@@ -37,10 +37,8 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {createMemoryHistory} from 'history';
-import {
-  mockFetchVariables,
-  mockFetchProcessInstanceDetailStatistics,
-} from 'modules/mocks/api/processInstances';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchSequenceFlows} from 'modules/mocks/api/sequenceFlows';

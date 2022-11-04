@@ -13,6 +13,9 @@ import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
 import {waitFor} from 'modules/testing-library';
 import {modificationsStore} from './modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {createInstance} from 'modules/testUtils';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -28,15 +31,11 @@ const metaData: MetaDataEntity = {
 
 describe('stores/flowNodeMetaData', () => {
   beforeAll(async () => {
-    mockServer.use(
-      rest.get(`/api/process-instances/${PROCESS_INSTANCE_ID}`, (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: PROCESS_INSTANCE_ID,
-            state: 'ACTIVE',
-          })
-        )
-      )
+    mockFetchProcessInstance().withSuccess(
+      createInstance({
+        id: PROCESS_INSTANCE_ID,
+        state: 'ACTIVE',
+      })
     );
 
     await processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
@@ -132,23 +131,15 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should not fetch metadata in modification mode if flow node does not have any running/finished instances', async () => {
-    mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'ServiceTask_1',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'ServiceTask_1',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
 
     modificationsStore.enableModificationMode();
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(

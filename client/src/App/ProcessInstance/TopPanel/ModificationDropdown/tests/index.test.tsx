@@ -16,67 +16,65 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {mockServer} from 'modules/mock-server/node';
 import {initializeStores, renderPopover} from './mocks';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'StartEvent_1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'service-task-1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        activityId: 'subprocess-start-1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        activityId: 'service-task-7',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'message-boundary',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      ),
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'StartEvent_1',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'service-task-1',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'multi-instance-subprocess',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-            {
-              activityId: 'subprocess-start-1',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'subprocess-service-task',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-            {
-              activityId: 'service-task-7',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'message-boundary',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
   });
@@ -227,50 +225,47 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not support add modification for events attached to event based gateway', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'message_intermediate_catch_non_selectable',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        activityId: 'message_intermediate_catch_selectable',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'timer_intermediate_catch_non_selectable',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'message_intermediate_throw_selectable',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'timer_intermediate_catch_selectable',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessWithEventBasedGateway))
-      ),
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'message_intermediate_catch_non_selectable',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-            {
-              activityId: 'message_intermediate_catch_selectable',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'timer_intermediate_catch_non_selectable',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'message_intermediate_throw_selectable',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'timer_intermediate_catch_selectable',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
 
@@ -331,22 +326,19 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not support move operation for sub processes', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      ),
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'multi-instance-subprocess',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
 

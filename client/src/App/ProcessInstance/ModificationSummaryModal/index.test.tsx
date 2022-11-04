@@ -22,6 +22,7 @@ import {createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
 import {ModificationSummaryModal} from './index';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -300,32 +301,26 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should display total affected token count if a subprocess is canceled', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 6,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 4,
+        incidents: 2,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      ),
-
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'multi-instance-subprocess',
-                active: 6,
-                incidents: 1,
-                completed: 0,
-                canceled: 0,
-              },
-              {
-                activityId: 'subprocess-service-task',
-                active: 4,
-                incidents: 2,
-                completed: 0,
-                canceled: 0,
-              },
-            ])
-          )
       )
     );
     await processInstanceDetailsDiagramStore.fetchProcessXml(
@@ -456,30 +451,22 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should display/hide warning message if all modifications are about to be canceled', async () => {
-    mockServer.use(
-      rest.get(
-        '/api/process-instances/:instanceId/statistics',
-        (_, rest, ctx) =>
-          rest(
-            ctx.json([
-              {
-                activityId: 'taskA',
-                active: 0,
-                canceled: 0,
-                incidents: 1,
-                completed: 0,
-              },
-              {
-                activityId: 'taskB',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'taskA',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        activityId: 'taskB',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics('id');
 
@@ -556,23 +543,15 @@ describe('Modification Summary Modal', () => {
       })
     );
 
-    mockServer.use(
-      rest.get(
-        '/api/process-instances/:instanceId/statistics',
-        (_, rest, ctx) =>
-          rest(
-            ctx.json([
-              {
-                activityId: 'taskA',
-                active: 0,
-                canceled: 0,
-                incidents: 1,
-                completed: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'taskA',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ]);
 
     await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics('id');
 

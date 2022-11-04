@@ -28,6 +28,7 @@ import {
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -50,6 +51,23 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('VariablePanel', () => {
   beforeEach(() => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'TEST_FLOW_NODE',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'Activity_0qtp1k6',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
         res.once(
@@ -68,26 +86,6 @@ describe('VariablePanel', () => {
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
-      ),
-      rest.get('/api/process-instances/:instanceId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'TEST_FLOW_NODE',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'Activity_0qtp1k6',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
 

@@ -5,15 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockGetRequest, mockPostRequest} from '../mockRequest';
-import {StatisticEntity} from 'modules/api/processInstances';
+import {mockPostRequest} from '../mockRequest';
 
 const mockFetchVariables = (contextPath = '') =>
   mockPostRequest(`${contextPath}/api/process-instances/:instanceId/variables`);
 
-const mockFetchProcessInstanceDetailStatistics = (contextPath = '') =>
-  mockGetRequest<StatisticEntity[]>(
-    `${contextPath}/api/process-instances/:processInstanceId/statistics`
-  );
-
-export {mockFetchVariables, mockFetchProcessInstanceDetailStatistics};
+export {mockFetchVariables};

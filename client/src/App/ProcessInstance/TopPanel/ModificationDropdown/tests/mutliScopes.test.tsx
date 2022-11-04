@@ -15,6 +15,7 @@ import {mockServer} from 'modules/mock-server/node';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {initializeStores, renderPopover} from './mocks';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
@@ -34,31 +35,29 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should support add modification for task with multiple scopes', async () => {
-    mockServer.use(
-      rest.get(
-        'http://localhost/api/process-instances/:processId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'OuterSubProcess',
-                active: 1,
-                incidents: 0,
-              },
-              {
-                activityId: 'InnerSubProcess',
-                active: 1,
-                incidents: 0,
-              },
-              {
-                activityId: 'TaskB',
-                active: 10,
-                incidents: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'OuterSubProcess',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'InnerSubProcess',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'TaskB',
+        active: 10,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
 
     initializeStores();
     renderPopover();
@@ -81,29 +80,29 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should not support add modification for task with multiple inner parent scopes', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'OuterSubProcess',
-              active: 1,
-              incidents: 0,
-            },
-            {
-              activityId: 'InnerSubProcess',
-              active: 10,
-              incidents: 0,
-            },
-            {
-              activityId: 'TaskB',
-              active: 1,
-              incidents: 0,
-            },
-          ])
-        )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'OuterSubProcess',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'InnerSubProcess',
+        active: 10,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'TaskB',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
 
     initializeStores();
     renderPopover();
@@ -126,29 +125,29 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should not support add modification for task with multiple outer parent scopes', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'OuterSubProcess',
-              active: 10,
-              incidents: 0,
-            },
-            {
-              activityId: 'InnerSubProcess',
-              active: 1,
-              incidents: 0,
-            },
-            {
-              activityId: 'TaskB',
-              active: 1,
-              incidents: 0,
-            },
-          ])
-        )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'OuterSubProcess',
+        active: 10,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'InnerSubProcess',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'TaskB',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
 
     initializeStores();
     renderPopover();
@@ -171,31 +170,29 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should render no modifications available', async () => {
-    mockServer.use(
-      rest.get(
-        'http://localhost/api/process-instances/:processId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'OuterSubProcess',
-                active: 1,
-                incidents: 0,
-              },
-              {
-                activityId: 'InnerSubProcess',
-                active: 10,
-                incidents: 0,
-              },
-              {
-                activityId: 'TaskB',
-                active: 1,
-                incidents: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'OuterSubProcess',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'InnerSubProcess',
+        active: 10,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'TaskB',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
 
     initializeStores();
     renderPopover();

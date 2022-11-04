@@ -27,6 +27,7 @@ import {
 } from 'modules/mocks/metadata';
 import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -92,22 +93,18 @@ describe('TopPanel', () => {
       rest.get(
         '/api/process-instances/:instanceId/sequence-flows',
         (_, res, ctx) => res.once(ctx.json(mockSequenceFlows))
-      ),
-      rest.get('/api/process-instances/:instanceId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'taskD',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
 
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'taskD',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+    ]);
     processInstanceDetailsStatisticsStore.init('id');
   });
 

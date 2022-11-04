@@ -16,6 +16,7 @@ import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagra
 import {mockSubProcesses} from 'modules/mocks/mockSubProcesses';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 const PROCESS_INSTANCE_ID = '2251799813686320';
 
@@ -66,12 +67,11 @@ const mockProcessInstanceDetailsStatistics = [
 
 describe('stores/processInstanceDetailsStatistics', () => {
   beforeEach(async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess(
+      mockProcessInstanceDetailsStatistics
+    );
+
     mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) =>
-          res.once(ctx.json(mockProcessInstanceDetailsStatistics))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockComplexProcess))
       )
@@ -155,24 +155,16 @@ describe('stores/processInstanceDetailsStatistics', () => {
 
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
 
-    mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              ...mockProcessInstanceDetailsStatistics,
-              {
-                activityId: 'anotherNode',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      ...mockProcessInstanceDetailsStatistics,
+      {
+        activityId: 'anotherNode',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
 
     jest.runOnlyPendingTimers();
 
@@ -196,12 +188,8 @@ describe('stores/processInstanceDetailsStatistics', () => {
   it('should stop polling when process instance is not running', async () => {
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
 
-    mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) =>
-          res.once(ctx.json(mockProcessInstanceDetailsStatistics))
-      )
+    mockFetchProcessInstanceDetailStatistics().withSuccess(
+      mockProcessInstanceDetailsStatistics
     );
 
     await waitFor(() => {
@@ -236,24 +224,16 @@ describe('stores/processInstanceDetailsStatistics', () => {
       )
     );
 
-    mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              ...mockProcessInstanceDetailsStatistics,
-              {
-                activityId: 'anotherNode',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      ...mockProcessInstanceDetailsStatistics,
+      {
+        activityId: 'anotherNode',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
 
     eventListeners.online();
 
@@ -304,11 +284,12 @@ describe('stores/processInstanceDetailsStatistics', () => {
         completed: 0,
       },
     ];
+
+    mockFetchProcessInstanceDetailStatistics().withSuccess(
+      subProcessStatistics
+    );
+
     mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) => res.once(ctx.json(subProcessStatistics))
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockSubProcesses))
       )
@@ -338,30 +319,22 @@ describe('stores/processInstanceDetailsStatistics', () => {
   });
 
   it('should return selectable flow nodes', async () => {
-    mockServer.use(
-      rest.get(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/statistics`,
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'startEvent1',
-                active: 0,
-                canceled: 0,
-                incidents: 0,
-                completed: 1,
-              },
-              {
-                activityId: 'serviceTask1',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 0,
-              },
-            ])
-          )
-      )
-    );
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'startEvent1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'serviceTask1',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
 
     processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
 

@@ -31,6 +31,7 @@ import {
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
@@ -202,6 +203,30 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'parent_sub_process',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 2,
+      },
+      {
+        activityId: 'inner_sub_process',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 2,
+      },
+      {
+        activityId: 'user_task',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 2,
+      },
+    ]);
+
     mockServer.use(
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(
@@ -210,35 +235,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(mockNestedSubprocess))
-      ),
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'parent_sub_process',
-                active: 0,
-                canceled: 0,
-                incidents: 0,
-                completed: 2,
-              },
-              {
-                activityId: 'inner_sub_process',
-                active: 0,
-                canceled: 0,
-                incidents: 0,
-                completed: 2,
-              },
-              {
-                activityId: 'user_task',
-                active: 0,
-                canceled: 0,
-                incidents: 0,
-                completed: 2,
-              },
-            ])
-          )
       )
     );
 
@@ -385,6 +381,30 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'parent_sub_process',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'inner_sub_process',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'user_task',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+    ]);
+
     mockServer.use(
       rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
         res.once(
@@ -393,35 +413,6 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       ),
       rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
         res.once(ctx.text(mockNestedSubprocess))
-      ),
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'parent_sub_process',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 1,
-              },
-              {
-                activityId: 'inner_sub_process',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 1,
-              },
-              {
-                activityId: 'user_task',
-                active: 1,
-                canceled: 0,
-                incidents: 0,
-                completed: 1,
-              },
-            ])
-          )
       )
     );
 

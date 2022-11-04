@@ -17,6 +17,7 @@ import {
   createEditVariableModification,
 } from 'modules/mocks/modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -324,34 +325,29 @@ describe('stores/modifications', () => {
   });
 
   it('should get modifications by flow node', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 0,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 2,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      ),
-
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'multi-instance-subprocess',
-                active: 0,
-                incidents: 0,
-                completed: 0,
-                canceled: 0,
-              },
-              {
-                activityId: 'subprocess-service-task',
-                active: 2,
-                incidents: 1,
-                completed: 0,
-                canceled: 0,
-              },
-            ])
-          )
       )
     );
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
     );
@@ -560,22 +556,17 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'StartEvent_1',
+        active: 2,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
+
     mockServer.use(
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'StartEvent_1',
-                active: 2,
-                incidents: 0,
-                completed: 0,
-                canceled: 0,
-              },
-            ])
-          )
-      ),
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
       )
@@ -621,74 +612,68 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens from multi instance process', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'StartEvent_1',
+        active: 0,
+        incidents: 0,
+        completed: 1,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-1',
+        active: 0,
+        incidents: 0,
+        completed: 1,
+        canceled: 0,
+      },
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 0,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'subprocess-start-1',
+        active: 0,
+        incidents: 0,
+        completed: 0,
+        canceled: 1,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 0,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-7',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'multi-instance-service-task',
+        active: 2,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'message-boundary',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      ),
-
-      rest.get(
-        '/api/process-instances/:processInstanceId/statistics',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json([
-              {
-                activityId: 'StartEvent_1',
-                active: 0,
-                incidents: 0,
-                completed: 1,
-                canceled: 0,
-              },
-              {
-                activityId: 'service-task-1',
-                active: 0,
-                incidents: 0,
-                completed: 1,
-                canceled: 0,
-              },
-              {
-                activityId: 'multi-instance-subprocess',
-                active: 0,
-                incidents: 1,
-                completed: 0,
-                canceled: 0,
-              },
-              {
-                activityId: 'subprocess-start-1',
-                active: 0,
-                incidents: 0,
-                completed: 0,
-                canceled: 1,
-              },
-              {
-                activityId: 'subprocess-service-task',
-                active: 0,
-                incidents: 1,
-                completed: 0,
-                canceled: 0,
-              },
-              {
-                activityId: 'service-task-7',
-                active: 1,
-                incidents: 0,
-                completed: 0,
-                canceled: 0,
-              },
-              {
-                activityId: 'multi-instance-service-task',
-                active: 2,
-                incidents: 0,
-                completed: 0,
-                canceled: 0,
-              },
-              {
-                activityId: 'message-boundary',
-                active: 1,
-                incidents: 0,
-                completed: 0,
-                canceled: 0,
-              },
-            ])
-          )
       )
     );
 

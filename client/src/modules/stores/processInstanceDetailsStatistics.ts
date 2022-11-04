@@ -15,20 +15,19 @@ import {
   computed,
 } from 'mobx';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {
   fetchProcessInstanceDetailStatistics,
-  StatisticEntity,
-} from 'modules/api/processInstances';
+  ProcessInstanceDetailStatisticsDto,
+} from 'modules/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 
-type Statistic = StatisticEntity & {filteredActive: number};
+type Statistic = ProcessInstanceDetailStatisticsDto & {filteredActive: number};
 
 type State = {
-  statistics: Statistic[];
+  statistics: ProcessInstanceDetailStatisticsDto[];
   status: 'initial' | 'fetched' | 'error';
 };
 const DEFAULT_STATE: State = {
@@ -77,56 +76,41 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   fetchFlowNodeStatistics = this.retryOnConnectionLost(
     async (processInstanceId: string) => {
-      try {
-        const response = await fetchProcessInstanceDetailStatistics(
-          processInstanceId
-        );
-        if (response.ok) {
-          this.handleFetchSuccess(await response.json());
-        } else {
-          this.handleFetchFailure();
-        }
-      } catch (error) {
-        this.handleFetchFailure(error);
+      const response = await fetchProcessInstanceDetailStatistics(
+        processInstanceId
+      );
+      if (response.isSuccess) {
+        this.handleFetchSuccess(response.data);
+      } else {
+        this.handleFetchFailure();
       }
     }
   );
 
   handlePolling = async (processInstanceId: string) => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchProcessInstanceDetailStatistics(
-        processInstanceId
-      );
+    this.isPollRequestRunning = true;
+    const response = await fetchProcessInstanceDetailStatistics(
+      processInstanceId
+    );
 
-      if (this.intervalId !== null) {
-        if (response.ok) {
-          this.handleFetchSuccess(await response.json());
-        } else {
-          this.handleFetchFailure();
-        }
+    if (this.intervalId !== null) {
+      if (response.isSuccess) {
+        this.handleFetchSuccess(response.data);
+      } else {
+        this.handleFetchFailure();
       }
-    } catch (error) {
-      if (this.intervalId !== null) {
-        this.handleFetchFailure(error);
-      }
-    } finally {
-      this.isPollRequestRunning = false;
     }
+
+    this.isPollRequestRunning = false;
   };
 
-  handleFetchSuccess = (statistics: State['statistics']) => {
+  handleFetchSuccess = (statistics: ProcessInstanceDetailStatisticsDto[]) => {
     this.state.statistics = statistics;
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
+  handleFetchFailure = () => {
     this.state.status = 'error';
-
-    logger.error('Failed to fetch process instance detail statistics');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   startPolling = (processInstanceId: string) => {

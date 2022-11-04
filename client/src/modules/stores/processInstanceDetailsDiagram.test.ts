@@ -19,6 +19,7 @@ import {mockProcessForModifications} from 'modules/mocks/mockProcessForModificat
 import {modificationsStore} from './modifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
@@ -238,64 +239,61 @@ describe('stores/processInstanceDiagram', () => {
   });
 
   it('should get modifiable-nonmodifiable flow nodes', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'StartEvent_1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'service-task-1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        activityId: 'subprocess-start-1',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 0,
+        canceled: 0,
+        incidents: 1,
+        completed: 0,
+      },
+      {
+        activityId: 'service-task-7',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'message-boundary',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
+
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockProcessForModifications))
-      ),
-      rest.get('/api/process-instances/:processId/statistics', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              activityId: 'StartEvent_1',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'service-task-1',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'multi-instance-subprocess',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-            {
-              activityId: 'subprocess-start-1',
-              active: 0,
-              canceled: 0,
-              incidents: 0,
-              completed: 1,
-            },
-            {
-              activityId: 'subprocess-service-task',
-              active: 0,
-              canceled: 0,
-              incidents: 1,
-              completed: 0,
-            },
-            {
-              activityId: 'service-task-7',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-            {
-              activityId: 'message-boundary',
-              active: 1,
-              canceled: 0,
-              incidents: 0,
-              completed: 0,
-            },
-          ])
-        )
       )
     );
 

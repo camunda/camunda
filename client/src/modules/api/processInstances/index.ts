@@ -9,14 +9,6 @@ import {request} from 'modules/request';
 
 const URL = '/api/process-instances';
 
-type StatisticEntity = {
-  activityId: string;
-  active: number;
-  canceled: number;
-  incidents: number;
-  completed: number;
-};
-
 type BatchOperationQuery = {
   active?: boolean;
   canceled?: boolean;
@@ -44,12 +36,6 @@ type VariablePayload = {
   searchBefore?: ReadonlyArray<string>;
   searchBeforeOrEqual?: ReadonlyArray<string>;
 };
-
-async function fetchProcessInstanceDetailStatistics(
-  processInstanceId: ProcessInstanceEntity['id']
-) {
-  return request({url: `${URL}/${processInstanceId}/statistics`});
-}
 
 /**
  * @param {*} payload object with query params.
@@ -108,12 +94,11 @@ async function fetchVariable(id: VariableEntity['id']) {
   return request({url: `/api/variables/${id}`});
 }
 
-export type {VariablePayload, StatisticEntity};
+export type {VariablePayload};
 export {
   applyBatchOperation,
   applyOperation,
   getOperation,
   fetchVariables,
   fetchVariable,
-  fetchProcessInstanceDetailStatistics,
 };

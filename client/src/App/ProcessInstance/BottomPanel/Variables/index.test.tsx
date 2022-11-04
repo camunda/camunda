@@ -29,6 +29,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import arrayMutators from 'final-form-arrays';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
+import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -1144,32 +1145,26 @@ describe('Variables', () => {
 
     it('should disable add variable button when selected flow node is not running', async () => {
       processInstanceDetailsStatisticsStore.init(instanceMock.id);
+      mockFetchProcessInstanceDetailStatistics().withSuccess([
+        {
+          activityId: 'start',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          activityId: 'neverFails',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ]);
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/variables',
           (_, res, ctx) => res.once(ctx.json([]))
-        ),
-        rest.get(
-          '/api/process-instances/:instanceId/statistics',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                {
-                  activityId: 'start',
-                  active: 0,
-                  canceled: 0,
-                  incidents: 0,
-                  completed: 1,
-                },
-                {
-                  activityId: 'neverFails',
-                  active: 0,
-                  canceled: 0,
-                  incidents: 0,
-                  completed: 1,
-                },
-              ])
-            )
         )
       );
 
