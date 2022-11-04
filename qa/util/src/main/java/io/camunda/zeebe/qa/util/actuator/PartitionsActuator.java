@@ -71,27 +71,27 @@ public interface PartitionsActuator {
   Map<Integer, PartitionStatus> query();
 
   @RequestLine("POST /pauseExporting")
-  @Headers("Accept: application/json")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseExporting();
 
   @RequestLine("POST /resumeExporting")
-  @Headers("Accept: application/json")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> resumeExporting();
 
   @RequestLine("POST /pauseProcessing")
-  @Headers("Accept: application/json")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseProcessing();
 
   @RequestLine("POST /resumeProcessing")
-  @Headers("Accept: application/json")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> resumeProcessing();
 
   @RequestLine("POST /takeSnapshot")
-  @Headers("Accept: application/json")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> takeSnapshot();
 
   @RequestLine("POST /prepareUpgrade")
-  @Headers("Accept: application/json")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> prepareUpgrade();
 
   @JsonIgnoreProperties(ignoreUnknown = true)
