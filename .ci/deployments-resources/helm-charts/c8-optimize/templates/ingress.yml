@@ -37,6 +37,31 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: mailhog
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}{{ include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 }}
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - {{ include "ingress.domain" $ | quote }}
+      secretName: optimize-tls
+  rules:
+    - host: {{ include "ingress.domain" $ | quote }}
+      http:
+        paths:
+          - path: /mail(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: mailhog
+                port:
+                  number: 8025
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
   name: optimize-external
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}

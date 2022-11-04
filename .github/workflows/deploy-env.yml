@@ -53,29 +53,29 @@ jobs:
     - name: Determine Argocd arguments
       shell: bash
       run: |
-        echo "c7_arguments=--dest-namespace ${app_name} \
+        echo "c7_arguments=--dest-namespace optimize-${app_name} \
             --file .ci/deployments-resources/argo/c7-optimize-application.yml \
             --helm-set optimize.image.tag=${docker_tag} \
             --helm-set cambpm.image.tag=${cambpm_version} \
             --helm-set elasticsearch.image.tag=${es_version} \
-            --helm-set global.labels.app=${app_name} \
+            --helm-set global.labels.app=optimize-${app_name} \
             --helm-set git.branch=${revision} \
-            --name ${app_name} \
+            --name optimize-${app_name} \
             --revision ${revision} \
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
 
-        echo "c8_arguments=--dest-namespace ${app_name}-c8 \
+        echo "c8_arguments=--dest-namespace optimize-${app_name}-c8 \
             --file .ci/deployments-resources/argo/c8-optimize-application.yml \
-            --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-stage-c8.optimize.camunda.cloud/auth/realms/camunda-platform \
-            --helm-set global.identity.auth.optimize.redirectUrl=https://stage-c8.optimize.camunda.cloud \
+            --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${app_name}-c8.optimize.camunda.cloud/auth/realms/camunda-platform \
+            --helm-set global.identity.auth.optimize.redirectUrl=https://${app_name}-c8.optimize.camunda.cloud \
             --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
             --helm-set camunda-platform.identity.image.tag=${identity_version} \
             --helm-set camunda-platform.zeebe.image.tag=${zeebe_version} \
             --helm-set camunda-platform.zeebe-gateway.image.tag=${zeebe_version} \
-            --helm-set global.labels.app=c8-${app_name} \
+            --helm-set global.labels.app=c8-optimize-${app_name} \
             --helm-set git.branch=${revision} \
-            --name c8-${app_name} \
+            --name c8-optimize-${app_name} \
             --revision ${revision} \
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
@@ -86,7 +86,7 @@ jobs:
         identity_version: ${{ github.event.inputs.identity_version }}
         cambpm_version: ${{ github.event.inputs.cambpm_version }}
         docker_tag: ${{ github.sha }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+        app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
     #########################################################################
     # Create Optimize environment
     - name: Deploy c7 Optimize Environment

@@ -16,6 +16,11 @@ ingress:
   # Defines the domain under which to expose the ingress
   domain: optimize.camunda.cloud
 
+mailhog:
+  image:
+    repository: mailhog/mailhog
+    tag: v1.0.1
+
 # Configuration of the camunda-platform chart, in particular we disable some features that
 # we don't want to deploy. We also change the `fullNameOverride` and `zeebeClusterName`
 # to simpler values, so we don't duplicate
@@ -40,6 +45,15 @@ camunda-platform:
       - key: "previews"
         operator: "Exists"
         effect: "NoSchedule"
+    env:
+      - name: CAMUNDA_OPTIMIZE_EMAIL_ENABLED
+        value: "true"
+      - name: CAMUNDA_OPTIMIZE_EMAIL_ADDRESS
+        value: "optimize@camunda.com"
+      - name: CAMUNDA_OPTIMIZE_EMAIL_HOSTNAME
+        value: "mailhog"
+      - name: CAMUNDA_OPTIMIZE_EMAIL_PORT
+        value: "1025"
 
   identity:
     fullnameOverride: identity
