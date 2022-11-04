@@ -7,9 +7,7 @@
 
 import {MetaDataEntity} from 'modules/stores/flowNodeMetaData';
 
-const mockVariables: Readonly<
-  [VariableEntity, VariableEntity, VariableEntity]
-> = [
+const mockVariables: VariableEntity[] = [
   {
     id: '2251799813686037-clientNo',
     name: 'clientNo',

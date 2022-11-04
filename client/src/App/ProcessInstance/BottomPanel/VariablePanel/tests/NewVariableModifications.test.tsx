@@ -23,11 +23,12 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, createVariable} from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -96,21 +97,9 @@ describe('New Variable Modifications', () => {
       },
     ]);
 
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
@@ -203,7 +192,7 @@ describe('New Variable Modifications', () => {
       expect(
         await screen.findByTestId('new-variable-name')
       ).toBeInTheDocument();
-      await editNameFromTextfieldAndBlur(user, 'test');
+      await editNameFromTextfieldAndBlur(user, 'testVariableName');
       await editValue(type, user, '123');
       expect(
         screen.getByRole('button', {name: /add variable/i})
@@ -537,10 +526,9 @@ describe('New Variable Modifications', () => {
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
+    mockFetchVariables().withSuccess([]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
@@ -553,10 +541,9 @@ describe('New Variable Modifications', () => {
     });
     await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
+    mockFetchVariables().withSuccess([]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))

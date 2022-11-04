@@ -94,6 +94,21 @@ export const createInstance = (
   };
 };
 
+const createVariable = (
+  options: Partial<VariableEntity> = {}
+): VariableEntity => {
+  const name = options.name ?? 'testVariableName';
+  return {
+    id: `2251799813725337-${name}`,
+    name,
+    value: '1',
+    isPreview: false,
+    hasActiveOperation: false,
+    isFirst: false,
+    sortValues: [name],
+    ...options,
+  };
+};
 /**
  * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
  */
@@ -1026,3 +1041,5 @@ export const createEventSubProcessFlowNodeInstances = (
     },
   };
 };
+
+export {createVariable};

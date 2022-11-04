@@ -23,12 +23,14 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {
   createInstance,
+  createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -68,21 +70,8 @@ describe('VariablePanel', () => {
       },
     ]);
 
+    mockFetchVariables().withSuccess([createVariable()]);
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
@@ -170,12 +159,7 @@ describe('VariablePanel', () => {
         screen.getByRole('button', {name: /add variable/i})
       ).toBeInTheDocument();
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/invalid_instance/variables',
-          (_, res, ctx) => res.once(ctx.json({}), ctx.status(500))
-        )
-      );
+      mockFetchVariables().withServerError();
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -206,12 +190,7 @@ describe('VariablePanel', () => {
         screen.getByRole('button', {name: /add variable/i})
       ).toBeInTheDocument();
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/invalid_instance/variables',
-          (_, res) => res.networkError('A network error')
-        )
-      );
+      mockFetchVariables().withNetworkError();
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -231,7 +210,7 @@ describe('VariablePanel', () => {
   it('should render variables', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
 
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
 
   it('should add new variable', async () => {
@@ -249,21 +228,8 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'foo');
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
+    mockFetchVariables().withSuccess([createVariable()]);
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
@@ -274,34 +240,23 @@ describe('VariablePanel', () => {
       expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
 
+    mockFetchVariables().withSuccess([
+      createVariable(),
+      createVariable({
+        id: '2251799813725337-foo',
+        name: 'foo',
+        value: '"bar"',
+        isFirst: false,
+        sortValues: ['foo'],
+      }),
+    ]);
+
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(
           ctx.json({
             id: 'batch-operation-id',
           })
-        )
-      ),
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-            {
-              id: '9007199254742796-foo',
-              name: 'foo',
-              value: '"bar"',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
         )
       ),
       rest.get('/api/operations', (req, res, ctx) => {
@@ -371,6 +326,7 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'foo');
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
+    mockFetchVariables().withSuccess([]);
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(
@@ -378,9 +334,6 @@ describe('VariablePanel', () => {
             id: 'batch-operation-id',
           })
         )
-      ),
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
       )
     );
 
@@ -506,21 +459,9 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'foo');
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
@@ -532,26 +473,14 @@ describe('VariablePanel', () => {
       expect(screen.getByTitle(/save variable/i)).toBeEnabled()
     );
 
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(
           ctx.json({
             id: 'batch-operation-id',
           })
-        )
-      ),
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
         )
       ),
       rest.get('/api/operations', (req, res, ctx) => {
@@ -602,21 +531,9 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'foo');
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      ),
       rest.post(
         '/api/process-instances/:instanceId/flow-node-metadata',
         (_, res, ctx) => res.once(ctx.json(undefined))
@@ -636,29 +553,12 @@ describe('VariablePanel', () => {
 
     expect(screen.getByTestId('edit-variable-spinner')).toBeInTheDocument();
 
+    mockFetchVariables().withSuccess([
+      createVariable(),
+      createVariable({id: 'instance_id-foo', name: 'foo', value: 'bar'}),
+    ]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-            {
-              id: 'instance_id-foo',
-              name: 'foo',
-              value: '"bar"',
-              scopeId: 'instance_id',
-              processInstanceId: 'instance_id',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      ),
       rest.get('/api/operations', (_, res, ctx) =>
         res.once(ctx.json([{state: 'SENT'}]))
       )
@@ -680,20 +580,8 @@ describe('VariablePanel', () => {
     render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: '9007199254742796-test',
-            name: 'test',
-            value: '123',
-            scopeId: '9007199254742796',
-            processInstanceId: '9007199254742796',
-            hasActiveOperation: false,
-          })
-        )
-      )
-    );
+    mockFetchVariables().withSuccess([createVariable()]);
+
     variablesStore.fetchVariables({
       fetchType: 'initial',
       instanceId: '1',
@@ -718,24 +606,9 @@ describe('VariablePanel', () => {
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test2',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      )
-    );
+    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'Activity_0qtp1k6',
@@ -809,24 +682,9 @@ describe('VariablePanel', () => {
   it('should display spinner for variables tab when switching between tabs', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'test2',
-              value: '123',
-              scopeId: '9007199254742796',
-              processInstanceId: '9007199254742796',
-              hasActiveOperation: false,
-            },
-          ])
-        )
-      )
-    );
+    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
 
     flowNodeSelectionStore.setSelection({
       flowNodeInstanceId: 'another_flow_node',
@@ -838,6 +696,8 @@ describe('VariablePanel', () => {
 
     await user.click(screen.getByRole('button', {name: 'Input Mappings'}));
 
+    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+
     await user.click(screen.getByRole('button', {name: 'Variables'}));
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
   });
@@ -846,13 +706,13 @@ describe('VariablePanel', () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'non-existing',
     });
 
-    expect(screen.queryByText('test')).not.toBeInTheDocument();
+    expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
 
     await user.dblClick(screen.getByRole('button', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
@@ -863,13 +723,13 @@ describe('VariablePanel', () => {
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'flowNode-without-running-tokens',
@@ -879,7 +739,7 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByRole('button', {name: /add variable/i})
     ).not.toBeInTheDocument();
-    expect(screen.queryByText('test')).not.toBeInTheDocument();
+    expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
       screen.queryByText('The Flow Node has no Variables')
     ).not.toBeInTheDocument();
@@ -986,18 +846,14 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchVariables().withSuccess([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'TEST_FLOW_NODE',
@@ -1083,18 +939,14 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchVariables().withSuccess([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'Activity_0qtp1k6',
@@ -1279,13 +1131,17 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    mockFetchVariables().withSuccess([
+      createVariable({name: 'some-other-variable'}),
+    ]);
 
     mockServer.use(
       rest.post(
@@ -1298,20 +1154,6 @@ describe('VariablePanel', () => {
               instanceMetadata: {endDate: '2022-09-15T12:44:45.406+0000'},
             })
           )
-      ),
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'some-other-variable',
-              value: '123',
-              scopeId: '9007199254742797',
-              processInstanceId: '9007199254742797',
-              hasActiveOperation: false,
-            },
-          ])
-        )
       )
     );
 
@@ -1347,13 +1189,17 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+
+    mockFetchVariables().withSuccess([
+      createVariable({name: 'some-other-variable'}),
+    ]);
 
     mockServer.use(
       rest.post(
@@ -1366,20 +1212,6 @@ describe('VariablePanel', () => {
               instanceMetadata: {endDate: null},
             })
           )
-      ),
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '9007199254742796-test',
-              name: 'some-other-variable',
-              value: '123',
-              scopeId: '9007199254742797',
-              processInstanceId: '9007199254742797',
-              hasActiveOperation: false,
-            },
-          ])
-        )
       )
     );
 
@@ -1436,12 +1268,12 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
     modificationsStore.addModification({
@@ -1475,18 +1307,14 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchVariables().withSuccess([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'Activity_0qtp1k6',
@@ -1577,18 +1405,14 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: Wrapper});
-    expect(await screen.findByText('test')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
-    expect(screen.getByText('test')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchVariables().withSuccess([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'Activity_0qtp1k6',

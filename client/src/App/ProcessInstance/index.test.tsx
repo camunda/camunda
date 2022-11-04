@@ -24,7 +24,10 @@ import {mockSequenceFlows} from './TopPanel/index.setup';
 import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {ProcessInstance} from './index';
-import {createMultiInstanceFlowNodeInstances} from 'modules/testUtils';
+import {
+  createMultiInstanceFlowNodeInstances,
+  createVariable,
+} from 'modules/testUtils';
 import {useNotifications} from 'modules/notifications';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -37,7 +40,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {createMemoryHistory} from 'history';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
@@ -121,16 +124,7 @@ const mockRequests = (contextPath: string = '') => {
       canceled: 0,
     },
   ]);
-  mockFetchVariables(contextPath).withSuccess([
-    {
-      id: '2251799813686037-mwst',
-      name: 'newVariable',
-      value: '1234',
-      scopeId: '2251799813686037',
-      processInstanceId: '2251799813686037',
-      hasActiveOperation: false,
-    },
-  ]);
+  mockFetchVariables(contextPath).withSuccess([createVariable()]);
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({
     ...mockIncidents,
     count: 2,
@@ -159,7 +153,7 @@ describe('Instance', () => {
     expect(screen.getByTestId('diagram-panel-body')).toBeInTheDocument();
     expect(screen.getByText('Instance History')).toBeInTheDocument();
     await waitFor(() =>
-      expect(screen.getByText('newVariable')).toBeInTheDocument()
+      expect(screen.getByText('testVariableName')).toBeInTheDocument()
     );
     expect(
       within(screen.getByTestId('instance-header')).getByTestId('INCIDENT-icon')
@@ -386,16 +380,7 @@ describe('Instance', () => {
     );
 
     mockFetchFlowNodeMetadata().withSuccess({});
-    mockFetchVariables().withSuccess([
-      {
-        id: '2251799813686037-mwst',
-        name: 'newVariable',
-        value: '1234',
-        scopeId: '2251799813686037',
-        processInstanceId: '2251799813686037',
-        hasActiveOperation: false,
-      },
-    ]);
+    mockFetchVariables().withSuccess([createVariable()]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'taskD',

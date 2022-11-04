@@ -60,6 +60,7 @@ async function requestAndParse<T>(props: RequestParams) {
       } as const;
     }
     return {
+      isAborted: false,
       isSuccess: true,
       statusCode: response.status,
       data: (response.headers.get('content-type')?.includes('application/json')
@@ -67,9 +68,19 @@ async function requestAndParse<T>(props: RequestParams) {
         : await response.text()) as T,
     } as const;
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return {
+        isAborted: true,
+        isSuccess: false,
+        statusCode: 0,
+        data: undefined,
+      } as const;
+    }
+
     logger.error(`Failed to fetch ${url}`);
     logger.error(error);
     return {
+      isAborted: false,
       isSuccess: false,
       statusCode: 0,
       data: undefined,

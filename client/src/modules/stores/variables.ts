@@ -19,10 +19,12 @@ import {
 import {
   applyOperation,
   getOperation,
-  fetchVariables,
-  VariablePayload,
   fetchVariable,
 } from 'modules/api/processInstances';
+import {
+  fetchVariables,
+  VariablePayload,
+} from 'modules/api/processInstances/fetchVariables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
@@ -296,10 +298,6 @@ class Variables extends NetworkReconnectionHandler {
 
   handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
-    logger.error('Failed to fetch Variables');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   handleFetchSuccess = () => {
@@ -374,54 +372,49 @@ class Variables extends NetworkReconnectionHandler {
   };
 
   handlePolling = async (instanceId: ProcessInstanceEntity['id']) => {
-    try {
-      const {items} = this.state;
+    const {items} = this.state;
 
-      if (this.pollingAbortController?.signal.aborted) {
-        this.pollingAbortController = new AbortController();
-      }
-
-      this.isPollRequestRunning = true;
-
-      const response = await fetchVariables({
-        instanceId,
-        payload: {
-          scopeId: this.scopeId || instanceId,
-          pageSize:
-            items.length <= MAX_VARIABLES_PER_REQUEST
-              ? MAX_VARIABLES_PER_REQUEST
-              : items.length,
-          searchAfterOrEqual: this.getSortValues('initial'),
-        },
-        signal: this.pollingAbortController?.signal,
-      });
-
-      if (this.intervalId !== null && response.ok) {
-        const variables: VariableEntity[] = await response.json();
-
-        const {pendingItem} = this.state;
-
-        if (
-          pendingItem !== null &&
-          variables.some(({name}) => name === pendingItem.name)
-        ) {
-          this.setPendingItem(null);
-          this.stopPollingOperation();
-          this.onPollingOperationSuccess?.();
-        }
-
-        this.setItems(variables);
-      }
-
-      if (!response.ok) {
-        logger.error('Failed to poll Variables');
-      }
-    } catch (error) {
-      logger.error('Failed to poll Variables');
-      logger.error(error);
-    } finally {
-      this.isPollRequestRunning = false;
+    if (this.pollingAbortController?.signal.aborted) {
+      this.pollingAbortController = new AbortController();
     }
+
+    this.isPollRequestRunning = true;
+
+    const response = await fetchVariables({
+      instanceId,
+      payload: {
+        scopeId: this.scopeId || instanceId,
+        pageSize:
+          items.length <= MAX_VARIABLES_PER_REQUEST
+            ? MAX_VARIABLES_PER_REQUEST
+            : items.length,
+        searchAfterOrEqual: this.getSortValues('initial'),
+      },
+      signal: this.pollingAbortController?.signal,
+    });
+
+    if (this.intervalId !== null && response.isSuccess) {
+      const variables = response.data;
+
+      const {pendingItem} = this.state;
+
+      if (
+        pendingItem !== null &&
+        variables.some(({name}) => name === pendingItem.name)
+      ) {
+        this.setPendingItem(null);
+        this.stopPollingOperation();
+        this.onPollingOperationSuccess?.();
+      }
+
+      this.setItems(variables);
+    }
+
+    if (!response.isSuccess) {
+      logger.error('Failed to poll Variables');
+    }
+
+    this.isPollRequestRunning = false;
   };
 
   handlePollingOperation = async (
@@ -471,36 +464,30 @@ class Variables extends NetworkReconnectionHandler {
         return null;
       }
 
-      try {
-        if (fetchType === 'initial') {
-          this.startFetching();
-        }
+      if (fetchType === 'initial') {
+        this.startFetching();
+      }
 
-        if (this.fetchAbortController?.signal.aborted) {
-          this.fetchAbortController = new AbortController();
-        }
+      if (this.fetchAbortController?.signal.aborted) {
+        this.fetchAbortController = new AbortController();
+      }
 
-        const response = await fetchVariables({
-          instanceId,
-          payload,
-          signal: this.fetchAbortController?.signal,
-        });
+      const response = await fetchVariables({
+        instanceId,
+        payload,
+        signal: this.fetchAbortController?.signal,
+      });
 
-        if (response.ok) {
-          const variablesFromResponse = await response.json();
-          this.setItems(this.getVariables(fetchType, variablesFromResponse));
-          this.setLatestFetchDetails(fetchType, variablesFromResponse.length);
+      if (response.isSuccess) {
+        const variablesFromResponse = response.data;
+        this.setItems(this.getVariables(fetchType, variablesFromResponse));
+        this.setLatestFetchDetails(fetchType, variablesFromResponse.length);
 
-          this.handleFetchSuccess();
-        } else {
+        this.handleFetchSuccess();
+      } else {
+        if (!response.isAborted) {
           this.handleFetchFailure();
         }
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          return;
-        }
-
-        this.handleFetchFailure(error);
       }
     }
   );

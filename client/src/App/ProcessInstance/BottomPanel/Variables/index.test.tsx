@@ -22,7 +22,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, createVariable} from 'modules/testUtils';
 import {Form} from 'react-final-form';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -30,6 +30,7 @@ import arrayMutators from 'final-form-arrays';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -81,12 +82,7 @@ describe('Variables', () => {
 
   describe('Skeleton', () => {
     it('should display empty content if there are no variables', async () => {
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json([]))
-        )
-      );
+      mockFetchVariables().withSuccess([]);
 
       render(<Variables />, {wrapper: Wrapper});
       flowNodeMetaDataStore.setMetaData(mockMetaData);
@@ -101,12 +97,8 @@ describe('Variables', () => {
     });
 
     it('should display skeleton on initial load', async () => {
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -124,12 +116,8 @@ describe('Variables', () => {
     it('should render variables table', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -154,12 +142,8 @@ describe('Variables', () => {
 
     it('should show/hide spinner next to variable according to it having an active operation', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -197,13 +181,9 @@ describe('Variables', () => {
         ...instanceMock,
         state: 'COMPLETED',
       });
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(ctx.json([{...mockVariables[0], isPreview: true}]))
-        )
-      );
+
+      mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -217,7 +197,7 @@ describe('Variables', () => {
       );
 
       expect(
-        screen.getByTitle('View full value of clientNo')
+        screen.getByTitle('View full value of testVariableName')
       ).toBeInTheDocument();
     });
   });
@@ -226,12 +206,8 @@ describe('Variables', () => {
     it('should show/hide add variable inputs', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -251,12 +227,8 @@ describe('Variables', () => {
     it('should not allow empty value', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -287,12 +259,7 @@ describe('Variables', () => {
     it('should not allow empty characters in variable name', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -356,12 +323,8 @@ describe('Variables', () => {
     it('should not allow to add duplicate variables', async () => {
       jest.useFakeTimers();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -376,7 +339,7 @@ describe('Variables', () => {
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
       await user.type(
         screen.getByTestId('add-variable-name'),
-        mockVariables[0].name
+        mockVariables[0]!.name
       );
 
       expect(screen.getByTitle(/save variable/i)).toBeDisabled();
@@ -421,12 +384,7 @@ describe('Variables', () => {
       jest.useFakeTimers();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -461,12 +419,8 @@ describe('Variables', () => {
     it('clicking edit variables while add mode is open, should not display a validation error', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables('1');
 
       const {user} = render(<Variables />, {wrapper: Wrapper});
@@ -484,12 +438,8 @@ describe('Variables', () => {
     it('should not exit add variable state when user presses Enter', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -509,12 +459,8 @@ describe('Variables', () => {
 
     it('should exit Add Variable mode when process is canceled', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -538,12 +484,8 @@ describe('Variables', () => {
     it('should show/hide edit button next to variable according to it having an active operation', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -579,12 +521,8 @@ describe('Variables', () => {
     it('should not display edit button next to variables if instance is completed or canceled', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -621,12 +559,8 @@ describe('Variables', () => {
     it('should show/hide edit variable inputs', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -671,12 +605,8 @@ describe('Variables', () => {
     it('should disable save button when nothing is changed', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -704,12 +634,8 @@ describe('Variables', () => {
     it('should validate when editing variables', async () => {
       jest.useFakeTimers();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -760,34 +686,15 @@ describe('Variables', () => {
 
     it('should get variable details on edit button click if the variables value was a preview', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                {
-                  id: '2251799813686037-clientNo',
-                  name: 'clientNo',
-                  value: '"value-preview"',
-                  scopeId: '2251799813686037',
-                  processInstanceId: '2251799813686037',
-                  hasActiveOperation: false,
-                  isPreview: true,
-                },
-                {
-                  id: '2251799813686037-mwst',
-                  name: 'mwst',
-                  value: '124.26',
-                  scopeId: '2251799813686037',
-                  processInstanceId: '2251799813686037',
-                  hasActiveOperation: false,
-                },
-              ])
-            )
-        )
-      );
+      mockFetchVariables().withSuccess([
+        createVariable({
+          id: '2251799813686037-clientNo',
+          name: 'clientNo',
+          value: '"value-preview"',
+          isPreview: true,
+        }),
+        createVariable({name: 'mwst', value: '124.26'}),
+      ]);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -799,6 +706,7 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByText('"value-preview"')).toBeInTheDocument();
+
       mockServer.use(
         rest.get('/api/variables/:variableId', (_, res, ctx) =>
           res.once(
@@ -838,26 +746,9 @@ describe('Variables', () => {
 
     it('should display notification if error occurs when getting single variable details', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                {
-                  id: '2251799813686037-clientNo',
-                  name: 'clientNo',
-                  value: '"value-preview"',
-                  scopeId: '2251799813686037',
-                  processInstanceId: '2251799813686037',
-                  hasActiveOperation: false,
-                  isPreview: true,
-                },
-              ])
-            )
-        )
-      );
+      mockFetchVariables().withSuccess([
+        createVariable({isPreview: true, value: '"value-preview"'}),
+      ]);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -876,7 +767,9 @@ describe('Variables', () => {
       );
 
       await user.click(
-        within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
+        within(screen.getByTestId('testVariableName')).getByTitle(
+          /enter edit mode/i
+        )
       );
       expect(screen.getByTestId('variable-backdrop')).toBeInTheDocument();
 
@@ -892,25 +785,9 @@ describe('Variables', () => {
     it('should not get variable details on edit button click if the variables value was not a preview', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                {
-                  id: '2251799813686037-clientNo',
-                  name: 'clientNo',
-                  value: '"full-value"',
-                  scopeId: '2251799813686037',
-                  processInstanceId: '2251799813686037',
-                  hasActiveOperation: false,
-                  isPreview: false,
-                },
-              ])
-            )
-        )
-      );
+      mockFetchVariables().withSuccess([
+        createVariable({value: '"full-value"'}),
+      ]);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -924,7 +801,9 @@ describe('Variables', () => {
       expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
       await user.click(
-        within(screen.getByTestId('clientNo')).getByTitle(/enter edit mode/i)
+        within(screen.getByTestId('testVariableName')).getByTitle(
+          /enter edit mode/i
+        )
       );
 
       expect(screen.queryByTestId('variable-backdrop')).not.toBeInTheDocument();
@@ -934,25 +813,11 @@ describe('Variables', () => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                {
-                  id: '2251799813686037-clientNo',
-                  name: 'clientNo',
-                  value: '123',
-                  hasActiveOperation: false,
-                  isFirst: true,
-                  isPreview: true,
-                  sortValues: ['clientNo'],
-                },
-              ])
-            )
-        )
-      );
+
+      mockFetchVariables().withSuccess([
+        createVariable({isPreview: true, value: '123'}),
+      ]);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -1001,25 +866,10 @@ describe('Variables', () => {
     it('should load full value on json viewer click during modification mode if it was truncated', async () => {
       modificationsStore.enableModificationMode();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json([
-                {
-                  id: '2251799813686037-clientNo',
-                  name: 'clientNo',
-                  value: '123',
-                  hasActiveOperation: false,
-                  isFirst: true,
-                  isPreview: true,
-                  sortValues: ['clientNo'],
-                },
-              ])
-            )
-        )
-      );
+
+      mockFetchVariables().withSuccess([
+        createVariable({isPreview: true, value: '123'}),
+      ]);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -1039,7 +889,7 @@ describe('Variables', () => {
             ctx.status(200),
             ctx.json({
               id: '2251799813686037-clientNo',
-              name: 'clientNo',
+              name: 'testVariableName',
               value: '123456',
               isPreview: false,
               hasActiveOperation: false,
@@ -1062,12 +912,8 @@ describe('Variables', () => {
     it('should disable add variable button when loading', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -1087,12 +933,7 @@ describe('Variables', () => {
         state: 'CANCELED',
       });
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
 
       variablesStore.fetchVariables({
         fetchType: 'initial',
@@ -1111,12 +952,8 @@ describe('Variables', () => {
     it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json(mockVariables))
-        )
-      );
+      mockFetchVariables().withSuccess(mockVariables);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -1161,12 +998,7 @@ describe('Variables', () => {
           completed: 1,
         },
       ]);
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json([]))
-        )
-      );
+      mockFetchVariables().withSuccess([]);
 
       flowNodeMetaDataStore.init();
       processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -1244,11 +1076,8 @@ describe('Variables', () => {
   it('should have JSON editor when adding a new Variable', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json(mockVariables))
-      )
-    );
+    mockFetchVariables().withSuccess(mockVariables);
+
     variablesStore.fetchVariables({
       fetchType: 'initial',
       instanceId: '1',
@@ -1275,10 +1104,9 @@ describe('Variables', () => {
   it('should have JSON editor when editing a Variable', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([mockVariables[0]]))
-      ),
       rest.get('/api/variables/:instanceId', (_, res, ctx) =>
         res.once(ctx.json(mockVariables[0]))
       )
@@ -1325,12 +1153,8 @@ describe('Variables', () => {
     it('should not display Edit Variable button', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json([mockVariables[0]]))
-        )
-      );
+      mockFetchVariables().withSuccess([createVariable()]);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -1346,12 +1170,8 @@ describe('Variables', () => {
     it('should not display Add Variable footer', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) => res.once(ctx.json([mockVariables[0]]))
-        )
-      );
+      mockFetchVariables().withSuccess([createVariable()]);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -1368,13 +1188,9 @@ describe('Variables', () => {
       processInstanceDetailsStore.setProcessInstance({
         ...instanceMock,
       });
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/variables',
-          (_, res, ctx) =>
-            res.once(ctx.json([{...mockVariables[0], isPreview: true}]))
-        )
-      );
+
+      mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
+
       variablesStore.fetchVariables({
         fetchType: 'initial',
         instanceId: '1',
@@ -1388,7 +1204,7 @@ describe('Variables', () => {
       );
 
       expect(
-        screen.getByTitle('View full value of clientNo')
+        screen.getByTitle('View full value of testVariableName')
       ).toBeInTheDocument();
     });
   });

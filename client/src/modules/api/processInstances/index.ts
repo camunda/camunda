@@ -28,15 +28,6 @@ type OperationPayload = {
   incidentId?: string;
 };
 
-type VariablePayload = {
-  pageSize: number;
-  scopeId: string;
-  searchAfter?: ReadonlyArray<string>;
-  searchAfterOrEqual?: ReadonlyArray<string>;
-  searchBefore?: ReadonlyArray<string>;
-  searchBeforeOrEqual?: ReadonlyArray<string>;
-};
-
 /**
  * @param {*} payload object with query params.
  */
@@ -73,32 +64,8 @@ async function getOperation(batchOperationId: string) {
   return request({url: `/api/operations?batchOperationId=${batchOperationId}`});
 }
 
-async function fetchVariables({
-  instanceId,
-  payload,
-  signal,
-}: {
-  instanceId: ProcessInstanceEntity['id'];
-  payload: VariablePayload;
-  signal?: AbortSignal;
-}) {
-  return request({
-    url: `${URL}/${instanceId}/variables`,
-    method: 'POST',
-    body: payload,
-    signal,
-  });
-}
-
 async function fetchVariable(id: VariableEntity['id']) {
   return request({url: `/api/variables/${id}`});
 }
 
-export type {VariablePayload};
-export {
-  applyBatchOperation,
-  applyOperation,
-  getOperation,
-  fetchVariables,
-  fetchVariable,
-};
+export {applyBatchOperation, applyOperation, getOperation, fetchVariable};

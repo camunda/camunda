@@ -29,11 +29,16 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
+import {
+  createVariable,
+  mockCallActivityProcessXML,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -281,18 +286,12 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when variables is updated', async () => {
-    const mockVariable = {
-      name: 'key',
-      value: 'value',
-      hasActiveOperation: false,
-    };
+    const mockVariable = createVariable();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchVariables().withSuccess([mockVariable]);
 
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/variables', (_, res, ctx) =>
-        res.once(ctx.json([mockVariable]))
-      ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(undefined))
       ),
