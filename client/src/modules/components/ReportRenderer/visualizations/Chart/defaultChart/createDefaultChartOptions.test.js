@@ -201,3 +201,45 @@ it('should switch tooltip alignment of an item when surpassing 70% of the availa
   const newAlignment = chartConfig.plugins.datalabels.align(context);
   expect(newAlignment).toBe('start');
 });
+
+it('should set axis-0 scale step to integers if chart values doesnt have decimal points', () => {
+  const chartConfig = createDefaultChartOptions({
+    report: {
+      data: {
+        visualization: 'bar',
+        configuration: {xLabel: 'Flow Nodes'},
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        groupBy: {type: 'flowNodes'},
+      },
+      result: {
+        measures: [
+          {property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]},
+          {property: 'duration', data: [{key: 'a', value: 9001, label: 'a'}]},
+        ],
+      },
+    },
+  });
+
+  expect(chartConfig.scales['axis-0'].ticks.precision).toBe(0);
+});
+
+it('should not set axis-0 scale step to integers if chart values have decimal point', () => {
+  const chartConfig = createDefaultChartOptions({
+    report: {
+      data: {
+        visualization: 'bar',
+        configuration: {xLabel: 'Flow Nodes'},
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        groupBy: {type: 'flowNodes'},
+      },
+      result: {
+        measures: [
+          {property: 'frequency', data: [{key: 'a', value: 123.123, label: 'a'}]},
+          {property: 'duration', data: [{key: 'a', value: 9001.023, label: 'a'}]},
+        ],
+      },
+    },
+  });
+
+  expect(chartConfig.scales['axis-0'].ticks.precision).not.toBeDefined();
+});

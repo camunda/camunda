@@ -149,6 +149,19 @@ export function createBarOptions({
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
+  const hasDecimalPoints = measures
+    // check only for frequency measures
+    .filter(({property}) => property === 'frequency')
+    // check if there are any decimal points
+    .every((measure) =>
+      measure.data.every(({value}) => {
+        if (Array.isArray(value)) {
+          return value[0].value % 1 !== 0;
+        }
+        return value % 1 !== 0;
+      })
+    );
+
   const topPadding = isPersistedTooltips && !horizontalBar;
 
   const measuresAxis = {
@@ -179,6 +192,10 @@ export function createBarOptions({
       stacked,
     },
   };
+
+  if (!hasDecimalPoints) {
+    measuresAxis['axis-0'].ticks.precision = 0;
+  }
 
   if (hasMultipleAxes) {
     measuresAxis['axis-0'].title.display = true;
