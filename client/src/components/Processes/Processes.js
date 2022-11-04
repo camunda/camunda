@@ -88,7 +88,7 @@ export function Processes({mightFail, user}) {
             <span>
               {t('processes.analysing', {count: processes.length, label: processesLabel})}
             </span>{' '}
-            <DocsLink location="components/optimize/userguide/processes">
+            <DocsLink location="components/userguide/processes">
               {t('events.sources.learnMore')}
             </DocsLink>
           </div>
