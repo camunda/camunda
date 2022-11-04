@@ -150,7 +150,7 @@ to: `-agentlib:jdwp=transport=dt_socket,server=y,suspend=n`.
 
 To enable this for CI, find the job which runs your test, and under it, the step running the tests (
 e.g. the command running `mvn verify` or `mvn test` or the likes). There, you can add the
-property (`maven.debug.surefire` or `maven.debug.failsafe`). For example:
+property (`maven.debug.surefire` for `mvn test` or `maven.debug.failsafe` for `mvn verify`). For example:
 
 ```yaml
       - name: Maven Test Build
