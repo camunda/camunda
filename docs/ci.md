@@ -133,7 +133,7 @@ faster feedback loop. If it doesn't, then you unfortunately have to revert your 
 
 ##### Debugging
 
-> NOTE: the end process is somewhat convoluted, so do not hesitate to suggest things which may
+> NOTE: the end of this process is somewhat convoluted, so do not hesitate to suggest things which may
 > simplify it.
 
 Next is the fun part where it comes to debugging. You can use the `maven.surefire.debug` (
