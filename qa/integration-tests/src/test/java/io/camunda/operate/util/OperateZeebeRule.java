@@ -7,6 +7,7 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.util.ZeebeVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -18,14 +19,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
-import org.elasticsearch.client.indices.GetIndexTemplatesResponse;
-import org.elasticsearch.client.indices.IndexTemplateMetadata;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.client.indices.*;
+import org.elasticsearch.cluster.metadata.ComponentTemplate;
+import org.elasticsearch.cluster.metadata.Template;
 import org.elasticsearch.common.settings.Settings;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -65,17 +64,17 @@ public class OperateZeebeRule extends TestWatcher {
 
   public void updateRefreshInterval(String value) {
     try {
-      GetIndexTemplatesRequest request = new GetIndexTemplatesRequest(prefix);
-      GetIndexTemplatesResponse indexTemplate = zeebeEsClient.indices().getIndexTemplate(request, RequestOptions.DEFAULT);
-      IndexTemplateMetadata indexTemplateMetaData = indexTemplate.getIndexTemplates().get(0);
+      GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
+      GetComponentTemplatesResponse response = zeebeEsClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
+      ComponentTemplate componentTemplate = response.getComponentTemplates().get(prefix);
+      Settings settings = componentTemplate.template().settings();
 
-      PutIndexTemplateRequest updateTemplateRequest = new PutIndexTemplateRequest(prefix);
-      updateTemplateRequest.patterns(indexTemplateMetaData.patterns());
-      updateTemplateRequest.order(indexTemplateMetaData.order());
-      updateTemplateRequest.settings(Settings.builder().put(indexTemplateMetaData.settings()).put("index.refresh_interval", value));
-      updateTemplateRequest.alias(new Alias(prefix));
-      updateTemplateRequest.mapping(indexTemplateMetaData.mappings().getSourceAsMap());
-      zeebeEsClient.indices().putTemplate(updateTemplateRequest, RequestOptions.DEFAULT);
+      PutComponentTemplateRequest request = new PutComponentTemplateRequest().name(prefix);
+      Settings newSettings = Settings.builder().put(settings).put("index.refresh_interval", value).build();
+      Template newTemplate = new Template(newSettings, componentTemplate.template().mappings(), null);
+      ComponentTemplate newComponentTemplate = new ComponentTemplate(newTemplate, null, null);
+      request.componentTemplate(newComponentTemplate);
+      assertThat(zeebeEsClient.cluster().putComponentTemplate(request, RequestOptions.DEFAULT).isAcknowledged()).isTrue();
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

@@ -36,7 +36,8 @@ import static io.camunda.operate.util.ThreadUtil.sleepFor;
     classes = { TestApplication.class},
     properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".importer.threadsCount = 1",
-        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
+        OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
+        "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"})
 public class ImportMidnightIT extends OperateZeebeIntegrationTest {
 
   @Autowired
@@ -59,7 +60,6 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  @Ignore("OPE-1288")
   public void testProcessInstancesCompletedNextDay() {
     // having
     String processId = "demoProcess";
