@@ -153,18 +153,18 @@ e.g. the command running `mvn verify` or `mvn test` or the likes). There, you ca
 property (`maven.debug.surefire` for `mvn test` or `maven.debug.failsafe` for `mvn verify`). For example:
 
 ```yaml
-      - name: Maven Test Build
-        run: >
-          mvn -B -T2 --no-snapshot-updates
-          -D forkCount=5
-          -D maven.javadoc.skip=true
-          -D skipUTs -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -D maven.failsafe.debug=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n
-          -P parallel-tests,extract-flaky-tests
-          -pl '!qa/update-tests'
-          verify
-          | tee "${BUILD_OUTPUT_FILE_PATH}"
+- name: Maven Test Build
+  run: >
+    mvn -B -T2 --no-snapshot-updates
+    -D forkCount=5
+    -D maven.javadoc.skip=true
+    -D skipUTs -D skipChecks
+    -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+    -D maven.failsafe.debug=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n
+    -P parallel-tests,extract-flaky-tests
+    -pl '!qa/update-tests'
+    verify
+    | tee "${BUILD_OUTPUT_FILE_PATH}"
 ```
 
 When the forks are started, they will print out the port which they use for the debugger, e.g.
@@ -233,7 +233,6 @@ To cut down on reproduction times, you might sometimes want to run multiple work
 parallel. There I can recommend using [Webhook.site](https://webhook.site/), and having your test
 ping that endpoint with some payload, so you can react to a test failure. For example:
 
-
 ```java
 try {
   SslAssert.assertThat(socketAddress)
@@ -253,3 +252,4 @@ try {
   }
 }
 ```
+
