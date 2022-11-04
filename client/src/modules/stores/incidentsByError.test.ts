@@ -6,9 +6,8 @@
  */
 
 import {incidentsByErrorStore} from './incidentsByError';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/dom';
+import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 
 describe('stores/incidentsByError', () => {
   const mockIncidentsByError = [
@@ -59,11 +58,7 @@ describe('stores/incidentsByError', () => {
   ];
 
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
   });
 
   afterEach(() => {
@@ -91,11 +86,7 @@ describe('stores/incidentsByError', () => {
 
     expect(incidentsByErrorStore.state.incidents).toEqual(mockIncidentsByError);
 
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess([]);
 
     jest.runOnlyPendingTimers();
 
@@ -108,11 +99,8 @@ describe('stores/incidentsByError', () => {
   });
 
   it('should set failed response on error', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-      )
-    );
+    mockFetchIncidentsByError().withServerError();
+
     await incidentsByErrorStore.getIncidentsByError();
     expect(incidentsByErrorStore.state.status).toBe('error');
     expect(incidentsByErrorStore.state.incidents).toEqual([]);
@@ -151,11 +139,8 @@ describe('stores/incidentsByError', () => {
         processes: [],
       },
     ];
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(newMockIncidentsByError))
-      )
-    );
+
+    mockFetchIncidentsByError().withSuccess(newMockIncidentsByError);
 
     eventListeners.online();
 

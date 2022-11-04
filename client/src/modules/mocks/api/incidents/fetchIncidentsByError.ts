@@ -5,14 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {IncidentByErrorDto} from 'modules/api/incidents/fetchIncidentsByError';
+import {mockGetRequest} from '../mockRequest';
 
-async function fetchProcessInstancesByName() {
-  return request({url: '/api/incidents/byProcess'});
-}
+const mockFetchIncidentsByError = () =>
+  mockGetRequest<IncidentByErrorDto[]>('/api/incidents/byError');
 
-async function fetchIncidentsByError() {
-  return request({url: '/api/incidents/byError'});
-}
-
-export {fetchProcessInstancesByName, fetchIncidentsByError};
+export {mockFetchIncidentsByError};

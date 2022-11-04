@@ -6,28 +6,15 @@
  */
 
 import {action, makeObservable, observable, override} from 'mobx';
-import {fetchProcessInstancesByName} from 'modules/api/incidents';
+import {
+  fetchProcessInstancesByName,
+  ProcessInstanceByNameDto,
+} from 'modules/api/incidents/fetchProcessInstancesByName';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isEqual} from 'lodash';
 
-type Process = {
-  processId: string;
-  version: number;
-  name: null | string;
-  bpmnProcessId: string;
-  errorMessage: null | string;
-  instancesWithActiveIncidentsCount: number;
-  activeInstancesCount: number;
-};
-type ProcessInstanceByName = {
-  bpmnProcessId: string;
-  processName: null | string;
-  instancesWithActiveIncidentsCount: number;
-  activeInstancesCount: number;
-  processes: Process[];
-};
 type State = {
-  processInstances: ProcessInstanceByName[];
+  processInstances: ProcessInstanceByNameDto[];
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
@@ -60,15 +47,12 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
 
   getProcessInstancesByName = this.retryOnConnectionLost(async () => {
     this.startFetching();
-    try {
-      const response = await fetchProcessInstancesByName();
 
-      if (response.ok) {
-        this.setProcessInstances(await response.json());
-      } else {
-        this.setError();
-      }
-    } catch {
+    const response = await fetchProcessInstancesByName();
+
+    if (response.isSuccess) {
+      this.setProcessInstances(response.data);
+    } else {
       this.setError();
     }
   });
@@ -85,27 +69,21 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
   };
 
   handlePolling = async () => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchProcessInstancesByName();
+    this.isPollRequestRunning = true;
+    const response = await fetchProcessInstancesByName();
 
-      if (this.intervalId !== null) {
-        if (response.ok) {
-          const instances = await response.json();
-          if (!isEqual(instances, this.state.processInstances)) {
-            this.setProcessInstances(instances);
-          }
-        } else {
-          this.setError();
+    if (this.intervalId !== null) {
+      if (response.isSuccess) {
+        const instances = response.data;
+        if (!isEqual(instances, this.state.processInstances)) {
+          this.setProcessInstances(instances);
         }
-      }
-    } catch {
-      if (this.intervalId !== null) {
+      } else {
         this.setError();
       }
-    } finally {
-      this.isPollRequestRunning = false;
     }
+
+    this.isPollRequestRunning = false;
   };
 
   startPolling = async () => {
@@ -125,7 +103,7 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
     }
   };
 
-  setProcessInstances = (processInstances: ProcessInstanceByName[]) => {
+  setProcessInstances = (processInstances: ProcessInstanceByNameDto[]) => {
     this.state.processInstances = processInstances;
     this.state.status = 'fetched';
   };
@@ -138,4 +116,3 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
 }
 
 export const processInstancesByNameStore = new ProcessInstancesByName();
-export type {ProcessInstanceByName};

@@ -8,14 +8,14 @@
 import {
   createProcess,
   createIncidentsByError,
-  createInstanceByError,
+  createIncidentByError,
 } from 'modules/testUtils';
 
 const mockIncidentsByError = createIncidentsByError([
-  createInstanceByError({
+  createIncidentByError({
     processes: [createProcess()],
   }),
-  createInstanceByError({
+  createIncidentByError({
     errorMessage: 'No space left on device.',
     processes: [
       createProcess({name: 'processA', version: 42}),
@@ -28,7 +28,7 @@ const bigErrorMessage =
   'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Tempor nec feugiat nisl pretium fusce id. Pulvinar sapien et ligula ullamcorper malesuada. Iaculis nunc sed augue lacus viverra vitae congue eu. Aliquet lectus proin nibh nisl condimentum id. Tempus iaculis urna id volutpat.';
 
 const mockIncidentsByErrorWithBigErrorMessage = createIncidentsByError([
-  createInstanceByError({
+  createIncidentByError({
     processes: [
       createProcess({
         errorMessage: bigErrorMessage,
@@ -38,11 +38,8 @@ const mockIncidentsByErrorWithBigErrorMessage = createIncidentsByError([
   }),
 ]);
 
-const mockErrorResponse = {error: 'an error occurred'};
-
 export {
   mockIncidentsByError,
-  mockErrorResponse,
   bigErrorMessage,
   mockIncidentsByErrorWithBigErrorMessage,
 };

@@ -8,16 +8,11 @@
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, within, screen} from 'modules/testing-library';
 import {InstancesByProcess} from './index';
-import {
-  mockWithSingleVersion,
-  mockErrorResponse,
-  mockWithMultipleVersions,
-} from './index.setup';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
+import {mockWithSingleVersion, mockWithMultipleVersions} from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -47,11 +42,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should display skeleton when loading', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithSingleVersion))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -67,11 +58,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should handle server errors', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json(mockErrorResponse))
-      )
-    );
+    mockFetchProcessInstancesByName().withServerError();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -83,11 +70,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should handle network errors', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchProcessInstancesByName().withNetworkError();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -99,11 +82,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should display information message when there are no processes', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess([]);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -115,17 +94,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should render items with more than one processes versions', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithMultipleVersions))
-      ),
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithMultipleVersions))
-      ),
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithMultipleVersions))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(mockWithMultipleVersions);
 
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -199,11 +168,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should render items with one process version', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithSingleVersion))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -239,11 +204,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithSingleVersion))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -269,11 +230,7 @@ describe('InstancesByProcess', () => {
 
   it('should update after next poll', async () => {
     jest.useFakeTimers();
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithSingleVersion))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
@@ -287,13 +244,9 @@ describe('InstancesByProcess', () => {
       withinIncident.getByText('loanProcess – 138 Instances in 1 Version')
     ).toBeInTheDocument();
 
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(
-          ctx.json([{...mockWithSingleVersion[0], activeInstancesCount: 142}])
-        )
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess([
+      {...mockWithSingleVersion[0]!, activeInstancesCount: 142},
+    ]);
 
     jest.runOnlyPendingTimers();
 

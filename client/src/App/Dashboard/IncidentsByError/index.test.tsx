@@ -15,15 +15,13 @@ import {
 import {IncidentsByError} from './index';
 import {
   mockIncidentsByError,
-  mockErrorResponse,
   mockIncidentsByErrorWithBigErrorMessage,
   bigErrorMessage,
 } from './index.setup';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -53,11 +51,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should display skeleton when loading', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -69,11 +63,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should handle server errors', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json(mockErrorResponse))
-      )
-    );
+    mockFetchIncidentsByError().withServerError();
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -85,11 +75,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should handle network errors', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchIncidentsByError().withNetworkError();
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -101,11 +87,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should display information message when there are no processes', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess([]);
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -117,11 +99,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should render process incidents by error message', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -166,11 +144,7 @@ describe('IncidentsByError', () => {
   it('should update after next poll', async () => {
     jest.useFakeTimers();
 
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     render(<IncidentsByError />, {
       wrapper: createWrapper(),
@@ -186,16 +160,10 @@ describe('IncidentsByError', () => {
       )
     ).toBeInTheDocument();
 
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {...mockIncidentsByError[0], instancesWithErrorCount: 40},
-            mockIncidentsByError[1],
-          ])
-        )
-      )
-    );
+    mockFetchIncidentsByError().withSuccess([
+      {...mockIncidentsByError[0]!, instancesWithErrorCount: 40},
+      mockIncidentsByError[1]!,
+    ]);
 
     jest.runOnlyPendingTimers();
 
@@ -210,10 +178,8 @@ describe('IncidentsByError', () => {
   });
 
   it('should truncate the error message search param', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByErrorWithBigErrorMessage))
-      )
+    mockFetchIncidentsByError().withSuccess(
+      mockIncidentsByErrorWithBigErrorMessage
     );
 
     const {user} = render(<IncidentsByError />, {
@@ -250,11 +216,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should expand filters panel on click', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     const {user} = render(<IncidentsByError />, {
       wrapper: createWrapper(),

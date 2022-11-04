@@ -6,9 +6,8 @@
  */
 
 import {processInstancesByNameStore} from './processInstancesByName';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from '@testing-library/dom';
+import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 
 describe('stores/processInstancesByName', () => {
   const mockInstancesByProcess = [
@@ -58,11 +57,7 @@ describe('stores/processInstancesByName', () => {
   ];
 
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockInstancesByProcess))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(mockInstancesByProcess);
   });
 
   afterEach(() => {
@@ -92,11 +87,7 @@ describe('stores/processInstancesByName', () => {
       mockInstancesByProcess
     );
 
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess([]);
 
     jest.runOnlyPendingTimers();
 
@@ -109,11 +100,8 @@ describe('stores/processInstancesByName', () => {
   });
 
   it('should set failed response on error', async () => {
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-      )
-    );
+    mockFetchProcessInstancesByName().withServerError();
+
     await processInstancesByNameStore.getProcessInstancesByName();
     expect(processInstancesByNameStore.state.status).toBe('error');
     expect(processInstancesByNameStore.state.processInstances).toEqual([]);
@@ -156,11 +144,7 @@ describe('stores/processInstancesByName', () => {
         processes: [],
       },
     ];
-    mockServer.use(
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(newMockInstancesByProcess))
-      )
-    );
+    mockFetchProcessInstancesByName().withSuccess(newMockInstancesByProcess);
 
     eventListeners.online();
 

@@ -11,13 +11,13 @@ import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {statisticsStore} from 'modules/stores/statistics';
 import {Dashboard} from './index';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockIncidentsByError} from './IncidentsByError/index.setup';
 import {mockWithSingleVersion} from './InstancesByProcess/index.setup';
 import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
+import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
+import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 
 type Props = {
   children?: React.ReactNode;
@@ -38,14 +38,8 @@ describe('Dashboard', () => {
 
   it('should render', async () => {
     mockFetchProcessCoreStatistics().withSuccess(statistics);
-    mockServer.use(
-      rest.get('/api/incidents/byError', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidentsByError))
-      ),
-      rest.get('/api/incidents/byProcess', (_, res, ctx) =>
-        res.once(ctx.json(mockWithSingleVersion))
-      )
-    );
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     render(<Dashboard />, {wrapper: Wrapper});
 

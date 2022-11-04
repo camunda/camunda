@@ -7,27 +7,15 @@
 
 import {action, makeObservable, observable, override} from 'mobx';
 
-import {fetchIncidentsByError} from 'modules/api/incidents';
+import {
+  fetchIncidentsByError,
+  IncidentByErrorDto,
+} from 'modules/api/incidents/fetchIncidentsByError';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isEqual} from 'lodash';
 
-type Process = {
-  processId: string;
-  version: number;
-  name: null | string;
-  bpmnProcessId: string;
-  errorMessage: string;
-  instancesWithActiveIncidentsCount: number;
-  activeInstancesCount: number;
-};
-type IncidentByError = {
-  errorMessage: string;
-  instancesWithErrorCount: number;
-  processes: Process[];
-};
-
 type State = {
-  incidents: IncidentByError[];
+  incidents: IncidentByErrorDto[];
   status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
 };
 
@@ -64,8 +52,8 @@ class IncidentsByError extends NetworkReconnectionHandler {
     try {
       const response = await fetchIncidentsByError();
 
-      if (response.ok) {
-        this.setIncidents(await response.json());
+      if (response.isSuccess) {
+        this.setIncidents(response.data);
       } else {
         this.setError();
       }
@@ -87,27 +75,21 @@ class IncidentsByError extends NetworkReconnectionHandler {
   };
 
   handlePolling = async () => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await fetchIncidentsByError();
+    this.isPollRequestRunning = true;
+    const response = await fetchIncidentsByError();
 
-      if (this.intervalId !== null) {
-        if (response.ok) {
-          const incidents = await response.json();
-          if (!isEqual(incidents, this.state.incidents)) {
-            this.setIncidents(incidents);
-          }
-        } else {
-          this.setError();
+    if (this.intervalId !== null) {
+      if (response.isSuccess) {
+        const incidents = response.data;
+        if (!isEqual(incidents, this.state.incidents)) {
+          this.setIncidents(incidents);
         }
-      }
-    } catch {
-      if (this.intervalId !== null) {
+      } else {
         this.setError();
       }
-    } finally {
-      this.isPollRequestRunning = false;
     }
+
+    this.isPollRequestRunning = false;
   };
 
   startPolling = async () => {
@@ -127,7 +109,7 @@ class IncidentsByError extends NetworkReconnectionHandler {
     }
   };
 
-  setIncidents(incidents: IncidentByError[]) {
+  setIncidents(incidents: IncidentByErrorDto[]) {
     this.state.incidents = incidents;
     this.state.status = 'fetched';
   }
@@ -140,4 +122,3 @@ class IncidentsByError extends NetworkReconnectionHandler {
 }
 
 export const incidentsByErrorStore = new IncidentsByError();
-export type {Process};

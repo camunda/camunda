@@ -6,6 +6,8 @@
  */
 
 import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
+import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
+import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 
 /**
@@ -195,7 +197,9 @@ export const createProcess = (options = {}) => {
  * @returns a single mocked instanceByProcess Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createInstanceByProcess = (options = {}) => {
+export const createInstanceByProcess = (
+  options: Partial<ProcessInstanceByNameDto> = {}
+): ProcessInstanceByNameDto => {
   return {
     bpmnProcessId: 'loanProcess',
     processName: null,
@@ -217,7 +221,9 @@ export const createInstanceByProcess = (options = {}) => {
  * @returns a single mocked instanceByProcess Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createInstanceByError = (options = {}) => {
+export const createIncidentByError = (
+  options: Partial<IncidentByErrorDto> = {}
+): IncidentByErrorDto => {
   return {
     errorMessage: "JSON path '$.paid' has no result.",
     instancesWithErrorCount: 36,
@@ -240,8 +246,8 @@ export const createInstanceByError = (options = {}) => {
  * @returns a mocked InstancesByError Object as exposed by 'api/incidents/byError'
  * @param {*} customProps array with any number of instanceByError Objects
  */
-export const createIncidentsByError = (options: any) => {
-  return options || [createInstanceByError()];
+export const createIncidentsByError = (options: IncidentByErrorDto[]) => {
+  return options || [createIncidentByError()];
 };
 
 /**

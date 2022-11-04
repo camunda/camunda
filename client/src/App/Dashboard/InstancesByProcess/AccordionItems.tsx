@@ -13,11 +13,11 @@ import {PanelListItem} from 'modules/components/PanelListItem';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {ProcessInstanceByName} from 'modules/stores/processInstancesByName';
+import {ProcessInstanceByNameDto} from 'modules/api/incidents/fetchProcessInstancesByName';
 
 type Props = {
   processName: string;
-  processes: ProcessInstanceByName['processes'];
+  processes: ProcessInstanceByNameDto['processes'];
 };
 
 const AccordionItems: React.FC<Props> = ({processName, processes}) => {
