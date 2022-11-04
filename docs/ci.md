@@ -95,7 +95,8 @@ it [here](https://docs.github.com/en/actions/managing-workflow-runs/manually-run
 The next step is to narrow down the workflow to our failing test. This will make the feedback loop
 shorter, and minimize resource usage during investigation.
 
-> NOTE: it can happen that a flaky test is only flaky when there is pressure on the system, so we
+> **Note**
+> It can happen that a flaky test is only flaky when there is pressure on the system, so we
 > cannot always fully narrow the workflow to a single test. You will have to experiment to find out
 > which level is acceptable, i.e. how narrow you can make the scope while still reproducing the
 > failure.
