@@ -46,7 +46,7 @@ public class TestContainerUtil {
     if (version.equals("SNAPSHOT")) {
       broker.withImagePullPolicy(alwaysPull());
     }
-    broker.withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dzeebe.broker.exporters.elasticsearch.args.index.processMessageSubscription=true")
+    broker.withEnv("JAVA_OPTS", "-Xss256k -XX:+TieredCompilation -XX:TieredStopAtLevel=1")
         .withEnv("ZEEBE_LOG_LEVEL", "ERROR")
         .withEnv("ATOMIX_LOG_LEVEL", "ERROR")
         .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
@@ -55,6 +55,9 @@ public class TestContainerUtil {
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME", "io.camunda.zeebe.exporter.ElasticsearchExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", prefix)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_DEPLOYMENTDISTRIBUTION", "false")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_MESSAGESTARTSUBSCRIPTION", "false")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_TIMER", "false")
         .withEnv("ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK", "0.99")
         .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.98")
         .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m");

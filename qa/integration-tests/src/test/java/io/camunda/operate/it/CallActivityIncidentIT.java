@@ -37,11 +37,9 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Map;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
 
-@Ignore("https://github.com/camunda/operate/issues/3583")
 public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
 
   private static final String QUERY_PROCESS_STATISTICS_URL = "/api/process-instances/statistics";
