@@ -71,7 +71,7 @@ export class HelpMenu extends React.Component {
           <Dropdown.Option
             onClick={() => {
               window.open(
-                this.props.docsLink + 'components/optimize/what-is-optimize/',
+                this.props.docsLink + 'components/what-is-optimize/',
                 '_blank',
                 'noopener,noreferrer'
               );

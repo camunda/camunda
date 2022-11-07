@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import javax.validation.Valid;
 import javax.ws.rs.BadRequestException;
@@ -57,6 +58,7 @@ public class BackupRestService {
   }
 
   @DeleteMapping(value = "/{backupId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(final @PathVariable String backupId) {
     backupService.deleteBackup(backupId);
   }

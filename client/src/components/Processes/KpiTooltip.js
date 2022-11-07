@@ -17,7 +17,7 @@ export default function KpiTooltip() {
       content={
         <>
           {t('processes.configureKpis')}{' '}
-          <DocsLink location="components/optimize/userguide/processes/#set-time-and-quality-kpis">
+          <DocsLink location="components/userguide/processes/#set-time-and-quality-kpis">
             {t('common.here')}
           </DocsLink>
           .

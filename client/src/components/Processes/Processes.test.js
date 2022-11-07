@@ -81,7 +81,11 @@ it('should hide owner column and process config button in ccsm mode', async () =
 
   await runAllEffects();
 
-  expect(node.find(EntityList).prop('columns')[1]).not.toBe('owner');
+  const columns = node.find(EntityList).prop('columns');
+
+  expect(columns[1]).not.toBe('owner');
+  expect(columns[columns.length - 1]).not.toBe('Configure');
+  expect(columns.length).toBe(4);
   expect(node.find(EntityList).prop('data')[0].meta.length).toBe(3);
 });
 
