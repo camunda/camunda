@@ -11,6 +11,7 @@ import {
   getBodyRows,
   getCombinedTableProps,
   isVisibleColumn,
+  rearrangeColumns,
 } from './service';
 
 jest.mock('request', () => ({
@@ -306,4 +307,13 @@ it('should check if column is enabled based on excluded values', () => {
   });
 
   expect(isVisible).toBe(false);
+});
+
+it('should rearrange columns properly', () => {
+  const spy = jest.fn();
+  const tableProps = {head: ['a', 'b', 'c']};
+  rearrangeColumns(0, 2, tableProps, spy);
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {tableColumns: {columnOrder: {$set: ['b', 'c', 'a']}}},
+  });
 });
