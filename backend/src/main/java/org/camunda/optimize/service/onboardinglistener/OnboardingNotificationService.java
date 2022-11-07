@@ -33,7 +33,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 @Slf4j
 public class OnboardingNotificationService {
 
-  public static final String MAGIC_LINK_TEMPLATE = "%s/collection/%s/dashboard/%s";
+  public static final String MAGIC_LINK_TEMPLATE = "%s/collection/%s/dashboard/%s/";
   public static final String EMAIL_SUBJECT = "You've got insights from Optimize for your new process";
   private static final String HTTP_PREFIX = "http://";
   private static final String HTTPS_PREFIX = "https://";

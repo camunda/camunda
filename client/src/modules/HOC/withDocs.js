@@ -11,7 +11,7 @@ const DocsContext = createContext();
 
 export function DocsProvider({children}) {
   return (
-    <DocsContext.Provider value={{docsLink: `https://docs.camunda.io/docs/`}}>
+    <DocsContext.Provider value={{docsLink: `https://docs.camunda.io/optimize/`}}>
       {children}
     </DocsContext.Provider>
   );
