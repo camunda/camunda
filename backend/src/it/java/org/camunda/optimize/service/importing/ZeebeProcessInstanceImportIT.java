@@ -37,15 +37,19 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
+import static org.camunda.optimize.util.ZeebeBpmnModels.END_EVENT_2;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SEND_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static org.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSendTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createSingleStartDoubleEndEventProcess;
 import static org.camunda.optimize.util.ZeebeBpmnModels.createStartEndProcess;
+import static org.camunda.optimize.util.ZeebeBpmnModels.createTerminateEndEventProcess;
 
 public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
 
@@ -100,7 +104,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     deployAndStartInstanceForProcess(createStartEndProcess("someProcess"));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(6);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -385,6 +389,77 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
   }
 
   @Test
+  public void importZeebeProcessInstanceData_processStartedDuringProcess() {
+    // given
+    final String processName = "someProcess";
+    final Process process = zeebeExtension.deployProcess(createSingleStartDoubleEndEventProcess(processName));
+    zeebeExtension.startProcessInstanceBeforeElementWithIds(process.getBpmnProcessId(), END_EVENT, END_EVENT_2);
+
+    // when
+    waitUntilMinimumProcessInstanceEventsExportedCount(6);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> {
+        assertThat(instance.getEndDate()).isNotNull();
+        assertThat(instance.getState()).isEqualTo(ProcessInstanceConstants.COMPLETED_STATE);
+        assertThat(instance.getFlowNodeInstances())
+          .extracting(FlowNodeInstanceDto::getFlowNodeType)
+          .containsExactlyInAnyOrder(
+            BpmnElementType.END_EVENT.getElementTypeName().get(),
+            BpmnElementType.END_EVENT.getElementTypeName().get()
+          );
+      });
+  }
+
+  @Test
+  public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
+    // given
+    final String processName = "someProcess";
+    deployAndStartInstanceForProcess(createTerminateEndEventProcess(processName));
+
+    // when
+    waitUntilMinimumProcessInstanceEventsExportedCount(2);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
+        .extracting(FlowNodeInstanceDto::getFlowNodeType)
+        .containsExactlyInAnyOrder(
+          BpmnElementType.START_EVENT.getElementTypeName().get(),
+          BpmnElementType.END_EVENT.getElementTypeName().get()
+        ));
+  }
+
+  @Test
+  public void importZeebeProcessInstanceData_processContainsInclusiveGateway() {
+    // given
+    final String processName = "someProcess";
+    final Process process = zeebeExtension.deployProcess(createInclusiveGatewayProcess(processName));
+    zeebeExtension.startProcessInstanceWithVariables(process.getBpmnProcessId(), Map.of("varName", "a,b"));
+
+    // when
+    waitUntilMinimumProcessInstanceEventsExportedCount(8);
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
+      .singleElement()
+      .satisfies(instance -> assertThat(instance.getFlowNodeInstances())
+        .extracting(FlowNodeInstanceDto::getFlowNodeType)
+        .containsExactlyInAnyOrder(
+          BpmnElementType.START_EVENT.getElementTypeName().get(),
+          BpmnElementType.INCLUSIVE_GATEWAY.getElementTypeName().get(),
+          BpmnElementType.END_EVENT.getElementTypeName().get(),
+          BpmnElementType.END_EVENT.getElementTypeName().get()
+        ));
+  }
+
+  @Test
   public void importSendTaskZeebeProcessInstanceData_flowNodeInstancesCreatedCorrectly() {
     // given
     final ProcessInstanceEvent processInstance = deployAndStartInstanceForProcess(createSendTaskProcess("someProcess"));
@@ -402,7 +477,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
           .allSatisfy(flowNodeInstanceDto -> {
             assertThat(flowNodeInstanceDto)
               .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.definitionKey, processInstance.getBpmnProcessId())
-              .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.definitionVersion, String.valueOf(processInstance.getVersion()))
+              .hasFieldOrPropertyWithValue(
+                FlowNodeInstanceDto.Fields.definitionVersion,
+                String.valueOf(processInstance.getVersion())
+              )
               .hasFieldOrPropertyWithValue(FlowNodeInstanceDto.Fields.tenantId, null);
           })
           .extracting(FlowNodeInstanceDto::getFlowNodeId, FlowNodeInstanceDto::getFlowNodeType)
@@ -446,10 +524,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
                 .size(100));
     final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
     return ElasticsearchReaderUtil.mapHits(
-      searchResponse.getHits(),
-      ZeebeProcessInstanceRecordDto.class,
-      embeddedOptimizeExtension.getObjectMapper()
-    ).stream()
+        searchResponse.getHits(),
+        ZeebeProcessInstanceRecordDto.class,
+        embeddedOptimizeExtension.getObjectMapper()
+      ).stream()
       .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 

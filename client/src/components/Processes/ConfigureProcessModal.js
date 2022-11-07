@@ -46,16 +46,13 @@ export function ConfigureProcessModal({
       <Modal.Header>{t('processes.configureProcess')}</Modal.Header>
       <Modal.Content>
         {!emailEnabled && (
-          <MessageBox
-            type="warning"
-            dangerouslySetInnerHTML={{
-              __html: t('alert.emailWarning', {
-                docsLink:
-                  docsLink +
-                  'self-managed/optimize-deployment/configuration/system-configuration/#email',
-              }),
-            }}
-          />
+          <MessageBox type="warning">
+            {t('alert.emailWarning', {
+              docsLink:
+                docsLink +
+                'self-managed/optimize-deployment/configuration/system-configuration/#email',
+            })}
+          </MessageBox>
         )}
         <Labeled
           label={

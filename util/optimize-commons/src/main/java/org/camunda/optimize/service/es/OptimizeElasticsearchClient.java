@@ -21,12 +21,19 @@ import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.IndicesRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksRequest;
 import org.elasticsearch.action.admin.cluster.node.tasks.list.ListTasksResponse;
+import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
+import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
+import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -52,6 +59,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.GetAliasesResponse;
@@ -332,6 +340,28 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   public ListTasksResponse getTaskList(final ListTasksRequest request) throws IOException {
     return highLevelClient.tasks().list(request, requestOptions());
+  }
+
+  public void verifyRepositoryExists(final GetRepositoriesRequest getRepositoriesRequest) throws
+                                                                                          IOException,
+                                                                                          ElasticsearchStatusException {
+    highLevelClient.snapshot().getRepository(getRepositoriesRequest, requestOptions());
+  }
+
+  public GetSnapshotsResponse getSnapshots(final GetSnapshotsRequest getSnapshotsRequest) throws
+                                                                                          IOException,
+                                                                                          ElasticsearchStatusException {
+    return highLevelClient.snapshot().get(getSnapshotsRequest, requestOptions());
+  }
+
+  public void triggerSnapshotAsync(final CreateSnapshotRequest createSnapshotRequest,
+                                   final ActionListener<CreateSnapshotResponse> listener) {
+    highLevelClient.snapshot().createAsync(createSnapshotRequest, requestOptions(), listener);
+  }
+
+  public void deleteSnapshotAsync(final DeleteSnapshotRequest deleteSnapshotRequest,
+                                  final ActionListener<AcknowledgedResponse> listener) {
+    highLevelClient.snapshot().deleteAsync(deleteSnapshotRequest, requestOptions(), listener);
   }
 
   public long countWithoutPrefix(final CountRequest request) throws IOException {

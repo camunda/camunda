@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {evaluateReport, processResult} from './reportService';
+import {processResult, getReportResult, isCategoricalBar, isCategorical} from './reportService';
 
 import {post} from 'request';
 
@@ -94,22 +94,103 @@ it('should convert group by none distribute by process hypermap report to normal
 
   post.mockReturnValueOnce({json: () => hyperMapReport});
 
-  expect(await evaluateReport()).toEqual({
-    data: {
-      groupBy: {type: 'none'},
-      distributedBy: {type: 'process'},
-    },
-    result: {
-      type: 'map',
-      measures: [
-        {
-          type: 'map',
-          data: [
-            {key: 'definition1', value: 12, label: 'Definition 1'},
-            {key: 'definition2', value: 34, label: 'Definition 2'},
-          ],
+  expect(await getReportResult(hyperMapReport)).toEqual({
+    data: [
+      {key: 'definition1', value: 12, label: 'Definition 1'},
+      {key: 'definition2', value: 34, label: 'Definition 2'},
+    ],
+    type: 'map',
+    measures: [
+      {
+        type: 'map',
+        data: [
+          {key: 'definition1', value: 12, label: 'Definition 1'},
+          {key: 'definition2', value: 34, label: 'Definition 2'},
+        ],
+      },
+    ],
+  });
+});
+
+describe('isCategoricalBar', () => {
+  it('should return false if the visualization is not a bar chart', () => {
+    expect(
+      isCategoricalBar({
+        visualization: 'line',
+        configuration: {xml: 'fooXml'},
+        groupBy: {
+          type: 'variable',
+          value: {type: 'String'},
         },
-      ],
-    },
+      })
+    ).toBe(false);
+  });
+
+  it('should return false if the grouping is not categorical', () => {
+    expect(
+      isCategoricalBar({
+        visualization: 'bar',
+        configuration: {xml: 'fooXml'},
+        groupBy: {
+          type: 'startDate',
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('should return true for categorical bar chart reports', () => {
+    expect(
+      isCategoricalBar({
+        visualization: 'bar',
+        configuration: {xml: 'fooXml'},
+        groupBy: {
+          type: 'variable',
+          value: {type: 'String'},
+        },
+      })
+    ).toBe(true);
+  });
+});
+
+describe('isCategorical', () => {
+  it('should return true for flow node groupBy', () => {
+    expect(
+      isCategorical({
+        groupBy: {
+          type: 'flowNodes',
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('should return false for double variable groupBy', () => {
+    expect(
+      isCategorical({
+        groupBy: {
+          type: 'variabe',
+          value: {type: 'Double'},
+        },
+      })
+    ).toBe(false);
+  });
+
+  it('should return true for group by assignee', () => {
+    expect(
+      isCategorical({
+        groupBy: {
+          type: 'assignee',
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('should return true for distributed by process', () => {
+    expect(
+      isCategorical({
+        distributedBy: {
+          type: 'process',
+        },
+      })
+    ).toBe(true);
   });
 });

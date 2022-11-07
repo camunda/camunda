@@ -9,12 +9,14 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
@@ -44,7 +46,6 @@ import static org.camunda.optimize.service.onboardinglistener.OnboardingNotifica
 @Slf4j
 public class ProcessOverviewService {
 
-  public static final String APP_CUE_DASHBOARD_SUFFIX = "?appcue=7c293dbb-3957-4187-a079-f0237161c489";
   private static final String PENDING_OWNER_UPDATE_TEMPLATE = "pendingauthcheck#%s#%s";
 
   private final DefinitionService definitionService;
@@ -77,12 +78,14 @@ public class ProcessOverviewService {
     final Map<String, ProcessOverviewDto> processOverviewByKey =
       processOverviewReader.getProcessOverviewsByKey(procDefKeysAndName.keySet());
 
+    // Get data for all processes at once concerning whether they already have a dashboard
+    Map<String, Boolean> collectionHasDashboard = retrieveCollectionInformation(userId);
+
     return procDefKeysAndName.entrySet()
       .stream()
       .map(entry -> {
         final String procDefKey = entry.getKey();
-        String appCueSuffix = collectionAlreadyCreatedForProcess(procDefKey) ? "" : APP_CUE_DASHBOARD_SUFFIX;
-        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, "", procDefKey, procDefKey) + appCueSuffix;
+        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, "", procDefKey, procDefKey);
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
           entry.getValue(),
@@ -93,7 +96,8 @@ public class ProcessOverviewService {
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
           overviewForKey.map(kpiService::extractKpiResultsForProcessDefinition).orElse(Collections.emptyList()),
-          magicLinkToDashboard
+          magicLinkToDashboard,
+          collectionHasDashboard.getOrDefault(procDefKey, Boolean.FALSE)
         );
       }).collect(Collectors.toList());
   }
@@ -157,7 +161,8 @@ public class ProcessOverviewService {
       .keySet()
       .stream()
       .filter(completeDefKey -> {
-        Pattern pattern = Pattern.compile(String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", "(.*)$"));
+        Pattern pattern = Pattern.compile(
+          String.format(PENDING_OWNER_UPDATE_TEMPLATE, "(.*)", processToBeOnboarded + "$"));
         return pattern.matcher(completeDefKey).matches();
       })
       .forEach(completeDefKey -> {
@@ -195,13 +200,11 @@ public class ProcessOverviewService {
       });
   }
 
-  private boolean collectionAlreadyCreatedForProcess(final String procDefKey) {
-    try {
-      return collectionService.getCollectionDefinition(procDefKey).isAutomaticallyCreated();
-    } catch (NotFoundException e) {
-      // Doesn't exist yet, return false
-      return false;
-    }
+  private Map<String, Boolean> retrieveCollectionInformation(final String userId) {
+    // This involves a call to ES, so using it parsimoniously
+    return collectionService.getAllCollectionDefinitions(userId)
+      .stream()
+      .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
+      .collect(Collectors.toMap(CollectionDefinitionDto::getId, CollectionDefinitionDto::isAutomaticallyCreated));
   }
-
 }

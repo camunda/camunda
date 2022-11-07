@@ -95,21 +95,21 @@ container:
   ports:
     # A port number that will be used by Optimize to process HTTP connections.
     # If set to null, ~ or left empty, http connections won't be accepted.
-    http: 8090
+    http: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTP:8090}
     # A port number that will be used by Optimize to process
     # secure HTTPS connections.
-    https: 8091
+    https: ${CAMUNDA_OPTIMIZE_CONTAINER_PORTS_HTTPS:8091}
   # HTTPS requires an SSL Certificate. When you generate an SSL Certificate,
   # you are creating a keystore file and a keystore password for use when the
   # browser interface connects
   keystore:
-    location: keystore.jks
-    password: optimize
+    location: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_LOCATION:keystore.jks}
+    password: ${CAMUNDA_OPTIMIZE_CONTAINER_KEYSTORE_PASSWORD:optimize}
   # configuration of status reporting web socket
   status:
     # max number of threads\sessions that will be kept to report status
     connections:
-      max: 10
+      max: ${CAMUNDA_OPTIMIZE_CONTAINER_STATUS_CONNECTIONS_MAX:10}
   # Optional url to access Optimize (used for links to Optimize in e.g. alert emails)
   accessUrl: ${CONTAINER_ACCESS_URL:null}
 
@@ -335,6 +335,12 @@ es:
       port: null
       # whether this proxy is using a secured connection
       sslEnabled: false
+    # Determines whether the hostname verification should be skipped
+    skipHostnameVerification: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
+  # Configuration relating to ES backup
+  backup:
+    # The repository name in which the backups should be stored
+    repositoryName: ${CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME:}
 
 
   # Elasticsearch security settings
@@ -427,28 +433,28 @@ alerting:
 
 email:
   # A switch to control email sending process.
-  enabled: false
+  enabled: ${CAMUNDA_OPTIMIZE_EMAIL_ENABLED:false}
   # Email address that can be used to send alerts or email digests
-  address: ''
+  address: ${CAMUNDA_OPTIMIZE_EMAIL_ADDRESS:}
   # The smtp server name
-  hostname: ''
+  hostname: ${CAMUNDA_OPTIMIZE_EMAIL_HOSTNAME:}
   # The smtp server port. This one is also used as SSL port for the security connection.
-  port: 587
+  port: ${CAMUNDA_OPTIMIZE_EMAIL_PORT:587}
   # This is the company name that will be shown in the subject and body of e-mails sent by Optimize
   # This configuration's setting is subject to any legal agreements between Camunda and the user's organization.
   # Changes are only permitted with formal, written approval by Camunda.
-  companyBranding: Camunda
+  companyBranding: ${CAMUNDA_OPTIMIZE_EMAIL_COMPANY_BRANDING:Camunda}
   # Define configuration properties for the authentication of the email server
   authentication:
     # A switch to control whether the email server requires authentication
-    enabled: true
+    enabled: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_ENABLED:true}
     # Username of your smtp server
-    username: ''
+    username: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_USERNAME:}
     # Corresponding password to the given user of your smtp server
-    password: ''
+    password: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_PASSWORD:}
     # States how the connection to the server should be secured.
     # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
-    securityProtocol: 'NONE'
+    securityProtocol: ${CAMUNDA_OPTIMIZE_EMAIL_AUTHENTICATION_SECURITY_PROTOCOL:NONE}
 
 webhookAlerting:
   webhooks:
@@ -624,9 +630,14 @@ analytics:
       clusterId: ${CAMUNDA_OPTIMIZE_CLIENT_CLUSTERID:dev}
 
 onboarding:
+  # This is a UI flag to determine whether the onboarding UI actions should be display
   enabled: ${CAMUNDA_OPTIMIZE_ONBOARDING_ENABLED:false}
   appCuesScriptUrl: ${CAMUNDA_OPTIMIZE_ONBOARDING_APPCUES_SCRIPT_URL://fast.appcues.com/104513.js}
-  # Should process owners receive emails with onboarding data?
+  # Determines whether this Optimize instance should check for whether or not processes are onboarded. Note: This
+  # should be enabled for exactly one Optimize instance within the cluster
+  scheduleProcessOnboardingChecks: ${CAMUNDA_OPTIMIZE_ONBOARDING_SCHEDULE_PROCESS_ONBOARDING_CHECKS:true}
+  # Determines whether onboarding emails should be sent with process data. 'scheduleProcessOnboardingChecks' must be
+  # set to true for this to take effect
   enableOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_SEND_EMAILS:false}
   # How often (in seconds) shall optimize check for process instances updates? - Minimum 60s
   intervalForCheckingTriggerForOnboardingEmails: ${CAMUNDA_OPTIMIZE_ONBOARDING_INTERVAL_CHECK_DATA:180}

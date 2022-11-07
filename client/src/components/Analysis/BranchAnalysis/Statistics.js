@@ -61,36 +61,29 @@ export default class Statistics extends React.Component {
 
       return (
         <div className="Statistics" ref={this.rootRef}>
-          <p
-            dangerouslySetInnerHTML={{
-              __html: t('analysis.gatewayInstances', {totalGateway}),
-            }}
-          />
+          <p>{t('analysis.gatewayInstances', {totalGateway})}</p>
           <ul>
             {Object.keys(this.state.data.followingNodes).map((key) => {
               const count = this.state.data.followingNodes[key].activityCount;
               const reached = this.state.data.followingNodes[key].activitiesReached;
 
               return (
-                <li
-                  key={key}
-                  dangerouslySetInnerHTML={{
-                    __html: t('analysis.branchDistribution', {
-                      count,
-                      branchPercentage: Math.round((count / totalGateway) * 100) || 0,
-                      reached,
-                      reachedEndPercentage: Math.round((reached / count) * 100) || 0,
-                    }),
-                  }}
-                />
+                <li key={key}>
+                  {t('analysis.branchDistribution', {
+                    count,
+                    branchPercentage: Math.round((count / totalGateway) * 100) || 0,
+                    reached,
+                    reachedEndPercentage: Math.round((reached / count) * 100) || 0,
+                  })}
+                </li>
               );
             })}
           </ul>
-          <p dangerouslySetInnerHTML={{__html: t('analysis.gatewayDistribution')}} />
+          <p>{t('analysis.gatewayDistribution')}</p>
           <div className="diagram-container">
             <canvas ref={(node) => (this.absoluteChartRef = node)} />
           </div>
-          <p dangerouslySetInnerHTML={{__html: t('analysis.endEventProbability')}} />
+          <p>{t('analysis.endEventProbability')}</p>
           <div className="diagram-container">
             <canvas ref={(node) => (this.relativeChartRef = node)} />
           </div>

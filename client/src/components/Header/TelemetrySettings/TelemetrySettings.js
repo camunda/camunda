@@ -71,14 +71,10 @@ export function TelemetrySettings({onClose, mightFail}) {
           <DocsLink location="self-managed/optimize-deployment/configuration/telemetry/">
             {t('common.documentation')}
           </DocsLink>{' '}
-          <span
-            dangerouslySetInnerHTML={{
-              __html: t('telemetry.orView', {
-                policy: t('telemetry.privacyPolicy'),
-                link: 'https://camunda.com/legal/privacy/',
-              }),
-            }}
-          />
+          {t('telemetry.orView', {
+            policy: t('telemetry.privacyPolicy'),
+            link: 'https://camunda.com/legal/privacy/',
+          })}
         </p>
       </Modal.Content>
       <Modal.Actions>

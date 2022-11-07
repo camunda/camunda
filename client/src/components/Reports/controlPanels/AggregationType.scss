@@ -2,7 +2,7 @@
   display: inline-block;
   flex: 0 0 51px;
 
-  .Popover__button {
+  &.Popover .buttonWrapper .Button {
     border-left: none;
     padding: 6px 0;
     width: 51px;

@@ -56,6 +56,34 @@ public class ProcessInitialOwnerIT extends AbstractIT {
   }
 
   @Test
+  public void setInitialOwner_ownerSetToCorrectPendingProcessDefinition() {
+    // given
+    final String defKey1 = "unborn_process1";
+    final String defKey2 = "unborn_process2";
+
+    // when
+    // Make sure process definitions are not there yet
+    assertThat(definitionClient.getAllDefinitions()).isEmpty();
+    // Set owner for 1st process
+    final Response responseInitialOwner = processOverviewClient.setInitialProcessOwner(defKey1, DEFAULT_USERNAME);
+    // Now only we deploy the processes
+    deploySimpleProcessDefinition(defKey1);
+    deploySimpleProcessDefinition(defKey2);
+    importAllEngineEntitiesFromScratch();
+
+    final OnboardingSchedulerService onboardingSchedulerService =
+      embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
+    // Process the pending data
+    onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+
+    // then
+    assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    // Only the 1st process should have an owner
+    assertExpectedProcessOwner(defKey1, DEFAULT_USERNAME);
+    assertExpectedProcessOwner(defKey2, null);
+  }
+
+  @Test
   public void setInitialOwner_processDoesNotExistYetPendingOwnerNotAuthorizedToProcess() {
     // given
     String defKey = "unborn_rogue_process";
@@ -268,7 +296,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
   }
 
   private void assertExpectedProcessOwner(final String defKey, final String expectedOwnerId) {
-    assertThat(getProcessOverView(null))
+    assertThat(getProcessOverview(null))
       .filteredOn(def -> def.getProcessDefinitionKey().equals(defKey))
       .extracting(ProcessOverviewResponseDto::getOwner)
       .singleElement()
@@ -279,7 +307,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
           .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
   }
 
-  private List<ProcessOverviewResponseDto> getProcessOverView(final ProcessOverviewSorter processOverviewSorter) {
+  private List<ProcessOverviewResponseDto> getProcessOverview(final ProcessOverviewSorter processOverviewSorter) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildGetProcessOverviewRequest(processOverviewSorter)
       .executeAndReturnList(ProcessOverviewResponseDto.class, Response.Status.OK.getStatusCode());

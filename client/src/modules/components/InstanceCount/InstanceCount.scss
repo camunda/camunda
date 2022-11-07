@@ -12,7 +12,7 @@
 
     > .buttonWrapper {
       display: inline-block;
-      .Popover__button {
+      .Button {
         font-size: 12px;
         font-weight: bold;
         padding: 0;
@@ -70,7 +70,7 @@
     margin-left: -40px;
     min-width: 397px;
     transform: translate(16px, 0);
-    .Popover__dialog {
+    .dialog {
       padding-top: 20px;
 
       .countString {

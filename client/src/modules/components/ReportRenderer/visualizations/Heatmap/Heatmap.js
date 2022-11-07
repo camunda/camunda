@@ -32,7 +32,13 @@ export function Heatmap({report, context, user}) {
     result,
     data: {
       view: {properties},
-      configuration: {alwaysShowAbsolute, alwaysShowRelative, heatmapTargetValue: targetValue, xml},
+      configuration: {
+        alwaysShowAbsolute,
+        alwaysShowRelative,
+        heatmapTargetValue: targetValue,
+        xml,
+        precision,
+      },
     },
   } = report;
 
@@ -56,41 +62,50 @@ export function Heatmap({report, context, user}) {
         data={heat}
         tooltipOptions={{alwaysShow}}
         formatter={(_, id) => {
-          let tooltipHTML = '';
-
           const target = formatters.convertToMilliseconds(
             targetValue.values[id].value,
             targetValue.values[id].unit
           );
           const real = resultObj[id];
+          let tooltipHTML;
 
-          tooltipHTML = `${t('report.heatTarget.targetDuration')}: <b>${formatters.duration(
-            target
-          )}</b><br/>`;
+          const targetDuration = (
+            <>
+              {t('report.heatTarget.targetDuration')}:{' '}
+              <b>{formatters.duration(target, precision)}</b>
+              <br />
+            </>
+          );
 
           if (typeof real === 'number') {
             const relation = (real / target) * 100;
             const type = result.measures[selectedMeasure].aggregationType?.type;
 
-            tooltipHTML +=
-              t(`report.heatTarget.duration.${type}`) +
-              t('report.heatTarget.actualDuration', {
-                duration: formatters.duration(real),
-                percentage: relation < 1 ? '< 1' : Math.round(relation),
-              });
+            tooltipHTML = (
+              <>
+                {targetDuration}
+                {t(`report.heatTarget.duration.${type}`)}
+                {t('report.heatTarget.actualDuration', {
+                  duration: formatters.duration(real, precision),
+                  percentage: relation < 1 ? '< 1' : Math.round(relation),
+                })}
+              </>
+            );
           } else {
-            tooltipHTML += t('report.heatTarget.noValueAvailable');
+            tooltipHTML = (
+              <>
+                {targetDuration}
+                {t('report.heatTarget.noValueAvailable')}
+              </>
+            );
           }
-
-          // tooltips don't work well with spaces
-          tooltipHTML = tooltipHTML.replace(/ /g, '\u00A0');
 
           return (
             <div>
-              <span className="text" dangerouslySetInnerHTML={{__html: tooltipHTML}} />
+              <span className="text">{tooltipHTML}</span>
               {context !== 'shared' && (
                 <DownloadButton
-                  retriever={loadRawData(getConfig(report.data, id))}
+                  retriever={() => loadRawData(getConfig(report.data, id))}
                   fileName={
                     t('report.heatTarget.exceededInstances', {
                       name: formatters.formatFileName(name),
@@ -140,7 +155,8 @@ export function Heatmap({report, context, user}) {
                           result.instanceCount,
                           alwaysShowAbsolute,
                           alwaysShowRelative,
-                          measure.property === 'duration'
+                          measure.property === 'duration',
+                          precision
                         )}
                       </td>
                     </tr>

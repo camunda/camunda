@@ -18,7 +18,9 @@ import {DashboardView} from '../Dashboards/DashboardView';
 import KpiResult from './KpiResult';
 import KpiSummary from './KpiSummary';
 import ConfigureProcessModal from './ConfigureProcessModal';
+import KpiTooltip from './KpiTooltip';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
+import CreateDashboardModal from './CreateDashboardModal';
 
 import './Processes.scss';
 
@@ -28,6 +30,8 @@ export function Processes({mightFail, user}) {
   const [editProcessConfig, setEditProcessConfig] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [dashboard, setDashboard] = useState();
+  const [linkToCreateDashboard, setLinkToCreateDashboard] = useState();
+  const [viewedProcesses, setViewedProcesses] = useState([]);
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -53,40 +57,66 @@ export function Processes({mightFail, user}) {
 
   const columns = [
     t('common.name'),
-    t('processes.timeKpi'),
-    t('processes.qualityKpi'),
-    t('common.configure'),
+    <>
+      {t('processes.timeKpi')} <KpiTooltip />
+    </>,
+    <>
+      {t('processes.qualityKpi')} <KpiTooltip />
+    </>,
   ];
+
+  const isEditor = user?.authorizations.includes('entity_editor');
+  if (isEditor) {
+    columns.push(t('dashboard.label'));
+  }
 
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
     columns.splice(1, 0, ownerColumn);
+    columns.push(<span className="hidden">{t('common.configure')}</span>);
   }
 
-  const isEditor = user?.authorizations.includes('entity_editor');
-  if (isEditor) {
-    columns.splice(-1, 0, t('dashboard.label'));
-  }
+  const processesLabel =
+    processes?.length === 1 ? t('processes.label') : t('processes.label-plural');
 
   return (
     <div className="Processes">
-      <h1 className="processOverview">Process Overview</h1>
+      <h1 className="processOverview">
+        {t('processes.processOverview')}
+        {processes && (
+          <div className="info">
+            <span>
+              {t('processes.analysing', {count: processes.length, label: processesLabel})}
+            </span>{' '}
+            <DocsLink location="components/userguide/processes">
+              {t('events.sources.learnMore')}
+            </DocsLink>
+          </div>
+        )}
+      </h1>
       {dashboard && (
         <DashboardView
           reports={dashboard.reports}
           availableFilters={dashboard.availableFilters}
-          disableNameLink
+          customizeReportLink={(id) => `/processes/report/${id}/`}
+          simplifiedDateFilter
         />
       )}
       <EntityList
-        name={t('processes.title')}
-        headerText={
-          <>
-            {t('processes.kpiInfo')}{' '}
-            <DocsLink location="components/optimize/userguide/processes/#set-time-and-quality-kpis">
-              {t('events.sources.learnMore')}
-            </DocsLink>
-          </>
+        name={t('processes.list')}
+        displaySearchInfo={
+          processes &&
+          ((query, count) => (
+            <div className="info">
+              {query
+                ? t('processes.processesListedOf', {
+                    count,
+                    total: processes.length,
+                    label: processesLabel,
+                  })
+                : t('processes.processesListed', {total: processes.length, label: processesLabel})}
+            </div>
+          ))
         }
         empty={t('processes.empty')}
         isLoading={!processes}
@@ -94,7 +124,15 @@ export function Processes({mightFail, user}) {
         sorting={sorting}
         onChange={loadProcessesList}
         data={processes?.map(
-          ({processDefinitionKey, processDefinitionName, owner, digest, kpis, linkToDashboard}) => {
+          ({
+            processDefinitionKey,
+            processDefinitionName,
+            owner,
+            digest,
+            kpis,
+            linkToDashboard,
+            hasDefaultDashboard,
+          }) => {
             const kpisWithData = kpis.filter(({value, target}) => value && target);
             const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
             const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
@@ -112,19 +150,29 @@ export function Processes({mightFail, user}) {
             ];
 
             if (isEditor) {
-              meta.push(
-                <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
-                  {t('common.view')} <Icon type="jump" />
-                </Link>
-              );
+              if (!hasDefaultDashboard && !viewedProcesses.includes(linkToDashboard)) {
+                meta.push(
+                  <Button
+                    link
+                    className="processHoverBtn"
+                    onClick={() => {
+                      setLinkToCreateDashboard(linkToDashboard);
+                    }}
+                  >
+                    {t('common.view')} <Icon type="jump" />
+                  </Button>
+                );
+              } else {
+                meta.push(
+                  <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
+                    {t('common.view')} <Icon type="jump" />
+                  </Link>
+                );
+              }
             }
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
-              meta.unshift(
-                <Tooltip content={owner?.name} overflowOnly>
-                  <div className="ownerName">{owner?.name}</div>
-                </Tooltip>
-              );
+              meta.unshift(owner?.name);
 
               meta.push(
                 <Button
@@ -165,6 +213,16 @@ export function Processes({mightFail, user}) {
               },
               showError
             );
+          }}
+        />
+      )}
+      {linkToCreateDashboard && (
+        <CreateDashboardModal
+          linkToDashboard={linkToCreateDashboard}
+          onClose={() => setLinkToCreateDashboard()}
+          onConfirm={() => {
+            setLinkToCreateDashboard();
+            setViewedProcesses((prev) => [...prev, linkToCreateDashboard]);
           }}
         />
       )}

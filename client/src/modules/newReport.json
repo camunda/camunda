@@ -20,6 +20,7 @@
         "alwaysShowAbsolute": false,
         "showGradientBars": true,
         "stackedBar": false,
+        "horizontalBar": false,
         "logScale": false,
         "xml": null,
         "tableColumns": {
@@ -193,7 +194,8 @@
         "ylabel": "",
         "xlabel": "",
         "sorting": null,
-        "logScale": false
+        "logScale": false,
+        "horizontalBar": false
       },
       "definitions": [
         {

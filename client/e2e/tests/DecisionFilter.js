@@ -20,7 +20,7 @@ fixture('Decision Report Filter')
 
 test('should apply a filter to the report result', async (t) => {
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.option('Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
   await u.selectDefinition(t, 'Invoice Classification');
@@ -46,7 +46,7 @@ test('should apply a filter to the report result', async (t) => {
 
 test('should have seperate input and output variables', async (t) => {
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.option('Report'));
   await t.click(Homepage.submenuOption('Decision Report'));
 
   await u.selectDefinition(t, 'Invoice Classification');

@@ -32,7 +32,7 @@ async function createReport(
   if (completed) {
     await t.click(Report.sectionToggle('Filters'));
     await t.click(Report.filterButton);
-    await t.click(Report.filterOption('Process Instance State'));
+    await t.click(Report.filterOption('Instance State'));
     await t.click(Report.modalOption('Completed'));
     await t.click(Report.primaryModalButton);
   }
@@ -56,15 +56,13 @@ test('combine two single number reports', async (t) => {
   await t.resizeWindow(1400, 700);
 
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.option('Report'));
 
   await t.hover(Homepage.submenuOption('Combined Process Report'));
 
-  await t.takeElementScreenshot(
-    Homepage.entityList,
-    'img/combined-report-create.png',
-    {crop: {left: 1000, bottom: 300}}
-  );
+  await t.takeElementScreenshot(Homepage.entityList, 'img/combined-report-create.png', {
+    crop: {left: 1000, bottom: 300},
+  });
 
   await t.click(Homepage.submenuOption('Combined Process Report'));
   await t.typeText(Report.nameEditField, 'Combined Report', {replace: true});
@@ -93,7 +91,7 @@ test('combine two single table reports and reorder them', async (t) => {
   await createReport(t, 'Table Report', 'Lead Qualification', 'Table', true);
 
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.option('Report'));
   await t.click(Homepage.submenuOption('Combined Process Report'));
 
   await t.click(Combined.singleReport('Table Report'));
@@ -118,7 +116,7 @@ test('combine two single chart reports and change their colors', async (t) => {
   await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', true);
 
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.option('Report'));
   await t.click(Homepage.submenuOption('Combined Process Report'));
 
   await t.click(Combined.singleReport('Line Report - 1'));
@@ -132,9 +130,7 @@ test('combine two single chart reports and change their colors', async (t) => {
 
   await t.click(Combined.reportColorPopover('Line Report - 2'));
 
-  await t
-    .takeScreenshot('img/area-chart-report.png', {fullPage: true})
-    .maximizeWindow();
+  await t.takeScreenshot('img/area-chart-report.png', {fullPage: true}).maximizeWindow();
 
   await t.click(Combined.redColor);
 
@@ -146,7 +142,7 @@ test('open the configuration popover and add a goal line', async (t) => {
   await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', true);
 
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.option('Report'));
   await t.click(Homepage.submenuOption('Combined Process Report'));
 
   await t.click(Combined.singleReport('Bar Report - 1'));
@@ -160,9 +156,7 @@ test('open the configuration popover and add a goal line', async (t) => {
   await t.click(Combined.goalSwitch);
   await t.typeText(Combined.goalInput, '300', {replace: true});
 
-  await t
-    .takeScreenshot('img/combined-config.png', {fullPage: true})
-    .maximizeWindow();
+  await t.takeScreenshot('img/combined-config.png', {fullPage: true}).maximizeWindow();
 
   await t.click(Combined.configurationButton);
 

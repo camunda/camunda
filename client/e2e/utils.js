@@ -45,10 +45,26 @@ export function getUser(t, userHandle) {
 
 export async function createNewReport(t) {
   await t.click('.CreateNewButton');
-  await t.click(Selector('.Submenu').withText('New Report'));
+  await t.click(Selector('.Submenu').withText('Report'));
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector('.Modal .primary.confirm.Button'));
+}
+
+export async function selectVersion(t, selector, version) {
+  await t.click(selector.find('.Popover .Button'));
+  await t.click('.VersionPopover');
+
+  if (typeof version === 'string') {
+    await t.click(Selector('.label').withText(version));
+  } else {
+    await t.click(Selector('.label').withText('Specific versions'));
+    for (let i = 0; i < version.length; i++) {
+      await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
+    }
+  }
+
+  await t.click(selector.find('.Popover .Button'));
 }
 
 export async function selectReportDefinition(t, name, version) {
@@ -58,19 +74,7 @@ export async function selectReportDefinition(t, name, version) {
     .click('.Modal .primary.Button');
 
   if (version) {
-    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover__button'));
-    await t.click('.VersionPopover');
-
-    if (typeof version === 'string') {
-      await t.click(Selector('.label').withText(version));
-    } else {
-      await t.click(Selector('.label').withText('Specific versions'));
-      for (let i = 0; i < version.length; i++) {
-        await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
-      }
-    }
-
-    await t.click(Selector('.DefinitionList li').withText(name).find('.Popover__button'));
+    selectVersion(t, Selector('.DefinitionList li').withText(name), version);
   }
 }
 
@@ -132,7 +136,7 @@ export async function gotoOverview(t) {
 
 export async function createNewDashboard(t) {
   await t.click('.CreateNewButton');
-  await t.click(Selector('.DropdownOption').withText('New Dashboard'));
+  await t.click(Selector('.DropdownOption').withText('Dashboard'));
   await t.click(Selector('.Button').withText('Blank Dashboard'));
   await t.click(Homepage.modalConfirmbutton);
 }

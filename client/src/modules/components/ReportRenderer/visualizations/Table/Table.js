@@ -134,7 +134,6 @@ export function Table(props) {
   }
 
   const isHyper = getReportResult(report)?.type === 'hyperMap';
-
   return (
     <>
       <ColumnRearrangement

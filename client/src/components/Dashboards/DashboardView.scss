@@ -24,12 +24,12 @@
   }
 
   .OptimizeReport:hover {
-    .Popover__button {
+    .Popover .buttonWrapper .Button {
       opacity: 1;
     }
   }
 
-  .share-button .Popover__dialog {
+  .share-button .dialog {
     padding: 30px;
     padding-bottom: 10px;
   }

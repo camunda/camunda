@@ -43,7 +43,7 @@ export function DownloadButton({
   function triggerDownload(evt) {
     onClick?.(evt);
     mightFail(
-      retriever || getData(href),
+      retriever ? retriever() : getData(href),
       (data) => {
         const hiddenElement = document.createElement('a');
         hiddenElement.href = window.URL.createObjectURL(data);
@@ -77,13 +77,11 @@ export function DownloadButton({
               <b>{t('common.csvLimit.Warning')}</b>
             </p>
             <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
-            <p
-              dangerouslySetInnerHTML={{
-                __html: t('common.csvLimit.exportApi', {
-                  docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
-                }),
-              }}
-            />
+            <p>
+              {t('common.csvLimit.exportApi', {
+                docsLink: docsLink + 'apis-clients/optimize-api/report/get-data-export/',
+              })}
+            </p>
           </Modal.Content>
           <Modal.Actions>
             <Button main onClick={closeModal}>

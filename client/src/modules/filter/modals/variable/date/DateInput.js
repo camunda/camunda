@@ -24,13 +24,8 @@ export default class DateInput extends React.Component {
     excludeUndefined: false,
   };
 
-  componentDidMount() {
-    this.props.setValid?.(isValid(this.props.filter));
-  }
-
   changeFilter = (newFilter) => {
     this.props.changeFilter(newFilter);
-    this.props.setValid?.(isValid(newFilter));
   };
 
   render() {

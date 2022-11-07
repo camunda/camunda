@@ -1,4 +1,23 @@
-FROM alpine:3.16.2 as builder
+ARG BASE_IMAGE_NAME="alpine:3.16.2"
+ARG BASE_IMAGE_SHA_AMD64="1304f174557314a7ed9eddb4eab12fed12cb0cd9809e4c28f29af86979a3c870"
+ARG BASE_IMAGE_SHA_ARM64="ed73e2bee79b3428995b16fce4221fc715a849152f364929cdccdc83db5f3d5c"
+
+# Building prod image amd64
+FROM ${BASE_IMAGE_NAME}@sha256:${BASE_IMAGE_SHA_AMD64} as prod-amd64
+
+# leave unset to use the default value at the top of the file
+ARG BASE_IMAGE_SHA_AMD64
+ARG BASE_SHA="${BASE_IMAGE_SHA_AMD64}"
+
+# Building prod image arm64
+FROM ${BASE_IMAGE_NAME}@sha256:${BASE_IMAGE_SHA_ARM64} as prod-arm64
+
+# leave unset to use the default value at the top of the file
+ARG BASE_IMAGE_SHA_ARM64
+ARG BASE_SHA="${BASE_IMAGE_SHA_ARM64}"
+
+# Building builder image
+FROM ${BASE_IMAGE_NAME} as builder
 
 ARG VERSION=2.0.0
 ARG DISTRO=production
@@ -17,8 +36,40 @@ ADD docker/bin/optimize.sh ${BUILD_DIR}/optimize.sh
 RUN rm ${BUILD_DIR}/config/environment-config.yaml
 
 ##### FINAL IMAGE #####
+# The value of TARGETARCH is provided by the build command from docker and based on that value, prod-amd64 or
+# prod-arm64 will be built as defined above
+FROM prod-${TARGETARCH}
 
-FROM alpine:3.16.2
+ARG VERSION=""
+ARG DATE=""
+ARG REVISION=""
+
+# leave the values below unset to use the default value at the top of the file
+ARG BASE_IMAGE_NAME
+ARG BASE_SHA
+
+# OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
+LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE_NAME}"
+LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
+LABEL org.opencontainers.image.created="${DATE}"
+LABEL org.opencontainers.image.authors="optimize@camunda.com"
+LABEL org.opencontainers.image.url="https://docs.camunda.io/docs/components/optimize/what-is-optimize/"
+LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/optimize-deployment/install-and-start/"
+LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-optimize"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.revision="${REVISION}"
+LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
+LABEL org.opencontainers.image.licenses="Proprietary"
+LABEL org.opencontainers.image.title="Camunda Optimize"
+LABEL org.opencontainers.image.description="Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks"
+
+# OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
+LABEL io.openshift.tags="bpmn,optimization,camunda"
+LABEL io.openshift.wants="zeebe,elasticsearch,identity,keycloak"
+LABEL io.k8s.description="Provides business activity monitoring for workflows and uses BPMN-based analysis to uncover process bottlenecks"
+LABEL io.openshift.non-scalable="false"
+LABEL io.openshift.min-memory="2Gi"
+LABEL io.openshift.min-cpu="1"
 
 ENV WAIT_FOR=
 ENV WAIT_FOR_TIMEOUT=30

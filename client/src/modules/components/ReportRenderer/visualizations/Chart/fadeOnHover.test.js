@@ -11,11 +11,7 @@ jest.mock('chart.js/helpers', () => ({
   color: () => ({alpha: () => ({rgbString: () => 'fadded'})}),
 }));
 
-function simulateEvent(node, evt, payload = {}) {
-  const event = new MouseEvent(evt, {...payload, bubbles: true});
-  Object.keys(payload).forEach((key) => (event[key] = payload[key]));
-  node.dispatchEvent(event);
-}
+jest.useFakeTimers();
 
 const chart = {
   canvas: document.createElement('canvas'),
@@ -45,6 +41,7 @@ it('should fadeout background color of the non hovered pie slices', () => {
 
   const datasets = [{datasetIndex: 0, index: 0}];
   chart.options.onHover({}, datasets, chart);
+  jest.runAllTimers();
 
   expect(chart.data.datasets[0].backgroundColor[0]).toBe('red');
   expect(chart.data.datasets[0].backgroundColor[1]).toBe('fadded');
@@ -58,6 +55,7 @@ it('should fadeout background color of the non hovered bar datasets', () => {
 
   const datasets = [{datasetIndex: 1}];
   chart.options.onHover({}, datasets, chart);
+  jest.runAllTimers();
 
   expect(chart.data.datasets).toEqual([
     {
@@ -81,10 +79,66 @@ it('should reset colors when hovering outside chart area', () => {
   const plugin = fadeOnHover({visualization: 'pie'});
   plugin.afterInit(chart);
 
-  const datasets = [{datasetIndex: 1}];
-  chart.options.onHover({}, datasets, chart);
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
+  jest.runAllTimers();
 
-  simulateEvent(chart.canvas, 'mousemove', {offsetX: 0, offsetY: 300});
+  plugin.afterEvent(chart, {event: {type: 'mouseout'}});
 
   expect(chart.data.datasets[0].backgroundColor[1]).not.toBe('fadded');
+});
+
+it('should delay the hover when entering the chart', () => {
+  const plugin = fadeOnHover({visualization: 'pie'});
+  plugin.afterInit(chart);
+
+  // enter the chart
+  chart.options.onHover({}, [], chart);
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
+
+  expect(chart.data.datasets[0].backgroundColor[1]).toBe('blue');
+
+  jest.runAllTimers();
+  expect(chart.data.datasets[0].backgroundColor[1]).toBe('fadded');
+});
+
+it('should not have a delay when moving the mouse after the timer elapses', () => {
+  const plugin = fadeOnHover({visualization: 'pie'});
+  plugin.afterInit(chart);
+
+  // enter the chart
+  chart.options.onHover({}, [], chart);
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
+
+  //run the timeout
+  jest.runAllTimers();
+
+  // hover over another item
+  expect(chart.data.datasets[0].backgroundColor[0]).toBe('fadded');
+  chart.options.onHover({}, [{datasetIndex: 0, index: 0}], chart);
+  expect(chart.data.datasets[0].backgroundColor[0]).toBe('red');
+});
+
+it('should have the delay after leaving the chart and enter again', () => {
+  const plugin = fadeOnHover({visualization: 'pie'});
+  plugin.afterInit(chart);
+
+  // enter the chart
+  chart.options.onHover({}, [], chart);
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
+
+  // timer elapsed
+  jest.runAllTimers();
+
+  // leave the chart
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
+  chart.options.onHover({}, [], chart);
+
+  // enter again
+  expect(chart.data.datasets[0].backgroundColor[1]).toBe('blue');
+  chart.options.onHover({}, [{datasetIndex: 1}], chart);
+  expect(chart.data.datasets[0].backgroundColor[1]).toBe('blue');
+
+  // after the delay
+  jest.runAllTimers();
+  expect(chart.data.datasets[0].backgroundColor[1]).toBe('fadded');
 });

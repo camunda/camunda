@@ -35,23 +35,19 @@ const barReport = {
   },
 };
 
-it('it should display correct configuration for barchart', () => {
-  const node = shallow(<BarChartConfig report={barReport} />);
-  expect(node).toMatchSnapshot();
-});
-
 it('should not display show instance count and color picker for combined reports', () => {
-  const node = shallow(
-    <BarChartConfig
-      report={{
-        ...barReport,
-        combined: true,
-        result: {data: {test: {data: {view: {properties: ['frequency']}}}}},
-      }}
-    />
-  );
+  const node = shallow(<BarChartConfig report={barReport} />);
 
-  expect(node.find('ShowInstanceCount')).not.toExist();
+  expect(node.find('ColorPicker')).toExist();
+
+  node.setProps({
+    report: {
+      ...barReport,
+      combined: true,
+      result: {data: {test: {data: {view: {properties: ['frequency']}}}}},
+    },
+  });
+
   expect(node.find('ColorPicker')).not.toExist();
 });
 
@@ -70,6 +66,12 @@ it('should not display color picker for hyper reports (distributed by userTask/a
   );
 
   expect(node.find('ColorPicker')).not.toExist();
+});
+
+it('it should display show tooltips config for barchart', () => {
+  const node = shallow(<BarChartConfig report={barReport} />);
+
+  expect(node.find('RelativeAbsoluteSelection')).toExist();
 });
 
 it('should not show target value, color picker or y axis label for multi-measure reports', () => {
@@ -92,7 +94,7 @@ it('should not show target value, color picker or y axis label for multi-measure
 it('should show stacked bar option for distributed bar chart reports', () => {
   const node = shallow(<BarChartConfig report={barReport} />);
 
-  expect(node.find('.stackedBars')).not.toExist();
+  expect(node.find({label: 'Stacked bars'})).not.toExist();
 
   node.setProps({
     report: {
@@ -104,7 +106,7 @@ it('should show stacked bar option for distributed bar chart reports', () => {
     },
   });
 
-  expect(node.find('.stackedBars')).toExist();
+  expect(node.find({label: 'Stacked bars'})).toExist();
 });
 
 it('should show goal line option and not show stacking option if current visualization cannot be stacked ', () => {
@@ -122,7 +124,7 @@ it('should show goal line option and not show stacking option if current visuali
     },
   });
 
-  expect(node.find('.stackedBars')).not.toExist();
+  expect(node.find({label: 'Stacked bars'})).not.toExist();
   expect(node.find('ChartTargetInput')).toExist();
 });
 
@@ -149,9 +151,27 @@ it('should set logScale to true when enabling logarithmic scale switch', () => {
 
   node
     .find('fieldset')
-    .at(2)
+    .at(3)
     .find('Switch')
     .simulate('change', {target: {checked: true}});
 
   expect(spy).toHaveBeenCalledWith({logScale: {$set: true}});
+});
+
+it('should show horizontalBar option for non combined bar chart reports', () => {
+  const node = shallow(<BarChartConfig report={barReport} />);
+
+  expect(node.find({label: 'Horizontal bars'})).toExist();
+
+  node.setProps({
+    report: {
+      ...barReport,
+      combined: true,
+      result: {
+        data: [{}],
+      },
+    },
+  });
+
+  expect(node.find({label: 'Horizontal bars'})).not.toExist();
 });

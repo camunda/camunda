@@ -43,15 +43,6 @@ it('should not show the add value button for greater and less than operators', (
   expect(node.find('ValueListInput').prop('allowMultiple')).toBe(false);
 });
 
-it('should disable add filter button if provided value is invalid', () => {
-  const spy = jest.fn();
-  const node = shallow(<NumberInput {...props} setValid={spy} />);
-
-  node.setProps({filter: {operator: 'in', values: ['123xxxx'], includeUndefined: false}});
-
-  expect(spy).toHaveBeenCalledWith(false);
-});
-
 it('should parse an existing filter', () => {
   const parsed = NumberInput.parseFilter({data: {data: {values: ['123', null], operator: 'in'}}});
 
@@ -72,5 +63,27 @@ it('should convert includeUndefined to a null entry in filter values', () => {
     data: {data: {operator: 'in', values: ['123', null]}, name: 'aVariableName', type: 'long'},
     type: 'variable',
     appliedTo: ['definition'],
+  });
+});
+
+describe('NumberInput.isValid', () => {
+  it('should return true for valid filters', () => {
+    let result = NumberInput.isValid({values: ['123']});
+
+    expect(result).toBe(true);
+
+    result = NumberInput.isValid({values: [], includeUndefined: true});
+
+    expect(result).toBe(true);
+  });
+
+  it('should return false for invalid filters', () => {
+    let result = NumberInput.isValid({values: ['NaN']});
+
+    expect(result).toBe(false);
+
+    result = NumberInput.isValid({values: [], includeUndefined: false});
+
+    expect(result).toBe(false);
   });
 });

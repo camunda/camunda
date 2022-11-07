@@ -31,7 +31,7 @@ export default function SelectionFilter({filter, type, config, setFilter, report
   const [variableValues, setVariableValues] = useState(['']);
 
   useEffect(() => {
-    setCustomValues((defaultValues ?? []).filter((value) => !values.includes(value)));
+    setCustomValues((defaultValues ?? []).filter((value) => value && !values.includes(value)));
   }, [defaultValues, values, resetTrigger]);
 
   const loadValues = async (value) => {

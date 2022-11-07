@@ -34,13 +34,14 @@ export default function Table({
   defaultPage = 0,
   totalEntries,
   loading,
+  allowLocalSorting = false,
 }) {
   const columnWidths = useRef({});
   const columns = React.useMemo(() => Table.formatColumns(head, '', columnWidths.current), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
   const initialSorting = React.useMemo(
-    () => formatSorting(sorting, resultType, columns),
-    [columns, resultType, sorting]
+    () => formatSorting(sorting, resultType, columns, allowLocalSorting),
+    [columns, resultType, sorting, allowLocalSorting]
   );
 
   const {
@@ -61,7 +62,7 @@ export default function Table({
     {
       columns,
       data,
-      manualSortBy: true,
+      manualSortBy: !allowLocalSorting,
       disableMultiSort: true,
       disableSortRemove: true,
       autoResetPage: false,
@@ -86,7 +87,7 @@ export default function Table({
   const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column) {
-    if (!updateSorting) {
+    if (!updateSorting && !allowLocalSorting) {
       return {};
     }
     const props = column.getSortByToggleProps();
@@ -106,7 +107,7 @@ export default function Table({
               sortColumn = 'value';
             }
           }
-          updateSorting(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
+          updateSorting?.(sortColumn, sorting?.order === 'asc' ? 'desc' : 'asc');
         }
       },
     };
@@ -154,6 +155,8 @@ export default function Table({
     );
   });
 
+  const isSortedDesc = (column) => (sorting ? sorting?.order === 'desc' : column.isSortedDesc);
+
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
       <table {...getTableProps()}>
@@ -173,9 +176,7 @@ export default function Table({
                     <Tooltip content={column.title} overflowOnly>
                       <span className="text">{column.render('Header')}</span>
                     </Tooltip>
-                    {column.isSorted && sorting && (
-                      <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
-                    )}
+                    {column.isSorted && <Icon type={isSortedDesc(column) ? 'down' : 'up'} />}
                   </div>
                   <div {...column.getResizerProps()} className="resizer" />
                 </th>
@@ -221,12 +222,9 @@ export default function Table({
               <Select.Option value={1000}>1000</Select.Option>
             </Select>
           </div>
-          <div
-            className="info"
-            dangerouslySetInnerHTML={{
-              __html: t('report.table.info', {firstRowIndex, lastRowIndex, totalRows}),
-            }}
-          />
+          <div className="info">
+            {t('report.table.info', {firstRowIndex, lastRowIndex, totalRows})}
+          </div>
           <div className="controls">
             <Button className="first" icon onClick={() => gotoPage(0)} disabled={!canPreviousPage}>
               <Icon type="expand" />
@@ -261,7 +259,15 @@ export default function Table({
   );
 }
 
-function formatSorting(sorting, resultType, columns) {
+function formatSorting(sorting, resultType, columns, allowLocalSorting) {
+  if (allowLocalSorting) {
+    const firstSortableColumn = columns.find((column) => !column.disableSortBy);
+    if (firstSortableColumn) {
+      return [{id: firstSortableColumn.id, order: 'desc'}];
+    }
+    return [];
+  }
+
   if (!sorting) {
     return [];
   }

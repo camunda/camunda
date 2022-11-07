@@ -64,24 +64,6 @@ it('should load 10 more values if the user wants more', () => {
   expect(props.config.getValues).toHaveBeenCalledWith('foo', 'String', 21, '', props.definition);
 });
 
-it('should disable add filter button if no value is selected', () => {
-  const changeSpy = jest.fn();
-  const validSpy = jest.fn();
-  const node = shallow(
-    <StringInput
-      {...props}
-      filter={{operator: 'in', values: ['A']}}
-      changeFilter={changeSpy}
-      setValid={validSpy}
-    />
-  );
-
-  node.find('Checklist').prop('onChange')([]);
-
-  expect(changeSpy).toHaveBeenCalledWith({operator: 'in', values: []});
-  expect(validSpy).toHaveBeenCalledWith(false);
-});
-
 it('should reset values when switching between operators types', () => {
   const node = shallow(<StringInput {...props} filter={{operator: 'in', values: ['A']}} />);
 
@@ -232,4 +214,26 @@ it('should parse existing values correctly without creating duplicates', async (
   await flushPromises();
 
   expect(node.find('Checklist').prop('allItems')).toEqual([null, 'A', 'B']);
+});
+
+describe('StringInput.isValid', () => {
+  it('should return true for valid filters', () => {
+    let result = StringInput.isValid({values: [null, 'A']});
+
+    expect(result).toBe(true);
+
+    result = StringInput.isValid({values: [], includeUndefined: true});
+
+    expect(result).toBe(true);
+  });
+
+  it('should return false for invalid filters', () => {
+    let result = StringInput.isValid({values: []});
+
+    expect(result).toBe(false);
+
+    result = StringInput.isValid({values: [], includeUndefined: false});
+
+    expect(result).toBe(false);
+  });
 });

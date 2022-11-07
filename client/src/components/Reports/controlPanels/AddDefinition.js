@@ -54,6 +54,7 @@ export function AddDefinition({mightFail, location, definitions, type, onAdd}) {
         setSelectedDefinitions([]);
         setModalOpen(true);
       }}
+      disabled={definitions.length >= 10}
     >
       <Icon type="plus" />
       {t('common.add')}

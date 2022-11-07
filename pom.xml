@@ -4,7 +4,7 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.9.0-alpha4</version>
+  <version>3.10.0</version>
   <packaging>pom</packaging>
   <name>Camunda Optimize</name>
 
@@ -23,13 +23,13 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.9.0-preview-1-RC1</project.previousVersion>
+    <project.previousVersion>3.9.0</project.previousVersion>
 
-    <camunda.engine.version>7.16.0</camunda.engine.version>
-    <camunda.maven.artifacts.version>7.17.0-ee</camunda.maven.artifacts.version>
+    <camunda.engine.version>7.18.0</camunda.engine.version>
+    <camunda.maven.artifacts.version>7.18.0-ee</camunda.maven.artifacts.version>
 
-    <zeebe.version>8.0.6</zeebe.version>
-    <identity.version>8.0.5</identity.version>
+    <zeebe.version>8.1.3</zeebe.version>
+    <identity.version>8.1.3</identity.version>
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
@@ -37,7 +37,7 @@
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
-    <jackson.version>2.13.4</jackson.version>
+    <jackson.version>2.13.4.20221013</jackson.version>
     <jsonpath.version>2.7.0</jsonpath.version>
     <elasticsearch.version>7.17.3</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -45,14 +45,14 @@
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>7.10.0</previous.optimize.elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.18.0</elasticsearch.log4j.version>
+    <elasticsearch.log4j.version>2.19.0</elasticsearch.log4j.version>
     <guava.version>31.1-jre</guava.version>
-    <spring.boot.version>2.7.3</spring.boot.version>
-    <spring.version>5.3.22</spring.version>
-    <mockito.version>4.7.0</mockito.version>
+    <spring.boot.version>2.7.5</spring.boot.version>
+    <spring.version>5.3.23</spring.version>
+    <mockito.version>4.8.1</mockito.version>
     <httpclient.version>4.5.13</httpclient.version>
-    <junit.jupiter.version>5.9.0</junit.jupiter.version>
-    <junit.platform.version>1.9.0</junit.platform.version>
+    <junit.jupiter.version>5.9.1</junit.jupiter.version>
+    <junit.platform.version>1.9.1</junit.platform.version>
     <mockserver.version>5.14.0</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.23.1</assertj.version>
@@ -123,6 +123,13 @@
     </profile>
 
     <profile>
+      <id>engine-7.18</id>
+      <properties>
+        <camunda.engine.version>7.18.0</camunda.engine.version>
+      </properties>
+    </profile>
+
+    <profile>
       <id>engine-7.17</id>
       <properties>
         <camunda.engine.version>7.17.0</camunda.engine.version>
@@ -133,13 +140,6 @@
       <id>engine-7.16</id>
       <properties>
         <camunda.engine.version>7.16.0</camunda.engine.version>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.15</id>
-      <properties>
-        <camunda.engine.version>7.15.0</camunda.engine.version>
       </properties>
     </profile>
 
@@ -357,7 +357,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.2</version>
+          <version>3.3.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -400,7 +400,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.4.1</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>
@@ -464,7 +464,7 @@
       <plugin>
         <groupId>com.amashchenko.maven.plugin</groupId>
         <artifactId>gitflow-maven-plugin</artifactId>
-        <version>1.18.0</version>
+        <version>1.19.0</version>
         <configuration>
           <gitFlowConfig>
             <productionBranch>latest</productionBranch>

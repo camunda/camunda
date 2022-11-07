@@ -73,7 +73,7 @@
             }
 
             .Popover {
-              .Popover__button {
+              .buttonWrapper .Button {
                 width: 20px;
                 height: 20px;
                 padding: 0px;
@@ -89,7 +89,7 @@
                 }
               }
 
-              .Popover__dialog {
+              .dialog {
                 padding: 5px;
               }
               .dialogContainer {

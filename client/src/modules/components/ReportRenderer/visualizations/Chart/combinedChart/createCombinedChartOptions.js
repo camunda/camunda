@@ -22,6 +22,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     data: {visualization, configuration},
     result,
   } = report;
+  const {alwaysShowAbsolute, alwaysShowRelative, precision} = configuration;
 
   const {view, groupBy} = Object.values(result.data)[0].data;
 
@@ -30,8 +31,8 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   const isDuration = isDurationReport(Object.values(result.data)[0]);
   const maxDuration = isDuration ? findMaxDurationAcrossReports(result) : 0;
   const isPersistedTooltips = isDuration
-    ? configuration.alwaysShowAbsolute
-    : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
+    ? alwaysShowAbsolute
+    : alwaysShowAbsolute || alwaysShowRelative;
 
   const groupedByDurationMaxValue =
     groupBy?.type === 'duration' && findMaxDurationAcrossReports(result, 'label');
@@ -57,7 +58,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     tooltipCallbacks.afterTitle = () => '';
   } else if (groupedByDurationMaxValue) {
     tooltipCallbacks.title = (tooltipItems) =>
-      tooltipItems?.[0]?.label && formatters.duration(tooltipItems[0].label);
+      tooltipItems?.[0]?.label && formatters.duration(tooltipItems[0].label, precision);
   }
 
   return {

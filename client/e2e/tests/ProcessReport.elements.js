@@ -16,7 +16,7 @@ export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
 export const editButton = Selector('.edit-button');
-export const shareButton = Selector('.share-button .Popover__button');
+export const shareButton = Selector('.share-button .Button');
 export const shareSwitch = Selector('.ShareEntity .Switch');
 export const shareUrl = Selector('.ShareEntity .linkText');
 export const shareHeader = Selector('.Sharing .header');
@@ -24,11 +24,14 @@ export const shareOptimizeIcon = Selector('.Sharing.compact .IconLink');
 export const shareTitle = shareHeader.find('.name-container');
 export const shareLink = shareHeader.find('.title-button');
 export const deleteButton = Selector('.delete-button');
+export const definitionCopyButton = (definition) => definition.find('.Button').nth(0);
+export const definitionEditButton = (definition) => definition.find('.Popover .Button');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
-export const groupbyDropdown = Selector('.label').withText('Group By').nextSibling();
+export const checkbox = (name) => Selector('.label').withText(name);
+export const groupbyDropdown = checkbox('Group By').nextSibling();
 export const groupbyDropdownButton = groupbyDropdown.find('button');
 export const removeGroupButton = Selector('.removeGrouping');
-export const visualizationDropdown = Selector('.label').withText('Visualization').nextSibling();
+export const visualizationDropdown = checkbox('Visualization').nextSibling();
 export const option = (text) => Selector('.DropdownOption').withExactText(text);
 export const configurationOption = (text) =>
   Selector('.Configuration .DropdownOption').withExactText(text);
@@ -83,7 +86,9 @@ export const collectionsDropdown = Selector(`.CollectionsDropdown`);
 export const createCollectionButton = Selector('.Modal button').withText('Create Collection');
 export const collectionOption = (text) =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
-export const limitPrecisionSwitch = Selector('.NumberConfig .Switch').withText('Limit Precision');
+export const limitPrecisionSwitch = Selector('.PrecisionConfig .Switch').withText(
+  'Custom Precision'
+);
 export const limitPrecisionInput = Selector('.precision input');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = (text) => Selector('.Table tbody td').withText(text);
@@ -94,8 +99,9 @@ export const chartGoalInput = Selector('input[placeholder="Goal value"]');
 export const warningMessage = Selector('.Report .MessageBox--warning');
 export const controlPanelFilter = Selector('.ActionItem');
 export const filterRemoveButton = controlPanelFilter.find('.Button:last-child');
-export const definitionEditor = Selector('.DefinitionList .Popover__button');
-export const definitionSelectionDialog = Selector('.DefinitionList .Popover__dialog');
+export const definitionElement = (name) => Selector('.DefinitionList li').withText(name);
+export const definitionEditor = Selector('.DefinitionList .Popover .Button');
+export const definitionSelectionDialog = Selector('.DefinitionList .dialog');
 export const versionPopover = Selector('.VersionPopover');
 export const versionAll = Selector('input[type="radio"]').nth(0);
 export const versionLatest = Selector('input[type="radio"]').nth(1);

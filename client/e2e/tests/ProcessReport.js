@@ -75,7 +75,9 @@ test('sharing', async (t) => {
   await t.click(e.shareSwitch);
 
   await t
-    .takeScreenshot('process-analysis/report-analysis/img/report-sharingPopover.png', {fullPage: true})
+    .takeScreenshot('process-analysis/report-analysis/img/report-sharingPopover.png', {
+      fullPage: true,
+    })
     .maximizeWindow();
 
   const shareUrl = await e.shareUrl.value;
@@ -294,7 +296,7 @@ test('should only enable valid combinations for process instance count grouped b
   await t.expect(e.reportNumber.visible).ok();
 });
 
-test('Limit the precsion in number report', async (t) => {
+test('Limit the precision in number report', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
 
@@ -308,10 +310,37 @@ test('Limit the precsion in number report', async (t) => {
 
   await t
     .resizeWindow(1600, 800)
-    .takeScreenshot('process-analysis/report-analysis/img/NumberConfiguration.png', {fullPage: true})
+    .takeScreenshot('process-analysis/report-analysis/img/NumberConfiguration.png', {
+      fullPage: true,
+    })
     .maximizeWindow();
 
   await t.expect(e.reportNumber.visible).ok();
+});
+
+test('Limit the precision in chart type reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await t.typeText(e.nameEditField, 'Chart Report', {replace: true});
+
+  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
+  await u.selectVisualization(t, 'Bar Chart');
+  await t.click(e.configurationButton);
+  await t.expect(e.limitPrecisionInput.visible).ok();
+  await t.expect(e.reportChart.visible).ok();
+
+  // Heatmap
+  await u.selectVisualization(t, 'Heatmap');
+  await t.click(e.configurationButton);
+  await t.expect(e.limitPrecisionInput.visible).ok();
+  await t.expect(e.reportDiagram.visible).ok();
 });
 
 test('Disable absolute and relative values for table reports', async (t) => {
@@ -421,7 +450,9 @@ test('bar chart and line chart configuration', async (t) => {
   await t.click(e.configurationButton);
   await t.click(e.cyanColor);
 
-  await t.takeScreenshot('process-analysis/report-analysis/img/chartConfiguration.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/chartConfiguration.png', {
+    fullPage: true,
+  });
 
   await t.click(e.goalSwitch);
 
@@ -434,7 +465,10 @@ test('bar chart and line chart configuration', async (t) => {
 
   await u.selectVisualization(t, 'Line Chart');
 
-  await t.takeElementScreenshot(e.reportRenderer, 'process-analysis/report-analysis/img/targetline.png');
+  await t.takeElementScreenshot(
+    e.reportRenderer,
+    'process-analysis/report-analysis/img/targetline.png'
+  );
 
   await t.maximizeWindow();
 
@@ -512,7 +546,7 @@ test('aggregators', async (t) => {
 
   await t.click(e.sectionToggle('Filters'));
   await t.click(e.filterButton);
-  await t.click(e.filterOption('Process Instance State'));
+  await t.click(e.filterOption('Instance State'));
   await t.click(e.modalOption('Completed'));
   await t.click(e.primaryModalButton);
 
@@ -524,12 +558,13 @@ test('aggregators', async (t) => {
 
   await t.click(e.limitPrecisionSwitch);
   await t.typeText(e.limitPrecisionInput, '2', {replace: true});
-
   await t.click(e.configurationButton);
 
   await t.click(e.aggregationTypeSelect);
 
-  await t.takeScreenshot('process-analysis/report-analysis/img/durationAggregation.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/durationAggregation.png', {
+    fullPage: true,
+  });
 
   await t.click(e.aggregationOption('Minimum'));
   await t.click(e.aggregationOption('Average'));
@@ -575,7 +610,10 @@ test('progress bar and reset to default', async (t) => {
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportProgressBar, 'process-analysis/report-analysis/img/progressbar.png')
+    .takeElementScreenshot(
+      e.reportProgressBar,
+      'process-analysis/report-analysis/img/progressbar.png'
+    )
     .maximizeWindow();
 
   await t.click(e.configurationButton);
@@ -584,7 +622,10 @@ test('progress bar and reset to default', async (t) => {
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportProgressBar, 'process-analysis/report-analysis/img/progressbarExceeded.png')
+    .takeElementScreenshot(
+      e.reportProgressBar,
+      'process-analysis/report-analysis/img/progressbarExceeded.png'
+    )
     .maximizeWindow();
 
   await t.click(e.configurationButton);
@@ -609,20 +650,23 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).notContains('Target\u00A0duration');
+  await t.expect(e.tooltip.textContent).notContains('Target duration');
 
   await t.click(e.targetValueButton);
   await t.typeText(e.targetValueInput('Approve Invoice'), '1');
   await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
   await t.typeText(e.targetValueInput('Review Invoice'), '1');
 
-  await t.takeElementScreenshot(e.modalContainer, 'process-analysis/report-analysis/img/targetvalue-2.png');
+  await t.takeElementScreenshot(
+    e.modalContainer,
+    'process-analysis/report-analysis/img/targetvalue-2.png'
+  );
 
   await t.click(e.primaryModalButton);
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).contains('Target\u00A0duration:\u00A01h');
+  await t.expect(e.tooltip.textContent).contains('Target duration: 1\u00A0hour');
 
   await addAnnotation(e.targetValueButton, 'Toggle Target Value Mode');
   await addAnnotation(e.tooltip, 'Target Value Tooltip', {x: -50, y: 0});
@@ -633,7 +677,9 @@ test('heatmap target values', async (t) => {
   );
   await addAnnotation(e.badge('prepareBankTransfer'), 'Target Value for Activity', {x: 50, y: 0});
 
-  await t.takeScreenshot('process-analysis/report-analysis/img/targetvalue-1.png', {fullPage: true});
+  await t.takeScreenshot('process-analysis/report-analysis/img/targetvalue-1.png', {
+    fullPage: true,
+  });
 
   await clearAllAnnotations();
 
@@ -641,7 +687,7 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
+  await t.expect(e.tooltip.textContent).notContains('target duration');
 
   await t.maximizeWindow();
 });
@@ -661,7 +707,9 @@ test('always show tooltips', async (t) => {
   await t.click(e.selectSwitchLabel('Show Absolute Value'));
   await t.click(e.selectSwitchLabel('Show Relative Value'));
 
-  await t.takeScreenshot('process-analysis/report-analysis/img/heatmap.png', {fullPage: true}).maximizeWindow();
+  await t
+    .takeScreenshot('process-analysis/report-analysis/img/heatmap.png', {fullPage: true})
+    .maximizeWindow();
 
   await t.expect(e.tooltip.visible).ok();
 });
@@ -715,7 +763,10 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.expect(e.visualizationDropdown.textContent).contains('Bar Chart');
 
-  await t.takeElementScreenshot(e.reportRenderer, 'process-analysis/report-analysis/img/distributed-report.png');
+  await t.takeElementScreenshot(
+    e.reportRenderer,
+    'process-analysis/report-analysis/img/distributed-report.png'
+  );
 
   await t.click(e.visualizationDropdown);
 
@@ -774,7 +825,10 @@ test('process parts', async (t) => {
   await t.click(e.modalFlowNode('StartEvent_1'));
   await t.click(e.modalFlowNode('assignApprover'));
 
-  await t.takeElementScreenshot(e.modalContainer, 'process-analysis/report-analysis/img/process-part.png');
+  await t.takeElementScreenshot(
+    e.modalContainer,
+    'process-analysis/report-analysis/img/process-part.png'
+  );
   await t.maximizeWindow();
 
   await t.click(e.primaryModalButton);
@@ -855,7 +909,10 @@ test('distribute by variable', async (t) => {
   await t.click(e.submenuOption('approved'));
   await t
     .resizeWindow(1650, 900)
-    .takeElementScreenshot(e.reportRenderer, 'process-analysis/report-analysis/img/distributedByVar.png')
+    .takeElementScreenshot(
+      e.reportRenderer,
+      'process-analysis/report-analysis/img/distributedByVar.png'
+    )
     .maximizeWindow();
 
   await t.click(e.distributedBySelect);
@@ -1089,4 +1146,98 @@ test('variable renaming', async (t) => {
   await t.click(e.definitionEditor);
 
   await t.expect(e.viewSelect.textContent).contains('amount');
+});
+
+test('create report with two versions of the same process', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  const definition1 = e
+    .definitionElement('Invoice Receipt with alternative correlation variable')
+    .nth(0);
+
+  await t.click(e.definitionCopyButton(definition1));
+
+  await t
+    .expect(e.definitionElement('Invoice Receipt with alternative correlation variable').count)
+    .eql(2);
+
+  const definition2 = e
+    .definitionElement('Invoice Receipt with alternative correlation variable')
+    .nth(1);
+
+  await u.selectVersion(t, definition1, [5]);
+  await u.selectVersion(t, definition2, [4]);
+
+  await t.click(e.definitionEditButton(definition1));
+  await t.click(e.versionPopover);
+
+  await t.takeElementScreenshot(
+    '.DefinitionEditor',
+    'additional-features/img/process-version-selection.png'
+  );
+
+  await t.click(e.definitionEditButton(definition1));
+
+  await t.expect(e.definitionElement('Version: 5').exists).ok();
+  await t.expect(e.definitionElement('Version: 4').exists).ok();
+
+  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectGroupby(t, 'Process');
+
+  await t.click(e.configurationButton);
+  await t.click(e.selectSwitchLabel('Show Absolute Value'));
+  await t.click(e.configurationButton);
+
+  await t
+    .resizeWindow(1600, 800)
+    .takeScreenshot('additional-features/img/report-with-process-variants.png', {
+      fullPage: true,
+    });
+});
+
+test('Display precision properly', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Invoice Receipt with alternative correlation variable');
+
+  await t.typeText(e.nameEditField, 'Precision Report', {replace: true});
+
+  await u.selectView(t, 'Flow Node', 'Duration');
+  await t.click(e.addMeasureButton);
+  await t.click(e.dropdownOption('Count'));
+  await u.selectVisualization(t, 'Table');
+
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
+
+  let a = e.tableCell(19, 1);
+  let b = e.tableCell(19, 2);
+  let c = e.tableCell(19, 3);
+
+  // Default precision for duration is 3
+  // shouldn't affect percentage values
+  await t.expect(a.textContent).match(/\d+/);
+  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(c.textContent).match(/\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*/);
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '4', {replace: true});
+
+  a = e.tableCell(19, 1);
+  b = e.tableCell(19, 2);
+  c = e.tableCell(19, 3);
+
+  await t.expect(a.textContent).match(/\d+/);
+  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(c.textContent).match(/\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*/);
+
+  await t.typeText(e.limitPrecisionInput, '1', {replace: true});
+
+  a = e.tableCell(19, 1);
+  b = e.tableCell(19, 2);
+  c = e.tableCell(19, 3);
+
+  await t.expect(a.textContent).match(/\d+/);
+  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(c.textContent).match(/\d+.[a-zA-Z]*/);
 });

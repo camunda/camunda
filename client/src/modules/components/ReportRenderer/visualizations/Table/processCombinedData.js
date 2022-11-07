@@ -7,11 +7,17 @@
 
 import {formatters} from 'services';
 
-import {sortColumns, getFormattedLabels, getBodyRows, getCombinedTableProps} from './service';
+import {
+  sortColumns,
+  getFormattedLabels,
+  getBodyRows,
+  getCombinedTableProps,
+  formatLabelsForTableBody,
+} from './service';
 
 export default function processCombinedData({report}) {
   const {
-    configuration: {hideAbsoluteValue, hideRelativeValue, tableColumns},
+    configuration: {hideAbsoluteValue, hideRelativeValue, tableColumns, precision},
   } = report.data;
   const {view, groupBy} = Object.values(report.result.data)[0].data;
 
@@ -57,21 +63,22 @@ export default function processCombinedData({report}) {
     displayAbsoluteValue,
     flowNodeNames,
     groupedByDuration: groupBy.type === 'duration',
+    precision,
   });
 
-  const head = [{id: keysLabel, label: ' ', columns: [keysLabel]}, ...formattedLabels];
-
+  let head = [{id: keysLabel, label: ' ', columns: [keysLabel]}, ...formattedLabels];
+  let body = rows;
   if (tableColumns) {
     const {sortedHead, sortedBody} = sortColumns(head, rows, tableColumns.columnOrder);
-    return {
-      head: sortedHead,
-      body: sortedBody,
-    };
+    head = sortedHead;
+    body = sortedBody;
   }
+
+  body = formatLabelsForTableBody(body);
 
   return {
     head,
-    body: rows,
+    body,
   };
 }
 

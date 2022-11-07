@@ -5,7 +5,7 @@ that provides continuous monitoring and insights about your deployed
 business processes.
 
 * [Issue Tracker](https://app.camunda.com/jira/secure/RapidBoard.jspa?rapidView=49)
-* [Documentation](https://docs.camunda.org/optimize/)
+* [Documentation](https://docs.camunda.io/docs/components/optimize/what-is-optimize/)
 
 ## Building Optimize
 

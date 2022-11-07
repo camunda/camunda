@@ -742,3 +742,13 @@ it('should reset kpi status when having more than one definition', async () => {
 
   expect(spy.mock.calls[0][0].configuration.targetValue.isKpi).toBeDefined();
 });
+
+it('should use key as a displayName for copied process when it has no displayName and name properties', () => {
+  const spy = jest.fn();
+  const node = shallow(<ReportControlPanel {...props} updateReport={spy} report={report} />);
+
+  node.find(DefinitionList).prop('onCopy')(0);
+
+  expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].definitions.$splice[0][2].displayName).toBe('aKey (copy)');
+});

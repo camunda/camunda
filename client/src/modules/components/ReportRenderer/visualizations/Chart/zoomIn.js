@@ -97,6 +97,7 @@ export default function zoomIn({updateReport, filters, type, valueRange: {min, m
                   end: format(end, BACKEND_DATE_FORMAT),
                 },
                 filterLevel: 'instance',
+                appliedTo: ['all'],
               },
             ],
           },

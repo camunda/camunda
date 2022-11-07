@@ -49,6 +49,18 @@ spec:
       securityContext:
         privileged: true
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -210,12 +222,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.10.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.10.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_710.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_710.log', onlyIfSuccessful: false
             }
           }
         }
@@ -228,12 +248,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.11.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.11.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_711.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_711.log', onlyIfSuccessful: false
             }
           }
         }
@@ -246,12 +274,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.12.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.12.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_712.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_712.log', onlyIfSuccessful: false
             }
           }
         }
@@ -264,12 +300,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.13.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.13.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_713.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_713.log', onlyIfSuccessful: false
             }
           }
         }
@@ -282,12 +326,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.14.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.14.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_714.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_714.log', onlyIfSuccessful: false
             }
           }
         }
@@ -300,12 +352,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.15.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.15.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_715.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_715.log', onlyIfSuccessful: false
             }
           }
         }
@@ -318,12 +378,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.16.2", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.16.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_716.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_716.log', onlyIfSuccessful: false
             }
           }
         }
@@ -336,12 +404,20 @@ pipeline {
               yaml mavenElasticsearchIntegrationTestAgent("7.17.0", "${env.CAMBPM_VERSION}")
             }
           }
+          environment {
+            LABEL = "optimize-ci-build_es-7.17.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          }
           steps {
             integrationTestSteps()
           }
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
+              container('gcloud') {
+                sh 'apt-get install kubectl'
+                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_717.log'
+              }
+              archiveArtifacts artifacts: 'elasticsearch_717.log', onlyIfSuccessful: false
             }
           }
         }

@@ -7,6 +7,34 @@
     position: absolute;
   }
 
+  .dialogArrow {
+    &,
+    &Border {
+      bottom: -11px;
+      z-index: calc(var(--z-popup) + 1);
+      left: 50%;
+      border: solid transparent;
+      height: 0;
+      width: 0;
+      position: absolute;
+      pointer-events: none;
+    }
+
+    &Border {
+      border-color: transparent;
+      border-bottom-color: var(--silver-darken-80);
+      border-width: 11px;
+      margin-left: -11px;
+    }
+
+    & {
+      border-color: transparent;
+      border-bottom-color: var(--white);
+      border-width: 10px;
+      margin-left: -10px;
+    }
+  }
+
   .dialogContainer {
     position: absolute;
     width: auto;
@@ -17,56 +45,34 @@
     margin-top: 10px;
     z-index: var(--z-popup);
     box-sizing: content-box;
+
+    .dialog {
+      padding: 10px 20px 15px 20px;
+
+      &.scrollable {
+        @include scrollable;
+      }
+    }
   }
-}
 
-.Popover__button--open,
-.Popover__button {
-  width: 100%;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  text-align: left;
-  padding-right: 30px;
+  .buttonWrapper {
+    .Button {
+      width: 100%;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      text-align: left;
 
-  .downIcon {
-    position: absolute;
-    right: 0;
-    display: inline-block;
-    margin-right: 7px;
+      .downIcon {
+        position: absolute;
+        right: 0;
+        display: inline-block;
+        margin-right: 7px;
+      }
+
+      &:not(.icon) {
+        padding-right: 30px;
+      }
+    }
   }
-}
-
-.Popover__dialog {
-  padding: 10px 20px 15px 20px;
-
-  &.scrollable {
-    @include scrollable;
-  }
-}
-
-.Popover__dialog-arrow,
-.Popover__dialog-arrow-border {
-  bottom: -11px;
-  z-index: calc(var(--z-popup) + 1);
-  left: 50%;
-  border: solid transparent;
-  height: 0;
-  width: 0;
-  position: absolute;
-  pointer-events: none;
-}
-
-.Popover__dialog-arrow {
-  border-color: transparent;
-  border-bottom-color: var(--white);
-  border-width: 10px;
-  margin-left: -10px;
-}
-
-.Popover__dialog-arrow-border {
-  border-color: transparent;
-  border-bottom-color: var(--silver-darken-80);
-  border-width: 11px;
-  margin-left: -11px;
 }

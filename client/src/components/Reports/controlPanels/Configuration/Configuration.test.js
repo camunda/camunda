@@ -11,6 +11,7 @@ import {shallow} from 'enzyme';
 import Configuration from './Configuration';
 import {typeA, typeB} from './visualizations';
 import {Button} from 'components';
+import PrecisionConfig from './visualizations/PrecisionConfig';
 
 jest.mock('./visualizations', () => {
   const typeA = () => null;
@@ -32,14 +33,20 @@ jest.mock('./visualizations', () => {
 });
 
 it('should be disabled if no type is set', () => {
-  const node = shallow(<Configuration report={{data: {configuration: {}}}} />);
+  const node = shallow(
+    <Configuration report={{data: {configuration: {}, view: {properties: []}}}} />
+  );
 
   expect(node.find('Popover')).toBeDisabled();
 });
 
 it('should be disabled if specified', () => {
   const node = shallow(
-    <Configuration type="typeA" report={{data: {configuration: {}}}} disabled />
+    <Configuration
+      type="typeA"
+      report={{data: {configuration: {}, view: {properties: []}}}}
+      disabled
+    />
   );
 
   expect(node.find('Popover')).toBeDisabled();
@@ -50,8 +57,10 @@ it('should be disabled if the report is combined with a duration view', () => {
     <Configuration
       report={{
         combined: true,
-        data: {reports: [{id: 'test'}]},
-        result: {test: {data: {view: {properties: ['duration']}}}},
+        data: {reports: [{id: 'test'}], view: {properties: []}, configuration: {}},
+        result: {
+          data: [{data: {view: {properties: ['duration']}}}],
+        },
       }}
     />
   );
@@ -61,7 +70,11 @@ it('should be disabled if the report is combined with a duration view', () => {
 
 it('should contain the Component from the visualizations based on the type', () => {
   const node = shallow(
-    <Configuration report={{data: {configuration: {}}}} type="typeA" onChange={() => {}} />
+    <Configuration
+      report={{data: {configuration: {}, view: {properties: []}}}}
+      type="typeA"
+      onChange={() => {}}
+    />
   );
 
   expect(node.find(typeA)).toExist();
@@ -76,7 +89,9 @@ it('should reset to defaults except for columnOrder', () => {
   const spy = jest.fn();
   const node = shallow(
     <Configuration
-      report={{data: {configuration: {tableColumns: {columnOrder: ['test']}}}}}
+      report={{
+        data: {configuration: {tableColumns: {columnOrder: ['test']}}, view: {properties: []}},
+      }}
       type="typeA"
       onChange={spy}
       configuration={{}}
@@ -88,4 +103,68 @@ it('should reset to defaults except for columnOrder', () => {
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].configuration.precision).toEqual({$set: null});
   expect(spy.mock.calls[0][0].configuration.tableColumns.$set.columnOrder).toEqual(['test']);
+});
+
+it('should not show the precison for percentage only report', () => {
+  const node = shallow(
+    <Configuration
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}},
+          view: {properties: ['percentage']},
+        },
+      }}
+      type="typeA"
+    />
+  );
+
+  expect(node.find(PrecisionConfig)).not.toExist();
+});
+
+it('should not show the precison for raw data report', () => {
+  const node = shallow(
+    <Configuration
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}},
+          view: {properties: ['rawData']},
+        },
+      }}
+      type="typeA"
+    />
+  );
+
+  expect(node.find(PrecisionConfig)).not.toExist();
+});
+
+it('should show the precison config if there is instance count shown', () => {
+  const node = shallow(
+    <Configuration
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}, showInstanceCount: true},
+          view: {properties: ['percentage']},
+        },
+      }}
+      type="typeA"
+    />
+  );
+
+  expect(node.find(PrecisionConfig)).toExist();
+});
+
+it('should show the precison config for chart report', () => {
+  const node = shallow(
+    <Configuration
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}},
+          view: {entity: 'flowNode', properties: []},
+        },
+      }}
+      type="typeA"
+    />
+  );
+
+  expect(node.find(PrecisionConfig)).toExist();
 });

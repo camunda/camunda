@@ -278,6 +278,7 @@ public class EngineContext {
       engineEntity.getVersionAsString(),
       engineEntity.getVersionTag(),
       engineEntity.getName(),
+      true,
       new EngineDataSourceDto(this.getEngineAlias()),
       engineEntity.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
     );

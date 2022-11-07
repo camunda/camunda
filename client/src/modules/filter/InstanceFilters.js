@@ -11,6 +11,8 @@ import {Dropdown} from 'components';
 import {t} from 'translation';
 import {getOptimizeProfile} from 'config';
 
+import './InstanceFilters.scss';
+
 export default function InstanceFilters({openNewFilterModal, processDefinitionIsNotSelected}) {
   const [optimizeProfile, setOptimizeProfile] = useState();
 
@@ -26,13 +28,11 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       id="ControlPanel__filters"
       className="InstanceFilters Filter__dropdown"
     >
+      <div className="dropdownInfo">{t('common.filter.dropdownInfo.instance')}</div>
       <Dropdown.Option onClick={openNewFilterModal('instanceState')}>
         {t('common.filter.types.instanceState')}
       </Dropdown.Option>
-      <Dropdown.Option onClick={openNewFilterModal('incidentInstances')}>
-        {t('common.filter.types.incident')}
-      </Dropdown.Option>
-      <Dropdown.Submenu label={t('common.filter.types.date')}>
+      <Dropdown.Submenu label={t('common.filter.types.date')} openToLeft>
         <Dropdown.Option onClick={openNewFilterModal('instanceStartDate')}>
           {t('common.filter.types.instanceStartDate')}
         </Dropdown.Option>
@@ -43,6 +43,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
       <Dropdown.Submenu
         disabled={processDefinitionIsNotSelected}
         label={t('common.filter.types.flowNodeDate')}
+        openToLeft
       >
         <Dropdown.Option onClick={openNewFilterModal('flowNodeStartDate')}>
           {t('common.filter.types.instanceStartDate')}
@@ -51,7 +52,7 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
           {t('common.filter.types.instanceEndDate')}
         </Dropdown.Option>
       </Dropdown.Submenu>
-      <Dropdown.Submenu label={t('common.filter.types.duration')}>
+      <Dropdown.Submenu label={t('common.filter.types.instanceDuration')} openToLeft>
         <Dropdown.Option onClick={openNewFilterModal('processInstanceDuration')}>
           {t('common.filter.types.instance')}
         </Dropdown.Option>
@@ -67,6 +68,9 @@ export default function InstanceFilters({openNewFilterModal, processDefinitionIs
         onClick={openNewFilterModal('executedFlowNodes')}
       >
         {t('common.filter.types.flowNode')}
+      </Dropdown.Option>
+      <Dropdown.Option onClick={openNewFilterModal('incidentInstances')}>
+        {t('common.filter.types.incident')}
       </Dropdown.Option>
       {optimizeProfile === 'platform' && (
         <>

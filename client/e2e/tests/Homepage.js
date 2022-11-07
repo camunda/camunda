@@ -56,8 +56,8 @@ test('navigate to dashboard view and edit pages', async (t) => {
 test('complex Homepage actions', async (t) => {
   await t.click(e.createNewMenu).hover(e.newReportOption);
 
-  await t.expect(e.createNewMenu.textContent).contains('New Collection');
-  await t.expect(e.createNewMenu.textContent).contains('New Dashboard');
+  await t.expect(e.createNewMenu.textContent).contains('Collection');
+  await t.expect(e.createNewMenu.textContent).contains('Dashboard');
   await t.expect(e.createNewMenu.textContent).contains('Process Report');
   await t.expect(e.createNewMenu.textContent).contains('Combined Process Report');
   await t.expect(e.createNewMenu.textContent).contains('Decision Report');
@@ -108,7 +108,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.click(e.createNewMenu).click(e.option('New Collection'));
+  await t.click(e.createNewMenu).click(e.option('Collection'));
   await t.typeText(e.modalNameInput, 'Marketing', {replace: true});
   await t.click(e.confirmButton);
   await t.click(e.confirmButton);
@@ -118,7 +118,7 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.homepageLink);
 
-  await t.click(e.createNewMenu).click(e.option('New Collection'));
+  await t.click(e.createNewMenu).click(e.option('Collection'));
   await t.typeText(e.modalNameInput, 'Sales', {replace: true});
   await t.click(e.confirmButton);
   await t.click(e.confirmButton);

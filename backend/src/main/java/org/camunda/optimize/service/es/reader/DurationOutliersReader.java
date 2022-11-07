@@ -207,17 +207,16 @@ public class DurationOutliersReader {
       .field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION);
 
     final BoolQueryBuilder query = boolQuery();
-    if(processDefinitionParams.isDisconsiderAutomatedTasks())
-    {
+    if (processDefinitionParams.isDisconsiderAutomatedTasks()) {
       query.filter(termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE, generateListOfHumanTasks()));
-    }
-    else
-    {
-      query.filter(boolQuery().mustNot(termsQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE,
-                                                  generateListOfStandardExcludedFlowNodeTypes())));
+    } else {
+      query.filter(boolQuery().mustNot(termsQuery(
+        FLOW_NODE_INSTANCES + "." + FLOW_NODE_TYPE,
+        generateListOfStandardExcludedFlowNodeTypes()
+      )));
     }
 
-    AggregationBuilder aggregationflowNodeTypeAndId = AggregationBuilders
+    AggregationBuilder aggregationFlowNodeTypeAndId = AggregationBuilders
       .filter(FLOW_NODE_TYPE_FILTER, query)
       .subAggregation(
         AggregationBuilders
@@ -227,7 +226,7 @@ public class DurationOutliersReader {
       );
 
     NestedAggregationBuilder nested = AggregationBuilders.nested(AGG_NESTED, FLOW_NODE_INSTANCES)
-      .subAggregation(aggregationflowNodeTypeAndId);
+      .subAggregation(aggregationFlowNodeTypeAndId);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(processInstanceQuery)
@@ -246,6 +245,16 @@ public class DurationOutliersReader {
       final String reason = "Could not fetch data to generate Outlier Analysis Heatmap";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
+    } catch (ElasticsearchStatusException e) {
+      if (isInstanceIndexNotFoundException(PROCESS, e)) {
+        log.info(
+          "Was not able to get Flow Node outlier map because instance index with alias {} does not exist. " +
+            "Returning empty results.",
+          getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey())
+        );
+        return Collections.emptyMap();
+      }
+      throw e;
     }
     final List<? extends Terms.Bucket> deviationForEachFlowNode = searchResponse.getAggregations()
       .<Nested>get(AGG_NESTED)
@@ -519,9 +528,9 @@ public class DurationOutliersReader {
         .subAggregation(nestedVariableAggregation)
     );
     final NestedAggregationBuilder nestedFlowNodeAggregation = AggregationBuilders.nested(
-      FLOW_NODE_INSTANCES,
-      FLOW_NODE_INSTANCES
-    )
+        FLOW_NODE_INSTANCES,
+        FLOW_NODE_INSTANCES
+      )
       .subAggregation(flowNodeFilterAggregation);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -619,10 +628,14 @@ public class DurationOutliersReader {
           double stdDeviationBoundLower = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.LOWER);
           double stdDeviationBoundHigher = statsAgg.getStdDeviationBound(ExtendedStats.Bounds.UPPER);
           double average = statsAgg.getAvg();
-          stdDeviationBoundLower = Math.min(stdDeviationBoundLower,
-                                            average - processDefinitionParams.getMinimumDeviationFromAvg());
-          stdDeviationBoundHigher = Math.max(stdDeviationBoundHigher,
-                                             average + processDefinitionParams.getMinimumDeviationFromAvg());
+          stdDeviationBoundLower = Math.min(
+            stdDeviationBoundLower,
+            average - processDefinitionParams.getMinimumDeviationFromAvg()
+          );
+          stdDeviationBoundHigher = Math.max(
+            stdDeviationBoundHigher,
+            average + processDefinitionParams.getMinimumDeviationFromAvg()
+          );
           final FilterAggregationBuilder lowerOutlierEventFilter = AggregationBuilders.filter(
             LOWER_DURATION_AGG,
             rangeQuery(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION).lte(stdDeviationBoundLower)
@@ -643,12 +656,14 @@ public class DurationOutliersReader {
         }
       });
 
-    final SearchRequest searchRequest = new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
+    final SearchRequest searchRequest =
+      new SearchRequest(getProcessInstanceIndexAliasName(processDefinitionParams.getProcessDefinitionKey()))
       .source(searchSourceBuilder);
     try {
       final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest)
         .getAggregations();
-      final Aggregations allFlowNodeFilterAggs = ((Nested) allFlowNodesPercentileRanks.get(FLOW_NODE_INSTANCES)).getAggregations();
+      final Aggregations allFlowNodeFilterAggs =
+        ((Nested) allFlowNodesPercentileRanks.get(FLOW_NODE_INSTANCES)).getAggregations();
       return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
     } catch (IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
@@ -824,10 +839,11 @@ public class DurationOutliersReader {
       BOUNDARY_CANCEL, BOUNDARY_CONDITIONAL, START_EVENT, START_EVENT_TIMER, START_EVENT_MESSAGE, START_EVENT_SIGNAL,
       START_EVENT_ESCALATION, START_EVENT_COMPENSATION, START_EVENT_ERROR, START_EVENT_CONDITIONAL,
       INTERMEDIATE_EVENT_CATCH, INTERMEDIATE_EVENT_MESSAGE, INTERMEDIATE_EVENT_TIMER, INTERMEDIATE_EVENT_LINK,
-      INTERMEDIATE_EVENT_SIGNAL,INTERMEDIATE_EVENT_CONDITIONAL, INTERMEDIATE_EVENT_THROW,
+      INTERMEDIATE_EVENT_SIGNAL, INTERMEDIATE_EVENT_CONDITIONAL, INTERMEDIATE_EVENT_THROW,
       INTERMEDIATE_EVENT_SIGNAL_THROW, INTERMEDIATE_EVENT_COMPENSATION_THROW, INTERMEDIATE_EVENT_MESSAGE_THROW,
-      INTERMEDIATE_EVENT_NONE_THROW , INTERMEDIATE_EVENT_ESCALATION_THROW, END_EVENT_ERROR, END_EVENT_CANCEL,
-      END_EVENT_TERMINATE, END_EVENT_MESSAGE, END_EVENT_SIGNAL, END_EVENT_COMPENSATION , END_EVENT_ESCALATION,
-      END_EVENT_NONE);
+      INTERMEDIATE_EVENT_NONE_THROW, INTERMEDIATE_EVENT_ESCALATION_THROW, END_EVENT_ERROR, END_EVENT_CANCEL,
+      END_EVENT_TERMINATE, END_EVENT_MESSAGE, END_EVENT_SIGNAL, END_EVENT_COMPENSATION, END_EVENT_ESCALATION,
+      END_EVENT_NONE
+    );
   }
 }

@@ -59,7 +59,9 @@
   }
 
   > * {
-    width: 190px;
+    min-width: 190px;
+    width: max-content;
+    max-width: 350px;
     margin-right: 14px;
     display: inline-block;
 
@@ -81,16 +83,8 @@
   }
 
   > .VariableFilter__Dashboard {
-    width: max-content;
-
-    .BooleanFilter,
-    .SelectionFilter,
     .DateFilter__Dashboard {
-      width: 180px;
-    }
-
-    .DateFilter__Dashboard.fixed {
-      width: max-content;
+      width: 100%;
     }
   }
 
@@ -126,13 +120,13 @@
       margin-top: 4px;
       border: none;
 
-      .Popover__dialog {
+      .dialog {
         padding: 0;
       }
     }
 
-    .Popover__dialog-arrow-border,
-    .Popover__dialog-arrow {
+    .dialogArrowBorder,
+    .dialogArrow {
       display: none;
     }
 

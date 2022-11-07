@@ -68,7 +68,7 @@ export default class Submenu extends React.Component {
       evt.target.click();
     }
 
-    if (evt.key === 'Escape' || evt.key === 'ArrowLeft') {
+    if (evt.key === 'Escape' || evt.key === this.getCloseDirection()) {
       document.activeElement.parentNode.closest('.DropdownOption').focus();
       this.props.forceToggle(evt);
     }
@@ -141,7 +141,7 @@ export default class Submenu extends React.Component {
       const parentMenu = container.getBoundingClientRect();
       const body = document.body;
 
-      if (parentMenu.right + submenu.clientWidth > body.clientWidth) {
+      if (this.props.openToLeft || parentMenu.right + submenu.clientWidth > body.clientWidth) {
         styles.right = this.props.offset + 'px';
       } else {
         styles.left = this.props.offset + 'px';
@@ -169,6 +169,9 @@ export default class Submenu extends React.Component {
     this.setState({styles});
   };
 
+  getOpenDirection = () => (this.props.openToLeft ? 'ArrowLeft' : 'ArrowRight');
+  getCloseDirection = () => (this.props.openToLeft ? 'ArrowRight' : 'ArrowLeft');
+
   render() {
     return (
       <DropdownOption
@@ -177,19 +180,23 @@ export default class Submenu extends React.Component {
         className={classnames('Submenu', {
           open: this.props.open,
           fixed: this.props.fixed,
+          leftCheckMark: this.props.openToLeft,
         })}
         ref={this.containerRef}
         onClick={this.onClick}
         onMouseOver={this.onMouseOver}
         onMouseLeave={this.onMouseLeave}
         onKeyDown={(evt) => {
-          if (evt.key === 'ArrowRight' && !this.props.disabled) {
+          if (evt.key === this.getOpenDirection() && !this.props.disabled) {
             this.props.forceToggle(evt);
           }
         }}
       >
         {this.props.label}
-        <Icon type="right" className="rightIcon" />
+        <Icon
+          type={this.props.openToLeft ? 'left' : 'right'}
+          className={classnames('submenuArrow', {left: this.props.openToLeft})}
+        />
         {this.props.open && (
           <div
             className="childrenContainer"

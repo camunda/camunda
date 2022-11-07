@@ -7,11 +7,21 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {ignoreFragments} from 'services';
 
 import DropdownOptionsList from './DropdownOptionsList';
 import Dropdown from './Dropdown';
 
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  ignoreFragments: jest.fn().mockImplementation((children) => children),
+}));
+
 jest.useFakeTimers();
+
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 
 it('should open and close a submenu', () => {
   const node = shallow(
@@ -102,4 +112,11 @@ it('should close the submenu immediately when hovering over another option', asy
   node.find(Dropdown.Option).prop('onMouseEnter')({target: document.createElement('div')});
 
   expect(node.find(Dropdown.Submenu)).toHaveProp('open', false);
+});
+
+it('should invoke ignoreFragments when rendering the list', async () => {
+  const children = [<Dropdown.Submenu key="1" />, <Dropdown.Option key="2" />];
+  shallow(<DropdownOptionsList>{children}</DropdownOptionsList>);
+
+  expect(ignoreFragments).toHaveBeenCalledWith(children);
 });

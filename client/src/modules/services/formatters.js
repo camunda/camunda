@@ -75,6 +75,12 @@ export function percentage(number) {
 }
 
 export function duration(timeObject, precision) {
+  // In case the precision from the report configuration is passed to the function but it is turned off, its value is set to null
+  // In this case we want to set the default value of the precision to be 3
+  if (precision === null) {
+    precision = 3;
+  }
+
   if (!timeObject && timeObject !== 0) {
     return '--';
   }
@@ -82,10 +88,10 @@ export function duration(timeObject, precision) {
   const time =
     typeof timeObject === 'object'
       ? timeObject.value * timeUnits[timeObject.unit].value
-      : timeObject;
+      : Number(timeObject);
 
   if (time >= 0 && time < 1) {
-    return `${time || 0}ms`;
+    return `${Number(time.toFixed(2)) || 0}ms`;
   }
 
   const timeSegments = [];
@@ -102,11 +108,16 @@ export function duration(timeObject, precision) {
           if (!remainingPrecision || currentUnit.abbreviation === 'ms') {
             number = Math.round(remainingTime / currentUnit.value);
           }
-          timeSegments.push(
-            `${number} ${t(
-              `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
-            )}`
-          );
+
+          if (number === 0) {
+            remainingPrecision++;
+          } else {
+            timeSegments.push(
+              `${number}\u00A0${t(
+                `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
+              )}`
+            );
+          }
           remainingTime -= number * currentUnit.value;
         }
       } else if (remainingTime >= currentUnit.value) {
@@ -114,7 +125,7 @@ export function duration(timeObject, precision) {
         // allow numbers with ms abreviation to have floating numbers (avoid flooring)
         // e.g 1.2ms => 1.2 ms. On the other hand, 1.2 seconds => 1 seconds 200ms
         if (currentUnit.abbreviation === 'ms') {
-          numberOfUnits = remainingTime / currentUnit.value;
+          numberOfUnits = Number((remainingTime / currentUnit.value).toFixed(2));
         }
         timeSegments.push(numberOfUnits + currentUnit.abbreviation);
 
@@ -287,7 +298,8 @@ export function createDurationFormattingOptions(targetLine, dataMinStep, logScal
   return {
     callback: function (value, ...args) {
       let durationMs = value;
-      if (this.axis === 'x') {
+
+      if (this.type === 'category') {
         const labels = this.getLabels();
         durationMs = Number(labels[value]);
       }
@@ -409,4 +421,24 @@ export function formatTenantName({id, name}) {
 
 export function formatFileName(name) {
   return name.replace(/[^a-zA-Z0-9-_.]/gi, '_').toLowerCase();
+}
+
+export function formatLabel(label, numbersOnly) {
+  if (!label || typeof label === 'object') {
+    return label;
+  }
+  const MAX_LENGHT = 50;
+  const tooLong = label.length >= MAX_LENGHT;
+  const parsedLabel = Number.parseFloat(label);
+  const isNan = Number.isNaN(parsedLabel);
+
+  if (!tooLong || (numbersOnly && isNan)) {
+    return label;
+  }
+
+  if (isNan) {
+    return label.slice(0, MAX_LENGHT) + '...';
+  }
+
+  return parsedLabel.toExponential();
 }

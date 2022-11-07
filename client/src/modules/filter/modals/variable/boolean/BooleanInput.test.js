@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect} from 'react';
+import React from 'react';
 
 import BooleanInput from './BooleanInput';
 
@@ -29,13 +29,16 @@ it('should update filter selected values on Checklist change', () => {
   expect(spy).toHaveBeenCalledWith({values: [null, true]});
 });
 
-it('should invoke setValid on filter change', () => {
-  const spy = jest.fn();
-  const node = shallow(<BooleanInput {...props} setValid={spy} />);
+describe('BooleanInput.isValid', () => {
+  it('should return true for valid filters', () => {
+    const result = BooleanInput.isValid({values: [true]});
 
-  node.setProps({filter: {values: [true]}});
+    expect(result).toBe(true);
+  });
 
-  runLastEffect();
+  it('should return false for invalid filters', () => {
+    const result = BooleanInput.isValid({values: []});
 
-  expect(spy).toHaveBeenCalledWith(true);
+    expect(result).toBe(false);
+  });
 });

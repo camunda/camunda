@@ -10,6 +10,8 @@ import update from 'immutability-helper';
 import {t} from 'translation';
 import {getVariableLabel} from 'variables';
 
+import {isCategoricalBar, isCategorical} from '../reportService';
+
 import * as processOptions from './process';
 import * as decisionOptions from './decision';
 
@@ -104,6 +106,8 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
 
   // update sorting and tablecolumnorder
   report.configuration.sorting = getDefaultSorting({reportType, data: newReport});
+  report.configuration.horizontalBar = isCategoricalBar(newReport);
+
   report.configuration.tableColumns.columnOrder = [];
 
   if (reportType === 'process') {
@@ -189,9 +193,10 @@ function isProcessInstanceDuration({view}) {
   return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
 }
 
-function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
-  if (visualization !== 'table') {
-    return null;
+function getDefaultSorting({reportType, data}) {
+  const {view, groupBy, visualization} = data;
+  if (visualization === 'table' && ['flowNodes', 'userTasks'].includes(groupBy?.type)) {
+    return {by: 'label', order: 'asc'};
   }
 
   if ((view?.properties?.[0] ?? view?.property) === 'rawData') {
@@ -199,13 +204,13 @@ function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
     return {by, order: 'desc'};
   }
 
-  if (['flowNodes', 'userTasks'].includes(groupBy?.type)) {
-    return {by: 'label', order: 'asc'};
+  if (visualization !== 'table' && isCategorical(data)) {
+    return {by: 'value', order: 'desc'};
   }
 
   if (groupBy?.type.toLowerCase().includes('variable')) {
     // Descending for Date and Boolean
-    // Ascending for Integer, Double, Long, Date
+    // Ascending for Integer, Double, Long
     const order = ['Date', 'Boolean'].includes(groupBy.value.type) ? 'desc' : 'asc';
     return {by: 'key', order};
   }

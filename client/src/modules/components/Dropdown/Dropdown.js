@@ -59,6 +59,11 @@ export default class Dropdown extends React.Component {
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
     document.body.addEventListener('scroll', this.handleScroll, true);
+    new MutationObserver(this.fixPositioning).observe(this.container, {
+      childList: true,
+      subtree: true,
+    });
+    window.addEventListener('resize', this.fixPositioning);
   }
 
   initilizeHeaderAndFooterRefs() {
@@ -69,6 +74,11 @@ export default class Dropdown extends React.Component {
       this.headerRef = document.body.querySelector('.Header');
     }
   }
+
+  fixPositioning = () => {
+    const {open} = this.state;
+    open && this.calculateMenuStyle(open);
+  };
 
   calculateMenuStyle = (open) => {
     const activeButton = this.container.querySelector('.activateButton');
@@ -214,6 +224,7 @@ export default class Dropdown extends React.Component {
   componentWillUnmount() {
     document.body.removeEventListener('click', this.close, true);
     document.body.removeEventListener('scroll', this.handleScroll, true);
+    window.removeEventListener('resize', this.fixPositioning);
   }
 }
 

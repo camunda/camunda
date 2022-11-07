@@ -37,6 +37,8 @@ export {
   getReportResult,
   processResult,
   isAlertCompatibleReport,
+  isCategoricalBar,
+  isCategorical,
 } from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
@@ -56,3 +58,4 @@ export function getCollection(path) {
 }
 
 export {loadAlerts, addAlert, removeAlert, editAlert} from './alertService';
+export {default as ignoreFragments} from './ignoreFragments';

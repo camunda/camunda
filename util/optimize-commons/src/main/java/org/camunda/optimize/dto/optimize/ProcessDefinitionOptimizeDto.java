@@ -29,6 +29,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
   private String bpmn20Xml;
   private List<FlowNodeDataDto> flowNodeData = new ArrayList<>();
   private Map<String, String> userTaskNames = new HashMap<>();
+  private boolean onboarded = false;
   @JsonIgnore
   private boolean eventBased;
 
@@ -41,9 +42,11 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
                                       final String version,
                                       final String versionTag,
                                       final String name,
+                                      final boolean onboarded,
                                       final DataSourceDto dataSource,
                                       final String tenantId) {
     super(id, key, version, versionTag, name, dataSource, tenantId, false, DefinitionType.PROCESS);
+    this.onboarded = onboarded;
   }
 
   public ProcessDefinitionOptimizeDto(final String id,
@@ -67,12 +70,14 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
                                       final String tenantId,
                                       final String bpmn20Xml,
                                       final boolean deleted,
+                                      final boolean onboarded,
                                       final List<FlowNodeDataDto> flowNodeData,
                                       final Map<String, String> userTaskNames) {
     super(id, key, version, versionTag, name, dataSource, tenantId, deleted, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeData = flowNodeData;
     this.userTaskNames = userTaskNames;
+    this.onboarded = onboarded;
   }
 
   public final List<FlowNodeDataDto> getFlowNodeData() {

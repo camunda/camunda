@@ -39,29 +39,6 @@ const props = {
   },
 };
 
-it('should have a switch for the precision setting', () => {
-  const spy = jest.fn();
-  const node = shallow(<NumberConfig {...props} onChange={spy} />);
-
-  expect(node.find('Switch')).toExist();
-  expect(node.find('.precision')).toExist();
-
-  node.find({label: 'Limit Precision'}).simulate('change', {target: {checked: true}});
-
-  expect(spy).toHaveBeenCalledWith({precision: {$set: 1}});
-});
-
-it('should change the precision', () => {
-  props.report.data.configuration.precision = 5;
-
-  const spy = jest.fn();
-  const node = shallow(<NumberConfig {...props} onChange={spy} />);
-
-  node.find('.precision').simulate('keydown', {key: '3'});
-
-  expect(spy).toHaveBeenCalledWith({precision: {$set: 3}});
-});
-
 it('should contain a target input for count property', () => {
   const node = shallow(<NumberConfig {...props} />);
 

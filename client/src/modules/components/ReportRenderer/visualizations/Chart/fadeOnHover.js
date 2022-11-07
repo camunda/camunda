@@ -11,14 +11,44 @@ import deepEqual from 'fast-deep-equal';
 const COLOR_FADE_OPACITY = 0.15;
 
 export default function fadeOnHover({visualization, isStacked}) {
-  let chartInstance = null;
-  let canvas = null;
   let prevDatasets = [];
+  let delayTimer;
+  let isHoverDelayElapsed = false;
+  let lastUpdater;
 
   function onHover(evt, datasets, chart) {
     if (deepEqual(prevDatasets, datasets)) {
       return;
     }
+
+    const isHoveringStarted = prevDatasets.length === 0 && datasets.length > 0;
+    const isHoveringEnded = prevDatasets.length > 0 && datasets.length === 0;
+
+    if (isHoveringStarted) {
+      delayTimer = setTimeout(() => {
+        isHoverDelayElapsed = true;
+        // if we call updateChartColors directly here,
+        // setimeout will create a closure on an old version of the updateChartColors
+        // thats why, we call a function the stores the latest version of updateChartColors
+        lastUpdater();
+      }, 350);
+    }
+
+    if (isHoveringEnded) {
+      updateChartColors(datasets, chart);
+      clearTimeout(delayTimer);
+      isHoverDelayElapsed = false;
+    }
+
+    if (isHoverDelayElapsed) {
+      updateChartColors(datasets, chart);
+    }
+
+    lastUpdater = () => updateChartColors(datasets, chart);
+    prevDatasets = datasets;
+  }
+
+  function updateChartColors(datasets, chart) {
     const datasetIndexes = datasets.map((el) => el.datasetIndex);
 
     if (visualization === 'pie') {
@@ -62,7 +92,6 @@ export default function fadeOnHover({visualization, isStacked}) {
       });
     }
     chart.update();
-    prevDatasets = datasets;
   }
 
   function getOriginal(dataset, property) {
@@ -89,18 +118,6 @@ export default function fadeOnHover({visualization, isStacked}) {
     return addAlpha(originalColor, COLOR_FADE_OPACITY);
   }
 
-  function onMouseMove({offsetX, offsetY}) {
-    if (
-      offsetX < chartInstance.chartArea.left ||
-      chartInstance.chartArea.right < offsetX ||
-      offsetY < chartInstance.chartArea.top ||
-      chartInstance.chartArea.bottom < offsetY
-    ) {
-      // reset hover effect when moving mouse outside chart area
-      onHover({}, [], chartInstance);
-    }
-  }
-
   return {
     afterInit: function (chart) {
       const originalHover = chart.options.onHover;
@@ -108,13 +125,11 @@ export default function fadeOnHover({visualization, isStacked}) {
         originalHover?.(...args);
         onHover.call(this, ...args);
       };
-      chartInstance = chart;
-      canvas = chart.canvas;
-
-      canvas.addEventListener('mousemove', onMouseMove);
     },
-    destroy: function () {
-      canvas.removeEventListener('mousemove', onMouseMove);
+    afterEvent(chart, {event}) {
+      if (event.type === 'mouseout') {
+        onHover({}, [], chart);
+      }
     },
   };
 }

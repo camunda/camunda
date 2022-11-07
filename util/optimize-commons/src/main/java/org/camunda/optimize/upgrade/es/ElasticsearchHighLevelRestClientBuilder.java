@@ -78,14 +78,6 @@ public class ElasticsearchHighLevelRestClientBuilder {
     return createHttpClientConfigCallback(configurationService, null);
   }
 
-  /**
-   * The clientConfigCallback can be set only once per builder.
-   * This method cares about all aspects that need to be considered in its setup.
-   *
-   * @param configurationService configuration source for the client callback
-   * @param sslContext           ssl setup to apply, might be <code>null</code> if there is no ssl setup
-   * @return singleton config callback for the elasticsearch rest client
-   */
   private static RestClientBuilder.HttpClientConfigCallback createHttpClientConfigCallback(
     final ConfigurationService configurationService,
     final SSLContext sslContext) {
@@ -95,11 +87,16 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       httpClientBuilder.setSSLContext(sslContext);
 
-      final ProxyConfiguration proxyConfig = configurationService.getElasticSearchProxyConfig();
+      final ProxyConfiguration proxyConfig = configurationService.getElasticsearchProxyConfig();
       if (proxyConfig.isEnabled()) {
         httpClientBuilder.setProxy(new HttpHost(
           proxyConfig.getHost(), proxyConfig.getPort(), proxyConfig.isSslEnabled() ? "https" : "http"
         ));
+      }
+
+      if (configurationService.getElasticsearchSkipHostnameVerification()) {
+        // setting this to always be true essentially skips the hostname verification
+        httpClientBuilder.setSSLHostnameVerifier((s, sslSession) -> true);
       }
 
       return httpClientBuilder;

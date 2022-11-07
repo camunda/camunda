@@ -27,7 +27,6 @@ import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.service.ProcessOverviewService.APP_CUE_DASHBOARD_SUFFIX;
 
 @AllArgsConstructor
 @Component
@@ -104,6 +103,6 @@ public class OnboardingNotificationService {
         + ":" + port + configurationService.getContextPath().orElse("");
     }
     rootUrl += "/#";
-    return String.format(MAGIC_LINK_TEMPLATE, rootUrl, processKey, processKey) + APP_CUE_DASHBOARD_SUFFIX;
+    return String.format(MAGIC_LINK_TEMPLATE, rootUrl, processKey, processKey);
   }
 }

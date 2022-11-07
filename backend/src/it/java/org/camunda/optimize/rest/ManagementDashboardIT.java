@@ -14,14 +14,19 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -130,7 +135,9 @@ public class ManagementDashboardIT extends AbstractIT {
     assertThat(managementDashboard.getExternalResourceUrls()).isEqualTo(Collections.emptySet());
     assertThat(managementDashboard.getRefreshRateSeconds()).isNull();
     assertThat(managementDashboard.getAvailableFilters()).isEqualTo(List.of(
-      new DashboardInstanceStartDateFilterDto(), new DashboardInstanceEndDateFilterDto()
+            createDashboardStartDateFilterWithDefaultValues(
+                    new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS))
+            )
     ));
     assertThat(managementDashboard.getReports())
       .hasSize(6)
@@ -173,6 +180,12 @@ public class ManagementDashboardIT extends AbstractIT {
 
   private List<DashboardDefinitionRestDto> getAllSavedDashboards() {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(DASHBOARD_INDEX_NAME, DashboardDefinitionRestDto.class);
+  }
+
+  private static DashboardFilterDto<?> createDashboardStartDateFilterWithDefaultValues(final DateFilterDataDto<?> defaultValues) {
+    DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
+    filterDto.setData(new DashboardDateFilterDataDto(defaultValues));
+    return filterDto;
   }
 
   private List<SingleProcessReportDefinitionRequestDto> getAllSavedManagementReports() {

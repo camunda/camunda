@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.service.importing.processdefinition;
 
+import org.assertj.core.groups.Tuple;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.importing.AbstractImportIT;
@@ -23,6 +26,7 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
 
   @Test
   public void getProcessDefinitionFields() {
+    // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
       "aProcess",
       START,
@@ -42,4 +46,55 @@ public class ProcessDefinitionImportIT extends AbstractImportIT {
           new FlowNodeDataDto(START, START, START_EVENT)
         ));
   }
+
+  @Test
+  public void processImportedForFirstTimeMarkedAsNotOnboarded() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
+      "aProcess",
+      START,
+      END
+    ));
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    List<ProcessDefinitionOptimizeDto> processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+
+    // then
+    assertThat(processDefinitions)
+      .singleElement()
+      .satisfies(definition -> assertThat(definition.isOnboarded()).isFalse());
+  }
+
+  @Test
+  public void secondVersionOfProcessDefinitionImportedDoesNotOverrideOnboardedStateOfFirst() {
+    // given
+    final BpmnModelInstance process = getSimpleBpmnDiagram("aProcess", START, END);
+    engineIntegrationExtension.deployAndStartProcess(process);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    List<ProcessDefinitionOptimizeDto> processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+
+    // then
+    assertThat(processDefinitions)
+      .singleElement()
+      .satisfies(definition -> {
+        assertThat(definition.getVersion()).isEqualTo("1");
+        assertThat(definition.isOnboarded()).isFalse();
+      });
+
+    engineIntegrationExtension.deployAndStartProcess(process);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    processDefinitions = elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+
+    // then
+    assertThat(processDefinitions)
+      .hasSize(2)
+      .extracting(DefinitionOptimizeResponseDto::getVersion, ProcessDefinitionOptimizeDto::isOnboarded)
+      .containsExactlyInAnyOrder(Tuple.tuple("1", false), Tuple.tuple("2", true));
+  }
+
 }

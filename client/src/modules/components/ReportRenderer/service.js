@@ -11,20 +11,27 @@ export function isEmpty(str) {
   return !str || 0 === str.length;
 }
 
-export function getFormatter(viewProperty) {
-  if (typeof viewProperty === 'object') {
-    // can only happen for variable reports
-    return formatters.frequency;
+export const formatValue = (value, measure, precision) => {
+  let formatter;
+
+  if (typeof measure === 'object') {
+    formatter = formatters.frequency;
   }
 
-  switch (viewProperty) {
+  switch (measure) {
     case 'frequency':
-      return formatters.frequency;
+      formatter = formatters.frequency;
+      break;
     case 'duration':
-      return formatters.duration;
+      formatter = formatters.duration;
+      break;
     case 'percentage':
-      return formatters.percentage;
+      formatter = formatters.percentage;
+      break;
     default:
-      return (v) => v;
+      formatter = (v) => v;
+      break;
   }
-}
+
+  return formatter(value, precision);
+};

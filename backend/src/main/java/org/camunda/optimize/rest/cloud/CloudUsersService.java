@@ -83,19 +83,21 @@ public class CloudUsersService {
     final OffsetDateTime currentTime = LocalDateUtil.getCurrentDateTime();
     final long secondsSinceCacheRepopulated = cacheLastPopulatedTimestamp.until(currentTime, ChronoUnit.SECONDS);
     if (secondsSinceCacheRepopulated > configurationService.getCaches().getCloudUsers().getMinFetchIntervalSeconds()) {
-      cloudUsersCache.putAll(fetchAllUsers());
+      cloudUsersCache.putAll(fetchAllUsersWithinOrganization());
       cacheLastPopulatedTimestamp = currentTime;
     }
   }
 
   /**
-   * This fetches the users from the actual Cloud Users client
+   * This fetches the users of the organization from the Cloud Users client.
    */
-  private Map<String, CloudUserDto> fetchAllUsers() {
+  private Map<String, CloudUserDto> fetchAllUsersWithinOrganization() {
     return accessTokenProvider.getCurrentUsersAccessToken()
       .map(userClient::fetchAllCloudUsers)
       .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN))
       .stream()
+      // We remove the users without a user ID
+      .filter(user -> user.getUserId() != null)
       .collect(Collectors.toMap(CloudUserDto::getUserId, Function.identity()));
   }
 }

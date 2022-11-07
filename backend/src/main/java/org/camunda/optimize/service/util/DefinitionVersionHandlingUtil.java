@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -49,17 +48,11 @@ public class DefinitionVersionHandlingUtil {
   }
 
   public static boolean isDefinitionVersionSetToAll(final List<String> definitionVersions) {
-    Optional<String> allVersionSelected = definitionVersions.stream()
-      .filter(ReportConstants.ALL_VERSIONS::equalsIgnoreCase)
-      .findFirst();
-    return allVersionSelected.isPresent();
+    return definitionVersions.stream().anyMatch(ReportConstants.ALL_VERSIONS::equalsIgnoreCase);
   }
 
   public static boolean isDefinitionVersionSetToLatest(final List<String> definitionVersions) {
-    Optional<String> allVersionSelected = definitionVersions.stream()
-      .filter(ReportConstants.LATEST_VERSION::equalsIgnoreCase)
-      .findFirst();
-    return allVersionSelected.isPresent();
+    return definitionVersions.stream().anyMatch(ReportConstants.LATEST_VERSION::equalsIgnoreCase);
   }
 
   public static boolean isDefinitionVersionSetToAllOrLatest(final String definitionVersion) {

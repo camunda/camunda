@@ -4,6 +4,7 @@
   display: flex;
   width: 100%;
   padding-right: 48px;
+  min-height: 35px;
 
   .name-container {
     position: absolute;
@@ -34,7 +35,7 @@
     vertical-align: top;
     margin-top: 7px;
 
-    .Popover__button {
+    .buttonWrapper .Button {
       width: 20px;
       height: 20px;
       margin-left: 3px;
@@ -68,7 +69,7 @@
 .detailsPopover .dialogContainer {
   margin-left: -20px;
   width: 277px;
-  .Popover__dialog {
+  .dialog {
     padding-top: 20px;
 
     dl {

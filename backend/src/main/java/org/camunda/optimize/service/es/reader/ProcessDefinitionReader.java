@@ -9,12 +9,34 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @AllArgsConstructor
 @Component
@@ -22,6 +44,7 @@ import java.util.Set;
 public class ProcessDefinitionReader {
 
   private final DefinitionReader definitionReader;
+  private final OptimizeElasticsearchClient esClient;
 
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
     return definitionReader.getDefinitions(DefinitionType.PROCESS, false, false, true);
@@ -32,13 +55,39 @@ public class ProcessDefinitionReader {
   }
 
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinition(final String definitionId) {
-    return definitionReader.getDefinitionsByIds(
-      DefinitionType.PROCESS,
-      Collections.singleton(definitionId),
-      false,
-      false,
-      true
-    ).stream().findFirst().map(ProcessDefinitionOptimizeDto.class::cast);
+    final BoolQueryBuilder query = boolQuery().must(matchAllQuery());
+    query.must(termsQuery(PROCESS_DEFINITION_ID, definitionId));
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, query, true)
+      .stream()
+      .findFirst()
+      .map(ProcessDefinitionOptimizeDto.class::cast);
+  }
+
+  public Set<String> getAllNonOnboardedProcessDefinitionKeys() {
+    final String defKeyAgg = "keyAgg";
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(boolQuery()
+               .must(termsQuery(ProcessDefinitionIndex.ONBOARDED, false))
+               .must(termQuery(DEFINITION_DELETED, false))
+               .should(existsQuery(PROCESS_DEFINITION_XML))
+      )
+      .aggregation(terms(defKeyAgg).field(ProcessDefinitionIndex.PROCESS_DEFINITION_KEY))
+      .fetchSource(false)
+      .size(MAX_RESPONSE_SIZE_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME).source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest);
+    } catch (IOException e) {
+      String reason = "Was not able to fetch non-onboarded process definition keys.";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    final Terms definitionKeyTerms = searchResponse.getAggregations().get(defKeyAgg);
+    return definitionKeyTerms.getBuckets().stream()
+      .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+      .collect(toSet());
   }
 
   public String getLatestVersionToKey(String key) {

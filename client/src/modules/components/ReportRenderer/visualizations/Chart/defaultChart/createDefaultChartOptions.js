@@ -25,6 +25,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     data: {visualization, view, groupBy, configuration, definitions},
     result,
   } = report;
+  const {alwaysShowAbsolute, alwaysShowRelative, precision, xml} = configuration;
 
   const decisionDefinitionKey = definitions?.[0].key;
 
@@ -39,8 +40,8 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       )
     : 0;
   const isPersistedTooltips = isDuration
-    ? configuration.alwaysShowAbsolute
-    : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
+    ? alwaysShowAbsolute
+    : alwaysShowAbsolute || alwaysShowRelative;
 
   const groupedByDurationMaxValue =
     groupBy?.type === 'duration' && Math.max(...result.data.map(({label}) => +label));
@@ -48,7 +49,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   let options;
   switch (visualization) {
     case 'pie':
-      options = createPieOptions(isDark, groupBy?.type === 'duration');
+      options = createPieOptions(isDark, groupBy?.type === 'duration', precision);
       break;
     case 'line':
     case 'bar':
@@ -63,7 +64,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         isPersistedTooltips,
         measures: result.measures,
         entity: view.entity,
-        autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
+        autoSkip: canBeInterpolated(groupBy, xml, decisionDefinitionKey),
       });
       break;
     default:
@@ -90,7 +91,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     tooltipCallbacks.title = () => '';
   } else if (groupedByDurationMaxValue) {
     tooltipCallbacks.title = (tooltipItems) =>
-      tooltipItems?.[0]?.label && duration(tooltipItems[0].label);
+      tooltipItems?.[0]?.label && duration(tooltipItems[0].label, precision);
   }
 
   if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
@@ -141,24 +142,23 @@ export function createBarOptions({
   isCombined,
   visualization,
 }) {
+  const {stackedBar, xLabel, yLabel, logScale, pointMarkers, horizontalBar} = configuration;
   const isCombinedNumber = isCombined && visualization === 'number';
-  const stacked =
-    configuration.stackedBar && isCombined && ['bar', 'barLine'].includes(visualization);
+  const stacked = stackedBar && isCombined && ['bar', 'barLine'].includes(visualization);
   const targetLine = !stacked && targetValue && getFormattedTargetValue(targetValue);
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
-  const axisType = configuration.logScale ? 'logarithmic' : undefined;
+  const topPadding = isPersistedTooltips && !horizontalBar;
 
-  const yAxes = {
+  const measuresAxis = {
     'axis-0': {
-      type: axisType,
       grid: {
         color: getColorFor('grid', isDark),
       },
       title: {
-        display: !!configuration.yLabel,
-        text: configuration.yLabel,
+        display: !!yLabel,
+        text: yLabel,
         color: getColorFor('label', isDark),
         font: {
           size: 14,
@@ -167,24 +167,26 @@ export function createBarOptions({
       },
       ticks: {
         ...(maxDuration && !hasMultipleAxes
-          ? createDurationFormattingOptions(targetLine, maxDuration, configuration.logScale)
+          ? createDurationFormattingOptions(targetLine, maxDuration, logScale)
           : {}),
         beginAtZero: true,
         color: getColorFor('label', isDark),
       },
       suggestedMax: targetLine,
       id: 'axis-0',
-      axis: 'y',
+      axis: horizontalBar ? 'x' : 'y',
+      position: horizontalBar ? 'bottom' : 'left',
       stacked,
     },
   };
 
   if (hasMultipleAxes) {
-    yAxes['axis-0'].title.display = true;
-    yAxes['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t('report.view.count')}`;
+    measuresAxis['axis-0'].title.display = true;
+    measuresAxis['axis-0'].title.text = `${t('common.' + entity + '.label')} ${t(
+      'report.view.count'
+    )}`;
 
-    yAxes['axis-1'] = {
-      type: axisType,
+    measuresAxis['axis-1'] = {
       grid: {
         drawOnChartArea: false,
       },
@@ -198,64 +200,88 @@ export function createBarOptions({
         },
       },
       ticks: {
-        ...createDurationFormattingOptions(targetLine, maxDuration, configuration.logScale),
+        ...createDurationFormattingOptions(targetLine, maxDuration, logScale),
         beginAtZero: true,
         color: getColorFor('label', isDark),
       },
       suggestedMax: targetLine,
-      position: 'right',
       id: 'axis-1',
-      axis: 'y',
+      position: horizontalBar ? 'top' : 'right',
+      axis: horizontalBar ? 'x' : 'y',
     };
   }
 
+  const groupByAxis = {
+    grid: {
+      color: getColorFor('grid', isDark),
+    },
+    title: {
+      display: !!xLabel,
+      text: xLabel,
+      color: getColorFor('label', isDark),
+      font: {
+        size: 14,
+        weight: 'bold',
+      },
+    },
+    ticks: {
+      color: getColorFor('label', isDark),
+      autoSkip,
+      callback: function (value, idx, allLabels) {
+        const label = this.getLabelForValue(value);
+        const width = this.maxWidth / allLabels.length;
+        const widthPerCharacter = 7;
+
+        if (isCombinedNumber && label.length > width / widthPerCharacter) {
+          return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
+        }
+
+        return label;
+      },
+      ...(groupedByDurationMaxValue
+        ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
+        : {}),
+    },
+    stacked: stacked || isCombinedNumber,
+    axis: horizontalBar ? 'y' : 'x',
+  };
+
+  if (logScale) {
+    Object.keys(measuresAxis).forEach((key) => {
+      measuresAxis[key].type = 'logarithmic';
+    });
+  }
+
   return {
-    ...(configuration.pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
+    ...(pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
+    indexAxis: horizontalBar ? 'y' : 'x',
     layout: {
-      padding: {top: isPersistedTooltips ? 30 : 0},
+      padding: {top: topPadding ? 30 : 0},
     },
     scales: {
-      ...yAxes,
-      xAxes: {
-        axis: 'x',
-        grid: {
-          color: getColorFor('grid', isDark),
-        },
-        title: {
-          display: !!configuration.xLabel,
-          text: configuration.xLabel,
-          color: getColorFor('label', isDark),
-          font: {
-            size: 14,
-            weight: 'bold',
-          },
-        },
-        ticks: {
-          color: getColorFor('label', isDark),
-          autoSkip,
-          callback: function (value, idx, allLabels) {
-            const label = this.getLabelForValue(value);
-            const width = this.maxWidth / allLabels.length;
-            const widthPerCharacter = 7;
-
-            if (isCombinedNumber && label.length > width / widthPerCharacter) {
-              return label.substr(0, Math.floor(width / widthPerCharacter)) + '…';
-            }
-
-            return label;
-          },
-          ...(groupedByDurationMaxValue
-            ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
-            : {}),
-        },
-        stacked: stacked || isCombinedNumber,
-      },
+      ...measuresAxis,
+      groupByAxis,
     },
     spanGaps: true,
     // plugin property
     lineAt: targetLine,
     tension: 0.4,
     plugins: {
+      datalabels: {
+        align: (context) => {
+          if (!configuration.horizontalBar) {
+            return 'end';
+          }
+
+          const scale = context.chart.scales[context.dataset.xAxisID];
+          const yPosition = scale.getPixelForValue(context.dataset.data[context.dataIndex]);
+
+          const {left, right} = context.chart.chartArea;
+          const center = left + 0.7 * (right - left);
+
+          return yPosition > center ? 'start' : 'end';
+        },
+      },
       legend: {
         display: measures.length > 1,
         onClick: (e) => e.native.stopPropagation(),
@@ -270,7 +296,7 @@ export function createBarOptions({
   };
 }
 
-function createPieOptions(isDark, isGroupedByDuration) {
+function createPieOptions(isDark, isGroupedByDuration, precision) {
   const generateLabels = (chart) => {
     // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
     // we also need it to render the legends based on the hovered dataset in order to fade out only non hovered legends
@@ -286,7 +312,7 @@ function createPieOptions(isDark, isGroupedByDuration) {
         const style = meta.controller.getStyle(i);
 
         return {
-          text: isGroupedByDuration ? duration(label) : label,
+          text: isGroupedByDuration ? duration(label, precision) : label,
           fillStyle: style.backgroundColor,
           strokeStyle: style.borderColor,
           lineWidth: style.borderWidth,

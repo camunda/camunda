@@ -21,6 +21,7 @@ import {
   formatVersions,
   formatTenants,
   convertToDecimalTimeUnit,
+  formatLabel,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -95,6 +96,11 @@ describe('durationFormatter', () => {
     expect(durationFormatter({value: 0.2, unit: 'millis'})).toBe('0.2ms');
   });
 
+  it('should truncate to 2 significant figures for milliseconds', () => {
+    expect(durationFormatter({value: 0.24324234234, unit: 'millis'})).toBe('0.24ms');
+    expect(durationFormatter({value: 1.234343, unit: 'seconds'})).toBe(`1s${nbsp}234.34ms`);
+  });
+
   it('should not floor millisecond durations only', () => {
     expect(durationFormatter({value: 1.3, unit: 'millis'})).toBe('1.3ms');
     expect(durationFormatter({value: 1.2, unit: 'seconds'})).toBe(`1s${nbsp}200ms`);
@@ -109,9 +115,18 @@ describe('durationFormatter', () => {
   });
 
   it('should use a precision', () => {
-    expect(durationFormatter(123456789, 2)).toBe(`1 day${nbsp}10 hours`);
+    expect(durationFormatter(123456789, 2)).toBe(`1${nbsp}day${nbsp}10${nbsp}hours`);
+    expect(durationFormatter(29009802502, 3)).toBe(
+      `11${nbsp}months${nbsp}5${nbsp}days${nbsp}18${nbsp}hours`
+    );
     expect(durationFormatter(123456789, 4)).toBe(
-      `1 day${nbsp}10 hours${nbsp}17 minutes${nbsp}37 seconds`
+      `1${nbsp}day${nbsp}10${nbsp}hours${nbsp}17${nbsp}minutes${nbsp}37${nbsp}seconds`
+    );
+  });
+
+  it('should use default precision of 3 when the precision is turned off in the report', () => {
+    expect(durationFormatter(29009802502, null)).toBe(
+      `11${nbsp}months${nbsp}5${nbsp}days${nbsp}18${nbsp}hours`
     );
   });
 
@@ -409,7 +424,7 @@ describe('createDurationFormattingOptions', () => {
 
   it('should show nice ticks for duration formats on the x axis', () => {
     const config = createDurationFormattingOptions(0, maxDuration);
-    config.axis = 'x';
+    config.type = 'category';
     config.getLabels = () => [(2 * 24 * 60 * 60 * 1000).toString()];
 
     expect(config.stepSize).toBe(1 * 24 * 60 * 60 * 1000);
@@ -496,5 +511,36 @@ describe('formatTenants', () => {
 
   it('should fall back to tenant ids if no name is set', () => {
     expect(formatTenants(['b', 'c'], tenantInfo)).toBe('Tenant B, c');
+  });
+});
+
+describe('formatLabel', () => {
+  it('should shorten to long string label', () => {
+    const string = new Array(55).join('a'); //generates string of length 54 filled with letter 'a'
+    const result = formatLabel(string);
+
+    expect(result.length).toBe(53);
+    expect(result.slice(50)).toBe('...');
+  });
+
+  it('should shorten to long number label', () => {
+    const string = new Array(55).join('1'); //generates string of length 54 filled with letter '1'
+
+    expect(formatLabel(string)).toBe('1.111111111111111e+53');
+  });
+
+  it('should not change object labels and null values', () => {
+    const object = {};
+
+    expect(formatLabel(object)).toBe(object);
+    expect(formatLabel(null)).toBe(null);
+  });
+
+  it('should only format number labels when numberOnly is true', () => {
+    const numberString = new Array(55).join('1');
+    const string = new Array(55).join('a');
+
+    expect(formatLabel(numberString, true)).toBe('1.111111111111111e+53');
+    expect(formatLabel(string, true)).toBe(string);
   });
 });

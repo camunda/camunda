@@ -19,7 +19,7 @@ Chart.register(ChartDataLabels);
 Chart.defaults.set('plugins.datalabels', {
   align: 'end',
   anchor: 'end',
-  backgroundColor: 'black',
+  backgroundColor: 'rgba(0, 0, 0, 0.7)',
   borderRadius: 4,
   color: 'white',
   font: {

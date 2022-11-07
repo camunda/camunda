@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Component
 @Conditional(CamundaPlatformCondition.class)
-public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache implements UserIdentityCache {
+public class PlatformUserIdentityCache extends AbstractPlatformIdentityCache {
   private final EngineContextFactory engineContextFactory;
 
   public PlatformUserIdentityCache(final ConfigurationService configurationService,

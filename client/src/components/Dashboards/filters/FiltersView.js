@@ -20,7 +20,13 @@ import AssigneeFilter from './AssigneeFilter';
 
 import './FiltersView.scss';
 
-export default function FiltersView({availableFilters, filter = [], setFilter, reports = []}) {
+export default function FiltersView({
+  availableFilters,
+  filter = [],
+  setFilter,
+  reports = [],
+  simplifiedDateFilter,
+}) {
   // used by the individual filter components to reset internal state
   const [resetTrigger, setResetTrigger] = useState(false);
   useEffect(() => {
@@ -54,6 +60,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
                     setFilter(rest);
                   }
                 }}
+                simplified={simplifiedDateFilter}
               />
             );
           case 'variable':
@@ -112,14 +119,16 @@ export default function FiltersView({availableFilters, filter = [], setFilter, r
             return null;
         }
       })}
-      <Button
-        onClick={() => {
-          setFilter(getDefaultFilter(availableFilters));
-          setResetTrigger(true);
-        }}
-      >
-        {t('dashboard.filter.resetAll')}
-      </Button>
+      {availableFilters.length > 1 && (
+        <Button
+          onClick={() => {
+            setFilter(getDefaultFilter(availableFilters));
+            setResetTrigger(true);
+          }}
+        >
+          {t('dashboard.filter.resetAll')}
+        </Button>
+      )}
     </div>
   );
 }

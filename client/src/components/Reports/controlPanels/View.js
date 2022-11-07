@@ -52,6 +52,7 @@ export default function View({type, report, onChange, variables}) {
                 value="variable"
                 label={label()}
                 disabled={!enabled(report) || !numberVariables || !numberVariables?.length}
+                openToLeft
               >
                 {numberVariables?.map(({name, label}, idx) => {
                   return (

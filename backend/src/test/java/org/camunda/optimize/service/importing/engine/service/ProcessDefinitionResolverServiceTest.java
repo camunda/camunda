@@ -168,7 +168,20 @@ public class ProcessDefinitionResolverServiceTest {
 
   private void mockProcessDefinitionForEngineContext(final String id) {
     ProcessDefinitionOptimizeDto mockedDefinition =
-      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "1", "aVersionTag", "name", new EngineDataSourceDto(""), "engine", null, false, null, null);
+      new ProcessDefinitionOptimizeDto(
+        id,
+        TEST_KEY,
+        "1",
+        "aVersionTag",
+        "name",
+        new EngineDataSourceDto(""),
+        "engine",
+        null,
+        false,
+        true,
+        null,
+        null
+      );
     when(engineContext.fetchProcessDefinition(any())).thenReturn(mockedDefinition);
   }
 

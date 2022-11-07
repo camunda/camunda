@@ -9,11 +9,13 @@ import React from 'react';
 
 import {Popover, Form, Icon, Button, ColorPicker} from 'components';
 import {t} from 'translation';
+import {isCategoricalBar} from 'services';
 
 import * as visualizations from './visualizations';
 import ShowInstanceCount from './ShowInstanceCount';
 import DateVariableUnit from './DateVariableUnit';
 import BucketSize from './BucketSize';
+import PrecisionConfig from './visualizations/PrecisionConfig';
 
 import './Configuration.scss';
 
@@ -29,6 +31,8 @@ function convertToChangeset(config) {
 
 export default class Configuration extends React.Component {
   resetToDefaults = () => {
+    const {data} = this.props.report;
+
     this.updateConfiguration(
       convertToChangeset({
         precision: null,
@@ -71,7 +75,7 @@ export default class Configuration extends React.Component {
           includeNewVariables: true,
           includedColumns: [],
           excludedColumns: [],
-          columnOrder: this.props.report.data.configuration.tableColumns.columnOrder,
+          columnOrder: data.configuration.tableColumns.columnOrder,
         },
         pointMarkers: true,
         xLabel: '',
@@ -98,6 +102,7 @@ export default class Configuration extends React.Component {
           duration: 'line',
         },
         stackedBar: false,
+        horizontalBar: isCategoricalBar(data),
         logScale: false,
       }),
       true
@@ -110,7 +115,13 @@ export default class Configuration extends React.Component {
 
   render() {
     const {report, type, disabled} = this.props;
+    const {configuration, view} = report.data;
     const Component = visualizations[type];
+
+    const isRawDataReport = !report.combined && report.data.view?.properties[0] === 'rawData';
+
+    const isPercentageOnly =
+      view?.properties.includes('percentage') && view.properties.length === 1;
 
     const enablePopover =
       Component && !disabled && (!Component.isDisabled || !Component.isDisabled(report));
@@ -125,7 +136,7 @@ export default class Configuration extends React.Component {
           <Form className="content" compact>
             {!report.combined && (
               <ShowInstanceCount
-                configuration={report.data.configuration}
+                configuration={configuration}
                 onChange={this.updateConfiguration}
                 label={report.reportType === 'decision' ? 'evaluation' : 'instance'}
               />
@@ -133,6 +144,14 @@ export default class Configuration extends React.Component {
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
             <BucketSize report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
+            {(configuration.showInstanceCount || (!isPercentageOnly && !isRawDataReport)) && (
+              <PrecisionConfig
+                configuration={configuration}
+                onChange={this.updateConfiguration}
+                view={view}
+                type={type}
+              />
+            )}
           </Form>
           <Button className="resetButton" onClick={this.resetToDefaults}>
             {t('report.config.reset')}

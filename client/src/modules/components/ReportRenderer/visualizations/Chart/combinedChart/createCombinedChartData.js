@@ -47,7 +47,7 @@ function createMultiMeasureChartData(props) {
     report: {
       result: {measures},
       data: {
-        configuration: {measureVisualizations, stackedBar},
+        configuration: {measureVisualizations, stackedBar, horizontalBar},
       },
     },
   } = props;
@@ -75,7 +75,7 @@ function createMultiMeasureChartData(props) {
 
     unitedResults.forEach((report, index) => {
       datasets.push({
-        yAxisID: 'axis-' + getAxisIdx(measures, idx),
+        [horizontalBar ? 'xAxisID' : 'yAxisID']: 'axis-' + getAxisIdx(measures, idx),
         label:
           reportsNames &&
           reportsNames[index] + (measures.length > 1 ? ' - ' + getLabel(measure) : ''),
@@ -129,8 +129,9 @@ export function extractCombinedData({report, theme, targetValue}, measureIdx = 0
   }
 
   const unitedResults = uniteResults(resultArr, keys);
-  const labels =
+  let labels =
     data.visualization === 'number' ? reportsNames : keys.map((key) => labelsMap[key] || key);
+  labels = labels.map((label) => formatters.formatLabel(label));
 
   return {
     labels,

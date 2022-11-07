@@ -41,9 +41,7 @@ export function License({mightFail, error, resetError}) {
                     {t('license.validUntil')} {new Date(licenseInfo.validUntil).toUTCString()}.{' '}
                   </>
                 )}
-                {willReload && (
-                  <span dangerouslySetInnerHTML={{__html: t('license.redirectMessage')}} />
-                )}
+                {willReload && <span>{t('license.redirectMessage')}</span>}
               </>
             )}
           </MessageBox>

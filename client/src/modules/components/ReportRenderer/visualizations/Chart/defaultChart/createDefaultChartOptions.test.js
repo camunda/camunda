@@ -106,31 +106,98 @@ it('should create default chart options', () => {
 });
 
 it('should create bar options', () => {
-  expect(
-    createBarOptions({
-      configuration: {},
-      measures: [{property: 'frequency', data: []}],
-    })
-  ).toMatchSnapshot();
+  const chartConfig = createBarOptions({
+    configuration: {},
+    measures: [{property: 'frequency', data: []}],
+  });
+
+  expect(chartConfig.indexAxis).toBe('x');
+  expect(Object.keys(chartConfig.scales).length).toBe(2);
 });
 
-it('should create correct options for multi-measure charts', () => {
-  expect(
-    createDefaultChartOptions({
-      report: {
-        data: {
-          visualization: 'bar',
-          configuration: {},
-          view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
-          groupBy: {type: 'flowNodes'},
-        },
-        result: {
-          measures: [
-            {property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]},
-            {property: 'duration', data: [{key: 'a', value: 9001, label: 'a'}]},
-          ],
-        },
+it('should create multi-axis chart for multi-measure reports', () => {
+  const chartConfig = createDefaultChartOptions({
+    report: {
+      data: {
+        visualization: 'bar',
+        configuration: {xLabel: 'Flow Nodes'},
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        groupBy: {type: 'flowNodes'},
       },
-    })
-  ).toMatchSnapshot();
+      result: {
+        measures: [
+          {property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]},
+          {property: 'duration', data: [{key: 'a', value: 9001, label: 'a'}]},
+        ],
+      },
+    },
+  });
+
+  expect(Object.keys(chartConfig.scales).length).toBe(3);
+
+  expect(chartConfig.scales['axis-0'].title.text).toBe('Flow Node Count');
+  expect(chartConfig.scales['axis-0'].position).toBe('left');
+
+  expect(chartConfig.scales['axis-1'].title.text).toBe('Flow Node Duration');
+  expect(chartConfig.scales['axis-1'].position).toBe('right');
+
+  expect(chartConfig.scales['groupByAxis'].title.text).toBe('Flow Nodes');
+});
+
+it('should switch axis positions when horizontalBar config is eanbled', () => {
+  const chartConfig = createDefaultChartOptions({
+    report: {
+      data: {
+        visualization: 'bar',
+        configuration: {horizontalBar: true},
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        groupBy: {type: 'flowNodes'},
+      },
+      result: {
+        measures: [
+          {property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]},
+          {property: 'duration', data: [{key: 'a', value: 9001, label: 'a'}]},
+        ],
+      },
+    },
+  });
+
+  expect(chartConfig.indexAxis).toBe('y');
+
+  expect(chartConfig.scales['axis-0'].position).toBe('bottom');
+  expect(chartConfig.scales['axis-0'].axis).toBe('x');
+
+  expect(chartConfig.scales['axis-1'].position).toBe('top');
+  expect(chartConfig.scales['axis-0'].axis).toBe('x');
+
+  expect(chartConfig.scales['groupByAxis'].axis).toBe('y');
+});
+
+it('should switch tooltip alignment of an item when surpassing 70% of the available area', () => {
+  const chartConfig = createDefaultChartOptions({
+    report: {
+      data: {
+        visualization: 'bar',
+        configuration: {horizontalBar: true},
+        view: {properties: ['frequency', 'duration'], entity: 'flowNode'},
+        groupBy: {type: 'flowNodes'},
+      },
+      result: {
+        measures: [{property: 'frequency', data: [{key: 'a', value: 123, label: 'a'}]}],
+      },
+    },
+  });
+
+  const getPixelForValue = jest.fn().mockReturnValueOnce(5);
+  const context = {
+    dataIndex: 0,
+    dataset: {xAxisID: 'axis-0', data: []},
+    chart: {chartArea: {left: 0, right: 20}, scales: {'axis-0': {getPixelForValue}}},
+  };
+
+  const alignment = chartConfig.plugins.datalabels.align(context);
+  expect(alignment).toBe('end');
+  getPixelForValue.mockReturnValueOnce(19);
+  const newAlignment = chartConfig.plugins.datalabels.align(context);
+  expect(newAlignment).toBe('start');
 });

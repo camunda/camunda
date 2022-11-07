@@ -6,6 +6,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "master"
     commit-message:
       prefix: "chore"
@@ -19,12 +20,13 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
-
+      - "backend"
 
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "master"
     commit-message:
       prefix: "chore"
@@ -33,12 +35,13 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
-
+      - "frontend"
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
+    open-pull-requests-limit: 10
     target-branch: "master"
     commit-message:
       prefix: "chore"
@@ -48,12 +51,14 @@ updates:
     labels:
       - "dependencies"
 
-  # maintenance/3.8
+
+  # maintenance/3.9
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.8"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.9"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -68,65 +73,14 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
-
-
-  - package-ecosystem: "npm"
-    directory: "/client"
-    schedule:
-      interval: "daily"
-    target-branch: "maintenance/3.8"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    ignore:
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
-    reviewers:
-      - "camunda/optimize"
-    labels:
-      - "dependencies"
-
-
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    target-branch: "maintenance/3.8"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    reviewers:
-      - "camunda/optimize"
-    labels:
-      - "dependencies"
-
-  # maintenance/3.9.0-preview-1
-  - package-ecosystem: "maven"
-    directory: "/"
-    schedule:
-      interval: "daily"
-    target-branch: "maintenance/3.9.0-preview-1"
-    commit-message:
-      prefix: "chore"
-      include: "scope"
-    ignore:
-      - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "com.h2database:h2"
-      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
-      - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
-    reviewers:
-      - "camunda/optimize"
-    labels:
-      - "dependencies"
-
+      - "backend"
 
   - package-ecosystem: "npm"
     directory: "/client"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9.0-preview-1"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.9"
     commit-message:
       prefix: "chore"
       include: "scope"
@@ -137,13 +91,14 @@ updates:
       - "camunda/optimize"
     labels:
       - "dependencies"
-
+      - "frontend"
 
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "daily"
-    target-branch: "maintenance/3.9.0-preview-1"
+    open-pull-requests-limit: 10
+    target-branch: "maintenance/3.9"
     commit-message:
       prefix: "chore"
       include: "scope"

@@ -53,19 +53,22 @@
       display: flex;
       padding-bottom: 18px;
 
-      h1 {
-        font-size: 24px;
-        line-height: 32px;
-        font-weight: normal;
-        color: var(--grey-darken-23);
-        margin: 0;
+      .leftSection {
         flex-grow: 1;
-      }
 
-      .headerText {
-        padding-right: 20px;
-        border-right: 1px solid var(--silver-darken-87);
-        margin-right: 20px;
+        h1 {
+          font-size: 24px;
+          line-height: 32px;
+          font-weight: normal;
+          color: var(--grey-darken-23);
+          margin: 0;
+        }
+
+        .searchInfo {
+          font-size: 14px;
+          line-height: 18px;
+          color: var(--grey-darken-33);
+        }
       }
 
       > .action:not(:empty) {
@@ -134,7 +137,7 @@
         color: var(--grey-darken-23);
       }
 
-      .Icon {
+      > .Icon {
         font-size: 24px;
         position: absolute;
         margin-left: 4px;
@@ -190,11 +193,5 @@
       opacity: 0.34;
       pointer-events: none;
     }
-  }
-
-  .LoadingIndicator {
-    margin-top: 50px;
-    margin-left: calc(50% - 70px);
-    position: absolute;
   }
 }

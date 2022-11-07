@@ -9,8 +9,9 @@ import {post} from 'request';
 import {NoDataNotice} from 'components';
 import {reportConfig, formatters} from 'services';
 import {t} from 'translation';
+import {formatLabel} from 'services/formatters';
 
-const {formatReportResult, getRelativeValue, duration} = formatters;
+const {formatReportResult, getRelativeValue, duration, frequency} = formatters;
 
 export function getFormattedLabels(reportsLabels, reportsNames, reportsIds) {
   return reportsLabels.reduce(
@@ -34,23 +35,26 @@ export function getBodyRows({
   displayAbsoluteValue,
   flowNodeNames = {},
   groupedByDuration,
+  precision,
 }) {
   const rows = allKeys.map((key, idx) => {
-    const row = [groupedByDuration ? duration(key) : flowNodeNames[key] || key];
+    const row = [groupedByDuration ? duration(key, precision) : flowNodeNames[key] || key];
     unitedResults.forEach((measures, i) => {
       measures.forEach((measure) => {
         const value = measure.data[idx].value;
         if (measure.property === 'frequency') {
           if (displayAbsoluteValue) {
             row.push(
-              formatters.frequency(typeof value !== 'undefined' && value !== null ? value : '')
+              frequency(typeof value !== 'undefined' && value !== null ? value : '', precision)
             );
           }
           if (displayRelativeValue) {
             row.push(getRelativeValue(value, instanceCount[i]));
           }
         } else {
-          row.push(duration(typeof value !== 'undefined' && value !== null ? value : ''));
+          row.push(
+            duration(typeof value !== 'undefined' && value !== null ? value : '', precision)
+          );
         }
       });
     });
@@ -256,4 +260,8 @@ export async function loadObjectValues(
 
   const values = await response.json();
   return values[0];
+}
+
+export function formatLabelsForTableBody(body) {
+  return body.map((row) => row.map((cell) => formatLabel(cell, true)));
 }

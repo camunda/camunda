@@ -18,13 +18,13 @@ import * as Alert from './Alerts.elements.js';
 fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 test('create a dashboard and reports from a template', async (t) => {
-  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
   await t.click(Homepage.confirmButton);
   await t.click(Homepage.confirmButton);
 
   await t.resizeWindow(1300, 750);
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Dashboard'));
+  await t.click(Homepage.option('Dashboard'));
 
   await t.click(e.templateModalProcessField);
   await t.click(e.option('Invoice Receipt with alternative correlation variable'));
@@ -135,7 +135,7 @@ test('cancel changes', async (t) => {
 test('sharing', async (t) => {
   await t.resizeWindow(1300, 750);
   await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('New Dashboard'));
+  await t.click(Homepage.option('Dashboard'));
 
   await t.click(e.templateOption('Process performance overview'));
 
@@ -349,7 +349,7 @@ test('filters', async (t) => {
 });
 
 test('version selection', async (t) => {
-  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.click(Homepage.createNewMenu).click(Homepage.option('Collection'));
   await t.click(Homepage.confirmButton);
   await t.click(Homepage.confirmButton);
 
@@ -389,4 +389,39 @@ test('version selection', async (t) => {
   await t.click(e.notificationCloseButton);
   await t.click(e.alertsDropdown);
   await t.expect(e.option('Test alert').exists).notOk();
+});
+
+test('add a report from the dashboard', async (t) => {
+  await u.createNewDashboard(t);
+
+  await t
+    .click(e.addButton)
+    .click(e.reportModalOptionsButton)
+    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.addReportButton)
+    .click(e.templateModalProcessField)
+    .click(e.option('Invoice Receipt with alternative correlation variable'))
+    .click(e.blankReportButton)
+    .click(e.modalConfirmbutton)
+    .click('.DashboardRenderer');
+
+  await t
+    .click(e.addButton)
+    .click(e.reportModalOptionsButton)
+    .click(e.reportModalDropdownOption.withText('New Report from a template'))
+    .click(e.addReportButton);
+
+  await t
+    .expect(
+      e.templateModalProcessTag.withText('Invoice Receipt with alternative correlation variable')
+        .exists
+    )
+    .ok();
+
+  await t.click(e.modalConfirmbutton).click('.DashboardRenderer');
+
+  await u.save(t);
+
+  await t.expect(e.reportTile.nth(0).textContent).contains('Blank report');
+  await t.expect(e.reportTile.nth(1).textContent).contains('KPI: 75th Percentile Duration');
 });

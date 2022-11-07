@@ -80,10 +80,7 @@ export default class DateFilter extends React.Component {
             <MessageBox type="warning">{t('common.filter.dateModal.endDateWarning')}</MessageBox>
           )}
           <Form>
-            <span
-              className="tip"
-              dangerouslySetInnerHTML={{__html: t(`common.filter.dateModal.info.${filterType}`)}}
-            />
+            <span className="tip">{t(`common.filter.dateModal.info.${filterType}`)}</span>
             <DateRangeInput
               type={type}
               unit={unit}

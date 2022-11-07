@@ -613,6 +613,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       .version(versionValue)
       .bpmn20Xml(key + versionValue)
       .deleted(false)
+      .onboarded(true)
       .flowNodeData(new ArrayList<>())
       .userTaskNames(Collections.emptyMap())
       .build();

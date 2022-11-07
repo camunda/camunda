@@ -11,8 +11,8 @@ import classnames from 'classnames';
 import useDeepCompareEffect from 'use-deep-compare-effect';
 import deepEqual from 'fast-deep-equal';
 
-import {Button, Icon, Popover} from 'components';
-import {withErrorHandling} from 'HOC';
+import {Button, Icon, Popover, Tooltip} from 'components';
+import {withDocs, withErrorHandling} from 'HOC';
 import {getCollection, formatters} from 'services';
 import {t} from 'translation';
 import {showError} from 'notifications';
@@ -32,6 +32,7 @@ export function DefinitionList({
   onChange,
   onRemove,
   onCopy,
+  docsLink,
 }) {
   const [openPopover, setOpenPopover] = useState();
   const [tenantInfo, setTenantInfo] = useState();
@@ -72,9 +73,19 @@ export function DefinitionList({
             )}
             <div className="actions">
               {!isDefinitionLimitReached && (
-                <Button icon onClick={() => onCopy(idx)}>
-                  <Icon type="copy-small" size="14px" />
-                </Button>
+                <Tooltip
+                  content={t('report.copyTooltip', {
+                    entity: t('common.process.label'),
+                    docsLink:
+                      docsLink +
+                      'components/userguide/additional-features/process-variants-comparison/',
+                  })}
+                  position="bottom"
+                >
+                  <Button icon onClick={() => onCopy(idx)}>
+                    <Icon type="copy-small" size="14px" />
+                  </Button>
+                </Tooltip>
               )}
               <Popover
                 renderInPortal="DefinitionList"
@@ -82,6 +93,8 @@ export function DefinitionList({
                 onClose={() => setOpenPopover()}
                 title={<Icon type="edit-small" size="14px" />}
                 tabIndex="0"
+                tooltip={t('common.editName', {name: t('common.process.label')})}
+                tooltipPosition="bottom"
               >
                 <DefinitionEditor
                   collection={collection}
@@ -91,9 +104,14 @@ export function DefinitionList({
                   type={type}
                 />
               </Popover>
-              <Button icon onClick={() => onRemove(idx)}>
-                <Icon type="close-small" size="14px" />
-              </Button>
+              <Tooltip
+                content={t('common.removeEntity', {entity: t('common.process.label')})}
+                position="bottom"
+              >
+                <Button icon onClick={() => onRemove(idx)}>
+                  <Icon type="close-small" size="14px" />
+                </Button>
+              </Tooltip>
             </div>
           </li>
         );
@@ -102,4 +120,4 @@ export function DefinitionList({
   );
 }
 
-export default withRouter(withErrorHandling(DefinitionList));
+export default withRouter(withErrorHandling(withDocs(DefinitionList)));

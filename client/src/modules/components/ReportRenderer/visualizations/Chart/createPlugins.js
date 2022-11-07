@@ -7,17 +7,15 @@
 
 import {parseISO} from 'date-fns';
 
-import {drawHorizentalLine} from './service';
 import zoomIn from './zoomIn';
 import drawPieEmptyState from './drawPieEmptyState';
 import generateLegends from './generateLegends';
 import fadeOnHover from './fadeOnHover';
+import drawLine from './drawLine';
 
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
   const plugins = [
-    {
-      afterDatasetsDraw: drawHorizentalLine,
-    },
+    drawLine(data.configuration.horizontalBar),
     drawPieEmptyState,
     generateLegends,
     fadeOnHover({visualization: data.visualization, isStacked: data.configuration.stackedBar}),
@@ -27,7 +25,8 @@ export default function createPlugins({updateReport, report: {combined, data, re
     !combined &&
     updateReport &&
     ['startDate', 'evaluationDateTime', 'endDate'].includes(data.groupBy.type) &&
-    ['line', 'bar'].includes(data.visualization)
+    ['line', 'bar'].includes(data.visualization) &&
+    !data.configuration.horizontalBar
   ) {
     const dataPoints = result.data.map(({key}) => key);
 

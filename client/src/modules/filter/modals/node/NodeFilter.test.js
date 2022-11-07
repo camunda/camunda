@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {Button} from 'components';
@@ -13,6 +13,7 @@ import {loadProcessDefinitionXml} from 'services';
 
 import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection';
 import {NodeFilter} from './NodeFilter';
+import NodeListPreview from './NodeListPreview';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -28,6 +29,7 @@ const props = {
   definitions: [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
   ],
+  addFilter: jest.fn(),
 };
 
 it('should contain a modal', () => {
@@ -38,6 +40,8 @@ it('should contain a modal', () => {
 
 it('should display a diagram', () => {
   const node = shallow(<NodeFilter {...props} />);
+
+  runAllEffects();
 
   expect(node.find('.diagramContainer').childAt(0).props().xml).toBe('fooXml');
 });
@@ -50,9 +54,11 @@ it('should add an unselected node to the selectedNodes on toggle', () => {
     id: 'bar',
   };
 
-  node.instance().toggleNode(flowNode);
+  runAllEffects();
 
-  expect(node.state().selectedNodes).toContain(flowNode);
+  node.find('ClickBehavior').prop('onClick')(flowNode);
+
+  expect(node.find('ClickBehavior').prop('selectedNodes')).toContain(flowNode);
 });
 
 it('should remove a selected node from the selectedNodes on toggle', () => {
@@ -63,10 +69,12 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
     id: 'bar',
   };
 
-  node.instance().toggleNode(flowNode);
-  node.instance().toggleNode(flowNode);
+  runAllEffects();
 
-  expect(node.state().selectedNodes).not.toContain(flowNode);
+  node.find('ClickBehavior').prop('onClick')(flowNode);
+  node.find('ClickBehavior').prop('onClick')(flowNode);
+
+  expect(node.find('ClickBehavior').prop('selectedNodes')).not.toContain(flowNode);
 });
 
 it('should create an executed node filter when operator is specified', () => {
@@ -83,9 +91,10 @@ it('should create an executed node filter when operator is specified', () => {
     id: 'bar',
   };
 
-  node.setState({
-    selectedNodes: [flowNode1, flowNode2],
-  });
+  runAllEffects();
+
+  node.find('ClickBehavior').prop('onClick')(flowNode1);
+  node.find('ClickBehavior').prop('onClick')(flowNode2);
 
   node.find('[primary]').simulate('click');
 
@@ -108,11 +117,11 @@ it('should set filter type depending on selected operation', () => {
     id: 'bar',
   };
 
+  runAllEffects();
+
   node.find(Button).at(0).simulate('click');
 
-  node.setState({
-    selectedNodes: [flowNode1],
-  });
+  node.find('ClickBehavior').prop('onClick')(flowNode1);
 
   node.find('[primary]').simulate('click');
 
@@ -140,9 +149,8 @@ it('should set filter type depending on selected operation', () => {
 
 it('should disable create filter button if no node was selected', () => {
   const node = shallow(<NodeFilter {...props} />);
-  node.setState({
-    selectedNodes: [],
-  });
+
+  runAllEffects();
 
   expect(node.find('[primary]').prop('disabled')).toBeTruthy(); // create filter
 });
@@ -155,7 +163,9 @@ it('should create preview list of selected node', () => {
     id: 'bar',
   };
 
-  node.instance().toggleNode(flowNode);
+  runAllEffects();
+
+  node.find('ClickBehavior').prop('onClick')(flowNode);
 
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'bar', name: 'foo'}],
@@ -167,27 +177,37 @@ it('should create preview list of selected node', () => {
 it('should contain buttons to switch between executed and not executed mode', () => {
   const node = shallow(<NodeFilter {...props} />);
 
-  expect(node.find('ButtonGroup')).toMatchSnapshot();
+  runAllEffects();
+
+  const buttonGroup = node.find('ButtonGroup');
+
+  expect(buttonGroup.find(Button).at(0).text()).toBe('Running');
+  expect(buttonGroup.find(Button).at(1).text()).toBe('Running, Canceled or Completed');
+  expect(buttonGroup.find(Button).at(2).text()).toBe('Not executed');
+  expect(buttonGroup.find(Button).at(3).text()).toBe('Canceled');
 });
 
 it('should set the operator when clicking the operator buttons', () => {
   const node = shallow(<NodeFilter {...props} />);
 
+  runAllEffects();
+
   node.find(Button).at(1).simulate('click');
-  expect(node.state().operator).toBe('in');
+  expect(node.find(NodeListPreview).props().operator).toBe('in');
 
   node.find(Button).at(2).simulate('click');
-  expect(node.state().operator).toBe('not in');
+  expect(node.find(NodeListPreview).prop('operator')).toBe('not in');
 });
 
-it('should initially load xml', async () => {
+it('should initially load xml', () => {
   shallow(<NodeFilter {...props} />);
-  await flushPromises();
+
+  runAllEffects();
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('definitionKey', 'all', null);
 });
 
-it('should load new xml after changing definition', async () => {
+it('should load new xml after changing definition', () => {
   const definitions = [
     {identifier: 'definition', key: 'definitionKey', versions: ['all'], tenantIds: [null]},
     {
@@ -198,10 +218,16 @@ it('should load new xml after changing definition', async () => {
     },
   ];
   const node = shallow(<NodeFilter {...props} definitions={definitions} />);
-  await flushPromises();
+
+  runAllEffects();
 
   node.find(FilterSingleDefinitionSelection).prop('setApplyTo')(definitions[1]);
-  await flushPromises();
+  node.find('ClickBehavior').prop('onClick')({
+    name: 'foo',
+    id: 'bar',
+  });
+
+  runAllEffects();
 
   expect(loadProcessDefinitionXml).toHaveBeenCalledWith('otherDefinitionKey', '1', 'marketing');
 });

@@ -16,7 +16,7 @@ import org.camunda.optimize.rest.cloud.CloudUsersService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import org.jetbrains.annotations.NotNull;
+import javax.validation.constraints.NotNull;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 

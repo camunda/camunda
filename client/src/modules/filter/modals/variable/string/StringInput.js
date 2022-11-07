@@ -37,7 +37,6 @@ export default class StringInput extends React.Component {
   };
 
   reset() {
-    this.props.setValid?.(this.props.filter.values.length > 0);
     this.loadAvailableValues();
   }
 
@@ -116,7 +115,7 @@ export default class StringInput extends React.Component {
 
   setOperator = (operator) => (evt) => {
     evt.preventDefault();
-    const {filter, changeFilter, setValid} = this.props;
+    const {filter, changeFilter} = this.props;
 
     const containToEquality =
       filter.operator.includes('contains') && !operator.includes('contains');
@@ -126,7 +125,6 @@ export default class StringInput extends React.Component {
     let newValues = filter.values;
     if (containToEquality || equalityToContain) {
       newValues = [];
-      setValid?.(false);
     }
 
     changeFilter({operator, values: newValues});
@@ -158,7 +156,6 @@ export default class StringInput extends React.Component {
       operator: this.props.filter.operator,
       values: newValues,
     });
-    this.props.setValid?.(newValues.length > 0);
   };
 
   addCustomValue = () => {
@@ -194,7 +191,7 @@ export default class StringInput extends React.Component {
   };
 
   render() {
-    const {changeFilter, setValid, filter} = this.props;
+    const {changeFilter, filter} = this.props;
     const {
       valuesAreComplete,
       loading,
@@ -236,7 +233,6 @@ export default class StringInput extends React.Component {
             }}
             onChange={({operator, values, includeUndefined}) => {
               changeFilter({operator, values: includeUndefined ? [...values, null] : values});
-              setValid?.(includeUndefined || values.length > 0);
             }}
             allowUndefined
             allowMultiple

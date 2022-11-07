@@ -4,7 +4,7 @@
   .titleBar {
     display: flex;
 
-    .Popover__button {
+    .Popover .buttonWrapper .Button {
       opacity: 0;
 
       &.active,
@@ -19,7 +19,7 @@
 
     .Popover {
       margin-top: -2px;
-      .Popover__button {
+      .buttonWrapper .Button {
         margin-left: 2px;
       }
     }
@@ -46,7 +46,7 @@
       display: inline-block;
       margin-top: -2px;
 
-      .Popover__button {
+      .buttonWrapper .Button {
         width: 20px;
         height: 20px;
       }

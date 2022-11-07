@@ -62,18 +62,20 @@ public class ConfigurationServiceConstants {
   public static final String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionOutputImport.basePackages";
   public static final String BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.businessKeyImport.basePackages";
   public static final String ELASTICSEARCH_CUSTOM_HEADER_BASE_PACKAGES = "$.plugin.elasticsearchCustomHeader.basePackages";
-  public static final String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
-  public static final String ELASTIC_SEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB = "$.es.connection.responseConsumerBufferLimitInMb";
-  public static final String ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
-  public static final String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
-  public static final String ELASTIC_SEARCH_PROXY = "$.es.connection.proxy";
-  public static final String ELASTIC_SEARCH_PATH_PREFIX = "$.es.connection.pathPrefix";
+  public static final String ELASTICSEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
+  public static final String ELASTICSEARCH_RESPONSE_CONSUMER_BUFFER_LIMIT_MB = "$.es.connection.responseConsumerBufferLimitInMb";
+  public static final String ELASTICSEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
+  public static final String ELASTICSEARCH_CONNECTION_NODES = "$.es.connection.nodes";
+  public static final String ELASTICSEARCH_PROXY = "$.es.connection.proxy";
+  public static final String ELASTICSEARCH_SKIP_HOSTNAME_VERIFICATION = "$.es.connection.skipHostnameVerification";
+  public static final String ELASTICSEARCH_PATH_PREFIX = "$.es.connection.pathPrefix";
+  public static final String ELASTICSEARCH_SNAPSHOT_REPO = "$.es.backup.repositoryName";
 
-  public static final String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
-  public static final String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";
-  public static final String ELASTIC_SEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
-  public static final String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
-  public static final String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
+  public static final String ELASTICSEARCH_SECURITY_USERNAME = "$.es.security.username";
+  public static final String ELASTICSEARCH_SECURITY_PASSWORD = "$.es.security.password";
+  public static final String ELASTICSEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
+  public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
+  public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
 
   public static final String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
 

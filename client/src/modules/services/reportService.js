@@ -23,19 +23,13 @@ export async function evaluateReport(payload, filter = [], query = {}) {
     response = await post(`api/report/evaluate/`, payload, {query});
   }
 
-  response = await response.json();
-
-  if (
-    response?.data?.groupBy?.type === 'none' &&
-    response?.data?.distributedBy?.type === 'process'
-  ) {
-    response = convertHyperMapToMap(response);
-  }
-
-  return response;
+  return await response.json();
 }
 
 export function getReportResult(report, idx = 0) {
+  if (report?.data?.groupBy?.type === 'none' && report?.data?.distributedBy?.type === 'process') {
+    report = convertHyperMapToMap(report);
+  }
   if (report?.result?.measures) {
     return {
       ...report.result,
@@ -102,10 +96,26 @@ function convertHyperMapToMap(report) {
   const newResult = {...report.result};
 
   newResult.type = 'map';
-  newResult.measures.forEach((measure) => {
-    measure.type = 'map';
-    measure.data = measure.data[0].value;
-  });
+  if (newResult.measures) {
+    newResult.measures = newResult.measures.map((measure) => ({
+      ...measure,
+      type: 'map',
+      data: measure.data[0].value,
+    }));
+  }
 
   return {...report, result: newResult};
+}
+
+export function isCategoricalBar(report) {
+  return report.visualization === 'bar' && isCategorical(report);
+}
+
+export function isCategorical({groupBy, distributedBy}) {
+  return (
+    ['flowNodes', 'userTasks', 'assignee', 'candidateGroup'].includes(groupBy?.type) ||
+    (['variable', 'inputVariable', 'outputVariable'].includes(groupBy?.type) &&
+      ['Boolean', 'String'].includes(groupBy.value.type)) ||
+    distributedBy?.type === 'process'
+  );
 }

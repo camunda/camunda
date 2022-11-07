@@ -93,6 +93,8 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private Boolean stackedBar = false;
   @Builder.Default
+  private Boolean horizontalBar = false;
+  @Builder.Default
   private Boolean logScale = false;
 
   @JsonIgnore

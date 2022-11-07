@@ -16,6 +16,7 @@ import {getOptimizeProfile} from 'config';
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 import {addUser, editUser, removeUser, getUsers, removeUsers} from './service';
+import {formatRole} from './formatters';
 
 import './UserList.scss';
 
@@ -187,8 +188,4 @@ function formatType(type) {
     default:
       return t('home.types.unknown');
   }
-}
-
-function formatRole(role) {
-  return t('home.roles.' + role);
 }

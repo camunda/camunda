@@ -112,12 +112,12 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isTrue();
     final MimeMessage[] emails = greenMail.getReceivedMessages();
     assertThat(GreenMailUtil.getBody(emails[0])).contains(DEF_KEY);
-    greenMail.reset();
 
     // when digest is disabled
     processOverviewClient.updateProcess(
       DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(false));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    greenMail.reset();
 
     // then no more emails are sent
     assertThat(greenMail.waitForIncomingEmail(1000, 1)).isFalse();
@@ -181,7 +181,7 @@ public class ProcessDigestNotificationIT extends AbstractIT {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
     createKpiReport("KPI Report 1");
-    createKpiReport("KPI Report 2");
+    createKpiReport("KPI Report 2", "0");
     importAllEngineEntitiesFromScratch();
     runKpiSchedulerAndRefreshIndices();
     processOverviewClient.updateProcess(
@@ -195,11 +195,37 @@ public class ProcessDigestNotificationIT extends AbstractIT {
         "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
           "targets.")
       .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
-      .containsIgnoringWhitespaces("100%</span> of your quality KPIs met their targets")
+      .containsIgnoringWhitespaces("50%</span> of your quality KPIs met their targets")
       .containsIgnoringWhitespaces("Quality")
       .containsIgnoringWhitespaces("KPI Report 1")
       .containsIgnoringWhitespaces("KPI Report 2")
       .containsIgnoringWhitespaces("< 1") // target
+      .containsIgnoringWhitespaces("--") // change
+      .containsIgnoringWhitespaces("1.0"); // current
+  }
+
+  @Test
+  public void correctEmailContent_noSuccessfulKpiReportsExist() {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(DEF_KEY));
+    createKpiReport("KPI Report 1", "0");
+    importAllEngineEntitiesFromScratch();
+    runKpiSchedulerAndRefreshIndices();
+    processOverviewClient.updateProcess(
+      DEF_KEY, DEFAULT_USERNAME, new ProcessDigestRequestDto(true));
+
+    // then
+    assertThat(greenMail.waitForIncomingEmail(100, 1)).isTrue();
+    assertThat(readEmailHtmlContent(greenMail.getReceivedMessages()[0]))
+      .containsIgnoringWhitespaces("Hi firstName lastName,")
+      .containsIgnoringWhitespaces(
+        "Here's your digest for the " + DEF_KEY + " process, showing you the current state of your KPIs compared to their " +
+          "targets.")
+      .containsIgnoringWhitespaces("There are currently no time KPIs defined for this process.")
+      .containsIgnoringWhitespaces("0%</span> of your quality KPIs met their targets")
+      .containsIgnoringWhitespaces("Quality")
+      .containsIgnoringWhitespaces("KPI Report 1")
+      .containsIgnoringWhitespaces("< 0") // target
       .containsIgnoringWhitespaces("--") // change
       .containsIgnoringWhitespaces("1.0"); // current
   }
@@ -304,13 +330,17 @@ public class ProcessDigestNotificationIT extends AbstractIT {
   }
 
   private String createKpiReport(final String reportName) {
+    return createKpiReport(reportName, "1");
+  }
+
+  private String createKpiReport(final String reportName, final String target) {
     final ProcessReportDataDto reportDataDto = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.PROC_INST_FREQ_GROUP_BY_NONE)
       .definitions(List.of(new ReportDataDefinitionDto(DEF_KEY)))
       .build();
     reportDataDto.getConfiguration().getTargetValue().setIsKpi(true);
     reportDataDto.getConfiguration().getTargetValue().getCountProgress().setIsBelow(true);
-    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget("1");
+    reportDataDto.getConfiguration().getTargetValue().getCountProgress().setTarget(target);
     SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto =
       new SingleProcessReportDefinitionRequestDto();
     singleProcessReportDefinitionDto.setName(reportName);

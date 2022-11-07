@@ -176,10 +176,22 @@ spec:
     env:
     - name: OPTIMIZE_JAVA_OPTS
       value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
-    - name: OPTIMIZE_CAMUNDABPM_REST_URL
-      value: http://cambpm:8080/engine-rest
     - name: OPTIMIZE_ELASTICSEARCH_HOST
       value: localhost
+    livenessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+      httpGet:
+        path: /
+        port: 8090
+    readinessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+      httpGet:
+        path: /api/readyz
+        port: 8090
     resources:
       limits:
         cpu: 1
@@ -231,6 +243,18 @@ spec:
         value: 9200
       - name: cluster.name
         value: elasticsearch
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
 """
 }
 
@@ -377,6 +401,9 @@ pipeline {
         GCR_REGISTRY_CREDENTIALS = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
+        // retrieve the git commit hash from the checked out tag of the release
+        REVISION = sh(returnStdout: true, script: "git --git-dir target/checkout/.git log -n 1 --pretty=format:'%h'").trim()
+        DATE = java.time.Instant.now().toString()
       }
       steps {
         container('docker') {
@@ -402,10 +429,48 @@ pipeline {
             
           printf -v tag_arguments -- "-t %s " "\${tags[@]}"
           docker buildx create --use
+          
+          export VERSION=${VERSION}
+          export DATE=${DATE}
+          export REVISION=${REVISION}
+          export BASE_IMAGE=docker.io/library/alpine:3.16.2
+          apk update
+          apk add jq
+
+          # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
+          # able to perform the checks before pushing
+          # First amd64
+          docker buildx build \
+            \${tag_arguments} \
+            --build-arg VERSION=${VERSION} \
+            --build-arg DATE=${DATE} \
+            --build-arg REVISION=${REVISION} \
+            --platform linux/amd64 \
+            --load \
+            .
+          export ARCHITECTURE=amd64
+          ./docker/test/verify.sh \${tags[@]}
+
+          # Now arm64
+          docker buildx build \
+            \${tag_arguments} \
+            --build-arg VERSION=${VERSION} \
+            --build-arg DATE=${DATE} \
+            --build-arg REVISION=${REVISION} \
+            --platform linux/arm64 \
+            --load \
+            .
+          export ARCHITECTURE=arm64
+          ./docker/test/verify.sh \${tags[@]}
+
+          # If we made it to here, all checks were successful. So let's build it to push. This is not as
+          # inefficient as it looks, since docker retrieves the previously generated images from the build cache
           docker buildx build \
             \${tag_arguments} \
             --build-arg ARTIFACT_PATH=target/checkout/distro/target \
             --build-arg VERSION=${VERSION} \
+            --build-arg DATE=${DATE} \
+            --build-arg REVISION=${REVISION} \
             --platform linux/amd64,linux/arm64 \
             \${docker_args} \
             .
@@ -422,16 +487,27 @@ pipeline {
           yaml smoketestPodSpec(params, env.CAMBPM_VERSION, env.ES_VERSION)
         }
       }
+      environment {
+        LABEL = "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      }
       steps {
         container('maven') {
           sh("""#!/bin/bash -eux
           echo Giving Optimize some time to start up
-          sleep 60
-          echo Smoke testing if Optimize API can be reached
-          curl -q -f http://localhost:8090/api/status | grep -q engineStatus
+          echo Smoke testing if Optimize is ready
+          curl -q -f -I http://localhost:8090/api/readyz | grep -q "200 OK"
           echo Smoke testing if Optimize Frontend resources are accessible
           curl -q -f http://localhost:8090/index.html | grep -q html
           """)
+        }
+      }
+      post {
+        always {
+          container('gcloud') {
+            sh 'apt-get install kubectl'
+            sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+            archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
+          }
         }
       }
     }

@@ -136,6 +136,7 @@ export default function FiltersEdit({
                 <Button
                   className="editButton"
                   icon
+                  disabled={!reports || reports.length === 0}
                   onClick={() => {
                     setFilterToEdit(idx);
                     setAllowCustomValues(data.allowCustomValues);

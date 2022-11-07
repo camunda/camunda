@@ -84,7 +84,7 @@ export function Login({onLogin, mightFail}) {
       <Button main primary type="submit" onClick={submit} disabled={waitingForServer}>
         {t('login.btn')}
       </Button>
-      <div className="privacyNotice" dangerouslySetInnerHTML={{__html: t('login.telemetry')}} />
+      <div className="privacyNotice">{t('login.telemetry')}</div>
     </form>
   );
 }

@@ -22,6 +22,10 @@ public interface IndexMappingCreator {
     return false;
   }
 
+  default boolean isImportIndex() {
+    return false;
+  }
+
   int getVersion();
 
   XContentBuilder getSource();

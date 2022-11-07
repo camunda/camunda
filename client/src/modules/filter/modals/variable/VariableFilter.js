@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import classnames from 'classnames';
 import {Modal, Button, Typeahead, Labeled} from 'components';
 
@@ -19,56 +19,74 @@ import {DateInput} from './date';
 import './VariableFilter.scss';
 import {t} from 'translation';
 
-export default class VariableFilter extends React.Component {
-  state = {
-    valid: false,
-    filter: {},
-    variables: [],
-    selectedVariable: null,
-    applyTo: null,
-  };
+export default function VariableFilter({
+  addFilter,
+  close,
+  className,
+  filterType,
+  getPretext,
+  getPosttext,
+  config,
+  filterData,
+  forceEnabled,
+  definitions,
+}) {
+  const [valid, setValid] = useState(false);
+  const [filter, setFilter] = useState({});
+  const [variables, setVariables] = useState([]);
+  const [selectedVariable, setSelectedVariable] = useState(null);
+  const [applyTo, setApplyTo] = useState(null);
 
-  componentDidMount = async () => {
-    if (this.props.filterData) {
-      const filterData = this.props.filterData.data;
+  // load the available variables for the selected definition
+  useEffect(() => {
+    (async () => {
+      const validDefinitions = definitions?.filter(
+        (definition) => definition.versions.length && definition.tenantIds.length
+      );
 
-      const InputComponent = this.getInputComponentForVariable(filterData);
-      const filter = InputComponent.parseFilter
-        ? InputComponent.parseFilter(this.props.filterData)
-        : filterData.data;
+      const applyTo =
+        validDefinitions?.find(({identifier}) => filterData?.appliedTo[0] === identifier) ||
+        validDefinitions?.[0];
 
-      const {id, name, type} = filterData;
-      this.setState({
-        selectedVariable: {id, name, type},
-        filter,
-        valid: true,
-      });
+      setVariables(await config.getVariables(applyTo));
+      setApplyTo(applyTo);
+    })();
+  }, [config, definitions, filterData?.appliedTo]);
+
+  // check if the all the variable filters are valid on filters change
+  useEffect(() => {
+    if (selectedVariable && filter) {
+      const InputComponent = getInputComponentForVariable(selectedVariable);
+      const isFilterValid = InputComponent.isValid(filter);
+      setValid(isFilterValid);
     }
+  }, [filter, selectedVariable]);
 
-    const validDefinitions = this.props.definitions?.filter(
-      (definition) => definition.versions.length && definition.tenantIds.length
-    );
+  // initialize the filters state when editing a pre-existing filter
+  useEffect(() => {
+    if (filterData) {
+      const data = filterData.data;
 
-    const applyTo =
-      validDefinitions?.find(
-        ({identifier}) => this.props.filterData?.appliedTo[0] === identifier
-      ) || validDefinitions?.[0];
+      const InputComponent = getInputComponentForVariable(data);
+      const filter = InputComponent.parseFilter
+        ? InputComponent.parseFilter(filterData)
+        : data.data;
 
-    this.setState({
-      variables: await this.props.config.getVariables(applyTo),
-      applyTo,
-    });
+      const {id, name, type} = data;
+      setSelectedVariable({id, name, type});
+      setFilter(filter);
+      setValid(true);
+    }
+  }, [filterData]);
+
+  const selectVariable = (nameOrId) => {
+    const variable = variables.find((variable) => getId(variable) === nameOrId);
+
+    setSelectedVariable(variable);
+    setFilter(getInputComponentForVariable(variable).defaultFilter);
   };
 
-  selectVariable = (nameOrId) => {
-    const variable = this.state.variables.find((variable) => this.getId(variable) === nameOrId);
-    this.setState({
-      selectedVariable: variable,
-      filter: this.getInputComponentForVariable(variable).defaultFilter,
-    });
-  };
-
-  getInputComponentForVariable = (variable) => {
+  const getInputComponentForVariable = (variable) => {
     if (!variable) {
       return () => null;
     }
@@ -85,121 +103,94 @@ export default class VariableFilter extends React.Component {
     }
   };
 
-  setValid = (valid) => this.setState({valid});
+  const changeFilter = (filter) => setFilter(filter);
 
-  changeFilter = (filter) => this.setState({filter});
-
-  getId = (variable) => {
+  const getId = (variable) => {
     if (variable) {
       return variable.id || variable.name;
     }
   };
 
-  render() {
-    const {selectedVariable, variables, filter, valid, applyTo} = this.state;
-    const {
-      close,
-      className,
-      filterType,
-      getPretext,
-      getPosttext,
-      config,
-      filterData,
-      forceEnabled,
-      definitions,
-    } = this.props;
+  const getVariableName = (variable) => (variable ? variable.label || variable.name : null);
 
-    const ValueInput = this.getInputComponentForVariable(selectedVariable);
-
-    return (
-      <Modal open onClose={close} className={classnames('VariableFilter__modal', className)}>
-        <Modal.Header>
-          {t('common.filter.modalHeader', {
-            type: t(`common.filter.types.${filterType}`),
-          })}
-        </Modal.Header>
-        <Modal.Content>
-          {definitions && (
-            <FilterSingleDefinitionSelection
-              availableDefinitions={definitions}
-              applyTo={applyTo}
-              setApplyTo={async (applyTo) => {
-                this.setState({
-                  applyTo,
-                  valid: false,
-                  filter: {},
-                  variables: [],
-                  selectedVariable: null,
-                });
-
-                this.setState({
-                  variables: await config.getVariables(applyTo),
-                });
-              }}
-            />
-          )}
-          {getPretext?.(selectedVariable)}
-          <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
-            <Typeahead
-              onChange={this.selectVariable}
-              value={variables.length > 0 && this.getId(selectedVariable)}
-              placeholder={t('common.filter.variableModal.inputPlaceholder')}
-              noValuesMessage={t('common.filter.variableModal.noVariables')}
-            >
-              {variables.map((variable) => (
-                <Typeahead.Option key={this.getId(variable)} value={this.getId(variable)}>
-                  {this.getVariableName(variable)}
-                </Typeahead.Option>
-              ))}
-            </Typeahead>
-          </Labeled>
-          <ValueInput
-            config={config}
-            variable={selectedVariable}
-            setValid={this.setValid}
-            changeFilter={this.changeFilter}
-            filter={filter}
-            definition={applyTo}
-          />
-          {getPosttext?.(selectedVariable)}
-        </Modal.Content>
-        <Modal.Actions>
-          <Button main onClick={close}>
-            {t('common.cancel')}
-          </Button>
-          <Button
-            main
-            primary
-            disabled={!valid && !forceEnabled?.(selectedVariable)}
-            onClick={this.createFilter}
-          >
-            {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
-          </Button>
-        </Modal.Actions>
-      </Modal>
-    );
-  }
-
-  getVariableName = (variable) => (variable ? variable.label || variable.name : null);
-
-  createFilter = (evt) => {
+  const createFilter = (evt) => {
     evt.preventDefault();
 
-    const variable = this.state.selectedVariable;
-    const InputComponent = this.getInputComponentForVariable(variable);
-    const {filter, applyTo} = this.state;
-    const {addFilter, filterType} = this.props;
-
+    const InputComponent = getInputComponentForVariable(selectedVariable);
     InputComponent.addFilter
-      ? InputComponent.addFilter(addFilter, filterType, variable, filter, applyTo)
+      ? InputComponent.addFilter(addFilter, filterType, selectedVariable, filter, applyTo)
       : addFilter({
           type: filterType,
           data: {
-            name: variable.id || variable.name,
-            type: variable.type,
+            name: selectedVariable.id || selectedVariable.name,
+            type: selectedVariable.type,
             data: filter,
           },
           appliedTo: [applyTo?.identifier],
         });
   };
+
+  const ValueInput = getInputComponentForVariable(selectedVariable);
+
+  return (
+    <Modal open onClose={close} className={classnames('VariableFilter__modal', className)}>
+      <Modal.Header>
+        {t('common.filter.modalHeader', {
+          type: t(`common.filter.types.${filterType}`),
+        })}
+      </Modal.Header>
+      <Modal.Content>
+        {definitions && (
+          <FilterSingleDefinitionSelection
+            availableDefinitions={definitions}
+            applyTo={applyTo}
+            setApplyTo={async (applyTo) => {
+              setApplyTo(applyTo);
+              setValid(false);
+              setFilter({});
+              setVariables([]);
+              setVariables(await config.getVariables(applyTo));
+              setSelectedVariable(null);
+            }}
+          />
+        )}
+        {getPretext?.(selectedVariable)}
+        <Labeled className="LabeledTypeahead" label={t('common.filter.variableModal.inputLabel')}>
+          <Typeahead
+            onChange={selectVariable}
+            value={variables.length > 0 && getId(selectedVariable)}
+            placeholder={t('common.filter.variableModal.inputPlaceholder')}
+            noValuesMessage={t('common.filter.variableModal.noVariables')}
+          >
+            {variables.map((variable) => (
+              <Typeahead.Option key={getId(variable)} value={getId(variable)}>
+                {getVariableName(variable)}
+              </Typeahead.Option>
+            ))}
+          </Typeahead>
+        </Labeled>
+        <ValueInput
+          config={config}
+          variable={selectedVariable}
+          changeFilter={changeFilter}
+          filter={filter}
+          definition={applyTo}
+        />
+        {getPosttext?.(selectedVariable)}
+      </Modal.Content>
+      <Modal.Actions>
+        <Button main onClick={close}>
+          {t('common.cancel')}
+        </Button>
+        <Button
+          main
+          primary
+          disabled={!valid && !forceEnabled?.(selectedVariable)}
+          onClick={createFilter}
+        >
+          {filterData ? t('common.filter.updateFilter') : t('common.filter.addFilter')}
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
 }

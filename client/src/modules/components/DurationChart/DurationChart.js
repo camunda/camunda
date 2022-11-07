@@ -38,7 +38,7 @@ function DurationChart({data, colors}) {
   useEffect(() => {
     const maxDuration = data && data.length > 0 ? data[data.length - 1].key : 0;
 
-    return new Chart(canvas.current, {
+    const chart = new Chart(canvas.current, {
       type: 'bar',
       data: {
         labels: data.map(({key}) => key),
@@ -96,6 +96,8 @@ function DurationChart({data, colors}) {
         },
       },
     });
+
+    return () => chart.destroy();
   }, [createTooltipTitle, data, colors]);
 
   return (

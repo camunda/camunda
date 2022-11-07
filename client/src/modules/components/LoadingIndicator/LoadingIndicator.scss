@@ -8,23 +8,29 @@
 }
 
 .LoadingIndicator {
-  margin: 5px auto 14px auto;
-  width: 22px;
-  height: 22px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  margin: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 
   &.small {
-    width: 10px;
-    height: 10px;
     margin-bottom: 9px;
 
     &:after {
       border-width: 2px;
+      width: 10px;
+      height: 10px;
     }
   }
 
   &:after {
-    width: inherit;
-    height: inherit;
+    width: 22px;
+    height: 22px;
     box-sizing: content-box;
     border: 4px solid var(--grey-base-40);
     content: ' ';

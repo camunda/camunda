@@ -52,6 +52,18 @@ spec:
         capabilities:
           add: ["IPC_LOCK", "SYS_RESOURCE"]
   containers:
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -218,12 +230,20 @@ pipeline {
           yaml securedEsTestPodSpec(env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
+      environment {
+        LABEL = "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+      }
       steps {
         securityTestSteps()
       }
       post {
         always {
           junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+          container('gcloud'){
+            sh 'apt-get install kubectl'
+            sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch-9203 > elasticsearch.log'
+          }
+            archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
         }
       }
     }
