@@ -8,10 +8,12 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -33,7 +35,6 @@ import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.engine.util.TestStreams;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -43,7 +44,9 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
@@ -67,41 +70,112 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
-public final class SkipFailingEventsTest {
+public final class EngineErrorHandlingTest {
 
   private static final String STREAM_NAME = "foo";
-  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
-  private static final JobRecord JOB_RECORD = Records.job(1);
 
-  public final TemporaryFolder tempFolder = new TemporaryFolder();
-  public final AutoCloseableRule closeables = new AutoCloseableRule();
-
-  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
+  private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final AutoCloseableRule closeables = new AutoCloseableRule();
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
-  protected TestStreams streams;
-  protected SynchronousLogStream stream;
-
-  @Mock protected CommandResponseWriter commandResponseWriter;
+  private TestStreams streams;
   private KeyGenerator keyGenerator;
+  private CommandResponseWriter mockCommandResponseWriter;
   private MutableZeebeState zeebeState;
 
   @Before
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
-
     streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
-    commandResponseWriter = streams.getMockedResponseWriter();
-    stream = streams.createLogStream(STREAM_NAME);
+    mockCommandResponseWriter = streams.getMockedResponseWriter();
+    streams.createLogStream(STREAM_NAME);
 
     final AtomicLong key = new AtomicLong();
     keyGenerator = () -> key.getAndIncrement();
+  }
+
+  @Test
+  public void shouldAutoRejectCommandOnProcessingFailure() {
+    // given
+    streams.startStreamProcessor(
+        STREAM_NAME,
+        DefaultZeebeDbFactory.defaultFactory(),
+        (processingContext) ->
+            TypedRecordProcessors.processors(keyGenerator, processingContext.getWriters())
+                .onCommand(
+                    ValueType.DEPLOYMENT,
+                    DeploymentIntent.CREATE,
+                    new TypedRecordProcessor<DeploymentRecord>() {
+                      @Override
+                      public void processRecord(final TypedRecord<DeploymentRecord> record) {
+                        if (record.getKey() == 0) {
+                          throw new RuntimeException("expected");
+                        }
+                        processingContext
+                            .getWriters()
+                            .state()
+                            .appendFollowUpEvent(
+                                record.getKey(), DeploymentIntent.CREATED, record.getValue());
+                      }
+                    }));
+
+    final long failingKey = keyGenerator.nextKey();
+    streams
+        .newRecord(STREAM_NAME)
+        .event(deployment("foo"))
+        .recordType(RecordType.COMMAND)
+        .intent(DeploymentIntent.CREATE)
+        .requestId(255L)
+        .requestStreamId(99)
+        .key(failingKey)
+        .write();
+    final long secondEventPosition =
+        streams
+            .newRecord(STREAM_NAME)
+            .event(deployment("foo2"))
+            .recordType(RecordType.COMMAND)
+            .intent(DeploymentIntent.CREATE)
+            .key(keyGenerator.nextKey())
+            .write();
+
+    // when
+    final LoggedEvent writtenEvent =
+        TestUtil.doRepeatedly(
+                () ->
+                    streams
+                        .events(STREAM_NAME)
+                        .filter(
+                            e -> Records.isEvent(e, ValueType.DEPLOYMENT, DeploymentIntent.CREATED))
+                        .findFirst())
+            .until(o -> o.isPresent())
+            .get();
+
+    // then
+    assertThat(writtenEvent.getKey()).isEqualTo(1);
+    assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(secondEventPosition);
+
+    // error response
+    verify(mockCommandResponseWriter).tryWriteResponse(eq(99), eq(255L));
+
+    final Record<DeploymentRecord> deploymentRejection =
+        new RecordStream(streams.events(STREAM_NAME))
+            .onlyDeploymentRecords()
+            .onlyRejections()
+            .withIntent(DeploymentIntent.CREATE)
+            .getFirst();
+
+    assertThat(deploymentRejection.getKey()).isEqualTo(failingKey);
+    assertThat(deploymentRejection.getRejectionType()).isEqualTo(RejectionType.PROCESSING_ERROR);
+  }
+
+  DeploymentRecord deployment(final String name) {
+    final DeploymentRecord event = new DeploymentRecord();
+    event.resources().add().setResource(wrapString("foo")).setResourceName(wrapString(name));
+    return event;
   }
 
   @Test
@@ -125,7 +199,7 @@ public final class SkipFailingEventsTest {
     final long failingEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(PROCESS_INSTANCE_RECORD)
+            .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .key(keyGenerator.nextKey())
@@ -170,7 +244,7 @@ public final class SkipFailingEventsTest {
     final long failingEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(PROCESS_INSTANCE_RECORD)
+            .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .key(keyGenerator.nextKey())
@@ -213,14 +287,14 @@ public final class SkipFailingEventsTest {
 
     streams
         .newRecord(STREAM_NAME)
-        .event(PROCESS_INSTANCE_RECORD)
+        .event(Records.processInstance(1))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(PROCESS_INSTANCE_RECORD)
+        .event(Records.processInstance(1))
         .recordType(RecordType.COMMAND)
         .intent(ProcessInstanceIntent.COMPLETE_ELEMENT)
         .key(keyGenerator.nextKey())
@@ -247,7 +321,7 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
 
     verify(dumpProcessorRef.get(), times(1)).processRecord(any(), any());
@@ -257,19 +331,19 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldBlacklistInstanceOnReplay() throws Exception {
     // given
-    when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
 
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
-            .event(PROCESS_INSTANCE_RECORD)
+            .event(Records.processInstance(1))
             .recordType(RecordType.COMMAND)
             .intent(ProcessInstanceIntent.ACTIVATE_ELEMENT)
             .key(keyGenerator.nextKey())
             .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(Records.error((int) PROCESS_INSTANCE_RECORD.getProcessInstanceKey(), failedPos))
+        .event(Records.error((int) Records.processInstance(1).getProcessInstanceKey(), failedPos))
         .recordType(RecordType.EVENT)
         .sourceRecordPosition(failedPos)
         .intent(ErrorIntent.CREATED)
@@ -304,14 +378,14 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
     waitUntil(() -> zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord));
   }
 
   @Test
   public void shouldNotBlacklistInstanceOnJobCommand() {
     // given
-    when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
     final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef =
         new AtomicReference<>();
@@ -355,14 +429,14 @@ public final class SkipFailingEventsTest {
 
     streams
         .newRecord(STREAM_NAME)
-        .event(JOB_RECORD)
+        .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.COMPLETE)
         .key(keyGenerator.nextKey())
         .write();
     streams
         .newRecord(STREAM_NAME)
-        .event(JOB_RECORD)
+        .event(Records.job(1))
         .recordType(RecordType.COMMAND)
         .intent(JobIntent.THROW_ERROR)
         .key(keyGenerator.nextKey())
@@ -387,7 +461,7 @@ public final class SkipFailingEventsTest {
     final RecordMetadata metadata = new RecordMetadata();
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
-        new MockTypedRecord<>(0, metadata, PROCESS_INSTANCE_RECORD);
+        new MockTypedRecord<>(0, metadata, Records.processInstance(1));
     Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
 
     verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any(), any());
@@ -397,7 +471,7 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldNotBlacklistInstanceAndIgnoreTimerStartEvents() {
     // given
-    when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
 
     final BpmnModelInstance process =

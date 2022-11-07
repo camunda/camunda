@@ -117,3 +117,245 @@ func TestFailJobCommand_ErrorMessage(t *testing.T) {
 		t.Errorf("Failed to receive response")
 	}
 }
+
+func TestFailJobCommand_VariablesFromString(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	errorMessage := "something went wrong"
+	variables := "{\"foo\":\"bar\"}"
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		ErrorMessage: errorMessage,
+		Variables:    variables,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).VariablesFromString(variables)
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestFailJobCommand_VariablesFromStringer(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	errorMessage := "something went wrong"
+	variables := "{\"foo\":\"bar\"}"
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		ErrorMessage: errorMessage,
+		Variables:    variables,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).VariablesFromStringer(DataType{Foo: "bar"})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestFailJobCommand_VariablesFromObject(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	errorMessage := "something went wrong"
+	variables := "{\"foo\":\"bar\"}"
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		ErrorMessage: errorMessage,
+		Variables:    variables,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).VariablesFromObject(DataType{Foo: "bar"})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestFailJobCommand_VariablesFromObjectOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	errorMessage := "something went wrong"
+	variables := "{}"
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		ErrorMessage: errorMessage,
+		Variables:    variables,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).VariablesFromObject(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestFailJobCommand_VariablesFromObjectIgnoreOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	errorMessage := "something went wrong"
+	variables := "{\"foo\":\"\"}"
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		ErrorMessage: errorMessage,
+		Variables:    variables,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestFailJobCommand_VariablesFromMap(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	errorMessage := "something went wrong"
+	variables := "{\"foo\":\"bar\"}"
+	variableMaps := make(map[string]interface{})
+	variableMaps["foo"] = "bar"
+
+	request := &pb.FailJobRequest{
+		JobKey:       123,
+		Retries:      12,
+		ErrorMessage: errorMessage,
+		Variables:    variables,
+	}
+	stub := &pb.FailJobResponse{}
+
+	client.EXPECT().FailJob(gomock.Any(), &utils.RPCTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewFailJobCommand(client, func(context.Context, error) bool { return false })
+
+	variablesCommand, err := command.JobKey(123).Retries(12).ErrorMessage(errorMessage).VariablesFromMap(variableMaps)
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), utils.DefaultTestTimeout)
+	defer cancel()
+
+	response, err := variablesCommand.Send(ctx)
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}

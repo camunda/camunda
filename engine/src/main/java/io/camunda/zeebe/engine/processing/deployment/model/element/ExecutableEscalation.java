@@ -7,17 +7,22 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public interface ExecutableFlowElement {
+public class ExecutableEscalation extends AbstractFlowElement {
 
-  DirectBuffer getId();
+  private final DirectBuffer escalationCode = new UnsafeBuffer();
 
-  BpmnElementType getElementType();
+  public ExecutableEscalation(final String id) {
+    super(id);
+  }
 
-  ExecutableFlowElement getFlowScope();
+  public DirectBuffer getEscalationCode() {
+    return escalationCode;
+  }
 
-  BpmnEventType getEventType();
+  public void setEscalationCode(final DirectBuffer escalationCode) {
+    this.escalationCode.wrap(escalationCode);
+  }
 }

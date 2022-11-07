@@ -2,8 +2,6 @@ alertmanager:
   enabled: true
 
 grafana:
-  image:
-    tag: 7.4.5
   admin:
     existingSecret: grafana-admin-password
     userKey: admin-user
@@ -80,4 +78,3 @@ prometheus:
           resources:
             requests:
               storage: 150Gi
-

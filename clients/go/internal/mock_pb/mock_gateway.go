@@ -352,6 +352,26 @@ func (mr *MockGatewayClientMockRecorder) UpdateJobRetries(ctx, in interface{}, o
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobRetries", reflect.TypeOf((*MockGatewayClient)(nil).UpdateJobRetries), varargs...)
 }
 
+// ModifyProcessInstance mocks base method.
+func (m *MockGatewayClient) ModifyProcessInstance(ctx context.Context, in *pb.ModifyProcessInstanceRequest, opts ...grpc.CallOption) (*pb.ModifyProcessInstanceResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ModifyProcessInstance", varargs...)
+	ret0, _ := ret[0].(*pb.ModifyProcessInstanceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ModifyProcessInstance indicates an expected call of ModifyProcessInstance.
+func (mr *MockGatewayClientMockRecorder) ModifyProcessInstance(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModifyProcessInstance", reflect.TypeOf((*MockGatewayClient)(nil).ModifyProcessInstance), varargs...)
+}
+
 // MockGateway_ActivateJobsClient is a mock of Gateway_ActivateJobsClient interface.
 type MockGateway_ActivateJobsClient struct {
 	ctrl     *gomock.Controller
@@ -705,6 +725,21 @@ func (m *MockGatewayServer) UpdateJobRetries(arg0 context.Context, arg1 *pb.Upda
 func (mr *MockGatewayServerMockRecorder) UpdateJobRetries(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateJobRetries", reflect.TypeOf((*MockGatewayServer)(nil).UpdateJobRetries), arg0, arg1)
+}
+
+// ModifyProcessInstance mocks base method.
+func (m *MockGatewayServer) ModifyProcessInstance(arg0 context.Context, arg1 *pb.ModifyProcessInstanceRequest, opts ...grpc.CallOption) (*pb.ModifyProcessInstanceResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ModifyProcessInstance", arg0, arg1)
+	ret0, _ := ret[0].(*pb.ModifyProcessInstanceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ModifyProcessInstance indicates an expected call of ModifyProcessInstance.
+func (mr *MockGatewayServerMockRecorder) ModifyProcessInstance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ModifyProcessInstance", reflect.TypeOf((*MockGatewayServer)(nil).ModifyProcessInstance), arg0, arg1)
 }
 
 // MockGateway_ActivateJobsServer is a mock of Gateway_ActivateJobsServer interface.

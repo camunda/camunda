@@ -40,6 +40,9 @@
             "bpmnElementType": {
               "type": "keyword"
             },
+            "bpmnEventType": {
+              "type": "keyword"
+            },
             "parentProcessInstanceKey": {
               "type": "long"
             },

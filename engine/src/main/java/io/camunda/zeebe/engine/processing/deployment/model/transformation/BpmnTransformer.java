@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.CatchEven
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ContextProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.EndEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ErrorTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.EscalationTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.EventBasedGatewayTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExclusiveGatewayTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.FlowElementInstantiationTransformer;
@@ -68,6 +69,7 @@ public final class BpmnTransformer {
 
     step1Visitor = new TransformationVisitor();
     step1Visitor.registerHandler(new ErrorTransformer());
+    step1Visitor.registerHandler(new EscalationTransformer());
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());

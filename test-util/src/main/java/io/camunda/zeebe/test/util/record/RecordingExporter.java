@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -233,6 +235,14 @@ public final class RecordingExporter implements Exporter {
 
   public static TimerRecordStream timerRecords(final TimerIntent intent) {
     return timerRecords().withIntent(intent);
+  }
+
+  public static EscalationRecordStream escalationRecords() {
+    return new EscalationRecordStream(records(ValueType.ESCALATION, EscalationRecordValue.class));
+  }
+
+  public static EscalationRecordStream escalationRecords(final EscalationIntent intent) {
+    return escalationRecords().withIntent(intent);
   }
 
   public static VariableRecordStream variableRecords() {

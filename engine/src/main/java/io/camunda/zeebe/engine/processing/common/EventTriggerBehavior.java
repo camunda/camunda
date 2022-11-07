@@ -234,7 +234,8 @@ public class EventTriggerBehavior {
 
     eventRecord
         .setBpmnElementType(triggeredEvent.getElementType())
-        .setElementId(triggeredEvent.getId());
+        .setElementId(triggeredEvent.getId())
+        .setBpmnEventType(triggeredEvent.getEventType());
 
     final var eventInstanceKey = keyGenerator.nextKey();
     // transition to activating and activated directly to pass the variables to this instance
