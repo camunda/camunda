@@ -45,8 +45,8 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
-    <version.commons-text>1.10.0</version.commons-text>
     <version.commons-compress>1.22</version.commons-compress>
+    <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.0</version.cron-utils>
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.5</version.elasticsearch>
@@ -1011,7 +1011,6 @@
         <version>${version.commons-codec}</version>
       </dependency>
 
-      <!-- between testcontainers and zeebe-test-container -->
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
