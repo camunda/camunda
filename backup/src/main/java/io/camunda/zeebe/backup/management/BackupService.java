@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -131,6 +132,12 @@ public final class BackupService extends Actor implements BackupManager {
             });
     future.onComplete(operationMetrics::complete);
     return future;
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupStatus>> listBackups() {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException("Not implemented"));
   }
 
   @Override

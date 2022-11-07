@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,12 @@ public class NoopBackupManager implements BackupManager {
 
   @Override
   public ActorFuture<BackupStatus> getBackupStatus(final long checkpointId) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupStatus>> listBackups() {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }
