@@ -37,7 +37,7 @@
     <version.junit>4.13.2</version.junit>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.9.5</version.micrometer>
-    <version.mockito>4.8.0</version.mockito>
+    <version.mockito>4.8.1</version.mockito>
     <version.byte.buddy>1.12.18</version.byte.buddy>
     <version.assertj-core>3.23.1</version.assertj-core>
     <version.jackson>2.13.4</version.jackson>
