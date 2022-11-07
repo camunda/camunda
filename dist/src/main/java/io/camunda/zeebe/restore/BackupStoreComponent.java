@@ -48,7 +48,8 @@ final class BackupStoreComponent {
               s3Config.getAccessKey(),
               s3Config.getSecretKey(),
               s3Config.getApiCallTimeout(),
-              s3Config.isForcePathStyleAccess());
+              s3Config.isForcePathStyleAccess(),
+              s3Config.isEnableCompression());
       return new S3BackupStore(storeConfig);
     } else {
       throw new IllegalArgumentException(

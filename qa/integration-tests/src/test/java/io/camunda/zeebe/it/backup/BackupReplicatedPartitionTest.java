@@ -83,7 +83,8 @@ class BackupReplicatedPartitionTest {
             S3.accessKey(),
             S3.secretKey(),
             Duration.ofSeconds(15),
-            true);
+            true,
+            false);
     try (final var s3Client = S3BackupStore.buildClient(s3ClientConfig)) {
       s3Client.createBucket(builder -> builder.bucket(bucketName).build()).join();
     }

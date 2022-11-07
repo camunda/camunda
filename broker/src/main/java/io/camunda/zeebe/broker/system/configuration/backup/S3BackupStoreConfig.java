@@ -20,6 +20,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private String secretKey;
   private Duration apiCallTimeout = Duration.ofSeconds(180);
   private boolean forcePathStyleAccess = false;
+  private boolean enableCompression = false;
 
   public String getBucketName() {
     return bucketName;
@@ -77,6 +78,14 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     this.forcePathStyleAccess = forcePathStyleAccess;
   }
 
+  public boolean isEnableCompression() {
+    return enableCompression;
+  }
+
+  public void setEnableCompression(final boolean enableCompression) {
+    this.enableCompression = enableCompression;
+  }
+
   @Override
   public int hashCode() {
     int result = bucketName != null ? bucketName.hashCode() : 0;
@@ -86,6 +95,7 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (secretKey != null ? secretKey.hashCode() : 0);
     result = 31 * result + (apiCallTimeout != null ? apiCallTimeout.hashCode() : 0);
     result = 31 * result + (forcePathStyleAccess ? 1 : 0);
+    result = 31 * result + (enableCompression ? 1 : 0);
     return result;
   }
 
@@ -101,6 +111,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     final S3BackupStoreConfig that = (S3BackupStoreConfig) o;
 
     if (forcePathStyleAccess != that.forcePathStyleAccess) {
+      return false;
+    }
+    if (enableCompression != that.enableCompression) {
       return false;
     }
     if (!Objects.equals(bucketName, that.bucketName)) {
@@ -139,9 +152,12 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + ", secretKey='"
         + "<redacted>"
         + '\''
-        + ", apiCallTimeout='"
+        + ", apiCallTimeout="
         + apiCallTimeout
-        + '\''
+        + ", forcePathStyleAccess="
+        + forcePathStyleAccess
+        + ", enableCompression="
+        + enableCompression
         + '}';
   }
 }
