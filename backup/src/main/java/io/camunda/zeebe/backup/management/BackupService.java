@@ -136,8 +136,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public ActorFuture<Collection<BackupStatus>> listBackups() {
-    return CompletableActorFuture.completedExceptionally(
-        new UnsupportedOperationException("Not implemented"));
+    return internalBackupManager.listBackups(partitionId, actor);
   }
 
   @Override

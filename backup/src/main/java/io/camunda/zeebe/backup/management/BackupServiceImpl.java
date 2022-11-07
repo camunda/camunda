@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -252,5 +253,24 @@ final class BackupServiceImpl {
     } else {
       return backupStore.delete(backupStatus.id());
     }
+  }
+
+  ActorFuture<Collection<BackupStatus>> listBackups(
+      final int partitionId, final ConcurrencyControl executor) {
+    final ActorFuture<Collection<BackupStatus>> availableBackupsFuture = executor.createFuture();
+    executor.run(
+        () ->
+            backupStore
+                .list(
+                    new BackupIdentifierWildcardImpl(
+                        Optional.empty(), Optional.of(partitionId), Optional.empty()))
+                .thenAccept(availableBackupsFuture::complete)
+                .exceptionally(
+                    error -> {
+                      LOG.warn("Failed to list available backups", error);
+                      availableBackupsFuture.completeExceptionally(error);
+                      return null;
+                    }));
+    return availableBackupsFuture;
   }
 }
