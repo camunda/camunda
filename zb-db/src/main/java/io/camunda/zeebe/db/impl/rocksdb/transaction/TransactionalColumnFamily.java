@@ -333,7 +333,8 @@ class TransactionalColumnFamily<
 
             boolean shouldVisitNext = true;
 
-            for (iterator.seek(ByteBuffer.wrap(prefixKey, 0, prefixLength));
+            final ByteBuffer bufferView = ByteBuffer.wrap(prefixKey, 0, prefixLength);
+            for (iterator.seek(bufferView);
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
               final byte[] keyBytes = iterator.key();

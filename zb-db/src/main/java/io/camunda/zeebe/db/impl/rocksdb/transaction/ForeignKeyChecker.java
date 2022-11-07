@@ -90,7 +90,8 @@ public final class ForeignKeyChecker {
         transaction.newIterator(
             transactionDb.getPrefixReadOptions(), transactionDb.getDefaultHandle())) {
 
-      iterator.seek(ByteBuffer.wrap(prefix, 0, prefixLength));
+      final ByteBuffer bufferView = ByteBuffer.wrap(prefix, 0, prefixLength);
+      iterator.seek(bufferView);
       boolean exists = false;
       if (iterator.isValid()) {
         final byte[] keyBytes = iterator.key();
