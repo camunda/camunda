@@ -9,8 +9,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,7 +25,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 public class RawProcessDataResultDtoMapperTest {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -35,7 +42,7 @@ public class RawProcessDataResultDtoMapperTest {
 
     // when
     final List<RawDataProcessInstanceDto> result =
-      mapper.mapFrom(processInstanceDtos, objectMapper, Collections.emptySet());
+      mapper.mapFrom(processInstanceDtos, objectMapper, Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap());
 
     // then
     assertThat(result).hasSize(rawDataLimit);
@@ -58,7 +65,7 @@ public class RawProcessDataResultDtoMapperTest {
     final Set<String> varsFromUndisplayedInstances = new HashSet<>();
     varsFromUndisplayedInstances.add("var2");
     final List<RawDataProcessInstanceDto> result =
-      mapper.mapFrom(processInstanceDtos, objectMapper, varsFromUndisplayedInstances);
+      mapper.mapFrom(processInstanceDtos, objectMapper, varsFromUndisplayedInstances, Collections.emptyMap(), Collections.emptyMap());
 
     // then
     assertThat(result)
@@ -81,7 +88,7 @@ public class RawProcessDataResultDtoMapperTest {
 
     // when
     final List<RawDataProcessInstanceDto> result =
-      mapper.mapFrom(processInstanceDtos, objectMapper, new HashSet<>());
+      mapper.mapFrom(processInstanceDtos, objectMapper, new HashSet<>(), Collections.emptyMap(), Collections.emptyMap());
 
     // then
     assertThat(result)
@@ -94,5 +101,4 @@ public class RawProcessDataResultDtoMapperTest {
       .mapToObj(i -> ProcessInstanceDto.builder().build())
       .collect(Collectors.toList());
   }
-
 }

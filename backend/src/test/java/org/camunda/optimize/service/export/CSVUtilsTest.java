@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -60,6 +61,7 @@ public class CSVUtilsTest {
 	}
 
 	@Test
+	@Disabled("Will be fixed with OPT-6530")
 	public void testRawProcessResultMapping_testQuoteEscapingInValue() {
 		// given
 		final Map<String, Object> variables = new HashMap<>();
@@ -80,7 +82,8 @@ public class CSVUtilsTest {
 
 	@ParameterizedTest
 	@MethodSource("getExpectedStringAndCsvDelimiter")
-	public void testRawProcessResultMapping_csvWorksWithSeveralDelimters(String expectedString, char delimiter) {
+	@Disabled("Will be fixed with OPT-6530")
+	public void testRawProcessResultMapping_csvWorksWithSeveralDelimiters(String expectedString, char delimiter) {
 		// given
 		final Map<String, Object> variables = new HashMap<>();
 		variables.put("\"1\"", "test");
@@ -99,7 +102,7 @@ public class CSVUtilsTest {
 		List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
 
 		List<String> excludedColumns =
-      Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[0].getName());
+			Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[0].getName());
 
 		final SingleProcessReportDefinitionRequestDto reportDefinition = new SingleProcessReportDefinitionRequestDto();
 		reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);

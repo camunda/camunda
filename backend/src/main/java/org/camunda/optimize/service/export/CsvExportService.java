@@ -7,6 +7,7 @@ package org.camunda.optimize.service.export;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,12 +42,18 @@ public class CsvExportService {
         .isCsvExport(true)
         .build();
       final AuthorizedReportEvaluationResult reportResult = reportEvaluationHandler.evaluateReport(evaluationInfo);
-      final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
+      List<String[]> resultAsCsv = reportResult.getEvaluationResult()
         .getResultAsCsv(
-          Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT),
+          Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit())
+            .orElse(DEFAULT_RECORD_LIMIT),
           0,
           timezone
         );
+      //lines 52 - 58 will be removed with OPT-6530
+      if (evaluationInfo.getReport().getReportType().equals(ReportType.PROCESS) && !evaluationInfo.getReport()
+        .isCombined()) {
+        resultAsCsv = dropFlowNodeDurationsColumn(resultAsCsv);
+      }
       return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(
         resultAsCsv,
         configurationService.getCsvConfiguration().getExportCsvDelimiter()
@@ -73,15 +81,37 @@ public class CsvExportService {
         reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
         .getResultAsCsv(
-          Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT),
+          Optional.ofNullable(configurationService.getCsvConfiguration().getExportCsvLimit())
+            .orElse(DEFAULT_RECORD_LIMIT),
           0,
           timezone
         );
-      return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv, configurationService.getCsvConfiguration().getExportCsvDelimiter());
+      return CSVUtils.mapCsvLinesToCsvBytes(
+        resultAsCsv,
+        configurationService.getCsvConfiguration().getExportCsvDelimiter()
+      );
     } catch (Exception e) {
       log.error("Could not evaluate report to export the result to csv!", e);
       throw e;
     }
+  }
+
+  private List<String[]> dropFlowNodeDurationsColumn(List<String[]> resultAsCsv) {
+    int totalRows = resultAsCsv.size();
+    int totalColumns = resultAsCsv.get(0).length;
+    if (totalColumns < 5) {
+      return resultAsCsv;
+    }
+    String[][] newCsvResult = new String[totalRows][totalColumns - 1];
+    for (int currentRow = 0; currentRow < totalRows; currentRow++) {
+      for (int currentColumn = 0, currColumn = 0; currentColumn < totalColumns; currentColumn++) {
+        if (currentColumn != 4) {
+          newCsvResult[currentRow][currColumn] = resultAsCsv.get(currentRow)[currentColumn];
+          currColumn++;
+        }
+      }
+    }
+    return Arrays.asList(newCsvResult);
   }
 
 }

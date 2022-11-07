@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -48,6 +49,7 @@ public class CsvExportServiceTest {
   }
 
   @Test
+  @Disabled("will be enabled with OPT-6530")
   public void rawProcessReportCsvExport() {
     // given
     RawDataCommandResult rawDataReportResult =
@@ -71,6 +73,7 @@ public class CsvExportServiceTest {
   }
 
   @Test
+  @Disabled("will be enabled with OPT-6530")
   public void rawDecisionReportCsvExport() {
     // given
     RawDataCommandResult rawDataReportResult =

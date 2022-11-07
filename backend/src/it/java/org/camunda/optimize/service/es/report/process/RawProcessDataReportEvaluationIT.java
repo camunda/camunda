@@ -8,6 +8,8 @@ package org.camunda.optimize.service.es.report.process;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.FlowNodeTotalDurationDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
@@ -31,7 +33,10 @@ import org.camunda.optimize.rest.optimize.dto.VariableDto;
 import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.service.util.ProcessReportDataType;
+import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.DateCreationFreezer;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -42,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -50,6 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
@@ -63,8 +70,14 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.service.es.report.command.process.mapping.RawProcessDataResultDtoMapper.OBJECT_VARIABLE_VALUE_PLACEHOLDER;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.util.BpmnModels.FLONODE_NAME;
+import static org.camunda.optimize.util.BpmnModels.MERGE_GATEWAY_ID;
+import static org.camunda.optimize.util.BpmnModels.SCRIPT_TASK;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -78,9 +91,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -96,9 +108,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -114,9 +125,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -130,6 +140,246 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getEngineName()).isEqualTo(DEFAULT_ENGINE_ALIAS);
     assertThat(rawDataProcessInstanceDto.getBusinessKey()).isEqualTo(BUSINESS_KEY);
     assertThat(rawDataProcessInstanceDto.getVariables()).isNotNull().isEmpty();
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenAllFlowNodeInstancesHaveFinished() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcessWithFlowNodeNames();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstance.getId(),
+      USER_TASK_1,
+      10
+    );
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    assertBasicResultData(evaluationResult, processInstance, 1);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResult.getResult().getData().get(0);
+
+    // then
+    assertThat(rawDataProcessInstanceDto.getFlowNodeDurations()).containsExactlyInAnyOrderEntriesOf(
+      ImmutableMap.of(START_EVENT, new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+                      USER_TASK_1, new FlowNodeTotalDurationDataDto(FLONODE_NAME, 10),
+                      END_EVENT, new FlowNodeTotalDurationDataDto(END_EVENT, 0)
+      )
+    );
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenAllFlowNodesHaveTheSameName() {
+    // given
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagramWithAllFlowNodesHavingSameNames());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstance.getId(),
+      USER_TASK_1,
+      10
+    );
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResultWithUserTask =
+      evaluateRawReportWithDefaultPagination(reportData);
+    assertBasicResultData(evaluationResultWithUserTask, processInstance, 1);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResultWithUserTask.getResult().getData().get(0);
+
+    // then
+    assertThat(rawDataProcessInstanceDto.getFlowNodeDurations()).containsExactlyInAnyOrderEntriesOf(
+      ImmutableMap.of(START_EVENT, new FlowNodeTotalDurationDataDto(FLONODE_NAME, 0),
+                      USER_TASK_1, new FlowNodeTotalDurationDataDto(FLONODE_NAME, 10),
+                      END_EVENT, new FlowNodeTotalDurationDataDto(FLONODE_NAME, 0)
+      )
+    );
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenFlowNodesHaveNoNames() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstance.getId(),
+      USER_TASK_1,
+      10
+    );
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResultWithUserTask =
+      evaluateRawReportWithDefaultPagination(reportData);
+    assertBasicResultData(evaluationResultWithUserTask, processInstance, 1);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResultWithUserTask.getResult().getData().get(0);
+
+    // then the flow node IDs are used instead of names
+    assertThat(rawDataProcessInstanceDto.getFlowNodeDurations()).containsExactlyInAnyOrderEntriesOf(
+      ImmutableMap.of(START_EVENT, new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+                      USER_TASK_1, new FlowNodeTotalDurationDataDto(USER_TASK_1, 10),
+                      END_EVENT, new FlowNodeTotalDurationDataDto(END_EVENT, 0)
+      )
+    );
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenFlowNodeHasNotFinished() {
+    // given
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    final OffsetDateTime instanceStartDate = now.minusSeconds(10);
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcess();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeStartDate(
+      processInstance.getId(),
+      USER_TASK_1,
+      instanceStartDate
+    );
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResultWithUserTask =
+      evaluateRawReportWithDefaultPagination(reportData);
+    assertBasicResultData(evaluationResultWithUserTask, processInstance, 1);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResultWithUserTask.getResult().getData().get(0);
+
+    // then
+    assertThat(rawDataProcessInstanceDto.getFlowNodeDurations()).containsExactlyInAnyOrderEntriesOf(
+      ImmutableMap.of(
+        START_EVENT,
+        new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+        USER_TASK_1,
+        new FlowNodeTotalDurationDataDto(
+          USER_TASK_1,
+          now.toInstant().toEpochMilli() - instanceStartDate.toInstant().toEpochMilli()
+        )
+      )
+    );
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenProcessIsLooping() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartLoopingProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), SCRIPT_TASK, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), SERVICE_TASK_ID_1, 10);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), MERGE_GATEWAY_ID, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), SERVICE_TASK_ID_2, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), SPLITTING_GATEWAY_ID, 1);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    assertBasicResultData(evaluationResult, processInstance, 1);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResult.getResult().getData().get(0);
+
+    // then
+    assertThat(rawDataProcessInstanceDto.getFlowNodeDurations()).containsExactlyInAnyOrderEntriesOf(
+      ImmutableMap.of( // service tesk 1 loops in the process and that's why its total duration equates to 20
+                       SERVICE_TASK_ID_1, new FlowNodeTotalDurationDataDto(SERVICE_TASK_ID_1, 20),
+                       SERVICE_TASK_ID_2, new FlowNodeTotalDurationDataDto(SERVICE_TASK_ID_2, 0),
+                       START_EVENT, new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+                       END_EVENT, new FlowNodeTotalDurationDataDto(END_EVENT, 0),
+                       SCRIPT_TASK, new FlowNodeTotalDurationDataDto(SCRIPT_TASK, 0),
+                       MERGE_GATEWAY_ID, new FlowNodeTotalDurationDataDto(MERGE_GATEWAY_ID, 0),
+                       // splitting gateway loops in the process and that's why its total duration equates to 2
+                       SPLITTING_GATEWAY_ID, new FlowNodeTotalDurationDataDto(SPLITTING_GATEWAY_ID, 2)
+      )
+    );
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForDefinitionWithDifferentVersions() {
+    // given
+    ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    ProcessInstanceEngineDto processInstance2 =  engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSimpleStartEventOnlyDiagram());
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), END_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), USER_TASK_1, 10);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance2.getId(), FLONODE_NAME, 12);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReportForAllDefinitionVersions(processInstance2.getProcessDefinitionKey());
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResult.getResult().getData().get(0);
+
+    // then
+    List<FlowNodeTotalDurationDataDto> flowNodeTotalDurationDataDtos = evaluationResult.getResult()
+      .getData()
+      .stream()
+      .map(RawDataProcessInstanceDto::getFlowNodeDurations)
+      .map(Map::values)
+      .flatMap(Collection::stream)
+      .collect(Collectors.toList());
+    assertThat(flowNodeTotalDurationDataDtos).containsExactlyInAnyOrder(
+      new FlowNodeTotalDurationDataDto(USER_TASK_1, 10),
+      new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+      new FlowNodeTotalDurationDataDto(END_EVENT, 0),
+      new FlowNodeTotalDurationDataDto(FLONODE_NAME, 12)
+
+    );
+  }
+
+  @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenReportHasTwoDefinitions() {
+    // given
+    ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleUserTaskProcessWithFlowNodeNames();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), USER_TASK_1, 10);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance1.getId(), END_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance2.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance2.getId(), USER_TASK_1, 20);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance2.getId(), END_EVENT, 0);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto rawDataReportWithTwoDefinitions = createReportWithTwoDefinitions(
+      processInstance1.getProcessDefinitionKey(),
+      processInstance2.getProcessDefinitionKey()
+    );
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResultWithUserTask =
+      evaluateRawReportWithDefaultPagination(rawDataReportWithTwoDefinitions);
+
+    // then
+    assertBasicResultDataForMultiDefinitionReport(evaluationResultWithUserTask, processInstance1, 2);
+    List<FlowNodeTotalDurationDataDto> flowNodeTotalDurationDataDtos = evaluationResultWithUserTask.getResult()
+      .getData()
+      .stream()
+      .map(RawDataProcessInstanceDto::getFlowNodeDurations)
+      .map(Map::values)
+      .flatMap(Collection::stream)
+      .collect(Collectors.toList());
+    assertThat(flowNodeTotalDurationDataDtos).containsExactlyInAnyOrder(
+      new FlowNodeTotalDurationDataDto(USER_TASK_1, 20),
+      new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+      new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+      new FlowNodeTotalDurationDataDto(END_EVENT, 0),
+      new FlowNodeTotalDurationDataDto(END_EVENT, 0),
+      new FlowNodeTotalDurationDataDto(USER_TASK_1, 10)
+
+    );
   }
 
   @Test
@@ -222,9 +472,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -289,9 +538,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then the given list should be sorted in ascending order
@@ -421,9 +669,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -573,9 +820,8 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
-      evaluateRawReportWithDefaultPagination(reportData);
+      createReportAndReturnEvaluationResult(processInstance);
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
 
     // then
@@ -892,10 +1138,12 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     assertThat(evaluationResult.getReportDefinition().getData()).extracting(
         ProcessReportDataDto::getProcessDefinitionKey,
-        ProcessReportDataDto::getDefinitionVersions)
+        ProcessReportDataDto::getDefinitionVersions
+      )
       .containsExactly(definitionKey, List.of(definitionVersion));
     final ReportResultResponseDto<List<RawDataProcessInstanceDto>> result = evaluationResult.getResult();
-    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getNumberOfOpenIncidents).containsExactlyInAnyOrder(0L, 1L);
+    assertThat(result.getData()).extracting(RawDataProcessInstanceDto::getNumberOfOpenIncidents)
+      .containsExactlyInAnyOrder(0L, 1L);
   }
 
   @ParameterizedTest
@@ -1392,6 +1640,20 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(result.getResult().getData()).isNotNull().hasSize(expectedDataSize);
   }
 
+  private void assertBasicResultDataForMultiDefinitionReport(final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> result,
+                                                             final ProcessInstanceEngineDto instance,
+                                                             final int expectedDataSize) {
+    final ProcessReportDataDto resultDataDto = result.getReportDefinition().getData();
+    assertThat(resultDataDto.getProcessDefinitionKey()).isEqualTo(instance.getProcessDefinitionKey());
+    assertThat(resultDataDto.getDefinitionVersions()).containsExactly(ALL_VERSIONS);
+    assertThat(resultDataDto.getView())
+      .isNotNull()
+      .extracting(ProcessViewDto::getFirstProperty)
+      .isEqualTo(ViewProperty.RAW_DATA);
+    assertThat(result.getResult().getData()).isNotNull().hasSize(expectedDataSize);
+  }
+
+
   private void assertResultInstance(final ProcessInstanceEngineDto expectedInstance,
                                     final RawDataProcessInstanceDto resultInstance) {
     assertThat(resultInstance.getProcessDefinitionKey()).isEqualTo(expectedInstance.getProcessDefinitionKey());
@@ -1434,5 +1696,32 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     return Collections.singletonList(variableFilterDto);
   }
 
-}
+  private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessWithFlowNodeNames() {
+    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagramWithFlowNodeNames());
+  }
 
+  private ProcessReportDataDto createReportWithTwoDefinitions(final String processDefinitionKey1,
+                                                              final String processDefinitionKey2) {
+    return TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .definitions(List.of(
+        new ReportDataDefinitionDto(processDefinitionKey1),
+        new ReportDataDefinitionDto(processDefinitionKey2)
+      ))
+      .build();
+  }
+
+  private AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> createReportAndReturnEvaluationResult(final ProcessInstanceEngineDto processInstanceEngineDto) {
+    ProcessReportDataDto reportData = createReport(processInstanceEngineDto);
+    return evaluateRawReportWithDefaultPagination(reportData);
+  }
+
+  private ProcessReportDataDto createReportForAllDefinitionVersions(String definitionKey) {
+    return new ProcessReportDataBuilderHelper()
+      .processDefinitionKey(definitionKey)
+      .processDefinitionVersions(Collections.singletonList(ALL_VERSIONS))
+      .viewProperty(ViewProperty.RAW_DATA)
+      .visualization(ProcessVisualization.TABLE)
+      .build();
+  }
+}
