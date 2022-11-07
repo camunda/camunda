@@ -401,21 +401,18 @@ public final class S3BackupStore implements BackupStore {
     LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
 
-    final var futures =
-        backup.snapshot().namedFiles().entrySet().stream()
-            .map(
-                snapshotFile ->
-                    saveNamedFile(prefix, snapshotFile.getKey(), snapshotFile.getValue()))
-            .toList();
-
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
+    return saveNamedFileSet(prefix, backup.snapshot());
   }
 
   private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
     LOG.debug("Saving segment files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
+    return saveNamedFileSet(prefix, backup.segments());
+  }
+
+  private CompletableFuture<Void> saveNamedFileSet(final String prefix, final NamedFileSet files) {
     final var futures =
-        backup.segments().namedFiles().entrySet().stream()
+        files.namedFiles().entrySet().stream()
             .map(segmentFile -> saveNamedFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
             .toList();
 
