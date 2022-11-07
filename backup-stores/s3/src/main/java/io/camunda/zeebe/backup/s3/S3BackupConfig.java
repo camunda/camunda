@@ -38,17 +38,26 @@ public record S3BackupConfig(
     Optional<String> region,
     Optional<Credentials> credentials,
     Optional<Duration> apiCallTimeout,
-    boolean forcePathStyleAccess) {
+    boolean forcePathStyleAccess,
+    boolean enableCompression) {
 
   /**
    * Creates a config without setting the region and credentials.
    *
    * @param bucketName Name of the backup that will be used for storing backups
    * @see S3BackupConfig#S3BackupConfig(String bucketName, Optional endpoint, Optional region,
-   *     Optional credentials, Optional apiCallTimeout, boolean forcePathStyleAccess)
+   *     Optional credentials, Optional apiCallTimeout, boolean forcePathStyleAccess, boolean
+   *     enableCompression)
    */
   public S3BackupConfig(final String bucketName) {
-    this(bucketName, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), false);
+    this(
+        bucketName,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty(),
+        false,
+        false);
   }
 
   public static S3BackupConfig from(
@@ -58,7 +67,8 @@ public record S3BackupConfig(
       final String accessKey,
       final String secretKey,
       final Duration apiCallTimeoutMs,
-      final boolean forcePathStyleAccess) {
+      final boolean forcePathStyleAccess,
+      final boolean enableCompression) {
     Credentials credentials = null;
     if (accessKey != null && secretKey != null) {
       credentials = new Credentials(accessKey, secretKey);
@@ -69,7 +79,8 @@ public record S3BackupConfig(
         Optional.ofNullable(region),
         Optional.ofNullable(credentials),
         Optional.ofNullable(apiCallTimeoutMs),
-        forcePathStyleAccess);
+        forcePathStyleAccess,
+        enableCompression);
   }
 
   record Credentials(String accessKey, String secretKey) {
