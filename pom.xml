@@ -34,7 +34,7 @@
     <version.elasticsearch>7.17.6</version.elasticsearch>
     <version.spring.boot>2.7.5</version.spring.boot>
     <version.junit>4.13.2</version.junit>
-    <version.springdoc>1.6.11</version.springdoc>
+    <version.springdoc>1.6.12</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.9.5</version.micrometer>
     <version.mockito>4.8.0</version.mockito>
