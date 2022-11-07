@@ -288,3 +288,21 @@ it('should not pass updateSorting to the table component on dashboard or shared 
   node.setProps({context: 'shared'});
   expect(node.find('Table').prop('updateSorting')).toBe(false);
 });
+
+it('should not pass updateSorting to the table component for report grouped by process', () => {
+  const spy = jest.fn();
+  const node = shallow(<Table {...props} loadReport={spy} updateReport={() => {}} />);
+
+  node.find('Table').prop('updateSorting')();
+  expect(spy).toHaveBeenCalled();
+
+  node.setProps({
+    report: {
+      ...report,
+      data: {...report.data, distributedBy: {type: 'process'}},
+      result: {data: []},
+    },
+  });
+
+  expect(node.find('Table').prop('updateSorting')).toBe(false);
+});
