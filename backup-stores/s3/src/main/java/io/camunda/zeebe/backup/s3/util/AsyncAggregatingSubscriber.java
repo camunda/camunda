@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.backup.s3;
+package io.camunda.zeebe.backup.s3.util;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -83,7 +83,7 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
   /**
    * @return A future that is completed with the results once all of them have been collected.
    */
-  CompletableFuture<Collection<T>> result() {
+  public CompletableFuture<Collection<T>> result() {
     return CompletableFuture.supplyAsync(phaser::arriveAndAwaitAdvance)
         .thenApply(
             ignored -> {
