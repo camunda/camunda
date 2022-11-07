@@ -161,7 +161,7 @@ export default withErrorHandling(
           <AddUserModal
             optimizeProfile={optimizeProfile}
             open={addingUser}
-            existingUsers={users}
+            existingUsers={users || []}
             onClose={this.closeAddUserModal}
             onConfirm={this.addUsers}
           />
