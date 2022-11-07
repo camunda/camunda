@@ -46,6 +46,7 @@
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.15</version.commons-codec>
     <version.commons-compress>1.22</version.commons-compress>
+    <version.zstd-jni>1.5.2-4</version.zstd-jni>
     <version.commons-text>1.10.0</version.commons-text>
     <version.cron-utils>9.2.0</version.cron-utils>
     <version.docker-java-api>3.2.13</version.docker-java-api>
@@ -1015,6 +1016,12 @@
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${version.commons-compress}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.luben</groupId>
+        <artifactId>zstd-jni</artifactId>
+        <version>${version.zstd-jni}</version>
       </dependency>
 
       <!-- both hamcrest-core (deprecated in favor of hamcrest) and hamcrest are required for
