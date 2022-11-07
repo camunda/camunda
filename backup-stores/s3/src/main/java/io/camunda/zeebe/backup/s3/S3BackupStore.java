@@ -88,6 +88,7 @@ public final class S3BackupStore implements BackupStore {
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final Pattern BACKUP_IDENTIFIER_PATTERN =
       Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
+  public static final int SCAN_PARALLELISM = 16;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
 
@@ -326,7 +327,7 @@ public final class S3BackupStore implements BackupStore {
 
   private CompletableFuture<Collection<Manifest>> readManifestObjects(
       final BackupIdentifierWildcard wildcard) {
-    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(16);
+    final var aggregator = new AsyncAggregatingSubscriber<Manifest>(SCAN_PARALLELISM);
     final var publisher = findBackupIds(wildcard).map(this::readManifestObject);
     publisher.subscribe(aggregator);
 
