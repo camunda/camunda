@@ -30,6 +30,7 @@ import io.camunda.zeebe.backup.s3.manifest.InProgressBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
+import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
