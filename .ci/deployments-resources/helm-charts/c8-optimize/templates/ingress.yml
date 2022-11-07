@@ -40,9 +40,6 @@ metadata:
   name: mailhog
   labels: {{ include "commonLabels" $ | nindent 4 }}
   annotations: {{ include "commonAnnotations" $ | nindent 4 }}{{ include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 }}
-    nginx.ingress.kubernetes.io/rewrite-target: /$2
-    nginx.ingress.kubernetes.io/configuration-snippet: | # This is needed to redirect mail to mail/ otherwise the CSS of mailhog won't render
-      rewrite ^([^.?]*[^/])$ $1/ redirect;
 spec:
   ingressClassName: nginx
   tls:
@@ -53,8 +50,8 @@ spec:
     - host: {{ include "ingress.domain" $ | quote }}
       http:
         paths:
-          - path: /mail(/|$)(.*)
-            pathType: Prefix
+          - path: /mail
+            pathType: ImplementationSpecific
             backend:
               service:
                 name: mailhog
