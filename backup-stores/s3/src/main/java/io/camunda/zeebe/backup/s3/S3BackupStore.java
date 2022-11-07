@@ -31,8 +31,11 @@ import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -45,6 +48,8 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
+import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -59,7 +64,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
@@ -80,6 +84,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
+
   static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
   static final String SNAPSHOT_PREFIX = "snapshot/";
@@ -89,6 +94,7 @@ public final class S3BackupStore implements BackupStore {
   private static final Pattern BACKUP_IDENTIFIER_PATTERN =
       Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   public static final int SCAN_PARALLELISM = 16;
+  public static final int COMPRESSION_MIN_FILE_SIZE = 1024 * 1024; // 1 MiB
   private final S3BackupConfig config;
   private final S3AsyncClient client;
 
@@ -421,12 +427,79 @@ public final class S3BackupStore implements BackupStore {
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
   }
 
-  private CompletableFuture<PutObjectResponse> saveNamedFile(
+  private CompletableFuture<Void> saveNamedFile(
+      final String prefix, final String fileName, final Path filePath) {
+    try {
+      if (shouldCompress(filePath)) {
+        return compressAndSaveNamedFile(prefix, fileName, filePath);
+      } else {
+        return saveNamedFileWithoutCompression(prefix, fileName, filePath);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private CompletableFuture<Void> saveNamedFileWithoutCompression(
       final String prefix, final String fileName, final Path filePath) {
     LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client.putObject(
-        put -> put.bucket(config.bucketName()).key(prefix + fileName),
-        AsyncRequestBody.fromFile(filePath));
+    return client
+        .putObject(
+            put -> put.bucket(config.bucketName()).key(prefix + fileName),
+            AsyncRequestBody.fromFile(filePath))
+        .thenApply(response -> null);
+  }
+
+  private CompletableFuture<Void> compressAndSaveNamedFile(
+      final String prefix, final String fileName, final Path filePath) throws IOException {
+    final var compressed = compressFile(filePath);
+    return saveNamedFileWithoutCompression(prefix, fileName, compressed)
+        .thenRunAsync(cleanupCompressedFile(fileName, compressed));
+  }
+
+  private static Runnable cleanupCompressedFile(final String fileName, final Path compressed) {
+    return () -> {
+      try {
+        Files.delete(compressed);
+      } catch (final IOException e) {
+        LOG.warn(
+            "Failed to delete temporary file {} created for compressing {}",
+            compressed,
+            fileName,
+            e);
+      }
+    };
+  }
+
+  private boolean shouldCompress(final Path filePath) {
+    if (!config.enableCompression()) {
+      return false;
+    }
+    try {
+      final var fileSize = Files.size(filePath);
+      return fileSize > COMPRESSION_MIN_FILE_SIZE;
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private static Path compressFile(final Path file) {
+    try {
+      final var compressedFile = Files.createTempFile("zb-backup-compress-", null);
+      LOG.trace("Compressing file {} to {}", file, compressedFile);
+      try (final var fileInput = Files.newInputStream(file)) {
+        try (final var bufferedInput = new BufferedInputStream(fileInput)) {
+          try (final var output = Files.newOutputStream(compressedFile)) {
+            try (final var compressedOutput = new ZstdCompressorOutputStream(output)) {
+              IOUtils.copy(bufferedInput, compressedOutput);
+              return compressedFile;
+            }
+          }
+        }
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
