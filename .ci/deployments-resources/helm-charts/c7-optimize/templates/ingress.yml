@@ -36,23 +36,6 @@ spec:
             name: optimize
             port:
               number: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: optimize-mailhog
-  labels: {{ include "commonLabels" $ | nindent 4 }}
-  annotations: {{ include "commonAnnotations" $ | nindent 4 }}{{ include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 }}
-spec:
-  ingressClassName: nginx
-  tls:
-  - hosts:
-    - {{ include "ingress.domain" $ | quote }}
-    secretName: optimize-tls
-  rules:
-  - host: {{ include "ingress.domain" $ | quote }}
-    http:
-      paths:
       - path: /mail
         pathType: ImplementationSpecific
         backend:

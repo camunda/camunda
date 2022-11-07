@@ -23,6 +23,13 @@ spec:
             name: optimize
             port:
               number: 80
+      - path: /mail
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: mailhog
+            port:
+              number: 8025
   - host: keycloak-{{ include "ingress.domain" $ }}
     http:
       paths:
@@ -33,30 +40,6 @@ spec:
               name: keycloak
               port:
                 number: 80
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: mailhog
-  labels: {{ include "commonLabels" $ | nindent 4 }}
-  annotations: {{ include "commonAnnotations" $ | nindent 4 }}{{ include "infrapreviewenvironmentsingress.annotations" $ | nindent 4 }}
-spec:
-  ingressClassName: nginx
-  tls:
-    - hosts:
-        - {{ include "ingress.domain" $ | quote }}
-      secretName: optimize-tls
-  rules:
-    - host: {{ include "ingress.domain" $ | quote }}
-      http:
-        paths:
-          - path: /mail
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: mailhog
-                port:
-                  number: 8025
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
