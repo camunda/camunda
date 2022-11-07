@@ -22,6 +22,7 @@ public class BackupManagerMetrics {
   private static final String COMPLETED = "completed";
   private static final String TAKE_OPERATION = "take";
   private static final String STATUS_OPERATION = "status";
+  private static final String LIST_OPERATION = "list";
   private static final String DELETE_OPERATION = "delete";
 
   private static final Counter TOTAL_OPERATIONS =
@@ -62,6 +63,10 @@ public class BackupManagerMetrics {
     return OperationMetrics.start(partitionId, STATUS_OPERATION);
   }
 
+  public OperationMetrics startListingBackups() {
+    return OperationMetrics.start(partitionId, LIST_OPERATION);
+  }
+
   public OperationMetrics startDeleting() {
     return OperationMetrics.start(partitionId, DELETE_OPERATION);
   }
@@ -70,6 +75,7 @@ public class BackupManagerMetrics {
     OPERATIONS_IN_PROGRESS.labels(partitionId, TAKE_OPERATION).set(0);
     OPERATIONS_IN_PROGRESS.labels(partitionId, DELETE_OPERATION).set(0);
     OPERATIONS_IN_PROGRESS.labels(partitionId, STATUS_OPERATION).set(0);
+    OPERATIONS_IN_PROGRESS.labels(partitionId, LIST_OPERATION).set(0);
   }
 
   public static final class OperationMetrics {

@@ -136,7 +136,10 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public ActorFuture<Collection<BackupStatus>> listBackups() {
-    return internalBackupManager.listBackups(partitionId, actor);
+    final var operationMetrics = metrics.startListingBackups();
+    final var resultFuture = internalBackupManager.listBackups(partitionId, actor);
+    resultFuture.onComplete(operationMetrics::complete);
+    return resultFuture;
   }
 
   @Override
