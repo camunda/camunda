@@ -172,6 +172,7 @@ export function createBarOptions({
           : {}),
         beginAtZero: true,
         color: getColorFor('label', isDark),
+        precision: hasCountMeasure ? 0 : undefined,
       },
       suggestedMax: targetLine,
       id: 'axis-0',
@@ -180,10 +181,6 @@ export function createBarOptions({
       stacked,
     },
   };
-
-  if (hasCountMeasure) {
-    measuresAxis['axis-0'].ticks.precision = 0;
-  }
 
   if (hasMultipleAxes) {
     measuresAxis['axis-0'].title.display = true;
