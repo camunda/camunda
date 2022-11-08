@@ -62,7 +62,7 @@ jobs:
           ZEEBE_IMAGE: ${{ steps.build-docker.outputs.image }}
           GENERATION_TEMPLATE: "${{ github.event.inputs.generation || 'Zeebe SNAPSHOT'}}"
           # Weekly e2e test run for 5 days.
-          MAX_TEST_DURATION: "${{ github.event.inputs.maxTestDuration || 'PT5D'}}"
+          MAX_TEST_DURATION: "${{ github.event.inputs.maxTestDuration || 'P5D'}}"
           BRANCH_NAME: "${{ github.ref_name }}"
           ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
           ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
