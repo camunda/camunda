@@ -76,3 +76,26 @@ it('should load non imported user before adding it to the list', () => {
     },
   ]);
 });
+
+it('should default users and collectionUsers null values to an empty array', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <UserTypeahead
+      users={null}
+      collectionUsers={null}
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      onChange={spy}
+    />
+  );
+  node.find('MultiUserInput').prop('onAdd')({
+    id: 'kermit',
+  });
+  expect(getUser).toHaveBeenCalledWith('kermit');
+
+  expect(spy).toHaveBeenCalledWith([
+    {
+      id: 'USER:kermit',
+      identity: {id: 'kermit', memberCount: undefined, name: 'Kermit', type: 'user'},
+    },
+  ]);
+});

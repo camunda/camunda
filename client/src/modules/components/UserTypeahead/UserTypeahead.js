@@ -17,7 +17,7 @@ import {getUser} from './service';
 
 export function UserTypeahead({
   users,
-  collectionUsers = [],
+  collectionUsers,
   onChange,
   mightFail,
   fetchUsers,
@@ -25,6 +25,13 @@ export function UserTypeahead({
   excludeGroups = false,
   persistMenu,
 }) {
+  if (!users) {
+    users = [];
+  }
+  if (!collectionUsers) {
+    collectionUsers = [];
+  }
+
   const getSelectedUser = (user, cb) => {
     const {id, name} = user;
     if (!name) {
