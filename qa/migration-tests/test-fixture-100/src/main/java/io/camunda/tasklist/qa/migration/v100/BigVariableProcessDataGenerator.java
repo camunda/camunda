@@ -10,8 +10,8 @@ import static io.camunda.tasklist.property.ImportProperties.DEFAULT_VARIABLE_SIZ
 import static io.camunda.tasklist.qa.util.VariablesUtil.createBigVariableWithSuffix;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
-import io.camunda.tasklist.qa.util.migration.TestContext;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.zeebe.client.ZeebeClient;

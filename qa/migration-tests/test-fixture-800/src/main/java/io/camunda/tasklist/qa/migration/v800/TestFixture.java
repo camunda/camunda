@@ -6,8 +6,8 @@
  */
 package io.camunda.tasklist.qa.migration.v800;
 
+import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.migration.AbstractTestFixture;
-import io.camunda.tasklist.qa.util.migration.TestContext;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,7 +20,7 @@ public class TestFixture extends AbstractTestFixture {
     super.setup(testContext);
     startZeebeAndTasklist();
     // no new data is created
-    stopZeebeAndTasklist();
+    stopZeebeAndTasklist(testContext);
   }
 
   @Override

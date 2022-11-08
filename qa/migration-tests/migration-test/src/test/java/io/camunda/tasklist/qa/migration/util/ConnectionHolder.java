@@ -6,7 +6,8 @@
  */
 package io.camunda.tasklist.qa.migration.util;
 
-import io.camunda.tasklist.qa.util.migration.TestContext;
+import io.camunda.tasklist.qa.util.TestContainerUtil;
+import io.camunda.tasklist.qa.util.TestContext;
 import java.io.File;
 import java.io.IOException;
 import org.apache.http.HttpHost;
@@ -18,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class ConnectionHolder {
 
-  @Autowired private ElasticsearchContainerUtil testContainerUtil;
+  @Autowired private TestContainerUtil testContainerUtil;
 
   @Bean
   public RestHighLevelClient getEsClient(TestContext testContext) {

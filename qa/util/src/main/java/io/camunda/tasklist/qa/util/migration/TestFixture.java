@@ -6,6 +6,8 @@
  */
 package io.camunda.tasklist.qa.util.migration;
 
+import io.camunda.tasklist.qa.util.TestContext;
+
 /**
  * Test fixture to create test data for given version of Tasklist. Prerequisites: Elasticsearch is
  * running - it is either empty or contains indices of one of previous versions of Tasklist. Test

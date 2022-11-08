@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.migration.util;
 import static org.junit.Assume.assumeTrue;
 
 import io.camunda.tasklist.qa.util.DependencyInjectionTestExecutionListener;
-import io.camunda.tasklist.qa.util.migration.TestContext;
+import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
@@ -17,16 +17,13 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
-@ContextConfiguration
+@ContextConfiguration(classes = TestConfig.class)
 @TestPropertySource(locations = "/test.properties")
 @TestExecutionListeners(
     listeners = DependencyInjectionTestExecutionListener.class,
@@ -50,16 +47,4 @@ public abstract class AbstractMigrationTest {
   protected void assumeThatProcessIsUnderTest(String bpmnProcessId) {
     assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));
   }
-
-  @Configuration
-  @ComponentScan(
-      basePackages = {
-        "io.camunda.tasklist.property",
-        "io.camunda.tasklist.schema.indices",
-        "io.camunda.tasklist.schema.templates",
-        "io.camunda.tasklist.qa.migration",
-        "io.camunda.tasklist.util.rest"
-      },
-      nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-  public static class SpringConfig {}
 }

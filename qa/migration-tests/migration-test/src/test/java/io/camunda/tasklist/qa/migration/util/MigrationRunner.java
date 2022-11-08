@@ -6,7 +6,7 @@
  */
 package io.camunda.tasklist.qa.migration.util;
 
-import io.camunda.tasklist.qa.util.migration.TestContext;
+import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.migration.TestFixture;
 import io.camunda.tasklist.schema.migration.SchemaMigration;
 import java.util.HashMap;

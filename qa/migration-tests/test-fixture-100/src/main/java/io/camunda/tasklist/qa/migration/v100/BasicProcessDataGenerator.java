@@ -6,8 +6,8 @@
  */
 package io.camunda.tasklist.qa.migration.v100;
 
+import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
-import io.camunda.tasklist.qa.util.migration.TestContext;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.zeebe.client.ZeebeClient;

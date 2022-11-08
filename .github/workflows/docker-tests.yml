@@ -1,0 +1,46 @@
+name: Tests
+on: push
+
+jobs:
+  integration-tests:
+    name: Docker container tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.2
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: "adopt"
+          java-version: "11"
+          cache: "maven"
+      - name: Build backend
+        run: mvn clean install -s "./maven-settings.xml" -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Build Docker and push to local registry
+        run: mvn -pl webapp -s "./maven-settings.xml" jib:build -Dimage=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} -Djib.allowInsecureRegistries=true
+      - name: Run Docker tests
+        run: mvn -f qa/integration-tests -s "./maven-settings.xml" -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: "docker tests"
