@@ -52,7 +52,10 @@ jobs:
             secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
         # Start e2e test instance, do not wait for the result
       - name: Run E2E Tests
-        run: .ci/scripts/distribution/e2e-testbench.sh
+        run: |
+          chmod +x clients/go/cmd/zbctl/dist/zbctl
+          clients/go/cmd/zbctl/dist/zbctl create instance e2e_testbench_protocol --variables "{\"zeebeImage\":\"$ZEEBE_IMAGE\", \"generationTemplate\":\"$GENERATION_TEMPLATE\", \"channel\":\"Internal Dev\", \"clusterPlan\":\"Production - M\", \"region\":\"new chaos\", \"properties\":[\"allInstancesAreCompleted\"], \"testProcessId\": \"e2e-test\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"testParams\": { \"maxTestDuration\": \"$MAX_TEST_DURATION\", \"starter\": [ {\"rate\": 50, \"processId\": \"one-task-one-timer\" } ], \"verifier\" : { \"maxInstanceDuration\" : \"15m\" } } }"
+
         env:
           ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
           ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
