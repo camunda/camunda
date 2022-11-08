@@ -5,17 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  InstanceMetaDataEntity,
-  MetaDataEntity,
-} from 'modules/stores/flowNodeMetaData';
+import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
 const FLOW_NODE_INSTANCE_ID = '2251799813699889';
 const PROCESS_INSTANCE_ID = '2251799813685591';
 
-const baseInstanceMetadata: InstanceMetaDataEntity = {
+const baseInstanceMetadata: MetaDataDto['instanceMetadata'] = {
   flowNodeId: FLOW_NODE_ID,
   flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
   flowNodeType: 'START_EVENT',
@@ -34,7 +31,7 @@ const baseInstanceMetadata: InstanceMetaDataEntity = {
   jobId: null,
 };
 
-const baseMetadata: MetaDataEntity = {
+const baseMetadata: MetaDataDto = {
   flowNodeInstanceId: FLOW_NODE_INSTANCE_ID,
   flowNodeId: null,
   flowNodeType: null,
@@ -163,6 +160,7 @@ const rootIncidentFlowNodeMetaData = {
   incident: {
     ...calledInstanceWithIncidentMetadata.incident,
     rootCauseInstance: {
+      processDefinitionId: 'called-process',
       processDefinitionName: 'Called Process',
       instanceId: PROCESS_INSTANCE_ID,
     },

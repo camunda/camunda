@@ -47,9 +47,10 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 import {mockFetchSequenceFlows} from 'modules/mocks/api/sequenceFlows';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/flowNodeInstances';
 import {mockFetchProcessXML} from 'modules/mocks/api/diagram';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/flowNodeMetadata';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {modifyProcess} from 'modules/mocks/api/modifications';
 import {mockIncidents} from 'modules/mocks/incidents';
+import {singleInstanceMetadata} from 'modules/mocks/metadata';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -370,6 +371,7 @@ describe('Instance', () => {
       screen.getByTestId('instance-header-skeleton')
     );
 
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     storeStateLocally({
       [`hideModificationHelperModal`]: true,
     });
@@ -379,8 +381,8 @@ describe('Instance', () => {
       })
     );
 
-    mockFetchFlowNodeMetadata().withSuccess({});
-    mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([]);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'taskD',
@@ -389,6 +391,8 @@ describe('Instance', () => {
     await user.click(
       screen.getByRole('button', {name: /add single flow node instance/i})
     );
+
+    mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(screen.getByTestId('apply-modifications-button'));
 
@@ -538,7 +542,7 @@ describe('Instance', () => {
   });
 
   it('should display loading overlay when modifications are applied', async () => {
-    mockFetchFlowNodeMetadata().withSuccess({});
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     modifyProcess().withDelay({});
 
     jest.useFakeTimers();
@@ -562,11 +566,13 @@ describe('Instance', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
-    mockFetchFlowNodeMetadata().withSuccess({});
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'taskD',
     });
+
+    mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(
       screen.getByRole('button', {name: /add single flow node instance/i})
@@ -607,7 +613,7 @@ describe('Instance', () => {
       'handlePolling'
     );
 
-    mockFetchFlowNodeMetadata().withSuccess({});
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(

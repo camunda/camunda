@@ -28,6 +28,7 @@ import {
 import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -199,12 +200,10 @@ describe('TopPanel', () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockCallActivityProcessXML))
-      ),
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
+
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
@@ -241,12 +240,7 @@ describe('TopPanel', () => {
     expect(screen.queryByText(/Start Date/)).not.toBeInTheDocument();
     expect(screen.queryByText(/End Date/)).not.toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'taskD',
@@ -275,12 +269,11 @@ describe('TopPanel', () => {
     mockServer.use(
       rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
         res.once(ctx.text(mockCallActivityProcessXML))
-      ),
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(calledInstanceMetadata))
       )
     );
+
+    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,

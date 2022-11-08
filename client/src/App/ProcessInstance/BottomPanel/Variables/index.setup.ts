@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {MetaDataEntity} from 'modules/stores/flowNodeMetaData';
+import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 const mockVariables: VariableEntity[] = [
   {
@@ -37,7 +37,7 @@ const mockVariables: VariableEntity[] = [
   },
 ];
 
-const mockMetaData: MetaDataEntity = {
+const mockMetaData: MetaDataDto = {
   flowNodeId: null,
   flowNodeInstanceId: '123',
   flowNodeType: 'start-event',

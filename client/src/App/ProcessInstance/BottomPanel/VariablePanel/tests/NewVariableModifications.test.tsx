@@ -21,14 +21,14 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {createInstance, createVariable} from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {singleInstanceMetadata} from 'modules/mocks/metadata';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -99,12 +99,7 @@ describe('New Variable Modifications', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
@@ -528,12 +523,7 @@ describe('New Variable Modifications', () => {
 
     mockFetchVariables().withSuccess([]);
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'someProcessName',
@@ -543,12 +533,7 @@ describe('New Variable Modifications', () => {
 
     mockFetchVariables().withSuccess([]);
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeInstanceId: 'instance_id',

@@ -14,69 +14,20 @@ import {
   reaction,
   override,
 } from 'mobx';
-import {fetchFlowNodeMetaData} from 'modules/api/flowNodeMetaData';
+import {
+  fetchFlowNodeMetaData,
+  MetaDataDto,
+} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {FlowNodeInstance} from './flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore, Selection} from './flowNodeSelection';
-import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {formatDate} from 'modules/utils/date';
 import {modificationsStore} from './modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 
-type InstanceMetaData = {
-  startDate: string;
-  endDate: string | null;
-  eventId: string;
-  flowNodeId: string;
-  flowNodeInstanceId: string;
-  flowNodeType: string;
-  jobCustomHeaders: {[key: string]: string} | null;
-  jobDeadline: string | null;
-  jobId: string | null;
-  jobRetries: number | null;
-  jobType: string | null;
-  jobWorker: string | null;
-  calledProcessInstanceId: string | null;
-  calledProcessDefinitionName: string | null;
-  calledDecisionInstanceId: string | null;
-  calledDecisionDefinitionName: string | null;
-};
-
-type MetaData = {
-  flowNodeId: string | null;
-  flowNodeInstanceId: string | null;
-  flowNodeType: string | null;
-  instanceCount: number | null;
-  instanceMetadata: InstanceMetaData | null;
-  incident: {
-    id: string;
-    errorMessage: string;
-    errorType: {
-      id: string;
-      name: string;
-    };
-    flowNodeId: string;
-    flowNodeInstanceId: string;
-    jobId: string | null;
-    creationTime: string;
-    hasActiveOperation: boolean;
-    lastOperation: boolean | null;
-    rootCauseInstance: {
-      instanceId: string;
-      processDefinitionId: string;
-      processDefinitionName: string;
-    } | null;
-    rootCauseDecision: {
-      instanceId: string;
-      decisionName: string;
-    } | null;
-  } | null;
-  incidentCount: number;
-};
-
 type State = {
-  metaData: MetaData | null;
+  metaData: MetaDataDto | null;
 };
 
 const DEFAULT_STATE: State = {
@@ -110,7 +61,7 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
     );
   };
 
-  setMetaData = (metaData: MetaData | null) => {
+  setMetaData = (metaData: MetaDataDto | null) => {
     this.state.metaData = metaData;
   };
 
@@ -132,13 +83,6 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
       flowNodeSelectionStore.newTokenCountForSelectedNode > 0
     );
   }
-
-  handleFetchFailure = (error?: unknown) => {
-    logger.error('Failed to fetch flow node meta data');
-    if (error !== undefined) {
-      logger.error(error);
-    }
-  };
 
   fetchMetaData = this.retryOnConnectionLost(
     async ({
@@ -167,36 +111,28 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
         return;
       }
 
-      try {
-        const response = await fetchFlowNodeMetaData({
-          flowNodeId,
-          processInstanceId,
-          flowNodeInstanceId,
-          flowNodeType,
-        });
+      const response = await fetchFlowNodeMetaData({
+        flowNodeId,
+        processInstanceId,
+        flowNodeInstanceId,
+        flowNodeType,
+      });
 
-        if (response.ok) {
-          const metaData = await response.json();
+      if (response.isSuccess) {
+        const metaData = response.data;
 
-          if (metaData.instanceMetadata !== null) {
-            const {startDate, endDate, jobDeadline, incidentErrorType} =
-              metaData.instanceMetadata;
+        if (metaData.instanceMetadata !== null) {
+          const {startDate, endDate, jobDeadline} = metaData.instanceMetadata;
 
-            metaData.instanceMetadata = {
-              ...metaData.instanceMetadata,
-              startDate: formatDate(startDate, null),
-              endDate: formatDate(endDate, null),
-              jobDeadline: formatDate(jobDeadline, null),
-              incidentErrorType: incidentErrorType === null ? null : undefined,
-            };
-          }
-
-          this.setMetaData(metaData);
-        } else {
-          this.handleFetchFailure();
+          metaData.instanceMetadata = {
+            ...metaData.instanceMetadata,
+            startDate: formatDate(startDate, null)!,
+            endDate: formatDate(endDate, null),
+            jobDeadline: formatDate(jobDeadline, null),
+          };
         }
-      } catch (error) {
-        this.handleFetchFailure(error);
+
+        this.setMetaData(metaData);
       }
     }
   );
@@ -213,5 +149,3 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
 }
 
 export const flowNodeMetaDataStore = new FlowNodeMetaData();
-export type {InstanceMetaData as InstanceMetaDataEntity};
-export type {MetaData as MetaDataEntity};

@@ -5,21 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
-import {flowNodeMetaDataStore, MetaDataEntity} from './flowNodeMetaData';
+import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {waitFor} from 'modules/testing-library';
 import {modificationsStore} from './modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
+import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
-const metaData: MetaDataEntity = {
+const metaData: MetaDataDto = {
   flowNodeId: 'ServiceTask_1',
   flowNodeInstanceId: '2251799813689409',
   flowNodeType: 'SERVICE_TASK',
@@ -62,12 +62,7 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should fetch and set meta data', async () => {
-    mockServer.use(
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(metaData))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(metaData);
 
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.setSelection({
@@ -87,12 +82,7 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should retry fetch on network reconnection', async () => {
-    mockServer.use(
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(metaData))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(metaData);
 
     const eventListeners: any = {};
     const originalEventListener = window.addEventListener;
@@ -115,12 +105,8 @@ describe('stores/flowNodeMetaData', () => {
       instanceCount: 6,
     };
 
-    mockServer.use(
-      rest.post(
-        `/api/process-instances/${PROCESS_INSTANCE_ID}/flow-node-metadata`,
-        (_, res, ctx) => res.once(ctx.json(newMetaData))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(newMetaData);
+
     eventListeners.online();
 
     await waitFor(() => {

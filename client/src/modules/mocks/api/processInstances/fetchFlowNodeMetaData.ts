@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockPostRequest} from './mockRequest';
+import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
+import {mockPostRequest} from '../mockRequest';
 
 const mockFetchFlowNodeMetadata = (contextPath = '') =>
-  mockPostRequest(
+  mockPostRequest<MetaDataDto>(
     `${contextPath}/api/process-instances/:instanceId/flow-node-metadata`
   );
 

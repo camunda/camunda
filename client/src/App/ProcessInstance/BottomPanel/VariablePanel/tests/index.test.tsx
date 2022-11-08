@@ -31,6 +31,8 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {singleInstanceMetadata} from 'modules/mocks/metadata';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -71,12 +73,7 @@ describe('VariablePanel', () => {
     ]);
 
     mockFetchVariables().withSuccess([createVariable()]);
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
@@ -108,19 +105,12 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/flow-node-metadata',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                flowNodeInstanceId: null,
-                instanceCount: 2,
-                instanceMetadata: null,
-              })
-            )
-        )
-      );
+      mockFetchFlowNodeMetadata().withSuccess({
+        ...singleInstanceMetadata,
+        flowNodeInstanceId: null,
+        instanceCount: 2,
+        instanceMetadata: null,
+      });
 
       render(<VariablePanel />, {wrapper: Wrapper});
 
@@ -229,12 +219,8 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockFetchVariables().withSuccess([createVariable()]);
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await waitFor(() =>
       expect(screen.getByTitle(/save variable/i)).toBeEnabled()
@@ -302,18 +288,12 @@ describe('VariablePanel', () => {
 
   it('should remove pending variable if scope id changes', async () => {
     jest.useFakeTimers();
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '2251799813686104',
-              instanceCount: 1,
-            })
-          )
-      )
-    );
+
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813686104',
+      instanceCount: 1,
+    });
 
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
@@ -461,12 +441,7 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>
@@ -532,12 +507,9 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      ),
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json({id: '1234'}))
       )
@@ -623,12 +595,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('localVariable1')).toBeInTheDocument();
     expect(screen.getByText('localVariable2')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'Event_0bonl61',
@@ -654,12 +621,8 @@ describe('VariablePanel', () => {
       screen.queryByRole('button', {name: 'Output Mappings'})
     ).not.toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) => res.once(ctx.json(undefined))
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'StartEvent_1',
     });
@@ -829,19 +792,14 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has only one finished token on it', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: null,
-              instanceCount: 0,
-              instanceMetadata: {endDate: '2022-09-08T12:44:45.406+0000'},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: null,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: '2022-09-08T12:44:45.406+0000',
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -861,13 +819,11 @@ describe('VariablePanel', () => {
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
         flowNodeInstanceId: null,
-        instanceCount: 0,
         instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
           endDate: '2018-12-12 00:00:00',
-          startDate: null,
-          jobDeadline: null,
-          incidentErrorType: undefined,
         },
       })
     );
@@ -922,19 +878,15 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has only one running token on it', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '2251799813695856',
-              instanceCount: 1,
-              instanceMetadata: {endDate: null},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813695856',
+      instanceCount: 1,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -954,13 +906,12 @@ describe('VariablePanel', () => {
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
         flowNodeInstanceId: '2251799813695856',
         instanceCount: 1,
         instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
           endDate: null,
-          startDate: null,
-          jobDeadline: null,
-          incidentErrorType: undefined,
         },
       })
     );
@@ -1041,22 +992,16 @@ describe('VariablePanel', () => {
       screen.queryByRole('button', {name: /add variable/i})
     ).not.toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '2251799813695856',
-              instanceCount: 1,
-              instanceMetadata: {
-                endDate: null,
-                startDate: '2022-09-30T15:00:31.772+0000',
-              },
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813695856',
+      instanceCount: 1,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+        startDate: '2022-09-30T15:00:31.772+0000',
+      },
+    });
 
     // select existing scope
     flowNodeSelectionStore.selectFlowNode({
@@ -1066,13 +1011,12 @@ describe('VariablePanel', () => {
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
         flowNodeInstanceId: '2251799813695856',
         instanceCount: 1,
         instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
           endDate: null,
-          startDate: '2018-12-12 00:00:00',
-          jobDeadline: null,
-          incidentErrorType: undefined,
         },
       })
     );
@@ -1114,19 +1058,14 @@ describe('VariablePanel', () => {
   });
 
   it('should be readonly if flow node has variables but no running instances', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: null,
-              instanceCount: 0,
-              instanceMetadata: {endDate: '2022-09-08T12:44:45.406+0000'},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: null,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: '2022-09-08T12:44:45.406+0000',
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -1143,19 +1082,14 @@ describe('VariablePanel', () => {
       createVariable({name: 'some-other-variable'}),
     ]);
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '9007199254742797',
-              instanceCount: 0,
-              instanceMetadata: {endDate: '2022-09-15T12:44:45.406+0000'},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '9007199254742797',
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: '2022-09-15T12:44:45.406+0000',
+      },
+    });
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'TEST_FLOW_NODE',
@@ -1172,19 +1106,14 @@ describe('VariablePanel', () => {
   });
 
   it('should be readonly if flow node has variables and running instances', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: null,
-              instanceCount: 0,
-              instanceMetadata: {endDate: null},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: null,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -1201,19 +1130,14 @@ describe('VariablePanel', () => {
       createVariable({name: 'some-other-variable'}),
     ]);
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '9007199254742797',
-              instanceCount: 0,
-              instanceMetadata: {endDate: null},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '9007199254742797',
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'Activity_0qtp1k6',
@@ -1251,19 +1175,14 @@ describe('VariablePanel', () => {
   });
 
   it('should be readonly if root node is selected and applying modifications will cancel the whole process', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: null,
-              instanceCount: 0,
-              instanceMetadata: {endDate: null},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: null,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -1290,19 +1209,15 @@ describe('VariablePanel', () => {
   });
 
   it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '2251799813695856',
-              instanceCount: 1,
-              instanceMetadata: {endDate: null},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813695856',
+      instanceCount: 1,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: null,
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -1323,13 +1238,12 @@ describe('VariablePanel', () => {
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
         flowNodeInstanceId: '2251799813695856',
         instanceCount: 1,
         instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
           endDate: null,
-          startDate: null,
-          jobDeadline: null,
-          incidentErrorType: undefined,
         },
       })
     );
@@ -1388,19 +1302,15 @@ describe('VariablePanel', () => {
   });
 
   it('should display readonly state for existing node if it has finished state and one new token is added on the same flow node', async () => {
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:instanceId/flow-node-metadata',
-        (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              flowNodeInstanceId: '2251799813695856',
-              instanceCount: 1,
-              instanceMetadata: {endDate: '2022-04-10T15:01:31.794+0000'},
-            })
-          )
-      )
-    );
+    mockFetchFlowNodeMetadata().withSuccess({
+      ...singleInstanceMetadata,
+      flowNodeInstanceId: '2251799813695856',
+      instanceCount: 1,
+      instanceMetadata: {
+        ...singleInstanceMetadata.instanceMetadata!,
+        endDate: '2022-04-10T15:01:31.794+0000',
+      },
+    });
 
     modificationsStore.enableModificationMode();
 
@@ -1421,13 +1331,12 @@ describe('VariablePanel', () => {
 
     await waitFor(() =>
       expect(flowNodeMetaDataStore.state.metaData).toEqual({
+        ...singleInstanceMetadata,
         flowNodeInstanceId: '2251799813695856',
         instanceCount: 1,
         instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
           endDate: '2018-12-12 00:00:00',
-          startDate: null,
-          jobDeadline: null,
-          incidentErrorType: undefined,
         },
       })
     );

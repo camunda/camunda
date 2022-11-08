@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {InstanceMetaDataEntity} from 'modules/stores/flowNodeMetaData';
+import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 export const buildMetadata = (
-  metadata: InstanceMetaDataEntity | null,
+  metadata: MetaDataDto['instanceMetadata'] | null,
   incident: {errorType: {id: string; name: string}; errorMessage: string} | null
 ) => {
   if (metadata === null) {

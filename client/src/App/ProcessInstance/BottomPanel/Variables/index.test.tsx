@@ -31,6 +31,8 @@ import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInsta
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {singleInstanceMetadata} from 'modules/mocks/metadata';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -1013,19 +1015,13 @@ describe('Variables', () => {
 
       expect(screen.getByText(/add variable/i)).toBeEnabled();
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/1/flow-node-metadata',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                instanceMetadata: {
-                  endDate: null,
-                },
-              })
-            )
-        )
-      );
+      mockFetchFlowNodeMetadata().withSuccess({
+        ...singleInstanceMetadata,
+        instanceMetadata: {
+          ...singleInstanceMetadata.instanceMetadata!,
+          endDate: null,
+        },
+      });
 
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'start',
@@ -1041,19 +1037,7 @@ describe('Variables', () => {
 
       expect(screen.getByText(/add variable/i)).toBeEnabled();
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/1/flow-node-metadata',
-          (_, res, ctx) =>
-            res.once(
-              ctx.json({
-                instanceMetadata: {
-                  endDate: '2021-03-22T12:28:00.393+0000',
-                },
-              })
-            )
-        )
-      );
+      mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'neverFails',
