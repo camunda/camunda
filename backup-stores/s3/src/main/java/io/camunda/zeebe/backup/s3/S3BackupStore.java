@@ -351,10 +351,9 @@ public final class S3BackupStore implements BackupStore {
               try {
                 return (Manifest)
                     MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
-              } catch (final JsonParseException e) {
-                throw new ManifestParseException("Failed to parse manifest object", e);
               } catch (final IOException e) {
-                throw new BackupReadException("Failed to read manifest object", e);
+                throw new ManifestParseException(
+                    "Failed to read manifest object: %s".formatted(response.asUtf8String()), e);
               }
             })
         .exceptionally(
