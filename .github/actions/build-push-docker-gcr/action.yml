@@ -44,10 +44,8 @@ runs:
     - uses: actions/checkout@v3
       with:
         ref: "${{ github.event.inputs.branch }}"
-    - uses: actions/setup-java@v3.6.0
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+    # Also setup java
+    - uses: ./.github/actions/setup-zeebe
     # Set further environment variables, which are needed for the QA Testbench run
     - id: generate-tag
       name: Generate image tag
@@ -72,7 +70,6 @@ runs:
         registry: gcr.io
         username: _json_key
         password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
-    - uses: ./.github/actions/setup-zeebe
     - uses: ./.github/actions/build-zeebe
       id: build-zeebe
     - name: build-docker
