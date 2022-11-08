@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.s3;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -322,10 +321,9 @@ public final class S3BackupStore implements BackupStore {
               try {
                 return (Manifest)
                     MAPPER.readValue(response.asInputStream(), ValidBackupManifest.class);
-              } catch (final JsonParseException e) {
-                throw new ManifestParseException("Failed to parse manifest object", e);
               } catch (final IOException e) {
-                throw new BackupReadException("Failed to read manifest object", e);
+                throw new ManifestParseException(
+                    "Failed to read manifest object: %s".formatted(response.asUtf8String()), e);
               }
             })
         .exceptionally(
