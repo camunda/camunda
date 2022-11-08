@@ -89,7 +89,7 @@ public final class BpmnEventPublicationBehavior {
   public Either<Failure, CatchEventTuple> findErrorCatchEvent(
       final DirectBuffer errorCode, final BpmnElementContext context) {
     final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-    return catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance, Optional.empty());
+    return catchEventAnalyzer.findErrorCatchEvent(errorCode, flowScopeInstance, Optional.empty());
   }
 
   /**

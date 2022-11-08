@@ -41,7 +41,7 @@ public final class CatchEventAnalyzer {
     this.elementInstanceState = elementInstanceState;
   }
 
-  public Either<Failure, CatchEventTuple> findCatchEvent(
+  public Either<Failure, CatchEventTuple> findErrorCatchEvent(
       final DirectBuffer errorCode,
       ElementInstance instance,
       final Optional<DirectBuffer> jobErrorMessage) {
@@ -53,7 +53,7 @@ public final class CatchEventAnalyzer {
       final var instanceRecord = instance.getValue();
       final var process = getProcess(instanceRecord.getProcessDefinitionKey());
 
-      final var found = findCatchEventInProcess(errorCode, process, instance);
+      final var found = findErrorCatchEventInProcess(errorCode, process, instance);
       if (found.isRight()) {
         return Either.right(found.get());
       } else {
@@ -85,13 +85,13 @@ public final class CatchEventAnalyzer {
     return Either.left(new Failure(incidentErrorMessage, ErrorType.UNHANDLED_ERROR_EVENT));
   }
 
-  private Either<List<DirectBuffer>, CatchEventTuple> findCatchEventInProcess(
+  private Either<List<DirectBuffer>, CatchEventTuple> findErrorCatchEventInProcess(
       final DirectBuffer errorCode, final ExecutableProcess process, ElementInstance instance) {
 
     final Either<List<DirectBuffer>, CatchEventTuple> availableCatchEvents =
         Either.left(new ArrayList<>());
     while (instance != null && instance.isActive() && !instance.isInterrupted()) {
-      final var found = findCatchEventInScope(errorCode, process, instance);
+      final var found = findErrorCatchEventInScope(errorCode, process, instance);
       if (found.isRight()) {
         return found;
       } else {
@@ -106,7 +106,7 @@ public final class CatchEventAnalyzer {
     return availableCatchEvents;
   }
 
-  private Either<List<DirectBuffer>, CatchEventTuple> findCatchEventInScope(
+  private Either<List<DirectBuffer>, CatchEventTuple> findErrorCatchEventInScope(
       final DirectBuffer errorCode,
       final ExecutableProcess process,
       final ElementInstance instance) {
