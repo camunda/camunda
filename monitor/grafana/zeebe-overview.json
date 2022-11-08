@@ -199,7 +199,7 @@
       "pluginVersion": "7.4.5",
       "targets": [
         {
-          "expr": "zeebe_health{namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"} ",
+          "expr": "zeebe_health{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\", pod=~\"$pod\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -207,7 +207,7 @@
           "refId": "A"
         },
         {
-          "expr": "atomix_role{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} ",
+          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -326,7 +326,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", pod!~\".*curator.*|worker.*|starter.*\", namespace=\"$namespace\"}",
+          "expr": "1 - kube_pod_container_status_ready{pod=~\"$pod\", pod!~\".*curator.*|worker.*|starter.*\", cluster=~\"$cluster\", namespace=~\"$namespace\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -335,13 +335,13 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(kube_pod_container_status_ready{container=\"worker\",namespace=\"$namespace\"}[1m])) or vector(1)",
+          "expr": "sum(rate(kube_pod_container_status_ready{container=\"worker\", cluster=~\"$cluster\", namespace=~\"$namespace\"}[1m])) or vector(1)",
           "hide": false,
           "legendFormat": "Worker restart",
           "refId": "M"
         },
         {
-          "expr": "sum(rate(kube_pod_container_status_ready{container=\"starter\",namespace=\"$namespace\"}[1m])) or vector(1)",
+          "expr": "sum(rate(kube_pod_container_status_ready{container=\"starter\", cluster=~\"$cluster\", namespace=~\"$namespace\"}[1m])) or vector(1)",
           "legendFormat": "Starter Restart",
           "refId": "N"
         }
@@ -447,7 +447,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "atomix_role{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+          "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -555,7 +555,7 @@
       "pluginVersion": "7.4.5",
       "targets": [
         {
-          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"$namespace\", container=\"zeebe\"}",
+          "expr": "kube_pod_container_status_last_terminated_reason{cluster=~\"$cluster\", namespace=~\"$namespace\", container=\"zeebe\"}",
           "interval": "",
           "legendFormat": "{{ pod }}",
           "refId": "A"
@@ -669,7 +669,7 @@
       "pluginVersion": "7.4.5",
       "targets": [
         {
-          "expr": "(sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) / sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) ) * 100",
+          "expr": "(sum(rate(zeebe_dropped_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) / sum(rate(zeebe_received_request_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) ) * 100",
           "interval": "",
           "legendFormat": "Partition {{partition}}",
           "refId": "A"
@@ -741,7 +741,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"skipped|processed\"}[1m])) by (pod, partition, processor)",
+          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"skipped|processed\"}[1m])) by (pod, partition, processor)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -749,7 +749,7 @@
           "refId": "A"
         },
         {
-          "expr": "sum(rate(zeebe_stream_processor_records_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[1m])) by (pod, partition, processor)",
+          "expr": "sum(rate(zeebe_stream_processor_records_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"written\"}[1m])) by (pod, partition, processor)",
           "interval": "",
           "legendFormat": "{{pod}}-{{partition}}-{{processor}}-written",
           "refId": "C"
@@ -859,7 +859,7 @@
       "pluginVersion": "7.4.5",
       "targets": [
         {
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", type!=\"PROCESS\", action!=\"activated\"}[1m]))",
           "instant": true,
           "interval": "",
           "legendFormat": "Partition {{partition}} FNI per s",
@@ -926,7 +926,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
+          "expr": "sum(rate(zeebe_exporter_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1046,7 +1046,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"SERVICE_TASK\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{type}} {{action}}",
@@ -1138,7 +1138,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m]))",
+          "expr": "sum(rate(zeebe_element_instance_events_total{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=\"completed\", type=\"PROCESS\"}[1m]))",
           "format": "time_series",
           "intervalFactor": 1,
           "legendFormat": "{{type}} {{action}}",
@@ -1209,7 +1209,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=~\"$cluster\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
           "interval": "",
           "legendFormat": "{{pod}}",
           "refId": "A"
@@ -1315,7 +1315,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[1m])) by (grpc_method, code)",
+          "expr": "sum(rate(grpc_server_handled_total{cluster=~\"$cluster\", namespace=~\"$namespace\"}[1m])) by (grpc_method, code)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 1,
@@ -1429,7 +1429,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "container_memory_rss{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
+          "expr": "container_memory_rss{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"}",
           "format": "time_series",
           "hide": false,
           "interval": "",
@@ -1438,14 +1438,14 @@
           "refId": "A"
         },
         {
-          "expr": "max(kube_pod_container_resource_limits_memory_bytes{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+          "expr": "max(kube_pod_container_resource_limits_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "limit",
           "refId": "B"
         },
         {
-          "expr": "min(kube_pod_container_resource_requests_memory_bytes{namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
+          "expr": "min(kube_pod_container_resource_requests_memory_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", container=~\"zeebe.*\"})",
           "interval": "",
           "legendFormat": "request",
           "refId": "C"
@@ -1553,7 +1553,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"})",
+          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\"elastic.*\"})",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
@@ -1666,7 +1666,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "(kubelet_volume_stats_used_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
+          "expr": "(kubelet_volume_stats_used_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"} / kubelet_volume_stats_capacity_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\", persistentvolumeclaim=~\".*zeebe.*\"})",
           "legendFormat": "{{persistentvolumeclaim}}",
           "refId": "B"
         }
@@ -1756,7 +1756,38 @@
           "value": "$__all"
         },
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(atomix_role, namespace)",
+        "definition": "label_values(atomix_role, cluster)",
+        "description": "Kubernetes cluster",
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": null,
+        "multi": false,
+        "name": "cluster",
+        "options": [],
+        "query": {
+          "query": "label_values(atomix_role, cluster)",
+          "refId": "Prometheus-cluster-Variable-Query"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\"}, namespace)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1766,7 +1797,7 @@
         "name": "namespace",
         "options": [],
         "query": {
-          "query": "label_values(atomix_role, namespace)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\"}, namespace)",
           "refId": "Prometheus-namespace-Variable-Query"
         },
         "refresh": 2,
@@ -1787,7 +1818,7 @@
           "value": "$__all"
         },
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, pod)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1797,7 +1828,7 @@
         "name": "pod",
         "options": [],
         "query": {
-          "query": "label_values(atomix_role{namespace=~\"$namespace\"}, pod)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\"}, pod)",
           "refId": "Prometheus-pod-Variable-Query"
         },
         "refresh": 2,
@@ -1818,7 +1849,7 @@
           "value": "$__all"
         },
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "definition": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
         "description": null,
         "error": null,
         "hide": 0,
@@ -1828,7 +1859,7 @@
         "name": "partition",
         "options": [],
         "query": {
-          "query": "label_values(atomix_role{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+          "query": "label_values(atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
           "refId": "Prometheus-partition-Variable-Query"
         },
         "refresh": 2,
@@ -1874,5 +1905,5 @@
   "timezone": "",
   "title": "Zeebe Overview",
   "uid": "NzsO1mUnk",
-  "version": 12
+  "version": 13
 }
