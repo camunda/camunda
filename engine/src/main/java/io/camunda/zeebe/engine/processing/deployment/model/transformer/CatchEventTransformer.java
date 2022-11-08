@@ -181,5 +181,6 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       executableEscalation = context.getEscalation(escalation.getId());
     }
     executableElement.setEscalation(executableEscalation);
+    executableElement.setEventType(BpmnEventType.ESCALATION);
   }
 }
