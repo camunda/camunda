@@ -21,8 +21,6 @@ import {
   mockProcessInstances,
   operations,
 } from 'modules/testUtils';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processDiagramStore} from 'modules/stores/processDiagram';
@@ -34,6 +32,7 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 
 jest.mock('modules/utils/bpmn');
 
@@ -65,12 +64,7 @@ describe('Instances', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
   });
 
   afterEach(() => {
@@ -230,11 +224,7 @@ describe('Instances', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
 
     const {user} = render(
       <>

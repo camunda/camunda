@@ -15,9 +15,8 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {OperationsPanel} from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {MemoryRouter} from 'react-router-dom';
+import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 jest.mock('modules/utils/localStorage', () => ({
   getStateLocally: () => ({
     isFiltersCollapsed: false,
@@ -35,11 +34,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('OperationsPanel', () => {
   it('should display empty panel on mount', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchBatchOperations().withSuccess([]);
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 
@@ -49,11 +44,8 @@ describe('OperationsPanel', () => {
   });
 
   it('should render skeleton when loading', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json([]))
-      )
-    );
+    mockFetchBatchOperations().withSuccess([]);
+
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
@@ -61,14 +53,11 @@ describe('OperationsPanel', () => {
   });
 
   it('should render operation entries', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(
-          ctx.status(200),
-          ctx.json([mockOperationRunning, mockOperationFinished])
-        )
-      )
-    );
+    mockFetchBatchOperations().withSuccess([
+      mockOperationRunning,
+      mockOperationFinished,
+    ]);
+
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
@@ -100,12 +89,7 @@ describe('OperationsPanel', () => {
   });
 
   it('should show an error message', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json([]), ctx.status(500))
-      )
-    );
-
+    mockFetchBatchOperations().withServerError();
     const {unmount} = render(<OperationsPanel />, {wrapper: Wrapper});
 
     expect(
@@ -114,11 +98,7 @@ describe('OperationsPanel', () => {
 
     unmount();
 
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchBatchOperations().withNetworkError();
 
     render(<OperationsPanel />, {wrapper: Wrapper});
 

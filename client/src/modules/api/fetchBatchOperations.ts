@@ -5,16 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 
-export async function fetchOperations({
+const fetchBatchOperations = async ({
   pageSize,
   searchAfter,
 }: {
   pageSize: number;
-  searchAfter?: [string, string];
-}) {
-  return request({
+  searchAfter?: OperationEntity['sortValues'];
+}) => {
+  return requestAndParse<OperationEntity[]>({
     url: '/api/batch-operations',
     method: 'POST',
     body: {
@@ -22,4 +22,6 @@ export async function fetchOperations({
       searchAfter,
     },
   });
-}
+};
+
+export {fetchBatchOperations};

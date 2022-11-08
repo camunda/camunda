@@ -14,7 +14,7 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import * as operationsApi from 'modules/api/batchOperations';
+import {fetchBatchOperations} from 'modules/api/fetchBatchOperations';
 import {
   applyBatchOperation,
   applyOperation,
@@ -80,25 +80,21 @@ class Operations extends NetworkReconnectionHandler {
   }
 
   fetchOperations = this.retryOnConnectionLost(
-    async (searchAfter?: [string, string]) => {
+    async (searchAfter?: OperationEntity['sortValues']) => {
       this.startFetching();
 
-      try {
-        const response = await operationsApi.fetchOperations({
-          pageSize: MAX_OPERATIONS_PER_REQUEST,
-          searchAfter,
-        });
+      const response = await fetchBatchOperations({
+        pageSize: MAX_OPERATIONS_PER_REQUEST,
+        searchAfter,
+      });
 
-        if (response.ok) {
-          const operations = await response.json();
-          this.setOperations(operations);
-          this.setHasMoreOperations(operations.length);
-          this.handleFetchSuccess();
-        } else {
-          this.handleFetchError();
-        }
-      } catch (error) {
-        this.handleFetchError(error);
+      if (response.isSuccess) {
+        const operations = response.data;
+        this.setOperations(operations);
+        this.setHasMoreOperations(operations.length);
+        this.handleFetchSuccess();
+      } else {
+        this.handleFetchError();
       }
     }
   );
@@ -165,25 +161,20 @@ class Operations extends NetworkReconnectionHandler {
   };
 
   handlePolling = async () => {
-    try {
-      this.isPollRequestRunning = true;
-      const response = await operationsApi.fetchOperations({
-        pageSize: MAX_OPERATIONS_PER_REQUEST * this.state.page,
-      });
+    this.isPollRequestRunning = true;
+    const response = await fetchBatchOperations({
+      pageSize: MAX_OPERATIONS_PER_REQUEST * this.state.page,
+    });
 
-      if (this.intervalId !== null && response.ok) {
-        this.setOperations(await response.json());
-      }
-
-      if (!response.ok) {
-        logger.error('Failed to poll operations');
-      }
-    } catch (error) {
-      logger.error('Failed to poll operations');
-      logger.error(error);
-    } finally {
-      this.isPollRequestRunning = false;
+    if (this.intervalId !== null && response.isSuccess) {
+      this.setOperations(response.data);
     }
+
+    if (!response.isSuccess) {
+      logger.error('Failed to poll operations');
+    }
+
+    this.isPollRequestRunning = false;
   };
 
   startFetching = () => {
@@ -198,13 +189,8 @@ class Operations extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchError = (error?: unknown) => {
+  handleFetchError = () => {
     this.state.status = 'error';
-
-    logger.error('Failed to fetch operations');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   startPolling = async () => {

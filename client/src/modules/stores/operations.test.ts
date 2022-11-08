@@ -10,6 +10,7 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {operations} from 'modules/testUtils';
+import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 
 describe('stores/operations', () => {
   afterEach(() => {
@@ -17,11 +18,7 @@ describe('stores/operations', () => {
   });
 
   it('should reset state', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
 
     await operationsStore.fetchOperations();
     expect(operationsStore.state.operations).toEqual(operations);
@@ -40,17 +37,12 @@ describe('stores/operations', () => {
   });
 
   it('should increase page if next operations are requested', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      ),
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
 
     await operationsStore.fetchOperations();
     expect(operationsStore.state.page).toBe(1);
+
+    mockFetchBatchOperations().withSuccess(operations);
 
     await operationsStore.fetchNextOperations();
     expect(operationsStore.state.page).toBe(2);
@@ -69,11 +61,9 @@ describe('stores/operations', () => {
         operationsTotalCount: 1,
         operationsFinishedCount: 0,
       };
-      mockServer.use(
-        rest.post('/api/batch-operations', (_, res, ctx) =>
-          res.once(ctx.json(operations))
-        )
-      );
+
+      mockFetchBatchOperations().withSuccess(operations);
+
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/operation',
@@ -96,11 +86,8 @@ describe('stores/operations', () => {
     });
 
     it('should not prepend operations and call error callback when a server error occurred', async () => {
-      mockServer.use(
-        rest.post('/api/batch-operations', (_, res, ctx) =>
-          res.once(ctx.json(operations))
-        )
-      );
+      mockFetchBatchOperations().withSuccess(operations);
+
       mockServer.use(
         rest.post(
           '/api/process-instances/:instanceId/operation',
@@ -124,11 +111,8 @@ describe('stores/operations', () => {
     });
 
     it('should not prepend operations and call error callback when a network error occurred', async () => {
-      mockServer.use(
-        rest.post('/api/batch-operations', (_, res, ctx) =>
-          res.once(ctx.json(operations))
-        )
-      );
+      mockFetchBatchOperations().withSuccess(operations);
+
       mockServer.use(
         rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
           res.networkError('A network error')
@@ -163,11 +147,8 @@ describe('stores/operations', () => {
         operationsTotalCount: 0,
         operationsFinishedCount: 0,
       };
-      mockServer.use(
-        rest.post('/api/batch-operations', (_, res, ctx) =>
-          res.once(ctx.json(operations))
-        )
-      );
+      mockFetchBatchOperations().withSuccess(operations);
+
       mockServer.use(
         rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.json(newOperation))
@@ -192,11 +173,8 @@ describe('stores/operations', () => {
     });
 
     it('should not prepend operations and call error callback when a server error occurred', async () => {
-      mockServer.use(
-        rest.post('/api/batch-operations', (_, res, ctx) =>
-          res.once(ctx.json(operations))
-        )
-      );
+      mockFetchBatchOperations().withSuccess(operations);
+
       mockServer.use(
         rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
           res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
@@ -220,11 +198,8 @@ describe('stores/operations', () => {
     });
 
     it('should not prepend operations and call error callback when a network error occurred', async () => {
-      mockServer.use(
-        rest.post('/api/batch-operations', (_, res, ctx) =>
-          res.once(ctx.json(operations))
-        )
-      );
+      mockFetchBatchOperations().withSuccess(operations);
+
       mockServer.use(
         rest.post('/api/process-instances/batch-operation', (_, res) =>
           res.networkError('A network error')
@@ -259,56 +234,12 @@ describe('stores/operations', () => {
   });
 
   it('should get hasRunningOperations', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
 
     await operationsStore.fetchOperations();
     expect(operationsStore.hasRunningOperations).toBe(false);
 
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
-              name: null,
-              type: 'RESOLVE_INCIDENT',
-              startDate: '2020-09-30T06:14:55.185+0000',
-              endDate: null,
-              instancesCount: 2,
-              operationsTotalCount: 0,
-              operationsFinishedCount: 0,
-              sortValues: ['1601446495209', '1601446495185'],
-            },
-            ...operations,
-          ])
-        )
-      )
-    );
-
-    await operationsStore.fetchOperations();
-    expect(operationsStore.hasRunningOperations).toBe(true);
-  });
-
-  it('should poll when there are running operations', async () => {
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
-
-    operationsStore.init();
-    jest.useFakeTimers();
-    await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
-
-    // no polling occurs in the next 2 polling
-    jest.runOnlyPendingTimers();
-    jest.runOnlyPendingTimers();
-
-    const operationsWithRunningOperation = [
+    mockFetchBatchOperations().withSuccess([
       {
         id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
         name: null,
@@ -321,35 +252,50 @@ describe('stores/operations', () => {
         sortValues: ['1601446495209', '1601446495185'],
       },
       ...operations,
-    ];
+    ]);
 
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operationsWithRunningOperation))
-      )
-    );
+    await operationsStore.fetchOperations();
+    expect(operationsStore.hasRunningOperations).toBe(true);
+  });
+
+  it('should poll when there are running operations', async () => {
+    mockFetchBatchOperations().withSuccess(operations);
+
+    operationsStore.init();
+    jest.useFakeTimers();
+    await waitFor(() => expect(operationsStore.state.status).toBe('fetched'));
+
+    // no polling occurs in the next 2 polling
+    jest.runOnlyPendingTimers();
+    jest.runOnlyPendingTimers();
+
+    const runningOperation: OperationEntity = {
+      id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
+      name: null,
+      type: 'RESOLVE_INCIDENT',
+      startDate: '2020-09-30T06:14:55.185+0000',
+      endDate: null,
+      instancesCount: 2,
+      operationsTotalCount: 0,
+      operationsFinishedCount: 0,
+      sortValues: ['1601446495209', '1601446495185'],
+    };
+
+    const operationsWithRunningOperation: OperationEntity[] = [
+      runningOperation,
+      ...operations,
+    ];
+    mockFetchBatchOperations().withSuccess(operationsWithRunningOperation);
 
     operationsStore.fetchOperations();
     await waitFor(() =>
       expect(operationsStore.hasRunningOperations).toBe(true)
     );
 
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
-              endDate: '2020-09-30T06:14:55.185+0000',
-            },
-            {
-              id: '921455fd-849a-49c5-be17-c92eb6d9e946',
-              endDate: '2020-09-30T06:14:55.185+0000',
-            },
-          ])
-        )
-      )
-    );
+    mockFetchBatchOperations().withSuccess([
+      {...runningOperation, endDate: '2020-09-2930T15:38:34.372+0000'},
+      ...operations,
+    ]);
 
     jest.runOnlyPendingTimers();
 
@@ -368,11 +314,7 @@ describe('stores/operations', () => {
       eventListeners[event] = cb;
     });
 
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
 
     operationsStore.init();
 
@@ -380,11 +322,7 @@ describe('stores/operations', () => {
       expect(operationsStore.state.status).toEqual('fetched')
     );
 
-    mockServer.use(
-      rest.post('/api/batch-operations', (_, res, ctx) =>
-        res.once(ctx.json(operations))
-      )
-    );
+    mockFetchBatchOperations().withSuccess(operations);
 
     eventListeners.online();
 

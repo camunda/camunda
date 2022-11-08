@@ -443,7 +443,7 @@ export const mockProcessInstances = {
   totalCount: 912,
 };
 
-export const operations = [
+export const operations: OperationEntity[] = [
   {
     id: '921455fd-849a-49c5-be17-c92eb6d9e946',
     name: null,
