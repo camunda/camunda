@@ -308,6 +308,9 @@ public final class StreamProcessorTest {
     final var firstRecord = logStreamReader.next();
     assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
     final var firstRecordPosition = firstRecord.getPosition();
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
     while (logStreamReader.hasNext()) {
       final var followUpRecord = logStreamReader.next();
       assertThat(followUpRecord.getSourceEventPosition()).isEqualTo(firstRecordPosition);
@@ -656,7 +659,10 @@ public final class StreamProcessorTest {
     final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
     logStreamReader.seekToFirstEvent();
     logStreamReader.next(); // command
-    assertThat(logStreamReader.hasNext()).isTrue(); // rejection
+
+    // rejection
+    await("should write rejection to log")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
     final var record = logStreamReader.next();
     final var recordMetadata = new RecordMetadata();
     record.readMetadata(recordMetadata);
