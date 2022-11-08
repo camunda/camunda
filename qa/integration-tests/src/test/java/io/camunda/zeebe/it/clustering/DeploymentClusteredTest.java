@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -99,6 +100,53 @@ public final class DeploymentClusteredTest {
 
     // then
     clientRule.waitUntilDeploymentIsDone(processDefinitionKey);
+  }
+
+  @Test
+  public void shouldRedistributeDeploymentWhenDeploymentPartitionIsRestarted() {
+    // given
+    final var deploymentPartitionLeader =
+        clusteringRule.getLeaderForPartition(Protocol.DEPLOYMENT_PARTITION).getNodeId();
+    // We must pause the second partition. If we don't do this the deployment will send the
+    // distribution and it will be handled by the second partition accordingly. Without pausing
+    // it would be a regular deployment, instead of a redestributed deployment.
+    final var secondPartitionLeader = clusteringRule.getLeaderForPartition(2).getNodeId();
+    final var adminServiceLeaderTwo =
+        clusteringRule.getBroker(secondPartitionLeader).getBrokerContext().getBrokerAdminService();
+    adminServiceLeaderTwo.pauseStreamProcessing();
+
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getClient()
+            .newDeployResourceCommand()
+            .addProcessModel(PROCESS, "process.bpmn")
+            .send()
+            .join();
+    final var processDefinitionKey = deploymentEvent.getKey();
+
+    assertThat(
+            RecordingExporter.deploymentDistributionRecords()
+                .withIntent(DeploymentDistributionIntent.COMPLETED)
+                .withPartitionId(3)
+                .findFirst())
+        .isPresent();
+
+    clusteringRule.stopBroker(deploymentPartitionLeader);
+    adminServiceLeaderTwo.resumeStreamProcessing();
+
+    // when
+    clusteringRule.restartBroker(deploymentPartitionLeader);
+    clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
+
+    // then
+    clientRule.waitUntilDeploymentIsDone(processDefinitionKey);
+
+    assertThat(
+            RecordingExporter.deploymentDistributionRecords()
+                .withIntent(DeploymentDistributionIntent.COMPLETED)
+                .withPartitionId(2)
+                .findFirst())
+        .isPresent();
   }
 
   /**
