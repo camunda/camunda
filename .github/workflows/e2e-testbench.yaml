@@ -13,10 +13,6 @@ on:
         required: false
         default: 'Zeebe SNAPSHOT'
         type: string
-      branch:
-        description: 'Specifies the branch, for which the E2E tests should be executed'
-        default: 'main'
-        required: false
   schedule:
     # Run at 7:00 on every monday
     - cron:  '0 7 * * 1'
@@ -32,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: "${{ github.event.inputs.branch || 'main' }}"
+          ref: "${{ github.ref_name || 'main' }}"
 
       - name: Build and push docker
         id: build-docker
@@ -64,6 +60,6 @@ jobs:
           GENERATION_TEMPLATE: "${{ github.event.inputs.generation || 'Zeebe SNAPSHOT'}}"
           # Weekly e2e test run for 5 days.
           MAX_TEST_DURATION: "${{ github.event.inputs.maxTestDuration || 'PT5D'}}"
-          BRANCH_NAME: "${{ github.event.inputs.branch }}"
+          BRANCH_NAME: "${{ github.ref_name }}"
           ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
           ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
