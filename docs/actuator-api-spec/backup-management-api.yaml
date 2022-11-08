@@ -114,7 +114,7 @@ components:
       required:
         - backupId
         - state
-        - partitions
+        - details
 
     PartitionBackupInfo:
       title: Partition's Backup Info
@@ -129,6 +129,10 @@ components:
           readOnly: true
           allOf:
             - $ref: '#/components/schemas/StateCode'
+        failureReason:
+          description: Failure reason if stats is 'FAILED'
+          type: string
+          example: ""
         createdAt:
           description: The timestamp at which the backup was started on this partition.
           readOnly: true
@@ -148,7 +152,7 @@ components:
           allOf:
             - $ref: '#/components/schemas/BackupDescriptor'
       required:
-        - id
+        - partitionId
         - state
 
     BackupDescriptor:
