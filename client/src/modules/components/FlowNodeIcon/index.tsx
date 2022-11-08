@@ -18,6 +18,7 @@ import {ReactComponent as FlowNodeProcess} from 'modules/components/Icon/flow-no
 /**
  * Gateway Imports
  */
+import {ReactComponent as FlowNodeGatewayInclusive} from 'modules/components/Icon/flow-node-gateway-inclusive-or.svg';
 import {ReactComponent as FlowNodeGatewayExclusive} from 'modules/components/Icon/flow-node-gateway-exclusive.svg';
 import {ReactComponent as FlowNodeGatewayParallel} from 'modules/components/Icon/flow-node-gateway-parallel.svg';
 import {ReactComponent as FlowNodeGatewayEventBased} from 'modules/components/Icon/flow-node-gateway-event-based.svg';
@@ -158,6 +159,8 @@ const getSVGComponent = (
       return FlowNodeGatewayParallel;
     case 'bpmn:ExclusiveGateway':
       return FlowNodeGatewayExclusive;
+    case 'bpmn:InclusiveGateway':
+      return FlowNodeGatewayInclusive;
     case 'bpmn:Process':
       return FlowNodeProcess;
     case 'bpmn:IntermediateThrowEvent':
