@@ -13,7 +13,7 @@ import {
   reaction,
   IReactionDisposer,
 } from 'mobx';
-import {fetchDecisionXML} from 'modules/api/decisions/decisionXml';
+import {fetchDecisionXML} from 'modules/api/decisions/fetchDecisionXML';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 

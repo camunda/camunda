@@ -19,12 +19,11 @@ import {
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {processesStore} from 'modules/stores/processes';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
 
@@ -45,12 +44,7 @@ describe('DiagramPanel', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      )
-    );
+    mockFetchProcessXML().withSuccess('');
 
     processesStore.fetchProcesses();
   });
@@ -130,12 +124,7 @@ describe('DiagramPanel', () => {
 
   it('should show an error message', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchProcessXML().withNetworkError();
 
     render(<DiagramPanel />, {
       wrapper: getWrapper(),
@@ -151,12 +140,7 @@ describe('DiagramPanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      )
-    );
+    mockFetchProcessXML().withSuccess('');
 
     processDiagramStore.fetchProcessDiagram('2');
 
@@ -167,12 +151,7 @@ describe('DiagramPanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''), ctx.status(500))
-      )
-    );
+    mockFetchProcessXML().withServerError();
 
     processDiagramStore.fetchProcessDiagram('3');
 

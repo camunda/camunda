@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {mockXmlGetRequest} from '../mockRequest';
 
-export const fetchProcessXML = async (
-  processId: ProcessInstanceEntity['processId']
-) => {
-  return request({url: `/api/processes/${processId}/xml`});
-};
+const mockFetchDecisionXML = () =>
+  mockXmlGetRequest('/api/decisions/:decisionDefinitionId/xml');
+
+export {mockFetchDecisionXML};

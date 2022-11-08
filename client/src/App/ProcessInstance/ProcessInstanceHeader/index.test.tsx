@@ -39,6 +39,7 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -77,12 +78,7 @@ describe('InstanceHeader', () => {
 
   it('should show skeleton before instance data is available', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
@@ -100,12 +96,8 @@ describe('InstanceHeader', () => {
 
   it('should render instance data', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     processInstanceDetailsDiagramStore.init();
@@ -151,12 +143,7 @@ describe('InstanceHeader', () => {
 
   it('should render "View All" link for call activity process', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
@@ -176,12 +163,7 @@ describe('InstanceHeader', () => {
     panelStatesStore.toggleFiltersPanel();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
@@ -206,12 +188,8 @@ describe('InstanceHeader', () => {
 
   it('should render parent Process Instance Key', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithParentInstance);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     processInstanceDetailsDiagramStore.init();
@@ -231,12 +209,7 @@ describe('InstanceHeader', () => {
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     jest.useFakeTimers();
     processInstanceDetailsDiagramStore.init();
@@ -259,13 +232,11 @@ describe('InstanceHeader', () => {
 
   it('should show spinner when operation is applied', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(mockOperationCreated))
-      ),
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
       )
     );
 
@@ -290,13 +261,11 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchVariables().withSuccess([mockVariable]);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.json(undefined))
-      ),
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
       )
     );
 
@@ -332,13 +301,11 @@ describe('InstanceHeader', () => {
 
   it('should remove spinner when operation fails', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     mockServer.use(
       rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-      ),
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
       )
     );
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -359,12 +326,7 @@ describe('InstanceHeader', () => {
 
   it('should show operation buttons when user has permission', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -399,12 +361,7 @@ describe('InstanceHeader', () => {
 
   it('should hide operation buttons when user has no permission', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
       displayName: 'demo',
@@ -441,12 +398,8 @@ describe('InstanceHeader', () => {
     jest.useFakeTimers();
 
     mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
-    mockServer.use(
-      rest.get('/api/processes/:id/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
     const onPollingFailure = jest.fn();
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});

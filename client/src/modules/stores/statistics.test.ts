@@ -7,8 +7,6 @@
 
 import {statisticsStore} from './statistics';
 import {processInstanceDetailsStore} from './processInstanceDetails';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {processInstancesStore} from './processInstances';
 import {
@@ -20,6 +18,7 @@ import {statistics} from 'modules/mocks/statistics';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessCoreStatistics} from 'modules/mocks/api/processInstances/fetchProcessCoreStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const mockInstance = createInstance({id: '2251799813685625'});
 
@@ -118,11 +117,7 @@ describe('stores/statistics', () => {
 
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [{...mockInstance, hasActiveOperation: true}],

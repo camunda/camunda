@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {render, screen} from 'modules/testing-library';
 import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
@@ -14,19 +13,19 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
 
 describe('TimeStampPill', () => {
   beforeEach(() => {
     mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      ),
       rest.post('/api/activity-instances', (_, res, ctx) =>
         res.once(ctx.json({}))
       )
     );
+
+    mockFetchProcessXML().withSuccess('');
   });
 
   afterEach(() => {

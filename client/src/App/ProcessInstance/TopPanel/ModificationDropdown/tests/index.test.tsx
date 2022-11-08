@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -13,10 +12,10 @@ import {mockProcessForModifications} from 'modules/mocks/mockProcessForModificat
 import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockServer} from 'modules/mock-server/node';
 import {initializeStores, renderPopover} from './mocks';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {
@@ -72,11 +71,7 @@ describe('Modification Dropdown', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
   });
 
   afterEach(() => {
@@ -263,11 +258,7 @@ describe('Modification Dropdown', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessWithEventBasedGateway))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessWithEventBasedGateway);
 
     initializeStores();
     renderPopover();
@@ -336,11 +327,7 @@ describe('Modification Dropdown', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     initializeStores();
     renderPopover();

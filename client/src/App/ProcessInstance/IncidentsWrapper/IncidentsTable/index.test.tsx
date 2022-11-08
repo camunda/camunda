@@ -13,10 +13,9 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {render, screen, within} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';
@@ -69,11 +68,8 @@ describe('IncidentsTable', () => {
   });
 
   it('should render the right column headers', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
+
     incidentsStore.setIncidents(incidentsMock);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
@@ -112,11 +108,8 @@ describe('IncidentsTable', () => {
   });
 
   it('should render incident details', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
+
     incidentsStore.setIncidents(incidentsMock);
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
 

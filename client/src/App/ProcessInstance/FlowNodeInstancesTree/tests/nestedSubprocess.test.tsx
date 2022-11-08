@@ -24,16 +24,13 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(nestedSubProcessesInstance);
+    mockFetchProcessXML().withSuccess(open('NestedSubProcesses.bpmn'));
 
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(open('NestedSubProcesses.bpmn')))
-      )
-    );
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       nestedSubProcessesInstance.bpmnProcessId
     );

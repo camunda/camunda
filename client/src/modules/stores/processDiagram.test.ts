@@ -6,15 +6,14 @@
  */
 
 import {waitFor} from '@testing-library/react';
-import {mockServer} from 'modules/mock-server/node';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockProcessInstances} from 'modules/testUtils';
 import {mockProcessStatistics} from 'modules/mocks/mockProcessStatistics';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
-import {rest} from 'msw';
 import {processDiagramStore} from './processDiagram';
 import {processInstancesStore} from './processInstances';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('stores/processDiagram', () => {
   afterEach(() => {
@@ -24,12 +23,7 @@ describe('stores/processDiagram', () => {
 
   it('should fetch xml and process statistics', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     expect(processDiagramStore.state.status).toBe('initial');
     expect(processDiagramStore.state.statistics).toEqual([]);
@@ -46,12 +40,7 @@ describe('stores/processDiagram', () => {
 
   it('should get flowNodeFilterOptions', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     processDiagramStore.fetchProcessDiagram('1');
 
@@ -68,12 +57,7 @@ describe('stores/processDiagram', () => {
 
   it('should get flowNodeStates', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     processDiagramStore.fetchProcessDiagram('1');
 
@@ -107,12 +91,7 @@ describe('stores/processDiagram', () => {
 
   it('should get overlaysData', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     processDiagramStore.fetchProcessDiagram('1');
 
@@ -174,12 +153,8 @@ describe('stores/processDiagram', () => {
 
   it('should handle errors', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessXML().withServerError();
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
     processDiagramStore.fetchProcessDiagram('1');
 
     await waitFor(() => expect(processDiagramStore.state.status).toBe('error'));
@@ -190,11 +165,7 @@ describe('stores/processDiagram', () => {
 
     mockFetchProcessInstancesStatistics().withServerError();
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     processDiagramStore.fetchProcessDiagram('1');
 
@@ -225,11 +196,7 @@ describe('stores/processDiagram', () => {
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     processDiagramStore.fetchProcessDiagram('1');
 
@@ -279,12 +246,7 @@ describe('stores/processDiagram', () => {
     });
 
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     processDiagramStore.init();
     processDiagramStore.fetchProcessDiagram('1');
@@ -307,12 +269,7 @@ describe('stores/processDiagram', () => {
     ];
 
     mockFetchProcessInstancesStatistics().withSuccess(newStatisticsResponse);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXml))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXml);
 
     eventListeners.online();
 

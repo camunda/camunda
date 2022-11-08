@@ -32,15 +32,12 @@ import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(multiInstanceProcess))
-      )
-    );
+    mockFetchProcessXML().withSuccess(multiInstanceProcess);
   });
 
   afterEach(() => {
@@ -232,11 +229,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         res.once(
           ctx.json(multipleSubprocessesWithNoRunningScopeMock.firstLevel)
         )
-      ),
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(mockNestedSubprocess))
       )
     );
+
+    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 
@@ -410,11 +406,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         res.once(
           ctx.json(multipleSubprocessesWithOneRunningScopeMock.firstLevel)
         )
-      ),
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(mockNestedSubprocess))
       )
     );
+
+    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
 

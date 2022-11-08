@@ -6,8 +6,6 @@
  */
 
 import {FlowNodeModification, modificationsStore} from './modifications';
-import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
@@ -18,6 +16,7 @@ import {
 } from 'modules/mocks/modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -342,11 +341,7 @@ describe('stores/modifications', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -566,11 +561,7 @@ describe('stores/modifications', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -671,11 +662,7 @@ describe('stores/modifications', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -821,11 +808,8 @@ describe('stores/modifications', () => {
   });
 
   it('should generate parent scope ids', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockNestedSubprocess))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
     );
@@ -847,11 +831,8 @@ describe('stores/modifications', () => {
   });
 
   it('should not generate parent scope id twice', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockNestedSubprocess))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
     );

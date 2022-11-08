@@ -11,17 +11,17 @@ import {waitFor} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
+import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 
 describe('decisionInstanceDetailsStore', () => {
   it('should initialize and reset ', async () => {
     mockServer.use(
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(invoiceClassification))
-      ),
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockDmnXml))
       )
     );
+
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     expect(decisionInstanceDetailsStore.state.status).toBe('initial');
 

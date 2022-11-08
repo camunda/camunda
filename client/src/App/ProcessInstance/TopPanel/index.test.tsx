@@ -29,6 +29,7 @@ import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -68,10 +69,9 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
 describe('TopPanel', () => {
   beforeEach(() => {
+    mockFetchProcessXML().withSuccess('');
+
     mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      ),
       rest.get('/api/process-instances/active_instance', (_, res, ctx) =>
         res.once(
           ctx.json({
@@ -138,11 +138,8 @@ describe('TopPanel', () => {
   });
 
   it('should show an error when a server error occurs', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''), ctx.status(500))
-      )
-    );
+    mockFetchProcessXML().withServerError();
+
     render(<TopPanel />, {
       wrapper: Wrapper,
     });
@@ -156,11 +153,8 @@ describe('TopPanel', () => {
   });
 
   it('should show an error when a network error occurs', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchProcessXML().withNetworkError();
+
     render(<TopPanel />, {
       wrapper: Wrapper,
     });
@@ -197,11 +191,7 @@ describe('TopPanel', () => {
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
     processInstanceDetailsDiagramStore.init();
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
 
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
@@ -266,12 +256,8 @@ describe('TopPanel', () => {
 
   it('should display move token banner in moving mode', async () => {
     processInstanceDetailsDiagramStore.init();
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
 
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(

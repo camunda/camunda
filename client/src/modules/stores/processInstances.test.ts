@@ -7,13 +7,12 @@
 
 import {processInstancesStore} from './processInstances';
 import {groupedProcessesMock, mockProcessStatistics} from 'modules/testUtils';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',
@@ -61,11 +60,7 @@ describe('stores/processInstances', () => {
   mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
   beforeEach(async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      )
-    );
+    mockFetchProcessXML().withSuccess('');
   });
   afterEach(() => {
     processInstancesStore.reset();

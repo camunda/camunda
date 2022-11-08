@@ -5,25 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {screen, waitFor} from '@testing-library/react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockServer} from 'modules/mock-server/node';
 import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {initializeStores, renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(open('multipleInstanceSubProcess.bpmn')))
-      )
-    );
+    mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
   });
 
   afterEach(() => {

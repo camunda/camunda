@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {
   render,
   screen,
@@ -15,7 +14,6 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockServer} from 'modules/mock-server/node';
 import {MetadataPopover} from '.';
 import {
   createInstance,
@@ -43,6 +41,7 @@ import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -92,15 +91,10 @@ describe('MetadataPopover', () => {
   });
 
   it('should render meta data for incident flow node', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: PROCESS_INSTANCE_ID,
@@ -142,12 +136,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render meta data for completed flow node', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -185,12 +174,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render meta data modal', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockCallActivityProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -257,12 +241,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render metadata for multi instance flow nodes', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -293,12 +272,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should not render called instances for multi instance call activities', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -324,12 +298,7 @@ describe('MetadataPopover', () => {
   it('should not render root cause instance link when instance is root', async () => {
     const {rootCauseInstance} = rootIncidentFlowNodeMetaData.incident;
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(rootIncidentFlowNodeMetaData);
 
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
@@ -360,12 +329,7 @@ describe('MetadataPopover', () => {
   it('should render completed decision', async () => {
     const {instanceMetadata} = calledDecisionMetadata;
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(metadataDemoProcess))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledDecisionMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -400,12 +364,7 @@ describe('MetadataPopover', () => {
     const {instanceMetadata} = calledFailedDecisionMetadata;
     const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(metadataDemoProcess))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledFailedDecisionMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -445,12 +404,7 @@ describe('MetadataPopover', () => {
   it('should render unevaluated decision', async () => {
     const {instanceMetadata} = calledUnevaluatedDecisionMetadata;
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(metadataDemoProcess))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(metadataDemoProcess);
     mockFetchFlowNodeMetadata().withSuccess(calledUnevaluatedDecisionMetadata);
 
     processInstanceDetailsStore.setProcessInstance(

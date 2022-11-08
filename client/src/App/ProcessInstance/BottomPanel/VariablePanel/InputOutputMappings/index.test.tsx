@@ -8,25 +8,22 @@
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InputOutputMappings} from './index';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('Input Mappings', () => {
+  beforeEach(() =>
+    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML)
+  );
+
   afterEach(() => {
     flowNodeSelectionStore.reset();
     processInstanceDetailsDiagramStore.reset();
   });
 
   it('should display empty message', async () => {
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
-      )
-    );
-
     await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'Event_0bonl61',
@@ -42,12 +39,6 @@ describe('Input Mappings', () => {
   });
 
   it('should display input mappings', async () => {
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
-      )
-    );
-
     await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'Activity_0qtp1k6',
@@ -67,12 +58,6 @@ describe('Input Mappings', () => {
   });
 
   it('should display output mappings', async () => {
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
-      )
-    );
-
     await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'Activity_0qtp1k6',
@@ -103,12 +88,6 @@ describe('Input Mappings', () => {
   ])(
     'should display/hide information banner for input/output mappings',
     async ({type, message}) => {
-      mockServer.use(
-        rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-          res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
-        )
-      );
-
       await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Activity_0qtp1k6',

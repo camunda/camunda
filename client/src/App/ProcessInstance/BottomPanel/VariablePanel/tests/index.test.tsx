@@ -33,6 +33,7 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -568,11 +569,7 @@ describe('VariablePanel', () => {
   });
 
   it('should select correct tab when navigating between flow nodes', async () => {
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(mockProcessWithInputOutputMappingsXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
 

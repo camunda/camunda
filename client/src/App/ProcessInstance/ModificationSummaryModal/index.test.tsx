@@ -23,6 +23,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {rest} from 'msw';
 import {ModificationSummaryModal} from './index';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -318,11 +319,8 @@ describe('Modification Summary Modal', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
     );

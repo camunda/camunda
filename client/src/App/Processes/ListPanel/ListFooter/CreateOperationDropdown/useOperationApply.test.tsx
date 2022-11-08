@@ -26,6 +26,7 @@ import {getSearchString} from 'modules/utils/getSearchString';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('modules/utils/getSearchString');
 
@@ -44,11 +45,9 @@ describe('useOperationApply', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessXML().withSuccess('');
 
     mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
-      ),
       rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
         res.once(ctx.json({}))
       )

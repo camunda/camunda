@@ -33,6 +33,7 @@ import {Header} from 'App/Layout/Header';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
 
@@ -63,11 +64,9 @@ describe('Instances', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      ),
       rest.post('/api/batch-operations', (_, res, ctx) =>
         res.once(ctx.json(operations))
       )
@@ -182,19 +181,13 @@ describe('Instances', () => {
     ).toBeChecked();
   });
 
-  it.only('should fetch diagram and diagram statistics', async () => {
+  it('should fetch diagram and diagram statistics', async () => {
     const firstProcessStatisticsResponse = [
       {...mockProcessStatistics[0]!, completed: 10},
     ];
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(
       firstProcessStatisticsResponse
     );

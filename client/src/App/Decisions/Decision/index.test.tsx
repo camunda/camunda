@@ -15,6 +15,7 @@ import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {Decision} from '.';
 import {MemoryRouter} from 'react-router-dom';
+import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -30,12 +31,6 @@ function createWrapper(initialPath: string = '/') {
 describe('<Decision />', () => {
   beforeEach(async () => {
     mockServer.use(
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (req, res, ctx) => {
-        if (req.params.decisionDefinitionId === '2') {
-          return res.once(ctx.status(404), ctx.text(''));
-        }
-        return res.once(ctx.text(mockDmnXml));
-      }),
       rest.get('/api/decisions/grouped', (_, res, ctx) =>
         res.once(ctx.json(groupedDecisions))
       )
@@ -55,6 +50,8 @@ describe('<Decision />', () => {
   });
 
   it('should render decision table and panel header', async () => {
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
+
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
     });
@@ -66,6 +63,8 @@ describe('<Decision />', () => {
   });
 
   it('should render text when no decision is selected', () => {
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
+
     render(<Decision />, {
       wrapper: createWrapper('/decisions'),
     });
@@ -82,6 +81,8 @@ describe('<Decision />', () => {
   });
 
   it('should render text when no version is selected', () => {
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
+
     render(<Decision />, {
       wrapper: createWrapper(
         '/decisions?name=invoiceClassification&version=all'
@@ -102,6 +103,8 @@ describe('<Decision />', () => {
   });
 
   it('should render text on error', async () => {
+    mockFetchDecisionXML().withServerError(404);
+
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=calc-key-figures&version=1'),
     });

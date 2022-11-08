@@ -12,13 +12,13 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionXmlStore} from './decisionXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
+import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 
 describe('decisionXmlStore', () => {
   it('should initialize and reset ', async () => {
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
+
     mockServer.use(
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockDmnXml))
-      ),
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(invoiceClassification))
       )

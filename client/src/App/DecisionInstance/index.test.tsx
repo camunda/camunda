@@ -16,6 +16,7 @@ import {DecisionInstance} from './';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
+import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
@@ -37,11 +38,10 @@ describe('<DecisionInstance />', () => {
       rest.get(
         '/api/decision-instances/:decisionInstanceId/drd-data',
         (_, res, ctx) => res(ctx.json(mockDrdData))
-      ),
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res(ctx.text(mockDmnXml))
       )
     );
+
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
   });
 
   afterEach(() => {

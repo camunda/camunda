@@ -7,8 +7,6 @@
 
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {processInstanceDetailsStore} from './processInstanceDetails';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {
   createInstance,
   mockProcessXML,
@@ -20,14 +18,11 @@ import {modificationsStore} from './modifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
   });
 
   afterEach(() => {
@@ -65,11 +60,7 @@ describe('stores/processInstanceDiagram', () => {
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
     );
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     processInstanceDetailsDiagramStore.fetchProcessXml('1');
     expect(processInstanceDetailsDiagramStore.state.status).toBe('fetching');
@@ -163,11 +154,7 @@ describe('stores/processInstanceDiagram', () => {
       expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
     );
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     eventListeners.online();
 
@@ -182,11 +169,7 @@ describe('stores/processInstanceDiagram', () => {
 
   describe('hasCalledProcessInstances', () => {
     it('should return true for processes with call activity', async () => {
-      mockServer.use(
-        rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-          res.once(ctx.text(mockCallActivityProcessXML))
-        )
-      );
+      mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
 
       processInstanceDetailsStore.setProcessInstance(
         createInstance({
@@ -210,11 +193,7 @@ describe('stores/processInstanceDiagram', () => {
     });
 
     it('should return false for processes without call activity', async () => {
-      mockServer.use(
-        rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-          res.once(ctx.text(mockProcessXML))
-        )
-      );
+      mockFetchProcessXML().withSuccess(mockProcessXML);
 
       processInstanceDetailsStore.setProcessInstance(
         createInstance({
@@ -291,11 +270,7 @@ describe('stores/processInstanceDiagram', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessForModifications))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -381,11 +356,7 @@ describe('stores/processInstanceDiagram', () => {
   });
 
   it('should get flow node parents', async () => {
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockNestedSubprocess))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     processInstanceDetailsStore.setProcessInstance(
       createInstance({

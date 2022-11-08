@@ -14,25 +14,19 @@ import {
   mockProcessStatistics,
   mockProcessXML,
 } from 'modules/testUtils';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {omit} from 'lodash';
 
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('Filters', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();
 

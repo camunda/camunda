@@ -15,10 +15,9 @@ import {
   observable,
 } from 'mobx';
 import {DiagramModel} from 'bpmn-moddle';
-import {fetchProcessXML} from 'modules/api/diagram';
+import {fetchProcessXML} from 'modules/api/fetchProcessXML';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isFlowNode} from 'modules/utils/flowNodes';
 import {NON_APPENDABLE_FLOW_NODES} from 'modules/constants';
@@ -111,17 +110,13 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   fetchProcessXml = this.retryOnConnectionLost(
     async (processId: ProcessInstanceEntity['processId']) => {
       this.startFetch();
-      try {
-        const response = await fetchProcessXML(processId);
+      const response = await fetchProcessXML(processId);
 
-        if (response.ok) {
-          const xml = await response.text();
-          this.handleFetchSuccess(xml, await parseDiagramXML(xml));
-        } else {
-          this.handleFetchFailure();
-        }
-      } catch (error) {
-        this.handleFetchFailure(error);
+      if (response.isSuccess) {
+        const xml = response.data;
+        this.handleFetchSuccess(xml, await parseDiagramXML(xml));
+      } else {
+        this.handleFetchFailure();
       }
     }
   );
@@ -249,11 +244,6 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
-
-    logger.error('Failed to fetch Diagram XML');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   reset() {

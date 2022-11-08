@@ -6,8 +6,6 @@
  */
 
 import {waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {modificationsStore} from './modifications';
@@ -17,6 +15,7 @@ import {mockSubProcesses} from 'modules/mocks/mockSubProcesses';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 const PROCESS_INSTANCE_ID = '2251799813686320';
 
@@ -70,13 +69,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
     mockFetchProcessInstanceDetailStatistics().withSuccess(
       mockProcessInstanceDetailsStatistics
     );
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockComplexProcess))
-      )
-    );
-
+    mockFetchProcessXML().withSuccess(mockComplexProcess);
     mockFetchProcessInstance().withSuccess(
       createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'})
     );
@@ -289,11 +282,7 @@ describe('stores/processInstanceDetailsStatistics', () => {
       subProcessStatistics
     );
 
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockSubProcesses))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockSubProcesses);
 
     mockFetchProcessInstance().withSuccess(
       createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'})

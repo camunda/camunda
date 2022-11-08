@@ -18,18 +18,17 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionPanel} from '.';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
+import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 
 describe('<DecisionPanel />', () => {
   beforeEach(() => {
     mockServer.use(
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(invoiceClassification))
-      ),
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockDmnXml))
       )
     );
 
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
     decisionXmlStore.init();
   });
 

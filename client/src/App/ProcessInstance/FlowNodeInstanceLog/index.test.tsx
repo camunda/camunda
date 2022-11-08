@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {
   render,
   screen,
@@ -25,6 +24,7 @@ import {
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
 
@@ -57,11 +57,10 @@ describe('FlowNodeInstanceLog', () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
       )
     );
+
+    mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
@@ -79,11 +78,10 @@ describe('FlowNodeInstanceLog', () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
       )
     );
+
+    mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
@@ -103,11 +101,10 @@ describe('FlowNodeInstanceLog', () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json({}), ctx.status(500))
-      ),
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
       )
     );
+
+    mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
@@ -122,11 +119,10 @@ describe('FlowNodeInstanceLog', () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.text(''))
       )
     );
+
+    mockFetchProcessXML().withServerError();
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
@@ -143,11 +139,11 @@ describe('FlowNodeInstanceLog', () => {
       // initial fetch
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
       )
     );
+
+    mockFetchProcessXML().withSuccess('');
+
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 
     jest.useFakeTimers();
@@ -207,11 +203,10 @@ describe('FlowNodeInstanceLog', () => {
     mockServer.use(
       rest.post('/api/flow-node-instances', (_, res, ctx) =>
         res.once(ctx.json(processInstancesMock.level1))
-      ),
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(''))
       )
     );
+
+    mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
 

@@ -23,6 +23,7 @@ import {useNotifications} from 'modules/notifications';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
+import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -63,11 +64,10 @@ describe('<Decisions />', () => {
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json({decisionInstances: [], totalCount: 0}))
       ),
-      rest.get('/api/decisions/grouped', (_, res, ctx) => res(ctx.json([]))),
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockDmnXml))
-      )
+      rest.get('/api/decisions/grouped', (_, res, ctx) => res(ctx.json([])))
     );
+
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {wrapper: createWrapper()});
 
@@ -100,11 +100,10 @@ describe('<Decisions />', () => {
       ),
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json({decisionInstances: [], totalCount: 0}))
-      ),
-      rest.get('/api/decisions/:decisionDefinitionId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockDmnXml))
       )
     );
+
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {
       wrapper: createWrapper(`/decisions${queryString}`),

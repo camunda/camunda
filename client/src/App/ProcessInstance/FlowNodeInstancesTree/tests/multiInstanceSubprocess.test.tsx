@@ -23,15 +23,13 @@ import {
   processInstanceId,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
-    mockServer.use(
-      rest.get(`/api/processes/:processId/xml`, (_, res, ctx) =>
-        res.once(ctx.text(multiInstanceProcess))
-      )
-    );
+    mockFetchProcessXML().withSuccess(multiInstanceProcess);
+
     await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
   });
 

@@ -14,7 +14,7 @@ import {
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {fetchProcessXML} from 'modules/api/diagram';
+import {fetchProcessXML} from 'modules/api/fetchProcessXML';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {processInstancesStore} from './processInstances';
@@ -117,8 +117,11 @@ class ProcessDiagram extends NetworkReconnectionHandler {
         fetchProcessInstancesStatistics(getProcessInstancesRequestFilters()),
       ]);
 
-    if (processXMLResponse.ok && processInstancesStatisticsResponse.isSuccess) {
-      const xml = await processXMLResponse.text();
+    if (
+      processXMLResponse.isSuccess &&
+      processInstancesStatisticsResponse.isSuccess
+    ) {
+      const xml = processXMLResponse.data;
       const [diagramModel, statistics] = await Promise.all([
         parseDiagramXML(xml),
         processInstancesStatisticsResponse.data,

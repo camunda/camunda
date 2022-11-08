@@ -8,8 +8,6 @@
 import {render, screen} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
-import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -21,17 +19,13 @@ import {processDiagramStore} from 'modules/stores/processDiagram';
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
+import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
 
 describe('Validations', () => {
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-
-    mockServer.use(
-      rest.get('/api/processes/:processId/xml', (_, res, ctx) =>
-        res.once(ctx.text(mockProcessXML))
-      )
-    );
+    mockFetchProcessXML().withSuccess(mockProcessXML);
 
     processesStore.fetchProcesses();
 
