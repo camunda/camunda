@@ -30,6 +30,7 @@ import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
+  createBatchOperation,
   createVariable,
   mockCallActivityProcessXML,
   mockProcessXML,
@@ -40,6 +41,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -233,12 +235,7 @@ describe('InstanceHeader', () => {
   it('should show spinner when operation is applied', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json(mockOperationCreated))
-      )
-    );
+    mockApplyOperation().withSuccess(mockOperationCreated);
 
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
 
@@ -256,17 +253,16 @@ describe('InstanceHeader', () => {
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
-  it('should show spinner when variables is updated', async () => {
+  it('should show spinner when variables is added', async () => {
+    jest.useFakeTimers();
     const mockVariable = createVariable();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchVariables().withSuccess([mockVariable]);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json(undefined))
-      )
+    mockApplyOperation().withSuccess(
+      createBatchOperation({id: 'batch-operation-id', type: 'ADD_VARIABLE'})
     );
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -290,24 +286,39 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: mockInstanceWithActiveOperation.id,
-      payload: {pageSize: 10, scopeId: '1'},
-    });
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+
+    mockServer.use(
+      rest.get('/api/operations', (req, res, ctx) => {
+        if (
+          req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
+        ) {
+          return res.once(
+            ctx.json([
+              {
+                state: 'COMPLETED',
+              },
+            ])
+          );
+        }
+      })
+    );
+
+    jest.runOnlyPendingTimers();
+
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
     await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should remove spinner when operation fails', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockApplyOperation().withServerError();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-      )
-    );
     const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
     processInstanceDetailsDiagramStore.init();
     processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
@@ -423,11 +434,7 @@ describe('InstanceHeader', () => {
       expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument()
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json({}))
-      )
-    );
+    mockApplyOperation().withSuccess(mockOperationCreated);
 
     await user.click(screen.getByTestId('delete-button'));
     await waitForElementToBeRemoved(

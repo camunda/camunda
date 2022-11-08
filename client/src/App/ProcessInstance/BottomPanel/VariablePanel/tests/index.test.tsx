@@ -22,6 +22,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {
+  createBatchOperation,
   createInstance,
   createVariable,
   mockProcessWithInputOutputMappingsXML,
@@ -34,6 +35,7 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -238,14 +240,11 @@ describe('VariablePanel', () => {
       }),
     ]);
 
+    mockApplyOperation().withSuccess(
+      createBatchOperation({id: 'batch-operation-id'})
+    );
+
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 'batch-operation-id',
-          })
-        )
-      ),
       rest.get('/api/operations', (req, res, ctx) => {
         if (
           req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
@@ -308,14 +307,8 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
     mockFetchVariables().withSuccess([]);
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 'batch-operation-id',
-          })
-        )
-      )
+    mockApplyOperation().withSuccess(
+      createBatchOperation({id: 'batch-operation-id'})
     );
 
     await waitFor(() =>
@@ -356,11 +349,7 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'foo');
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.status(400), ctx.json({}))
-      )
-    );
+    mockApplyOperation().withServerError(400);
 
     await waitFor(() =>
       expect(screen.getByTitle(/save variable/i)).toBeEnabled()
@@ -403,11 +392,7 @@ describe('VariablePanel', () => {
     await user.type(screen.getByTestId('add-variable-name'), 'foo');
     await user.type(screen.getByTestId('add-variable-value'), '"bar"');
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({}))
-      )
-    );
+    mockApplyOperation().withServerError();
 
     await waitFor(() =>
       expect(screen.getByTitle(/save variable/i)).toBeEnabled()
@@ -450,15 +435,11 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockApplyOperation().withSuccess(
+      createBatchOperation({id: 'batch-operation-id'})
+    );
 
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 'batch-operation-id',
-          })
-        )
-      ),
       rest.get('/api/operations', (req, res, ctx) => {
         if (
           req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
@@ -509,12 +490,7 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json({id: '1234'}))
-      )
-    );
+    mockApplyOperation().withSuccess(createBatchOperation());
 
     jest.runOnlyPendingTimers();
     await waitFor(() =>

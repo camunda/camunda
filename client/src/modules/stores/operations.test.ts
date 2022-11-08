@@ -6,11 +6,13 @@
  */
 
 import {operationsStore} from './operations';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
-import {operations} from 'modules/testUtils';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
+import {createBatchOperation, operations} from 'modules/testUtils';
+import {
+  mockApplyBatchOperation,
+  mockApplyOperation,
+} from 'modules/mocks/api/processInstances/operations';
 
 describe('stores/operations', () => {
   afterEach(() => {
@@ -50,26 +52,10 @@ describe('stores/operations', () => {
 
   describe('Apply Operation', () => {
     it('should prepend operations when an operation is applied', async () => {
-      const newOperation = {
-        id: 'c6cde799-69bc-4dd5-9f98-3f931aa2c922',
-        name: null,
-        type: 'CANCEL_PROCESS_INSTANCE',
-        startDate: '2020-09-30T06:13:21.312+0000',
-        endDate: null,
-        username: 'demo',
-        instancesCount: 1,
-        operationsTotalCount: 1,
-        operationsFinishedCount: 0,
-      };
+      const newOperation = createBatchOperation();
 
       mockFetchBatchOperations().withSuccess(operations);
-
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) => res.once(ctx.json(newOperation))
-        )
-      );
+      mockApplyOperation().withSuccess(newOperation);
 
       await operationsStore.fetchOperations();
       expect(operationsStore.state.operations).toEqual(operations);
@@ -87,14 +73,7 @@ describe('stores/operations', () => {
 
     it('should not prepend operations and call error callback when a server error occurred', async () => {
       mockFetchBatchOperations().withSuccess(operations);
-
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) =>
-            res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-        )
-      );
+      mockApplyOperation().withServerError();
 
       await operationsStore.fetchOperations();
       expect(operationsStore.state.operations).toEqual(operations);
@@ -112,12 +91,7 @@ describe('stores/operations', () => {
 
     it('should not prepend operations and call error callback when a network error occurred', async () => {
       mockFetchBatchOperations().withSuccess(operations);
-
-      mockServer.use(
-        rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
-          res.networkError('A network error')
-        )
-      );
+      mockApplyOperation().withNetworkError();
 
       await operationsStore.fetchOperations();
       expect(operationsStore.state.operations).toEqual(operations);
@@ -136,24 +110,10 @@ describe('stores/operations', () => {
 
   describe('Apply Batch Operation', () => {
     it('should prepend operations when a batch operation is applied', async () => {
-      const newOperation = {
-        id: '6255ced4-f570-46ce-b5c0-4b88a785fb9a',
-        name: null,
-        type: 'RESOLVE_INCIDENT',
-        startDate: '2020-09-30T06:14:55.185+0000',
-        endDate: '2020-09-30T06:14:55.209+0000',
-        username: 'demo',
-        instancesCount: 2,
-        operationsTotalCount: 0,
-        operationsFinishedCount: 0,
-      };
-      mockFetchBatchOperations().withSuccess(operations);
+      const newOperation = createBatchOperation();
 
-      mockServer.use(
-        rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
-          res.once(ctx.json(newOperation))
-        )
-      );
+      mockFetchBatchOperations().withSuccess(operations);
+      mockApplyBatchOperation().withSuccess(newOperation);
 
       await operationsStore.fetchOperations();
       expect(operationsStore.state.operations).toEqual(operations);
@@ -174,12 +134,7 @@ describe('stores/operations', () => {
 
     it('should not prepend operations and call error callback when a server error occurred', async () => {
       mockFetchBatchOperations().withSuccess(operations);
-
-      mockServer.use(
-        rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-        )
-      );
+      mockApplyBatchOperation().withServerError();
 
       await operationsStore.fetchOperations();
       expect(operationsStore.state.operations).toEqual(operations);
@@ -199,12 +154,7 @@ describe('stores/operations', () => {
 
     it('should not prepend operations and call error callback when a network error occurred', async () => {
       mockFetchBatchOperations().withSuccess(operations);
-
-      mockServer.use(
-        rest.post('/api/process-instances/batch-operation', (_, res) =>
-          res.networkError('A network error')
-        )
-      );
+      mockApplyBatchOperation().withNetworkError();
 
       await operationsStore.fetchOperations();
       expect(operationsStore.state.operations).toEqual(operations);

@@ -43,7 +43,7 @@ interface OperationEntity {
   instancesCount: number;
   operationsTotalCount: number;
   operationsFinishedCount: number;
-  sortValues: [string, string];
+  sortValues?: [string, string];
 }
 
 interface InstanceOperationEntity {

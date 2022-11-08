@@ -11,9 +11,14 @@ import {flowNodeSelectionStore} from './flowNodeSelection';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {
+  createBatchOperation,
+  createInstance,
+  createVariable,
+} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 
 jest.mock('modules/constants/variables', () => ({
   ...jest.requireActual('modules/constants/variables'),
@@ -28,28 +33,17 @@ describe('stores/variables', () => {
     createVariable({name: 'paid', value: 'true'}),
   ];
 
-  const mockVariableOperation = {
-    id: 'b638e93a-5083-4487-af9c-78cac528a07a',
-    name: null,
-    type: 'UPDATE_VARIABLE',
-    startDate: '2020-10-09T08:30:29.749+0000',
-    endDate: null,
-    username: 'demo',
-    instancesCount: 1,
-    operationsTotalCount: 1,
-    operationsFinishedCount: 0,
-  };
+  const mockVariableOperation = createBatchOperation({type: 'UPDATE_VARIABLE'});
 
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(
       createInstance({id: '123', state: 'ACTIVE'})
     );
 
+    mockApplyOperation().withSuccess(mockVariableOperation);
+
     mockFetchVariables().withSuccess(mockVariables);
     mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json(mockVariableOperation))
-      ),
       rest.get('/api/operations', (_, res, ctx) =>
         res.once(
           ctx.json([
@@ -314,13 +308,7 @@ describe('stores/variables', () => {
     it('should not add variable on server error', async () => {
       expect(variablesStore.state.items).toEqual([]);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) =>
-            res.once(ctx.status(500), ctx.json({error: 'An error occurred'}))
-        )
-      );
+      mockApplyOperation().withServerError();
 
       const mockOnError = jest.fn();
       await variablesStore.addVariable({
@@ -337,11 +325,7 @@ describe('stores/variables', () => {
     it('should not add variable on network error', async () => {
       expect(variablesStore.state.items).toEqual([]);
 
-      mockServer.use(
-        rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
-          res.networkError('A network error')
-        )
-      );
+      mockApplyOperation().withNetworkError();
 
       const mockOnError = jest.fn();
       await variablesStore.addVariable({
@@ -400,12 +384,7 @@ describe('stores/variables', () => {
         },
       ]);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) => res.once(ctx.json(mockVariableOperation))
-        )
-      );
+      mockApplyOperation().withSuccess(mockVariableOperation);
 
       await variablesStore.updateVariable({
         id: '1',
@@ -452,13 +431,7 @@ describe('stores/variables', () => {
       });
       expect(variablesStore.state.items).toEqual(mockVariables);
 
-      mockServer.use(
-        rest.post(
-          '/api/process-instances/:instanceId/operation',
-          (_, res, ctx) =>
-            res.once(ctx.status(500), ctx.json({error: 'An error occurred'}))
-        )
-      );
+      mockApplyOperation().withServerError();
 
       const mockOnError = jest.fn();
       await variablesStore.updateVariable({
@@ -479,11 +452,7 @@ describe('stores/variables', () => {
       });
       expect(variablesStore.state.items).toEqual(mockVariables);
 
-      mockServer.use(
-        rest.post('/api/process-instances/:instanceId/operation', (_, res) =>
-          res.networkError('A network error')
-        )
-      );
+      mockApplyOperation().withNetworkError();
 
       const mockOnError = jest.fn();
       await variablesStore.updateVariable({

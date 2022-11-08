@@ -18,17 +18,19 @@ import {
   groupedProcessesMock,
   mockProcessStatistics,
   mockProcessInstances,
+  createBatchOperation,
 } from 'modules/testUtils';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
-import {isEqual} from 'lodash';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
+import * as operationsApi from 'modules/api/processInstances/operations';
 
 jest.mock('modules/utils/getSearchString');
+
+const applyBatchOperationSpy = jest.spyOn(operationsApi, 'applyBatchOperation');
 
 const mockedGetSearchString = getSearchString as jest.MockedFunction<
   typeof getSearchString
@@ -46,12 +48,7 @@ describe('useOperationApply', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess('');
-
-    mockServer.use(
-      rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
-        res.once(ctx.json({}))
-      )
-    );
+    mockApplyBatchOperation().withSuccess(createBatchOperation());
   });
 
   afterEach(() => {
@@ -61,16 +58,8 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (no filter, select all ids)', async () => {
-    const {mockOperationCreated, expectedQuery} = mockData.noFilterSelectAll;
-
-    mockServer.use(
-      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        if (isEqual(req.body.query, expectedQuery)) {
-          return res.once(ctx.json(mockOperationCreated));
-        }
-      })
-    );
+    const {mockOperationCreated, expectedBody} = mockData.noFilterSelectAll;
+    mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     mockedGetSearchString.mockImplementation(
       () => '?active=true&running=true&incidents=true'
@@ -82,38 +71,29 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
+
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
+      expectedBody.operationType,
+      expectedBody.query
+    );
   });
 
   it('should call apply (set id filter, select all ids)', async () => {
-    const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectAll;
+    const {mockOperationCreated, expectedBody} = mockData.setFilterSelectAll;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
+
+    mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     mockedGetSearchString.mockImplementation(
       () => '?active=true&running=true&incidents=true&ids=1'
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        if (isEqual(req.body.query, expectedQuery)) {
-          return res.once(ctx.json(mockOperationCreated));
-        }
-      })
-    );
-
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
     );
 
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
-
-    await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
-    );
-
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-    processInstancesSelectionStore.setAllChecked();
+    processInstancesSelectionStore.setAllChecked(true);
 
     expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
@@ -121,30 +101,21 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
+      expectedBody.operationType,
+      expectedBody.query
+    );
   });
 
   it('should call apply (set id filter, select one id)', async () => {
-    const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectOne;
+    const {mockOperationCreated, expectedBody} = mockData.setFilterSelectOne;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
     mockedGetSearchString.mockImplementation(
       () => '?active=true&running=true&incidents=true&ids=1'
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        if (isEqual(req.body.query, expectedQuery)) {
-          return res.once(ctx.json(mockOperationCreated));
-        }
-      })
-    );
-
-    await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
-    );
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -158,10 +129,14 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
+      expectedBody.operationType,
+      expectedBody.query
+    );
   });
 
   it('should call apply (set id filter, exclude one id)', async () => {
-    const {mockOperationCreated, expectedQuery, ...context} =
+    const {mockOperationCreated, expectedBody, ...context} =
       mockData.setFilterExcludeOne;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -169,20 +144,7 @@ describe('useOperationApply', () => {
       () => '?active=true&running=true&incidents=true&ids=1,2'
     );
 
-    mockServer.use(
-      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        if (isEqual(req.body.query, expectedQuery)) {
-          return res.once(ctx.json(mockOperationCreated));
-        }
-      })
-    );
-
-    await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
-    );
-
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -198,10 +160,14 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
+      expectedBody.operationType,
+      expectedBody.query
+    );
   });
 
   it('should call apply (set process filter, select one)', async () => {
-    const {mockOperationCreated, expectedQuery, ...context} =
+    const {mockOperationCreated, expectedBody, ...context} =
       mockData.setProcessFilterSelectOne;
     processInstancesStore.init();
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -211,19 +177,7 @@ describe('useOperationApply', () => {
     );
     await processesStore.fetchProcesses();
 
-    mockServer.use(
-      rest.post('/api/process-instances/batch-operation', (req, res, ctx) => {
-        // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
-        if (isEqual(req.body.query, expectedQuery)) {
-          return res.once(ctx.json(mockOperationCreated));
-        }
-      })
-    );
-
-    await waitFor(() =>
-      expect(processInstancesStore.state.status).toBe('fetched')
-    );
-    mockFetchProcessInstances().withSuccess(mockProcessInstances);
+    mockApplyBatchOperation().withSuccess(mockOperationCreated);
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
@@ -238,10 +192,14 @@ describe('useOperationApply', () => {
     await waitFor(() =>
       expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
+    expect(applyBatchOperationSpy).toHaveBeenCalledWith(
+      expectedBody.operationType,
+      expectedBody.query
+    );
   });
 
   it('should poll all visible instances', async () => {
-    const {expectedQuery, ...context} = mockData.setFilterSelectAll;
+    const {expectedBody, ...context} = mockData.setFilterSelectAll;
     processInstancesSelectionStore.setMode(INSTANCE_SELECTION_MODE.ALL);
 
     jest.useFakeTimers();
@@ -285,7 +243,7 @@ describe('useOperationApply', () => {
   });
 
   it('should poll the selected instances', async () => {
-    const {expectedQuery, ...context} = mockData.setProcessFilterSelectOne;
+    const {expectedBody, ...context} = mockData.setProcessFilterSelectOne;
     processInstancesSelectionStore.selectProcessInstance('2251799813685594');
 
     jest.useFakeTimers();

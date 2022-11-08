@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {createIncident} from 'modules/testUtils';
+import {createBatchOperation, createIncident} from 'modules/testUtils';
 import {IncidentOperation} from './index';
 import {
   render,
@@ -14,11 +14,10 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {operationsStore} from 'modules/stores/operations';
-import {mockOperationCreated, mockProps} from './index.setup';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
+import {mockProps} from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {NotificationProvider} from 'modules/notifications';
+import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -48,11 +47,7 @@ describe('IncidentOperation', () => {
   });
 
   it('should render a spinner and disable retry button when instance operation is applied', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json(mockOperationCreated))
-      )
-    );
+    mockApplyOperation().withSuccess(createBatchOperation());
 
     const {user} = render(
       <IncidentOperation
@@ -72,11 +67,7 @@ describe('IncidentOperation', () => {
   });
 
   it('should remove spinner and enable button when a server error occurs on an operation', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({error: 'An error occurred'}))
-      )
-    );
+    mockApplyOperation().withServerError();
 
     const {user} = render(
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,
@@ -97,11 +88,7 @@ describe('IncidentOperation', () => {
   });
 
   it('should remove spinner and enable button when a network error occurs on an operation', async () => {
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.networkError('A network error')
-      )
-    );
+    mockApplyOperation().withNetworkError();
 
     const {user} = render(
       <IncidentOperation incident={createIncident()} instanceId="instance_1" />,

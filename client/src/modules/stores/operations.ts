@@ -18,7 +18,8 @@ import {fetchBatchOperations} from 'modules/api/fetchBatchOperations';
 import {
   applyBatchOperation,
   applyOperation,
-} from 'modules/api/processInstances';
+  BatchOperationDto,
+} from 'modules/api/processInstances/operations';
 import {sortOperations} from './utils/sortOperations';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
@@ -120,8 +121,8 @@ class Operations extends NetworkReconnectionHandler {
     try {
       const response = await applyBatchOperation(operationType, query);
 
-      if (response.ok) {
-        this.prependOperations(await response.json());
+      if (response.isSuccess) {
+        this.prependOperations(response.data);
         onSuccess();
       } else {
         onError(operationType);
@@ -142,21 +143,17 @@ class Operations extends NetworkReconnectionHandler {
     onError?: (operationType: OperationEntityType) => void;
     onSuccess?: () => void;
   }) => {
-    try {
-      const response = await applyOperation(instanceId, payload);
+    const response = await applyOperation(instanceId, payload);
 
-      if (response.ok) {
-        this.prependOperations(await response.json());
-        tracking.track({
-          eventName: 'single-operation',
-          operationType: payload.operationType,
-        });
-        onSuccess?.();
-      } else {
-        onError?.(payload.operationType);
-      }
-    } catch {
-      return onError?.(payload.operationType);
+    if (response.isSuccess) {
+      this.prependOperations(response.data);
+      tracking.track({
+        eventName: 'single-operation',
+        operationType: payload.operationType,
+      });
+      onSuccess?.();
+    } else {
+      onError?.(payload.operationType);
     }
   };
 
@@ -210,8 +207,8 @@ class Operations extends NetworkReconnectionHandler {
     }
   };
 
-  prependOperations = (response: OperationEntity) => {
-    this.state.operations.unshift(response);
+  prependOperations = (response: BatchOperationDto) => {
+    this.state.operations.unshift({...response, sortValues: undefined});
   };
 
   setOperations(response: any) {

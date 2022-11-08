@@ -12,18 +12,20 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockProcessInstances} from 'modules/testUtils';
+import {createBatchOperation, mockProcessInstances} from 'modules/testUtils';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
 import {ListPanel} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {NotificationProvider} from 'modules/notifications';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {ListFooter} from './ListFooter';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {
+  mockApplyBatchOperation,
+  mockApplyOperation,
+} from 'modules/mocks/api/processInstances/operations';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -201,22 +203,8 @@ describe('ListPanel', () => {
       totalCount: 1,
     });
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: '1',
-            name: null,
-            type: 'CANCEL_PROCESS_INSTANCE',
-            startDate: '2020-11-23T04:42:08.030+0000',
-            endDate: null,
-            username: 'demo',
-            instancesCount: 1,
-            operationsTotalCount: 1,
-            operationsFinishedCount: 0,
-          })
-        )
-      )
+    mockApplyOperation().withSuccess(
+      createBatchOperation({type: 'CANCEL_PROCESS_INSTANCE'})
     );
 
     processInstancesStore.fetchProcessInstancesFromFilters();
@@ -264,11 +252,7 @@ describe('ListPanel', () => {
 
       mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
-      mockServer.use(
-        rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
-          res.once(ctx.json({}))
-        )
-      );
+      mockApplyBatchOperation().withSuccess(createBatchOperation());
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -304,11 +288,7 @@ describe('ListPanel', () => {
     it('should remove spinners after batch operation if a server error occurs', async () => {
       mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
-      mockServer.use(
-        rest.post('/api/process-instances/batch-operation', (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({}))
-        )
-      );
+      mockApplyBatchOperation().withServerError();
 
       processInstancesStore.fetchProcessInstancesFromFilters();
 
@@ -340,11 +320,7 @@ describe('ListPanel', () => {
     it('should remove spinners after batch operation if a network error occurs', async () => {
       jest.useFakeTimers();
 
-      mockServer.use(
-        rest.post('/api/process-instances/batch-operation', (_, res) =>
-          res.networkError('A network error')
-        )
-      );
+      mockApplyBatchOperation().withNetworkError();
 
       mockFetchProcessInstances().withSuccess(mockProcessInstances);
 

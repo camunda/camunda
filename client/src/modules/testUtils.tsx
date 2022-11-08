@@ -9,6 +9,7 @@ import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
 import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
+import {BatchOperationDto} from './api/processInstances/operations';
 
 /**
  * @returns a jest mock function that resolves with given value
@@ -66,6 +67,23 @@ export const createOperation = (options = {}): InstanceOperationEntity => {
     errorMessage: 'string',
     state: 'SENT',
     type: 'RESOLVE_INCIDENT',
+    ...options,
+  };
+};
+
+const createBatchOperation = (
+  options: Partial<BatchOperationDto> = {}
+): BatchOperationDto => {
+  return {
+    id: randomIdIterator.next().value,
+    name: null,
+    type: 'RESOLVE_INCIDENT',
+    startDate: '2022-11-02T16:00:17.105+0100',
+    endDate: null,
+    username: 'demo',
+    instancesCount: 1,
+    operationsTotalCount: 1,
+    operationsFinishedCount: 0,
     ...options,
   };
 };
@@ -1048,4 +1066,4 @@ export const createEventSubProcessFlowNodeInstances = (
   };
 };
 
-export {createVariable};
+export {createVariable, createBatchOperation};

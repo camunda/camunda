@@ -16,15 +16,12 @@ import {
   override,
   reaction,
 } from 'mobx';
-import {
-  applyOperation,
-  getOperation,
-  fetchVariable,
-} from 'modules/api/processInstances';
+import {getOperation, fetchVariable} from 'modules/api/processInstances';
 import {
   fetchVariables,
   VariablePayload,
 } from 'modules/api/processInstances/fetchVariables';
+import {applyOperation} from 'modules/api/processInstances/operations';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
@@ -525,34 +522,28 @@ class Variables extends NetworkReconnectionHandler {
       isPreview: false,
     });
 
-    try {
-      this.stopPolling();
-      const response = await applyOperation(id, {
-        operationType: 'ADD_VARIABLE',
-        variableScopeId: this.scopeId || undefined,
-        variableName: name,
-        variableValue: value,
-      });
+    this.stopPolling();
+    const response = await applyOperation(id, {
+      operationType: 'ADD_VARIABLE',
+      variableScopeId: this.scopeId || undefined,
+      variableName: name,
+      variableValue: value,
+    });
 
-      if (response.ok) {
-        const {id} = await response.json();
-        this.startPollingOperation({operationId: id, onSuccess, onError});
-        return 'SUCCESSFUL';
-      } else {
-        this.setPendingItem(null);
-        if (response.status === 400) {
-          return 'VALIDATION_ERROR';
-        }
+    this.startPolling(this.instanceId);
 
-        onError();
-        return 'FAILED';
-      }
-    } catch {
+    if (response.isSuccess) {
+      const {id} = response.data;
+      this.startPollingOperation({operationId: id, onSuccess, onError});
+      return 'SUCCESSFUL';
+    } else {
       this.setPendingItem(null);
+      if (response.statusCode === 400) {
+        return 'VALIDATION_ERROR';
+      }
+
       onError();
       return 'FAILED';
-    } finally {
-      this.startPolling(this.instanceId);
     }
   };
 
@@ -580,21 +571,18 @@ class Variables extends NetworkReconnectionHandler {
       hasActiveOperation: true,
     });
 
-    try {
-      this.stopPolling();
+    this.stopPolling();
 
-      const response = await applyOperation(id, {
-        operationType: 'UPDATE_VARIABLE',
-        variableScopeId: this.scopeId || undefined,
-        variableName: name,
-        variableValue: value,
-      });
-      this.startPolling(this.instanceId);
-      if (!response.ok) {
-        this.setSingleVariable(originalVariable);
-        onError();
-      }
-    } catch {
+    const response = await applyOperation(id, {
+      operationType: 'UPDATE_VARIABLE',
+      variableScopeId: this.scopeId || undefined,
+      variableName: name,
+      variableValue: value,
+    });
+
+    this.startPolling(this.instanceId);
+
+    if (!response.isSuccess) {
       this.setSingleVariable(originalVariable);
       onError();
     }

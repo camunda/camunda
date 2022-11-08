@@ -11,12 +11,10 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {rest} from 'msw';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {Operations} from './index';
-import {mockServer} from 'modules/mock-server/node';
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
-import {groupedProcessesMock} from 'modules/testUtils';
+import {createBatchOperation, groupedProcessesMock} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
@@ -24,6 +22,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 
 const instanceMock: ProcessInstanceEntity = {
   id: 'instance_1',
@@ -331,11 +330,7 @@ describe('Operations', () => {
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
     expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/process-instances/:instanceId/operation', (_, res, ctx) =>
-        res.once(ctx.json({}))
-      )
-    );
+    mockApplyOperation().withSuccess(createBatchOperation());
 
     await user.click(screen.getByTestId('delete-button'));
     await waitForElementToBeRemoved(
