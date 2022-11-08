@@ -17,40 +17,31 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
-import io.camunda.zeebe.backup.s3.manifest.FileSet.FileMetadata;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
 import io.camunda.zeebe.backup.s3.util.AsyncAggregatingSubscriber;
-import java.io.BufferedInputStream;
+import io.camunda.zeebe.backup.s3.util.FileSetManager;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.compress.compressors.CompressorException;
-import org.apache.commons.compress.compressors.CompressorStreamFactory;
-import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -86,6 +77,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  */
 public final class S3BackupStore implements BackupStore {
 
+  public static final int SCAN_PARALLELISM = 16;
   static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new JavaTimeModule());
   static final String SNAPSHOT_PREFIX = "snapshot/";
@@ -94,11 +86,9 @@ public final class S3BackupStore implements BackupStore {
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final Pattern BACKUP_IDENTIFIER_PATTERN =
       Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
-  public static final int SCAN_PARALLELISM = 16;
-  public static final int COMPRESSION_MIN_FILE_SIZE = 1024 * 1024; // 1 MiB
-  public static final String COMPRESSION_ALGORITHM = CompressorStreamFactory.getZstandard();
   private final S3BackupConfig config;
   private final S3AsyncClient client;
+  private final FileSetManager fileSetManager;
 
   public S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -107,6 +97,7 @@ public final class S3BackupStore implements BackupStore {
   public S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
     this.config = config;
     this.client = client;
+    this.fileSetManager = new FileSetManager(client, config);
   }
 
   private static Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
@@ -239,10 +230,10 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(Manifest::expectCompleted)
         .thenComposeAsync(
             manifest ->
-                downloadNamedFileSet(
-                        backupPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
+                fileSetManager
+                    .restore(backupPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
                     .thenCombineAsync(
-                        downloadNamedFileSet(
+                        fileSetManager.restore(
                             backupPrefix + SNAPSHOT_PREFIX, manifest.snapshotFiles(), targetFolder),
                         (segments, snapshot) ->
                             new BackupImpl(id, manifest.descriptor(), snapshot, segments)));
@@ -260,30 +251,6 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
-  }
-
-  private CompletableFuture<NamedFileSet> downloadNamedFileSet(
-      final String sourcePrefix, final FileSet fileSet, final Path targetFolder) {
-    LOG.debug(
-        "Downloading {} files from prefix {} to {}",
-        fileSet.names().size(),
-        sourcePrefix,
-        targetFolder);
-    final var downloadedFiles = new ConcurrentHashMap<String, Path>();
-    final CompletableFuture<?>[] futures =
-        fileSet.names().stream()
-            .map(
-                fileName -> {
-                  final var path = targetFolder.resolve(fileName);
-                  return client
-                      .getObject(
-                          req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
-                      .thenApply(response -> downloadedFiles.put(fileName, path));
-                })
-            .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(futures)
-        .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
@@ -344,7 +311,7 @@ public final class S3BackupStore implements BackupStore {
     return aggregator.result();
   }
 
-  CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
+  private CompletableFuture<Manifest> readManifestObject(final BackupIdentifier id) {
     LOG.debug("Reading manifest object of {}", id);
     return client
         .getObject(
@@ -376,19 +343,21 @@ public final class S3BackupStore implements BackupStore {
             });
   }
 
-  <T> CompletableFuture<ValidBackupManifest> updateManifestObject(
+  private <T> CompletableFuture<ValidBackupManifest> updateManifestObject(
       final BackupIdentifier id,
       final Function<Manifest, T> typeExpectation,
       final Function<T, ValidBackupManifest> update) {
     return updateManifestObject(id, manifest -> update.apply(typeExpectation.apply(manifest)));
   }
 
+  @VisibleForTesting
   CompletableFuture<ValidBackupManifest> updateManifestObject(
       final BackupIdentifier id, final Function<Manifest, ValidBackupManifest> update) {
     return readManifestObject(id).thenApply(update).thenComposeAsync(this::writeManifestObject);
   }
 
-  CompletableFuture<ValidBackupManifest> writeManifestObject(final ValidBackupManifest manifest) {
+  private CompletableFuture<ValidBackupManifest> writeManifestObject(
+      final ValidBackupManifest manifest) {
     LOG.debug("Updating manifest of {} to {}", manifest.id(), manifest);
     final AsyncRequestBody body;
     try {
@@ -411,120 +380,13 @@ public final class S3BackupStore implements BackupStore {
   private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
     LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
-
-    return saveNamedFileSet(prefix, backup.snapshot());
+    return fileSetManager.save(prefix, backup.snapshot());
   }
 
   private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
     LOG.debug("Saving segment files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
-    return saveNamedFileSet(prefix, backup.segments());
-  }
-
-  private CompletableFuture<FileSet> saveNamedFileSet(
-      final String prefix, final NamedFileSet files) {
-    final var futures =
-        files.namedFiles().entrySet().stream()
-            .map(segmentFile -> saveNamedFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
-            .toArray(CompletableFuture[]::new);
-
-    //noinspection unchecked
-    return CompletableFuture.allOf(futures).thenApply(ignored -> savedFileSetFromResults(futures));
-  }
-
-  record SavedNamedFile(String fileName, FileMetadata metadata) {}
-
-  private static FileSet savedFileSetFromResults(
-      final CompletableFuture<? extends SavedNamedFile>[] saveResults) {
-    final var savedFiles =
-        Arrays.stream(saveResults)
-            .map(CompletableFuture::join)
-            .collect(Collectors.toMap(SavedNamedFile::fileName, SavedNamedFile::metadata));
-    return new FileSet(savedFiles);
-  }
-
-  private CompletableFuture<? extends SavedNamedFile> saveNamedFile(
-      final String prefix, final String fileName, final Path filePath) {
-    try {
-      if (shouldCompress(filePath)) {
-        return compressAndSaveNamedFile(prefix, fileName, filePath);
-      } else {
-        return saveNamedFileWithoutCompression(prefix, fileName, filePath);
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private CompletableFuture<SavedNamedFile> saveNamedFileWithoutCompression(
-      final String prefix, final String fileName, final Path filePath) {
-    LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client
-        .putObject(
-            put -> put.bucket(config.bucketName()).key(prefix + fileName),
-            AsyncRequestBody.fromFile(filePath))
-        .thenApply(response -> new SavedNamedFile(fileName, FileMetadata.withoutCompression()));
-  }
-
-  private CompletableFuture<SavedNamedFile> compressAndSaveNamedFile(
-      final String prefix, final String fileName, final Path filePath) throws IOException {
-    final var compressed = compressFile(filePath, COMPRESSION_ALGORITHM);
-    LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client
-        .putObject(
-            put -> put.bucket(config.bucketName()).key(prefix + fileName),
-            AsyncRequestBody.fromFile(compressed))
-        .thenApply(response -> null)
-        .thenRunAsync(cleanupCompressedFile(fileName, compressed))
-        .thenApply(
-            resp ->
-                new SavedNamedFile(fileName, FileMetadata.withCompression(COMPRESSION_ALGORITHM)));
-  }
-
-  private static Runnable cleanupCompressedFile(final String fileName, final Path compressed) {
-    return () -> {
-      try {
-        Files.delete(compressed);
-      } catch (final IOException e) {
-        LOG.warn(
-            "Failed to delete temporary file {} created for compressing {}",
-            compressed,
-            fileName,
-            e);
-      }
-    };
-  }
-
-  private boolean shouldCompress(final Path filePath) {
-    if (!config.enableCompression()) {
-      return false;
-    }
-    try {
-      final var fileSize = Files.size(filePath);
-      return fileSize > COMPRESSION_MIN_FILE_SIZE;
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
-  private static Path compressFile(final Path file, final String algorithm) {
-    try {
-      final var compressedFile = Files.createTempFile("zb-backup-compress-", null);
-      LOG.trace("Compressing file {} to {}", file, compressedFile);
-      try (final var fileInput = Files.newInputStream(file)) {
-        try (final var bufferedInput = new BufferedInputStream(fileInput)) {
-          try (final var output = Files.newOutputStream(compressedFile)) {
-            try (final var compressedOutput =
-                new CompressorStreamFactory().createCompressorOutputStream(algorithm, output)) {
-              IOUtils.copy(bufferedInput, compressedOutput);
-              return compressedFile;
-            }
-          }
-        }
-      }
-    } catch (final IOException | CompressorException e) {
-      throw new RuntimeException(e);
-    }
+    return fileSetManager.save(prefix, backup.segments());
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
