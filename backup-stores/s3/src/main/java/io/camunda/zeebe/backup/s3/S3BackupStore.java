@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.backup.s3;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -26,7 +25,8 @@ import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplet
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
-import io.camunda.zeebe.backup.s3.manifest.InProgressBackupManifest;
+import io.camunda.zeebe.backup.s3.manifest.FileSet;
+import io.camunda.zeebe.backup.s3.manifest.FileSet.FileMetadata;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
@@ -38,17 +38,18 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.compress.compressors.zstandard.ZstdCompressorOutputStream;
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +96,7 @@ public final class S3BackupStore implements BackupStore {
       Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   public static final int SCAN_PARALLELISM = 16;
   public static final int COMPRESSION_MIN_FILE_SIZE = 1024 * 1024; // 1 MiB
+  public static final String COMPRESSION_ALGORITHM = CompressorStreamFactory.getZstandard();
   private final S3BackupConfig config;
   private final S3AsyncClient client;
 
@@ -182,7 +184,8 @@ public final class S3BackupStore implements BackupStore {
                           updateManifestObject(
                               backup.id(),
                               Manifest::expectInProgress,
-                              InProgressBackupManifest::asCompleted))
+                              inProgress ->
+                                  inProgress.asCompleted(snapshot.join(), segments.join())))
                   .exceptionallyComposeAsync(
                       throwable ->
                           updateManifestObject(
@@ -237,12 +240,10 @@ public final class S3BackupStore implements BackupStore {
         .thenComposeAsync(
             manifest ->
                 downloadNamedFileSet(
-                        backupPrefix + SEGMENTS_PREFIX, manifest.segmentFileNames(), targetFolder)
+                        backupPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
                     .thenCombineAsync(
                         downloadNamedFileSet(
-                            backupPrefix + SNAPSHOT_PREFIX,
-                            manifest.snapshotFileNames(),
-                            targetFolder),
+                            backupPrefix + SNAPSHOT_PREFIX, manifest.snapshotFiles(), targetFolder),
                         (segments, snapshot) ->
                             new BackupImpl(id, manifest.descriptor(), snapshot, segments)));
   }
@@ -262,12 +263,15 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<NamedFileSet> downloadNamedFileSet(
-      final String sourcePrefix, final Set<String> fileNames, final Path targetFolder) {
+      final String sourcePrefix, final FileSet fileSet, final Path targetFolder) {
     LOG.debug(
-        "Downloading {} files from prefix {} to {}", fileNames.size(), sourcePrefix, targetFolder);
+        "Downloading {} files from prefix {} to {}",
+        fileSet.names().size(),
+        sourcePrefix,
+        targetFolder);
     final var downloadedFiles = new ConcurrentHashMap<String, Path>();
     final CompletableFuture<?>[] futures =
-        fileNames.stream()
+        fileSet.names().stream()
             .map(
                 fileName -> {
                   final var path = targetFolder.resolve(fileName);
@@ -404,29 +408,42 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(resp -> manifest);
   }
 
-  private CompletableFuture<Void> saveSnapshotFiles(final Backup backup) {
+  private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
     LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
 
     return saveNamedFileSet(prefix, backup.snapshot());
   }
 
-  private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
+  private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
     LOG.debug("Saving segment files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
     return saveNamedFileSet(prefix, backup.segments());
   }
 
-  private CompletableFuture<Void> saveNamedFileSet(final String prefix, final NamedFileSet files) {
+  private CompletableFuture<FileSet> saveNamedFileSet(
+      final String prefix, final NamedFileSet files) {
     final var futures =
         files.namedFiles().entrySet().stream()
             .map(segmentFile -> saveNamedFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
-            .toList();
+            .toArray(CompletableFuture[]::new);
 
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
+    //noinspection unchecked
+    return CompletableFuture.allOf(futures).thenApply(ignored -> savedFileSetFromResults(futures));
   }
 
-  private CompletableFuture<Void> saveNamedFile(
+  record SavedNamedFile(String fileName, FileMetadata metadata) {}
+
+  private static FileSet savedFileSetFromResults(
+      final CompletableFuture<? extends SavedNamedFile>[] saveResults) {
+    final var savedFiles =
+        Arrays.stream(saveResults)
+            .map(CompletableFuture::join)
+            .collect(Collectors.toMap(SavedNamedFile::fileName, SavedNamedFile::metadata));
+    return new FileSet(savedFiles);
+  }
+
+  private CompletableFuture<? extends SavedNamedFile> saveNamedFile(
       final String prefix, final String fileName, final Path filePath) {
     try {
       if (shouldCompress(filePath)) {
@@ -439,21 +456,29 @@ public final class S3BackupStore implements BackupStore {
     }
   }
 
-  private CompletableFuture<Void> saveNamedFileWithoutCompression(
+  private CompletableFuture<SavedNamedFile> saveNamedFileWithoutCompression(
       final String prefix, final String fileName, final Path filePath) {
     LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
     return client
         .putObject(
             put -> put.bucket(config.bucketName()).key(prefix + fileName),
             AsyncRequestBody.fromFile(filePath))
-        .thenApply(response -> null);
+        .thenApply(response -> new SavedNamedFile(fileName, FileMetadata.withoutCompression()));
   }
 
-  private CompletableFuture<Void> compressAndSaveNamedFile(
+  private CompletableFuture<SavedNamedFile> compressAndSaveNamedFile(
       final String prefix, final String fileName, final Path filePath) throws IOException {
-    final var compressed = compressFile(filePath);
-    return saveNamedFileWithoutCompression(prefix, fileName, compressed)
-        .thenRunAsync(cleanupCompressedFile(fileName, compressed));
+    final var compressed = compressFile(filePath, COMPRESSION_ALGORITHM);
+    LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, filePath, prefix);
+    return client
+        .putObject(
+            put -> put.bucket(config.bucketName()).key(prefix + fileName),
+            AsyncRequestBody.fromFile(compressed))
+        .thenApply(response -> null)
+        .thenRunAsync(cleanupCompressedFile(fileName, compressed))
+        .thenApply(
+            resp ->
+                new SavedNamedFile(fileName, FileMetadata.withCompression(COMPRESSION_ALGORITHM)));
   }
 
   private static Runnable cleanupCompressedFile(final String fileName, final Path compressed) {
@@ -482,22 +507,23 @@ public final class S3BackupStore implements BackupStore {
     }
   }
 
-  private static Path compressFile(final Path file) {
+  private static Path compressFile(final Path file, final String algorithm) {
     try {
       final var compressedFile = Files.createTempFile("zb-backup-compress-", null);
       LOG.trace("Compressing file {} to {}", file, compressedFile);
       try (final var fileInput = Files.newInputStream(file)) {
         try (final var bufferedInput = new BufferedInputStream(fileInput)) {
           try (final var output = Files.newOutputStream(compressedFile)) {
-            try (final var compressedOutput = new ZstdCompressorOutputStream(output)) {
+            try (final var compressedOutput =
+                new CompressorStreamFactory().createCompressorOutputStream(algorithm, output)) {
               IOUtils.copy(bufferedInput, compressedOutput);
               return compressedFile;
             }
           }
         }
       }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+    } catch (final IOException | CompressorException e) {
+      throw new RuntimeException(e);
     }
   }
 

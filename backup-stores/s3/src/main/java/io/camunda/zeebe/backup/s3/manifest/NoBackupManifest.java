@@ -14,7 +14,6 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Optional;
 
 public record NoBackupManifest(BackupIdentifierImpl id) implements Manifest {
@@ -34,13 +33,7 @@ public record NoBackupManifest(BackupIdentifierImpl id) implements Manifest {
   public FailedBackupManifest asFailed(final String failureReason) {
     final var now = Instant.now();
     return new FailedBackupManifest(
-        id,
-        Optional.empty(),
-        failureReason,
-        Collections.emptySet(),
-        Collections.emptySet(),
-        now,
-        now);
+        id, Optional.empty(), failureReason, FileSet.empty(), FileSet.empty(), now, now);
   }
 
   public InProgressBackupManifest asInProgress(final Backup backup) {
@@ -48,8 +41,8 @@ public record NoBackupManifest(BackupIdentifierImpl id) implements Manifest {
     return new InProgressBackupManifest(
         BackupIdentifierImpl.from(backup.id()),
         BackupDescriptorImpl.from(backup.descriptor()),
-        backup.snapshot().names(),
-        backup.segments().names(),
+        FileSet.withoutMetadata(backup.snapshot().names()),
+        FileSet.withoutMetadata(backup.segments().names()),
         now,
         now);
   }
