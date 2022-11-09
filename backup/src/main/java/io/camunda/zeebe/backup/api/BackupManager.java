@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.api;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.Collection;
 
 /** Manages backup of a partition * */
 public interface BackupManager {
@@ -31,6 +32,14 @@ public interface BackupManager {
    * @return backup status
    */
   ActorFuture<BackupStatus> getBackupStatus(long checkpointId);
+
+  /**
+   * Get all available backups where status is one of {@link BackupStatusCode#COMPLETED}, {@link
+   * BackupStatusCode#FAILED}, {@link BackupStatusCode#IN_PROGRESS}
+   *
+   * @return a collection of backup status
+   */
+  ActorFuture<Collection<BackupStatus>> listBackups();
 
   /**
    * Deletes the backup.

@@ -19,6 +19,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Predicate;
 import org.slf4j.Logger;
@@ -113,6 +114,7 @@ public final class BackupService extends Actor implements BackupManager {
         .onComplete(
             (backupStatus, throwable) -> {
               if (throwable != null) {
+                LOG.warn("Failed to query status of backup {}", checkpointId, throwable);
                 future.completeExceptionally(throwable);
               } else {
                 if (backupStatus.isEmpty()) {
@@ -134,12 +136,32 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
+  public ActorFuture<Collection<BackupStatus>> listBackups() {
+    final var operationMetrics = metrics.startListingBackups();
+    final var resultFuture = internalBackupManager.listBackups(partitionId, actor);
+    resultFuture.onComplete(operationMetrics::complete);
+    resultFuture.onComplete(
+        (ignore, error) -> {
+          if (error != null) {
+            LOG.warn("Failed to list backups", error);
+          }
+        });
+    return resultFuture;
+  }
+
+  @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     final var operationMetrics = metrics.startDeleting();
 
     final var backupDeleted = internalBackupManager.deleteBackup(partitionId, checkpointId, actor);
 
     backupDeleted.onComplete(operationMetrics::complete);
+    backupDeleted.onComplete(
+        (ignore, error) -> {
+          if (error != null) {
+            LOG.warn("Failed to delete backup {}", checkpointId, error);
+          }
+        });
 
     return backupDeleted;
   }
