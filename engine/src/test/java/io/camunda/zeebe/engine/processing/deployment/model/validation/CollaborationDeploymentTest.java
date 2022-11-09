@@ -54,11 +54,7 @@ public final class CollaborationDeploymentTest {
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
     return Arrays.asList(
-        new Object[] {"collaboration with NPE error one", deploy("/processes/issue-9400-NPE.bpmn")},
-        new Object[] {
-          "collaboration with NPE error two",
-          deploy("/processes/issue-9400-carPolicyRequestProcess.bpmn")
-        },
+        new Object[] {"collaboration with NPE error", deploy("/processes/issue-9400-NPE.bpmn")},
         new Object[] {"collaboration without NPE error", deploy("/processes/issue-9400.bpmn")});
   }
 
