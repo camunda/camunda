@@ -98,6 +98,7 @@ public final class FileSetManager {
 
   private CompletableFuture<Path> restoreAndDecompressFile(
       final String objectKey, final String compressionAlgorithm, final Path target) {
+    LOG.trace("Restoring and decompressing {} from object {}", target, objectKey);
     try {
       final var tmpPath = Files.createTempFile("zb-backup-decompress-", null);
       return client
@@ -118,6 +119,7 @@ public final class FileSetManager {
 
   private CompletableFuture<Path> restoreFileWithoutDecompression(
       final String objectKey, final Path target) {
+    LOG.trace("Restoring {} from object {}", target, objectKey);
     return client
         .getObject(req -> req.bucket(config.bucketName()).key(objectKey), target)
         .thenApply(resp -> target);
@@ -199,13 +201,20 @@ public final class FileSetManager {
   private static Path compressFile(final Path file, final String algorithm) {
     try {
       final var compressedFile = Files.createTempFile("zb-backup-compress-", null);
-      LOG.trace("Compressing file {} to {}", file, compressedFile);
+      LOG.trace("Compressing file {} to {} using {}", file, compressedFile, algorithm);
       try (final var fileInput = Files.newInputStream(file);
           final var bufferedInput = new BufferedInputStream(fileInput);
           final var output = Files.newOutputStream(compressedFile);
           final var compressedOutput =
               new CompressorStreamFactory().createCompressorOutputStream(algorithm, output)) {
         IOUtils.copy(bufferedInput, compressedOutput);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace(
+              "Compressed file {}. Uncompressed: {} bytes, compressed: {} bytes",
+              file,
+              Files.size(file),
+              Files.size(compressedFile));
+        }
         return compressedFile;
       }
     } catch (final IOException | CompressorException e) {
@@ -214,16 +223,24 @@ public final class FileSetManager {
   }
 
   private static void decompressFile(final Path from, final Path to, final String algorithm) {
+    LOG.trace("Decompressing {} to {} using {}", from, to, algorithm);
     try (final var fileInput = Files.newInputStream(from);
         final var bufferedInput = new BufferedInputStream(fileInput);
         final var output = Files.newOutputStream(to);
         final var decompressedOutput =
             new CompressorStreamFactory().createCompressorInputStream(algorithm, bufferedInput)) {
       IOUtils.copy(decompressedOutput, output);
+      if (LOG.isTraceEnabled()) {
+        LOG.trace(
+            "Decompressed file {}. Compressed: {} bytes, uncompressed: {} bytes",
+            from,
+            Files.size(from),
+            Files.size(to));
+      }
     } catch (final IOException | CompressorException e) {
       throw new RuntimeException(e);
     }
   }
 
-  record SavedNamedFile(String fileName, FileMetadata metadata) {}
+  private record SavedNamedFile(String fileName, FileMetadata metadata) {}
 }
