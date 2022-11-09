@@ -26,7 +26,10 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.FileTransformerConfiguration.FailureBehavior;
+import software.amazon.awssdk.core.FileTransformerConfiguration.FileWriteOption;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 /**
@@ -64,19 +67,60 @@ public final class FileSetManager {
         targetFolder);
     final var downloadedFiles = new ConcurrentHashMap<String, Path>();
     final CompletableFuture<?>[] futures =
-        fileSet.names().stream()
+        fileSet.entries().stream()
             .map(
-                fileName -> {
-                  final var path = targetFolder.resolve(fileName);
-                  return client
-                      .getObject(
-                          req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
-                      .thenApply(response -> downloadedFiles.put(fileName, path));
+                entry -> {
+                  final var fileName = entry.getKey();
+                  final var metadata = entry.getValue();
+                  return restoreFile(sourcePrefix, fileName, metadata, targetFolder)
+                      .thenApply(path -> downloadedFiles.put(fileName, path));
                 })
             .toArray(CompletableFuture[]::new);
 
     return CompletableFuture.allOf(futures)
         .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
+  }
+
+  private CompletableFuture<Path> restoreFile(
+      final String sourcePrefix,
+      final String fileName,
+      final FileMetadata metadata,
+      final Path targetFolder) {
+    final var objectKey = sourcePrefix + fileName;
+    final var compression = metadata.compressionAlgorithm();
+    final var targetPath = targetFolder.resolve(fileName);
+    if (compression.isPresent()) {
+      return restoreAndDecompressFile(objectKey, compression.get(), targetPath);
+    } else {
+      return restoreFileWithoutDecompression(objectKey, targetPath);
+    }
+  }
+
+  private CompletableFuture<Path> restoreAndDecompressFile(
+      final String objectKey, final String compressionAlgorithm, final Path target) {
+    try {
+      final var tmpPath = Files.createTempFile("zb-backup-decompress-", null);
+      return client
+          .getObject(
+              req -> req.bucket(config.bucketName()).key(objectKey),
+              AsyncResponseTransformer.toFile(
+                  tmpPath,
+                  cfg ->
+                      cfg.fileWriteOption(FileWriteOption.CREATE_OR_REPLACE_EXISTING)
+                          .failureBehavior(FailureBehavior.DELETE)))
+          .thenRunAsync(() -> decompressFile(tmpPath, target, compressionAlgorithm))
+          .thenApply(ignored -> target);
+
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private CompletableFuture<Path> restoreFileWithoutDecompression(
+      final String objectKey, final Path target) {
+    return client
+        .getObject(req -> req.bucket(config.bucketName()).key(objectKey), target)
+        .thenApply(resp -> target);
   }
 
   private static FileSet savedFileSetFromResults(
@@ -164,6 +208,18 @@ public final class FileSetManager {
         IOUtils.copy(bufferedInput, compressedOutput);
         return compressedFile;
       }
+    } catch (final IOException | CompressorException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static void decompressFile(final Path from, final Path to, final String algorithm) {
+    try (final var fileInput = Files.newInputStream(from);
+        final var bufferedInput = new BufferedInputStream(fileInput);
+        final var output = Files.newOutputStream(to);
+        final var decompressedOutput =
+            new CompressorStreamFactory().createCompressorInputStream(algorithm, bufferedInput)) {
+      IOUtils.copy(decompressedOutput, output);
     } catch (final IOException | CompressorException e) {
       throw new RuntimeException(e);
     }

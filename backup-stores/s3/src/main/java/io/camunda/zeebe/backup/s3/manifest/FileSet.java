@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -39,6 +40,10 @@ public record FileSet(@JsonAnySetter @JsonAnyGetter Map<String, FileMetadata> sa
 
   public static FileSet empty() {
     return new FileSet(Map.of());
+  }
+
+  public Set<Entry<String, FileMetadata>> entries() {
+    return savedFiles.entrySet();
   }
 
   public Set<String> names() {
