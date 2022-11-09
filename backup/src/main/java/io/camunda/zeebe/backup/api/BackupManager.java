@@ -34,7 +34,7 @@ public interface BackupManager {
   ActorFuture<BackupStatus> getBackupStatus(long checkpointId);
 
   /**
-   * Get all available backups with status is one of {@link BackupStatusCode#COMPLETED}, {@link
+   * Get all available backups where status is one of {@link BackupStatusCode#COMPLETED}, {@link
    * BackupStatusCode#FAILED}, {@link BackupStatusCode#IN_PROGRESS}
    *
    * @return a collection of backup status
