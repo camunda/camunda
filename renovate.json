@@ -2,6 +2,11 @@
   "extends": ["config:base", ":rebaseStalePrs"],
   "includePaths": ["client/**", ".github/**", ".ci/**"],
   "ignorePaths": ["client/pom.xml"],
+  "helmv3": {
+    "registryAliases": {
+      "helm-camunda-io": "https://helm.camunda.io"
+    }
+  },
   "packageRules": [
     {
       "groupName": "definitelyTyped",
