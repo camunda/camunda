@@ -42,6 +42,7 @@ Steps to reproduce the behavior:
 
 - [ ] The bug has been reproduced by the assignee in the environment compatible with the provided one; otherwise, the issue is closed with a comment
 - [ ] The issue has a meaningful title, description, and testable acceptance criteria
+- [ ] The issue has been labeled with an appropriate `Bug-area` label
 - [ ] Necessary screenshots, screen recordings, or files are attached to the bug report
 
 For UI changes required to solve the bug:
