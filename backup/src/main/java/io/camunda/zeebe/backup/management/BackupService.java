@@ -114,6 +114,7 @@ public final class BackupService extends Actor implements BackupManager {
         .onComplete(
             (backupStatus, throwable) -> {
               if (throwable != null) {
+                LOG.warn("Failed to query status of backup {}", checkpointId, throwable);
                 future.completeExceptionally(throwable);
               } else {
                 if (backupStatus.isEmpty()) {
@@ -139,6 +140,12 @@ public final class BackupService extends Actor implements BackupManager {
     final var operationMetrics = metrics.startListingBackups();
     final var resultFuture = internalBackupManager.listBackups(partitionId, actor);
     resultFuture.onComplete(operationMetrics::complete);
+    resultFuture.onComplete(
+        (ignore, error) -> {
+          if (error != null) {
+            LOG.warn("Failed to list backups", error);
+          }
+        });
     return resultFuture;
   }
 
@@ -149,6 +156,12 @@ public final class BackupService extends Actor implements BackupManager {
     final var backupDeleted = internalBackupManager.deleteBackup(partitionId, checkpointId, actor);
 
     backupDeleted.onComplete(operationMetrics::complete);
+    backupDeleted.onComplete(
+        (ignore, error) -> {
+          if (error != null) {
+            LOG.warn("Failed to delete backup {}", checkpointId, error);
+          }
+        });
 
     return backupDeleted;
   }

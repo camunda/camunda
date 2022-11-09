@@ -236,7 +236,6 @@ final class BackupServiceImpl {
                 .thenAccept(ignore -> deleteCompleted.complete(null))
                 .exceptionally(
                     error -> {
-                      LOG.warn("Failed to deleted backups with id {}.", checkpointId, error);
                       deleteCompleted.completeExceptionally(error);
                       return null;
                     }));
@@ -267,7 +266,6 @@ final class BackupServiceImpl {
                 .thenAccept(availableBackupsFuture::complete)
                 .exceptionally(
                     error -> {
-                      LOG.warn("Failed to list available backups", error);
                       availableBackupsFuture.completeExceptionally(error);
                       return null;
                     }));
