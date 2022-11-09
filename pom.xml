@@ -43,7 +43,7 @@
     <version.auth0>1.9.3</version.auth0>
     <version.auth0.jwt>4.1.0</version.auth0.jwt>
     <version.gson>2.10</version.gson>
-    <version.node>v16.18.3</version.node>
+    <version.node>v16.17.1</version.node>
     <version.yarn>v1.22.10</version.yarn>
 
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
