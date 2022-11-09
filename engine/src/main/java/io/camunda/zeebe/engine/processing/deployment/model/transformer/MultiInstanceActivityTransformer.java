@@ -23,7 +23,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -35,22 +34,9 @@ public final class MultiInstanceActivityTransformer implements ModelElementTrans
 
   @Override
   public void transform(final Activity element, final TransformContext context) {
-    final List<ExecutableProcess> processList = context.getProcesses();
-    ExecutableProcess process = processList.get(0);
-    ExecutableActivity innerActivity =
+    final ExecutableProcess process = context.getCurrentProcess();
+    final ExecutableActivity innerActivity =
         process.getElementById(element.getId(), ExecutableActivity.class);
-
-    // when there are more than one process in a collaboration definition the innerActivity could be
-    // null, we need to find the right process for it.
-    if (innerActivity == null && processList.size() > 1) {
-      for (final ExecutableProcess executableProcess : processList.subList(1, processList.size())) {
-        innerActivity = executableProcess.getElementById(element.getId(), ExecutableActivity.class);
-        if (innerActivity != null) {
-          process = executableProcess;
-          break;
-        }
-      }
-    }
 
     final LoopCharacteristics loopCharacteristics = element.getLoopCharacteristics();
     if (loopCharacteristics instanceof MultiInstanceLoopCharacteristics) {
