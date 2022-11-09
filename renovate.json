@@ -22,11 +22,5 @@
       "groupSlug": "all-minor-patch"
     }
   ],
-  "hostRules": [
-    {
-      "matchHost": "https://helm.camunda.io/",
-      "hostType": "helm"
-    }
-  ],
   "branchPrefix": "fe-renovate/"
 }
