@@ -77,7 +77,7 @@ it('should load non imported user before adding it to the list', () => {
   ]);
 });
 
-it('should default users and collectionUsers null values to an empty array', () => {
+it('should handle users and collectionUsers null values', () => {
   const spy = jest.fn();
   const node = shallow(
     <UserTypeahead
@@ -92,10 +92,5 @@ it('should default users and collectionUsers null values to an empty array', () 
   });
   expect(getUser).toHaveBeenCalledWith('kermit');
 
-  expect(spy).toHaveBeenCalledWith([
-    {
-      id: 'USER:kermit',
-      identity: {id: 'kermit', memberCount: undefined, name: 'Kermit', type: 'user'},
-    },
-  ]);
+  expect(spy).not.toHaveBeenCalled();
 });

@@ -16,8 +16,8 @@ import MultiUserInput from './MultiUserInput';
 import {getUser} from './service';
 
 export function UserTypeahead({
-  users,
-  collectionUsers,
+  users = [],
+  collectionUsers = [],
   onChange,
   mightFail,
   fetchUsers,
@@ -25,13 +25,6 @@ export function UserTypeahead({
   excludeGroups = false,
   persistMenu,
 }) {
-  if (!users) {
-    users = [];
-  }
-  if (!collectionUsers) {
-    collectionUsers = [];
-  }
-
   const getSelectedUser = (user, cb) => {
     const {id, name} = user;
     if (!name) {
@@ -39,7 +32,8 @@ export function UserTypeahead({
         getUser(id),
         (user) => {
           const {type, id} = user;
-          const exists = (users) => users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+          const exists = (users) =>
+            users && users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
 
           if (exists(users)) {
             return showError(t('home.roles.existing-identity'));
@@ -64,16 +58,16 @@ export function UserTypeahead({
     getSelectedUser(user, ({id, type, name, memberCount}) => {
       const newId = `${type.toUpperCase()}:${id}`;
       const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
-      onChange(update(users, {$push: [newIdentity]}));
+      users && onChange(update(users, {$push: [newIdentity]}));
     });
   };
 
-  const removeUser = (id) => onChange(users.filter((user) => user.id !== id));
+  const removeUser = (id) => users && onChange(users.filter((user) => user.id !== id));
 
   return (
     <MultiUserInput
-      users={users}
-      collectionUsers={collectionUsers}
+      users={users || []}
+      collectionUsers={collectionUsers || []}
       fetchUsers={fetchUsers}
       onAdd={addUser}
       onRemove={removeUser}
