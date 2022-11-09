@@ -203,7 +203,8 @@ public class IntermediateThrowEventProcessor
 
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final boolean canBeCompleted =
-          eventPublicationBehavior.throwEscalationEvent(element, activated);
+          eventPublicationBehavior.throwEscalationEvent(
+              element.getId(), element.getEscalation(), activated);
 
       if (canBeCompleted) {
         stateTransitionBehavior.completeElement(activated);
