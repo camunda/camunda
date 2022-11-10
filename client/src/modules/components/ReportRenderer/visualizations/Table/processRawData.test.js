@@ -24,6 +24,8 @@ describe('Process table', () => {
           'variable:var1',
           'variable:var2',
           'variable:var3',
+          'flowNodeDuration:dur1',
+          'flowNodeDuration:dur2',
         ],
         excludedColumns: [],
         columnOrder: [],
@@ -41,6 +43,10 @@ describe('Process table', () => {
           var2: null,
           var3: OBJECT_VARIABLE_IDENTIFIER,
         },
+        flowNodeDurations: {
+          dur1: {name: 'dur1Name', value: null},
+          dur2: {name: null, value: 2000},
+        },
       },
       {
         processInstanceId: 'xyz',
@@ -48,6 +54,10 @@ describe('Process table', () => {
         variables: {
           var1: null,
           var2: true,
+        },
+        flowNodeDurations: {
+          dur1: {name: 'dur1name', value: 1000},
+          dur2: {name: null, value: null},
         },
       },
     ],
@@ -63,7 +73,12 @@ describe('Process table', () => {
         tableColumns: {
           includeNewVariables: false,
           includedColumns: ['processInstanceId'],
-          excludedColumns: ['processDefinitionId', 'variable:var1', 'variable:var1'],
+          excludedColumns: [
+            'processDefinitionId',
+            'variable:var1',
+            'variable:var1',
+            'flowNodeDuration:dur1',
+          ],
           columnOrder: [],
         },
       },
@@ -200,6 +215,7 @@ describe('Decision table', () => {
           'tenantId',
           'variable:var1',
           'variable:var2',
+          'flowNodeDuration:dur1',
         ],
         columnOrder: [],
       },
@@ -265,6 +281,7 @@ describe('Decision table', () => {
             'input:var1',
             'input:var2',
             'output:result',
+            'flowNodeDuration:dur1',
           ],
           excludedColumns: [],
           columnOrder: [],
@@ -286,6 +303,10 @@ describe('Decision table', () => {
           outputVariables: {
             result: {id: 'result', values: [1], name: 'Result'},
           },
+          flowNodeDurations: {
+            dur1: {name: 'dur1name', value: 1000},
+            dur2: {name: null, value: null},
+          },
         },
         {
           decisionInstanceId: 'xyz',
@@ -298,6 +319,10 @@ describe('Decision table', () => {
           },
           outputVariables: {
             result: {id: 'result', values: [8], name: 'Result'},
+          },
+          flowNodeDurations: {
+            dur1: {name: 'dur1Name', value: null},
+            dur2: {name: null, value: 2000},
           },
         },
       ],
@@ -317,6 +342,9 @@ describe('Decision table', () => {
           },
           outputVariables: {
             result: {id: 'result', values: [1], name: 'Result'},
+          },
+          flowNodeDurations: {
+            dur1: {name: 'dur1Name', value: null},
           },
         },
       ],
@@ -343,6 +371,7 @@ describe('Decision table', () => {
                   'input:var1',
                   'input:var2',
                   'output:result',
+                  'flowNodeDuration:dur1',
                 ],
               },
             },

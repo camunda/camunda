@@ -20,6 +20,7 @@ const labels = {
   inputVariables: 'input',
   outputVariables: 'output',
   variables: 'variable',
+  flowNodeDurations: 'flowNodeDuration',
 };
 
 export default function ColumnSelection({report, onChange}) {
@@ -79,6 +80,9 @@ export default function ColumnSelection({report, onChange}) {
           } else if (prefix === 'output') {
             name = columns.outputVariables[name].name;
             type = 'outputVariable';
+          } else if (prefix === 'flowNodeDuration') {
+            name = columns.flowNodeDurations[name].name || name;
+            type = 'flowNodeDuration';
           } else {
             name = getVariableLabel(name);
           }

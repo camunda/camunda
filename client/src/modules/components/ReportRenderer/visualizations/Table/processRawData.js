@@ -65,21 +65,25 @@ export default function processRawData({
     isVisibleColumn(entry, tableColumns)
   );
 
-  const variableNames = Object.keys(result[0]?.variables || {}).filter((entry) =>
-    isVisibleColumn('variable:' + entry, tableColumns)
-  );
+  const variableNames = getVisibleColumns(result[0]?.variables, tableColumns, 'variable');
 
-  const inputVariables = Object.keys(result[0]?.inputVariables || {}).filter((entry) =>
-    isVisibleColumn('input:' + entry, tableColumns)
-  );
+  const inputVariables = getVisibleColumns(result[0]?.inputVariables, tableColumns, 'input');
 
-  const outputVariables = Object.keys(result[0]?.outputVariables || {}).filter((entry) =>
-    isVisibleColumn('output:' + entry, tableColumns)
+  const outputVariables = getVisibleColumns(result[0]?.outputVariables, tableColumns, 'output');
+
+  const flowNodeDurationNames = getVisibleColumns(
+    result[0]?.flowNodeDurations || {},
+    tableColumns,
+    'flowNodeDuration'
   );
 
   // If all columns are excluded return a message to enable one
   if (
-    instanceProps.length + variableNames.length + inputVariables.length + outputVariables.length ===
+    instanceProps.length +
+      variableNames.length +
+      inputVariables.length +
+      outputVariables.length +
+      flowNodeDurationNames.length ===
     0
   ) {
     return getNoDataMessage();
@@ -117,6 +121,7 @@ export default function processRawData({
       ...getVariableValues(variableNames, instance.variables, onVariableClick),
       ...getVariableValues(inputVariables, instance.inputVariables),
       ...getVariableValues(outputVariables, instance.outputVariables),
+      ...flowNodeDurationNames.map((key) => duration(instance.flowNodeDurations[key]?.value)),
     ];
   });
 
@@ -156,8 +161,19 @@ export default function processRawData({
           title: label,
         };
       })
+    )
+    .concat(
+      flowNodeDurationNames.map((key) => {
+        const {name} = result[0].flowNodeDurations[key];
+        const label = name || key;
+        return {
+          type: 'flowNodeDurations',
+          id: 'flowNodeDuration:' + key,
+          label: getLabelWithType(label, 'flowNodeDuration'),
+          title: label,
+        };
+      })
     );
-
   const {sortedHead, sortedBody} = sortColumns(head, body, tableColumns.columnOrder);
 
   return {head: sortedHead, body: sortedBody};
@@ -200,4 +216,8 @@ function getVariableValues(variableKeys, variableValues, onVariableClick) {
 
 function getVariableLabel(variables, name) {
   return variables.find((variable) => variable.name === name)?.label;
+}
+
+function getVisibleColumns(column = {}, tableColumns, type) {
+  return Object.keys(column).filter((entry) => isVisibleColumn(`${type}:${entry}`, tableColumns));
 }

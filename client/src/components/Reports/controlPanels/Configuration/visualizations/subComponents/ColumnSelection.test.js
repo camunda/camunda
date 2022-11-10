@@ -21,7 +21,7 @@ const data = {
   configuration: {
     tableColumns: {
       includeNewVariables: true,
-      includedColumns: ['processDefinitionKey', 'processInstanceId'],
+      includedColumns: ['processDefinitionKey', 'processInstanceId', 'flowNodeDuration:dur1'],
       excludedColumns: [],
     },
   },
@@ -38,6 +38,10 @@ it('should have a switch for every column', () => {
               processInstanceId: 2,
               businessKey: 3,
               variables: {x: 1, y: 2},
+              flowNodeDurations: {
+                dur1: {name: 'dur1', value: null},
+                dur2: {name: 'dur2', value: 1000},
+              },
             },
           ],
         },
@@ -46,7 +50,7 @@ it('should have a switch for every column', () => {
     />
   );
 
-  expect(node.find('Switch').length).toBe(5);
+  expect(node.find('Switch').length).toBe(7);
 });
 
 it('should change the switches labels to space case instead of camelCase for non variables', () => {
@@ -87,7 +91,7 @@ it('should call onChange with an empty included if all columns are excluded', ()
   });
 });
 
-it('should provde a sane interface for decision tables', () => {
+it('should provide a sane interface for decision tables', () => {
   const node = shallow(
     <ColumnSelection
       report={{
@@ -102,6 +106,9 @@ it('should provde a sane interface for decision tables', () => {
               },
               outputVariables: {
                 clause7: {name: 'Klaus Seven'},
+              },
+              flowNodeDurations: {
+                dur1: {name: 'dur1', value: null},
               },
             },
           ],
@@ -163,4 +170,30 @@ it('should resolve the label of the variable if it exists', () => {
   );
 
   expect(node.find('Switch').prop('label').props.children[1]).toBe('variableLabel');
+});
+
+it('should resolve the label of the flow node duration if it exists', () => {
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        result: {data: [{flowNodeDurations: {dur1: {name: 'dur1Name'}}}]},
+        data,
+      }}
+    />
+  );
+
+  expect(node.find('Switch').prop('label').props.children[1]).toBe('dur1Name');
+});
+
+it('should fallback the label of the flow node duration to key if name doesnt exist', () => {
+  const node = shallow(
+    <ColumnSelection
+      report={{
+        result: {data: [{flowNodeDurations: {dur1: {value: 0}}}]},
+        data,
+      }}
+    />
+  );
+
+  expect(node.find('Switch').prop('label').props.children[1]).toBe('dur1');
 });

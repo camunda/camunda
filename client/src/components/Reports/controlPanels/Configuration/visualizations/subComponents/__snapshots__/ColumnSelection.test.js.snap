@@ -9,7 +9,7 @@ Array [
 ]
 `;
 
-exports[`should provde a sane interface for decision tables 1`] = `
+exports[`should provide a sane interface for decision tables 1`] = `
 <fieldset
   className="ColumnSelection"
 >
@@ -79,6 +79,20 @@ exports[`should provde a sane interface for decision tables 1`] = `
           Output Variable: 
         </b>
         Klaus Seven
+      </React.Fragment>
+    }
+    onChange={[Function]}
+  />
+  <Switch
+    checked={true}
+    className="columnSelectionSwitch"
+    key="flowNodeDuration:dur1"
+    label={
+      <React.Fragment>
+        <b>
+          Flow Node Duration: 
+        </b>
+        dur1
       </React.Fragment>
     }
     onChange={[Function]}
