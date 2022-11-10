@@ -37,7 +37,7 @@ spec:
       image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
       env:
         - name: ES_JAVA_OPTS
-          value: "-Xms4096m -Xmx4096m"
+          value: "-Xms6096m -Xmx6096m"
         - name: cluster.name
           value: docker-cluster
         - name: discovery.type
@@ -47,7 +47,7 @@ spec:
         - name: action.auto_create_index
           value: true
         - name: processors
-          value: 2
+          value: 4
       securityContext:
         privileged: true
         capabilities:
@@ -63,11 +63,11 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 2
-          memory: 5Gi
+          cpu: 4
+          memory: 7Gi
         requests:
-          cpu: 2
-          memory: 5Gi
+          cpu: 4
+          memory: 7Gi
     - name: docker
       image: docker:18.06-dind
       args: ["--storage-driver=overlay2"]
