@@ -311,10 +311,10 @@ public final class StreamProcessorTest {
 
     await("should write follow up events")
         .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
-    while (logStreamReader.hasNext()) {
-      final var followUpRecord = logStreamReader.next();
-      assertThat(followUpRecord.getSourceEventPosition()).isEqualTo(firstRecordPosition);
-    }
+    assertThat(logStreamReader.hasNext()).isTrue();
+    assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+    assertThat(logStreamReader.hasNext()).isTrue();
+    assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
   }
 
   @Test
