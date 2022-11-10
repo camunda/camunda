@@ -12,13 +12,12 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {Link, MemoryRouter, To} from 'react-router-dom';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Login} from './index';
 import {LOGIN_ERROR, GENERIC_ERROR} from './constants';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {authenticationStore} from 'modules/stores/authentication';
+import {mockLogin} from 'modules/mocks/api/login';
 
 function createWrapper(
   initialPath: string = '/',
@@ -52,9 +51,7 @@ describe('<Login />', () => {
   });
 
   it('should login', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
-    );
+    mockLogin().withSuccess(null);
 
     const {user} = render(<Login />, {
       wrapper: createWrapper('/login'),
@@ -70,11 +67,7 @@ describe('<Login />', () => {
   });
 
   it.skip('should show a loading spinner', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.text(''))
-      )
-    );
+    mockLogin().withServerError();
 
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
@@ -87,9 +80,7 @@ describe('<Login />', () => {
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
 
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
-    );
+    mockLogin().withSuccess(null);
 
     await user.click(screen.getByRole('button', {name: /log in/i}));
 
@@ -98,9 +89,7 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the previous page', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text('')))
-    );
+    mockLogin().withSuccess(null);
 
     const {user} = render(<Login />, {
       wrapper: createWrapper('/login'),
@@ -139,11 +128,7 @@ describe('<Login />', () => {
   });
 
   it('should handle wrong credentials', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) =>
-        res.once(ctx.status(401), ctx.text(''))
-      )
-    );
+    mockLogin().withServerError(401);
 
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
@@ -157,11 +142,7 @@ describe('<Login />', () => {
   });
 
   it('should handle generic errors', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.text(''))
-      )
-    );
+    mockLogin().withServerError();
 
     const {user} = render(<Login />, {
       wrapper: createWrapper(),
@@ -175,9 +156,7 @@ describe('<Login />', () => {
   });
 
   it('should handle request failures', async () => {
-    mockServer.use(
-      rest.post('/api/login', (_, res) => res.networkError('Request failed'))
-    );
+    mockLogin().withNetworkError();
 
     const {user} = render(<Login />, {
       wrapper: createWrapper(),

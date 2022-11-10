@@ -5,10 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 
-function getUser() {
-  return request({url: '/api/authentications/user'});
-}
+const logout = async () => {
+  return requestAndParse({
+    url: '/api/logout',
+    method: 'POST',
+  });
+};
 
-export {getUser};
+export {logout};

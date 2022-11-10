@@ -6,7 +6,9 @@
  */
 
 import {makeObservable, observable, action} from 'mobx';
-import {getUser, login, logout, Credentials} from 'modules/api/authentication';
+import {getUser} from 'modules/api/authentication';
+import {login, Credentials} from 'modules/api/login';
+import {logout} from 'modules/api/logout';
 import {logger} from 'modules/logger';
 import {NetworkError} from 'modules/networkError';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -111,21 +113,18 @@ class Authentication {
   };
 
   handleLogin = async (credentials: Credentials): Promise<Error | void> => {
-    try {
-      const response = await login(credentials);
+    const response = await login(credentials);
 
-      if (!response.ok) {
-        return new NetworkError('Could not login credentials', response);
-      }
-
-      this.endLogin();
-
-      return;
-    } catch (error) {
-      logger.error(error);
-
-      return new Error('Could not login credentials');
+    if (!response.isSuccess) {
+      return new NetworkError(
+        'Could not login credentials',
+        response.statusCode
+      );
     }
+
+    this.endLogin();
+
+    return;
   };
 
   endLogin = () => {
@@ -191,19 +190,13 @@ class Authentication {
   };
 
   handleLogout = async () => {
-    try {
-      const response = await logout();
+    const response = await logout();
 
-      if (!response.ok) {
-        return new Error('Could not logout');
-      }
-
-      this.disableSession();
-    } catch (error) {
-      logger.error(error);
-
+    if (!response.isSuccess) {
       return new Error('Could not logout');
     }
+
+    this.disableSession();
   };
 
   hasPermission = (scopes: Permissions) => {

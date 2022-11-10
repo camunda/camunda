@@ -11,6 +11,7 @@ import {User} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
+import {mockLogout} from 'modules/mocks/api/logout';
 
 const mockUser = {
   displayName: 'Franz Kafka',
@@ -68,11 +69,11 @@ describe('User', () => {
   });
 
   it('should handle logout', async () => {
+    mockLogout().withSuccess(null);
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.json(mockUser))
-      ),
-      rest.post('/api/logout', (_, res, ctx) => res.once(ctx.json('')))
+      )
     );
 
     const {user} = render(<User />, {

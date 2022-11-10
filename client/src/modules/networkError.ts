@@ -8,10 +8,10 @@
 class NetworkError extends Error {
   status: Response['status'] | void = undefined;
 
-  constructor(message: string, response: Response) {
+  constructor(message: string, statusCode: number) {
     super(message);
 
-    this.status = response.status;
+    this.status = statusCode;
   }
 }
 

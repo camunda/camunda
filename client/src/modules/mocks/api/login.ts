@@ -5,10 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {mockPostRequest} from './mockRequest';
 
-function getUser() {
-  return request({url: '/api/authentications/user'});
-}
+const mockLogin = () => mockPostRequest('/api/login');
 
-export {getUser};
+export {mockLogin};
