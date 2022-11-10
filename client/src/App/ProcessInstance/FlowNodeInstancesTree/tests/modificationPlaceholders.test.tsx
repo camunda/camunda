@@ -32,7 +32,7 @@ import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {

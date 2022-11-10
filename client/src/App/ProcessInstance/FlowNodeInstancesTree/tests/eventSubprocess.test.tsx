@@ -24,7 +24,7 @@ import {
 import {eventSubProcess} from 'modules/testUtils';
 import {createRef} from 'react';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {

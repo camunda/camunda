@@ -15,7 +15,7 @@ import {
   observable,
 } from 'mobx';
 import {DiagramModel} from 'bpmn-moddle';
-import {fetchProcessXML} from 'modules/api/fetchProcessXML';
+import {fetchProcessXML} from 'modules/api/processes/fetchProcessXML';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';

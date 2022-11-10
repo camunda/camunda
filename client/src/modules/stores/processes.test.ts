@@ -8,7 +8,7 @@
 import {processesStore} from './processes';
 import {waitFor} from 'modules/testing-library';
 import {groupedProcessesMock} from 'modules/testUtils';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 
 describe('stores/processes', () => {
   afterEach(() => {

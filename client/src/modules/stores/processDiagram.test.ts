@@ -13,7 +13,7 @@ import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {processDiagramStore} from './processDiagram';
 import {processInstancesStore} from './processInstances';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('stores/processDiagram', () => {
   afterEach(() => {

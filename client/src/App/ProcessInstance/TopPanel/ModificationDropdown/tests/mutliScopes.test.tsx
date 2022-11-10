@@ -14,7 +14,7 @@ import {open} from 'modules/mocks/diagrams';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {initializeStores, renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeEach(() => {

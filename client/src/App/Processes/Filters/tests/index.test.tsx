@@ -18,9 +18,9 @@ import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {omit} from 'lodash';
 
 import {Filters} from '../index';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Filters', () => {
   beforeEach(async () => {

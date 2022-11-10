@@ -21,7 +21,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {modificationsStore} from 'modules/stores/modifications';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 
 const instanceMock: ProcessInstanceEntity = {

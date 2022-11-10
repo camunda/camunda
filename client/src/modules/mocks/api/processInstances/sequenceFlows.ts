@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockGetRequest} from './mockRequest';
-import {SequenceFlowsDto} from 'modules/api/sequenceFlows';
+import {mockGetRequest} from '../mockRequest';
+import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 
 const mockFetchSequenceFlows = (contextPath = '') =>
   mockGetRequest<SequenceFlowsDto>(

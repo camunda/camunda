@@ -14,7 +14,7 @@ import {
   IReactionDisposer,
   override,
 } from 'mobx';
-import {fetchSequenceFlows} from 'modules/api/sequenceFlows';
+import {fetchSequenceFlows} from 'modules/api/processInstances/sequenceFlows';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';

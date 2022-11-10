@@ -15,7 +15,7 @@ import {mockSubProcesses} from 'modules/mocks/mockSubProcesses';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const PROCESS_INSTANCE_ID = '2251799813686320';
 

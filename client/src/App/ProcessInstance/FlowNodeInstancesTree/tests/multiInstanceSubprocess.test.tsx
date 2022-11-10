@@ -23,7 +23,7 @@ import {
   processInstanceId,
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {

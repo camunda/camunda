@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockXmlGetRequest} from './mockRequest';
+import {mockXmlGetRequest} from '../mockRequest';
 
 const mockFetchProcessXML = (contextPath = '') =>
   mockXmlGetRequest(`${contextPath}/api/processes/:processId/xml`);

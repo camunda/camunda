@@ -41,7 +41,7 @@ import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 

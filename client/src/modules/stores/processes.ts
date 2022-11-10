@@ -11,7 +11,7 @@ import {
   fetchGroupedProcesses,
   ProcessDto,
   ProcessVersionDto,
-} from 'modules/api/fetchGroupedProcesses';
+} from 'modules/api/processes/fetchGroupedProcesses';
 import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';

@@ -22,9 +22,9 @@ import {
 } from 'modules/testUtils';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import * as operationsApi from 'modules/api/processInstances/operations';
 

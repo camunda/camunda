@@ -13,7 +13,7 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
 

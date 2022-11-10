@@ -10,9 +10,9 @@ import {groupedProcessesMock, mockProcessStatistics} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
 import {createOperation} from 'modules/utils/instance';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const instance: ProcessInstanceEntity = {
   id: '2251799813685625',

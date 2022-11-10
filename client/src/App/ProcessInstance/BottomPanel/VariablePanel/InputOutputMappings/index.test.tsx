@@ -11,7 +11,7 @@ import {render, screen, waitFor} from 'modules/testing-library';
 import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Input Mappings', () => {
   beforeEach(() =>

@@ -14,7 +14,7 @@ import {
 import {getProcessInstancesRequestFilters} from 'modules/utils/filter';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {fetchProcessXML} from 'modules/api/fetchProcessXML';
+import {fetchProcessXML} from 'modules/api/processes/fetchProcessXML';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import {processInstancesStore} from './processInstances';

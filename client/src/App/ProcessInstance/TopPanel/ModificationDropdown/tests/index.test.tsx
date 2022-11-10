@@ -15,7 +15,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {initializeStores, renderPopover} from './mocks';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Modification Dropdown', () => {
   beforeEach(() => {

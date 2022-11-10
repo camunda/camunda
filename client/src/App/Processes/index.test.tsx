@@ -29,9 +29,9 @@ import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Header} from 'App/Layout/Header';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 
 jest.mock('modules/utils/bpmn');

@@ -24,7 +24,7 @@ import {
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 jest.mock('modules/utils/bpmn');
 

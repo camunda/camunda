@@ -17,9 +17,9 @@ import {processesStore} from 'modules/stores/processes';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 
 import {Filters} from '../index';
-import {mockFetchGroupedProcesses} from 'modules/mocks/api/fetchGroupedProcesses';
+import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Validations', () => {
   beforeEach(async () => {

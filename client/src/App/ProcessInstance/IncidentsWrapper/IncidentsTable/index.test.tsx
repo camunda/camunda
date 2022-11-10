@@ -15,7 +15,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 const id = 'flowNodeInstanceIdB';
 const shortError = 'No data found for query $.orderId.';

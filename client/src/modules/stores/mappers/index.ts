@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {SequenceFlowsDto} from 'modules/api/sequenceFlows';
+import {SequenceFlowsDto} from 'modules/api/processInstances/sequenceFlows';
 
 const getProcessedSequenceFlows = (sequenceFlows: SequenceFlowsDto) => {
   return sequenceFlows

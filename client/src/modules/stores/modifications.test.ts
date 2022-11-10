@@ -16,7 +16,7 @@ import {
 } from 'modules/mocks/modifications';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/fetchProcessXML';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
