@@ -56,7 +56,7 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
             Optional.of(new Credentials(ACCESS_KEY, SECRET_KEY)),
             Optional.empty(),
             true,
-            false);
+            true);
     client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
     client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
