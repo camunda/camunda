@@ -29,8 +29,10 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.ServerOutput;
+import io.camunda.zeebe.transport.ServerResponse;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -59,8 +61,8 @@ final class BackupApiRequestHandlerTest {
   @Mock BackupManager backupManager;
 
   BackupApiRequestHandler handler;
-  private ServerOutput serverOutput;
-  private CompletableFuture<Either<ErrorResponse, BackupStatusResponse>> responseFuture;
+  private ResponseReader serverOutput;
+  private CompletableFuture<Either<ErrorResponse, BufferReader>> responseFuture;
 
   @BeforeEach
   void setup() {
@@ -68,7 +70,7 @@ final class BackupApiRequestHandlerTest {
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
-    serverOutput = createServerOutput();
+    serverOutput = new ResponseReader();
     responseFuture = new CompletableFuture<>();
   }
 
@@ -178,13 +180,13 @@ final class BackupApiRequestHandlerTest {
         .thenReturn(CompletableActorFuture.completed(status));
 
     // when
+    final BackupStatusResponse statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
     handleRequest(request);
 
     // then
-    assertThat(responseFuture)
-        .succeedsWithin(Duration.ofMillis(100))
-        .matches(Either::isRight)
-        .extracting(Either::get)
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(statusResponse)
         .returns(checkpointId, BackupStatusResponse::getBackupId)
         .returns(1, BackupStatusResponse::getPartitionId)
         .returns(1, BackupStatusResponse::getBrokerId)
@@ -221,13 +223,13 @@ final class BackupApiRequestHandlerTest {
         .thenReturn(CompletableActorFuture.completed(status));
 
     // when
+    final BackupStatusResponse statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
     handleRequest(request);
 
     // then
-    assertThat(responseFuture)
-        .succeedsWithin(Duration.ofMillis(100))
-        .matches(Either::isRight)
-        .extracting(Either::get)
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(statusResponse)
         .returns(checkpointId, BackupStatusResponse::getBackupId)
         .returns(1, BackupStatusResponse::getPartitionId)
         .returns(1, BackupStatusResponse::getBrokerId)
@@ -276,8 +278,16 @@ final class BackupApiRequestHandlerTest {
     scheduler.workUntilDone();
   }
 
-  private ServerOutput createServerOutput() {
-    return serverResponse -> {
+  final class ResponseReader implements ServerOutput {
+
+    BufferReader responseWrapper;
+
+    void setResponseObject(final BufferReader responseObject) {
+      responseWrapper = responseObject;
+    }
+
+    @Override
+    public void sendResponse(final ServerResponse serverResponse) {
       final var buffer = new ExpandableArrayBuffer();
       serverResponse.write(buffer, 0);
 
@@ -288,13 +298,12 @@ final class BackupApiRequestHandlerTest {
         return;
       }
 
-      final var response = new BackupStatusResponse();
       try {
-        response.wrap(buffer, 0, serverResponse.getLength());
-        responseFuture.complete(Either.right(response));
+        responseWrapper.wrap(buffer, 0, serverResponse.getLength());
+        responseFuture.complete(Either.right(responseWrapper));
       } catch (final Exception e) {
         responseFuture.completeExceptionally(e);
       }
-    };
+    }
   }
 }
