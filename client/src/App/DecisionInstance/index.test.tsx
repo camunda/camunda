@@ -17,6 +17,7 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
@@ -34,13 +35,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('<DecisionInstance />', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.get(
-        '/api/decision-instances/:decisionInstanceId/drd-data',
-        (_, res, ctx) => res(ctx.json(mockDrdData))
-      )
-    );
-
+    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionXML().withSuccess(mockDmnXml);
   });
 

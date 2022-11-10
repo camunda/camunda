@@ -18,6 +18,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Drd} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -30,14 +31,11 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('<Drd />', () => {
   beforeEach(() => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDrdData().withSuccess(mockDrdData);
 
     mockServer.use(
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(invoiceClassification))
-      ),
-      rest.get(
-        '/api/decision-instances/:decisionInstanceId/drd-data',
-        (_, res, ctx) => res(ctx.json(mockDrdData))
       )
     );
 

@@ -14,20 +14,12 @@ import {
   override,
   reaction,
 } from 'mobx';
-import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
-import {fetchDrdData} from 'modules/api/decisions';
+import {
+  fetchDrdData,
+  DrdDataDto,
+} from 'modules/api/decisionInstances/fetchDrdData';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {logger} from 'modules/logger';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
-
-type DrdData = ReadonlyDeep<{
-  [decisionId: string]: [
-    {
-      decisionInstanceId: DecisionInstanceEntity['id'];
-      state: DecisionInstanceEntityState;
-    }
-  ];
-}>;
 
 type DecisionStateOverlay = {
   state: DecisionInstanceEntityState;
@@ -36,7 +28,7 @@ type DecisionStateOverlay = {
 };
 
 type State = {
-  drdData: DrdData | null;
+  drdData: DrdDataDto | null;
   status: 'initial' | 'fetched' | 'error';
   decisionStateOverlays: DecisionStateOverlay[];
 };
@@ -84,32 +76,23 @@ class Drd extends NetworkReconnectionHandler {
 
   fetchDrdData = this.retryOnConnectionLost(
     async (decisionInstanceId: DecisionInstanceEntity['id']) => {
-      try {
-        const response = await fetchDrdData(decisionInstanceId);
+      const response = await fetchDrdData(decisionInstanceId);
 
-        if (response.ok) {
-          this.handleFetchSuccess(await response.json());
-        } else {
-          this.handleFetchFailure();
-        }
-      } catch (error) {
-        this.handleFetchFailure(error);
+      if (response.isSuccess) {
+        this.handleFetchSuccess(response.data);
+      } else {
+        this.handleFetchFailure();
       }
     }
   );
 
-  handleFetchSuccess = (drdData: DrdData) => {
+  handleFetchSuccess = (drdData: DrdDataDto) => {
     this.state.drdData = drdData;
     this.state.status = 'fetched';
   };
 
   handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
-
-    logger.error('Failed to fetch DRD data');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   addDecisionStateOverlay = (decisionStateOverlay: DecisionStateOverlay) => {
@@ -170,4 +153,3 @@ class Drd extends NetworkReconnectionHandler {
 }
 
 export const drdDataStore = new Drd();
-export type {DrdData};

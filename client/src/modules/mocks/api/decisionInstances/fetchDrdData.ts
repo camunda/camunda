@@ -5,22 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
+import {mockGetRequest} from '../mockRequest';
 import {DrdDataDto} from 'modules/api/decisionInstances/fetchDrdData';
 
-const mockDrdData: DrdDataDto = {
-  'invoice-assign-approver': [{decisionInstanceId: '0', state: 'EVALUATED'}],
-  invoiceClassification: [
-    {
-      decisionInstanceId: '1',
-      state: 'FAILED',
-    },
-  ],
-  'calc-key-figures': [
-    {
-      decisionInstanceId: '2',
-      state: 'EVALUATED',
-    },
-  ],
-};
+const mockFetchDrdData = () =>
+  mockGetRequest<DrdDataDto>(
+    '/api/decision-instances/:decisionInstanceId/drd-data'
+  );
 
-export {mockDrdData};
+export {mockFetchDrdData};

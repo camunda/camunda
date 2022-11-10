@@ -12,6 +12,7 @@ import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {rest} from 'msw';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {drdDataStore} from './drdData';
+import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
 
 describe('drdDataStore', () => {
   afterEach(() => {
@@ -20,12 +21,7 @@ describe('drdDataStore', () => {
   });
 
   it('should fetch DRD data', async () => {
-    mockServer.use(
-      rest.get(
-        '/api/decision-instances/:decisionInstancdId/drd-data',
-        (_, res, ctx) => res.once(ctx.json(mockDrdData))
-      )
-    );
+    mockFetchDrdData().withSuccess(mockDrdData);
 
     drdDataStore.fetchDrdData('1');
     await waitFor(() => expect(drdDataStore.state.status).toBe('fetched'));
@@ -33,25 +29,16 @@ describe('drdDataStore', () => {
   });
 
   it('should catch error', async () => {
-    mockServer.use(
-      rest.get(
-        '/api/decision-instances/:decisionInstancdId/drd-data',
-        (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({error: 'an error occurred'}))
-      )
-    );
-
+    mockFetchDrdData().withServerError();
     drdDataStore.fetchDrdData('1');
     await waitFor(() => expect(drdDataStore.state.status).toBe('error'));
     expect(drdDataStore.state.drdData).toEqual(null);
   });
 
   it('should get current decision', async () => {
+    mockFetchDrdData().withSuccess(mockDrdData);
+
     mockServer.use(
-      rest.get(
-        '/api/decision-instances/:decisionInstancdId/drd-data',
-        (_, res, ctx) => res.once(ctx.json(mockDrdData))
-      ),
       rest.get('/api/decision-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(invoiceClassification))
       )
