@@ -49,8 +49,8 @@ final class BulkIndexRequestTest {
             new BulkIndexAction("index2", "id2", "routing2"));
 
     // when
-    request.index(actions.get(0), records.get(0));
-    request.index(actions.get(1), records.get(1));
+    request.index(actions.get(0), records.get(0), recordSequence);
+    request.index(actions.get(1), records.get(1), recordSequence);
 
     // then
     final var expectedMemoryUsage =
@@ -67,8 +67,8 @@ final class BulkIndexRequestTest {
         List.of(
             new BulkIndexAction("index", "id", "routing"),
             new BulkIndexAction("index2", "id2", "routing2"));
-    request.index(actions.get(0), records.get(0));
-    request.index(actions.get(1), records.get(1));
+    request.index(actions.get(0), records.get(0), recordSequence);
+    request.index(actions.get(1), records.get(1), recordSequence);
 
     // when
     request.clear();
@@ -90,8 +90,8 @@ final class BulkIndexRequestTest {
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when - doesn't matter what the records are, if the metadata is the same we skip it
-      request.index(action, records.get(0));
-      request.index(action, records.get(1));
+      request.index(action, records.get(0), recordSequence);
+      request.index(action, records.get(1), recordSequence);
 
       // then
       assertThat(request.bulkOperations())
@@ -111,8 +111,8 @@ final class BulkIndexRequestTest {
               new BulkIndexAction("index2", "id2", "routing2"));
 
       // when
-      request.index(actions.get(0), records.get(0));
-      request.index(actions.get(1), records.get(1));
+      request.index(actions.get(0), records.get(0), recordSequence);
+      request.index(actions.get(1), records.get(1), recordSequence);
 
       // then
       assertThat(request.bulkOperations())
@@ -132,7 +132,7 @@ final class BulkIndexRequestTest {
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when
-      request.index(action, record);
+      request.index(action, record, recordSequence);
 
       // then
       final var operations = request.bulkOperations();
@@ -150,8 +150,8 @@ final class BulkIndexRequestTest {
           List.of(
               new BulkIndexAction("index", "id", "routing"),
               new BulkIndexAction("index2", "id2", "routing2"));
-      request.index(actions.get(0), records.get(0));
-      request.index(actions.get(1), records.get(1));
+      request.index(actions.get(0), records.get(0), recordSequence);
+      request.index(actions.get(1), records.get(1), recordSequence);
 
       // when
       final byte[] serializedBuffer;

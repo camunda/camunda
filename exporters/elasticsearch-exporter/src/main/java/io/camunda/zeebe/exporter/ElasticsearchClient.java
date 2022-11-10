@@ -73,7 +73,7 @@ class ElasticsearchClient implements AutoCloseable {
     client.close();
   }
 
-  public void index(final Record<?> record) {
+  public void index(final Record<?> record, final RecordSequence recordSequence) {
     if (metrics == null) {
       metrics = new ElasticsearchMetrics(record.getPartitionId());
     }
@@ -83,7 +83,7 @@ class ElasticsearchClient implements AutoCloseable {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             indexRouter.routingFor(record));
-    bulkIndexRequest.index(action, record);
+    bulkIndexRequest.index(action, record, recordSequence);
   }
 
   /**
