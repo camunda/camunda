@@ -72,17 +72,6 @@ public class ZeebeGatewayValidationTest extends AbstractZeebeValidationTest {
             expect(
                 "join", "Currently the inclusive gateway can only have one incoming sequence flow"))
       },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .exclusiveGateway("gateway")
-            .sequenceFlowId("flow")
-            .condition("name", "foo")
-            .defaultFlow()
-            .endEvent()
-            .done(),
-        singletonList(expect("gateway", "Default flow must not have a condition"))
-      },
       {"default-flow.bpmn", singletonList(expect("gateway", "Default flow must start at gateway"))},
       {
         "default-flow-inclusive-gateway.bpmn",
