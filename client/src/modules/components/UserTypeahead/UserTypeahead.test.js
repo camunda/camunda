@@ -78,19 +78,19 @@ it('should load non imported user before adding it to the list', () => {
 });
 
 it('should handle users and collectionUsers null values', () => {
-  const spy = jest.fn();
   const node = shallow(
     <UserTypeahead
       users={null}
-      collectionUsers={null}
+      collectionUsers={[]}
       mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
-      onChange={spy}
+      onChange={jest.fn()}
     />
   );
-  node.find('MultiUserInput').prop('onAdd')({
-    id: 'kermit',
-  });
-  expect(getUser).toHaveBeenCalledWith('kermit');
+  expect(node.find('LoadingIndicator').exists()).toBe(true);
 
-  expect(spy).not.toHaveBeenCalled();
+  node.setProps({users: [], collectionUsers: null});
+  expect(node.find('LoadingIndicator').exists()).toBe(true);
+
+  node.setProps({users: [], collectionUsers: []});
+  expect(node.find('LoadingIndicator').exists()).toBe(false);
 });
