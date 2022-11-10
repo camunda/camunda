@@ -40,15 +40,4 @@ async function fetchDrdData(decisionInstanceId: string) {
   });
 }
 
-async function fetchGroupedDecisions() {
-  return request({
-    url: '/api/decisions/grouped',
-  });
-}
-
-export {
-  fetchDecisionInstance,
-  fetchDecisionInstances,
-  fetchDrdData,
-  fetchGroupedDecisions,
-};
+export {fetchDecisionInstance, fetchDecisionInstances, fetchDrdData};

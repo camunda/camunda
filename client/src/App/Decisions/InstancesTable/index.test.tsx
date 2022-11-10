@@ -23,6 +23,7 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
 import {Header} from 'App/Layout/Header';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 
 const createWrapper = (initialPath: string = '/decisions') => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -45,12 +46,7 @@ const createWrapper = (initialPath: string = '/decisions') => {
 
 describe('<InstancesTable />', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(mockGroupedDecisions))
-      )
-    );
-
+    mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
     groupedDecisionsStore.fetchDecisions();
   });
   afterEach(() => {
@@ -293,12 +289,11 @@ describe('<InstancesTable />', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
+    mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
+
     mockServer.use(
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json(mockDecisionInstances))
-      ),
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(mockGroupedDecisions))
       ),
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json(mockDecisionInstances))

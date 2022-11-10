@@ -5,9 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -16,6 +14,7 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {Decision} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -30,11 +29,7 @@ function createWrapper(initialPath: string = '/') {
 }
 describe('<Decision />', () => {
   beforeEach(async () => {
-    mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedDecisions))
-      )
-    );
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
     decisionXmlStore.init();
     groupedDecisionsStore.fetchDecisions();

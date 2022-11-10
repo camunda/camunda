@@ -44,6 +44,6 @@ const groupedDecisions = [
       },
     ],
   },
-] as const;
+];
 
 export {groupedDecisions};

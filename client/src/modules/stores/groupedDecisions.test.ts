@@ -6,10 +6,9 @@
  */
 
 import {waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
-import {rest} from 'msw';
 import {groupedDecisionsStore} from './groupedDecisions';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 
 describe('groupedDecisionsStore', () => {
   afterEach(() => {
@@ -18,11 +17,7 @@ describe('groupedDecisionsStore', () => {
 
   describe('fetch success', () => {
     beforeEach(async () => {
-      mockServer.use(
-        rest.get('/api/decisions/grouped', (_, res, ctx) =>
-          res.once(ctx.json(groupedDecisions))
-        )
-      );
+      mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
       expect(groupedDecisionsStore.state.status).toBe('initial');
 
@@ -48,7 +43,10 @@ describe('groupedDecisionsStore', () => {
     });
 
     it('should get decision name', () => {
-      const [firstDecision, secondDecision, thirdDecision] = groupedDecisions;
+      const firstDecision = groupedDecisions[0]!;
+      const secondDecision = groupedDecisions[1]!;
+      const thirdDecision = groupedDecisions[2]!;
+
       const {getDecisionName} = groupedDecisionsStore;
 
       expect(getDecisionName(firstDecision.decisionId)).toBe(
@@ -74,7 +72,9 @@ describe('groupedDecisionsStore', () => {
     });
 
     it('should get sorted decision options', () => {
-      const [firstDecision, secondDecision, thirdDecision] = groupedDecisions;
+      const firstDecision = groupedDecisions[0]!;
+      const secondDecision = groupedDecisions[1]!;
+      const thirdDecision = groupedDecisions[2]!;
 
       expect(groupedDecisionsStore.decisions).toEqual([
         {
@@ -93,7 +93,10 @@ describe('groupedDecisionsStore', () => {
     });
 
     it('should get decision versions by id', () => {
-      const [firstDecision, secondDecision, thirdDecision] = groupedDecisions;
+      const firstDecision = groupedDecisions[0]!;
+      const secondDecision = groupedDecisions[1]!;
+      const thirdDecision = groupedDecisions[2]!;
+
       const [version2, version1] = firstDecision.decisions;
 
       expect(
@@ -134,11 +137,7 @@ describe('groupedDecisionsStore', () => {
 
   describe('fetch error', () => {
     beforeEach(async () => {
-      mockServer.use(
-        rest.get('/api/decisions/grouped', (_, res, ctx) =>
-          res.once(ctx.status(500))
-        )
-      );
+      mockFetchGroupedDecisions().withServerError();
 
       groupedDecisionsStore.fetchDecisions();
 

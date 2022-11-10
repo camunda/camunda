@@ -24,6 +24,7 @@ import {decisionInstancesStore} from 'modules/stores/decisionInstances';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -63,10 +64,10 @@ describe('<Decisions />', () => {
     mockServer.use(
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json({decisionInstances: [], totalCount: 0}))
-      ),
-      rest.get('/api/decisions/grouped', (_, res, ctx) => res(ctx.json([])))
+      )
     );
 
+    mockFetchGroupedDecisions().withSuccess([]);
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {wrapper: createWrapper()});
@@ -94,10 +95,8 @@ describe('<Decisions />', () => {
       search: queryString,
     }));
 
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
     mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedDecisions))
-      ),
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json({decisionInstances: [], totalCount: 0}))
       )
@@ -113,24 +112,17 @@ describe('<Decisions />', () => {
 
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedDecisions))
-      )
-    );
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
     jest.runOnlyPendingTimers();
 
-    mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedDecisions))
-      )
-    );
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
     jest.runOnlyPendingTimers();
 
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
     mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedDecisions))
-      ),
       rest.post('/api/decision-instances', (_, res, ctx) =>
         res.once(ctx.json({decisionInstances: [], totalCount: 0}))
       )

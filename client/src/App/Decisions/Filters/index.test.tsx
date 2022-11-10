@@ -7,16 +7,15 @@
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {Header} from 'App/Layout/Header';
-import {mockServer} from 'modules/mock-server/node';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {omit} from 'lodash';
+import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 
 function reset() {
   jest.clearAllTimers();
@@ -53,11 +52,8 @@ const MOCK_FILTERS_PARAMS = {
 
 describe('<Filters />', () => {
   beforeEach(async () => {
-    mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json(groupedDecisions))
-      )
-    );
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
     await groupedDecisionsStore.fetchDecisions();
     jest.useFakeTimers();
   });
@@ -487,13 +483,13 @@ describe('<Filters />', () => {
 
   it('should omit all versions option', async () => {
     reset();
-    const [firstDecision] = groupedDecisions;
-    const [, firstVersion] = firstDecision.decisions;
-    mockServer.use(
-      rest.get('/api/decisions/grouped', (_, res, ctx) =>
-        res.once(ctx.json([{...firstDecision, decisions: [firstVersion]}]))
-      )
-    );
+    const firstDecision = groupedDecisions[0]!;
+    const firstVersion = firstDecision.decisions[1]!;
+
+    mockFetchGroupedDecisions().withSuccess([
+      {...firstDecision, decisions: [firstVersion]},
+    ]);
+
     await groupedDecisionsStore.fetchDecisions();
 
     jest.useFakeTimers();
