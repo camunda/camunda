@@ -13,13 +13,10 @@ import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
@@ -27,7 +24,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final ProcessingScheduleService scheduleService;
   private final ZeebeDb zeebeDb;
   private final TransactionContext transactionContext;
-  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
@@ -37,14 +33,12 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final ProcessingScheduleService scheduleService,
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory,
       final InterPartitionCommandSender partitionCommandSender,
       final KeyGeneratorControls keyGeneratorControls) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
-    this.eventApplierFactory = eventApplierFactory;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
   }
@@ -67,11 +61,6 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public TransactionContext getTransactionContext() {
     return transactionContext;
-  }
-
-  @Override
-  public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
-    return eventApplierFactory;
   }
 
   @Override
