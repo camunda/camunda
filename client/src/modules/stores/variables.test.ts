@@ -19,6 +19,7 @@ import {
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
+import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 
 jest.mock('modules/constants/variables', () => ({
   ...jest.requireActual('modules/constants/variables'),
@@ -223,11 +224,7 @@ describe('stores/variables', () => {
     const mockOnError = jest.fn();
 
     // on success
-    mockServer.use(
-      rest.get('/api/variables/:variableId', (_, res, ctx) =>
-        res.once(ctx.json({id: 'variable-id', state: 'ACTIVE'}))
-      )
-    );
+    mockFetchVariable().withSuccess(createVariable({id: 'variable-id'}));
 
     expect(variablesStore.state.loadingItemId).toBeNull();
     variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
@@ -238,11 +235,7 @@ describe('stores/variables', () => {
     expect(mockOnError).not.toHaveBeenCalled();
 
     // on server error
-    mockServer.use(
-      rest.get('/api/variables/:variableId', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.json({}))
-      )
-    );
+    mockFetchVariable().withServerError();
 
     variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
     expect(variablesStore.state.loadingItemId).toBe('variable-id');
@@ -252,12 +245,7 @@ describe('stores/variables', () => {
     expect(mockOnError).toHaveBeenCalledTimes(1);
 
     // on network error
-
-    mockServer.use(
-      rest.get('/api/variables/:variableId', (_, res, ctx) =>
-        res.networkError('A network error')
-      )
-    );
+    mockFetchVariable().withNetworkError();
 
     variablesStore.fetchVariable({id: 'variable-id', onError: mockOnError});
     expect(variablesStore.state.loadingItemId).toBe('variable-id');
@@ -266,11 +254,7 @@ describe('stores/variables', () => {
 
     expect(mockOnError).toHaveBeenCalledTimes(2);
 
-    mockServer.use(
-      rest.get('/api/variables/:variableId', (_, res, ctx) =>
-        res.once(ctx.json({id: 'variable-id', state: 'ACTIVE'}))
-      )
-    );
+    mockFetchVariable().withSuccess(createVariable({id: 'variable-id'}));
 
     expect(variablesStore.state.loadingItemId).toBeNull();
     variablesStore.fetchVariable({

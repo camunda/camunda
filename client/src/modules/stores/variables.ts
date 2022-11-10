@@ -16,7 +16,8 @@ import {
   override,
   reaction,
 } from 'mobx';
-import {getOperation, fetchVariable} from 'modules/api/processInstances';
+import {getOperation} from 'modules/api/processInstances';
+import {fetchVariable} from 'modules/api/fetchVariable';
 import {
   fetchVariables,
   VariablePayload,
@@ -257,21 +258,15 @@ class Variables extends NetworkReconnectionHandler {
       this.setLoadingItemId(id);
     }
 
-    try {
-      const response = await fetchVariable(id);
-      if (response.ok) {
-        const variable = await response.json();
+    const response = await fetchVariable(id);
+    if (response.isSuccess) {
+      const variable = await response.data;
 
-        this.handleFetchVariableSuccess();
-        onSuccess?.(variable);
-        return variable;
-      } else {
-        this.handleFetchVariableFailure();
-        onError();
-        return null;
-      }
-    } catch (error) {
-      this.handleFetchVariableFailure(error);
+      this.handleFetchVariableSuccess();
+      onSuccess?.(variable);
+      return variable;
+    } else {
+      this.handleFetchVariableFailure();
       onError();
       return null;
     }
@@ -303,10 +298,6 @@ class Variables extends NetworkReconnectionHandler {
 
   handleFetchVariableFailure = (error?: unknown) => {
     this.setLoadingItemId(null);
-    logger.error('Failed to fetch Single Variable');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   handleFetchVariableSuccess = () => {

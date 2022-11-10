@@ -5,10 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 
-async function getOperation(batchOperationId: string) {
-  return request({url: `/api/operations?batchOperationId=${batchOperationId}`});
-}
+const fetchVariable = async (id: VariableEntity['id']) => {
+  return requestAndParse<VariableEntity>({
+    url: `/api/variables/${id}`,
+  });
+};
 
-export {getOperation};
+export {fetchVariable};

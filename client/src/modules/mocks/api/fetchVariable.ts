@@ -5,10 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {mockGetRequest} from './mockRequest';
 
-async function getOperation(batchOperationId: string) {
-  return request({url: `/api/operations?batchOperationId=${batchOperationId}`});
-}
+const mockFetchVariable = () =>
+  mockGetRequest<VariableEntity>('/api/variables/:id');
 
-export {getOperation};
+export {mockFetchVariable};

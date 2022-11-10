@@ -18,8 +18,6 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
 import {mockVariables, mockMetaData} from './index.setup';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {createInstance, createVariable} from 'modules/testUtils';
@@ -33,6 +31,7 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
+import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -690,7 +689,6 @@ describe('Variables', () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
       mockFetchVariables().withSuccess([
         createVariable({
-          id: '2251799813686037-clientNo',
           name: 'clientNo',
           value: '"value-preview"',
           isPreview: true,
@@ -709,20 +707,12 @@ describe('Variables', () => {
 
       expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
-      mockServer.use(
-        rest.get('/api/variables/:variableId', (_, res, ctx) =>
-          res.once(
-            ctx.json({
-              id: '2251799813686037-clientNo',
-              name: 'clientNo',
-              value: '"full-value"',
-              scopeId: '2251799813686037',
-              processInstanceId: '2251799813686037',
-              hasActiveOperation: false,
-              isPreview: false,
-            })
-          )
-        )
+      mockFetchVariable().withSuccess(
+        createVariable({
+          name: 'clientNo',
+          value: '"full-value"',
+          isPreview: false,
+        })
       );
 
       await user.click(
@@ -762,11 +752,8 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByText('"value-preview"')).toBeInTheDocument();
-      mockServer.use(
-        rest.get('/api/variables/:variableId', (_, res, ctx) =>
-          res.once(ctx.status(500), ctx.json({}))
-        )
-      );
+
+      mockFetchVariable().withServerError();
 
       await user.click(
         within(screen.getByTestId('testVariableName')).getByTitle(
@@ -832,21 +819,9 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
-      mockServer.use(
-        rest.get('/api/variables/:variableId', (_, res, ctx) =>
-          res.once(
-            ctx.status(200),
-            ctx.json({
-              id: '2251799813686037-clientNo',
-              name: 'clientNo',
-              value: '123456',
-              isPreview: false,
-              hasActiveOperation: false,
-              isFirst: false,
-              sortValues: null,
-            })
-          )
-        )
+
+      mockFetchVariable().withSuccess(
+        createVariable({isPreview: false, value: '123456'})
       );
 
       await user.click(screen.getByTestId('edit-variable-value'));
@@ -885,21 +860,9 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
-      mockServer.use(
-        rest.get('/api/variables/:variableId', (_, res, ctx) =>
-          res.once(
-            ctx.status(200),
-            ctx.json({
-              id: '2251799813686037-clientNo',
-              name: 'testVariableName',
-              value: '123456',
-              isPreview: false,
-              hasActiveOperation: false,
-              isFirst: false,
-              sortValues: null,
-            })
-          )
-        )
+
+      mockFetchVariable().withSuccess(
+        createVariable({isPreview: false, value: '123456'})
       );
 
       await user.click(screen.getByTitle(/open json editor modal/i));
@@ -1089,12 +1052,8 @@ describe('Variables', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariable().withSuccess(mockVariables[0]!);
 
-    mockServer.use(
-      rest.get('/api/variables/:instanceId', (_, res, ctx) =>
-        res.once(ctx.json(mockVariables[0]))
-      )
-    );
     variablesStore.fetchVariables({
       fetchType: 'initial',
       instanceId: '1',
