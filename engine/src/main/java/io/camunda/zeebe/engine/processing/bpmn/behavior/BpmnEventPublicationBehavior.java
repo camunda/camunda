@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
@@ -38,6 +39,7 @@ public final class BpmnEventPublicationBehavior {
   private final CatchEventAnalyzer catchEventAnalyzer;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final VariableState variableState;
 
   public BpmnEventPublicationBehavior(
       final ZeebeState zeebeState,
@@ -55,6 +57,7 @@ public final class BpmnEventPublicationBehavior {
     catchEventAnalyzer = new CatchEventAnalyzer(zeebeState.getProcessState(), elementInstanceState);
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
+    variableState = zeebeState.getVariableState();
   }
 
   /**
@@ -150,8 +153,9 @@ public final class BpmnEventPublicationBehavior {
       canBeCompleted = !catchEvent.isInterrupting();
 
       if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
+        final var variables = variableState.getVariablesLocalAsDocument(context.getFlowScopeKey());
         eventHandle.activateElement(
-            catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+            catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables);
         stateWriter.appendFollowUpEvent(key, EscalationIntent.ESCALATED, record);
         escalated = true;
       }

@@ -14,10 +14,12 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractBoundaryEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -681,6 +683,86 @@ public class EscalationEventTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     assertIsEscalated(processInstanceKey, CATCH_ELEMENT_ID, THROW_ELEMENT_ID, ESCALATION_CODE);
+  }
+
+  @Test
+  public void shouldPropagateVariablesToTheFlowScopeOfTheBoundaryEvent() {
+    // given
+    final var processChild =
+        Bpmn.createExecutableProcess("wf-child")
+            .startEvent()
+            .zeebeOutputExpression("2", "bar")
+            .intermediateThrowEvent(THROW_ELEMENT_ID, b -> b.escalation(ESCALATION_CODE))
+            .endEvent()
+            .done();
+
+    final var processParent =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId("wf-child"))
+            .boundaryEvent(CATCH_ELEMENT_ID, b -> b.escalation().zeebeOutputExpression("bar", "y"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-child.bpmn", processChild)
+        .withXmlResource("wf-parent.bpmn", processParent)
+        .deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("y")
+            .getFirst();
+    Assertions.assertThat(variableEvent.getValue()).hasValue("2");
+  }
+
+  @Test
+  public void shouldPropagateVariablesToTheFlowScopeOfTheEventSubPrecess() {
+    // given
+    final var processChild =
+        Bpmn.createExecutableProcess("wf-child")
+            .startEvent()
+            .zeebeOutputExpression("2", "bar")
+            .intermediateThrowEvent(THROW_ELEMENT_ID, b -> b.escalation(ESCALATION_CODE))
+            .endEvent()
+            .done();
+
+    final var processParent =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "escalation-event-subprocess",
+                e ->
+                    e.startEvent(CATCH_ELEMENT_ID)
+                        .escalation()
+                        .zeebeOutputExpression("bar", "y")
+                        .endEvent())
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId("wf-child"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-child.bpmn", processChild)
+        .withXmlResource("wf-parent.bpmn", processParent)
+        .deploy();
+
+    // when
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<VariableRecordValue> variableEvent =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("y")
+            .getFirst();
+    Assertions.assertThat(variableEvent.getValue()).hasValue("2");
   }
 
   private void assertIsNotEscalated(final String throwElementId, final String escalationCode) {
