@@ -147,20 +147,6 @@ components:
           type: string
           format: date-time
           example: "2022-09-15T13:10:38.176514094Z"
-        descriptor:
-          readOnly: true
-          allOf:
-            - $ref: '#/components/schemas/BackupDescriptor'
-      required:
-        - partitionId
-        - state
-
-    BackupDescriptor:
-      title: Backup Descriptor
-      description: |
-        Context information about the specific backup and what it contains for a given partition.
-      type: object
-      properties:
         snapshotId:
           description: The ID of the snapshot which is included in this backup.
           type: string
@@ -183,7 +169,5 @@ components:
           readOnly: true
           example: 8.1.2
       required:
-        - snapshotId
-        - checkpointPosition
-        - brokerId
-        - brokerVersion
+        - partitionId
+        - state
