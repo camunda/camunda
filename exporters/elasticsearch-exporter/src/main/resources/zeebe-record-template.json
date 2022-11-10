@@ -41,6 +41,9 @@
         },
         "brokerVersion": {
           "type": "keyword"
+        },
+        "sequence": {
+          "type": "long"
         }
       }
     }
