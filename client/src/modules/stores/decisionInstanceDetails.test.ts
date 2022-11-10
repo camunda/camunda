@@ -5,21 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('decisionInstanceDetailsStore', () => {
   it('should initialize and reset ', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 

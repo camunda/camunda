@@ -6,9 +6,7 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {rest} from 'msw';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {mockServer} from 'modules/mock-server/node';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -18,6 +16,7 @@ import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 const DECISION_INSTANCE_ID = '4294980768';
 
@@ -37,6 +36,7 @@ describe('<DecisionInstance />', () => {
   beforeEach(() => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionXML().withSuccess(mockDmnXml);
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
   });
 
   afterEach(() => {
@@ -45,12 +45,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should set page title', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(
@@ -63,12 +57,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should close DRD panel', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('drd-panel')).toBeInTheDocument();
@@ -90,12 +78,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should maximize DRD panel and hide other panels', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await user.click(
@@ -116,12 +98,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should minimize DRD panel', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await user.click(
@@ -145,12 +121,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should show DRD panel on header button click', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await user.click(
@@ -185,12 +155,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should persist panel state', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     const {unmount, user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await user.click(
@@ -203,6 +167,9 @@ describe('<DecisionInstance />', () => {
     expect(screen.queryByTestId('drd')).not.toBeInTheDocument();
 
     unmount();
+
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
@@ -210,12 +177,6 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should not keep same tab selected when page is completely refreshed', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res(ctx.json(invoiceClassification))
-      )
-    );
-
     const {user, unmount, rerender} = render(<DecisionInstance />, {
       wrapper: Wrapper,
     });
@@ -262,6 +223,9 @@ describe('<DecisionInstance />', () => {
     ).not.toBeInTheDocument();
 
     unmount();
+
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(

@@ -5,24 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionXmlStore} from './decisionXml';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('decisionXmlStore', () => {
   it('should initialize and reset ', async () => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
-
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     expect(decisionXmlStore.state.status).toBe('initial');
 

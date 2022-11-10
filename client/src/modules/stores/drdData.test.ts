@@ -6,13 +6,12 @@
  */
 
 import {waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
-import {rest} from 'msw';
 import {decisionInstanceDetailsStore} from './decisionInstanceDetails';
 import {drdDataStore} from './drdData';
 import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('drdDataStore', () => {
   afterEach(() => {
@@ -37,12 +36,7 @@ describe('drdDataStore', () => {
 
   it('should get current decision', async () => {
     mockFetchDrdData().withSuccess(mockDrdData);
-
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
     drdDataStore.fetchDrdData('1');

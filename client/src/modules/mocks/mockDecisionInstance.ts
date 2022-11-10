@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {DecisionInstanceType} from 'modules/stores/decisionInstanceDetails';
+import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
 
-const invoiceClassification: DecisionInstanceType = {
+const invoiceClassification: DecisionInstanceDto = {
   id: '3ß945876576324-1',
   decisionDefinitionId: '111',
   decisionId: 'invoiceClassification',
@@ -99,9 +99,9 @@ const invoiceClassification: DecisionInstanceType = {
     areAgeRequirementsSatisfied: 'satisfied',
     paragraph: 'sbl §17',
   }),
-} as const;
+};
 
-const assignApproverGroup: DecisionInstanceType = {
+const assignApproverGroup: DecisionInstanceDto = {
   id: '29283472932831-1',
   decisionDefinitionId: '111',
   decisionId: 'invoice-assign-approver',
@@ -129,15 +129,15 @@ const assignApproverGroup: DecisionInstanceType = {
   ],
   decisionType: 'DECISION_TABLE',
   result: null,
-} as const;
+};
 
-const assignApproverGroupWithoutVariables: DecisionInstanceType = {
+const assignApproverGroupWithoutVariables: DecisionInstanceDto = {
   ...assignApproverGroup,
   evaluatedInputs: [],
   evaluatedOutputs: [],
-} as const;
+};
 
-const literalExpression: DecisionInstanceType = {
+const literalExpression: DecisionInstanceDto = {
   id: '247986278462738-1',
   decisionDefinitionId: '111',
   decisionId: 'calc-key-figures',
@@ -151,7 +151,7 @@ const literalExpression: DecisionInstanceType = {
   evaluatedOutputs: [],
   decisionType: 'LITERAL_EXPRESSION',
   result: null,
-} as const;
+};
 
 export {
   invoiceClassification,

@@ -12,13 +12,12 @@ import {
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablesPanel} from './index';
-import {mockServer} from 'modules/mock-server/node';
-import {rest} from 'msw';
 import {
   invoiceClassification,
   literalExpression,
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('<VariablesPanel />', () => {
   it('should have 2 tabs', () => {
@@ -52,11 +51,7 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should switch tab content', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
@@ -93,11 +88,8 @@ describe('<VariablesPanel />', () => {
   });
 
   it('should hide input/output tab for literal expressions', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(literalExpression))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(literalExpression);
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<VariablesPanel />, {wrapper: ThemeProvider});

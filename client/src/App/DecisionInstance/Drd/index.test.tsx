@@ -5,8 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
@@ -19,6 +17,7 @@ import {Drd} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -32,12 +31,7 @@ describe('<Drd />', () => {
   beforeEach(() => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
     mockFetchDrdData().withSuccess(mockDrdData);
-
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     drdDataStore.init();
     decisionXmlStore.init();

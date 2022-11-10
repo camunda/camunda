@@ -10,15 +10,14 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {rest} from 'msw';
 import {Result} from './index';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('<Result />', () => {
   beforeEach(() => {
@@ -26,11 +25,8 @@ describe('<Result />', () => {
   });
 
   it('should show an error message', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
+    mockFetchDecisionInstance().withServerError();
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<Result />, {wrapper: ThemeProvider});
@@ -41,11 +37,7 @@ describe('<Result />', () => {
   });
 
   it('should show a loading spinner', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
+    mockFetchDecisionInstance().withServerError();
 
     render(<Result />, {
       wrapper: ThemeProvider,
@@ -61,11 +53,8 @@ describe('<Result />', () => {
   });
 
   it('should show the result on the json editor', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<Result />, {wrapper: ThemeProvider});
@@ -76,11 +65,8 @@ describe('<Result />', () => {
   });
 
   it('should show empty message for failed decision instances', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(assignApproverGroup))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(assignApproverGroup);
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<Result />, {wrapper: ThemeProvider});

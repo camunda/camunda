@@ -7,38 +7,14 @@
 
 import {makeObservable, override, action, observable} from 'mobx';
 import {logger} from 'modules/logger';
-import {fetchDecisionInstance} from 'modules/api/decisions';
+import {
+  fetchDecisionInstance,
+  DecisionInstanceDto,
+} from 'modules/api/decisionInstances/fetchDecisionInstance';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {ReadonlyDeep} from 'ts-toolbelt/out/Object/Readonly';
-
-type DecisionInstanceType = ReadonlyDeep<{
-  id: string;
-  decisionId: string;
-  decisionDefinitionId: string;
-  state: DecisionInstanceEntityState;
-  decisionName: string;
-  decisionVersion: number;
-  evaluationDate: string;
-  processInstanceId: string | null;
-  errorMessage: string | null;
-  evaluatedInputs: Array<{
-    id: string;
-    name: string;
-    value: string | null;
-  }>;
-  evaluatedOutputs: Array<{
-    id: string;
-    ruleIndex: number;
-    ruleId: string;
-    name: string;
-    value: string | null;
-  }>;
-  result: string | null;
-  decisionType: 'DECISION_TABLE' | 'LITERAL_EXPRESSION';
-}>;
 
 type State = {
-  decisionInstance: DecisionInstanceType | null;
+  decisionInstance: DecisionInstanceDto | null;
   decisionInstanceId: string | null;
   status: 'initial' | 'fetched' | 'error';
 };
@@ -64,22 +40,18 @@ class DecisionInstanceDetails extends NetworkReconnectionHandler {
 
   fetchDecisionInstance = this.retryOnConnectionLost(
     async (decisionInstanceId: string) => {
-      try {
-        const response = await fetchDecisionInstance(decisionInstanceId);
+      const response = await fetchDecisionInstance(decisionInstanceId);
 
-        if (response.ok) {
-          this.handleFetchSuccess(await response.json(), decisionInstanceId);
-        } else {
-          this.handleFetchFailure();
-        }
-      } catch (error) {
-        this.handleFetchFailure(error);
+      if (response.isSuccess) {
+        this.handleFetchSuccess(response.data, decisionInstanceId);
+      } else {
+        this.handleFetchFailure();
       }
     }
   );
 
   handleFetchSuccess = (
-    decisionInstance: DecisionInstanceType,
+    decisionInstance: DecisionInstanceDto,
     decisionInstanceId: string
   ) => {
     this.state.decisionInstance = decisionInstance;
@@ -103,4 +75,3 @@ class DecisionInstanceDetails extends NetworkReconnectionHandler {
 }
 
 export const decisionInstanceDetailsStore = new DecisionInstanceDetails();
-export type {DecisionInstanceType};

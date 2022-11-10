@@ -5,8 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {render, screen} from 'modules/testing-library';
 import {
   invoiceClassification,
@@ -19,15 +17,10 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionPanel} from '.';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('<DecisionPanel />', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
-
     mockFetchDecisionXML().withSuccess(mockDmnXml);
     decisionXmlStore.init();
   });
@@ -38,11 +31,7 @@ describe('<DecisionPanel />', () => {
   });
 
   it('should render decision table', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
@@ -55,11 +44,7 @@ describe('<DecisionPanel />', () => {
   });
 
   it('should render literal expression', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(literalExpression))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(literalExpression);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
@@ -71,11 +56,7 @@ describe('<DecisionPanel />', () => {
   });
 
   it('should render incident banner', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:id', (_, res, ctx) =>
-        res.once(ctx.json(assignApproverGroup))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(assignApproverGroup);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 

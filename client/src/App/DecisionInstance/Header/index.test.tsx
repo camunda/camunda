@@ -10,13 +10,12 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {rest} from 'msw';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Header} from './index';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 const MOCK_DECISION_INSTANCE_ID = '123567';
 
@@ -32,11 +31,7 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
 
 describe('<Header />', () => {
   it('should show a loading skeleton', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance(
       MOCK_DECISION_INSTANCE_ID
@@ -52,11 +47,7 @@ describe('<Header />', () => {
   });
 
   it('should show the decision instance details', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance(
       MOCK_DECISION_INSTANCE_ID

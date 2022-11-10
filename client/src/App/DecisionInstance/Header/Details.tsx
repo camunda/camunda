@@ -7,14 +7,14 @@
 
 import {Link} from 'modules/components/Link';
 import {Paths, Locations} from 'modules/routes';
-import {DecisionInstanceType} from 'modules/stores/decisionInstanceDetails';
+import {DecisionInstanceDto} from 'modules/api/decisionInstances/fetchDecisionInstance';
 import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date/formatDate';
 import {useParams} from 'react-router-dom';
 import {Table, TD, TH, SkeletonBlock} from './styled';
 
 type Props = {
-  decisionInstance?: DecisionInstanceType;
+  decisionInstance?: DecisionInstanceDto;
   'data-testid'?: string;
 };
 

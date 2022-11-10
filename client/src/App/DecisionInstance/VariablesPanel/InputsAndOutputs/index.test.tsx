@@ -11,7 +11,6 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {
   assignApproverGroup,
   assignApproverGroupWithoutVariables,
@@ -19,8 +18,8 @@ import {
 } from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {rest} from 'msw';
 import {InputsAndOutputs} from './index';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('<InputsAndOutputs />', () => {
   afterEach(() => {
@@ -28,11 +27,8 @@ describe('<InputsAndOutputs />', () => {
   });
 
   it('should have section panels', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {
@@ -48,11 +44,8 @@ describe('<InputsAndOutputs />', () => {
   });
 
   it('should show a loading skeleton', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
+    mockFetchDecisionInstance().withServerError();
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
@@ -69,11 +62,8 @@ describe('<InputsAndOutputs />', () => {
   });
 
   it('should show empty message for failed decision instances with variables', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(assignApproverGroup))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(assignApproverGroup);
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
@@ -90,11 +80,10 @@ describe('<InputsAndOutputs />', () => {
   });
 
   it('should show empty message for failed decision instances without variables', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(assignApproverGroupWithoutVariables))
-      )
+    mockFetchDecisionInstance().withSuccess(
+      assignApproverGroupWithoutVariables
     );
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
@@ -111,11 +100,8 @@ describe('<InputsAndOutputs />', () => {
   });
 
   it('should load inputs and outputs', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.json(invoiceClassification))
-      )
-    );
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
@@ -161,11 +147,8 @@ describe('<InputsAndOutputs />', () => {
   });
 
   it('should show an error', async () => {
-    mockServer.use(
-      rest.get('/api/decision-instances/:decisionInstanceId', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
+    mockFetchDecisionInstance().withServerError();
+
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {wrapper: ThemeProvider});
