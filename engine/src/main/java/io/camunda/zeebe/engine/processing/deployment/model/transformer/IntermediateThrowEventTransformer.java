@@ -91,5 +91,6 @@ public final class IntermediateThrowEventTransformer
     final var escalation = eventDefinition.getEscalation();
     final var executableEscalation = context.getEscalation(escalation.getId());
     executableElement.setEscalation(executableEscalation);
+    executableElement.setEventType(BpmnEventType.ESCALATION);
   }
 }

@@ -95,5 +95,6 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     final var escalation = escalationEventDefinition.getEscalation();
     final var executableEscalation = context.getEscalation(escalation.getId());
     executableElement.setEscalation(executableEscalation);
+    executableElement.setEventType(BpmnEventType.ESCALATION);
   }
 }
