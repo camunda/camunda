@@ -5,10 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 
-async function getOperation(batchOperationId: string) {
-  return request({url: `/api/operations?batchOperationId=${batchOperationId}`});
-}
+const getOperation = async (batchOperationId: string) => {
+  return requestAndParse<InstanceOperationEntity[]>({
+    url: `/api/operations?batchOperationId=${batchOperationId}`,
+  });
+};
 
 export {getOperation};

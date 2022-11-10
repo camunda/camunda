@@ -8,18 +8,18 @@
 import {variablesStore} from './variables';
 import {processInstanceDetailsStore} from './processInstanceDetails';
 import {flowNodeSelectionStore} from './flowNodeSelection';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {
   createBatchOperation,
   createInstance,
+  createOperation,
   createVariable,
 } from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
+import {mockGetOperation} from 'modules/mocks/api/getOperation';
 
 jest.mock('modules/constants/variables', () => ({
   ...jest.requireActual('modules/constants/variables'),
@@ -44,17 +44,7 @@ describe('stores/variables', () => {
     mockApplyOperation().withSuccess(mockVariableOperation);
 
     mockFetchVariables().withSuccess(mockVariables);
-    mockServer.use(
-      rest.get('/api/operations', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            {
-              state: 'COMPLETED',
-            },
-          ])
-        )
-      )
-    );
+    mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'StartEvent_1',

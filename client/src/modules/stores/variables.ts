@@ -16,7 +16,7 @@ import {
   override,
   reaction,
 } from 'mobx';
-import {getOperation} from 'modules/api/processInstances';
+import {getOperation} from 'modules/api/getOperation';
 import {fetchVariable} from 'modules/api/fetchVariable';
 import {
   fetchVariables,
@@ -410,32 +410,29 @@ class Variables extends NetworkReconnectionHandler {
     onSuccess: () => void,
     onError: () => void
   ) => {
-    try {
-      this.isPollOperationRequestRunning = true;
-      const response = await getOperation(operationId);
+    this.isPollOperationRequestRunning = true;
+    const response = await getOperation(operationId);
 
-      if (this.operationIntervalId !== null && response.ok) {
-        const operationDetail = await response.json();
-        if (operationDetail[0].state === 'COMPLETED') {
+    if (this.operationIntervalId !== null && response.isSuccess) {
+      const operationDetail = response.data[0];
+      if (operationDetail !== undefined) {
+        if (operationDetail.state === 'COMPLETED') {
           this.setPendingItem(null);
           onSuccess();
           this.stopPollingOperation();
-        } else if (operationDetail[0].state === 'FAILED') {
+        } else if (operationDetail.state === 'FAILED') {
           this.setPendingItem(null);
           this.stopPollingOperation();
           onError();
         }
       }
-
-      if (!response.ok) {
-        logger.error('Failed to poll Variable Operation');
-      }
-    } catch (error) {
-      logger.error('Failed to poll Variable Operation');
-      logger.error(error);
-    } finally {
-      this.isPollOperationRequestRunning = false;
     }
+
+    if (!response.isSuccess) {
+      logger.error('Failed to poll Variable Operation');
+    }
+
+    this.isPollOperationRequestRunning = false;
   };
 
   fetchVariables = this.retryOnConnectionLost(

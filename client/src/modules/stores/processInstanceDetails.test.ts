@@ -178,6 +178,7 @@ describe('stores/currentInstance', () => {
       processInstanceDetailsStore.state.processInstance?.operations
     ).toEqual([
       {
+        batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
         errorMessage: 'string',
         id: 'id_23',
         state: 'SENT',
@@ -195,6 +196,7 @@ describe('stores/currentInstance', () => {
       processInstanceDetailsStore.state.processInstance?.operations
     ).toEqual([
       {
+        batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
         errorMessage: 'string',
         id: 'id_23',
         state: 'SENT',

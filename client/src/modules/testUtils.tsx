@@ -61,12 +61,15 @@ export const createIncident = (
  * @returns a mocked incident Object
  * @param {*} customProps Obj with any type of custom property
  */
-export const createOperation = (options = {}): InstanceOperationEntity => {
+export const createOperation = (
+  options: Partial<InstanceOperationEntity> = {}
+): InstanceOperationEntity => {
   return {
     id: randomIdIterator.next().value,
     errorMessage: 'string',
     state: 'SENT',
     type: 'RESOLVE_INCIDENT',
+    batchOperationId: 'fe19ed17-a213-4b8d-ad10-2fb6d2bd89e5',
     ...options,
   };
 };

@@ -48,8 +48,9 @@ interface OperationEntity {
 
 interface InstanceOperationEntity {
   id?: string;
+  batchOperationId?: string;
   type: OperationEntityType;
-  state: 'SENT' | 'COMPLETED' | 'SCHEDULED';
+  state: 'SENT' | 'COMPLETED' | 'SCHEDULED' | 'LOCKED' | 'FAILED';
   errorMessage: null | string;
 }
 

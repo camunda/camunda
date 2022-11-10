@@ -15,8 +15,6 @@ import {getProcessName} from 'modules/utils/instance';
 import {ProcessInstanceHeader} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {variablesStore} from 'modules/stores/variables';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {operationsStore} from 'modules/stores/operations';
 import {
   mockInstanceWithActiveOperation,
@@ -31,6 +29,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {
   createBatchOperation,
+  createOperation,
   createVariable,
   mockCallActivityProcessXML,
   mockProcessXML,
@@ -42,6 +41,10 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetch
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
+import {mockGetOperation} from 'modules/mocks/api/getOperation';
+import * as operationApi from 'modules/api/getOperation';
+
+const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -288,27 +291,15 @@ describe('InstanceHeader', () => {
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
-    mockServer.use(
-      rest.get('/api/operations', (req, res, ctx) => {
-        if (
-          req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
-        ) {
-          return res.once(
-            ctx.json([
-              {
-                state: 'COMPLETED',
-              },
-            ])
-          );
-        }
-      })
-    );
+    mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
 
     jest.runOnlyPendingTimers();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
     await waitForElementToBeRemoved(screen.queryByTestId('operation-spinner'));
+
+    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
     jest.clearAllTimers();
     jest.useRealTimers();

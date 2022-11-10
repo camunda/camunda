@@ -19,11 +19,10 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {
   createBatchOperation,
   createInstance,
+  createOperation,
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
@@ -36,6 +35,10 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
+import {mockGetOperation} from 'modules/mocks/api/getOperation';
+import * as operationApi from 'modules/api/getOperation';
+
+const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -244,21 +247,8 @@ describe('VariablePanel', () => {
       createBatchOperation({id: 'batch-operation-id'})
     );
 
-    mockServer.use(
-      rest.get('/api/operations', (req, res, ctx) => {
-        if (
-          req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
-        ) {
-          return res.once(
-            ctx.json([
-              {
-                state: 'COMPLETED',
-              },
-            ])
-          );
-        }
-      })
-    );
+    mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
+
     await user.click(screen.getByTitle(/save variable/i));
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
 
@@ -281,6 +271,8 @@ describe('VariablePanel', () => {
     await waitFor(() =>
       expect(withinVariablesList.getByTestId('foo')).toBeInTheDocument()
     );
+
+    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -439,21 +431,7 @@ describe('VariablePanel', () => {
       createBatchOperation({id: 'batch-operation-id'})
     );
 
-    mockServer.use(
-      rest.get('/api/operations', (req, res, ctx) => {
-        if (
-          req.url.searchParams.get('batchOperationId') === 'batch-operation-id'
-        ) {
-          return res.once(
-            ctx.json([
-              {
-                state: 'FAILED',
-              },
-            ])
-          );
-        }
-      })
-    );
+    mockGetOperation().withSuccess([createOperation({state: 'FAILED'})]);
 
     await user.click(screen.getByTitle(/save variable/i));
 
@@ -470,6 +448,8 @@ describe('VariablePanel', () => {
     expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
       headline: 'Variable could not be saved',
     });
+
+    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -507,11 +487,8 @@ describe('VariablePanel', () => {
       createVariable({id: 'instance_id-foo', name: 'foo', value: 'bar'}),
     ]);
 
-    mockServer.use(
-      rest.get('/api/operations', (_, res, ctx) =>
-        res.once(ctx.json([{state: 'SENT'}]))
-      )
-    );
+    mockGetOperation().withSuccess([createOperation()]);
+
     jest.runOnlyPendingTimers();
     await waitForElementToBeRemoved(
       screen.getByTestId('edit-variable-spinner')
