@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -28,6 +30,8 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.Either;
+import java.time.Instant;
+import java.util.Collection;
 
 /**
  * Request handler to handle commands and queries related to the backup ({@link RequestType#BACKUP})
@@ -83,6 +87,7 @@ public final class BackupApiRequestHandler
           handleTakeBackupRequest(
               requestStreamId, requestId, requestReader, responseWriter, errorWriter));
       case QUERY_STATUS -> handleQueryStatusHandler(requestReader, responseWriter, errorWriter);
+      case LIST -> handleListBackupHandler(responseWriter, errorWriter);
       default -> CompletableActorFuture.completed(
           unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
     };
@@ -140,6 +145,46 @@ public final class BackupApiRequestHandler
               }
             });
     return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupHandler(
+      final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+
+    backupManager
+        .listBackups()
+        .onComplete(
+            (backups, error) -> {
+              if (error == null) {
+                result.complete(
+                    Either.right(responseWriter.withBackupList(buildBackupListResponse(backups))));
+              } else {
+                result.complete(
+                    Either.left(
+                        errorWriter
+                            .errorCode(ErrorCode.INTERNAL_ERROR)
+                            .errorMessage(error.getMessage())));
+              }
+            });
+    return result;
+  }
+
+  private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {
+    final var statuses =
+        backups.stream()
+            .map(
+                backup ->
+                    new BackupListResponse.BackupStatus()
+                        .setStatus(encodeStatusCode(backup.statusCode()))
+                        .setBackupId(backup.id().checkpointId())
+                        .setPartitionId(backup.id().partitionId())
+                        .setBrokerVersion(
+                            backup.descriptor().map(BackupDescriptor::brokerVersion).orElse(""))
+                        .setCreatedAt(backup.created().map(Instant::toString).orElse(""))
+                        .setFailureReason(backup.failureReason().orElse("")))
+            .toList();
+    return new BackupListResponse(statuses);
   }
 
   private BackupStatusResponse buildResponse(final BackupStatus status) {
