@@ -6,6 +6,7 @@
  */
 
 import update from 'immutability-helper';
+import structuredClone from '@ungap/structured-clone';
 
 import {t} from 'translation';
 import {getVariableLabel} from 'variables';
@@ -28,7 +29,7 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
     newPayload = update(newPayload, payloadAdjustment);
   }
 
-  let newReport = {...report, ...newPayload};
+  let newReport = {...structuredClone(report), ...newPayload};
 
   // ensure group is still valid
   const oldGroup = options.group.find(({matcher}) => matcher(newReport));
@@ -105,10 +106,10 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
   }
 
   // update sorting and tablecolumnorder
-  report.configuration.sorting = getDefaultSorting({reportType, data: newReport});
-  report.configuration.horizontalBar = isCategoricalBar(newReport);
+  newReport.configuration.sorting = getDefaultSorting({reportType, data: newReport});
+  newReport.configuration.horizontalBar = isCategoricalBar(newReport);
 
-  report.configuration.tableColumns.columnOrder = [];
+  newReport.configuration.tableColumns.columnOrder = [];
 
   if (reportType === 'process') {
     // disable and reset heatmap target values if no heatmap target values are allowed
