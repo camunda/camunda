@@ -162,7 +162,8 @@ class ElasticsearchClient implements AutoCloseable {
 
     final BulkIndexResponse response;
     try {
-      response = MAPPER.readValue(httpResponse.getEntity().getContent(), BulkIndexResponse.class);
+      final var responseBody = httpResponse.getEntity().getContent();
+      response = MAPPER.readValue(responseBody.readAllBytes(), BulkIndexResponse.class);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to parse response when flushing", e);
     }
@@ -194,8 +195,9 @@ class ElasticsearchClient implements AutoCloseable {
       request.setJsonEntity(MAPPER.writeValueAsString(template));
 
       final var response = client.performRequest(request);
+      final var responseBody = response.getEntity().getContent();
       final var putIndexTemplateResponse =
-          MAPPER.readValue(response.getEntity().getContent(), PutIndexTemplateResponse.class);
+          MAPPER.readValue(responseBody.readAllBytes(), PutIndexTemplateResponse.class);
       return putIndexTemplateResponse.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put index template", e);
@@ -208,8 +210,9 @@ class ElasticsearchClient implements AutoCloseable {
       request.setJsonEntity(MAPPER.writeValueAsString(template));
 
       final var response = client.performRequest(request);
+      final var responseBody = response.getEntity().getContent();
       final var putIndexTemplateResponse =
-          MAPPER.readValue(response.getEntity().getContent(), PutIndexTemplateResponse.class);
+          MAPPER.readValue(responseBody.readAllBytes(), PutIndexTemplateResponse.class);
       return putIndexTemplateResponse.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put component template", e);
