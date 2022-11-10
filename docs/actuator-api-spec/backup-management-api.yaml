@@ -24,16 +24,27 @@ paths:
         sorted in descending order of backupId.
       responses:
         '200':
+          description: OK
           $ref: '#/components/responses/BackupList'
+        '400':
+          description: Backup is not enabled or configured on the brokers
+          $ref: '#/components/responses/Error'
         '500':
           description: Internal Error
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
 
 components:
   responses:
+    Error:
+      description: Generic error response
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
     BackupList:
       description: |
        List of all available backups.
@@ -43,6 +54,16 @@ components:
             $ref: '#/components/schemas/BackupList'
 
   schemas:
+    Error:
+      title: Error response
+      description: Generic response for all errors
+      type: object
+      properties:
+        message:
+          description: Error message
+          type: string
+          example: something failed
+
     BackupId:
       title: Backup ID
       description: |
