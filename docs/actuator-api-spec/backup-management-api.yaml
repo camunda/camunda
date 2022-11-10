@@ -127,6 +127,7 @@ components:
         - COMPLETED
         - FAILED
         - INCOMPLETE
+        - INCOMPATIBLE
       example: IN_PROGRESS
 
     BackupList:
