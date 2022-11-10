@@ -5,11 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {waitFor} from 'modules/testing-library';
 import {mockDecisionInstances} from 'modules/mocks/mockDecisionInstances';
 import {decisionInstancesStore} from './decisionInstances';
+import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 
 describe('decisionInstancesStore', () => {
   afterEach(() => {
@@ -17,11 +16,7 @@ describe('decisionInstancesStore', () => {
   });
 
   it('should get decision instances', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     expect(decisionInstancesStore.state.status).toBe('initial');
 
@@ -36,11 +31,7 @@ describe('decisionInstancesStore', () => {
   });
 
   it('should fail when getting decision instances', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
+    mockFetchDecisionInstances().withServerError();
 
     expect(decisionInstancesStore.state.status).toBe('initial');
 

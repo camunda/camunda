@@ -5,13 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {mockPostRequest} from '../mockRequest';
+import {DecisionInstancesDto} from 'modules/api/decisionInstances/fetchDecisionInstances';
 
-async function fetchDecisionInstance(decisionInstanceId: string) {
-  return request({
-    url: `/api/decision-instances/${decisionInstanceId}`,
-    method: 'GET',
-  });
-}
+const mockFetchDecisionInstances = () =>
+  mockPostRequest<DecisionInstancesDto>('/api/decision-instances');
 
-export {fetchDecisionInstance};
+export {mockFetchDecisionInstances};

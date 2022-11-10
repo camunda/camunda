@@ -11,9 +11,7 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {rest} from 'msw';
 import {MemoryRouter} from 'react-router-dom';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Decisions} from './';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
@@ -25,6 +23,7 @@ import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
+import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
@@ -61,12 +60,10 @@ describe('<Decisions />', () => {
   });
 
   it('should show page title', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json({decisionInstances: [], totalCount: 0}))
-      )
-    );
-
+    mockFetchDecisionInstances().withSuccess({
+      decisionInstances: [],
+      totalCount: 0,
+    });
     mockFetchGroupedDecisions().withSuccess([]);
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
@@ -96,12 +93,10 @@ describe('<Decisions />', () => {
     }));
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json({decisionInstances: [], totalCount: 0}))
-      )
-    );
-
+    mockFetchDecisionInstances().withSuccess({
+      decisionInstances: [],
+      totalCount: 0,
+    });
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decisions />, {
@@ -122,11 +117,10 @@ describe('<Decisions />', () => {
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json({decisionInstances: [], totalCount: 0}))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess({
+      decisionInstances: [],
+      totalCount: 0,
+    });
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {

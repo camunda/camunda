@@ -7,8 +7,7 @@
 
 import {makeObservable, observable, action, override, computed} from 'mobx';
 
-import {fetchDecisionInstances} from 'modules/api/decisions';
-import {logger} from 'modules/logger';
+import {fetchDecisionInstances} from 'modules/api/decisionInstances/fetchDecisionInstances';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {
   getDecisionInstancesRequestFilters,
@@ -88,33 +87,29 @@ class DecisionInstances extends NetworkReconnectionHandler {
     fetchType: FetchType;
     payload: Parameters<typeof fetchDecisionInstances>['0'];
   }) => {
-    try {
-      const response = await fetchDecisionInstances(payload);
-      if (response.ok) {
-        const {decisionInstances, totalCount} = await response.json();
+    const response = await fetchDecisionInstances(payload);
+    if (response.isSuccess) {
+      const {decisionInstances, totalCount} = response.data;
 
-        tracking.track({
-          eventName: 'decisions-loaded',
-          filters: Object.keys(payload.query),
-          ...payload.sorting,
-        });
+      tracking.track({
+        eventName: 'decisions-loaded',
+        filters: Object.keys(payload.query),
+        ...payload.sorting,
+      });
 
-        this.setDecisionInstances({
-          decisionInstances: this.getDecisionInstances(
-            fetchType,
-            decisionInstances
-          ),
-          totalCount,
-        });
+      this.setDecisionInstances({
+        decisionInstances: this.getDecisionInstances(
+          fetchType,
+          decisionInstances
+        ),
+        totalCount,
+      });
 
-        this.setLatestFetchDetails(fetchType, decisionInstances.length);
+      this.setLatestFetchDetails(fetchType, decisionInstances.length);
 
-        this.handleFetchSuccess();
-      } else {
-        this.handleFetchError();
-      }
-    } catch (error) {
-      this.handleFetchError(error);
+      this.handleFetchSuccess();
+    } else {
+      this.handleFetchError();
     }
   };
 
@@ -204,14 +199,9 @@ class DecisionInstances extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchError = (error?: unknown) => {
+  handleFetchError = () => {
     this.state.status = 'error';
     this.state.decisionInstances = [];
-
-    logger.error('Failed to fetch decision instances');
-    if (error !== undefined) {
-      logger.error(error);
-    }
   };
 
   setLatestFetchDetails = (

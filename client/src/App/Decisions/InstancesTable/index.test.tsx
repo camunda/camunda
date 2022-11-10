@@ -12,8 +12,6 @@ import {
   waitForElementToBeRemoved,
   waitFor,
 } from 'modules/testing-library';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InstancesTable} from './index';
 import {decisionInstancesStore} from 'modules/stores/decisionInstances';
@@ -24,6 +22,7 @@ import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
 import {Header} from 'App/Layout/Header';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
+import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 
 const createWrapper = (initialPath: string = '/decisions') => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -55,11 +54,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should initially render skeleton', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
@@ -69,11 +64,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should render error message', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.status(500))
-      )
-    );
+    mockFetchDecisionInstances().withServerError();
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
@@ -84,11 +75,10 @@ describe('<InstancesTable />', () => {
   });
 
   it('should render empty message when no filter is selected', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json({decisionInstances: []}))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
@@ -107,11 +97,10 @@ describe('<InstancesTable />', () => {
   });
 
   it('should render empty message when at least one filter is selected', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json({decisionInstances: []}))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 0,
+      decisionInstances: [],
+    });
 
     render(<InstancesTable />, {
       wrapper: createWrapper('/decisions?evaluated=true&failed=true'),
@@ -132,11 +121,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should render decision instances', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     render(<InstancesTable />, {wrapper: createWrapper()});
 
@@ -198,11 +183,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should navigate to decision instance page', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     const {user} = render(<InstancesTable />, {
       wrapper: createWrapper('/decisions'),
@@ -224,24 +205,20 @@ describe('<InstancesTable />', () => {
   });
 
   it('should navigate to process instance page', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            decisionInstances: [
-              {
-                id: '2251799813689541',
-                name: 'test decision instance 1',
-                version: 1,
-                evaluationDate: '2022-02-07T10:01:51.293+0000',
-                processInstanceId: '2251799813689544',
-                state: 'EVALUATED',
-              },
-            ],
-          })
-        )
-      )
-    );
+    mockFetchDecisionInstances().withSuccess({
+      totalCount: 1,
+      decisionInstances: [
+        {
+          id: '2251799813689541',
+          decisionName: 'test decision instance 1',
+          decisionVersion: 1,
+          evaluationDate: '2022-02-07T10:01:51.293+0000',
+          processInstanceId: '2251799813689544',
+          state: 'EVALUATED',
+          sortValues: ['', ''],
+        },
+      ],
+    });
 
     const {user} = render(<InstancesTable />, {
       wrapper: createWrapper('/decisions'),
@@ -263,11 +240,7 @@ describe('<InstancesTable />', () => {
   });
 
   it('should display loading skeleton when sorting is applied', async () => {
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     const {user} = render(<InstancesTable />, {wrapper: createWrapper()});
 
@@ -275,11 +248,7 @@ describe('<InstancesTable />', () => {
 
     expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument();
 
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
@@ -290,15 +259,7 @@ describe('<InstancesTable />', () => {
 
   it('should refetch data when navigated from header', async () => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
-
-    mockServer.use(
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      ),
-      rest.post('/api/decision-instances', (_, res, ctx) =>
-        res.once(ctx.json(mockDecisionInstances))
-      )
-    );
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     const {user} = render(
       <>
@@ -309,6 +270,8 @@ describe('<InstancesTable />', () => {
     );
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
+
+    mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     await user.click(screen.getByRole('link', {name: 'View Decisions'}));
 
