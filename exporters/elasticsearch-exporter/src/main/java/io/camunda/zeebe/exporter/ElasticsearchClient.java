@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseException;
 import org.elasticsearch.client.RestClient;
 
 class ElasticsearchClient implements AutoCloseable {
@@ -146,26 +144,16 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   private void exportBulk() {
-    final Response httpResponse;
+    final BulkIndexResponse response;
     try {
       final var request = new Request("POST", "/_bulk");
       final var body = new EntityTemplate(bulkIndexRequest);
       body.setContentType("application/x-ndjson");
       request.setEntity(body);
 
-      httpResponse = client.performRequest(request);
-    } catch (final ResponseException e) {
-      throw new ElasticsearchExporterException("Elastic returned an error response on flush", e);
+      response = sendRequest(request, BulkIndexResponse.class);
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to flush bulk", e);
-    }
-
-    final BulkIndexResponse response;
-    try {
-      final var responseBody = httpResponse.getEntity().getContent();
-      response = MAPPER.readValue(responseBody.readAllBytes(), BulkIndexResponse.class);
-    } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to parse response when flushing", e);
     }
 
     if (response.errors()) {
@@ -194,11 +182,8 @@ class ElasticsearchClient implements AutoCloseable {
       final var request = new Request("PUT", "/_index_template/" + templateName);
       request.setJsonEntity(MAPPER.writeValueAsString(template));
 
-      final var response = client.performRequest(request);
-      final var responseBody = response.getEntity().getContent();
-      final var putIndexTemplateResponse =
-          MAPPER.readValue(responseBody.readAllBytes(), PutIndexTemplateResponse.class);
-      return putIndexTemplateResponse.acknowledged();
+      final var response = sendRequest(request, PutIndexTemplateResponse.class);
+      return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put index template", e);
     }
@@ -209,13 +194,18 @@ class ElasticsearchClient implements AutoCloseable {
       final var request = new Request("PUT", "/_component_template/" + configuration.index.prefix);
       request.setJsonEntity(MAPPER.writeValueAsString(template));
 
-      final var response = client.performRequest(request);
-      final var responseBody = response.getEntity().getContent();
-      final var putIndexTemplateResponse =
-          MAPPER.readValue(responseBody.readAllBytes(), PutIndexTemplateResponse.class);
-      return putIndexTemplateResponse.acknowledged();
+      final var response = sendRequest(request, PutIndexTemplateResponse.class);
+      return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put component template", e);
     }
+  }
+
+  private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
+    final var response = client.performRequest(request);
+    // buffer the complete response in memory before parsing it; this will give us a better error
+    // message which contains the raw response should the deserialization fail
+    final var responseBody = response.getEntity().getContent().readAllBytes();
+    return MAPPER.readValue(responseBody, responseType);
   }
 }
