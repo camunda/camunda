@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.stream.api.KeyGenerator;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 

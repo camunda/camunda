@@ -16,8 +16,8 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
-import io.camunda.zeebe.stream.api.KeyGenerator;
 import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
 
 public final class UpdateVariableDocumentProcessor

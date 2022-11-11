@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.stream.api.KeyGenerator;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class MessageEventProcessors {
 

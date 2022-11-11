@@ -40,7 +40,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
-import io.camunda.zeebe.stream.api.KeyGenerator;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Arrays;
 
 public final class ProcessEventProcessors {

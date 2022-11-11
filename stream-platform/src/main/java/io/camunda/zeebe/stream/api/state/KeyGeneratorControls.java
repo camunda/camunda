@@ -5,9 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.impl.state;
+package io.camunda.zeebe.stream.api.state;
 
-public interface MutableLastProcessedPositionState extends LastProcessedPositionState {
+/** Allows to manipulate the key generator. Should be used with caution. */
+public interface KeyGeneratorControls extends KeyGenerator {
 
-  void markAsProcessed(final long position);
+  /**
+   * Set the given value as the new key if it is higher than the current key.
+   *
+   * @param key the new key
+   */
+  void setKeyIfHigher(long key);
 }

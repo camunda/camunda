@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.api;
+package io.camunda.zeebe.stream.api.state;
 
 /** Generate unique keys. Should be used for records only. */
 @FunctionalInterface

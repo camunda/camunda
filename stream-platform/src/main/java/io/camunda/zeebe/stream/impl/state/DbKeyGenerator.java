@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.stream.api.KeyGeneratorControls;
+import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.util.VisibleForTesting;
 
 public final class DbKeyGenerator implements KeyGeneratorControls {

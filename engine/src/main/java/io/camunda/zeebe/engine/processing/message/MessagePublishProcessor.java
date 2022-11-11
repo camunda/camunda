@@ -26,9 +26,9 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.stream.api.KeyGenerator;
 import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.function.Consumer;
 
 public final class MessagePublishProcessor implements TypedRecordProcessor<MessageRecord> {

@@ -10,11 +10,11 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.KeyGenerator;
-import io.camunda.zeebe.stream.api.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import java.util.ArrayList;
 import java.util.List;
 
