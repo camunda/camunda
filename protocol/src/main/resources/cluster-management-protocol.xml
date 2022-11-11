@@ -68,7 +68,6 @@
       <field name="partitionId" id="3" type="uint16"/>
       <!-- failure reason will have a valid value if status == FAILED -->
       <data name="failureReason" id="8" type="varDataEncoding"/>
-      <!-- Following fields will have a valid value if status == COMPLETED or status == INPROGRESS -->
       <data name="createdAt" id="9" type="varDataEncoding"/>
       <!-- Broker version which created this backup -->
       <data name="brokerVersion" id="11" type="varDataEncoding"/>
