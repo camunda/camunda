@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.impl.TypedRecordImpl;
+import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import org.agrona.DirectBuffer;

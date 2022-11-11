@@ -32,6 +32,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.ReplayMetrics;
+import io.camunda.zeebe.stream.impl.records.RecordValues;
+import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;

@@ -27,7 +27,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.stream.impl.CopiedRecords;
+import io.camunda.zeebe.stream.impl.records.CopiedRecords;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Map;

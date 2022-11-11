@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.stream.impl.CopiedRecords;
+import io.camunda.zeebe.stream.impl.records.CopiedRecords;
 import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
