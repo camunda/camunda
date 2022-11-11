@@ -5,10 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
-import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
+import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.stream.api.records.RecordBatchEntry;
 import java.util.Optional;
 
 /**

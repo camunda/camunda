@@ -8,8 +8,8 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.api.Task;
+import io.camunda.zeebe.stream.api.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.Task;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;

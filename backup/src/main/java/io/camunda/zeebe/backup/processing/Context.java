@@ -9,7 +9,7 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.ProcessingScheduleService;
 
 /**
  * There is a good chance that we will get rid of this context, and use a "ProcessingContext"

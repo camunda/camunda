@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.state.EventApplier;
 import java.util.function.Supplier;
 

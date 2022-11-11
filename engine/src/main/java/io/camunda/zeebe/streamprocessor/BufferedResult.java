@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.streamprocessor;
 
-import io.camunda.zeebe.engine.api.PostCommitTask;
-import io.camunda.zeebe.engine.api.ProcessingResponse;
-import io.camunda.zeebe.engine.api.ProcessingResult;
-import io.camunda.zeebe.engine.api.TaskResult;
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.stream.api.PostCommitTask;
+import io.camunda.zeebe.stream.api.ProcessingResponse;
+import io.camunda.zeebe.stream.api.ProcessingResult;
+import io.camunda.zeebe.stream.api.TaskResult;
+import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.streamprocessor.BufferedProcessingResultBuilder.ProcessingResponseImpl;
 import java.util.ArrayList;
 import java.util.List;

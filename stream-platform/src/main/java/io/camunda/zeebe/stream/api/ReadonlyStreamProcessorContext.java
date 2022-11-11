@@ -5,10 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.stream.api;
 
-/** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
-public interface Task {
+public interface ReadonlyStreamProcessorContext {
 
-  TaskResult execute(TaskResultBuilder taskResultBuilder);
+  ProcessingScheduleService getScheduleService();
+
+  /**
+   * Returns the partition ID
+   *
+   * @return partition ID
+   */
+  int getPartitionId();
 }

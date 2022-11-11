@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.stream.api.TypedRecord;
 
 public interface BlackListState {
 

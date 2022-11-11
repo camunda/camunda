@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.stream.api.TypedRecord;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 
@@ -19,7 +19,7 @@ public interface TypedRejectionWriter {
    * @param command the command that is rejected
    * @param type the type of rejection
    * @param reason the reason for the rejection
-   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   * @throws io.camunda.zeebe.stream.api.records.RecordBatch.ExceededBatchRecordSizeException if the
    *     appended command doesn't fit into the RecordBatch
    */
   void appendRejection(

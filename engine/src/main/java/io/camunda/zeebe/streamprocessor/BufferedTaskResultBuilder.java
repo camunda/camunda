@@ -9,11 +9,11 @@ package io.camunda.zeebe.streamprocessor;
 
 import static io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry.TYPE_REGISTRY;
 
-import io.camunda.zeebe.engine.api.TaskResult;
-import io.camunda.zeebe.engine.api.TaskResultBuilder;
-import io.camunda.zeebe.engine.api.records.MutableRecordBatch;
-import io.camunda.zeebe.engine.api.records.RecordBatch;
-import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
+import io.camunda.zeebe.stream.api.TaskResult;
+import io.camunda.zeebe.stream.api.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
+import io.camunda.zeebe.stream.api.records.RecordBatch;
+import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;

@@ -17,7 +17,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
@@ -25,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.stream.api.TaskResultBuilder;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;

@@ -5,13 +5,8 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api.records;
+package io.camunda.zeebe.stream.api;
 
-import java.util.function.BiPredicate;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 
-/**
- * Takes as argument the potential next batch entry count and the next potential batch size, in
- * order to verify whether this next {@link RecordBatchEntry} can be added to the {@link
- * RecordBatch}.
- */
-public interface RecordBatchSizePredicate extends BiPredicate<Integer, Integer> {}
+public interface PostCommitTask extends SideEffectProducer {}

@@ -20,11 +20,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.Loggers;
-import io.camunda.zeebe.engine.api.ProcessingScheduleService;
-import io.camunda.zeebe.engine.api.Task;
-import io.camunda.zeebe.engine.api.TaskResult;
-import io.camunda.zeebe.engine.api.TaskResultBuilder;
-import io.camunda.zeebe.engine.api.records.RecordBatch;
+import io.camunda.zeebe.stream.api.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.Task;
+import io.camunda.zeebe.stream.api.TaskResult;
+import io.camunda.zeebe.stream.api.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.records.RecordBatch;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;

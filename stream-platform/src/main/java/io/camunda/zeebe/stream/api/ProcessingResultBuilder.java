@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -22,7 +22,7 @@ public interface ProcessingResultBuilder {
    * Appends a record to the result
    *
    * @return returns itself for method chaining
-   * @throws io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException if the
+   * @throws io.camunda.zeebe.stream.api.records.RecordBatch.ExceededBatchRecordSizeException if the
    *     appended record doesn't fit into the RecordBatch
    */
   default ProcessingResultBuilder appendRecord(

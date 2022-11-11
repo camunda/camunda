@@ -5,16 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.api;
+package io.camunda.zeebe.stream.api.records;
 
-public interface ReadonlyStreamProcessorContext {
+import java.util.function.BiPredicate;
 
-  ProcessingScheduleService getScheduleService();
-
-  /**
-   * Returns the partition ID
-   *
-   * @return partition ID
-   */
-  int getPartitionId();
-}
+/**
+ * Takes as argument the potential next batch entry count and the next potential batch size, in
+ * order to verify whether this next {@link RecordBatchEntry} can be added to the {@link
+ * RecordBatch}.
+ */
+public interface RecordBatchSizePredicate extends BiPredicate<Integer, Integer> {}

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message.command;
 
-import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;

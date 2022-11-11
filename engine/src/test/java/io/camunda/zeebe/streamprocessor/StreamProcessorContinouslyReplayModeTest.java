@@ -17,7 +17,7 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 
-import io.camunda.zeebe.engine.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
