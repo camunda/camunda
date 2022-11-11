@@ -72,7 +72,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -89,7 +88,6 @@ import org.junit.runners.model.Statement;
 public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
-  private static final int REPROCESSING_TIMEOUT_SEC = 30;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
   private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -220,12 +218,6 @@ public final class EngineRule extends ExternalResource {
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
 
-  public void awaitReprocessingCompleted() {
-    partitionReprocessingCompleteListeners
-        .values()
-        .forEach(ReprocessingCompletedListener::awaitReprocessingComplete);
-  }
-
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
     int partitionId = PARTITION_ID;
     for (int i = 0; i < partitionCount; i++) {
@@ -287,10 +279,6 @@ public final class EngineRule extends ExternalResource {
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
-  }
-
-  public long getLastWrittenPosition(final int partitionId) {
-    return environmentRule.getLastWrittenPosition(partitionId);
   }
 
   public long getLastProcessedPosition() {
@@ -501,10 +489,6 @@ public final class EngineRule extends ExternalResource {
     @Override
     public void onRecovered(final ReadonlyStreamProcessorContext context) {
       reprocessingComplete.complete(null);
-    }
-
-    public void awaitReprocessingComplete() {
-      reprocessingComplete.join(REPROCESSING_TIMEOUT_SEC, TimeUnit.SECONDS);
     }
   }
 

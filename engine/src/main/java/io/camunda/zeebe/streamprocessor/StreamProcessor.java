@@ -106,7 +106,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
-  private StreamProcessorDbState streamProcessorDbState;
   private ProcessingScheduleServiceImpl scheduleService;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
@@ -129,11 +128,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public static StreamProcessorBuilder builder() {
     return new StreamProcessorBuilder();
-  }
-
-  @Deprecated // only used for tests
-  public StreamProcessorDbState getStreamProcessorDbState() {
-    return streamProcessorDbState;
   }
 
   @Override
@@ -348,7 +342,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext.keyGeneratorControls(
         new DbKeyGenerator(partitionId, zeebeDb, transactionContext));
 
-    streamProcessorDbState = new StreamProcessorDbState(zeebeDb, transactionContext);
+    final StreamProcessorDbState streamProcessorDbState =
+        new StreamProcessorDbState(zeebeDb, transactionContext);
     streamProcessorContext.lastProcessedPositionState(
         streamProcessorDbState.getLastProcessedPositionState());
 
