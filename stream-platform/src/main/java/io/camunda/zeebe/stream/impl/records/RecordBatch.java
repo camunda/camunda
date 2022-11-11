@@ -11,12 +11,12 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -93,28 +93,5 @@ public final class RecordBatch implements MutableRecordBatch {
   @Override
   public Spliterator<ImmutableRecordBatchEntry> spliterator() {
     return recordBatchEntries.spliterator();
-  }
-
-  /**
-   * This exception is part of the contract with the engine. The engine may handle this exception
-   * explicitly
-   */
-  public static class ExceededBatchRecordSizeException extends RuntimeException {
-
-    public ExceededBatchRecordSizeException(
-        final RecordBatchEntry recordBatchEntry,
-        final int entryLength,
-        final int recordBatchEntriesSize,
-        final int batchSize) {
-      super(
-          """
-          Can't append entry: '%s' with size: %d this would exceed the maximum batch size. \
-          [ currentBatchEntryCount: %d, currentBatchSize: %d]"""
-              .formatted(
-                  StringUtil.limitString(recordBatchEntry.toString(), 1024),
-                  entryLength,
-                  recordBatchEntriesSize,
-                  batchSize));
-    }
   }
 }
