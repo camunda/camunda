@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse.BackupStatus;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -22,23 +21,13 @@ class BackupListResponseTest {
   @Test
   void shouldEncodeAndDecodeBackupListResponse() {
     // given
-    final List<BackupStatus> backups = new ArrayList<>();
-    backups.add(
-        new BackupStatus()
-            .setBackupId(1)
-            .setPartitionId(1)
-            .setStatus(BackupStatusCode.COMPLETED)
-            .setBrokerVersion("8.1.1")
-            .setFailureReason("")
-            .setCreatedAt(Instant.now().toString()));
-    backups.add(
-        new BackupStatus()
-            .setBackupId(2)
-            .setPartitionId(1)
-            .setStatus(BackupStatusCode.FAILED)
-            .setBrokerVersion("8.1.2")
-            .setFailureReason("Error")
-            .setCreatedAt(Instant.now().toString()));
+    final List<BackupStatus> backups =
+        List.of(
+            new BackupStatus(
+                1, 1, BackupStatusCode.COMPLETED, "", "8.1.1", Instant.now().toString()),
+            new BackupStatus(
+                1, 1, BackupStatusCode.FAILED, "ERROR", "8.1.2", Instant.now().toString()));
+
     final BackupListResponse toEncode = new BackupListResponse(backups);
 
     // when

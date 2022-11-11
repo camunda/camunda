@@ -299,13 +299,8 @@ final class BackupApiRequestHandlerTest {
     // then
     assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
     final var expected =
-        new BackupListResponse.BackupStatus()
-            .setBackupId(2)
-            .setPartitionId(1)
-            .setStatus(BackupStatusCode.COMPLETED)
-            .setFailureReason("")
-            .setCreatedAt(createdAt.toString())
-            .setBrokerVersion("test");
+        new BackupListResponse.BackupStatus(
+            2, 1, BackupStatusCode.COMPLETED, "", "test", createdAt.toString());
     assertThat(listResponse.getBackups()).containsExactly(expected);
   }
 

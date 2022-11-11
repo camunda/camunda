@@ -31,10 +31,11 @@ public class BackupListResponse implements BufferReader, BufferWriter {
   private final BackupListResponseEncoder bodyEncoder = new BackupListResponseEncoder();
   private final BackupListResponseDecoder bodyDecoder = new BackupListResponseDecoder();
 
-  private List<BackupStatus> backups;
+  // Consists of backup statuses with encoded string
+  private List<InternalBackupStatus> internalBackups;
 
   public BackupListResponse(final List<BackupStatus> statuses) {
-    backups = statuses;
+    internalBackups = statuses.stream().map(InternalBackupStatus::new).toList();
   }
 
   public BackupListResponse(final DirectBuffer buffer, final int offset, final int length) {
@@ -44,48 +45,33 @@ public class BackupListResponse implements BufferReader, BufferWriter {
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     bodyDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
-    backups = new ArrayList<>();
+    internalBackups = new ArrayList<>();
     for (final var backupsDecoder : bodyDecoder.backups()) {
-      final var backup =
-          new BackupStatus()
-              .setBackupId(backupsDecoder.backupId())
-              .setPartitionId(backupsDecoder.partitionId())
-              .setStatus(backupsDecoder.status());
 
-      backup.encodedFailureReason = new byte[backupsDecoder.failureReasonLength()];
-      backupsDecoder.getFailureReason(
-          backup.encodedFailureReason, 0, backup.encodedFailureReason.length);
-      backup.failureReason =
-          decodeString(
-              backup.encodedFailureReason, BackupsDecoder.failureReasonCharacterEncoding());
+      final byte[] encodedFailureReason = new byte[backupsDecoder.failureReasonLength()];
+      backupsDecoder.getFailureReason(encodedFailureReason, 0, encodedFailureReason.length);
 
-      backup.encodedCreatedAt = new byte[backupsDecoder.createdAtLength()];
-      backupsDecoder.getCreatedAt(backup.encodedCreatedAt, 0, backup.encodedCreatedAt.length);
-      backup.createdAt =
-          decodeString(backup.encodedCreatedAt, BackupsDecoder.createdAtCharacterEncoding());
+      final byte[] encodedCreatedAt = new byte[backupsDecoder.createdAtLength()];
+      backupsDecoder.getCreatedAt(encodedCreatedAt, 0, encodedCreatedAt.length);
 
-      backup.encodedBrokerVersion = new byte[backupsDecoder.brokerVersionLength()];
-      backupsDecoder.getBrokerVersion(
-          backup.encodedBrokerVersion, 0, backup.encodedBrokerVersion.length);
-      backup.brokerVersion =
-          decodeString(
-              backup.encodedBrokerVersion, BackupsDecoder.brokerVersionCharacterEncoding());
-      backups.add(backup);
-    }
-  }
+      final byte[] encodedBrokerVersion = new byte[backupsDecoder.brokerVersionLength()];
+      backupsDecoder.getBrokerVersion(encodedBrokerVersion, 0, encodedBrokerVersion.length);
 
-  private static String decodeString(final byte[] encodedSnapshotId, final String charsetName) {
-    try {
-      return new String(encodedSnapshotId, charsetName);
-    } catch (final UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
+      internalBackups.add(
+          new InternalBackupStatus(
+              backupsDecoder.backupId(),
+              backupsDecoder.partitionId(),
+              backupsDecoder.status(),
+              encodedFailureReason,
+              encodedBrokerVersion,
+              encodedCreatedAt));
     }
   }
 
   @Override
   public int getLength() {
     final int backupsLength =
-        backups.stream()
+        internalBackups.stream()
             .map(
                 backup ->
                     BackupsEncoder.sbeBlockLength()
@@ -107,14 +93,14 @@ public class BackupListResponse implements BufferReader, BufferWriter {
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
-    final var backupsEncoder = bodyEncoder.backupsCount(backups.size());
-    backups.forEach(
+    final var backupsEncoder = bodyEncoder.backupsCount(internalBackups.size());
+    internalBackups.forEach(
         backup ->
             backupsEncoder
                 .next()
-                .backupId(backup.backupId)
-                .partitionId(backup.partitionId)
-                .status(backup.status)
+                .backupId(backup.status.backupId)
+                .partitionId(backup.status.partitionId)
+                .status(backup.status.status)
                 .putFailureReason(
                     backup.encodedFailureReason, 0, backup.encodedFailureReason.length)
                 .putCreatedAt(backup.encodedCreatedAt, 0, backup.encodedCreatedAt.length)
@@ -123,145 +109,64 @@ public class BackupListResponse implements BufferReader, BufferWriter {
   }
 
   public List<BackupStatus> getBackups() {
-    return backups;
+    return internalBackups.stream().map(s -> s.status).toList();
   }
 
-  public static class BackupStatus {
-    private long backupId;
+  public record BackupStatus(
+      long backupId,
+      int partitionId,
+      BackupStatusCode status,
+      String failureReason,
+      String brokerVersion,
+      String createdAt) {}
 
-    private int partitionId;
-    private BackupStatusCode status;
+  private static final class InternalBackupStatus {
+    private final BackupStatus status;
+    private final byte[] encodedFailureReason;
+    private final byte[] encodedBrokerVersion;
+    private final byte[] encodedCreatedAt;
 
-    private String failureReason = "";
-    private byte[] encodedFailureReason = EMPTY_BYTE_ARRAY;
-    private String brokerVersion = "";
-    private byte[] encodedBrokerVersion = EMPTY_BYTE_ARRAY;
-    private String createdAt = "";
-    private byte[] encodedCreatedAt = EMPTY_BYTE_ARRAY;
-
-    public long getBackupId() {
-      return backupId;
-    }
-
-    public BackupStatus setBackupId(final long backupId) {
-      this.backupId = backupId;
-      return this;
-    }
-
-    public int getPartitionId() {
-      return partitionId;
-    }
-
-    public BackupStatus setPartitionId(final int partitionId) {
-      this.partitionId = partitionId;
-      return this;
-    }
-
-    public BackupStatusCode getStatus() {
-      return status;
-    }
-
-    public BackupStatus setStatus(final BackupStatusCode status) {
+    InternalBackupStatus(final BackupStatus status) {
       this.status = status;
-      return this;
-    }
-
-    public String getFailureReason() {
-      return failureReason;
-    }
-
-    public BackupStatus setFailureReason(final String failureReason) {
-      this.failureReason = failureReason;
       encodedFailureReason =
-          encodeString(failureReason, BackupsEncoder.failureReasonCharacterEncoding());
-      return this;
-    }
-
-    public String getBrokerVersion() {
-      return brokerVersion;
-    }
-
-    public BackupStatus setBrokerVersion(final String brokerVersion) {
-      this.brokerVersion = brokerVersion;
+          encodeString(status.failureReason(), BackupsEncoder.failureReasonCharacterEncoding());
       encodedBrokerVersion =
-          encodeString(brokerVersion, BackupsEncoder.brokerVersionCharacterEncoding());
-      return this;
+          encodeString(status.brokerVersion(), BackupsEncoder.brokerVersionCharacterEncoding());
+      encodedCreatedAt =
+          encodeString(status.createdAt(), BackupsEncoder.createdAtCharacterEncoding());
     }
 
-    public String getCreatedAt() {
-      return createdAt;
+    InternalBackupStatus(
+        final long backupId,
+        final int partitionId,
+        final BackupStatusCode statusCode,
+        final byte[] encodedFailureReason,
+        final byte[] encodedBrokerVersion,
+        final byte[] encodedCreatedAt) {
+      status =
+          new BackupStatus(
+              backupId,
+              partitionId,
+              statusCode,
+              decodeString(encodedFailureReason, BackupsDecoder.failureReasonCharacterEncoding()),
+              decodeString(encodedBrokerVersion, BackupsDecoder.brokerVersionCharacterEncoding()),
+              decodeString(encodedCreatedAt, BackupsDecoder.createdAtCharacterEncoding()));
+      this.encodedCreatedAt = encodedCreatedAt;
+      this.encodedBrokerVersion = encodedBrokerVersion;
+      this.encodedFailureReason = encodedFailureReason;
     }
 
-    public BackupStatus setCreatedAt(final String createdAt) {
-      this.createdAt = createdAt;
-      encodedCreatedAt = encodeString(createdAt, BackupsEncoder.createdAtCharacterEncoding());
-      return this;
-    }
-
-    @Override
-    public int hashCode() {
-      int result = (int) (backupId ^ (backupId >>> 32));
-      result = 31 * result + partitionId;
-      result = 31 * result + status.hashCode();
-      result = 31 * result + failureReason.hashCode();
-      result = 31 * result + brokerVersion.hashCode();
-      result = 31 * result + createdAt.hashCode();
-      return result;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-
-      final BackupStatus that = (BackupStatus) o;
-
-      if (backupId != that.backupId) {
-        return false;
-      }
-      if (partitionId != that.partitionId) {
-        return false;
-      }
-      if (status != that.status) {
-        return false;
-      }
-      if (!failureReason.equals(that.failureReason)) {
-        return false;
-      }
-      if (!brokerVersion.equals(that.brokerVersion)) {
-        return false;
-      }
-      return createdAt.equals(that.createdAt);
-    }
-
-    @Override
-    public String toString() {
-      return "BackupStatus{"
-          + "backupId="
-          + backupId
-          + ", partitionId="
-          + partitionId
-          + ", status="
-          + status
-          + ", failureReason='"
-          + failureReason
-          + '\''
-          + ", brokerVersion='"
-          + brokerVersion
-          + '\''
-          + ", createdAt='"
-          + createdAt
-          + '\''
-          + '}';
-    }
-
-    private byte[] encodeString(final String value, final String charsetName) {
+    private static byte[] encodeString(final String value, final String charsetName) {
       try {
         return (null == value || value.isEmpty()) ? EMPTY_BYTE_ARRAY : value.getBytes(charsetName);
+      } catch (final UnsupportedEncodingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+
+    private static String decodeString(final byte[] encodedSnapshotId, final String charsetName) {
+      try {
+        return new String(encodedSnapshotId, charsetName);
       } catch (final UnsupportedEncodingException e) {
         throw new RuntimeException(e);
       }

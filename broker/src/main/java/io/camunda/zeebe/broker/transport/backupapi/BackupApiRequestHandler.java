@@ -175,14 +175,13 @@ public final class BackupApiRequestHandler
         backups.stream()
             .map(
                 backup ->
-                    new BackupListResponse.BackupStatus()
-                        .setStatus(encodeStatusCode(backup.statusCode()))
-                        .setBackupId(backup.id().checkpointId())
-                        .setPartitionId(backup.id().partitionId())
-                        .setBrokerVersion(
-                            backup.descriptor().map(BackupDescriptor::brokerVersion).orElse(""))
-                        .setCreatedAt(backup.created().map(Instant::toString).orElse(""))
-                        .setFailureReason(backup.failureReason().orElse("")))
+                    new BackupListResponse.BackupStatus(
+                        backup.id().checkpointId(),
+                        backup.id().partitionId(),
+                        encodeStatusCode(backup.statusCode()),
+                        backup.failureReason().orElse(""),
+                        backup.descriptor().map(BackupDescriptor::brokerVersion).orElse(""),
+                        backup.created().map(Instant::toString).orElse("")))
             .toList();
     return new BackupListResponse(statuses);
   }
