@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 
 public interface TypedRejectionWriter {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 /**
  * Interface for record processors. A record processor is responsible for handling a single record.

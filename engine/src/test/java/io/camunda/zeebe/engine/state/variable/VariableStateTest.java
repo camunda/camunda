@@ -23,7 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;

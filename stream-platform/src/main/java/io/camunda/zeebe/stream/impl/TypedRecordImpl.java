@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
 
 public final class TypedRecordImpl implements TypedRecord {

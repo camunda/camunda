@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
-import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 

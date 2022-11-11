@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.function.Consumer;
 
 public interface CommandApiService {
