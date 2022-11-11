@@ -18,10 +18,8 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplete;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
@@ -38,9 +36,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -59,7 +55,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
 /**
@@ -90,6 +85,7 @@ public final class S3BackupStore implements BackupStore {
       Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   private final S3BackupConfig config;
   private final S3AsyncClient client;
+  private final FileSetManager fileSetManager;
 
   public S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
@@ -98,6 +94,7 @@ public final class S3BackupStore implements BackupStore {
   public S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
     this.config = config;
     this.client = client;
+    fileSetManager = new FileSetManager(client, config);
   }
 
   private static Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
@@ -229,10 +226,11 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(Manifest::expectCompleted)
         .thenComposeAsync(
             manifest ->
-                downloadNamedFileSet(
+                fileSetManager
+                    .restore(
                         backupPrefix + SEGMENTS_PREFIX, manifest.segmentFileNames(), targetFolder)
                     .thenCombineAsync(
-                        downloadNamedFileSet(
+                        fileSetManager.restore(
                             backupPrefix + SNAPSHOT_PREFIX,
                             manifest.snapshotFileNames(),
                             targetFolder),
@@ -252,27 +250,6 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
-  }
-
-  private CompletableFuture<NamedFileSet> downloadNamedFileSet(
-      final String sourcePrefix, final Set<String> fileNames, final Path targetFolder) {
-    LOG.debug(
-        "Downloading {} files from prefix {} to {}", fileNames.size(), sourcePrefix, targetFolder);
-    final var downloadedFiles = new ConcurrentHashMap<String, Path>();
-    final CompletableFuture<?>[] futures =
-        fileNames.stream()
-            .map(
-                fileName -> {
-                  final var path = targetFolder.resolve(fileName);
-                  return client
-                      .getObject(
-                          req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
-                      .thenApply(response -> downloadedFiles.put(fileName, path));
-                })
-            .toArray(CompletableFuture[]::new);
-
-    return CompletableFuture.allOf(futures)
-        .thenApply(ignored -> new NamedFileSetImpl(downloadedFiles));
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
@@ -401,31 +378,13 @@ public final class S3BackupStore implements BackupStore {
   private CompletableFuture<Void> saveSnapshotFiles(final Backup backup) {
     LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
-
-    return saveNamedFileSet(prefix, backup.snapshot());
+    return fileSetManager.save(prefix, backup.snapshot());
   }
 
   private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
     LOG.debug("Saving segment files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
-    return saveNamedFileSet(prefix, backup.segments());
-  }
-
-  private CompletableFuture<Void> saveNamedFileSet(final String prefix, final NamedFileSet files) {
-    final var futures =
-        files.namedFiles().entrySet().stream()
-            .map(segmentFile -> saveNamedFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
-            .toList();
-
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
-  }
-
-  private CompletableFuture<PutObjectResponse> saveNamedFile(
-      final String prefix, final String fileName, final Path filePath) {
-    LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client.putObject(
-        put -> put.bucket(config.bucketName()).key(prefix + fileName),
-        AsyncRequestBody.fromFile(filePath));
+    return fileSetManager.save(prefix, backup.segments());
   }
 
   public static S3AsyncClient buildClient(final S3BackupConfig config) {
