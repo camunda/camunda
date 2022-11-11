@@ -335,29 +335,6 @@ public final class ExpressionProcessor {
         .map(EvaluationResult::toBuffer);
   }
 
-  /**
-   * Evaluates the given expression of a script task and returns the result as buffer. If the
-   * evaluation fails or the result is not a context then a failure is returned.
-   *
-   * @param expression the expression to evaluate
-   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
-   *     empty variable context)
-   * @return either the evaluation result as buffer, or a failure
-   */
-  public Either<Failure, DirectBuffer> evaluateScriptExpression(
-      final Expression expression, final long scopeKey) {
-    final var expectedTypes =
-        List.of(
-            ResultType.BOOLEAN,
-            ResultType.NUMBER,
-            ResultType.STRING,
-            ResultType.ARRAY,
-            ResultType.OBJECT);
-    return evaluateExpressionAsEither(expression, scopeKey)
-        .flatMap(result -> typeCheck(result, expectedTypes, scopeKey))
-        .map(EvaluationResult::toBuffer);
-  }
-
   private Either<Failure, EvaluationResult> typeCheck(
       final EvaluationResult result, final ResultType expectedResultType, final long scopeKey) {
     if (result.getType() != expectedResultType) {

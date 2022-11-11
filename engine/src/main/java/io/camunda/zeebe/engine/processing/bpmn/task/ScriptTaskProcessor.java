@@ -167,7 +167,7 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     private Either<Failure, DirectBuffer> evaluateScript(
         final ExecutableScriptTask element, final BpmnElementContext context) {
       final var resultOrFailure =
-          expressionProcessor.evaluateScriptExpression(
+          expressionProcessor.evaluateAnyExpression(
               element.getExpression(), context.getElementInstanceKey());
 
       resultOrFailure.ifRight(

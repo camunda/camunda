@@ -202,7 +202,7 @@ public final class ScriptTaskExpressionTest {
         .withXmlResource(
             processWithScriptTask(
                 t ->
-                    t.zeebeExpression("substring(x, 4)")
+                    t.zeebeExpression("x")
                         .zeebeResultVariable(RESULT_VARIABLE)
                         .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
         .deploy();
@@ -225,8 +225,7 @@ public final class ScriptTaskExpressionTest {
 
     Assertions.assertThat(incidentRecord.getValue())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
-        .hasErrorMessage(
-            "Expected result of expression 'substring(x, 4)' to be one of '[BOOLEAN, NUMBER, STRING, ARRAY, OBJECT]', but was 'NULL'")
+        .hasErrorMessage("failed to evaluate expression 'x': no variable found for name 'x'")
         .hasBpmnProcessId(scriptTask.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(scriptTask.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(scriptTask.getValue().getProcessInstanceKey())
@@ -244,7 +243,7 @@ public final class ScriptTaskExpressionTest {
         .withXmlResource(
             processWithScriptTask(
                 t ->
-                    t.zeebeExpression("substring(x, 4)")
+                    t.zeebeExpression("x")
                         .zeebeResultVariable(RESULT_VARIABLE)
                         .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
         .deploy();
@@ -271,14 +270,13 @@ public final class ScriptTaskExpressionTest {
             .resolve();
 
     // then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withName(OUTPUT_TARGET)
-                .getFirst())
-        .extracting(Record::getValue)
-        .extracting(VariableRecordValue::getScopeKey, VariableRecordValue::getValue)
-        .containsExactly(processInstanceKey, A_SUB_STRING);
+                .getFirst()
+                .getValue())
+        .hasValue("\"foobar\"");
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }
