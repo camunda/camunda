@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.sideeffect;
 
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import java.util.ArrayList;
 import java.util.List;
 

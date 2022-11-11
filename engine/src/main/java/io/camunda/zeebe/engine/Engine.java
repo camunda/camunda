@@ -7,13 +7,6 @@
  */
 package io.camunda.zeebe.engine;
 
-import io.camunda.zeebe.stream.api.EmptyProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResult;
-import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.RecordProcessorContext;
-import io.camunda.zeebe.stream.api.TypedRecord;
-import io.camunda.zeebe.stream.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordProcessorMap;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
@@ -31,6 +24,13 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
+import io.camunda.zeebe.stream.api.EmptyProcessingResult;
+import io.camunda.zeebe.stream.api.ProcessingResult;
+import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.impl.records.RecordBatch.ExceededBatchRecordSizeException;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.function.Supplier;

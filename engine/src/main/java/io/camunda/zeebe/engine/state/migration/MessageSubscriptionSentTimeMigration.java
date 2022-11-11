@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /**
  * Reads out the sent time for message subscriptions and sets the {@code correlating} field in

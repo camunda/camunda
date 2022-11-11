@@ -11,13 +11,13 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
-import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.TypedRecord;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
-import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
+import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.TypedRecord;
+import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorListener;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
 import java.util.function.BiFunction;
 

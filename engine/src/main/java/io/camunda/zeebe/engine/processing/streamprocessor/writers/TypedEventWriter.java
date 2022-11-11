@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.impl.records.RecordBatch;
 
 public interface TypedEventWriter {
 
@@ -18,8 +19,8 @@ public interface TypedEventWriter {
    * @param key the key of the event
    * @param intent the intent of the event
    * @param value the record of the event
-   * @throws io.camunda.zeebe.stream.api.records.RecordBatch.ExceededBatchRecordSizeException if the
-   *     appended event doesn't fit into the RecordBatch
+   * @throws RecordBatch.ExceededBatchRecordSizeException if the appended event doesn't fit into the
+   *     RecordBatch
    */
   void appendFollowUpEvent(long key, Intent intent, RecordValue value);
 

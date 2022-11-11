@@ -9,7 +9,6 @@ package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.KeyGenerator;
 import java.util.List;
 
 public interface RecordProcessorContext {

@@ -12,12 +12,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
-import io.camunda.zeebe.stream.api.TypedRecord;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.stream.api.TypedRecord;
 import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
 import java.io.File;
 import java.io.IOException;

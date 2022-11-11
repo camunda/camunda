@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
@@ -45,6 +44,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.stream.api.KeyGenerator;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 

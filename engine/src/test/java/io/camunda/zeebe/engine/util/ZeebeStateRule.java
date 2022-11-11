@@ -9,11 +9,11 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 

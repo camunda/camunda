@@ -8,7 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
-import io.camunda.zeebe.stream.api.records.RecordBatchEntry;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 
 public interface TaskResult {
 

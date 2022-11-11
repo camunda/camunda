@@ -11,8 +11,8 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.migration.TemporaryVariables;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.DirectBuffer;
 
 public class LegacyDbTemporaryVariablesState {

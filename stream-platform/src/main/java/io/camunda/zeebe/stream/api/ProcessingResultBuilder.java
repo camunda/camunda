@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.util.Either;
 
 /** Builder to compose the processing result */
@@ -22,8 +23,8 @@ public interface ProcessingResultBuilder {
    * Appends a record to the result
    *
    * @return returns itself for method chaining
-   * @throws io.camunda.zeebe.stream.api.records.RecordBatch.ExceededBatchRecordSizeException if the
-   *     appended record doesn't fit into the RecordBatch
+   * @throws RecordBatch.ExceededBatchRecordSizeException if the appended record doesn't fit into
+   *     the RecordBatch
    */
   default ProcessingResultBuilder appendRecord(
       final long key,

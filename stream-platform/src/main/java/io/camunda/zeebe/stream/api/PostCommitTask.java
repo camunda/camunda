@@ -7,6 +7,4 @@
  */
 package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-
 public interface PostCommitTask extends SideEffectProducer {}

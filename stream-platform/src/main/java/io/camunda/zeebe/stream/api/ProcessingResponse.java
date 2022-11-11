@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.stream.api.records.RecordBatchEntry;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 
 /**
  * The response which has been created during processing, for a request which can be identified by
