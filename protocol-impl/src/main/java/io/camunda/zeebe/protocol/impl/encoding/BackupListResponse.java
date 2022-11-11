@@ -164,9 +164,9 @@ public class BackupListResponse implements BufferReader, BufferWriter {
       }
     }
 
-    private static String decodeString(final byte[] encodedSnapshotId, final String charsetName) {
+    private static String decodeString(final byte[] value, final String charsetName) {
       try {
-        return new String(encodedSnapshotId, charsetName);
+        return new String(value, charsetName);
       } catch (final UnsupportedEncodingException e) {
         throw new RuntimeException(e);
       }
