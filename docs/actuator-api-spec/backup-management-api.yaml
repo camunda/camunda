@@ -24,16 +24,55 @@ paths:
         sorted in descending order of backupId.
       responses:
         '200':
+          description: OK
           $ref: '#/components/responses/BackupList'
+        '400':
+          description: Backup is not enabled or configured on the brokers
+          $ref: '#/components/responses/Error'
         '500':
           description: Internal Error
-          content:
-            text/plain:
-              schema:
-                type: string
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
+  /{backupId}:
+    get:
+      summary: Get information of a backup
+      description: A detailed information of the backup with the give backup id.
+      parameters:
+        - name: backupId
+          in : path
+          description: Backup ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          $ref: '#/components/responses/BackupInfo'
+        '400':
+          description: Backup is not enabled or configured on the brokers
+          $ref: '#/components/responses/Error'
+        '404':
+          description: A backup with given backupId does not exist
+          $ref: '#/components/responses/Error'
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
 
 components:
   responses:
+    Error:
+      description: Generic error response
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
     BackupList:
       description: |
        List of all available backups.
@@ -42,7 +81,24 @@ components:
           schema:
             $ref: '#/components/schemas/BackupList'
 
+    BackupInfo:
+      description: Detailed information of a backup
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BackupInfo'
+
   schemas:
+    Error:
+      title: Error response
+      description: Generic response for all errors
+      type: object
+      properties:
+        message:
+          description: Error message
+          type: string
+          example: something failed
+
     BackupId:
       title: Backup ID
       description: |
@@ -71,6 +127,7 @@ components:
         - COMPLETED
         - FAILED
         - INCOMPLETE
+        - INCOMPATIBLE
       example: IN_PROGRESS
 
     BackupList:
@@ -147,20 +204,6 @@ components:
           type: string
           format: date-time
           example: "2022-09-15T13:10:38.176514094Z"
-        descriptor:
-          readOnly: true
-          allOf:
-            - $ref: '#/components/schemas/BackupDescriptor'
-      required:
-        - partitionId
-        - state
-
-    BackupDescriptor:
-      title: Backup Descriptor
-      description: |
-        Context information about the specific backup and what it contains for a given partition.
-      type: object
-      properties:
         snapshotId:
           description: The ID of the snapshot which is included in this backup.
           type: string
@@ -183,7 +226,5 @@ components:
           readOnly: true
           example: 8.1.2
       required:
-        - snapshotId
-        - checkpointPosition
-        - brokerId
-        - brokerVersion
+        - partitionId
+        - state
