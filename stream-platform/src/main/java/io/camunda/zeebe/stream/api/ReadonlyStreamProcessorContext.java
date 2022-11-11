@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+
 public interface ReadonlyStreamProcessorContext {
 
   ProcessingScheduleService getScheduleService();

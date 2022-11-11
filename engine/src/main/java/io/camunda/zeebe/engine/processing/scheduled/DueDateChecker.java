@@ -8,12 +8,12 @@
 package io.camunda.zeebe.engine.processing.scheduled;
 
 import io.camunda.zeebe.scheduler.clock.ActorClock;
-import io.camunda.zeebe.stream.api.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.Task;
-import io.camunda.zeebe.stream.api.TaskResult;
-import io.camunda.zeebe.stream.api.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.Task;
+import io.camunda.zeebe.stream.api.scheduling.TaskResult;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 import java.util.function.Function;
 

@@ -12,9 +12,9 @@ import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
-import io.camunda.zeebe.stream.api.Task;
-import io.camunda.zeebe.stream.api.TaskResult;
-import io.camunda.zeebe.stream.api.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.scheduling.Task;
+import io.camunda.zeebe.stream.api.scheduling.TaskResult;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 
 public final class MessageTimeToLiveChecker implements Task {
 

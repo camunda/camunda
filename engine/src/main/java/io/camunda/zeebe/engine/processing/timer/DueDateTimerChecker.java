@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.function.Function;

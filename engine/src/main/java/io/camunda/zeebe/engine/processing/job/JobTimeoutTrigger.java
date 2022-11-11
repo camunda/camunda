@@ -13,9 +13,9 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.stream.api.Task;
-import io.camunda.zeebe.stream.api.TaskResult;
-import io.camunda.zeebe.stream.api.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.scheduling.Task;
+import io.camunda.zeebe.stream.api.scheduling.TaskResult;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.time.Duration;
 
 public final class JobTimeoutTrigger implements StreamProcessorLifecycleAware {

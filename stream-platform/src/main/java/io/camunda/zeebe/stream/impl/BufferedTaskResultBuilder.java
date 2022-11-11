@@ -12,10 +12,10 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.TaskResult;
-import io.camunda.zeebe.stream.api.TaskResultBuilder;
 import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
+import io.camunda.zeebe.stream.api.scheduling.TaskResult;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 
 /**

@@ -5,8 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.api;
+package io.camunda.zeebe.stream.api.scheduling;
 
+import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 

@@ -28,7 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import io.camunda.zeebe.stream.api.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.nio.file.Path;
