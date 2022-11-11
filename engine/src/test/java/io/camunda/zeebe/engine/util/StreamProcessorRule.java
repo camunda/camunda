@@ -15,20 +15,16 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
-import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
-import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
@@ -36,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -58,7 +53,6 @@ public final class StreamProcessorRule implements TestRule {
   private final ControlledActorClock clock = new ControlledActorClock();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
   private final ZeebeDbFactory zeebeDbFactory;
-  private final SetupRule rule;
   private final int startPartitionId;
   private final int partitionCount;
   private final RuleChain chain;
@@ -100,7 +94,7 @@ public final class StreamProcessorRule implements TestRule {
     this.startPartitionId = startPartitionId;
     this.partitionCount = partitionCount;
 
-    rule = new SetupRule(startPartitionId, partitionCount);
+    final SetupRule rule = new SetupRule(startPartitionId, partitionCount);
 
     tempFolder = temporaryFolder;
     zeebeDbFactory = dbFactory;
@@ -112,10 +106,6 @@ public final class StreamProcessorRule implements TestRule {
             .around(rule);
   }
 
-  public ActorSchedulerRule getActorSchedulerRule() {
-    return actorSchedulerRule;
-  }
-
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
@@ -125,10 +115,6 @@ public final class StreamProcessorRule implements TestRule {
       final StreamProcessorMode streamProcessorMode) {
     this.streamProcessorMode = streamProcessorMode;
     return this;
-  }
-
-  public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
-    return streamProcessingComposite.getLogStreamRecordWriter(partitionId);
   }
 
   public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
@@ -143,17 +129,6 @@ public final class StreamProcessorRule implements TestRule {
       final StreamProcessorTestFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     return streamProcessingComposite.startTypedStreamProcessor(factory, streamProcessorListenerOpt);
-  }
-
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
-      final StreamProcessorTestFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(factory);
-  }
-
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
-      final TypedRecordProcessorFactory factory) {
-    return streamProcessingComposite.startTypedStreamProcessorNotAwaitOpening(
-        startPartitionId, factory);
   }
 
   public StreamProcessor startTypedStreamProcessor(
@@ -176,10 +151,6 @@ public final class StreamProcessorRule implements TestRule {
     streamProcessingComposite.closeStreamProcessor(partitionId);
   }
 
-  public void closeStreamProcessor() {
-    closeStreamProcessor(startPartitionId);
-  }
-
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return streamProcessingComposite.getStreamProcessor(partitionId);
   }
@@ -192,24 +163,12 @@ public final class StreamProcessorRule implements TestRule {
     return streams.getMockedResponseWriter();
   }
 
-  public StreamProcessorListener getMockStreamProcessorListener() {
-    return streams.getMockStreamProcessorListener();
-  }
-
   public ControlledActorClock getClock() {
     return clock;
   }
 
   public MutableZeebeState getZeebeState() {
     return streamProcessingComposite.getZeebeState();
-  }
-
-  public long getLastSuccessfulProcessedRecordPosition() {
-    return streamProcessingComposite.getLastSuccessfulProcessedRecordPosition();
-  }
-
-  public long getLastWrittenPosition(final int partitionId) {
-    return streams.getLastWrittenPosition(getLogName(partitionId));
   }
 
   public RecordStream events() {
@@ -222,28 +181,6 @@ public final class StreamProcessorRule implements TestRule {
       final SynchronousLogStream logStream = streams.getLogStream(getLogName(partitionId++));
       LogStreamPrinter.printRecords(logStream);
     }
-  }
-
-  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent) {
-    return writeProcessInstanceEvent(intent, 1);
-  }
-
-  public long writeProcessInstanceEventWithSource(
-      final ProcessInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
-    return streamProcessingComposite.writeProcessInstanceEventWithSource(
-        intent, instanceKey, sourceEventPosition);
-  }
-
-  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent, final int instanceKey) {
-    return streamProcessingComposite.writeProcessInstanceEvent(intent, instanceKey);
-  }
-
-  public long writeEvent(final long key, final Intent intent, final UnpackedObject value) {
-    return streamProcessingComposite.writeEvent(key, intent, value);
-  }
-
-  public long writeEvent(final Intent intent, final UnpackedObject value) {
-    return streamProcessingComposite.writeEvent(intent, value);
   }
 
   public long writeBatch(final RecordToWrite... recordToWrites) {
@@ -276,45 +213,9 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
   }
 
-  public long writeCommandRejection(final Intent intent, final UnpackedObject value) {
-    return streamProcessingComposite.writeCommandRejection(intent, value);
-  }
-
-  public long writeEvent(
-      final Intent intent,
-      final UnpackedObject value,
-      final UnaryOperator<FluentLogWriter> writer) {
-    return writeRecord(intent, value, w -> writer.apply(w.recordType(RecordType.EVENT)));
-  }
-
-  public long writeCommandRejection(
-      final Intent intent,
-      final UnpackedObject value,
-      final UnaryOperator<FluentLogWriter> writer) {
-    return writeRecord(
-        intent, value, w -> writer.apply(w.recordType(RecordType.COMMAND_REJECTION)));
-  }
-
-  private long writeRecord(
-      final Intent intent,
-      final UnpackedObject value,
-      final UnaryOperator<FluentLogWriter> writer) {
-    final var recordWriter =
-        streams
-            .newRecord(getLogName(startPartitionId))
-            .recordType(RecordType.EVENT)
-            .intent(intent)
-            .event(value);
-    return writer.apply(recordWriter).write();
-  }
-
   public void snapshot() {
     final var partitionId = startPartitionId;
     streamProcessingComposite.snapshot(partitionId);
-  }
-
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return streamProcessingComposite.getLastProcessedPositionState();
   }
 
   private class SetupRule extends ExternalResource {
