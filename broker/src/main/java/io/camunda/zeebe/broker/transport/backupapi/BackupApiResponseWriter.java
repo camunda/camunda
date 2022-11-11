@@ -8,10 +8,12 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
+import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
-import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
+import java.util.function.BiConsumer;
+import java.util.function.IntSupplier;
 import org.agrona.MutableDirectBuffer;
 
 public final class BackupApiResponseWriter implements ResponseWriter {
@@ -19,16 +21,24 @@ public final class BackupApiResponseWriter implements ResponseWriter {
 
   private boolean hasResponse = true;
 
-  private BackupStatusResponse status;
+  private BiConsumer<MutableDirectBuffer, Integer> responseWriter;
+  private IntSupplier lengthSupplier;
 
-  public BackupApiResponseWriter withStatus(final BackupStatusResponse response) {
-    status = response;
-    hasResponse = true;
+  BackupApiResponseWriter withStatus(final BackupStatusResponse response) {
+    responseWriter = response::write;
+    lengthSupplier = response::getLength;
     return this;
   }
 
-  public BackupApiResponseWriter noResponse() {
+  BackupApiResponseWriter withBackupList(final BackupListResponse response) {
+    responseWriter = response::write;
+    lengthSupplier = response::getLength;
+    return this;
+  }
+
+  BackupApiResponseWriter noResponse() {
     hasResponse = false;
+    lengthSupplier = () -> 0;
     return this;
   }
 
@@ -53,15 +63,11 @@ public final class BackupApiResponseWriter implements ResponseWriter {
 
   @Override
   public int getLength() {
-    if (hasResponse) {
-      return MessageHeaderEncoder.ENCODED_LENGTH + status.getLength();
-    } else {
-      return 0;
-    }
+    return lengthSupplier.getAsInt();
   }
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
-    status.write(buffer, offset);
+    responseWriter.accept(buffer, offset);
   }
 }

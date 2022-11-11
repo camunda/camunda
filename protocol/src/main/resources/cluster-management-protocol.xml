@@ -16,6 +16,7 @@
     <enum name="BackupRequestType" encodingType="uint8">
       <validValue name="TAKE_BACKUP">0</validValue>
       <validValue name="QUERY_STATUS">1</validValue>
+      <validValue name="LIST">2</validValue>
     </enum>
 
     <enum name="BackupStatusCode" encodingType="uint8">
@@ -59,4 +60,19 @@
     <data name="brokerVersion" id="11" type="varDataEncoding"/>
   </sbe:message>
 
+  <sbe:message name="BackupListResponse" id="5">
+    <!-- This response contains a subset of fields from BackupStatusResponse  -->
+    <group name="backups" id="1" dimensionType="groupSizeEncoding">
+      <field name="backupId" id="1" type="int64"/>
+      <field name="status" id="2" type="BackupStatusCode"/>
+      <field name="partitionId" id="3" type="uint16"/>
+      <!-- failure reason will have a valid value if status == FAILED -->
+      <data name="failureReason" id="8" type="varDataEncoding"/>
+      <data name="createdAt" id="9" type="varDataEncoding"/>
+      <!-- Broker version which created this backup -->
+      <data name="brokerVersion" id="11" type="varDataEncoding"/>
+    </group>
+  </sbe:message>
 </sbe:messageSchema>
+
+
