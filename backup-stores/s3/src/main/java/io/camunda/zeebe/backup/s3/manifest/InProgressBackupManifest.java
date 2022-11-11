@@ -14,13 +14,12 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Set;
 
 public record InProgressBackupManifest(
     BackupIdentifierImpl id,
     BackupDescriptorImpl descriptor,
-    Set<String> snapshotFileNames,
-    Set<String> segmentFileNames,
+    FileSet snapshotFiles,
+    FileSet segmentFiles,
     Instant createdAt,
     Instant modifiedAt)
     implements ValidBackupManifest {
@@ -30,9 +29,9 @@ public record InProgressBackupManifest(
     return BackupStatusCode.IN_PROGRESS;
   }
 
-  public CompletedBackupManifest asCompleted() {
+  public CompletedBackupManifest asCompleted(final FileSet snapshot, final FileSet segments) {
     return new CompletedBackupManifest(
-        id, descriptor, snapshotFileNames, segmentFileNames, createdAt, Instant.now());
+        id, descriptor, snapshot, segments, createdAt, Instant.now());
   }
 
   @Override
@@ -41,8 +40,8 @@ public record InProgressBackupManifest(
         id,
         Optional.of(descriptor),
         failureMessage,
-        snapshotFileNames,
-        segmentFileNames,
+        snapshotFiles,
+        segmentFiles,
         createdAt,
         Instant.now());
   }

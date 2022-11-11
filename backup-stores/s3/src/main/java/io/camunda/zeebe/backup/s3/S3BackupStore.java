@@ -23,7 +23,7 @@ import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupDeletionIncomplet
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupInInvalidStateException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupReadException;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.ManifestParseException;
-import io.camunda.zeebe.backup.s3.manifest.InProgressBackupManifest;
+import io.camunda.zeebe.backup.s3.manifest.FileSet;
 import io.camunda.zeebe.backup.s3.manifest.Manifest;
 import io.camunda.zeebe.backup.s3.manifest.NoBackupManifest;
 import io.camunda.zeebe.backup.s3.manifest.ValidBackupManifest;
@@ -172,7 +172,8 @@ public final class S3BackupStore implements BackupStore {
                           updateManifestObject(
                               backup.id(),
                               Manifest::expectInProgress,
-                              InProgressBackupManifest::asCompleted))
+                              inProgress ->
+                                  inProgress.asCompleted(snapshot.join(), segments.join())))
                   .exceptionallyComposeAsync(
                       throwable ->
                           updateManifestObject(
@@ -227,13 +228,10 @@ public final class S3BackupStore implements BackupStore {
         .thenComposeAsync(
             manifest ->
                 fileSetManager
-                    .restore(
-                        backupPrefix + SEGMENTS_PREFIX, manifest.segmentFileNames(), targetFolder)
+                    .restore(backupPrefix + SEGMENTS_PREFIX, manifest.segmentFiles(), targetFolder)
                     .thenCombineAsync(
                         fileSetManager.restore(
-                            backupPrefix + SNAPSHOT_PREFIX,
-                            manifest.snapshotFileNames(),
-                            targetFolder),
+                            backupPrefix + SNAPSHOT_PREFIX, manifest.snapshotFiles(), targetFolder),
                         (segments, snapshot) ->
                             new BackupImpl(id, manifest.descriptor(), snapshot, segments)));
   }
@@ -374,13 +372,13 @@ public final class S3BackupStore implements BackupStore {
         .thenApply(resp -> manifest);
   }
 
-  private CompletableFuture<Void> saveSnapshotFiles(final Backup backup) {
+  private CompletableFuture<FileSet> saveSnapshotFiles(final Backup backup) {
     LOG.debug("Saving snapshot files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SNAPSHOT_PREFIX;
     return fileSetManager.save(prefix, backup.snapshot());
   }
 
-  private CompletableFuture<Void> saveSegmentFiles(final Backup backup) {
+  private CompletableFuture<FileSet> saveSegmentFiles(final Backup backup) {
     LOG.debug("Saving segment files for {}", backup.id());
     final var prefix = objectPrefix(backup.id()) + SEGMENTS_PREFIX;
     return fileSetManager.save(prefix, backup.segments());

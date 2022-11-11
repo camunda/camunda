@@ -14,13 +14,12 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.Set;
 
 public record CompletedBackupManifest(
     BackupIdentifierImpl id,
     BackupDescriptorImpl descriptor,
-    Set<String> snapshotFileNames,
-    Set<String> segmentFileNames,
+    FileSet snapshotFiles,
+    FileSet segmentFiles,
     Instant createdAt,
     Instant modifiedAt)
     implements ValidBackupManifest {
@@ -47,8 +46,8 @@ public record CompletedBackupManifest(
         id,
         Optional.of(descriptor),
         failureReason,
-        snapshotFileNames,
-        segmentFileNames,
+        snapshotFiles,
+        segmentFiles,
         createdAt,
         Instant.now());
   }
