@@ -34,6 +34,7 @@ public class RawProcessDataResultDtoMapper {
   public List<RawDataProcessInstanceDto> mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
                                                  final ObjectMapper objectMapper,
                                                  final Set<String> allVariableNames,
+                                                 final Map<String, Long> instanceIdsToUserTaskCount,
                                                  final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeDurations,
                                                  final Map<String, String> flowNodeIdsToFlowNodeNames) {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
@@ -44,6 +45,7 @@ public class RawProcessDataResultDtoMapper {
         RawDataProcessInstanceDto dataEntry = convertToRawDataEntry(
           processInstanceDto,
           variables,
+          instanceIdsToUserTaskCount,
           convertToFlowNodeDurationDataDto(processInstanceIdsToFlowNodeDurations.getOrDefault(
             processInstanceDto.getProcessInstanceId(),
             Collections.emptyMap()
@@ -68,6 +70,7 @@ public class RawProcessDataResultDtoMapper {
 
   private RawDataProcessInstanceDto convertToRawDataEntry(final ProcessInstanceDto processInstanceDto,
                                                           final Map<String, Object> variables,
+                                                          final Map<String, Long> instanceIdsToUserTaskCount,
                                                           final Map<String, FlowNodeTotalDurationDataDto> flowNodeIdsToDurations) {
     return new RawDataProcessInstanceDto(
       processInstanceDto.getProcessDefinitionKey(),
@@ -79,6 +82,7 @@ public class RawProcessDataResultDtoMapper {
         .filter(incidentDto -> incidentDto.getIncidentStatus() == IncidentStatus.OPEN)
         .count(),
       flowNodeIdsToDurations,
+      instanceIdsToUserTaskCount.getOrDefault(processInstanceDto.getProcessInstanceId(), 0L),
       processInstanceDto.getBusinessKey(),
       processInstanceDto.getStartDate(),
       processInstanceDto.getEndDate(),

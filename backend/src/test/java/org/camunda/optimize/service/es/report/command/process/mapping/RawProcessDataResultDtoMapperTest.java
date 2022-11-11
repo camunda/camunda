@@ -42,7 +42,7 @@ public class RawProcessDataResultDtoMapperTest {
 
     // when
     final List<RawDataProcessInstanceDto> result =
-      mapper.mapFrom(processInstanceDtos, objectMapper, Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap());
+      mapper.mapFrom(processInstanceDtos, objectMapper, Collections.emptySet(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
 
     // then
     assertThat(result).hasSize(rawDataLimit);
@@ -65,7 +65,7 @@ public class RawProcessDataResultDtoMapperTest {
     final Set<String> varsFromUndisplayedInstances = new HashSet<>();
     varsFromUndisplayedInstances.add("var2");
     final List<RawDataProcessInstanceDto> result =
-      mapper.mapFrom(processInstanceDtos, objectMapper, varsFromUndisplayedInstances, Collections.emptyMap(), Collections.emptyMap());
+      mapper.mapFrom(processInstanceDtos, objectMapper, varsFromUndisplayedInstances, Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
 
     // then
     assertThat(result)
@@ -88,7 +88,7 @@ public class RawProcessDataResultDtoMapperTest {
 
     // when
     final List<RawDataProcessInstanceDto> result =
-      mapper.mapFrom(processInstanceDtos, objectMapper, new HashSet<>(), Collections.emptyMap(), Collections.emptyMap());
+      mapper.mapFrom(processInstanceDtos, objectMapper, new HashSet<>(), Collections.emptyMap(), Collections.emptyMap(), Collections.emptyMap());
 
     // then
     assertThat(result)
@@ -101,4 +101,5 @@ public class RawProcessDataResultDtoMapperTest {
       .mapToObj(i -> ProcessInstanceDto.builder().build())
       .collect(Collectors.toList());
   }
+
 }

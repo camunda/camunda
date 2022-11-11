@@ -120,7 +120,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   public void reportEvaluationForRunningProcessInstance() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcess();
-
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -409,6 +408,30 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       new FlowNodeTotalDurationDataDto(USER_TASK_1, 10)
 
     );
+  }
+
+  @Test
+  public void getNumberOfUserTasksForProcessInstance() {
+    // given
+    ProcessInstanceEngineDto processInstanceWithUserTask = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.startProcessInstance(processInstanceWithUserTask.getDefinitionId());
+    ProcessInstanceEngineDto processInstanceWithoutUserTask = deployAndStartSimpleProcess();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportDataWithUserTask = createReport(processInstanceWithUserTask);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResultWithUserTask =
+      evaluateRawReportWithDefaultPagination(reportDataWithUserTask);
+    ProcessReportDataDto reportDataWithoutUserTask = createReport(processInstanceWithoutUserTask);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResultWithoutUserTask =
+      evaluateRawReportWithDefaultPagination(reportDataWithoutUserTask);
+
+    // then
+    assertThat(evaluationResultWithUserTask.getResult()
+                 .getData()).extracting(RawDataProcessInstanceDto::getNumberOfUserTasks).containsExactlyInAnyOrder(1L, 1L);
+    assertThat(evaluationResultWithoutUserTask.getResult()
+                 .getData()).extracting(RawDataProcessInstanceDto::getNumberOfUserTasks).containsExactlyInAnyOrder(0L);
   }
 
   @Test
@@ -1697,6 +1720,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(resultInstance.getBusinessKey()).isEqualTo(BUSINESS_KEY);
     assertThat(resultInstance.getVariables()).isNotNull().isEmpty();
     assertThat(resultInstance.getNumberOfOpenIncidents()).isZero();
+    assertThat(resultInstance.getNumberOfUserTasks()).isZero();
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
