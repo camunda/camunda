@@ -5,25 +5,24 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.impl;
+package io.camunda.zeebe.stream.api;
 
-import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.stream.impl.StreamProcessor;
 import java.util.Objects;
 
-/**
- * Implement to control which events should be handled by a {@link StreamProcessor} based on the
- * event's metadata.
- */
+/** Implement to control which events should be handled by a {@link StreamProcessor}. */
 @FunctionalInterface
-public interface MetadataFilter {
+public interface EventFilter {
+
   /**
-   * @param metadata the metadata of the event to be processed next
-   * @return true to mark the event for processing; false to skip it
+   * @param event the event to be processed next
+   * @return true to mark an event for processing; false to skip it
    * @throws RuntimeException to signal that processing cannot continue
    */
-  boolean applies(RecordMetadata metadata);
+  boolean applies(LoggedEvent event);
 
-  default MetadataFilter and(final MetadataFilter other) {
+  default EventFilter and(final EventFilter other) {
     Objects.requireNonNull(other);
     return (e) -> applies(e) && other.applies(e);
   }

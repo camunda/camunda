@@ -28,7 +28,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
-import io.camunda.zeebe.stream.impl.EventFilter;
+import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.impl.RecordValues;
 import io.camunda.zeebe.stream.impl.TypedRecordImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;

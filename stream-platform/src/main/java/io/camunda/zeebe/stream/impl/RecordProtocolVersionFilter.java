@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.stream.api.MetadataFilter;
 
 public final class RecordProtocolVersionFilter implements MetadataFilter {
 
