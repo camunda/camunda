@@ -167,15 +167,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     private Either<Failure, DirectBuffer> evaluateScript(
         final ExecutableScriptTask element, final BpmnElementContext context) {
       final var resultOrFailure =
-          expressionProcessor
-              .evaluateAnyExpression(element.getExpression(), context.getElementInstanceKey())
-              .mapLeft(
-                  failure ->
-                      new Failure(
-                          "Expected to evaluate script '%s', but %s"
-                              .formatted(
-                                  BufferUtil.bufferAsString(element.getId()),
-                                  failure.getMessage())));
+          expressionProcessor.evaluateScriptExpression(
+              element.getExpression(), context.getElementInstanceKey());
 
       resultOrFailure.ifRight(
           result ->

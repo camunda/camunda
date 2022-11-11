@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
-import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -15,17 +14,21 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ScriptTaskBuilder;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.function.Consumer;
-import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -88,7 +91,7 @@ public final class ScriptTaskExpressionTest {
             .withElementType(BpmnElementType.SCRIPT_TASK)
             .getFirst();
 
-    assertThat(taskActivating.getValue())
+    Assertions.assertThat(taskActivating.getValue())
         .hasElementId(TASK_ID)
         .hasBpmnElementType(BpmnElementType.SCRIPT_TASK)
         .hasFlowScopeKey(processInstanceKey)
@@ -137,7 +140,7 @@ public final class ScriptTaskExpressionTest {
         ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("x", A_STRING).create();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withName(RESULT_VARIABLE)
@@ -172,7 +175,7 @@ public final class ScriptTaskExpressionTest {
             .getKey();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withName(RESULT_VARIABLE)
@@ -181,7 +184,7 @@ public final class ScriptTaskExpressionTest {
         .extracting(VariableRecordValue::getScopeKey, VariableRecordValue::getValue)
         .containsExactly(taskInstanceKey, A_SUB_STRING);
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withName(OUTPUT_TARGET)
@@ -189,5 +192,94 @@ public final class ScriptTaskExpressionTest {
         .extracting(Record::getValue)
         .extracting(VariableRecordValue::getScopeKey, VariableRecordValue::getValue)
         .containsExactly(processInstanceKey, A_SUB_STRING);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfScriptExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithScriptTask(
+                t ->
+                    t.zeebeExpression("substring(x, 4)")
+                        .zeebeResultVariable(RESULT_VARIABLE)
+                        .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final var scriptTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ID)
+            .withElementType(BpmnElementType.SCRIPT_TASK)
+            .getFirst();
+
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of expression 'substring(x, 4)' to be one of '[BOOLEAN, NUMBER, STRING, ARRAY, OBJECT]', but was 'NULL'")
+        .hasBpmnProcessId(scriptTask.getValue().getBpmnProcessId())
+        .hasProcessDefinitionKey(scriptTask.getValue().getProcessDefinitionKey())
+        .hasProcessInstanceKey(scriptTask.getValue().getProcessInstanceKey())
+        .hasElementId(scriptTask.getValue().getElementId())
+        .hasElementInstanceKey(scriptTask.getKey())
+        .hasVariableScopeKey(scriptTask.getKey())
+        .hasJobKey(-1);
+  }
+
+  @Test
+  public void shouldResolveIncidentIfScriptExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            processWithScriptTask(
+                t ->
+                    t.zeebeExpression("substring(x, 4)")
+                        .zeebeResultVariable(RESULT_VARIABLE)
+                        .zeebeOutputExpression(RESULT_VARIABLE, OUTPUT_TARGET)))
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final Record<IncidentRecordValue> incidentCreatedRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    ENGINE
+        .variables()
+        .ofScope(incidentCreatedRecord.getValue().getElementInstanceKey())
+        .withDocument(Map.of("x", A_STRING))
+        .update();
+
+    // when
+    final Record<IncidentRecordValue> incidentResolvedEvent =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreatedRecord.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withName(OUTPUT_TARGET)
+                .getFirst())
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getScopeKey, VariableRecordValue::getValue)
+        .containsExactly(processInstanceKey, A_SUB_STRING);
+
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }
 }
