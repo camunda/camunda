@@ -5,11 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {mockPostRequest} from './mockRequest';
+import {mockPostRequest} from '../mockRequest';
 
-const modifyProcess = (contextPath = '') =>
-  mockPostRequest(
+const mockModify = (contextPath = '') =>
+  mockPostRequest<OperationEntity>(
     `${contextPath}/api/process-instances/:processInstanceId/modify`
   );
 
-export {modifyProcess};
+export {mockModify};

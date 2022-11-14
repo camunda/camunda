@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {request} from 'modules/request';
+import {requestAndParse} from 'modules/request';
 
 type FlowNodeVariables = {
   [flowNodeId: string]: Array<{[variableName: string]: string}>;
@@ -34,7 +34,7 @@ async function modify({
   processInstanceId: ProcessInstanceEntity['id'];
   payload: ModificationPayload;
 }) {
-  return request({
+  return requestAndParse<OperationEntity>({
     url: `/api/process-instances/${processInstanceId}/modify`,
     method: 'POST',
     body: payload,

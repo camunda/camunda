@@ -14,7 +14,7 @@ import {
   modify,
   ModificationPayload,
   FlowNodeVariables,
-} from 'modules/api/modifications';
+} from 'modules/api/processInstances/modify';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
@@ -624,25 +624,19 @@ class Modifications {
   }) => {
     this.startApplyingModifications();
 
-    try {
-      const response = await modify({
-        processInstanceId,
-        payload: {modifications: this.generateModificationsPayload()},
-      });
+    const response = await modify({
+      processInstanceId,
+      payload: {modifications: this.generateModificationsPayload()},
+    });
 
-      if (response.ok) {
-        onSuccess();
-      } else {
-        logger.error('Failed to modify Process Instance');
-        onError();
-      }
-    } catch (error) {
+    if (response.isSuccess) {
+      onSuccess();
+    } else {
       logger.error('Failed to modify Process Instance');
-      logger.error(error);
       onError();
-    } finally {
-      this.reset();
     }
+
+    this.reset();
   };
 
   getParentScopeId = (flowNodeId: string) => {

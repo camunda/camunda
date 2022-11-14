@@ -25,6 +25,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import {getProcessName} from 'modules/utils/instance';
 import {ProcessInstance} from './index';
 import {
+  createBatchOperation,
   createMultiInstanceFlowNodeInstances,
   createVariable,
 } from 'modules/testUtils';
@@ -48,7 +49,7 @@ import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenc
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {modifyProcess} from 'modules/mocks/api/modifications';
+import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 
@@ -543,7 +544,9 @@ describe('Instance', () => {
 
   it('should display loading overlay when modifications are applied', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    modifyProcess().withDelay({});
+    mockModify().withDelay(
+      createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'})
+    );
 
     jest.useFakeTimers();
 

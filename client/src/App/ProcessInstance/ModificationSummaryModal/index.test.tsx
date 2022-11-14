@@ -7,7 +7,6 @@
 
 import {createAddVariableModification} from 'modules/mocks/modifications';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
-import {mockServer} from 'modules/mock-server/node';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -18,12 +17,12 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {createInstance} from 'modules/testUtils';
+import {createBatchOperation, createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {rest} from 'msw';
 import {ModificationSummaryModal} from './index';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockModify} from 'modules/mocks/api/processInstances/modify';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -370,11 +369,8 @@ describe('Modification Summary Modal', () => {
     modificationsStore.enableModificationMode();
     const mockOnClose = jest.fn();
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:processInstanceId/modify',
-        (_, res, ctx) => res.once(ctx.json({}))
-      )
+    mockModify().withSuccess(
+      createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'})
     );
 
     modificationsStore.addModification({
@@ -411,12 +407,8 @@ describe('Modification Summary Modal', () => {
     modificationsStore.enableModificationMode();
     const mockOnClose = jest.fn();
 
-    mockServer.use(
-      rest.post(
-        '/api/process-instances/:processInstanceId/modify',
-        (_, res, ctx) => res.once(ctx.status(500), ctx.json({}))
-      )
-    );
+    mockModify().withServerError();
+
     modificationsStore.addModification({
       type: 'token',
       payload: {
