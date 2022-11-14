@@ -73,7 +73,7 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "@wojtekmaj/enzyme-adapter-react-17": "^0.6.7",
+    "@wojtekmaj/enzyme-adapter-react-17": "^0.8.0",
     "ansi-html": "^0.0.9",
     "chalk": "^5.1.2",
     "date-fns": "^2.29.3",
