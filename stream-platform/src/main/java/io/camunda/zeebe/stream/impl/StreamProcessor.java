@@ -110,7 +110,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
-    lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
+    lifecycleAwareListeners = new ArrayList<>(processorBuilder.getLifecycleListeners());
     zeebeDb = processorBuilder.getZeebeDb();
 
     streamProcessorContext =
