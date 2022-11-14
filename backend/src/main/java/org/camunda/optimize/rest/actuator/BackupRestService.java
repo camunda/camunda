@@ -7,7 +7,6 @@ package org.camunda.optimize.rest.actuator;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.rest.BackupRequestDto;
-import org.camunda.optimize.dto.optimize.rest.BackupResponseDto;
 import org.camunda.optimize.dto.optimize.rest.BackupStateResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.BackupService;
@@ -48,8 +47,16 @@ public class BackupRestService {
   private final LocalizationService localizationService;
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
-  public BackupResponseDto takeBackup(final @RequestBody @Valid BackupRequestDto backupRequestDto) {
-    return backupService.triggerBackup(backupRequestDto.getBackupId());
+  public ResponseEntity<String> takeBackup(final @RequestBody @Valid BackupRequestDto backupRequestDto) {
+    backupService.triggerBackup(backupRequestDto.getBackupId());
+    return new ResponseEntity<>(
+      String.format(
+        "{\"message\" : " +
+          "\"Backup creation for ID %s has been scheduled. Use the GET API to monitor completion of backup process\"}",
+        backupRequestDto.getBackupId()
+      ),
+      HttpStatus.ACCEPTED
+    );
   }
 
   @GetMapping(value = "/{backupId}")

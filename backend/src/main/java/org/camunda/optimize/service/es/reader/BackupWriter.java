@@ -20,7 +20,6 @@ import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
@@ -35,14 +34,13 @@ public class BackupWriter {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
 
-  public List<String> triggerSnapshotCreation(final String backupId) {
+  public void triggerSnapshotCreation(final String backupId) {
     final String snapshot1Name = getSnapshotNameForImportIndices(backupId);
     final String snapshot2Name = getSnapshotNameForNonImportIndices(backupId);
     CompletableFuture.runAsync(() -> {
       triggerSnapshot(snapshot1Name, getIndexAliasesWithImportIndexFlag(true));
       triggerSnapshot(snapshot2Name, getIndexAliasesWithImportIndexFlag(false));
     });
-    return List.of(snapshot1Name, snapshot2Name);
   }
 
   public void deleteOptimizeSnapshots(final String backupId) {

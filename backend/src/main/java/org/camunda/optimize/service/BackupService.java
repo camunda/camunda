@@ -9,7 +9,6 @@ import io.micrometer.core.instrument.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.BackupState;
-import org.camunda.optimize.dto.optimize.rest.BackupResponseDto;
 import org.camunda.optimize.dto.optimize.rest.BackupStateResponseDto;
 import org.camunda.optimize.service.es.reader.BackupReader;
 import org.camunda.optimize.service.es.reader.BackupWriter;
@@ -38,14 +37,12 @@ public class BackupService {
   private final ConfigurationService configurationService;
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
 
-  public synchronized BackupResponseDto triggerBackup(final String backupId) {
+  public synchronized void triggerBackup(final String backupId) {
     validateRepositoryExists();
     backupReader.validateNoDuplicateBackupId(backupId);
 
     log.info("Triggering backup with ID {}", backupId);
-    final List<String> scheduledSnapshotNames = backupWriter.triggerSnapshotCreation(backupId);
-
-    return new BackupResponseDto(scheduledSnapshotNames);
+    backupWriter.triggerSnapshotCreation(backupId);
   }
 
   public BackupStateResponseDto getBackupState(final String backupId) {
