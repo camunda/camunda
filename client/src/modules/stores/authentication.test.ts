@@ -6,18 +6,12 @@
  */
 
 import {waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {rest} from 'msw';
+import {mockGetUser} from 'modules/mocks/api/getUser';
+import {createUser} from 'modules/testUtils';
 
-const mockUserResponse = {
-  userId: 'demo',
-  displayName: 'demo',
-  canLogout: true,
-  permissions: ['read', 'write'],
-  username: 'demo',
-} as const;
+const mockUserResponse = createUser();
 
 describe('stores/authentication', () => {
   afterEach(() => {
@@ -26,23 +20,11 @@ describe('stores/authentication', () => {
 
   it('should set user role', () => {
     expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: undefined,
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-    });
+
+    authenticationStore.setUser(createUser({permissions: undefined}));
     expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-    });
+
+    authenticationStore.setUser(createUser({permissions: ['read']}));
     expect(authenticationStore.state.permissions).toEqual(['read']);
   });
 
@@ -50,25 +32,13 @@ describe('stores/authentication', () => {
     expect(authenticationStore.hasPermission(['write'])).toBe(true);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);
     expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: undefined,
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-    });
+
+    authenticationStore.setUser(createUser({permissions: undefined}));
     expect(authenticationStore.hasPermission(['write'])).toBe(true);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);
     expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-    });
+
+    authenticationStore.setUser(createUser({permissions: ['read']}));
     expect(authenticationStore.hasPermission(['write'])).toBe(false);
     expect(authenticationStore.hasPermission(['read'])).toBe(true);
     expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
@@ -96,17 +66,7 @@ describe('stores/authentication', () => {
             },
           }));
 
-          mockServer.use(
-            rest.get('/api/authentications/user', (_, res, ctx) =>
-              res.once(ctx.json(mockUserResponse))
-            ),
-            rest.get('/api/authentications/user', (_, res, ctx) =>
-              res.once(ctx.status(401))
-            ),
-            rest.get('/api/authentications/user', (_, res, ctx) =>
-              res.once(ctx.json(mockUserResponse))
-            )
-          );
+          mockGetUser().withSuccess(mockUserResponse);
 
           authenticationStore.authenticate();
 
@@ -115,6 +75,8 @@ describe('stores/authentication', () => {
               'user-information-fetched'
             )
           );
+
+          mockGetUser().withServerError(401);
 
           authenticationStore.authenticate();
 
@@ -125,6 +87,8 @@ describe('stores/authentication', () => {
           );
           expect(mockReload).toHaveBeenCalledTimes(1);
           expect(getStateLocally()?.wasReloaded).toBe(true);
+
+          mockGetUser().withSuccess(mockUserResponse);
 
           authenticationStore.authenticate();
 

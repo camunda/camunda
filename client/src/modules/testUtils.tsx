@@ -6,6 +6,7 @@
  */
 
 import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
+import {UserDto} from './api/getUser';
 import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
@@ -132,6 +133,17 @@ const createVariable = (
     ...options,
   };
 };
+
+const createUser = (options: Partial<UserDto> = {}): UserDto => ({
+  userId: 'demo',
+  displayName: 'firstname lastname',
+  canLogout: true,
+  permissions: ['read', 'write'],
+  roles: null,
+  salesPlanType: null,
+  ...options,
+});
+
 /**
  * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
  */
@@ -1076,4 +1088,4 @@ export const createEventSubProcessFlowNodeInstances = (
   };
 };
 
-export {createVariable, createBatchOperation};
+export {createVariable, createBatchOperation, createUser};

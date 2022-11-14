@@ -44,13 +44,18 @@ async function request({url, method, body, headers, signal}: RequestParams) {
   return response;
 }
 
-async function requestAndParse<T>(props: RequestParams) {
-  const {url} = props;
+async function requestAndParse<T>(
+  params: RequestParams,
+  options?: {onFailure?: () => void; onException?: () => void}
+) {
+  const {url} = params;
 
   try {
-    const response = await request(props);
+    const response = await request(params);
 
     if (!response.ok) {
+      options?.onFailure?.();
+
       logger.error(`Failed to fetch ${url}`);
 
       return {
@@ -68,6 +73,8 @@ async function requestAndParse<T>(props: RequestParams) {
         : await response.text()) as T,
     } as const;
   } catch (error) {
+    options?.onException?.();
+
     if (error instanceof DOMException && error.name === 'AbortError') {
       return {
         isAborted: true,

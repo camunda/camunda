@@ -6,12 +6,12 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {rest} from 'msw';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {AuthenticationCheck} from './AuthenticationCheck';
+import {mockGetUser} from 'modules/mocks/api/getUser';
+import {createUser} from 'modules/testUtils';
 
 const PROTECTED_CONTENT = 'protected content';
 const PUBLIC_AREA_URL = '/public-area';
@@ -37,11 +37,8 @@ describe('<AuthenticationCheck />', () => {
   });
 
   it('should handle no session', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.status(401))
-      )
-    );
+    mockGetUser().withServerError(401);
+
     render(
       <AuthenticationCheck redirectPath={PUBLIC_AREA_URL}>
         {PROTECTED_CONTENT}
@@ -58,20 +55,7 @@ describe('<AuthenticationCheck />', () => {
   });
 
   it('should handle valid session', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(
-          ctx.status(200),
-          ctx.json({
-            userId: 'demo',
-            displayName: 'demo',
-            canLogout: true,
-            permissions: ['read', 'write'],
-            username: 'demo',
-          })
-        )
-      )
-    );
+    mockGetUser().withSuccess(createUser());
 
     render(
       <AuthenticationCheck redirectPath={PUBLIC_AREA_URL}>

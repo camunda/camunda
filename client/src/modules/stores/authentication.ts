@@ -6,13 +6,11 @@
  */
 
 import {makeObservable, observable, action} from 'mobx';
-import {getUser} from 'modules/api/authentication';
+import {getUser, UserDto} from 'modules/api/getUser';
 import {login, Credentials} from 'modules/api/login';
 import {logout} from 'modules/api/logout';
-import {logger} from 'modules/logger';
 import {NetworkError} from 'modules/networkError';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {Undefinable} from 'ts-toolbelt/out/Object/Undefinable';
 
 type Permissions = Array<'read' | 'write'>;
 
@@ -134,23 +132,20 @@ class Authentication {
   authenticate = async (): Promise<void | Error> => {
     this.startLoadingUser();
 
-    try {
-      const response = await getUser();
-
-      if (!response.ok) {
+    const response = await getUser({
+      onFailure: () => {
         this.expireSession();
+      },
+      onException: () => {
+        this.disableSession();
+      },
+    });
 
-        return new Error('Could not fetch user information');
-      }
-
-      this.setUser(await response.json());
-    } catch (error) {
-      this.disableSession();
-
-      logger.error(error);
-
+    if (!response.isSuccess) {
       return new Error('Could not fetch user information');
     }
+
+    this.setUser(response.data);
   };
 
   startLoadingUser = () => {
@@ -164,18 +159,7 @@ class Authentication {
     userId,
     salesPlanType,
     roles,
-  }: Undefinable<
-    Pick<
-      State,
-      | 'displayName'
-      | 'permissions'
-      | 'canLogout'
-      | 'userId'
-      | 'salesPlanType'
-      | 'roles'
-    >,
-    'permissions'
-  >) => {
+  }: UserDto) => {
     storeStateLocally({
       wasReloaded: false,
     });

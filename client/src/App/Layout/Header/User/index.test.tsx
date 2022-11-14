@@ -8,20 +8,20 @@
 import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {User} from './index';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogout} from 'modules/mocks/api/logout';
+import {mockGetUser} from 'modules/mocks/api/getUser';
+import {createUser} from 'modules/testUtils';
 
-const mockUser = {
+const mockUser = createUser({
   displayName: 'Franz Kafka',
   canLogout: true,
-};
+});
 
-const mockSsoUser = {
+const mockSsoUser = createUser({
   displayName: 'Michael Jordan',
   canLogout: false,
-};
+});
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return <ThemeProvider>{children}</ThemeProvider>;
@@ -33,11 +33,7 @@ describe('User', () => {
   });
 
   it('should render user display name', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json(mockUser))
-      )
-    );
+    mockGetUser().withSuccess(mockUser);
 
     render(<User />, {
       wrapper: Wrapper,
@@ -49,11 +45,7 @@ describe('User', () => {
   });
 
   it('should handle a SSO user', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json(mockSsoUser))
-      )
-    );
+    mockGetUser().withSuccess(mockSsoUser);
 
     const {user} = render(<User />, {
       wrapper: Wrapper,
@@ -70,11 +62,7 @@ describe('User', () => {
 
   it('should handle logout', async () => {
     mockLogout().withSuccess(null);
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json(mockUser))
-      )
-    );
+    mockGetUser().withSuccess(mockUser);
 
     const {user} = render(<User />, {
       wrapper: Wrapper,

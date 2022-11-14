@@ -11,12 +11,11 @@ import {Header} from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {render, screen} from 'modules/testing-library';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {authenticationStore} from 'modules/stores/authentication';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {createInstance} from 'modules/testUtils';
+import {createInstance, createUser} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockGetUser} from 'modules/mocks/api/getUser';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -32,18 +31,7 @@ function createWrapper(initialPath: string = '/') {
 
 describe('Header', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            displayName: 'firstname lastname',
-            canLogout: false,
-            permissions: ['read', 'write'],
-          })
-        )
-      )
-    );
-
+    mockGetUser().withSuccess(createUser());
     mockFetchProcessInstance().withSuccess(
       createInstance({id: 'first_instance_id', state: 'ACTIVE'})
     );
