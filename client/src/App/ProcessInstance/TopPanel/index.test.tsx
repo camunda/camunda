@@ -17,8 +17,6 @@ import {mockSequenceFlows, mockIncidents} from './index.setup';
 import {TopPanel} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
@@ -30,6 +28,9 @@ import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInsta
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
+import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
+import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -71,32 +72,11 @@ describe('TopPanel', () => {
   beforeEach(() => {
     mockFetchProcessXML().withSuccess('');
 
-    mockServer.use(
-      rest.get('/api/process-instances/active_instance', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 'instance_id',
-            state: 'ACTIVE',
-          })
-        )
-      ),
-      rest.get('/api/process-instances/instance_with_incident', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            id: 'instance_id',
-            state: 'INCIDENT',
-          })
-        )
-      ),
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(ctx.json(mockIncidents))
-      ),
-      rest.get(
-        '/api/process-instances/:instanceId/sequence-flows',
-        (_, res, ctx) => res.once(ctx.json(mockSequenceFlows))
-      )
+    mockFetchProcessInstance().withSuccess(
+      createInstance({id: 'instance_id', state: 'INCIDENT'})
     );
-
+    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+    mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
         activityId: 'taskD',
@@ -116,6 +96,8 @@ describe('TopPanel', () => {
   });
 
   it('should render spinner while loading', async () => {
+    mockFetchProcessInstance().withSuccess(createInstance({id: 'instance_id'}));
+
     render(<TopPanel />, {
       wrapper: Wrapper,
     });

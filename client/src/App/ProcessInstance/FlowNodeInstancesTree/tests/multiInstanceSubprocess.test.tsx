@@ -5,10 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {createRef} from 'react';
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -24,6 +22,7 @@ import {
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
   beforeEach(async () => {
@@ -43,11 +42,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1);
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -76,17 +71,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1))
-      ),
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level2))
-      ),
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level3))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1);
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -109,6 +94,8 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
 
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level2);
+
     await user.click(
       screen.getByLabelText('Unfold Filter-Map Sub Process (Multi Instance)')
     );
@@ -120,6 +107,8 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     ).toBeInTheDocument();
 
     expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level3);
 
     await user.click(
       await screen.findByLabelText('Unfold Filter-Map Sub Process')
@@ -144,11 +133,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1);
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -169,7 +154,7 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
     const withinMultiInstanceFlowNode = within(
       screen.getByTestId(
         `tree-node-${
-          flowNodeInstances.level1Poll[processInstanceId]!.children[1].id
+          flowNodeInstances.level1Poll[processInstanceId]!.children[1]!.id
         }`
       )
     );
@@ -183,12 +168,8 @@ describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
 
     // poll request
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1Poll);
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1Poll))
-      )
-    );
     jest.runOnlyPendingTimers();
 
     expect(

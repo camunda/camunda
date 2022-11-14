@@ -5,10 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {createRef} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -33,6 +31,7 @@ import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryMo
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
@@ -55,11 +54,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(flowNodeInstances.level1))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(flowNodeInstances.level1!);
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -139,11 +134,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(multipleFlowNodeInstances))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');
@@ -224,12 +215,8 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(
-          ctx.json(multipleSubprocessesWithNoRunningScopeMock.firstLevel)
-        )
-      )
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.firstLevel
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
@@ -296,12 +283,8 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       3
     );
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithNoRunningScopeMock.secondLevel1)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.secondLevel1
     );
 
     const [expandFirstScope, expandSecondScope, expandNewScope] =
@@ -311,36 +294,25 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithNoRunningScopeMock.thirdLevel1)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.thirdLevel1
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithNoRunningScopeMock.secondLevel2)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.secondLevel2
     );
+
     await user.click(expandSecondScope!);
 
     await waitFor(() =>
       expect(screen.getAllByText('inner_sub_process')).toHaveLength(2)
     );
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithNoRunningScopeMock.thirdLevel2)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.thirdLevel2
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
@@ -401,12 +373,8 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       },
     ]);
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(
-          ctx.json(multipleSubprocessesWithOneRunningScopeMock.firstLevel)
-        )
-      )
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.firstLevel
     );
 
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
@@ -472,12 +440,8 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       2
     );
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithOneRunningScopeMock.secondLevel1)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.secondLevel1
     );
 
     const [expandFirstScope, expandSecondScope] = screen.getAllByLabelText(
@@ -488,37 +452,26 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     expect(await screen.findByText('inner_sub_process')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithOneRunningScopeMock.thirdLevel1)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.thirdLevel1
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));
 
     expect(await screen.findByText('user_task')).toBeInTheDocument();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithOneRunningScopeMock.secondLevel2)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.secondLevel2
     );
+
     await user.click(expandSecondScope!);
 
     await waitFor(() =>
       expect(screen.getAllByText('inner_sub_process')).toHaveLength(2)
     );
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) => {
-        return res.once(
-          ctx.json(multipleSubprocessesWithOneRunningScopeMock.thirdLevel2)
-        );
-      })
+    mockFetchFlowNodeInstances().withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.thirdLevel2
     );
 
     await user.click(screen.getByLabelText('Unfold inner_sub_process'));

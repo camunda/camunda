@@ -7,20 +7,15 @@
 
 import {sequenceFlowsStore} from './sequenceFlows';
 import {processInstanceDetailsStore} from './processInstanceDetails';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {createInstance, createSequenceFlows} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
+import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
 
 describe('stores/sequenceFlows', () => {
   const mockSequenceFlows = createSequenceFlows();
 
   beforeEach(() => {
-    mockServer.use(
-      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
-        res.once(ctx.json(mockSequenceFlows))
-      )
-    );
+    mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
   });
 
   afterEach(() => {
@@ -62,19 +57,13 @@ describe('stores/sequenceFlows', () => {
       ])
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            ...mockSequenceFlows,
-            {
-              processInstanceId: '2251799813693731',
-              activityId: 'SequenceFlow_1sz6737',
-            },
-          ])
-        )
-      )
-    );
+    mockFetchSequenceFlows().withSuccess([
+      ...mockSequenceFlows,
+      {
+        processInstanceId: '2251799813693731',
+        activityId: 'SequenceFlow_1sz6737',
+      },
+    ]);
 
     jest.runOnlyPendingTimers();
 
@@ -88,19 +77,13 @@ describe('stores/sequenceFlows', () => {
       ])
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            ...mockSequenceFlows,
-            {
-              processInstanceId: '2251799813685691',
-              activityId: 'SequenceFlow_1sz6737',
-            },
-          ])
-        )
-      )
-    );
+    mockFetchSequenceFlows().withSuccess([
+      ...mockSequenceFlows,
+      {
+        processInstanceId: '2251799813693731',
+        activityId: 'SequenceFlow_1sz6737',
+      },
+    ]);
 
     jest.runOnlyPendingTimers();
 
@@ -178,19 +161,13 @@ describe('stores/sequenceFlows', () => {
       ])
     );
 
-    mockServer.use(
-      rest.get('/api/process-instances/:id/sequence-flows', (_, res, ctx) =>
-        res.once(
-          ctx.json([
-            ...mockSequenceFlows,
-            {
-              processInstanceId: '2251799813685691',
-              activityId: 'SequenceFlow_1sz6737',
-            },
-          ])
-        )
-      )
-    );
+    mockFetchSequenceFlows().withSuccess([
+      ...mockSequenceFlows,
+      {
+        processInstanceId: '2251799813693731',
+        activityId: 'SequenceFlow_1sz6737',
+      },
+    ]);
 
     eventListeners.online();
 

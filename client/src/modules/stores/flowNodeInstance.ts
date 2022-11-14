@@ -19,7 +19,7 @@ import {
   fetchFlowNodeInstances,
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
-} from 'modules/api/flowNodeInstances';
+} from 'modules/api/fetchFlowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {isEqual} from 'lodash';

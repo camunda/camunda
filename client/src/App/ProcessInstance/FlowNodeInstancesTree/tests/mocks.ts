@@ -5,7 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {
+  FlowNodeInstance,
+  FlowNodeInstances,
+} from 'modules/stores/flowNodeInstance';
 import {
   createEventSubProcessFlowNodeInstances,
   createInstance,
@@ -32,7 +35,7 @@ const nestedSubProcessesInstance = Object.freeze(
   })
 );
 
-const nestedSubProcessFlowNodeInstances = {
+const nestedSubProcessFlowNodeInstances: FlowNodeInstances = {
   [nestedSubProcessesInstance.id]: {
     running: null,
     children: [
@@ -80,7 +83,7 @@ const flowNodeInstances =
 const eventSubProcessFlowNodeInstances =
   createEventSubProcessFlowNodeInstances(processInstanceId);
 
-const multipleFlowNodeInstances = {
+const multipleFlowNodeInstances: FlowNodeInstances = {
   [processInstanceId]: {
     running: null,
     children: [
@@ -119,7 +122,13 @@ const mockFlowNodeInstance: FlowNodeInstance = {
   sortValues: [],
 };
 
-const multipleSubprocessesWithOneRunningScopeMock = {
+const multipleSubprocessesWithOneRunningScopeMock: {
+  firstLevel: FlowNodeInstances;
+  secondLevel1: FlowNodeInstances;
+  secondLevel2: FlowNodeInstances;
+  thirdLevel1: FlowNodeInstances;
+  thirdLevel2: FlowNodeInstances;
+} = {
   firstLevel: {
     [processInstanceId]: {
       children: [
@@ -131,7 +140,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '2',
@@ -141,7 +150,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: null,
           treePath: `${processInstanceId}/2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -158,7 +167,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '1_2',
@@ -168,7 +177,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
         {
           id: '1_3',
@@ -178,7 +187,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_3`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -195,17 +204,17 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '2_2',
           type: 'SUB_PROCESS',
           state: 'ACTIVE',
           flowNodeId: 'inner_sub_process',
-          startDate: null,
+          startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -222,7 +231,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2/1_2_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '1_2_2',
@@ -232,7 +241,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2/1_2_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
         {
           id: '1_2_3',
@@ -242,7 +251,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2/1_2_3`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -259,7 +268,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_2/2_2_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '2_2_2',
@@ -269,7 +278,7 @@ const multipleSubprocessesWithOneRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: null,
           treePath: `${processInstanceId}/2/2_2/2_2_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -277,7 +286,13 @@ const multipleSubprocessesWithOneRunningScopeMock = {
   },
 };
 
-const multipleSubprocessesWithNoRunningScopeMock = {
+const multipleSubprocessesWithNoRunningScopeMock: {
+  firstLevel: FlowNodeInstances;
+  secondLevel1: FlowNodeInstances;
+  secondLevel2: FlowNodeInstances;
+  thirdLevel1: FlowNodeInstances;
+  thirdLevel2: FlowNodeInstances;
+} = {
   firstLevel: {
     [processInstanceId]: {
       children: [
@@ -289,7 +304,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '2',
@@ -299,7 +314,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -316,7 +331,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '1_2',
@@ -326,7 +341,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
         {
           id: '1_3',
@@ -336,7 +351,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_3`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -353,7 +368,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '2_2',
@@ -363,7 +378,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
         {
           id: '2_3',
@@ -373,7 +388,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_3`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -390,7 +405,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2/1_2_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '1_2_2',
@@ -400,7 +415,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2/1_2_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
         {
           id: '1_2_3',
@@ -410,7 +425,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/1/1_2/1_2_3`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,
@@ -427,7 +442,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.096+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_2/2_2_1`,
-          sortValues: [1664017183097, '6755399441065192'],
+          sortValues: ['1664017183097', '6755399441065192'],
         },
         {
           id: '2_2_2',
@@ -437,7 +452,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_2/2_2_2`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
         {
           id: '2_2_3',
@@ -447,7 +462,7 @@ const multipleSubprocessesWithNoRunningScopeMock = {
           startDate: '2022-09-23T10:59:43.822+0000',
           endDate: '2022-09-23T11:00:42.508+0000',
           treePath: `${processInstanceId}/2/2_2/2_2_3`,
-          sortValues: [1664017183823, '6755399441065673'],
+          sortValues: ['1664017183823', '6755399441065673'],
         },
       ],
       running: null,

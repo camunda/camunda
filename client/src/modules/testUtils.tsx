@@ -868,7 +868,14 @@ export const eventSubProcess = `<?xml version="1.0" encoding="UTF-8"?>
 
 export const createMultiInstanceFlowNodeInstances = (
   processInstanceId: string
-) => {
+): {
+  level1: FlowNodeInstances;
+  level1Next: FlowNodeInstances;
+  level1Prev: FlowNodeInstances;
+  level1Poll: FlowNodeInstances;
+  level2: FlowNodeInstances;
+  level3: FlowNodeInstances;
+} => {
   return {
     level1: {
       [processInstanceId]: {
@@ -992,7 +999,7 @@ export const createMultiInstanceFlowNodeInstances = (
         ],
       },
     },
-  } as const;
+  };
 };
 
 export const createEventSubProcessFlowNodeInstances = (

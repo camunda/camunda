@@ -5,10 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {rest} from 'msw';
 import {createRef} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {mockServer} from 'modules/mock-server/node';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -25,6 +23,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
   beforeEach(async () => {
@@ -38,11 +37,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
     processInstanceDetailsStore.init({id: nestedSubProcessesInstance.id});
     flowNodeInstanceStore.init();
 
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(nestedSubProcessFlowNodeInstances))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(nestedSubProcessFlowNodeInstances);
 
     await waitFor(() => {
       expect(flowNodeInstanceStore.state.status).toBe('fetched');

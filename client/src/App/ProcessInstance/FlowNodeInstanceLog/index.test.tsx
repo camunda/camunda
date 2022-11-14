@@ -17,14 +17,13 @@ import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {
   createInstance,
   createMultiInstanceFlowNodeInstances,
 } from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 jest.mock('modules/utils/bpmn');
 
@@ -54,12 +53,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(processInstancesMock.level1))
-      )
-    );
-
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
@@ -75,12 +69,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should render skeleton when instance diagram is not loaded', async () => {
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(processInstancesMock.level1))
-      )
-    );
-
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
@@ -98,12 +87,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should display error when instance tree data could not be fetched', async () => {
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json({}), ctx.status(500))
-      )
-    );
-
+    mockFetchFlowNodeInstances().withServerError();
     mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
@@ -116,12 +100,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should display error when instance diagram could not be fetched', async () => {
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(processInstancesMock.level1))
-      )
-    );
-
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withServerError();
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
@@ -135,13 +114,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should continue polling after poll failure', async () => {
-    mockServer.use(
-      // initial fetch
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(processInstancesMock.level1))
-      )
-    );
-
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});
@@ -162,11 +135,7 @@ describe('FlowNodeInstanceLog', () => {
         bpmnProcessId: 'processName',
       })
     );
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.status(500), ctx.text(''))
-      )
-    );
+    mockFetchFlowNodeInstances().withServerError();
 
     jest.runOnlyPendingTimers();
 
@@ -179,11 +148,8 @@ describe('FlowNodeInstanceLog', () => {
         bpmnProcessId: 'processName',
       })
     );
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(processInstancesMock.level1Poll))
-      )
-    );
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
+
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
@@ -200,12 +166,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should render flow node instances tree', async () => {
-    mockServer.use(
-      rest.post('/api/flow-node-instances', (_, res, ctx) =>
-        res.once(ctx.json(processInstancesMock.level1))
-      )
-    );
-
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessXML().withSuccess('');
 
     render(<FlowNodeInstanceLog />, {wrapper: ThemeProvider});

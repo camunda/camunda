@@ -10,8 +10,6 @@ import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
@@ -19,12 +17,6 @@ jest.mock('modules/utils/bpmn');
 
 describe('TimeStampPill', () => {
   beforeEach(() => {
-    mockServer.use(
-      rest.post('/api/activity-instances', (_, res, ctx) =>
-        res.once(ctx.json({}))
-      )
-    );
-
     mockFetchProcessXML().withSuccess('');
   });
 

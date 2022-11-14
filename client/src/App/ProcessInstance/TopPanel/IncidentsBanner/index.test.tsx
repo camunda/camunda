@@ -10,8 +10,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
-import {rest} from 'msw';
-import {mockServer} from 'modules/mock-server/node';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
@@ -51,15 +49,10 @@ describe('IncidentsBanner', () => {
   });
 
   it('should show the right text for more than 1 incident', async () => {
-    mockServer.use(
-      rest.get('/api/process-instances/:instanceId/incidents', (_, res, ctx) =>
-        res.once(
-          ctx.json({
-            count: 2,
-          })
-        )
-      )
-    );
+    mockFetchProcessInstanceIncidents().withSuccess({
+      ...mockIncidents,
+      count: 2,
+    });
 
     await fetchIncidents('1');
 

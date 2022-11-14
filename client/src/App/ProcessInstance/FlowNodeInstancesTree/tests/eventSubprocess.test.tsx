@@ -6,9 +6,7 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {rest} from 'msw';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {mockServer} from 'modules/mock-server/node';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -25,6 +23,7 @@ import {eventSubProcess} from 'modules/testUtils';
 import {createRef} from 'react';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Event Subprocess', () => {
   beforeEach(async () => {
@@ -44,13 +43,8 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
   });
 
   it('should be able to unfold and fold event subprocesses', async () => {
-    mockServer.use(
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(eventSubProcessFlowNodeInstances.level1))
-      ),
-      rest.post(`/api/flow-node-instances`, (_, res, ctx) =>
-        res.once(ctx.json(eventSubProcessFlowNodeInstances.level2))
-      )
+    mockFetchFlowNodeInstances().withSuccess(
+      eventSubProcessFlowNodeInstances.level1
     );
 
     await waitFor(() => {
@@ -73,6 +67,10 @@ describe('FlowNodeInstancesTree - Event Subprocess', () => {
       screen.queryByLabelText('Fold Event Subprocess')
     ).not.toBeInTheDocument();
     expect(screen.queryByText('Interrupting timer')).not.toBeInTheDocument();
+
+    mockFetchFlowNodeInstances().withSuccess(
+      eventSubProcessFlowNodeInstances.level2
+    );
 
     await user.click(screen.getByLabelText('Unfold Event Subprocess'));
 

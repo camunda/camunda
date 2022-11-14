@@ -5,9 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
+import {
+  FlowNodeInstanceDto,
+  FlowNodeInstancesDto,
+} from 'modules/api/fetchFlowNodeInstances';
 import {mockPostRequest} from './mockRequest';
 
 const mockFetchFlowNodeInstances = (contextPath = '') =>
-  mockPostRequest(`${contextPath}/api/flow-node-instances`);
+  mockPostRequest<FlowNodeInstancesDto<FlowNodeInstanceDto>>(
+    `${contextPath}/api/flow-node-instances`
+  );
 
 export {mockFetchFlowNodeInstances};
