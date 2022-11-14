@@ -11,10 +11,10 @@ import update from 'immutability-helper';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {LoadingIndicator} from 'components';
 
 import MultiUserInput from './MultiUserInput';
 import {getUser} from './service';
-import {LoadingIndicator} from '../LoadingIndicator';
 
 export function UserTypeahead({
   users = [],
