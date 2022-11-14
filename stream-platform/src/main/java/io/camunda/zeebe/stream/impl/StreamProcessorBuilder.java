@@ -15,6 +15,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -89,7 +90,11 @@ public final class StreamProcessorBuilder {
   }
 
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
-    return lifecycleListeners;
+    return Collections.unmodifiableList(lifecycleListeners);
+  }
+
+  public void addLifecycleListener(final StreamProcessorLifecycleAware lifecycleAware) {
+    lifecycleListeners.add(lifecycleAware);
   }
 
   public ZeebeDb getZeebeDb() {

@@ -267,7 +267,7 @@ public final class StreamPlatform {
             .listener(mockStreamProcessorListener)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
-    builder.getLifecycleListeners().add(mockProcessorLifecycleAware);
+    builder.addLifecycleListener(mockProcessorLifecycleAware);
 
     final StreamProcessor streamProcessor = builder.build();
     final var openFuture = streamProcessor.openAsync(false);
