@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TerminateEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
@@ -60,6 +61,9 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
     } else if (eventDefinition instanceof TerminateEventDefinition) {
       executableElement.setTerminateEndEvent(true);
       executableElement.setEventType(BpmnEventType.TERMINATE);
+    } else if (eventDefinition instanceof EscalationEventDefinition) {
+      transformEscalationEventDefinition(
+          context, executableElement, (EscalationEventDefinition) eventDefinition);
     }
   }
 
@@ -81,5 +85,16 @@ public final class EndEventTransformer implements ModelElementTransformer<EndEve
 
   private boolean hasTaskDefinition(final EndEvent element) {
     return element.getSingleExtensionElement(ZeebeTaskDefinition.class) != null;
+  }
+
+  private void transformEscalationEventDefinition(
+      final TransformContext context,
+      final ExecutableEndEvent executableElement,
+      final EscalationEventDefinition escalationEventDefinition) {
+
+    final var escalation = escalationEventDefinition.getEscalation();
+    final var executableEscalation = context.getEscalation(escalation.getId());
+    executableElement.setEscalation(executableEscalation);
+    executableElement.setEventType(BpmnEventType.ESCALATION);
   }
 }

@@ -370,6 +370,25 @@ class BackupServiceImplTest {
     verify(backupStore).delete(backup.id());
   }
 
+  @Test
+  void shouldListAvailableBackups() {
+    // given
+    final int partitionId = 1;
+    final BackupStatus backup1 = mock(BackupStatus.class);
+    final BackupStatus backup2 = mock(BackupStatus.class);
+
+    when(backupStore.list(
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.of(partitionId), Optional.empty())))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)));
+
+    // when
+    final var backups = backupService.listBackups(partitionId, concurrencyControl).join();
+
+    // then
+    assertThat(backups).containsExactlyInAnyOrder(backup1, backup2);
+  }
+
   private ActorFuture<Void> failedFuture() {
     final ActorFuture<Void> future = concurrencyControl.createFuture();
     future.completeExceptionally(new RuntimeException("Expected"));

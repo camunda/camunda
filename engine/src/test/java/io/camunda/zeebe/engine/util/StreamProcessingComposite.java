@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.engine.util.Records.processInstance;
-
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -19,13 +17,11 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
-import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
@@ -37,8 +33,6 @@ public class StreamProcessingComposite {
   private final int partitionId;
   private final ZeebeDbFactory<?> zeebeDbFactory;
   private MutableZeebeState zeebeState;
-  private MutableLastProcessedPositionState lastProcessedPositionState = null;
-
   private final WriteActor writeActor = new WriteActor();
 
   public StreamProcessingComposite(
@@ -50,11 +44,6 @@ public class StreamProcessingComposite {
     this.partitionId = partitionId;
     this.zeebeDbFactory = zeebeDbFactory;
     actorScheduler.submitActor(writeActor);
-  }
-
-  public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
-    final String logName = getLogName(partitionId);
-    return streams.getLogStreamRecordWriter(logName);
   }
 
   public SynchronousLogStream getLogStream(final int partitionId) {
@@ -106,36 +95,6 @@ public class StreamProcessingComposite {
             }),
             streamProcessorListenerOpt);
 
-    lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
-
-    return result;
-  }
-
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
-      final StreamProcessorTestFactory factory) {
-    return startTypedStreamProcessorNotAwaitOpening(
-        (processingContext) -> createTypedRecordProcessors(factory, processingContext));
-  }
-
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
-      final TypedRecordProcessorFactory factory) {
-    return startTypedStreamProcessorNotAwaitOpening(partitionId, factory);
-  }
-
-  public StreamProcessor startTypedStreamProcessorNotAwaitOpening(
-      final int partitionId, final TypedRecordProcessorFactory factory) {
-    final var result =
-        streams.startStreamProcessorNotAwaitOpening(
-            getLogName(partitionId),
-            zeebeDbFactory,
-            (processingContext -> {
-              zeebeState = processingContext.getZeebeState();
-
-              return factory.createProcessors(processingContext);
-            }),
-            Optional.empty());
-
-    lastProcessedPositionState = result.getStreamProcessorDbState().getLastProcessedPositionState();
     return result;
   }
 
@@ -167,55 +126,8 @@ public class StreamProcessingComposite {
     return zeebeState;
   }
 
-  public long getLastSuccessfulProcessedRecordPosition() {
-    return lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
-  }
-
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(partitionId)));
-  }
-
-  public long writeProcessInstanceEventWithSource(
-      final ProcessInstanceIntent intent, final int instanceKey, final long sourceEventPosition) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .event(processInstance(instanceKey))
-            .recordType(RecordType.EVENT)
-            .sourceRecordPosition(sourceEventPosition)
-            .intent(intent);
-    return writeActor.submit(writer::write).join();
-  }
-
-  public long writeProcessInstanceEvent(final ProcessInstanceIntent intent, final int instanceKey) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .event(processInstance(instanceKey))
-            .recordType(RecordType.EVENT)
-            .intent(intent);
-    return writeActor.submit(writer::write).join();
-  }
-
-  public long writeEvent(final long key, final Intent intent, final UnpackedObject value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.EVENT)
-            .key(key)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
-  }
-
-  public long writeEvent(final Intent intent, final UnpackedObject value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.EVENT)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
@@ -283,22 +195,8 @@ public class StreamProcessingComposite {
     return writeActor.submit(writer::write).join();
   }
 
-  public long writeCommandRejection(final Intent intent, final UnpackedObject value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND_REJECTION)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
-  }
-
   public static String getLogName(final int partitionId) {
     return STREAM_NAME + partitionId;
-  }
-
-  public MutableLastProcessedPositionState getLastProcessedPositionState() {
-    return lastProcessedPositionState;
   }
 
   /** Used to run writes within an actor thread. */

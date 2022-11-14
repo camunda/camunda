@@ -219,7 +219,7 @@ public class BpmnEventTypeTest {
             }
           },
           new BpmnEventTypeScenario(
-              "Error Catch Event", BpmnElementType.BOUNDARY_EVENT, BpmnEventType.ERROR) {
+              "Error Boundary Event", BpmnElementType.BOUNDARY_EVENT, BpmnEventType.ERROR) {
             @Override
             BpmnModelInstance modelInstance() {
               return Bpmn.createExecutableProcess(processId())
@@ -322,6 +322,64 @@ public class BpmnEventTypeTest {
                   .withCorrelationKey(CORRELATION_KEY)
                   .publish();
             }
+          },
+          new BpmnEventTypeScenario(
+              "Escalation Start Event", BpmnElementType.START_EVENT, BpmnEventType.ESCALATION) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .eventSubProcess(
+                      "subprocess",
+                      sp -> sp.startEvent(elementId()).escalation(escalationCode()).endEvent())
+                  .startEvent()
+                  .intermediateThrowEvent("throw", i -> i.escalation(escalationCode()))
+                  .endEvent()
+                  .done();
+            }
+          },
+          new BpmnEventTypeScenario(
+              "Escalation Throw Event",
+              BpmnElementType.INTERMEDIATE_THROW_EVENT,
+              BpmnEventType.ESCALATION) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .intermediateThrowEvent(elementId(), e -> e.escalation(escalationCode()))
+                  .endEvent()
+                  .done();
+            }
+          },
+          new BpmnEventTypeScenario(
+              "Escalation Boundary Event",
+              BpmnElementType.BOUNDARY_EVENT,
+              BpmnEventType.ESCALATION) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .subProcess(
+                      "subprocess",
+                      sp ->
+                          sp.embeddedSubProcess()
+                              .startEvent()
+                              .intermediateThrowEvent("throw", e -> e.escalation(escalationCode()))
+                              .endEvent())
+                  .boundaryEvent(elementId(), b -> b.escalation(escalationCode()))
+                  .cancelActivity(false)
+                  .endEvent()
+                  .done();
+            }
+          },
+          new BpmnEventTypeScenario(
+              "Escalation End Event", BpmnElementType.END_EVENT, BpmnEventType.ESCALATION) {
+            @Override
+            BpmnModelInstance modelInstance() {
+              return Bpmn.createExecutableProcess(processId())
+                  .startEvent()
+                  .endEvent(elementId(), e -> e.escalation(escalationCode()))
+                  .done();
+            }
           });
 
   @Rule
@@ -385,6 +443,7 @@ public class BpmnEventTypeTest {
     private final String messageName = Strings.newRandomValidBpmnId();
     private final String jobType = Strings.newRandomValidBpmnId();
     private final String errorCode = Strings.newRandomValidBpmnId();
+    private final String escalationCode = Strings.newRandomValidBpmnId();
 
     BpmnEventTypeScenario(
         final String name, final BpmnElementType elementType, final BpmnEventType eventType) {
@@ -425,6 +484,10 @@ public class BpmnEventTypeTest {
 
     String errorCode() {
       return errorCode;
+    }
+
+    String escalationCode() {
+      return escalationCode;
     }
 
     @Override

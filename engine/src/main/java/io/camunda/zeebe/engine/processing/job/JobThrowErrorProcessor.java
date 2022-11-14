@@ -112,7 +112,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     final var errorCode = job.getErrorCodeBuffer();
     final var foundCatchEvent =
-        stateAnalyzer.findCatchEvent(
+        stateAnalyzer.findErrorCatchEvent(
             errorCode, serviceTaskInstance, Optional.of(job.getErrorMessageBuffer()));
     this.foundCatchEvent = foundCatchEvent;
 

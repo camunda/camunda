@@ -1,0 +1,230 @@
+openapi: "3.0.2"
+info:
+  title: Backup Management API
+  version: "1.0"
+  description: Management endpoint to query, take, and delete backups of Zeebe.
+servers:
+  - url: "{schema}://{host}:{port}/actuator/backups"
+    variables:
+      host:
+        default: localhost
+        description: Management server hostname
+      port:
+        default: "9600"
+        description: Management server port
+      schema:
+        default: http
+        description: Management server schema
+paths:
+  /:
+    get:
+      summary: Lists all available backups
+      description: |
+        Returns a list of all available backups with their state and additional info,
+        sorted in descending order of backupId.
+      responses:
+        '200':
+          description: OK
+          $ref: '#/components/responses/BackupList'
+        '400':
+          description: Backup is not enabled or configured on the brokers
+          $ref: '#/components/responses/Error'
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
+  /{backupId}:
+    get:
+      summary: Get information of a backup
+      description: A detailed information of the backup with the give backup id.
+      parameters:
+        - name: backupId
+          in : path
+          description: Backup ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          $ref: '#/components/responses/BackupInfo'
+        '400':
+          description: Backup is not enabled or configured on the brokers
+          $ref: '#/components/responses/Error'
+        '404':
+          description: A backup with given backupId does not exist
+          $ref: '#/components/responses/Error'
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
+
+components:
+  responses:
+    Error:
+      description: Generic error response
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/Error"
+
+    BackupList:
+      description: |
+       List of all available backups.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BackupList'
+
+    BackupInfo:
+      description: Detailed information of a backup
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BackupInfo'
+
+  schemas:
+    Error:
+      title: Error response
+      description: Generic response for all errors
+      type: object
+      properties:
+        message:
+          description: Error message
+          type: string
+          example: something failed
+
+    BackupId:
+      title: Backup ID
+      description: |
+        The ID of the backup. The ID of the backup must be a positive numerical value. As backups
+        are logically ordered by their IDs (ascending), each successive backup must use a higher
+        ID than the previous one.
+      type: number
+      example: 1
+      minimum: 0
+
+    PartitionId:
+      title: Partition ID
+      description: |
+        The ID of a partition. This is always a positive number greater than or equal to 1.
+      type: number
+      minimum: 1
+      example: 3
+
+    StateCode:
+      title: Backup State
+      description: The state of the backup.
+      type: string
+      enum:
+        - DOES_NOT_EXIST
+        - IN_PROGRESS
+        - COMPLETED
+        - FAILED
+        - INCOMPLETE
+        - INCOMPATIBLE
+      example: IN_PROGRESS
+
+    BackupList:
+      title: List of backups
+      description: List of backups with their state and additional info
+      type: array
+      items:
+        $ref: '#/components/schemas/BackupInfo'
+
+    BackupInfo:
+      title: Backup Info
+      description: |
+        Detailed status of a backup. The aggregated state is computed from the backup state of each partition as:
+        - If the backup of all partitions is in state 'COMPLETED', then the overall state is 'COMPLETED'.
+        - If one is 'FAILED', then the overall state is 'FAILED'.
+        - Otherwise, if one is 'DOES_NOT_EXIST', then the overall state is 'INCOMPLETE'.
+        - Otherwise, if one is 'IN_PROGRESS', then the overall state is 'IN_PROGRESS'.
+      type: object
+      properties:
+        backupId:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
+        state:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/StateCode'
+        failureReason:
+          description: Reason for failure if the state is 'FAILED'
+          type: string
+          example: ""
+        details:
+          readOnly: true
+          description: |
+            Detailed list of the status of the backup per partition. It should always contain all
+            partitions known to the cluster.
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/PartitionBackupInfo'
+      required:
+        - backupId
+        - state
+        - details
+
+    PartitionBackupInfo:
+      title: Partition's Backup Info
+      description: Detailed info of the backup for a given partition.
+      type: object
+      properties:
+        partitionId:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/PartitionId'
+        state:
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/StateCode'
+        failureReason:
+          description: Failure reason if stats is 'FAILED'
+          type: string
+          example: ""
+        createdAt:
+          description: The timestamp at which the backup was started on this partition.
+          readOnly: true
+          type: string
+          format: date-time
+          example: "2022-09-15T13:10:38.176514094Z"
+        lastUpdatedAt:
+          description: |
+            The timestamp at which the backup was last updated on this partition, e.g. changed
+            state from IN_PROGRESS to COMPLETED.
+          readOnly: true
+          type: string
+          format: date-time
+          example: "2022-09-15T13:10:38.176514094Z"
+        snapshotId:
+          description: The ID of the snapshot which is included in this backup.
+          type: string
+          readOnly: true
+          example: 238632143-55-690906332-690905294
+        checkpointPosition:
+          description: The position of the checkpoint for this backup.
+          type: number
+          readOnly: true
+          example: 10
+        brokerId:
+          description: The ID of the broker from which the backup was taken for this partition.
+          type: number
+          readOnly: true
+          example: 0
+          minimum: 0
+        brokerVersion:
+          description: The version of the broker from which the backup was taken for this partition.
+          type: string
+          readOnly: true
+          example: 8.1.2
+      required:
+        - partitionId
+        - state

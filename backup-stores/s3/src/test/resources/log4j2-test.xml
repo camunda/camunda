@@ -16,8 +16,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.camunda.zeebe" level="debug"/>
-    <Logger name="software.amazon.awssdk" level="debug" />
+    <Logger name="io.camunda.zeebe" level="trace"/>
     <Logger name="software.amazon.awssdk.request" level="debug" />
 
     <Root level="info">

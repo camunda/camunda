@@ -1,5 +1,6 @@
 # Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_SHA="4da6bae253f3cb77d87a98e78459ab85ab119a53aa2c66914981588a374f0627"
+ARG BASE_DIGEST="sha256:00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"
+ARG BASE_SHA="${BASE_SHA:-@$BASE_DIGEST}"
 
 # Building builder image
 FROM ubuntu:focal as builder
@@ -24,16 +25,16 @@ RUN chmod +x -R ${TMP_DIR}/bin/ && \
 
 # Building application image
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
+FROM eclipse-temurin:17-jre-focal${BASE_SHA} as app
 
 # leave unset to use the default value at the top of the file
-ARG BASE_SHA
+ARG BASE_DIGEST
 ARG VERSION=""
 ARG DATE=""
 ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
-LABEL org.opencontainers.image.base.digest="${BASE_SHA}"
+LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
 LABEL org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:17-jre-focal"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"

@@ -13,8 +13,6 @@ import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
-import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
@@ -38,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import org.slf4j.Logger;
 
 /*
@@ -87,7 +84,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ActorSchedulingService actorSchedulingService;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
-  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
 
@@ -110,15 +106,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
-  private StreamProcessorDbState streamProcessorDbState;
   private ProcessingScheduleServiceImpl scheduleService;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
     lifecycleAwareListeners = processorBuilder.getLifecycleListeners();
     zeebeDb = processorBuilder.getZeebeDb();
-
-    eventApplierFactory = processorBuilder.getEventApplierFactory();
 
     streamProcessorContext =
         processorBuilder
@@ -135,11 +128,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   public static StreamProcessorBuilder builder() {
     return new StreamProcessorBuilder();
-  }
-
-  @Deprecated // only used for tests
-  public StreamProcessorDbState getStreamProcessorDbState() {
-    return streamProcessorDbState;
   }
 
   @Override
@@ -340,7 +328,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             streamProcessorContext.getScheduleService(),
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
-            eventApplierFactory,
             streamProcessorContext.getPartitionCommandSender(),
             streamProcessorContext.getKeyGeneratorControls());
 
@@ -355,7 +342,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     streamProcessorContext.keyGeneratorControls(
         new DbKeyGenerator(partitionId, zeebeDb, transactionContext));
 
-    streamProcessorDbState = new StreamProcessorDbState(zeebeDb, transactionContext);
+    final StreamProcessorDbState streamProcessorDbState =
+        new StreamProcessorDbState(zeebeDb, transactionContext);
     streamProcessorContext.lastProcessedPositionState(
         streamProcessorDbState.getLastProcessedPositionState());
 

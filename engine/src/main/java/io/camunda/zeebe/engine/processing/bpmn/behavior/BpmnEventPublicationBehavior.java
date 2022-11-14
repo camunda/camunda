@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -89,7 +89,7 @@ public final class BpmnEventPublicationBehavior {
   public Either<Failure, CatchEventTuple> findErrorCatchEvent(
       final DirectBuffer errorCode, final BpmnElementContext context) {
     final var flowScopeInstance = elementInstanceState.getInstance(context.getFlowScopeKey());
-    return catchEventAnalyzer.findCatchEvent(errorCode, flowScopeInstance, Optional.empty());
+    return catchEventAnalyzer.findErrorCatchEvent(errorCode, flowScopeInstance, Optional.empty());
   }
 
   /**
@@ -113,24 +113,26 @@ public final class BpmnEventPublicationBehavior {
    * event if the given element instance is exists and is accepting events, e.g. isn't terminating,
    * wasn't interrupted, etc.
    *
-   * @param element the instance of the intermediate throw event
-   * @param activated process instance-related data of the element that is executed
+   * @param throwElementId the element id of the escalation throw event
+   * @param escalation the escalation of throw event
+   * @param context process instance-related data of the element that is executed
    * @return returns true if the escalation throw event can be completed, false otherwise
    */
   public boolean throwEscalationEvent(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext activated) {
-    final var escalation = element.getEscalation();
+      final DirectBuffer throwElementId,
+      final ExecutableEscalation escalation,
+      final BpmnElementContext context) {
     ensureNotNull("escalation", escalation);
 
     final var escalationCode = escalation.getEscalationCode();
     ensureNotNullOrEmpty("escalationCode", escalationCode);
 
     final var record = new EscalationRecord();
-    record.setThrowElementId(element.getId());
+    record.setThrowElementId(throwElementId);
     record.setEscalationCode(BufferUtil.bufferAsString(escalationCode));
-    record.setProcessInstanceKey(activated.getProcessInstanceKey());
+    record.setProcessInstanceKey(context.getProcessInstanceKey());
 
-    final var escalationCatchEvent = findEscalationCatchEvent(escalationCode, activated);
+    final var escalationCatchEvent = findEscalationCatchEvent(escalationCode, context);
 
     boolean canBeCompleted = true;
     boolean escalated = false;
