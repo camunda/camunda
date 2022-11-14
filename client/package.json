@@ -83,7 +83,7 @@
     "prettier": "2.7.1",
     "react-scripts": "4.0.3",
     "source-map-explorer": "2.5.3",
-    "testcafe": "2.0.2",
+    "testcafe": "2.1.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "4.8.4",
     "zeebe-node": "8.1.2"
