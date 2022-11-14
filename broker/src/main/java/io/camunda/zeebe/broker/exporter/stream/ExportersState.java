@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;

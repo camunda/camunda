@@ -19,7 +19,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessor;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

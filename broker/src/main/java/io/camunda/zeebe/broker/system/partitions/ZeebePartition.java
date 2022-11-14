@@ -23,7 +23,7 @@ import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.startup.StartupProcess;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;

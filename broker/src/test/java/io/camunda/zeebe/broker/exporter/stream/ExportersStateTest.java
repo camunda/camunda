@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.util.HashMap;
