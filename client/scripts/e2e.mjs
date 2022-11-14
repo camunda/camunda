@@ -5,15 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-const fetch = require('node-fetch');
-const createTestCafe = require('testcafe');
-const chalk = require('chalk');
+import fetch from 'node-fetch';
+import createTestCafe from 'testcafe';
+import chalk from 'chalk';
 
-const {spawn} = require('child_process');
-const kill = require('tree-kill');
-const fs = require('fs');
-const stream = require('stream');
-const path = require('path');
+import {spawn} from 'child_process';
+import kill from 'tree-kill';
+import {createWriteStream, chmodSync} from 'fs';
+import {pipeline} from 'stream';
+import {resolve as _resolve} from 'path';
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
@@ -52,16 +52,16 @@ if (ciMode && !chromeheadlessMode) {
         throw new Error(`unexpected response ${response.statusText}`);
       }
 
-      stream.pipeline(response.body, fs.createWriteStream('BrowserStackLocal'), (err) => {
+      pipeline(response.body, createWriteStream('BrowserStackLocal'), (err) => {
         if (err) {
           console.error('Pipeline failed.', err);
         } else {
           console.log('BrowserStackLocal file downloaded. Starting daemon.');
-          fs.chmodSync('BrowserStackLocal', 0o755);
+          chmodSync('BrowserStackLocal', 0o755);
           spawnWithArgs(
             `./BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon start --parallel-runs 3`,
             {
-              cwd: path.resolve(__dirname, '..'),
+              cwd: _resolve(__dirname, '..'),
             }
           );
         }
@@ -80,7 +80,7 @@ const frontendProcess = spawn('yarn', ['start']);
 if (ciMode) {
   backendProcess.stderr.on('data', (data) => console.error(data.toString()));
 
-  const logStream = fs.createWriteStream('./build/backendLogs.log', {flags: 'a'});
+  const logStream = createWriteStream('./build/backendLogs.log', {flags: 'a'});
   backendProcess.stdout.pipe(logStream);
   backendProcess.stderr.pipe(logStream);
 }
@@ -165,7 +165,7 @@ async function startTest() {
       spawnWithArgs(
         `BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon stop`,
         {
-          cwd: path.resolve(__dirname, '..'),
+          cwd: _resolve(__dirname, '..'),
         }
       );
     }
