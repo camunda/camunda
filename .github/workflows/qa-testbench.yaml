@@ -7,13 +7,24 @@ on:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
         default: 'Zeebe SNAPSHOT'
+        type: string
       branch:
         description: 'Specifies the branch, for which the QA Testbench run should be executed'
         default: 'main'
         required: false
-  schedule:
-  # * is a special character in YAML so you have to quote this string
-    - cron:  '0 23 * * *'
+        type: string
+  workflow_call:
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
+        type: string
 env:
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
@@ -24,12 +35,17 @@ jobs:
     timeout-minutes: 45
     env:
       IMAGE: "gcr.io/zeebe-io/zeebe"
-      GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
-      BRANCH_NAME: "${{ github.event.inputs.branch }}"
+      GENERATION_TEMPLATE: "${{ inputs.generation || 'Zeebe Snapshot' }}"
+      BRANCH_NAME: "${{ inputs.branch || github.ref_name || 'main' }}"
       ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
       ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
 
     steps:
+      # We need to check out the evaluated branch and setup java (incl. maven), so we can retrieve the current project version
+      # The version is necessary, since CC Saas only accepts SemVer for docker image tags (need to start with a version tag)
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ env.BRANCH_NAME }}"
       # Dynamic environment variables are not supported by GHA
       # https://brandur.org/fragments/github-actions-env-vars-in-env-vars
       #
@@ -43,11 +59,6 @@ jobs:
           branch=${branch:-main}
           echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
           echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
-      # We need to check out the evaluated branch and setup java (incl. maven), so we can retrieve the current project version
-      # The version is necessary, since CC Saas only accepts SemVer for docker image tags (need to start with a version tag)
-      - uses: actions/checkout@v3
-        with:
-          ref: "${{ github.event.inputs.branch }}"
       - uses: actions/setup-java@v3.6.0
         with:
           distribution: 'temurin'
@@ -102,8 +113,8 @@ jobs:
     needs: [qa-testbench]
     if: ${{ always() }}
     env:
-      GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
-      BRANCH_NAME: "${{ github.event.inputs.branch }}"
+      GENERATION_TEMPLATE: "${{ inputs.generation || 'Zeebe Snapshot' }}"
+      BRANCH_NAME: "${{ inputs.branch || github.ref_name || 'main' }}"
     steps:
       # Sharing environment variables are not supported, so we have to do it here again
       - id: evaluate-inputs
