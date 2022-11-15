@@ -12,12 +12,13 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.PreAllocateStrategy;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.util.unit.DataSize;
 
 final class RaftPartitionGroupFactoryTest {
@@ -155,16 +156,18 @@ final class RaftPartitionGroupFactoryTest {
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  void shouldSetSegmentFilesPreallocation(final boolean value) {
+  @EnumSource(PreAllocateStrategy.class)
+  void shouldSetSegmentFilesPreallocation(final PreAllocateStrategy strategy) {
     // given
-    brokerCfg.getExperimental().getRaft().setPreallocateSegmentFiles(value);
+    final var raft = brokerCfg.getExperimental().getRaft();
+    raft.setPreAllocateStrategy(strategy);
 
     // when
     final var config = buildRaftPartitionGroup();
 
     // then
-    assertThat(config.getStorageConfig().isPreallocateSegmentFiles()).isEqualTo(value);
+    assertThat(config.getStorageConfig().getSegmentAllocator())
+        .isEqualTo(raft.getPreAllocateStrategy().segmentAllocator());
   }
 
   private RaftPartitionGroupConfig buildRaftPartitionGroup() {
