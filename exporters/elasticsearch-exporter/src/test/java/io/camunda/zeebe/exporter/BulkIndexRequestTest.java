@@ -34,10 +34,14 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
+
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private static final int PARTITION_ID = 1;
+
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
+      new TypeReference<>() {};
 
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final BulkIndexRequest request = new BulkIndexRequest();
@@ -69,8 +73,7 @@ final class BulkIndexRequestTest {
       final Record<RecordValue> record, final RecordSequence recordSequence) throws IOException {
 
     final var serializedRecord = MAPPER.writeValueAsBytes(record);
-    final var recordAsMap =
-        MAPPER.readValue(serializedRecord, new TypeReference<Map<String, Object>>() {});
+    final var recordAsMap = MAPPER.readValue(serializedRecord, MAP_TYPE_REFERENCE);
     // The sequence property is not part of the record itself. It is added additionally in the
     // Elasticsearch exporter. We need to do the same in the test to get the correct memory usage.
     recordAsMap.put("sequence", recordSequence.sequence());
@@ -192,6 +195,32 @@ final class BulkIndexRequestTest {
           .containsExactly(
               Tuple.tuple(actions.get(0), records.get(0)),
               Tuple.tuple(actions.get(1), records.get(1)));
+    }
+
+    @Test
+    void shouldIndexRecordWithSequence() {
+      // given
+      final var records = recordFactory.generateRecords().limit(2).toList();
+
+      final var actions =
+          List.of(
+              new BulkIndexAction("index", "id", "routing"),
+              new BulkIndexAction("index2", "id2", "routing2"));
+
+      final var recordSequences =
+          List.of(new RecordSequence(PARTITION_ID, 10), new RecordSequence(PARTITION_ID, 20));
+
+      // when
+      request.index(actions.get(0), records.get(0), recordSequences.get(0));
+      request.index(actions.get(1), records.get(1), recordSequences.get(1));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(2)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("sequence"))
+          .describedAs("Expect that the records are serialized with the sequences")
+          .containsExactly(recordSequences.get(0).sequence(), recordSequences.get(1).sequence());
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {
