@@ -11,12 +11,12 @@ import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -182,31 +182,27 @@ final class SegmentLoader {
       final Path segmentPath, final SegmentDescriptor descriptor, final long lastWrittenIndex)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
-    try (final var channel =
-        FileChannel.open(
-            segmentPath,
-            StandardOpenOption.READ,
-            StandardOpenOption.WRITE,
-            StandardOpenOption.CREATE_NEW)) {
-      allocator.allocate(channel, maxSegmentSize);
-      return mapSegment(channel, maxSegmentSize);
-    } catch (final FileAlreadyExistsException e) {
+
+    if (Files.exists(segmentPath)) {
       // do not reuse a segment into which we've already written!
       if (lastWrittenIndex >= descriptor.index()) {
         throw new JournalException(
             String.format(
                 "Failed to create journal segment %s, as it already exists, and the last written "
                     + "index %d indicates we've already written to it",
-                segmentPath, lastWrittenIndex),
-            e);
+                segmentPath, lastWrittenIndex));
       }
 
       LOGGER.warn(
           "Failed to create segment {}: an unused file already existed, and will be replaced",
-          segmentPath,
-          e);
+          segmentPath);
       Files.delete(segmentPath);
       return mapNewSegment(segmentPath, descriptor, lastWrittenIndex);
+    }
+
+    try (final var file = new RandomAccessFile(segmentPath.toFile(), "rw")) {
+      allocator.allocate(file.getFD(), file.getChannel(), maxSegmentSize);
+      return mapSegment(file.getChannel(), maxSegmentSize);
     }
   }
 }
