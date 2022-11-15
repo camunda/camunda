@@ -25,13 +25,15 @@ final class ManifestCompatabilityTest {
     final var manifest =
         objectReader.readValue(
             getClass().getResourceAsStream("/manifests/8.1/completed.json"),
-            CompletedBackupManifest.class);
+            ValidBackupManifest.class);
 
     // then
-    Assertions.assertThat(manifest.segmentFiles()).isNotNull();
-    Assertions.assertThat(manifest.snapshotFiles()).isNotNull();
-    Assertions.assertThat(manifest.segmentFiles().files()).isNotEmpty();
-    Assertions.assertThat(manifest.snapshotFiles().files()).isNotEmpty();
+    Assertions.assertThat(manifest).isInstanceOf(CompletedBackupManifest.class);
+    final var completed = (CompletedBackupManifest) manifest;
+    Assertions.assertThat(completed.segmentFiles()).isNotNull();
+    Assertions.assertThat(completed.snapshotFiles()).isNotNull();
+    Assertions.assertThat(completed.segmentFiles().files()).isNotEmpty();
+    Assertions.assertThat(completed.snapshotFiles().files()).isNotEmpty();
   }
 
   @Test

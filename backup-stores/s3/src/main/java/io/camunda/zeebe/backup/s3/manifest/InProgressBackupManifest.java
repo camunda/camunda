@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.s3.manifest;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -18,8 +19,8 @@ import java.util.Optional;
 public record InProgressBackupManifest(
     BackupIdentifierImpl id,
     BackupDescriptorImpl descriptor,
-    FileSet snapshotFiles,
-    FileSet segmentFiles,
+    @JsonAlias("snapshotFileNames") FileSet snapshotFiles,
+    @JsonAlias("segmentFileNames") FileSet segmentFiles,
     Instant createdAt,
     Instant modifiedAt)
     implements ValidBackupManifest {
