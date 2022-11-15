@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.log;
 
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import java.io.File;
@@ -119,15 +120,14 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   }
 
   /**
-   * Sets whether segment files are pre-allocated at creation. If true, segment files are
-   * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
-   * before any writes happen.
+   * Sets the segment allocation strategy to use. Defaults to {@link SegmentAllocator::fill}. To
+   * disable, set to {@link SegmentAllocator::noop}.
    *
-   * @param preallocateSegmentFiles true to preallocate files, false otherwise
+   * @param segmentAllocator the segment allocation strategy to use
    * @return this builder for chaining
    */
-  public RaftLogBuilder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
-    journalBuilder.withPreallocateSegmentFiles(preallocateSegmentFiles);
+  public RaftLogBuilder withSegmentAllocator(final SegmentAllocator segmentAllocator) {
+    journalBuilder.withSegmentAllocator(segmentAllocator);
     return this;
   }
 

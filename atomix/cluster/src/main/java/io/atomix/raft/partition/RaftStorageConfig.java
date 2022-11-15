@@ -18,7 +18,9 @@ package io.atomix.raft.partition;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.utils.memory.MemorySize;
+import io.camunda.zeebe.journal.file.SegmentAllocator;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
+import java.util.Objects;
 
 /** Raft storage configuration. */
 public class RaftStorageConfig {
@@ -29,14 +31,14 @@ public class RaftStorageConfig {
   private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
-  private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
+  private static final SegmentAllocator DEFAULT_SEGMENT_ALLOCATOR = SegmentAllocator.fill();
 
   private String directory;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
   private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
-  private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+  private SegmentAllocator segmentAllocator = DEFAULT_SEGMENT_ALLOCATOR;
 
   @Optional("SnapshotStoreFactory")
   private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
@@ -157,19 +159,20 @@ public class RaftStorageConfig {
   }
 
   /**
-   * @return true to preallocate segment files, false otherwise
+   * @return the segment allocation strategy to use
    */
-  public boolean isPreallocateSegmentFiles() {
-    return preallocateSegmentFiles;
+  public SegmentAllocator getSegmentAllocator() {
+    return segmentAllocator;
   }
 
   /**
-   * Sets whether segment files are pre-allocated at creation. If true, segment files are
-   * pre-allocated to {@link #segmentSize} at creation before any writes happen.
+   * Sets the segment allocation strategy to use. Defaults to {@link SegmentAllocator::fill}. To
+   * disable, set it to {@link SegmentAllocator::noop}.
    *
-   * @param preallocateSegmentFiles true to preallocate files, false otherwise
+   * @param segmentAllocator the segment allocation strategy to use
    */
-  public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
-    this.preallocateSegmentFiles = preallocateSegmentFiles;
+  public void setSegmentAllocator(final SegmentAllocator segmentAllocator) {
+    this.segmentAllocator =
+        Objects.requireNonNull(segmentAllocator, "must specify a segment allocator");
   }
 }
