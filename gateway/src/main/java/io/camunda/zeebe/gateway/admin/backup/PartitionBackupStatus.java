@@ -10,14 +10,19 @@ package io.camunda.zeebe.gateway.admin.backup;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 
 public record PartitionBackupStatus(
     int partitionId,
     BackupStatusCode status,
-    Optional<PartitionBackupDescriptor> description,
     Optional<String> failureReason,
     Optional<String> createdAt,
-    Optional<String> lastUpdatedAt) {
+    Optional<String> lastUpdatedAt,
+    Optional<String> snapshotId,
+    OptionalLong checkpointPosition,
+    OptionalInt brokerId,
+    Optional<String> brokerVersion) {
 
   static PartitionBackupStatus from(final BackupStatusResponse response) {
 
@@ -31,19 +36,18 @@ public record PartitionBackupStatus(
   }
 
   private static PartitionBackupStatus validStatus(final BackupStatusResponse response) {
-    final var descriptor =
-        new PartitionBackupDescriptor(
-            response.getSnapshotId(),
-            response.getCheckpointPosition(),
-            response.getBrokerId(),
-            response.getBrokerVersion());
     return new PartitionBackupStatus(
         response.getPartitionId(),
         response.getStatus(),
-        Optional.of(descriptor),
         Optional.empty(),
         Optional.ofNullable(response.getCreatedAt()),
-        Optional.ofNullable(response.getLastUpdated()));
+        Optional.ofNullable(response.getLastUpdated()),
+        Optional.ofNullable(response.getSnapshotId()),
+        response.hasCheckpointPosition()
+            ? OptionalLong.of(response.getCheckpointPosition())
+            : OptionalLong.empty(),
+        response.hasBrokerId() ? OptionalInt.of(response.getBrokerId()) : OptionalInt.empty(),
+        Optional.ofNullable(response.getBrokerVersion()));
   }
 
   private static PartitionBackupStatus notExistingStatus(final BackupStatusResponse response) {
@@ -53,6 +57,9 @@ public record PartitionBackupStatus(
         Optional.empty(),
         Optional.empty(),
         Optional.empty(),
+        Optional.empty(),
+        OptionalLong.empty(),
+        OptionalInt.empty(),
         Optional.empty());
   }
 
@@ -60,9 +67,12 @@ public record PartitionBackupStatus(
     return new PartitionBackupStatus(
         response.getPartitionId(),
         BackupStatusCode.FAILED,
-        Optional.empty(),
         Optional.of(response.getFailureReason()),
         Optional.ofNullable(response.getCreatedAt()),
-        Optional.ofNullable(response.getLastUpdated()));
+        Optional.ofNullable(response.getLastUpdated()),
+        Optional.ofNullable(response.getSnapshotId()),
+        OptionalLong.empty(),
+        OptionalInt.empty(),
+        Optional.empty());
   }
 }

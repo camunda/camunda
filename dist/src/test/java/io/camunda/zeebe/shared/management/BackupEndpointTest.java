@@ -15,13 +15,14 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
-import io.camunda.zeebe.gateway.admin.backup.PartitionBackupDescriptor;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.shared.management.BackupEndpoint.ErrorResponse;
 import io.camunda.zeebe.shared.management.BackupEndpoint.TakeBackupResponse;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
@@ -167,14 +168,13 @@ final class BackupEndpointTest {
       return new PartitionBackupStatus(
           partitionId,
           BackupStatusCode.COMPLETED,
-          Optional.of(createDescriptor()),
           Optional.empty(),
           Optional.of("2022-09-19T14:44:17.340409393Z"),
-          Optional.of("2022-09-20T14:44:17.340409393Z"));
-    }
-
-    private PartitionBackupDescriptor createDescriptor() {
-      return new PartitionBackupDescriptor("1-1-1-1", 1, 0, "8.0.6");
+          Optional.of("2022-09-20T14:44:17.340409393Z"),
+          Optional.of("1-1-1-1"),
+          OptionalLong.of(1),
+          OptionalInt.of(0),
+          Optional.of("8.0.6"));
     }
 
     private BackupStatus createFailedBackupStatus() {
@@ -193,6 +193,9 @@ final class BackupEndpointTest {
           Optional.empty(),
           Optional.of("Failed backup"),
           Optional.empty(),
+          Optional.empty(),
+          OptionalLong.empty(),
+          OptionalInt.empty(),
           Optional.empty());
     }
   }
