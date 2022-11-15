@@ -8,6 +8,7 @@
 package io.camunda.zeebe.qa.util.actuator;
 
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.Feign;
 import feign.FeignException;
 import feign.FeignException.InternalServerError;
@@ -21,8 +22,8 @@ import feign.Target.HardCodedTarget;
 import feign.codec.ErrorDecoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
-import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
+import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.zeebe.containers.ZeebeNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -61,7 +62,7 @@ public interface BackupActuator {
   @SuppressWarnings("JavadocLinkAsPlainText")
   static BackupActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(BackupActuator.class, endpoint);
-    final var decoder = new JacksonDecoder(List.of(new Jdk8Module()));
+    final var decoder = new JacksonDecoder(List.of(new Jdk8Module(), new JavaTimeModule()));
 
     return Feign.builder()
         .encoder(new JacksonEncoder())
@@ -82,7 +83,7 @@ public interface BackupActuator {
 
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  BackupStatus status(@Param final long id);
+  BackupInfo status(@Param final long id);
 
   /**
    * Custom error handler, mapping errors with body to custom types for easier

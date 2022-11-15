@@ -14,13 +14,13 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
-import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
+import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.util.Map;
@@ -120,8 +120,8 @@ final class RestoreAcceptanceIT {
             () -> {
               final var status = actuator.status(response.id());
               assertThat(status)
-                  .extracting(BackupStatus::backupId, BackupStatus::status)
-                  .containsExactly(1L, BackupStatusCode.COMPLETED);
+                  .extracting(BackupInfo::getBackupId, BackupInfo::getState)
+                  .containsExactly(1L, StateCode.COMPLETED);
             });
 
     // then
@@ -147,8 +147,8 @@ final class RestoreAcceptanceIT {
             () -> {
               final var status = actuator.status(response.id());
               assertThat(status)
-                  .extracting(BackupStatus::backupId, BackupStatus::status)
-                  .containsExactly(1L, BackupStatusCode.COMPLETED);
+                  .extracting(BackupInfo::getBackupId, BackupInfo::getState)
+                  .containsExactly(1L, StateCode.COMPLETED);
             });
 
     // then -- restore container exits with an error code
