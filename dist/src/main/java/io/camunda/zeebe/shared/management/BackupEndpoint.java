@@ -10,8 +10,18 @@ package io.camunda.zeebe.shared.management;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
+import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
+import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
+import io.camunda.zeebe.shared.management.openapi.models.Error;
+import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
+import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -52,21 +62,71 @@ final class BackupEndpoint {
     }
   }
 
-  // TODO: do not use the internal data type directly, but later use the OpenAPI generated models on
-  //       both the client and server side
   @ReadOperation
   public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
     try {
       final BackupStatus status = api.getStatus(id).toCompletableFuture().join();
-      return new WebEndpointResponse<>(status);
+      final BackupInfo backupInfo =
+          new BackupInfo().backupId(status.backupId()).state(getBackupStateCode(status.status()));
+      status.failureReason().ifPresent(backupInfo::setFailureReason);
+      final var details = status.partitions().stream().map(this::toPartitionBackupInfo).toList();
+      backupInfo.setDetails(details);
+      return new WebEndpointResponse<>(backupInfo);
     } catch (final CompletionException e) {
       return new WebEndpointResponse<>(
-          new ErrorResponse(id, e.getCause().getMessage()),
+          new Error().message(e.getCause().getMessage()),
           WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
-          new ErrorResponse(id, e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
+  }
+
+  private PartitionBackupInfo toPartitionBackupInfo(final PartitionBackupStatus partitionStatus) {
+    final var partitionBackupInfo =
+        new PartitionBackupInfo()
+            .partitionId(partitionStatus.partitionId())
+            .state(getPartitionBackupStateCode(partitionStatus.status()));
+    partitionStatus.failureReason().ifPresent(partitionBackupInfo::setFailureReason);
+    partitionStatus
+        .createdAt()
+        .ifPresent(
+            time -> {
+              final var i = Instant.parse(time);
+              partitionBackupInfo.createdAt(OffsetDateTime.ofInstant(i, ZoneId.of("UTC")));
+            });
+    partitionStatus
+        .lastUpdatedAt()
+        .ifPresent(
+            time -> {
+              final var i = Instant.parse(time);
+              partitionBackupInfo.lastUpdatedAt(OffsetDateTime.ofInstant(i, ZoneId.of("UTC")));
+            });
+    partitionStatus.brokerId().ifPresent(partitionBackupInfo::setBrokerId);
+    partitionStatus.brokerVersion().ifPresent(partitionBackupInfo::setBrokerVersion);
+    partitionStatus.snapshotId().ifPresent(partitionBackupInfo::setSnapshotId);
+    partitionStatus.checkpointPosition().ifPresent(partitionBackupInfo::setCheckpointPosition);
+    return partitionBackupInfo;
+  }
+
+  private StateCode getBackupStateCode(final State state) {
+    return switch (state) {
+      case IN_PROGRESS -> StateCode.IN_PROGRESS;
+      case COMPLETED -> StateCode.COMPLETED;
+      case FAILED -> StateCode.FAILED;
+      case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
+      case INCOMPLETE -> StateCode.INCOMPLETE;
+    };
+  }
+
+  private StateCode getPartitionBackupStateCode(final BackupStatusCode status) {
+    return switch (status) {
+      case IN_PROGRESS -> StateCode.IN_PROGRESS;
+      case COMPLETED -> StateCode.COMPLETED;
+      case FAILED -> StateCode.FAILED;
+      case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
+      default -> throw new IllegalStateException("Unknown BackupState %s".formatted(status));
+    };
   }
 
   @VisibleForTesting
