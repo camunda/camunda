@@ -4,6 +4,7 @@
 #
 # Example usage:
 #   $ ./verify.sh camunda/zeebe:8.1.0
+#   $ ./verify.sh camunda/zeebe:8.1.0 arm64
 #
 # Globals:
 #   VERSION - required; the semantic version, e.g. 8.1.0 or 1.2.0-alpha1
@@ -11,6 +12,7 @@
 #   DATE - required; the ISO 8601 date at which the image was built
 # Arguments:
 #   1 - Docker image name
+#   2 - (optional) image architecture/platform e.g. amd64 (default) or arm64
 # Outputs:
 #   STDERR Error message if any of the properties are invalid
 # Returns:
@@ -40,10 +42,17 @@ if [ -z "${DATE}" ]; then
 fi
 
 imageName="${1}"
+arch="${2:-amd64}"
 
 # Check that the image exists
 if ! imageInfo="$(docker inspect "${imageName}")"; then
   echo >&2 "No known Docker image ${imageName} exists; did you pass the right name?"
+  exit 1
+fi
+
+actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture')
+if [ "$actualArchitecture" != "\"$arch\"" ]; then
+  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"."
   exit 1
 fi
 
@@ -59,7 +68,7 @@ if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" =
 fi
 
 # Generate the expected labels files with the dynamic properties substituted
-labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
+labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels-${arch}.golden.json"
 expectedLabels=$(
   jq --sort-keys -n \
     --arg VERSION "${VERSION}" \
