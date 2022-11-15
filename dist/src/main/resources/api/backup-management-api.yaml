@@ -166,8 +166,7 @@ components:
             partitions known to the cluster.
           type: array
           items:
-            allOf:
-              - $ref: '#/components/schemas/PartitionBackupInfo'
+            $ref: '#/components/schemas/PartitionBackupInfo'
       required:
         - backupId
         - state
