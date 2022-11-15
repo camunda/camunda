@@ -29,6 +29,7 @@ const instanceColumns = {
     'processInstanceId',
     'numberOfIncidents',
     'numberOfOpenIncidents',
+    'numberOfUserTasks',
     'businessKey',
     'startDate',
     'endDate',

@@ -209,6 +209,7 @@ describe('Decision table', () => {
           'startDate',
           'numberOfIncidents',
           'numberOfOpenIncidents',
+          'numberOfUserTasks',
           'endDate',
           'duration',
           'engineName',
