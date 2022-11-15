@@ -29,12 +29,12 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.MessageTr
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.MultiInstanceActivityTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ReceiveTaskTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.ScriptTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.SequenceFlowTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.StartEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.SubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.UserTaskTransformer;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
 import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
@@ -83,9 +83,9 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new EndEventTransformer());
     step2Visitor.registerHandler(new FlowNodeTransformer());
     step2Visitor.registerHandler(new JobWorkerElementTransformer<>(ServiceTask.class));
-    step2Visitor.registerHandler(new JobWorkerElementTransformer<>(ScriptTask.class));
     step2Visitor.registerHandler(new JobWorkerElementTransformer<>(SendTask.class));
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
+    step2Visitor.registerHandler(new ScriptTaskTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
     step2Visitor.registerHandler(new UserTaskTransformer(expressionLanguage));
