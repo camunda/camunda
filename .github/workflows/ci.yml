@@ -289,7 +289,6 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          cache: maven
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
