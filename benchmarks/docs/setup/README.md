@@ -69,19 +69,7 @@ Once these secrets exist, you can now install the operator. To do so, run:
 helm install metrics stable/prometheus-operator --atomic -f prometheus-operator-values.yml
 ```
 
-If you want to set up an ingress for Grafana (e.g. public endpoint), you can run
-
-```sh
-kubectl apply -f grafana-load-balancer.yml
-```
-
-You can then obtain your Grafana URL by checking the ingress' external IP, e.g.
-
-```sh
-kubectl get svc metrics-grafana-loadbalancer -o "custom-columns=ip:status.loadBalancer.ingress[0].ip"
-```
-
-If you don't need an ingress, you can simply proxy the Grafana port so it's available locally:
+To access Grafana, you can simply proxy the Grafana port so it's available locally:
 
 ```sh
 kubectl port-forward svc/metrics-grafana-loadbalancer :80

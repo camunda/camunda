@@ -2,31 +2,16 @@ alertmanager:
   enabled: true
 
 grafana:
+  image:
+    tag: 8.5.15
   admin:
     existingSecret: grafana-admin-password
     userKey: admin-user
     passwordKey: admin-password
   grafana.ini:
-    server:
-      # REPLACE THIS WITH THE ACTUAL ROOT URL
-      root_url: "http://34.77.165.228"
-    auth.github:
+    auth.anonymous:
       enabled: true
-      allow_sign_up: true
-      scopes: user:email,read:org
-      auth_url: https://github.com/login/oauth/authorize
-      token_url: https://github.com/login/oauth/access_token
-      api_url: https://api.github.com/user
-      allowed_organizations: zeebe-io camunda camunda-cloud
-      client_id: "$__file{/etc/secrets/auth-github-oauth/client_id}"
-      client_secret: "$__file{/etc/secrets/auth-github-oauth/client_secret}"
-      role_attribute_path: "editor"
-  extraSecretMounts:
-    - name: auth-github-oauth
-      secretName: auth-github-oauth
-      defaultMode: 0440
-      mountPath: /etc/secrets/auth-github-oauth
-      readOnly: true
+      org_role: Editor
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
