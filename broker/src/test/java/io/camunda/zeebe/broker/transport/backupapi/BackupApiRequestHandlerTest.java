@@ -242,7 +242,7 @@ final class BackupApiRequestHandlerTest {
         .returns(
             BackupStatusResponseEncoder.numberOfPartitionsNullValue(),
             BackupStatusResponse::getNumberOfPartitions)
-        .matches(response -> response.getSnapshotId().isEmpty())
+        .returns(null, BackupStatusResponse::getSnapshotId)
         .returns(BackupStatusCode.FAILED, BackupStatusResponse::getStatus)
         .returns("Expected", BackupStatusResponse::getFailureReason);
   }
