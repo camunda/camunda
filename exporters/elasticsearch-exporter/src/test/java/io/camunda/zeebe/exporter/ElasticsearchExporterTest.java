@@ -160,7 +160,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client).putComponentTemplate();
@@ -174,7 +176,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client, never()).putComponentTemplate();
@@ -190,7 +194,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client, times(1)).putIndexTemplate(valueType);
@@ -206,7 +212,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client, never()).putIndexTemplate(valueType);
@@ -223,8 +231,11 @@ final class ElasticsearchExporterTest {
       when(client.shouldFlush()).thenReturn(false, true);
 
       // when
-      exporter.export(mock(Record.class));
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+
+      exporter.export(recordMock);
+      exporter.export(recordMock);
 
       // then
       verify(client, times(1)).flush();
@@ -260,7 +271,11 @@ final class ElasticsearchExporterTest {
     @Test
     void shouldUpdateLastExportedPositionOnFlush() {
       // given
-      final var record = ImmutableRecord.builder().withPosition(10L).build();
+      final var record =
+          ImmutableRecord.builder()
+              .withPosition(10L)
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .build();
       exporter.configure(context);
       exporter.open(controller);
       when(client.shouldFlush()).thenReturn(true);
@@ -275,7 +290,11 @@ final class ElasticsearchExporterTest {
     @Test
     void shouldNotUpdatePositionOnFlushErrors() {
       // given
-      final var record = ImmutableRecord.builder().withPosition(10L).build();
+      final var record =
+          ImmutableRecord.builder()
+              .withPosition(10L)
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .build();
       exporter.configure(context);
       exporter.open(controller);
       when(client.shouldFlush()).thenReturn(true);

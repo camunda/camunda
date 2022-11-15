@@ -41,6 +41,8 @@ final class ElasticsearchClientIT {
           .withEnv("xpack.security.authc.anonymous.roles", "superuser")
           .withEnv("xpack.security.authc.anonymous.authz_exception", "true");
 
+  private static final int PARTITION_ID = 1;
+
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
@@ -65,7 +67,7 @@ final class ElasticsearchClientIT {
             RestClientFactory.of(config),
             indexRouter,
             templateReader,
-            new ElasticsearchMetrics(1));
+            new ElasticsearchMetrics(PARTITION_ID));
   }
 
   @AfterEach
@@ -79,7 +81,7 @@ final class ElasticsearchClientIT {
     // date, which must be a positive number of milliseconds since the UNIX epoch
     final var invalidRecord =
         recordFactory.generateRecord(ValueType.VARIABLE, b -> b.withTimestamp(Long.MIN_VALUE));
-    client.index(invalidRecord);
+    client.index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
     client.putComponentTemplate();
     client.putIndexTemplate(ValueType.VARIABLE);
 
