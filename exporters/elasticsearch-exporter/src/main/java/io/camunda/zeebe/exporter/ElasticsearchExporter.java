@@ -22,8 +22,6 @@ import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporter implements Exporter {
 
-  public static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
-
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
 
