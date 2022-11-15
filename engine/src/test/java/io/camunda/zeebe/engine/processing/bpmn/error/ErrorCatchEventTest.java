@@ -14,9 +14,16 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -208,5 +215,59 @@ public final class ErrorCatchEventTest {
             tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(expectedActivatedElement, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldThrowErrorWithVariables() {
+    // given
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .withVariables("{'foo':'bar'}")
+        .throwError();
+
+    // then
+    final List<Record<VariableRecordValue>> variableRecords =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .collect(Collectors.toList());
+
+    final List<Record<ProcessInstanceRecordValue>> errorEvents =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .limitToProcessInstanceCompleted()
+            .withElementId(expectedActivatedElement)
+            .withRecordType(RecordType.EVENT)
+            .withElementType(BpmnElementType.BOUNDARY_EVENT)
+            .asList();
+
+    if (errorEvents.size() > 0) {
+      assertThat(variableRecords)
+          .filteredOn(r -> r.getValue().getName().equals("foo"))
+          .extracting(
+              r -> r.getValue().getName(),
+              r -> r.getValue().getValue(),
+              r -> r.getValue().getScopeKey(),
+              Record::getIntent)
+          .containsExactly(
+              tuple("foo", "\"bar\"", errorEvents.get(0).getKey(), VariableIntent.CREATED));
+    } else {
+      assertThat(variableRecords)
+          .filteredOn(r -> r.getValue().getName().equals("foo"))
+          .extracting(
+              r -> r.getValue().getName(),
+              r -> r.getValue().getValue(),
+              r -> r.getValue().getScopeKey(),
+              Record::getIntent)
+          .describedAs("With event sub process the variables are created at the process instance")
+          .containsExactly(tuple("foo", "\"bar\"", processInstanceKey, VariableIntent.CREATED));
+    }
   }
 }

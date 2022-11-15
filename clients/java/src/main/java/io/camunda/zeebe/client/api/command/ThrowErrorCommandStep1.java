@@ -15,6 +15,9 @@
  */
 package io.camunda.zeebe.client.api.command;
 
+import java.io.InputStream;
+import java.util.Map;
+
 public interface ThrowErrorCommandStep1 {
   /**
    * Set the errorCode for the error.
@@ -38,5 +41,41 @@ public interface ThrowErrorCommandStep1 {
      *     it to the broker.
      */
     ThrowErrorCommandStep2 errorMessage(String errorMsg);
+
+    /**
+     * Set the variables of this job.
+     *
+     * @param variables the variables (JSON) as stream
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ThrowErrorCommandStep2 variables(InputStream variables);
+
+    /**
+     * Set the variables of this job.
+     *
+     * @param variables the variables (JSON) as String
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ThrowErrorCommandStep2 variables(String variables);
+
+    /**
+     * Set the variables of this job.
+     *
+     * @param variables the variables as map
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ThrowErrorCommandStep2 variables(Map<String, Object> variables);
+
+    /**
+     * Set the variables of this job.
+     *
+     * @param variables the variables as object
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    ThrowErrorCommandStep2 variables(Object variables);
   }
 }

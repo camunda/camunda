@@ -96,7 +96,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       return;
     }
 
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get());
+    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
   }
 
   private void acceptCommand(
@@ -106,6 +106,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final JobRecord job = jobState.getJob(jobKey);
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
     job.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    job.setVariables(command.getValue().getVariablesBuffer());
 
     final var serviceTaskInstanceKey = job.getElementInstanceKey();
     final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);

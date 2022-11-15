@@ -29,6 +29,11 @@ public final class BrokerThrowErrorRequest extends BrokerExecuteCommand<JobRecor
     return this;
   }
 
+  public BrokerThrowErrorRequest setVariables(final DirectBuffer variables) {
+    requestDto.setVariables(variables);
+    return this;
+  }
+
   @Override
   public JobRecord getRequestWriter() {
     return requestDto;

@@ -75,6 +75,24 @@ public final class BpmnEventPublicationBehavior {
   }
 
   /**
+   * Throws an error event to the given element instance/catch event pair. Only throws the event if
+   * the given element instance is exists and is accepting events, e.g. isn't terminating, wasn't
+   * interrupted, etc.
+   *
+   * @param catchEventTuple a tuple representing a catch event and its current instance
+   */
+  public void throwErrorEvent(
+      final CatchEventAnalyzer.CatchEventTuple catchEventTuple, final DirectBuffer variables) {
+    final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
+    final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
+
+    if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
+      eventHandle.activateElement(
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables);
+    }
+  }
+
+  /**
    * Finds the right catch event for the given error. This is done by going up through the scope
    * hierarchy recursively until a matching catch event is found. If none are found, a failure is
    * returned.
