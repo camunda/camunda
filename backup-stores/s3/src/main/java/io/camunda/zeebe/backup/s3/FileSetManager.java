@@ -9,15 +9,15 @@ package io.camunda.zeebe.backup.s3;
 
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.s3.manifest.FileSet;
 import io.camunda.zeebe.backup.s3.util.CompletableFutureUtils;
 import java.nio.file.Path;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 /** Can save and restore {@link NamedFileSet NamedFileSets}. */
 final class FileSetManager {
@@ -31,30 +31,36 @@ final class FileSetManager {
     this.config = config;
   }
 
-  CompletableFuture<Void> save(final String prefix, final NamedFileSet files) {
+  CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
     LOG.debug("Saving {} files to prefix {}", files.files().size(), prefix);
-    final var futures =
-        files.namedFiles().entrySet().stream()
-            .map(segmentFile -> saveFile(prefix, segmentFile.getKey(), segmentFile.getValue()))
-            .toList();
-
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[] {}));
+    return CompletableFutureUtils.mapAsync(
+            files.namedFiles().entrySet(),
+            Entry::getKey,
+            namedFile -> saveFile(prefix, namedFile.getKey(), namedFile.getValue()))
+        .thenApply(FileSet::new);
   }
 
-  private CompletableFuture<PutObjectResponse> saveFile(
+  private CompletableFuture<FileSet.FileMetadata> saveFile(
       final String prefix, final String fileName, final Path filePath) {
     LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-    return client.putObject(
-        put -> put.bucket(config.bucketName()).key(prefix + fileName),
-        AsyncRequestBody.fromFile(filePath));
+    return client
+        .putObject(
+            put -> put.bucket(config.bucketName()).key(prefix + fileName),
+            AsyncRequestBody.fromFile(filePath))
+        .thenApply(unused -> FileSet.FileMetadata.none());
   }
 
   CompletableFuture<NamedFileSet> restore(
-      final String sourcePrefix, final Set<String> fileNames, final Path targetFolder) {
+      final String sourcePrefix, final FileSet fileSet, final Path targetFolder) {
     LOG.debug(
-        "Restoring {} files from prefix {} to {}", fileNames.size(), sourcePrefix, targetFolder);
+        "Restoring {} files from prefix {} to {}",
+        fileSet.files().size(),
+        sourcePrefix,
+        targetFolder);
     return CompletableFutureUtils.mapAsync(
-            fileNames, fileName -> restoreFile(sourcePrefix, targetFolder, fileName))
+            fileSet.files().entrySet(),
+            Entry::getKey,
+            namedFile -> restoreFile(sourcePrefix, targetFolder, namedFile.getKey()))
         .thenApply(NamedFileSetImpl::new);
   }
 
