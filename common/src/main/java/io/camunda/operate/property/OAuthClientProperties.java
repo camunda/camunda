@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.property;
 
+@Deprecated(forRemoval = true)
 public class OAuthClientProperties {
 
   public static final String DEFAULT_AUDIENCE = "operate.camunda.io";

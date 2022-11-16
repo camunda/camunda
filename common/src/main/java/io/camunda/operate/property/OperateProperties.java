@@ -288,10 +288,12 @@ public class OperateProperties {
     this.roles = roles;
   }
 
+  @Deprecated(forRemoval = true)
   public OAuthClientProperties getClient() {
     return client;
   }
 
+  @Deprecated(forRemoval = true)
   public void setClient(final OAuthClientProperties client) {
     this.client = client;
   }
