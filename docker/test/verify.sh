@@ -56,6 +56,16 @@ if [ "$actualArchitecture" != "\"$arch\"" ]; then
   exit 1
 fi
 
+DIGEST_REGEX="BASE_DIGEST_$(echo "$arch" | tr '[:lower:]' '[:upper:]')=\"(sha256\:[a-f0-9\:]+)\""
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../Dockerfile")
+if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
+    DIGEST="${BASH_REMATCH[1]}"
+    echo "Digest found for architecture $arch: $DIGEST"
+else
+    echo >&2 "Docker image digest can not be found in the Dockerfile"
+    exit 1
+fi
+
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
 # ordering for maps to compare things properly
 actualLabels=$(echo "${imageInfo}" | jq --sort-keys '.[0].Config.Labels')
@@ -68,12 +78,13 @@ if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" =
 fi
 
 # Generate the expected labels files with the dynamic properties substituted
-labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels-${arch}.golden.json"
+labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
 expectedLabels=$(
   jq --sort-keys -n \
     --arg VERSION "${VERSION}" \
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
+    --arg DIGEST "${DIGEST}" \
     "$(cat "${labelsGoldenFile}")"
 )
 
