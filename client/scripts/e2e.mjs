@@ -13,7 +13,8 @@ import {spawn} from 'child_process';
 import kill from 'tree-kill';
 import {createWriteStream, chmodSync} from 'fs';
 import {pipeline} from 'stream';
-import {resolve as _resolve} from 'path';
+import {resolve as _resolve, dirname} from 'path';
+import {fileURLToPath} from 'url';
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
@@ -61,7 +62,7 @@ if (ciMode && !chromeheadlessMode) {
           spawnWithArgs(
             `./BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon start --parallel-runs 3`,
             {
-              cwd: _resolve(__dirname, '..'),
+              cwd: _resolve(getDirName(), '..'),
             }
           );
         }
@@ -165,7 +166,7 @@ async function startTest() {
       spawnWithArgs(
         `BrowserStackLocal --key ${process.env.BROWSERSTACK_ACCESS_KEY} --local-identifier TestCafe --daemon stop`,
         {
-          cwd: _resolve(__dirname, '..'),
+          cwd: _resolve(getDirName(), '..'),
         }
       );
     }
@@ -175,4 +176,9 @@ async function startTest() {
       });
     });
   }
+}
+
+function getDirName() {
+  const __filename = fileURLToPath(import.meta.url);
+  return dirname(__filename);
 }
