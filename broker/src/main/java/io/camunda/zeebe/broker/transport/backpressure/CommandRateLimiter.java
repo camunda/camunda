@@ -90,7 +90,7 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
     } else {
       // Ignore this message, if it happens immediately after failover. It can happen when a request
       // committed by the old leader is processed by the new leader.
-      Loggers.TRANSPORT_LOGGER.debug(
+      Loggers.TRANSPORT_LOGGER.trace(
           "Expected to have a rate limiter listener for request-{}-{}, but none found. (This can happen during fail over.)",
           streamId,
           requestId);
