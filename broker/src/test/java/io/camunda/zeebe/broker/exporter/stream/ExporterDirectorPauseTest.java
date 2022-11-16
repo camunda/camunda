@@ -101,6 +101,7 @@ public final class ExporterDirectorPauseTest {
     // Needed to prevent flaky test https://github.com/camunda/zeebe/issues/10439
     Awaitility.await()
         .alias("Exporter is closed")
+        .ignoreExceptions() // joining can still throw if actor is closed after `getPhase` is called
         .until(() -> activeExporter.getDirector().getPhase().join() == ExporterPhase.CLOSED);
 
     // then
