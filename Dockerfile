@@ -1,8 +1,7 @@
-# Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_DIGEST="sha256:00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"
-ARG BASE_SHA="${BASE_SHA:-@$BASE_DIGEST}"
+ARG BASE_DIGEST_AMD64="sha256:00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"
+ARG BASE_DIGEST_ARM64="sha256:ce46be0c4b4edd9f519e99ad68a6b5765abe577fbf1662d8ad2550838eb29823"
 
-# Building builder image
+#### Builder image ####
 FROM ubuntu:focal as builder
 ARG DISTBALL
 
@@ -23,10 +22,25 @@ COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/ && \
     chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
 
-# Building application image
+### AMD64 base image ###
+# BASE_DIGEST_AMD64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal${BASE_SHA} as app
+FROM eclipse-temurin:17-jre-focal@${BASE_DIGEST_AMD64} as base-amd64
+ARG BASE_DIGEST_AMD64
+ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
 
+### ARM64 base image ##
+# BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
+# hadolint ignore=DL3006
+FROM eclipse-temurin:17-jre-focal@${BASE_DIGEST_ARM64} as base-arm64
+ARG BASE_DIGEST_ARM64
+ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
+
+### Application Image ###
+# TARGETARCH is provided by buildkit
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# hadolint ignore=DL3006
+FROM base-${TARGETARCH} as app
 # leave unset to use the default value at the top of the file
 ARG BASE_DIGEST
 ARG VERSION=""
