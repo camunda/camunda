@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.service.dashboard.DashboardService;
@@ -30,7 +31,14 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
@@ -54,23 +62,21 @@ public class DashboardRestService {
   public IdResponseDto createNewDashboard(@Context final ContainerRequestContext requestContext,
                                           DashboardDefinitionRestDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (dashboardDefinitionDto != null && dashboardDefinitionDto.isManagementDashboard()) {
-      throw new OptimizeValidationException("Management Dashboards cannot be created");
+    if (dashboardDefinitionDto != null) {
+      if (dashboardDefinitionDto.isManagementDashboard()) {
+        throw new OptimizeValidationException("Management Dashboards cannot be created");
+      }
+      validateExternalDashboardLinks(dashboardDefinitionDto);
     }
     return dashboardService.createNewDashboardAndReturnId(
-      userId,
-      Optional.ofNullable(dashboardDefinitionDto)
-        .orElseGet(DashboardDefinitionRestDto::new)
-    );
+      userId, Optional.ofNullable(dashboardDefinitionDto).orElseGet(DashboardDefinitionRestDto::new));
   }
 
   @POST
   @Path("/{id}/copy")
   @Produces(MediaType.APPLICATION_JSON)
-  public IdResponseDto copyDashboard(@Context UriInfo uriInfo,
-                                     @Context ContainerRequestContext requestContext,
-                                     @PathParam("id") String dashboardId,
-                                     @QueryParam("collectionId") String collectionId,
+  public IdResponseDto copyDashboard(@Context UriInfo uriInfo, @Context ContainerRequestContext requestContext,
+                                     @PathParam("id") String dashboardId, @QueryParam("collectionId") String collectionId,
                                      @QueryParam("name") String newDashboardName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
@@ -94,8 +100,7 @@ public class DashboardRestService {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
     try {
-      dashboardDefinition =
-        dashboardService.getDashboardDefinition(dashboardId, userId);
+      dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
     } catch (NotFoundException | ForbiddenException e) {
       // This is potentially a case of magic link creation, let's wait a bit and give it another chance
       try {
@@ -104,8 +109,7 @@ public class DashboardRestService {
         // Not critical, do nothing
         Thread.currentThread().interrupt();
       }
-      dashboardDefinition =
-        dashboardService.getDashboardDefinition(dashboardId, userId);
+      dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
     }
 
     dashboardRestMapper.prepareRestResponse(dashboardDefinition);
@@ -116,8 +120,7 @@ public class DashboardRestService {
   @Path("/management")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(@Context ContainerRequestContext requestContext) {
-    AuthorizedDashboardDefinitionResponseDto dashboardDefinition =
-      dashboardService.getManagementDashboard();
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition = dashboardService.getManagementDashboard();
     dashboardRestMapper.prepareRestResponse(dashboardDefinition);
     return dashboardDefinition;
   }
@@ -126,11 +129,11 @@ public class DashboardRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateDashboard(@Context ContainerRequestContext requestContext,
-                              @PathParam("id") String dashboardId,
+  public void updateDashboard(@Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId,
                               DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateExternalDashboardLinks(updatedDashboard);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
 
@@ -140,10 +143,36 @@ public class DashboardRestService {
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteDashboard(@Context ContainerRequestContext requestContext,
-                              @PathParam("id") String dashboardId) {
+  public void deleteDashboard(@Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     dashboardService.deleteDashboardAsUser(dashboardId, userId);
+  }
+
+  private void validateExternalDashboardLinks(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    final List<String> invalidExternalLinks = dashboardDefinitionDto.getReports()
+      .stream()
+      .map(ReportLocationDto::getConfiguration)
+      .filter(Objects::nonNull)
+      .filter(Map.class::isInstance)
+      .map(Map.class::cast)
+      .map(reportConfig -> reportConfig.get("external"))
+      .filter(Objects::nonNull)
+      .filter(String.class::isInstance)
+      .map(String.class::cast)
+      .filter(externalLinkString -> !isValidURL(externalLinkString))
+      .collect(Collectors.toList());
+    if (!invalidExternalLinks.isEmpty()) {
+      throw new OptimizeValidationException("Cannot save dashboard as the following external links are invalid: " + invalidExternalLinks);
+    }
+  }
+
+  private boolean isValidURL(String url) {
+    try {
+      new URL(url).toURI();
+      return true;
+    } catch (MalformedURLException | URISyntaxException e) {
+      return false;
+    }
   }
 
 }

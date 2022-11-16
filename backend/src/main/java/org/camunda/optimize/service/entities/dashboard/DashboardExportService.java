@@ -75,7 +75,7 @@ public class DashboardExportService {
         .map(DashboardDefinitionRestDto::getId)
         .collect(toList());
       final Set<String> missingDashboardIds = new HashSet<>(dashboardIds);
-      missingDashboardIds.removeAll(foundIds);
+      foundIds.forEach(missingDashboardIds::remove);
       throw new NotFoundException("Could not find dashboards with IDs " + missingDashboardIds);
     }
 

@@ -15,6 +15,7 @@ import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
@@ -163,6 +164,31 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     assertThat(updatedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
     assertThat(updatedDefinition.getReports())
       .containsExactlyInAnyOrder(externalReport, variableReport);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {
+    // This string was reported as a vulnerability in https://jira.camunda.com/browse/OPT-6583
+    "javascript:alert(\"SySS Stored XSS Proof of Concept within domain:\\n\\n\"+document.domain)",
+    "invalidExternalUrl.com"
+  })
+  public void updateDashboard_dashboardContainsExternalReportWithInvalidURL(final String url) {
+    // given
+    String dashboardId = dashboardClient.createEmptyDashboard();
+
+    // when an external report is added to the dashboard
+    final DashboardDefinitionRestDto dashboardDefinitionDto = dashboardClient.getDashboard(dashboardId);
+    ReportLocationDto externalReport = new ReportLocationDto();
+    externalReport.setId("");
+    externalReport.setConfiguration(ImmutableMap.of("external", url));
+    dashboardDefinitionDto.setReports(List.of(externalReport));
+
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
