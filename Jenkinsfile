@@ -8,7 +8,6 @@
 
 MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim"
 
-static String PROJECT_DOCKER_IMAGE() { return 'gcr.io/ci-30-162810/camunda-optimize' }
 static String TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
 static String DOCKERHUB_IMAGE() { return 'camunda/optimize' }
 
@@ -596,11 +595,9 @@ pipeline {
             }
           }
           environment {
-            CRED_GCR_REGISTRY = credentials('docker-registry-ci3')
             CRED_REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
             DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
             DOCKER_BRANCH_TAG = getBranchSlug()
-            DOCKER_IMAGE = PROJECT_DOCKER_IMAGE()
             DOCKER_IMAGE_TEAM = TEAM_DOCKER_IMAGE()
             DOCKER_IMAGE_DOCKER_HUB = DOCKERHUB_IMAGE()
             DOCKER_LATEST_TAG = getLatestTag()
@@ -614,13 +611,12 @@ pipeline {
           steps {
             container('docker') {
               sh("""#!/bin/bash -eux
-              echo '${CRED_GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
               echo '${CRED_REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
-              tags=('${DOCKER_IMAGE}:${DOCKER_TAG}' '${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}')
+              tags=('${DOCKER_IMAGE_TEAM}:${DOCKER_TAG}' '${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}')
 
               if [ "${PUSH_LATEST_TAG}" = "TRUE" ]; then
-                tags+=('${DOCKER_IMAGE}:${DOCKER_LATEST_TAG}')
+                tags+=('${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}')
               fi
 
               if [ "${IS_MAIN}" = "TRUE" ]; then

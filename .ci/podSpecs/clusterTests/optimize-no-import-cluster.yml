@@ -20,6 +20,8 @@ spec:
     spec:
       nodeSelector:
         cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+      imagePullSecrets:
+        - name: registry-camunda-cloud
       tolerations:
         - key: "agents-n1-standard-32-netssd-preempt"
           operator: "Exists"
@@ -31,7 +33,7 @@ spec:
             defaultMode: 0744
       containers:
         - name: optimize-no-import
-          image: gcr.io/ci-30-162810/camunda-optimize:latest
+          image: registry.camunda.cloud/team-optimize/optimize:latest
           imagePullPolicy: Always
           env:
             - name: OPTIMIZE_JAVA_OPTS

@@ -21,17 +21,16 @@ Install dependencies
 yarn
 ```
 
-## Login to GCP
+## Login to Docker Registry
 
-GCP is used to store artifacts that will be downloaded automatically.
-First, a login to GCP is needed (if you don't have access, ask the infra team for it).
+Maybe it requires an addition for the readme you mentioned on how to long in to harbor.
+docker login registry.camunda.cloud via firstname.lastname
+
+Harbor is used to store artifacts that will be downloaded automatically. You can use your Okta credentials after
+running the below command to log in to Harbor.
 
 ```bash
-gcloud auth application-default login
-```
-
-```bash
-gcloud config set project ci-30-162810
+docker login registry.camunda.cloud
 ```
 
 ## Setup Auth0 credentials

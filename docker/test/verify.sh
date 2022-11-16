@@ -3,7 +3,7 @@
 # on `jq` as an external dependency.
 #
 # Example usage:
-#   $ ./verify.sh camunda/optimize:3.9.0 gcr.io/ci-30-162810/camunda-optimize:latest
+#   $ ./verify.sh camunda/optimize:3.9.0 registry.camunda.cloud/team-optimize/optimize:latest
 #
 # Globals:
 #   VERSION - required; the semantic version, e.g. 3.9.0 or 3.9.0-alpha1

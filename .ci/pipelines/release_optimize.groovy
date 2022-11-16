@@ -18,8 +18,6 @@ static String DOCKER_REGISTRY(boolean pushChanges) {
     'registry.camunda.cloud' : 'stage.registry.camunda.cloud'
 }
 
-static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
-
 static String DOCKER_REGISTRY_IMAGE(boolean pushChanges) {
   return "${DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize"
 }
@@ -398,7 +396,6 @@ pipeline {
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
         DOCKER_LATEST = "${params.DOCKER_LATEST}"
         DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
-        GCR_REGISTRY_CREDENTIALS = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
         // retrieve the git commit hash from the checked out tag of the release
@@ -408,10 +405,9 @@ pipeline {
       steps {
         container('docker') {
           sh("""#!/bin/bash -eux
-          echo '${GCR_REGISTRY_CREDENTIALS}' | docker login -u _json_key https://gcr.io --password-stdin
           echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
 
-          tags=('${PROJECT_DOCKER_IMAGE()}:${VERSION}' '${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}')
+          tags=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}')
             
           docker_args=""
           if [ "${PUSH_CHANGES}" = true ]; then
