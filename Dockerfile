@@ -1,16 +1,16 @@
 ARG BASE_IMAGE_NAME="alpine:3.16.2"
-ARG BASE_IMAGE_SHA_AMD64="1304f174557314a7ed9eddb4eab12fed12cb0cd9809e4c28f29af86979a3c870"
-ARG BASE_IMAGE_SHA_ARM64="922df7f9352943c7447dbc07c53563e6971fce3100d2ef2b8368b1ba9aac605d"
+ARG BASE_IMAGE_SHA_AMD64="sha256:1304f174557314a7ed9eddb4eab12fed12cb0cd9809e4c28f29af86979a3c870"
+ARG BASE_IMAGE_SHA_ARM64="sha256:922df7f9352943c7447dbc07c53563e6971fce3100d2ef2b8368b1ba9aac605d"
 
 # Building prod image amd64
-FROM ${BASE_IMAGE_NAME}@sha256:${BASE_IMAGE_SHA_AMD64} as prod-amd64
+FROM ${BASE_IMAGE_NAME}@${BASE_IMAGE_SHA_AMD64} as prod-amd64
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE_SHA_AMD64
 ARG BASE_SHA="${BASE_IMAGE_SHA_AMD64}"
 
 # Building prod image arm64
-FROM ${BASE_IMAGE_NAME}@sha256:${BASE_IMAGE_SHA_ARM64} as prod-arm64
+FROM ${BASE_IMAGE_NAME}@${BASE_IMAGE_SHA_ARM64} as prod-arm64
 
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE_SHA_ARM64

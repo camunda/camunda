@@ -61,8 +61,7 @@ echo "Checking for architecture ${ARCHITECTURE}"
 digestForArchitecture=$(echo "${baseImageInfo}" | jq '.manifests[] | select(.platform.architecture == "'"${ARCHITECTURE}"'") |
 .digest' )
 
-# Removing 'sha256:' prefix and also leading and trailing quotes
-digestForArchitecture=${digestForArchitecture//"sha256:"/}
+# Removing leading and trailing quotes
 digestForArchitecture="${digestForArchitecture%\"}"
 digestForArchitecture="${digestForArchitecture#\"}"
 echo "Expected base image digest from ${BASE_IMAGE} for ${ARCHITECTURE} is: ${digestForArchitecture}"
