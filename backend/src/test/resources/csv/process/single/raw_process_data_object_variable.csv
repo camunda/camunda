@@ -1,2 +1,2 @@
-"processDefinitionKey","processDefinitionId","processInstanceId","numberOfOpenIncidents","businessKey","startDate","endDate","duration","engineName","tenantId","variable:objectVar.age","variable:objectVar.firstName"
-"aProcess","${PD_ID}","${PI_ID}","0","aBusinessKey","2018-02-26T14:20+01:00","2018-02-26T14:20+01:00","0","camunda-bpm",,"50.0","Kermit"
+"processDefinitionKey","processDefinitionId","processInstanceId","numberOfOpenIncidents","businessKey","startDate","endDate","duration","engineName","tenantId","dur:endEvent","dur:startEvent","variable:objectVar.age","variable:objectVar.firstName"
+"aProcess","${PD_ID}","${PI_ID}","0","aBusinessKey","2018-02-26T14:20+01:00","2018-02-26T14:20+01:00","0","camunda-bpm",,"0","0","50.0","Kermit"

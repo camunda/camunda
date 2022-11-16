@@ -61,7 +61,6 @@ public class CSVUtilsTest {
 	}
 
 	@Test
-	@Disabled("Will be fixed with OPT-6530")
 	public void testRawProcessResultMapping_testQuoteEscapingInValue() {
 		// given
 		final Map<String, Object> variables = new HashMap<>();
@@ -82,7 +81,6 @@ public class CSVUtilsTest {
 
 	@ParameterizedTest
 	@MethodSource("getExpectedStringAndCsvDelimiter")
-	@Disabled("Will be fixed with OPT-6530")
 	public void testRawProcessResultMapping_csvWorksWithSeveralDelimiters(String expectedString, char delimiter) {
 		// given
 		final Map<String, Object> variables = new HashMap<>();

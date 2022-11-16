@@ -9,6 +9,7 @@ import com.opencsv.CSVWriter;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.FlowNodeTotalDurationDataDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
@@ -42,6 +43,7 @@ import static org.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
+  public static final String FLOWNODE_DURATION_PREFIX = "dur:";
 
   public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings, final char csvDelimiter) {
     final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
@@ -78,7 +80,9 @@ public class CSVUtils {
                                                             final TableColumnDto tableColumns) {
     final List<String[]> result = new ArrayList<>();
     final List<String> allVariableKeys = extractAllPrefixedVariableKeys(rawData);
-
+    final List<String> allFlowNodeDurationKeys = extractAllPrefixedFlowNodeKeys(rawData);
+    // append keys which need restructuring in one list
+    allVariableKeys.addAll(allFlowNodeDurationKeys);
     // Ensure all dto fields are taken into account by tableColumns
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
 
@@ -88,7 +92,9 @@ public class CSVUtils {
 
     // header line
     result.add(allIncludedKeysInOrder.toArray(new String[0]));
-
+    // only leave variable fields in the list of columns which need adjustment
+    // so that we can check whether the current column is a variable
+    allVariableKeys.removeAll(allFlowNodeDurationKeys);
     int currentPosition = 0;
     for (RawDataProcessInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
@@ -96,9 +102,15 @@ public class CSVUtils {
         final String[] dataLine = new String[allIncludedKeysInOrder.size()];
         for (int i = 0; i < dataLine.length; i++) {
           final String currentKey = allIncludedKeysInOrder.get(i);
-          final Optional<String> optionalValue = allVariableKeys.contains(currentKey)
-            ? getVariableValue(instanceDto, currentKey)
-            : getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
+          final Optional<String> optionalValue;
+          if (allVariableKeys.contains(currentKey)) {
+            optionalValue = getVariableValue(instanceDto, currentKey);
+            // if the current column is a flow node column
+          } else if (allFlowNodeDurationKeys.contains(currentKey)) {
+            optionalValue = getFlowNodeDurationValue(instanceDto, currentKey);
+          } else {
+            optionalValue = getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
+          }
           dataLine[i] = optionalValue.orElse(null);
         }
         result.add(dataLine);
@@ -129,7 +141,6 @@ public class CSVUtils {
 
     // header line
     result.add(allIncludedKeysInOrder.toArray(new String[0]));
-
     int currentPosition = 0;
     for (RawDataDecisionInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
@@ -221,6 +232,20 @@ public class CSVUtils {
     return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(toList());
   }
 
+  private static List<String> extractAllPrefixedFlowNodeKeys(List<RawDataProcessInstanceDto> rawData) {
+    List<String> flowNodeKeys = new ArrayList<>();
+    for (RawDataProcessInstanceDto currentInstanceDataDto : rawData) {
+      final Optional<Map<String, FlowNodeTotalDurationDataDto>> flowNodeDurations = Optional.ofNullable(
+        currentInstanceDataDto.getFlowNodeDurations());
+      flowNodeDurations.ifPresent(stringFlowNodeTotalDurationDataDtoMap -> stringFlowNodeTotalDurationDataDtoMap.keySet()
+        .stream()
+        // prefixing all flownode columns with "dur:"
+        .map(flowNodeTotalDurationDataDto -> FLOWNODE_DURATION_PREFIX + flowNodeTotalDurationDataDto)
+        .forEach(flowNodeKeys::add));
+    }
+    return flowNodeKeys;
+  }
+
   private static List<String> extractAllPrefixedDecisionInputKeys(List<RawDataDecisionInstanceDto> rawData) {
     Set<String> inputKeys = new HashSet<>();
     for (RawDataDecisionInstanceDto pi : rawData) {
@@ -271,6 +296,16 @@ public class CSVUtils {
       .map(variables -> variables.get(stripOffPrefix(variableKey, VARIABLE_PREFIX)))
       .filter(variable -> !OBJECT_VARIABLE_VALUE_PLACEHOLDER.equals(variable))
       .map(Object::toString);
+  }
+
+  private static Optional<String> getFlowNodeDurationValue(final RawDataProcessInstanceDto instanceDto,
+                                                           String flowNodeKey) {
+    flowNodeKey = flowNodeKey.replace(FLOWNODE_DURATION_PREFIX, "");
+    if (instanceDto.getFlowNodeDurations().containsKey(flowNodeKey)) {
+      return Optional.of((Long.toString(instanceDto.getFlowNodeDurations().get(flowNodeKey).getValue())));
+    } else {
+      return Optional.empty();
+    }
   }
 
   private static Optional<String> getOutputVariableValue(final RawDataDecisionInstanceDto instanceDto,

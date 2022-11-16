@@ -49,11 +49,6 @@ public class CsvExportService {
           0,
           timezone
         );
-      //lines 52 - 58 will be removed with OPT-6530
-      if (evaluationInfo.getReport().getReportType().equals(ReportType.PROCESS) && !evaluationInfo.getReport()
-        .isCombined()) {
-        resultAsCsv = dropFlowNodeDurationsColumn(resultAsCsv);
-      }
       return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(
         resultAsCsv,
         configurationService.getCsvConfiguration().getExportCsvDelimiter()
@@ -94,24 +89,6 @@ public class CsvExportService {
       log.error("Could not evaluate report to export the result to csv!", e);
       throw e;
     }
-  }
-
-  private List<String[]> dropFlowNodeDurationsColumn(List<String[]> resultAsCsv) {
-    int totalRows = resultAsCsv.size();
-    int totalColumns = resultAsCsv.get(0).length;
-    if (totalColumns < 5) {
-      return resultAsCsv;
-    }
-    String[][] newCsvResult = new String[totalRows][totalColumns - 1];
-    for (int currentRow = 0; currentRow < totalRows; currentRow++) {
-      for (int currentColumn = 0, currColumn = 0; currentColumn < totalColumns; currentColumn++) {
-        if (currentColumn != 4) {
-          newCsvResult[currentRow][currColumn] = resultAsCsv.get(currentRow)[currentColumn];
-          currColumn++;
-        }
-      }
-    }
-    return Arrays.asList(newCsvResult);
   }
 
 }

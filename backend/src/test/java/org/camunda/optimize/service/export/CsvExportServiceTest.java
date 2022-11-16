@@ -49,7 +49,6 @@ public class CsvExportServiceTest {
   }
 
   @Test
-  @Disabled("will be enabled with OPT-6530")
   public void rawProcessReportCsvExport() {
     // given
     RawDataCommandResult rawDataReportResult =
@@ -73,7 +72,6 @@ public class CsvExportServiceTest {
   }
 
   @Test
-  @Disabled("will be enabled with OPT-6530")
   public void rawDecisionReportCsvExport() {
     // given
     RawDataCommandResult rawDataReportResult =
