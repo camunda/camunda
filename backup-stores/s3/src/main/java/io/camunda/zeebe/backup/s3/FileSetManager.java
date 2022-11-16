@@ -11,10 +11,12 @@ import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.s3.S3BackupStoreException.BackupCompressionFailed;
 import io.camunda.zeebe.backup.s3.manifest.FileSet;
+import io.camunda.zeebe.backup.s3.manifest.FileSet.FileMetadata;
 import io.camunda.zeebe.backup.s3.util.CompletableFutureUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map.Entry;
@@ -24,7 +26,10 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.core.FileTransformerConfiguration.FailureBehavior;
+import software.amazon.awssdk.core.FileTransformerConfiguration.FileWriteOption;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 /** Can save and restore {@link NamedFileSet NamedFileSets}. */
@@ -127,16 +132,72 @@ final class FileSetManager {
     return CompletableFutureUtils.mapAsync(
             fileSet.files().entrySet(),
             Entry::getKey,
-            namedFile -> restoreFile(sourcePrefix, targetFolder, namedFile.getKey()))
+            namedFile ->
+                restoreFile(sourcePrefix, targetFolder, namedFile.getKey(), namedFile.getValue()))
         .thenApply(NamedFileSetImpl::new);
   }
 
   private CompletableFuture<Path> restoreFile(
-      final String sourcePrefix, final Path targetFolder, final String fileName) {
+      final String sourcePrefix,
+      final Path targetFolder,
+      final String fileName,
+      final FileMetadata metadata) {
+    final var compressionAlgorithm = metadata.compressionAlgorithm();
+    if (compressionAlgorithm.isPresent()) {
+      final var decompressed = targetFolder.resolve(fileName);
+      LOG.trace(
+          "Restoring compressed file {} from prefix {} to {}",
+          fileName,
+          sourcePrefix,
+          targetFolder);
+      try {
+        final var compressed = Files.createTempFile(TMP_DECOMPRESSION_PREFIX, null);
+        return client
+            .getObject(
+                req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName),
+                AsyncResponseTransformer.toFile(
+                    compressed,
+                    cfg ->
+                        cfg.fileWriteOption(FileWriteOption.CREATE_OR_REPLACE_EXISTING)
+                            .failureBehavior(FailureBehavior.DELETE)))
+            .thenApplyAsync(
+                response -> decompressFile(compressed, decompressed, compressionAlgorithm.get()));
+
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
     LOG.trace("Restoring file {} from prefix {} to {}", fileName, sourcePrefix, targetFolder);
     final var path = targetFolder.resolve(fileName);
     return client
         .getObject(req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
         .thenApply(response -> path);
+  }
+
+  private Path decompressFile(
+      final Path compressed, final Path decompressed, final String algorithm) {
+    try (final var input = new BufferedInputStream(Files.newInputStream(compressed));
+        final var output = new BufferedOutputStream(Files.newOutputStream(decompressed));
+        final var decompressedOutput =
+            new CompressorStreamFactory().createCompressorInputStream(algorithm, input)) {
+      IOUtils.copy(decompressedOutput, output);
+      if (LOG.isTraceEnabled()) {
+        LOG.trace(
+            "Decompressed file {} to {} using {}. Compressed: {} bytes, uncompressed: {} bytes",
+            compressed,
+            decompressed,
+            algorithm,
+            Files.size(compressed),
+            Files.size(decompressed));
+      }
+      cleanupCompressedFile(compressed);
+      return decompressed;
+    } catch (final IOException | CompressorException e) {
+      throw new BackupCompressionFailed(
+          "Failed to decompress from %s to %s using %s"
+              .formatted(compressed, decompressed, algorithm),
+          e);
+    }
   }
 }
