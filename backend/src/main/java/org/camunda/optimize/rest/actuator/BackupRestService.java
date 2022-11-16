@@ -40,7 +40,7 @@ import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOU
 
 @RequiredArgsConstructor
 @Component
-@RestControllerEndpoint(id = "backup")
+@RestControllerEndpoint(id = "backups")
 @Conditional(CCSMCondition.class)
 public class BackupRestService {
   private final BackupService backupService;
