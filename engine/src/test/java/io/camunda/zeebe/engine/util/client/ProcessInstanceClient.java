@@ -297,8 +297,24 @@ public final class ProcessInstanceClient {
      * @return this ActivationInstruction builder for chaining
      */
     public ActivationInstructionBuilder activateElement(final String elementId) {
+      final var noAncestorScopeKey = -1;
+      return activateElement(elementId, noAncestorScopeKey);
+    }
+
+    /**
+     * Add an activate element instruction with ancestor selection.
+     *
+     * @param elementId the id of the element to activate
+     * @param ancestorScopeKey the key of the ancestor scope that should be used as the (in)direct
+     *     flow scope instance of the element to activate; or -1 to disable ancestor selection
+     * @return this ActivationInstruction builder for chaining
+     */
+    public ActivationInstructionBuilder activateElement(
+        final String elementId, final long ancestorScopeKey) {
       final var activateInstruction =
-          new ProcessInstanceModificationActivateInstruction().setElementId(elementId);
+          new ProcessInstanceModificationActivateInstruction()
+              .setElementId(elementId)
+              .setAncestorScopeKey(ancestorScopeKey);
       activateInstructions.add(activateInstruction);
       return new ActivationInstructionBuilder(
           environmentRule, processInstanceKey, record, activateInstructions, activateInstruction);

@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -808,6 +809,65 @@ public class ModifyProcessInstanceTest {
                 .limit(2)
                 .count())
         .isEqualTo(2);
+  }
+
+  @Test
+  public void shouldActivateInsideSpecificFlowScopeUsingAncestorSelection() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-sub",
+                    sub ->
+                        sub.startEvent()
+                            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                            .interrupting(false)
+                            .userTask("A")
+                            .userTask("B")
+                            .endEvent())
+                .startEvent()
+                .userTask("C")
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "key-1").create();
+
+    ENGINE.message().withName("msg").withCorrelationKey("key-1").publish();
+    ENGINE.message().withName("msg").withCorrelationKey("key-1").publish();
+
+    final List<Long> eventSubProcessKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+    assertThat(eventSubProcessKeys)
+        .describedAs("Expect that there are 2 active instances of the event sub process")
+        .hasSize(2);
+
+    // when
+    final var ancestorScopeKey = eventSubProcessKeys.get(1);
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B", ancestorScopeKey)
+        .modify();
+
+    // then
+    final var activatedTaskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .findAny();
+    assertThat(activatedTaskB).describedAs("Expect that task B is activated").isPresent();
+    assertThat(activatedTaskB.get().getValue())
+        .describedAs("Expect that task B is exists inside of flow scope " + ancestorScopeKey)
+        .hasFlowScopeKey(ancestorScopeKey);
   }
 
   @Test
