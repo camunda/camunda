@@ -11,6 +11,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.junit.jupiter.api.Tag;
 
 /**
  * {@code @ContainerSmokeTest} is used to signal that the annotated method is a container based
@@ -19,5 +20,6 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
+@Tag("container")
 @SmokeTest
 public @interface ContainerSmokeTest {}
