@@ -14,40 +14,12 @@ on:
 env:
   # This URL is used as the business key for the various QA workflows
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  LATEST_STABLE_VERSION: 8.1.3
+  PREVIOUS_LATEST_VERSION: 8.0.8
 
 jobs:
-  # This job will figure out the last supported versions based on the latest tags.
-  #
-  # Versions around found by sorting the tags, removing any that doesn't match semantic version,
-  # and ignoring those with suffixes, and sort in natural order reversed. To get the second-highest
-  # minor branch, we do the same, but we also filter out any versions which match the minor version
-  # of the latest stable version.
-  get-versions:
-    name: Compute branch matrix
-    runs-on: ubuntu-latest
-    outputs:
-      latest-version: ${{ env.LATEST_VERSION }}
-      previous-latest-version: ${{ env.PREVIOUS_LATEST_VERSION }}
-    steps:
-      - uses: actions/checkout@v3
-      - run: git fetch --tags
-      - run: |
-          latest=$(git tag | grep '^[0-9]\.[0-9]\.[0-9]$' | sort -Vr | head -n1)
-          echo "Latest supported version: ${latest}"
-          previous=$(git tag | grep '^[0-9]\.[0-9]\.[0-9]$' | grep -v "^${latest%\.[0-9]}.*$" | sort -Vr | head -n1)
-          echo "Oldest supported version: ${latest}"
-          if [ ! -z $latest ] && [ ! -z $previous ]; then
-            echo "Successfully computed latest versions: ${latest} and ${previous}"
-          else
-            echo "Failed to compute latest versions"
-          fi
-          echo "LATEST_VERSION=${latest}" >> $GITHUB_ENV
-          echo "PREVIOUS_LATEST_VERSION=${previous}" >> $GITHUB_ENV
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Zeebe VERSION`.
-  #
-  # NOTE: it's not possible to use the env context in a matrix, which is why we use job outputs
-  # here.
   qa:
     needs:
       - get-versions
@@ -56,10 +28,10 @@ jobs:
         include:
           - branch: 'main'
             generation: 'Zeebe SNAPSHOT'
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
-            generation: ${{ format('Zeebe {0}', needs.get-versions.outputs.latest-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.previous-latest-version) }}
-            generation: ${{ format('Zeebe {0}', needs.get-versions.outputs.previous-latest-version) }}
+          - branch: 'stable/8.0'
+            generation: 'Zeebe 8.0.8'
+          - branch: 'stable/8.1'
+            generation: 'Zeebe 8.1.3'
     name: Daily QA
     uses: ./.github/workflows/qa-testbench.yaml
     with:
