@@ -7,24 +7,22 @@
 
 import {getExpandAccordionTitle} from './getExpandAccordionTitle';
 
-describe('service', () => {
-  describe('getExpandAccordionTitle', () => {
-    it('should get title for multiple instances', () => {
-      expect(getExpandAccordionTitle(100, 'no memory left')).toBe(
-        'Expand 100 Instances with error no memory left'
-      );
-    });
+describe('getExpandAccordionTitle', () => {
+  it('should get title for multiple instances', () => {
+    expect(getExpandAccordionTitle(100, 'no memory left')).toBe(
+      'Expand 100 Instances with error no memory left'
+    );
+  });
 
-    it('should get title for single instance', () => {
-      expect(getExpandAccordionTitle(1, 'no space left')).toBe(
-        'Expand 1 Instance with error no space left'
-      );
-    });
+  it('should get title for single instance', () => {
+    expect(getExpandAccordionTitle(1, 'no space left')).toBe(
+      'Expand 1 Instance with error no space left'
+    );
+  });
 
-    it('should get title for no instances', () => {
-      expect(getExpandAccordionTitle(0, 'cannot connect')).toBe(
-        'Expand 0 Instances with error cannot connect'
-      );
-    });
+  it('should get title for no instances', () => {
+    expect(getExpandAccordionTitle(0, 'cannot connect')).toBe(
+      'Expand 0 Instances with error cannot connect'
+    );
   });
 });
