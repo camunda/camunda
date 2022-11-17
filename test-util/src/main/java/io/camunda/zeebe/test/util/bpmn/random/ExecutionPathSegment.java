@@ -101,18 +101,29 @@ public final class ExecutionPathSegment {
   }
 
   /**
-   * Appends the step of the passed execution path segment to the current segment if the current
+   * Appends the steps of the passed execution path segment to the current segment.
    *
-   * @param pathToAdd
-   * @param changesFlowScope
+   * <p>The steps are only appended when the current segment has not reached a terminate end event.
+   * The reasoning behind this is that when a terminate end event has been reached processing must
+   * stop. No more steps should get executed.
+   *
+   * <p>This is only true in some cases. The terminate end event terminate the event's flow scope.
+   * When there is nested flow scopes, for example with a subprocess, only steps of this subprocess
+   * should not be appended. The steps of other flow scopes are not terminated by the end event.
+   * These steps should be appended. Because of this a boolean could be passed to force the steps to
+   * be appended.
+   *
+   * @param pathToAdd execution path segment to append to this segment
+   * @param force forces the path to be appended, even when a terminate end event has already been
+   *     reached
    */
-  public void append(final ExecutionPathSegment pathToAdd, final boolean changesFlowScope) {
+  public void append(final ExecutionPathSegment pathToAdd, final boolean force) {
     mergeVariableDefaults(pathToAdd);
 
-    if (!hasReachedTerminateEndEvent() || changesFlowScope) {
+    if (!hasReachedTerminateEndEvent() || force) {
       pathToAdd.getScheduledSteps().forEach(this::append);
     }
-    reachedTerminateEndEvent = pathToAdd.hasReachedTerminateEndEvent() && !changesFlowScope;
+    reachedTerminateEndEvent = pathToAdd.hasReachedTerminateEndEvent() && !force;
   }
 
   public void append(final ScheduledExecutionStep scheduledExecutionStep) {
