@@ -145,13 +145,13 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
     purgeEmptyBranches(branchPointers);
 
     while (!branchPointers.isEmpty()) {
-      final var tuple = branchPointers.get(random.nextInt(branchPointers.size()));
+      final var branchpointer = branchPointers.get(random.nextInt(branchPointers.size()));
 
-      takeNextItemAndAppendToExecutionPath(executionPath, tuple);
-      copyAutomaticSteps(tuple, executionPath);
+      takeNextItemAndAppendToExecutionPath(executionPath, branchpointer);
+      copyAutomaticSteps(branchpointer, executionPath);
       purgeEmptyBranches(branchPointers);
 
-      if (tuple.isEmpty() && tuple.shouldStopAfterLastStep) {
+      if (branchpointer.isEmpty() && branchpointer.shouldStopAfterLastStep) {
         executionPath.setReachedTerminateEndEvent(true);
         break;
       }
