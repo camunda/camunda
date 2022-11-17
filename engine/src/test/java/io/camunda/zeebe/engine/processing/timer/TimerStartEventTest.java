@@ -356,27 +356,25 @@ public final class TimerStartEventTest {
         .hasVersion(deployedProcess.getVersion())
         .hasProcessDefinitionKey(processDefinitionKey);
 
-    final long triggerRecordPosition =
-        RecordingExporter.timerRecords(TimerIntent.TRIGGER)
+    final var processInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessDefinitionKey(processDefinitionKey)
             .getFirst()
-            .getPosition();
+            .getValue()
+            .getProcessInstanceKey();
 
     assertThat(
-            RecordingExporter.timerRecords()
-                .withProcessDefinitionKey(processDefinitionKey)
-                .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
-                .limit(2))
-        .extracting(Record::getIntent)
-        .containsExactly(TimerIntent.TRIGGER, TimerIntent.TRIGGERED);
+            RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
 
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessDefinitionKey(processDefinitionKey)
-                .skipUntil(r -> r.getPosition() >= triggerRecordPosition)
-                .limit(4))
+                .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
-        .containsExactly(
+        .containsSequence(
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
