@@ -40,7 +40,7 @@ public class BoundaryEventBuilder {
       final String errorCode,
       final String boundaryEventId) {
     var builder = taskBuilder;
-    if (!joinGatewayCreated) {
+    if (!joinGatewayCreated && !errorEventHasTerminateEndEvent) {
       builder = connectJoinGateway(taskBuilder);
     }
 
@@ -49,7 +49,7 @@ public class BoundaryEventBuilder {
             .boundaryEvent(boundaryEventId, b -> b.error(errorCode));
 
     if (errorEventHasTerminateEndEvent) {
-      return boundaryEventBuilder.endEvent().terminate().moveToNode(joinGatewayId);
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(taskId);
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
@@ -58,7 +58,7 @@ public class BoundaryEventBuilder {
   public AbstractFlowNodeBuilder<?, ?> connectBoundaryTimerEvent(
       final AbstractFlowNodeBuilder<?, ?> taskBuilder, final String boundaryEventId) {
     var builder = taskBuilder;
-    if (!joinGatewayCreated) {
+    if (!joinGatewayCreated && !timerEventHasTerminateEndEvent) {
       builder = connectJoinGateway(taskBuilder);
     }
 
@@ -67,7 +67,7 @@ public class BoundaryEventBuilder {
             .boundaryEvent(boundaryEventId, b -> b.timerWithDurationExpression(boundaryEventId));
 
     if (timerEventHasTerminateEndEvent) {
-      return boundaryEventBuilder.endEvent().terminate().moveToNode(joinGatewayId);
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(taskId);
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
