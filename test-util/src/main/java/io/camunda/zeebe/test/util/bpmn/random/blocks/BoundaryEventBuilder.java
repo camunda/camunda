@@ -16,13 +16,13 @@ public class BoundaryEventBuilder {
 
   private final boolean timerEventHasTerminateEndEvent;
   private final boolean errorEventHasTerminateEndEvent;
-  private final String taskId;
+  private final String flowNodeId;
   private final String joinGatewayId;
   private boolean joinGatewayCreated;
 
-  public BoundaryEventBuilder(final ConstructionContext context, final String taskId) {
-    this.taskId = taskId;
-    joinGatewayId = "boundary_join_" + taskId;
+  public BoundaryEventBuilder(final ConstructionContext context, final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
+    joinGatewayId = "boundary_join_" + flowNodeId;
     timerEventHasTerminateEndEvent =
         context.getRandom().nextDouble() < RandomProcessGenerator.PROBABILITY_TERMINATE_END_EVENT;
     errorEventHasTerminateEndEvent =
@@ -30,44 +30,44 @@ public class BoundaryEventBuilder {
   }
 
   private AbstractFlowNodeBuilder<?, ?> connectJoinGateway(
-      final AbstractFlowNodeBuilder<?, ?> taskBuilder) {
+      final AbstractFlowNodeBuilder<?, ?> flowNodeBuilder) {
     joinGatewayCreated = true;
-    return taskBuilder.exclusiveGateway(joinGatewayId);
+    return flowNodeBuilder.exclusiveGateway(joinGatewayId);
   }
 
   public AbstractFlowNodeBuilder<?, ?> connectBoundaryErrorEvent(
-      final AbstractFlowNodeBuilder<?, ?> taskBuilder,
+      final AbstractFlowNodeBuilder<?, ?> flowNodeBuilder,
       final String errorCode,
       final String boundaryEventId) {
-    var builder = taskBuilder;
+    var builder = flowNodeBuilder;
     if (!joinGatewayCreated && !errorEventHasTerminateEndEvent) {
-      builder = connectJoinGateway(taskBuilder);
+      builder = connectJoinGateway(flowNodeBuilder);
     }
 
     final var boundaryEventBuilder =
-        ((AbstractActivityBuilder<?, ?>) builder.moveToNode(taskId))
+        ((AbstractActivityBuilder<?, ?>) builder.moveToNode(flowNodeId))
             .boundaryEvent(boundaryEventId, b -> b.error(errorCode));
 
     if (errorEventHasTerminateEndEvent) {
-      return boundaryEventBuilder.endEvent().terminate().moveToNode(taskId);
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(flowNodeId);
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
   }
 
   public AbstractFlowNodeBuilder<?, ?> connectBoundaryTimerEvent(
-      final AbstractFlowNodeBuilder<?, ?> taskBuilder, final String boundaryEventId) {
-    var builder = taskBuilder;
+      final AbstractFlowNodeBuilder<?, ?> flowNodeBuilder, final String boundaryEventId) {
+    var builder = flowNodeBuilder;
     if (!joinGatewayCreated && !timerEventHasTerminateEndEvent) {
-      builder = connectJoinGateway(taskBuilder);
+      builder = connectJoinGateway(flowNodeBuilder);
     }
 
     final var boundaryEventBuilder =
-        ((AbstractActivityBuilder<?, ?>) builder.moveToNode(taskId))
+        ((AbstractActivityBuilder<?, ?>) builder.moveToNode(flowNodeId))
             .boundaryEvent(boundaryEventId, b -> b.timerWithDurationExpression(boundaryEventId));
 
     if (timerEventHasTerminateEndEvent) {
-      return boundaryEventBuilder.endEvent().terminate().moveToNode(taskId);
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(flowNodeId);
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
