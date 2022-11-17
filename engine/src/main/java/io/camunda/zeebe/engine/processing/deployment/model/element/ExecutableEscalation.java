@@ -7,22 +7,41 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ExecutableEscalation extends AbstractFlowElement {
 
-  private final DirectBuffer escalationCode = new UnsafeBuffer();
+  private DirectBuffer escalationCode;
+  private Expression escalationCodeExpression;
 
   public ExecutableEscalation(final String id) {
     super(id);
   }
 
-  public DirectBuffer getEscalationCode() {
-    return escalationCode;
+  /**
+   * Returns the escalation code, if it has been resolved previously (and is independent of the
+   * variable context). If this returns an empty {@code Optional} then the escalation code must be
+   * resolved by evaluating {@code getEscalationCodeExpression()}
+   *
+   * @return the escalation code, if it has been resolved previously (and is independent of the
+   *     variable context)
+   */
+  public Optional<DirectBuffer> getEscalationCode() {
+    return Optional.ofNullable(escalationCode);
   }
 
   public void setEscalationCode(final DirectBuffer escalationCode) {
-    this.escalationCode.wrap(escalationCode);
+    this.escalationCode = new UnsafeBuffer(escalationCode);
+  }
+
+  public Expression getEscalationCodeExpression() {
+    return escalationCodeExpression;
+  }
+
+  public void setEscalationCodeExpression(final Expression escalationCodeExpression) {
+    this.escalationCodeExpression = escalationCodeExpression;
   }
 }

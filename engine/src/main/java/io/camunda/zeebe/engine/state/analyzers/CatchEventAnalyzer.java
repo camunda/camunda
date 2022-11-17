@@ -207,7 +207,12 @@ public final class CatchEventAnalyzer {
 
   public boolean matchesEscalationCode(
       final ExecutableCatchEvent catchEvent, final DirectBuffer escalationCode) {
-    final var eventEscalationCode = catchEvent.getEscalation().getEscalationCode();
+    final var eventEscalationCodeOptional = catchEvent.getEscalation().getEscalationCode();
+    // Because a catch event can not contain an expression, we ignore it if not set.
+    if (eventEscalationCodeOptional.isEmpty()) {
+      return false;
+    }
+    final var eventEscalationCode = eventEscalationCodeOptional.get();
     return eventEscalationCode.capacity() == 0 || eventEscalationCode.equals(escalationCode);
   }
 

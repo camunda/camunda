@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -15,7 +14,6 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
@@ -132,17 +130,15 @@ public final class BpmnEventPublicationBehavior {
    * wasn't interrupted, etc.
    *
    * @param throwElementId the element id of the escalation throw event
-   * @param escalation the escalation of throw event
+   * @param escalationCode the escalation code of escalation
    * @param context process instance-related data of the element that is executed
    * @return returns true if the escalation throw event can be completed, false otherwise
    */
   public boolean throwEscalationEvent(
       final DirectBuffer throwElementId,
-      final ExecutableEscalation escalation,
+      final DirectBuffer escalationCode,
       final BpmnElementContext context) {
-    ensureNotNull("escalation", escalation);
 
-    final var escalationCode = escalation.getEscalationCode();
     ensureNotNullOrEmpty("escalationCode", escalationCode);
 
     final var record = new EscalationRecord();

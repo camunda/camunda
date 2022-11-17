@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
+import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
+
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -15,8 +17,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public class IntermediateThrowEventProcessor
     implements BpmnElementProcessor<ExecutableIntermediateThrowEvent> {
@@ -33,6 +39,7 @@ public class IntermediateThrowEventProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnJobBehavior jobBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
+  private final ExpressionProcessor expressionProcessor;
 
   public IntermediateThrowEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -42,6 +49,7 @@ public class IntermediateThrowEventProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
   }
 
   @Override
@@ -200,15 +208,19 @@ public class IntermediateThrowEventProcessor
     @Override
     public void onActivate(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+      evaluateEscalationCode(element, activating)
+          .ifRightOrLeft(
+              escalationCode -> {
+                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final boolean canBeCompleted =
+                    eventPublicationBehavior.throwEscalationEvent(
+                        element.getId(), escalationCode, activated);
 
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
-      final boolean canBeCompleted =
-          eventPublicationBehavior.throwEscalationEvent(
-              element.getId(), element.getEscalation(), activated);
-
-      if (canBeCompleted) {
-        stateTransitionBehavior.completeElement(activated);
-      }
+                if (canBeCompleted) {
+                  stateTransitionBehavior.completeElement(activated);
+                }
+              },
+              failure -> incidentBehavior.createIncident(failure, activating));
     }
 
     @Override
@@ -220,6 +232,19 @@ public class IntermediateThrowEventProcessor
           .ifRightOrLeft(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
               failure -> incidentBehavior.createIncident(failure, completing));
+    }
+
+    private Either<Failure, DirectBuffer> evaluateEscalationCode(
+        final ExecutableIntermediateThrowEvent element, final BpmnElementContext context) {
+      final var escalation = element.getEscalation();
+      ensureNotNull("escalation", escalation);
+
+      if (escalation.getEscalationCode().isPresent()) {
+        return Either.right(escalation.getEscalationCode().get());
+      }
+
+      return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
+          escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
     }
   }
 }

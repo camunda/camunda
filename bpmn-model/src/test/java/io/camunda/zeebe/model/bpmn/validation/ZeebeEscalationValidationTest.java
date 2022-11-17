@@ -313,4 +313,43 @@ class ZeebeEscalationValidationTest {
     ProcessValidationUtil.assertThatProcessHasViolations(
         process, expect(Escalation.class, "EscalationCode must be present and not empty"));
   }
+
+  @Test
+  @DisplayName("An escalation boundary event can not contain an expression")
+  void verifyEscalationCodeOfEscalationBoundaryEventCanNotContainAnExpression() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId("child"))
+            .boundaryEvent("catch", b -> b.escalation("= escalation").endEvent())
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            EscalationEventDefinition.class,
+            "The escalationCode of the escalation catch event is not allowed to be an expression"));
+  }
+
+  @Test
+  @DisplayName("An escalation start event can not contain an expression")
+  void verifyEscalationCodeOfEscalationStartEventCanNotContainAnExpression() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess(
+                "sub", s -> s.startEvent("start").escalation("= escalation").endEvent())
+            .startEvent()
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            EscalationEventDefinition.class,
+            "The escalationCode of the escalation catch event is not allowed to be an expression"));
+  }
 }
