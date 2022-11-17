@@ -8,22 +8,16 @@
 package io.camunda.zeebe.it.smoke;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 
 /**
- * {@code @SmokeTest} is used to signal that the annotated method is smoke test case.
- *
- * <p>A smoke test is simple test case that verifies whether the system starts properly by verifying
- * health indicators and/or by performing simple API interaction.
+ * {@code @ContainerSmokeTest} is used to signal that the annotated method is a container based
+ * smoke test case, a special kind of {@link @SmokeTest} that verifies the system running within
+ * containers.
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-@Tag("smoke-test")
-@Test
-@Inherited
-public @interface SmokeTest {}
+@SmokeTest
+public @interface ContainerSmokeTest {}
