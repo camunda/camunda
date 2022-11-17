@@ -128,8 +128,8 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
       final BlockBuilder blockBuilder) {
     final var branchExecutionPath = blockBuilder.findRandomExecutionPath(context);
     executionPathSegment.mergeVariableDefaults(branchExecutionPath);
-    return new BranchPointer(
-        branchExecutionPath.getScheduledSteps(), branchExecutionPath.hasReachedTerminateEndEvent());
+    final boolean shouldStopAfterLastStep = branchExecutionPath.hasReachedTerminateEndEvent();
+    return new BranchPointer(branchExecutionPath.getScheduledSteps(), shouldStopAfterLastStep);
   }
 
   // shuffles the lists together by iteratively taking the first item from one of the lists
@@ -151,7 +151,7 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
       copyAutomaticSteps(tuple, executionPath);
       purgeEmptyBranches(branchPointers);
 
-      if (tuple.isEmpty() && tuple.stopAfterLastStep) {
+      if (tuple.isEmpty() && tuple.shouldStopAfterLastStep) {
         executionPath.setReachedTerminateEndEvent(true);
         break;
       }
@@ -195,12 +195,12 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
   private static final class BranchPointer {
 
     private final List<ScheduledExecutionStep> remainingSteps;
-    private final boolean stopAfterLastStep;
+    private final boolean shouldStopAfterLastStep;
 
     private BranchPointer(
-        final List<ScheduledExecutionStep> remainingSteps, final boolean stopAfterLastStep) {
+        final List<ScheduledExecutionStep> remainingSteps, final boolean shouldStopAfterLastStep) {
       this.remainingSteps = new ArrayList<>(remainingSteps);
-      this.stopAfterLastStep = stopAfterLastStep;
+      this.shouldStopAfterLastStep = shouldStopAfterLastStep;
     }
 
     private List<ScheduledExecutionStep> getRemainingSteps() {
