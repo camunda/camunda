@@ -113,6 +113,7 @@
     <version.zpt>8.1.3</version.zpt>
     <version.feign>12.0</version.feign>
     <version.awssdk>2.18.18</version.awssdk>
+    <version.toxiproxy>2.1.7</version.toxiproxy>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -827,6 +828,12 @@
         <groupId>com.github.docker-java</groupId>
         <artifactId>docker-java-api</artifactId>
         <version>${version.docker-java-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>eu.rekawek.toxiproxy</groupId>
+        <artifactId>toxiproxy-java</artifactId>
+        <version>${version.toxiproxy}</version>
       </dependency>
 
       <dependency>
