@@ -129,7 +129,7 @@ public class ObjectVariableService {
   private List<ProcessVariableDto> mapToFlattenedVariable(final String name, final Object value,
                                                           final ProcessVariableUpdateDto origin) {
     if (value == null || String.valueOf(value).isEmpty()) {
-      log.info("Variable attribute '{}' of '{}' is null or empty and won't be imported", name, origin.getName());
+      log.debug("Variable attribute '{}' of '{}' is null or empty and won't be imported", name, origin.getName());
       return Collections.emptyList();
     }
 
@@ -149,9 +149,9 @@ public class ObjectVariableService {
     } else if (value instanceof Number) {
       parseNumberVariable(Collections.singletonList(value), newVariable);
     } else {
-      log.warn(
-        "Variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",
-        name, origin.getName(), value.getClass().getSimpleName(), value
+      log.debug(
+        "Variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
+        name, origin.getName(), value.getClass().getSimpleName()
       );
       return Collections.emptyList();
     }
@@ -178,9 +178,9 @@ public class ObjectVariableService {
     } else if (firstItem instanceof Number) {
       parseNumberVariable(originList, newListVar);
     } else {
-      log.warn(
-        "List variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",
-        name, origin.getName(), firstItem.getClass().getSimpleName(), value
+      log.debug(
+        "List variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
+        name, origin.getName(), firstItem.getClass().getSimpleName()
       );
     }
     resultList.add(newListVar);
