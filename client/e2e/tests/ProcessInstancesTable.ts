@@ -10,7 +10,7 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './ProcessInstancesTable.setup';
-import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {setProcessesFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
 
@@ -30,7 +30,7 @@ fixture('Process Instances Table')
         })
       );
 
-    await setFlyoutTestAttribute('processName');
+    await setProcessesFlyoutTestAttribute('processName');
   });
 
 test('Sorting', async (t) => {

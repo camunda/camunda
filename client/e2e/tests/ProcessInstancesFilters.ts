@@ -10,7 +10,7 @@ import {setup} from './ProcessInstancesFilters.setup';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {setProcessesFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {processesPage as ProcessesPage} from './PageModels/Processes';
 import {validateSelectValue} from './utils/validateSelectValue';
@@ -31,9 +31,9 @@ fixture('Process Instances Filters')
         })
       );
 
-    await setFlyoutTestAttribute('processName');
-    await setFlyoutTestAttribute('processVersion');
-    await setFlyoutTestAttribute('flowNode');
+    await setProcessesFlyoutTestAttribute('processName');
+    await setProcessesFlyoutTestAttribute('processVersion');
+    await setProcessesFlyoutTestAttribute('flowNode');
   });
 
 test('Apply Filters', async (t) => {

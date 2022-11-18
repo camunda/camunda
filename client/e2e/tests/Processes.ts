@@ -14,7 +14,7 @@ import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {screen, within} from '@testing-library/testcafe';
-import {setFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
+import {setProcessesFlyoutTestAttribute} from './utils/setFlyoutTestAttribute';
 import {displayOptionalFilter} from './utils/displayOptionalFilter';
 import {validateCheckedState} from './utils/validateCheckedState';
 import {validateSelectValue} from './utils/validateSelectValue';
@@ -33,7 +33,7 @@ fixture('Processes')
       })
     );
 
-    await setFlyoutTestAttribute('processName');
+    await setProcessesFlyoutTestAttribute('processName');
   });
 
 test('Processes Page Initial Load', async (t) => {

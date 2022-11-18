@@ -27,10 +27,9 @@ class DecisionViewer {
       this.#viewer = new Viewer('decision', {container});
 
       await this.#viewer.importXML(xml);
-      this.#xml = xml;
     }
 
-    if (this.#decisionViewId !== decisionViewId) {
+    if (this.#decisionViewId !== decisionViewId || this.#xml !== xml) {
       const view = this.#viewer.getViews().find((view) => {
         return view.id === decisionViewId;
       });
@@ -42,6 +41,8 @@ class DecisionViewer {
         logger.error(`decision "${decisionViewId}" not found in xml`);
       }
     }
+
+    this.#xml = xml;
   };
 
   reset = () => {

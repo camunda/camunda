@@ -37,6 +37,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
           return (
             <Select
               label="Name"
+              data-testid="filter-decision-name"
               selectedOptions={
                 isSelectedValueValid && decisions.length > 0 && input.value
                   ? [input.value]
@@ -61,6 +62,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
         {({input}) => (
           <Select
             label="Version"
+            data-testid="filter-decision-version"
             selectedOptions={
               versions.length > 0 && input.value
                 ? [input.value.toString()]
