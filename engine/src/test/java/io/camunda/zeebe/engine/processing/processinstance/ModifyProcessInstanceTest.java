@@ -871,6 +871,63 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldActivateInsideNestedSpecificFlowScopeUsingAncestorSelection() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("sub")
+                .embeddedSubProcess()
+                .startEvent()
+                .exclusiveGateway("split")
+                .defaultFlow()
+                .userTask("A")
+                .userTask("C")
+                .exclusiveGateway("join")
+                .moveToLastExclusiveGateway()
+                .conditionExpression("false")
+                .userTask("B")
+                .connectTo("join")
+                .endEvent()
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var activatedTaskA =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .findAny();
+    assertThat(activatedTaskA).isPresent();
+
+    // when
+    final var ancestorScopeKey = processInstanceKey;
+    final var modifiedRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B", ancestorScopeKey)
+            .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .skipUntil(r -> r.getPosition() >= modifiedRecord.getSourceRecordPosition())
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getElementId)
+        .describedAs("Expect that a new instance of the sub process and task B have been activated")
+        .containsExactly("sub", "B");
+  }
+
+  @Test
   public void shouldActivateParallelGateway() {
     // given
     ENGINE
