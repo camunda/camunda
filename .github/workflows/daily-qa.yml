@@ -7,7 +7,6 @@ name: Daily tests
 
 on:
   workflow_dispatch: { }
-  push: { }
   schedule:
     # Runs at 01:00 every day; see this link for more: https://crontab.guru/#0_1_*_*_*
     - cron: '0 1 * * *'
