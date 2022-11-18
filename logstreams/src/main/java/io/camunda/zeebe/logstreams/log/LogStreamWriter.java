@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+
 public interface LogStreamWriter {
 
   /**
    * Attempts to write the event to the underlying stream.
    *
-   * @return the event position or a negative value if fails to write the event
+   * @return the event position
    */
-  long tryWrite();
+  ActorFuture<Long> tryWrite();
 }

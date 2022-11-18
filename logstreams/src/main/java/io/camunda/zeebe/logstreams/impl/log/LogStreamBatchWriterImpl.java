@@ -27,11 +27,12 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
 final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
@@ -200,31 +201,35 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
   }
 
   @Override
-  public long tryWrite() {
+  public ActorFuture<Long> tryWrite() {
     if (eventCount == 0) {
       if (valueWriter == null) {
-        return 0;
+        return CompletableActorFuture.completed(0L);
       }
 
       copyExistingEventToBuffer();
     }
 
     long position = claimBatchForEvents();
-    if (position >= 0) {
-      try {
-        // return position of last event
-        writeEventsToBuffer(claimedBatch.getBuffer(), position);
-        position += eventCount - 1;
-
-        claimedBatch.commit();
-      } catch (final Exception e) {
-        claimedBatch.abort();
-        LangUtil.rethrowUnchecked(e);
-      } finally {
-        reset();
-      }
+    if (position < 0) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException("Failed to claim batch (result: %d)".formatted(position)));
     }
-    return position;
+
+    try {
+      // return position of last event
+      writeEventsToBuffer(claimedBatch.getBuffer(), position);
+      position += eventCount - 1;
+
+      claimedBatch.commit();
+    } catch (final Exception e) {
+      claimedBatch.abort();
+      return CompletableActorFuture.completedExceptionally(e);
+    } finally {
+      reset();
+    }
+
+    return CompletableActorFuture.completed(position);
   }
 
   private long claimBatchForEvents() {

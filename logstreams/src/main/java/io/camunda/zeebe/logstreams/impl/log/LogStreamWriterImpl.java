@@ -21,10 +21,11 @@ import io.camunda.zeebe.dispatcher.ClaimedFragment;
 import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.DirectBuffer;
-import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
 final class LogStreamWriterImpl implements LogStreamRecordWriter {
@@ -110,9 +111,9 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
   }
 
   @Override
-  public long tryWrite() {
+  public ActorFuture<Long> tryWrite() {
     if (valueWriter == null) {
-      return 0;
+      return CompletableActorFuture.completed(0L);
     }
 
     long result = -1;
@@ -122,37 +123,40 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
     // claim fragment in log write buffer
     final long claimedPosition = claimLogEntry(valueLength, metadataLength);
-
-    if (claimedPosition >= 0) {
-      try {
-        final MutableDirectBuffer writeBuffer = claimedFragment.getBuffer();
-        final int bufferOffset = claimedFragment.getOffset();
-
-        // write log entry header
-        setPosition(writeBuffer, bufferOffset, claimedPosition);
-        setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
-        setKey(writeBuffer, bufferOffset, key);
-        setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
-        setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
-
-        if (metadataLength > 0) {
-          metadataWriter.write(writeBuffer, metadataOffset(bufferOffset));
-        }
-
-        // write log entry
-        valueWriter.write(writeBuffer, valueOffset(bufferOffset, metadataLength));
-
-        result = claimedPosition;
-        claimedFragment.commit();
-      } catch (final Exception e) {
-        claimedFragment.abort();
-        LangUtil.rethrowUnchecked(e);
-      } finally {
-        reset();
-      }
+    if (claimedPosition < 0) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalStateException(
+              "Failed to claim batch (result: %d)".formatted(claimedPosition)));
     }
 
-    return result;
+    try {
+      final MutableDirectBuffer writeBuffer = claimedFragment.getBuffer();
+      final int bufferOffset = claimedFragment.getOffset();
+
+      // write log entry header
+      setPosition(writeBuffer, bufferOffset, claimedPosition);
+      setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
+      setKey(writeBuffer, bufferOffset, key);
+      setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
+      setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
+
+      if (metadataLength > 0) {
+        metadataWriter.write(writeBuffer, metadataOffset(bufferOffset));
+      }
+
+      // write log entry
+      valueWriter.write(writeBuffer, valueOffset(bufferOffset, metadataLength));
+
+      result = claimedPosition;
+      claimedFragment.commit();
+    } catch (final Exception e) {
+      claimedFragment.abort();
+      return CompletableActorFuture.completedExceptionally(e);
+    } finally {
+      reset();
+    }
+
+    return CompletableActorFuture.completed(result);
   }
 
   private long claimLogEntry(final int valueLength, final int metadataLength) {
