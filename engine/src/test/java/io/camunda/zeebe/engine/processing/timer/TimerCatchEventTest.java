@@ -34,7 +34,7 @@ public final class TimerCatchEventTest {
   private static final BpmnModelInstance SINGLE_TIMER_PROCESS =
       Bpmn.createExecutableProcess("SINGLE_TIMER_PROCESS")
           .startEvent()
-          .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0.1S"))
+          .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1M"))
           .endEvent()
           .done();
   private static final BpmnModelInstance BOUNDARY_EVENT_PROCESS =
@@ -204,6 +204,8 @@ public final class TimerCatchEventTest {
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
     // then
     final Record<TimerRecordValue> triggeredEvent =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
@@ -212,8 +214,12 @@ public final class TimerCatchEventTest {
 
     assertThat(triggeredEvent.getKey()).isEqualTo(createdEvent.getKey());
     assertThat(triggeredEvent.getValue()).isEqualTo(createdEvent.getValue());
+    // Normally we don't guarantee that a timer gets triggered within a certain time-span. The only
+    // guarantee we have is that the timer gets triggered after a specific point in time.
+    // Because this is an isolated scenario we can test for this with relative accuracy so we do
+    // assert this here with a between.
     assertThat(Duration.ofMillis(triggeredEvent.getTimestamp() - createdEvent.getTimestamp()))
-        .isBetween(Duration.ofMillis(100), Duration.ofMillis(150));
+        .isBetween(Duration.ofMinutes(1), Duration.ofMinutes(2));
   }
 
   @Test
@@ -227,7 +233,7 @@ public final class TimerCatchEventTest {
         .withProcessInstanceKey(processInstanceKey)
         .getFirst();
 
-    ENGINE.increaseTime(Duration.ofSeconds(1));
+    ENGINE.increaseTime(Duration.ofMinutes(1));
 
     // then
     final Record<ProcessInstanceRecordValue> activatedEvent =
