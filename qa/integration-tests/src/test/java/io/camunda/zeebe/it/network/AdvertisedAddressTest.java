@@ -160,7 +160,7 @@ final class AdvertisedAddressTest {
 
   private void configureGateway(final ZeebeGatewayNode<?> gateway) {
     final var gatewayClusterProxy =
-        proxyRegistry.getOrCreateProxy(gateway.getExternalClusterAddress());
+        proxyRegistry.getOrCreateProxy(gateway.getInternalClusterAddress());
     final var contactPoint = cluster.getBrokers().get(0);
     final var contactPointProxy =
         proxyRegistry.getOrCreateProxy(contactPoint.getInternalClusterAddress());
