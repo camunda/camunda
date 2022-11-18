@@ -65,5 +65,15 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>toxiproxy</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>eu.rekawek.toxiproxy</groupId>
+      <artifactId>toxiproxy-java</artifactId>
+    </dependency>
   </dependencies>
 </project>
