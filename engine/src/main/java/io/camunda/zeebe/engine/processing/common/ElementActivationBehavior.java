@@ -35,6 +35,8 @@ import org.agrona.DirectBuffer;
 
 public final class ElementActivationBehavior {
 
+  public static final long NO_ANCESTOR_SCOPE_KEY = -1L;
+
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,15 @@ public final class ElementActivationBehavior {
   }
 
   /**
-   * Activates the given element. If the element is nested inside a flow scope and there is no
-   * active instance of the flow scope then it creates a new instance. This is used when modifying a
-   * process instance or starting a process instance at a different place than the start event.
+   * Activates the given element.
+   *
+   * <p>If the element is nested inside a flow scope and there is no active instance of the flow
+   * scope then it creates a new instance. This is used when modifying a process instance or
+   * starting a process instance at a different place than the start event.
+   *
+   * <p>If there are multiple flow scope instances, then you should use {@link
+   * #activateElement(ProcessInstanceRecord, AbstractFlowElement, long, BiConsumer)} to select a
+   * specific ancestor.
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
@@ -68,22 +76,31 @@ public final class ElementActivationBehavior {
   public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate) {
-    return activateElement(processInstanceRecord, elementToActivate, (empty, function) -> {});
+    return activateElement(
+        processInstanceRecord, elementToActivate, NO_ANCESTOR_SCOPE_KEY, (empty, function) -> {});
   }
 
   /**
-   * Activates the given element. If the element is nested inside a flow scope and there is no
-   * active instance of the flow scope then it creates a new instance. This is used when modifying a
-   * process instance or starting a process instance at a different place than the start event.
+   * Activates the given element.
+   *
+   * <p>If the element is nested inside a flow scope and there is no active instance of the flow
+   * scope then it creates a new instance. This is used when modifying a process instance or
+   * starting a process instance at a different place than the start event.
+   *
+   * <p>If there are multiple flow scope instances, then the ancestor scope key must be provided to
+   * choose one.
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
+   * @param ancestorScopeKey The key of the chosen ancestor scope in case there are multiple flow
+   *     scope instances
    * @param createVariablesCallback Callback to create variables at a given scope
    * @return The key of the activated element instance and the keys of all it's flow scopes
    */
   public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate,
+      final long ancestorScopeKey,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
     final var activatedElementKeys = new ActivatedElementKeys();
 
@@ -93,6 +110,7 @@ public final class ElementActivationBehavior {
             processInstanceRecord,
             processInstanceRecord.getProcessInstanceKey(),
             flowScopes,
+            ancestorScopeKey,
             createVariablesCallback,
             activatedElementKeys);
 
@@ -126,6 +144,7 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
       final Deque<ExecutableFlowElement> flowScopes,
+      final long ancestorScopeKey,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback,
       final ActivatedElementKeys activatedElementKeys) {
 
@@ -148,6 +167,7 @@ public final class ElementActivationBehavior {
           processInstanceRecord,
           elementInstanceKey,
           flowScopes,
+          ancestorScopeKey,
           createVariablesCallback,
           activatedElementKeys);
 
@@ -161,13 +181,38 @@ public final class ElementActivationBehavior {
           processInstanceRecord,
           elementInstance.getKey(),
           flowScopes,
+          ancestorScopeKey,
           createVariablesCallback,
           activatedElementKeys);
 
     } else {
-      final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-      throw new MultipleFlowScopeInstancesFoundException(
-          flowScopeId, processInstanceRecord.getBpmnProcessId());
+      // there are multiple active instances of this flow scope
+      // - use the selected ancestor as flow scope
+
+      if (ancestorScopeKey == NO_ANCESTOR_SCOPE_KEY) {
+        final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
+        throw new MultipleFlowScopeInstancesFoundException(
+            flowScopeId, processInstanceRecord.getBpmnProcessId());
+      }
+
+      final var selectedAncestor =
+          elementInstancesOfScope.stream()
+              .filter(instance -> instance.getKey() == ancestorScopeKey)
+              .findAny();
+      if (selectedAncestor.isEmpty()) {
+        // todo: reject
+      }
+
+      // todo: createVariablesCallback.accept(flowScope.getId(), ancestorScopeKey);
+      // todo: activatedElementKeys.addFlowScopeKey(ancestorScopeKey);
+
+      return activateFlowScopes(
+          processInstanceRecord,
+          ancestorScopeKey,
+          flowScopes,
+          ancestorScopeKey,
+          createVariablesCallback,
+          activatedElementKeys);
     }
   }
 
