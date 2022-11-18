@@ -42,8 +42,8 @@ jobs:
           else
             echo "Failed to compute latest versions"
           fi
-          echo "LATEST_VERSION=${latest}" >> $GITHUB_ENV
-          echo "PREVIOUS_LATEST_VERSION=${previous}" >> $GITHUB_ENV
+          echo "LATEST_VERSION=${latest%\.[0-9]}" >> $GITHUB_ENV
+          echo "PREVIOUS_LATEST_VERSION=${previous%\.[0-9]}" >> $GITHUB_ENV
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Zeebe VERSION`.
   #
