@@ -7,15 +7,28 @@ on:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
         default: 'Zeebe SNAPSHOT'
+        type: string
       branch:
         description: 'Specifies the branch, for which the QA Testbench run should be executed'
         default: 'main'
         required: false
-  schedule:
-  # * is a special character in YAML so you have to quote this string
-    - cron:  '0 23 * * *'
+        type: string
+  workflow_call:
+    inputs:
+      generation:
+        description: 'Specifies the generation template which should be used by the testbench run'
+        required: false
+        default: 'Zeebe SNAPSHOT'
+        type: string
+      branch:
+        description: 'Specifies the branch, for which the QA Testbench run should be executed'
+        default: 'main'
+        required: false
+        type: string
 env:
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+  GENERATION_TEMPLATE: ${{ inputs.generation }}
+  BRANCH: ${{ inputs.branch }}
 
 jobs:
   qa-testbench:
@@ -24,30 +37,25 @@ jobs:
     timeout-minutes: 45
     env:
       IMAGE: "gcr.io/zeebe-io/zeebe"
-      GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
-      BRANCH_NAME: "${{ github.event.inputs.branch }}"
+      GENERATION_TEMPLATE: "${{ inputs.generation }}"
+      BRANCH_NAME: "${{ inputs.branch }}"
       ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
       ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
 
     steps:
-      # Dynamic environment variables are not supported by GHA
-      # https://brandur.org/fragments/github-actions-env-vars-in-env-vars
-      #
-      # Since we run the workflow either on demand or via schedule we need to assign some defaults
-      # Furthermore we have branches like stable/1.0 where we have to replace certain patterns, in order to use the branch name as docker image tag
-      - id: evaluate-inputs
-        name: Evaluate Inputs
+      # Since we have branches like stable/1.0 where we have to replace certain patterns, in order to use the branch name as docker image tag
+      - id: set-branch-name
+        name: Sanitize branch name
         run: |
           branch=${BRANCH_NAME/\//-}
           branch=${branch//\./-}
           branch=${branch:-main}
-          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
-          echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
+          echo "BRANCH=$branch" >> $GITHUB_ENV
       # We need to check out the evaluated branch and setup java (incl. maven), so we can retrieve the current project version
       # The version is necessary, since CC Saas only accepts SemVer for docker image tags (need to start with a version tag)
       - uses: actions/checkout@v3
         with:
-          ref: "${{ github.event.inputs.branch }}"
+          ref: "${{ env.BRANCH_NAME }}"
       - uses: actions/setup-java@v3.6.0
         with:
           distribution: 'temurin'
@@ -57,11 +65,10 @@ jobs:
         name: Set environment variables
         run: |
           version=$(mvn help:evaluate -q -DforceStdout -D"expression=project.version")
-          tag="$version-$BRANCH_NAME-${GITHUB_SHA::8}"
+          tag="$version-$BRANCH-${GITHUB_SHA::8}"
           echo "TAG=$tag" >> $GITHUB_ENV
           echo "QA_RUN_VARIABLES={\"zeebeImage\": \"$IMAGE:$tag\", \"generationTemplate\": \"$GENERATION_TEMPLATE\", \"channel\": \"Internal Dev\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"businessKey\": \"$BUILD_URL\", \"processId\": \"qa-protocol\"}" >> $GITHUB_ENV
           echo "BUSINESS_KEY=$BUILD_URL" >> $GITHUB_ENV
-
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v2.4.3
@@ -101,18 +108,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [qa-testbench]
     if: ${{ always() }}
-    env:
-      GENERATION_TEMPLATE: "${{ github.event.inputs.generation }}"
-      BRANCH_NAME: "${{ github.event.inputs.branch }}"
     steps:
-      # Sharing environment variables are not supported, so we have to do it here again
-      - id: evaluate-inputs
-        name: Evaluate Inputs
-        run: |
-          branch=${BRANCH_NAME:-main}
-          echo "BRANCH_NAME=$branch" >> $GITHUB_ENV
-          echo "GENERATION_TEMPLATE=${GENERATION_TEMPLATE:-Zeebe SNAPSHOT}" >> $GITHUB_ENV
-
       - id: slack-failure-notify
         name: Send failure slack notification
         uses: slackapi/slack-github-action@v1.23.0
