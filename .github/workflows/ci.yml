@@ -389,6 +389,7 @@ jobs:
           format: sarif
           output-file: ./hadolint.sarif
           no-color: true
+          verbose: true
       - name: Upload Hadolint Results
         uses: github/codeql-action/upload-sarif@v2
         with:
