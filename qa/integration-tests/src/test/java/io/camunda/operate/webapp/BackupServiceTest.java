@@ -86,7 +86,7 @@ public class BackupServiceTest {
 
   @Test
   public void shouldFailCreateBackupOnWrongBackupId() {
-    String expectedMessage = "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?].";
+    String expectedMessage = "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _].";
 
     Exception exception = assertThrows(InvalidRequestException.class, () -> {
       backupService.takeBackup(new TakeBackupRequestDto().setBackupId("UPPERCASEID"));
@@ -141,13 +141,17 @@ public class BackupServiceTest {
     exception = assertThrows(InvalidRequestException.class, () -> {
       backupService.takeBackup(new TakeBackupRequestDto().setBackupId("backupIdWith?"));
     });
+
+    exception = assertThrows(InvalidRequestException.class, () -> {
+      backupService.takeBackup(new TakeBackupRequestDto().setBackupId("backupIdWith_"));
+    });
     assertTrue(exception.getMessage().contains(expectedMessage));
   }
 
   @Test
   public void shouldFailCreateBackupOnAbsentRepositoryName() {
     when(operateProperties.getBackup()).thenReturn(new BackupProperties());
-    Exception exception = assertThrows(OperateRuntimeException.class, () -> {
+    Exception exception = assertThrows(InvalidRequestException.class, () -> {
       backupManager.takeBackup(new TakeBackupRequestDto().setBackupId("backupid"));
     });
     String expectedMessage = "Cannot trigger backup because no Elasticsearch snapshot repository name found in Operate configuration.";
@@ -328,6 +332,36 @@ public class BackupServiceTest {
 
     GetBackupStateResponseDto backupState = backupManager.getBackupState(backupId);
     assertThat(backupState.getState()).isEqualTo(IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldFailDeleteBackupOnAbsentRepositoryName() {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    Exception exception = assertThrows(InvalidRequestException.class, () -> {
+      backupManager.deleteBackup("backupid");
+    });
+    String expectedMessage = "Cannot trigger backup because no Elasticsearch snapshot repository name found in Operate configuration.";
+    String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+  }
+
+  @Test
+  public void shouldFailDeleteBackupOnNonExistingRepository() throws IOException {
+    String repoName = "repoName";
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties().setRepositoryName(repoName));
+    ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
+    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
+    when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    Exception exception = assertThrows(OperateRuntimeException.class, () -> {
+      backupManager.deleteBackup("backupid");
+    });
+
+    String expectedMessage = String.format("Cannot trigger backup because no repository with name [%s] could be found.",
+        repoName);
+    String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+    verify(esClient, times(1)).snapshot();
   }
 
   @NotNull private SnapshotInfo createSnapshotInfoMock(String uuid, SnapshotState state) {

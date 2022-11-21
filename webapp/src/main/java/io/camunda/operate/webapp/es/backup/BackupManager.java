@@ -28,9 +28,11 @@ import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRe
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
+import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.snapshots.SnapshotInfo;
@@ -84,6 +86,33 @@ public class BackupManager {
 
   private String[][] indexPatternsOrdered;
 
+  public void deleteBackup(String backupId) {
+    validateRepositoryExists();
+    String repositoryName = getRepositoryName();
+    int count = getIndexPatternsOrdered().length;
+    String version = getCurrentOperateVersion();
+    for (int index = 0; index < count; index++) {
+      String snapshotName = new Metadata().setVersion(version).setPartCount(count).setPartNo(index + 1)
+          .buildSnapshotName(backupId);
+      DeleteSnapshotRequest request = new DeleteSnapshotRequest(repositoryName);
+      request.snapshots(snapshotName);
+      esClient.snapshot().deleteAsync(request, RequestOptions.DEFAULT, getDeleteListener());
+    }
+  }
+
+  public ActionListener<AcknowledgedResponse> getDeleteListener() {
+    return new ActionListener<>() {
+      @Override
+      public void onResponse(AcknowledgedResponse response) {
+        logger.debug("Delete snapshot was acknowledged by Elasticsearch node: " + response.isAcknowledged());
+      }
+      @Override
+      public void onFailure(Exception e) {
+        logger.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
+      }
+    };
+  }
+
   public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
     validateRepositoryExists();
     validateNoDuplicateBackupId(request.getBackupId());
@@ -136,7 +165,7 @@ public class BackupManager {
     String repositoryName = getRepositoryName();
     if (repositoryName == null || repositoryName.isBlank()) {
       final String reason = "Cannot trigger backup because no Elasticsearch snapshot repository name found in Operate configuration.";
-      throw new OperateRuntimeException(reason);
+      throw new InvalidRequestException(reason);
     }
     final GetRepositoriesRequest getRepositoriesRequest = new GetRepositoriesRequest()
         .repositories(new String[]{ repositoryName });
@@ -311,5 +340,4 @@ public class BackupManager {
       throw new OperateRuntimeException(reason, e);
     }
   }
-
 }
