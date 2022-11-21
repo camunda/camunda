@@ -17,6 +17,8 @@ package commands
 
 import (
 	"context"
+	"fmt"
+	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 )
 
@@ -30,6 +32,13 @@ type ThrowErrorCommandStep2 interface {
 
 type DispatchThrowErrorCommand interface {
 	ErrorMessage(string) DispatchThrowErrorCommand
+
+	VariablesFromString(string) (DispatchThrowErrorCommand, error)
+	VariablesFromStringer(fmt.Stringer) (DispatchThrowErrorCommand, error)
+	VariablesFromMap(map[string]interface{}) (DispatchThrowErrorCommand, error)
+	VariablesFromObject(interface{}) (DispatchThrowErrorCommand, error)
+	VariablesFromObjectIgnoreOmitempty(interface{}) (DispatchThrowErrorCommand, error)
+
 	Send(context.Context) (*pb.ThrowErrorResponse, error)
 }
 
@@ -53,6 +62,44 @@ func (c *ThrowErrorCommand) ErrorMessage(errorMsg string) DispatchThrowErrorComm
 	return c
 }
 
+func (c *ThrowErrorCommand) VariablesFromString(variables string) (DispatchThrowErrorCommand, error) {
+	err := c.mixin.Validate("variables", variables)
+	if err != nil {
+		return nil, err
+	}
+
+	c.request.Variables = variables
+	return c, nil
+}
+
+func (c *ThrowErrorCommand) VariablesFromStringer(variables fmt.Stringer) (DispatchThrowErrorCommand, error) {
+	return c.VariablesFromString(variables.String())
+}
+
+func (c *ThrowErrorCommand) VariablesFromObject(variables interface{}) (DispatchThrowErrorCommand, error) {
+	value, err := c.mixin.AsJSON("variables", variables, false)
+	if err != nil {
+		return nil, err
+	}
+
+	c.request.Variables = value
+	return c, nil
+}
+
+func (c *ThrowErrorCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchThrowErrorCommand, error) {
+	value, err := c.mixin.AsJSON("variables", variables, true)
+	if err != nil {
+		return nil, err
+	}
+
+	c.request.Variables = value
+	return c, nil
+}
+
+func (c *ThrowErrorCommand) VariablesFromMap(variables map[string]interface{}) (DispatchThrowErrorCommand, error) {
+	return c.VariablesFromObject(variables)
+}
+
 func (c *ThrowErrorCommand) Send(ctx context.Context) (*pb.ThrowErrorResponse, error) {
 	response, err := c.gateway.ThrowError(ctx, &c.request)
 	if c.shouldRetry(ctx, err) {
@@ -65,6 +112,7 @@ func (c *ThrowErrorCommand) Send(ctx context.Context) (*pb.ThrowErrorResponse, e
 func NewThrowErrorCommand(gateway pb.GatewayClient, pred retryPredicate) ThrowErrorCommandStep1 {
 	return &ThrowErrorCommand{
 		Command: Command{
+			mixin:       utils.NewJSONStringSerializer(),
 			gateway:     gateway,
 			shouldRetry: pred,
 		},
