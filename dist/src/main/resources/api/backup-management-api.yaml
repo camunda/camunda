@@ -105,7 +105,8 @@ components:
         The ID of the backup. The ID of the backup must be a positive numerical value. As backups
         are logically ordered by their IDs (ascending), each successive backup must use a higher
         ID than the previous one.
-      type: number
+      type: integer
+      format: int64
       example: 1
       minimum: 0
 
@@ -113,7 +114,8 @@ components:
       title: Partition ID
       description: |
         The ID of a partition. This is always a positive number greater than or equal to 1.
-      type: number
+      type: integer
+      format: int32
       minimum: 1
       example: 3
 
@@ -166,8 +168,7 @@ components:
             partitions known to the cluster.
           type: array
           items:
-            allOf:
-              - $ref: '#/components/schemas/PartitionBackupInfo'
+            $ref: '#/components/schemas/PartitionBackupInfo'
       required:
         - backupId
         - state
@@ -211,12 +212,14 @@ components:
           example: 238632143-55-690906332-690905294
         checkpointPosition:
           description: The position of the checkpoint for this backup.
-          type: number
+          type: integer
+          format: int64
           readOnly: true
           example: 10
         brokerId:
           description: The ID of the broker from which the backup was taken for this partition.
-          type: number
+          type: integer
+          format: int32
           readOnly: true
           example: 0
           minimum: 0
