@@ -28,7 +28,7 @@ on:
 env:
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   GENERATION_TEMPLATE: ${{ inputs.generation }}
-  BRANCH: ${{ inputs.branch }}
+  BRANCH_NAME: ${{ inputs.branch }}
 
 jobs:
   qa-testbench:
