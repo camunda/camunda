@@ -14,9 +14,11 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -364,5 +366,104 @@ public final class ExclusiveGatewayTest {
             RecordingExporter.incidentRecords().withProcessInstanceKey(processInstanceKey).limit(2))
         .extracting(Record::getIntent)
         .containsExactly(IncidentIntent.CREATED, IncidentIntent.RESOLVED);
+  }
+
+  @Test
+  public void shouldCreateDeploymentExclusiveGatewayWithDefaultFlow() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    // when
+    final BpmnModelInstance processDefinition1 =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlowId("s1")
+            .conditionExpression("= contains(str,\"a\")")
+            .endEvent("end1")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s2")
+            .endEvent("end2")
+            .done();
+
+    final Record<DeploymentRecordValue> deployment1 =
+        ENGINE.deployment().withXmlResource(processDefinition1).deploy();
+
+    // then
+    assertThat(deployment1.getKey())
+        .describedAs("Exclusive gateway's default flow should be allowed to have no condition")
+        .isNotNegative();
+
+    // when
+    final BpmnModelInstance processDefinition2 =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlowId("s1")
+            .conditionExpression("= contains(str,\"a\")")
+            .endEvent("end1")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s2")
+            .conditionExpression("= contains(str,\"b\")")
+            .endEvent("end2")
+            .done();
+
+    final Record<DeploymentRecordValue> deployment2 =
+        ENGINE.deployment().withXmlResource(processDefinition2).deploy();
+
+    // then
+    assertThat(deployment2.getKey())
+        .describedAs(
+            "Exclusive gateway's default flow should be allowed to have a condition, but not be required")
+        .isNotNegative();
+  }
+
+  @Test
+  public void shouldNotEvaluateConditionOfDefaultFlow() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .exclusiveGateway("xor")
+            .sequenceFlowId("s1")
+            .conditionExpression("= contains(str,\"a\")")
+            .endEvent("end1")
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .conditionExpression("= contains(str,\"b\")")
+            .endEvent("end2")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .sequenceFlowId("s3")
+            .conditionExpression("= nonexisting_variable")
+            .endEvent("end3")
+            .done();
+    ENGINE.deployment().withXmlResource(processDefinition).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(processId).withVariable("str", "d").create();
+
+    // then
+    assertThat(RecordingExporter.records().limitToProcessInstance(processInstanceKey))
+        .describedAs("Expect that the default flow is taken")
+        .satisfies(
+            record ->
+                assertThat(
+                        record.stream().filter(r -> r.getValueType() == ValueType.PROCESS_INSTANCE))
+                    .extracting(
+                        r -> ((ProcessInstanceRecordValue) r.getValue()).getElementId(),
+                        Record::getIntent)
+                    .containsSubsequence(
+                        tuple("xor", ProcessInstanceIntent.ELEMENT_COMPLETED),
+                        tuple("s3", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+                        tuple("end3", ProcessInstanceIntent.ELEMENT_COMPLETED)))
+        .describedAs(
+            "Expect that the default flow's condition `= nonexisting_variable` is not evaluated and no incident is created")
+        .satisfies(
+            r ->
+                assertThat(r).extracting(Record::getIntent).doesNotContain(IncidentIntent.CREATED));
   }
 }

@@ -28,7 +28,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-workflow-engine</artifactId>
+      <artifactId>zeebe-stream-platform</artifactId>
     </dependency>
 
     <dependency>

@@ -20,6 +20,11 @@ inputs:
     description: 'If true, will push the image'
     required: false
     default: 'false'
+  platforms:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64'
+    required: false
+    default: 'linux/amd64'
 
 outputs:
   image:
@@ -35,6 +40,8 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Set up multi-platform support
+      uses: docker/setup-qemu-action@v2
     # Creating a context is required when installing buildx on self-hosted runners
     - name: Create context
       shell: bash
@@ -71,6 +78,7 @@ runs:
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         no-cache: true
+        platforms: ${{ inputs.platforms }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}

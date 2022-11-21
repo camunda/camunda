@@ -95,7 +95,8 @@ public final class RequestMapper {
 
   public static BrokerThrowErrorRequest toThrowErrorRequest(final ThrowErrorRequest grpcRequest) {
     return new BrokerThrowErrorRequest(grpcRequest.getJobKey(), grpcRequest.getErrorCode())
-        .setErrorMessage(grpcRequest.getErrorMessage());
+        .setErrorMessage(grpcRequest.getErrorMessage())
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
   }
 
   public static BrokerCompleteJobRequest toCompleteJobRequest(

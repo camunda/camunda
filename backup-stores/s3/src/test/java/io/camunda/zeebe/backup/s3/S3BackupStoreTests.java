@@ -71,8 +71,8 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
         .isBeforeOrEqualTo(readManifest.modifiedAt());
     assertThat(readManifest.modifiedAt()).isBeforeOrEqualTo(Instant.now());
 
-    assertThat(readManifest.snapshotFileNames()).isEqualTo(backup.snapshot().names());
-    assertThat(readManifest.segmentFileNames()).isEqualTo(backup.segments().names());
+    assertThat(readManifest.snapshotFiles().names()).isEqualTo(backup.snapshot().names());
+    assertThat(readManifest.segmentFiles().names()).isEqualTo(backup.segments().names());
   }
 
   @ParameterizedTest

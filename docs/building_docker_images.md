@@ -2,7 +2,7 @@
 
 This document contains information on how to build native zeebe docker images for other platforms than the default amd64 architecture (e.g. for Apple Silicon/M1 based Macs).
 
-> **Note**  
+> **Note**
 > These instructions are meant for local development and testing (especially on ARM-based machines), not for production use.
 
 ## Get the Distball
@@ -23,15 +23,16 @@ mvn dependency:copy -B \
 
 ## Build the Image
 
-Now build the image for your local platform:
+Now build the image for your local platform (supported for AMD64 and ARM64):
 
 ```bash
-docker build --build-arg DISTBALL=camunda-zeebe.tar.gz --build-arg BASE_SHA="" -t my-zeebe:latest .
+docker build --build-arg DISTBALL=camunda-zeebe.tar.gz -t my-zeebe:latest .
 ```
 
-By default, the BASE_SHA argument in the Dockerfile points to an amd64 base image. Overriding the argument with an empty string - like in the above command - will automatically use your local system architecture for the base image.
-
-If you need a specific version of the [`eclipse-temurin:17-jre-focal`](https://hub.docker.com/layers/library/eclipse-temurin/17-jre-focal/images/sha256-e7fe469c4e729ff0ed6ff464f41eaff0e4cb9b6fe7efe71754d8935c8118eb87?context=explore) base image, you can override the default BASE_DIGEST like that: `--build-arg BASE_DIGEST="@sha256:fce37e5146419a158c2199c6089fa39b92445fb2e66dc0331f8591891239ea3b"`
+If you need a specific version of the [`eclipse-temurin:17-jre-focal`](https://hub.docker.com/layers/library/eclipse-temurin/17-jre-focal/images/sha256-e7fe469c4e729ff0ed6ff464f41eaff0e4cb9b6fe7efe71754d8935c8118eb87?context=explore) base image,
+you can override the default BASE_DIGEST[_ADM64|ARM64] depending on your local architecture like that:
+amd64: `--build-arg BASE_DIGEST_AMD64="sha256:00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"`
+arm64: `--build-arg BASE_DIGEST_ARM64="sha256:ce46be0c4b4edd9f519e99ad68a6b5765abe577fbf1662d8ad2550838eb29823"`
 
 ## Use it
 

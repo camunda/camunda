@@ -4,6 +4,7 @@
 #
 # Example usage:
 #   $ ./verify.sh camunda/zeebe:8.1.0
+#   $ ./verify.sh camunda/zeebe:8.1.0 arm64
 #
 # Globals:
 #   VERSION - required; the semantic version, e.g. 8.1.0 or 1.2.0-alpha1
@@ -11,6 +12,7 @@
 #   DATE - required; the ISO 8601 date at which the image was built
 # Arguments:
 #   1 - Docker image name
+#   2 - (optional) image architecture/platform e.g. amd64 (default) or arm64
 # Outputs:
 #   STDERR Error message if any of the properties are invalid
 # Returns:
@@ -40,11 +42,28 @@ if [ -z "${DATE}" ]; then
 fi
 
 imageName="${1}"
+arch="${2:-amd64}"
 
 # Check that the image exists
 if ! imageInfo="$(docker inspect "${imageName}")"; then
   echo >&2 "No known Docker image ${imageName} exists; did you pass the right name?"
   exit 1
+fi
+
+actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture')
+if [ "$actualArchitecture" != "\"$arch\"" ]; then
+  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"."
+  exit 1
+fi
+
+DIGEST_REGEX="BASE_DIGEST_$(echo "$arch" | tr '[:lower:]' '[:upper:]')=\"(sha256\:[a-f0-9\:]+)\""
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../Dockerfile")
+if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
+    DIGEST="${BASH_REMATCH[1]}"
+    echo "Digest found for architecture $arch: $DIGEST"
+else
+    echo >&2 "Docker image digest can not be found in the Dockerfile"
+    exit 1
 fi
 
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
@@ -65,6 +84,7 @@ expectedLabels=$(
     --arg VERSION "${VERSION}" \
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
+    --arg DIGEST "${DIGEST}" \
     "$(cat "${labelsGoldenFile}")"
 )
 

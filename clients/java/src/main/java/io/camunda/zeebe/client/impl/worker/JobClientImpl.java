@@ -53,7 +53,7 @@ public final class JobClientImpl implements JobClient {
   }
 
   @Override
-  public CompleteJobCommandStep1 newCompleteCommand(ActivatedJob job) {
+  public CompleteJobCommandStep1 newCompleteCommand(final ActivatedJob job) {
     return newCompleteCommand(job.getKey());
   }
 
@@ -64,18 +64,18 @@ public final class JobClientImpl implements JobClient {
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(ActivatedJob job) {
+  public FailJobCommandStep1 newFailCommand(final ActivatedJob job) {
     return newFailCommand(job.getKey());
   }
 
   @Override
-  public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
+  public ThrowErrorCommandStep1 newThrowErrorCommand(final long jobKey) {
     return new ThrowErrorCommandImpl(
-        asyncStub, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
+        asyncStub, jsonMapper, jobKey, config.getDefaultRequestTimeout(), retryPredicate);
   }
 
   @Override
-  public ThrowErrorCommandStep1 newThrowErrorCommand(ActivatedJob job) {
+  public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
     return newThrowErrorCommand(job.getKey());
   }
 }

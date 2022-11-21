@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -26,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
@@ -71,6 +71,24 @@ public final class BpmnEventPublicationBehavior {
     if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
       eventHandle.activateElement(
           catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+    }
+  }
+
+  /**
+   * Throws an error event to the given element instance/catch event pair. Only throws the event if
+   * the given element instance is exists and is accepting events, e.g. isn't terminating, wasn't
+   * interrupted, etc.
+   *
+   * @param catchEventTuple a tuple representing a catch event and its current instance
+   */
+  public void throwErrorEvent(
+      final CatchEventAnalyzer.CatchEventTuple catchEventTuple, final DirectBuffer variables) {
+    final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
+    final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
+
+    if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
+      eventHandle.activateElement(
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables);
     }
   }
 

@@ -289,7 +289,6 @@ jobs:
         with:
           java-version: '8'
           distribution: 'temurin'
-          cache: maven
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -375,6 +374,12 @@ jobs:
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
+    services:
+      # local registry is used as this job needs to push as it builds multi-platform images
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: actions/checkout@v3
       - uses: hadolint/hadolint-action@v2.1.0
@@ -394,15 +399,22 @@ jobs:
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
-          # give it a fake name to ensure we never try pushing it
+          # we use a local registry for pushing
           repository: localhost:5000/camunda/zeebe
           distball: ${{ steps.build-zeebe.outputs.distball }}
-      - name: Verify Docker image
+          platforms: "linux/amd64,linux/arm64"
+          # push is needed for multi-arch images as buildkit does not support loading them locally
+          push: true
+      - name: Verify Docker images
         env:
           DATE: ${{ steps.build-docker.outputs.date }}
           REVISION: ${{ github.sha }}
           VERSION: ${{ steps.build-docker.outputs.version }}
-        run: ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}'
+        run: |
+          docker pull --platform linux/amd64 ${{ steps.build-docker.outputs.image }}
+          ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}' amd64
+          docker pull --platform linux/arm64 ${{ steps.build-docker.outputs.image }}
+          ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}' arm64
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!

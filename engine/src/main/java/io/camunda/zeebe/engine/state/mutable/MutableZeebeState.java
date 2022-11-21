@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public interface MutableZeebeState extends ZeebeState {
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.sideeffect;
 
+import io.camunda.zeebe.stream.api.SideEffectProducer;
+
 /** A chain of side effects that are executed/flushed together at the end of the processing. */
 public interface SideEffects {
 
