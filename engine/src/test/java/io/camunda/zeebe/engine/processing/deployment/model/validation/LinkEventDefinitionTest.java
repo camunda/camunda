@@ -204,6 +204,87 @@ public class LinkEventDefinitionTest {
             "ERROR: Can't find an catch link event for the throw link event with the name 'LinkA'.");
   }
 
+  @Test
+  public void shouldRejectDeploymentIfTheLinkCatchEventOfLinkThrowEventIsNotInTheSameScope() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .subProcess(
+                "sub-1",
+                s ->
+                    s.embeddedSubProcess()
+                        .startEvent()
+                        .intermediateThrowEvent("throw_a")
+                        .link("link_a"))
+            .subProcess(
+                "sub-2",
+                s -> {
+                  s.embeddedSubProcess()
+                      .startEvent()
+                      .exclusiveGateway("gateway")
+                      .intermediateThrowEvent("throw_b")
+                      .link("link_b");
+                  s.embeddedSubProcess()
+                      .intermediateCatchEvent("catch_a", i -> i.link("link_a"))
+                      .connectTo("gateway");
+                })
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(
+            "ERROR: Can't find an catch link event for the throw link event with the name 'link_a'.");
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfMultipleLinkCatchEventsHaveSameNameInDifferentScopes() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .subProcess(
+                "sub-1",
+                s -> {
+                  s.embeddedSubProcess().startEvent().endEvent();
+                  s.embeddedSubProcess().intermediateCatchEvent("sub_1_catch", i -> i.link("link"));
+                })
+            .subProcess(
+                "sub-2",
+                s -> {
+                  s.embeddedSubProcess().startEvent().endEvent();
+                  s.embeddedSubProcess().intermediateCatchEvent("sub_2_catch", i -> i.link("link"));
+                })
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(rejectedDeployment.getRejectionReason())
+        .contains(
+            "ERROR: Multiple intermediate catch link event definitions with the same name 'link' are not allowed.");
+  }
+
   public static BpmnModelInstance getLinkEventProcess() {
     final ProcessBuilder process = Bpmn.createExecutableProcess("process");
     process.startEvent().manualTask("manualTask1").intermediateThrowEvent().link("LinkA");

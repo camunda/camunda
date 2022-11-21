@@ -66,6 +66,9 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
 
     ModelUtil.verifyNoDuplicatedEventSubprocesses(
         element, error -> validationResultCollector.addError(0, error));
+
+    ModelUtil.verifyLinkIntermediateEvents(
+        element, error -> validationResultCollector.addError(0, error));
   }
 
   private void validateEmbeddedSubprocess(

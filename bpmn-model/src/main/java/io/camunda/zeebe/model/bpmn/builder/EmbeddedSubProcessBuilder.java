@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import static io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder.SPACE;
 
+import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
 import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
@@ -90,6 +91,26 @@ public class EmbeddedSubProcessBuilder
     final EventSubProcessBuilder builder = eventSubProcess(id);
     consumer.accept(builder);
     return this;
+  }
+
+  public IntermediateCatchEventBuilder intermediateCatchEvent(
+      final String id, final Consumer<IntermediateCatchEventBuilder> catchEventBuilderConsumer) {
+    final IntermediateCatchEventBuilder catchEventBuilder = intermediateCatchEvent(id);
+
+    catchEventBuilderConsumer.accept(catchEventBuilder);
+
+    return catchEventBuilder;
+  }
+
+  public IntermediateCatchEventBuilder intermediateCatchEvent(final String id) {
+    final IntermediateCatchEvent catchEvent =
+        subProcessBuilder.createChild(IntermediateCatchEvent.class, id);
+    final BpmnShape bpmnShape = subProcessBuilder.createBpmnShape(catchEvent);
+
+    subProcessBuilder.setCoordinates(bpmnShape);
+    subProcessBuilder.resizeBpmnShape(bpmnShape);
+
+    return catchEvent.builder();
   }
 
   protected void setCoordinates(final BpmnShape targetBpmnShape) {
