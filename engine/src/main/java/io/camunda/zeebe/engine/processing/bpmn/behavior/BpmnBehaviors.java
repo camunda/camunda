@@ -18,7 +18,7 @@ public interface BpmnBehaviors {
 
   ExpressionProcessor expressionBehavior();
 
-  BpmnDecisionBehavior decisionBehavior();
+  BpmnDecisionBehavior bpmnDecisionBehavior();
 
   BpmnVariableMappingBehavior variableMappingBehavior();
 

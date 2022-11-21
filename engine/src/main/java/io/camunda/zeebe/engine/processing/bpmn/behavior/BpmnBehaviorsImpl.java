@@ -27,7 +27,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   private final ExpressionProcessor expressionBehavior;
-  private final BpmnDecisionBehavior decisionBehavior;
+  private final BpmnDecisionBehavior bpmnDecisionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -76,7 +76,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new EventTriggerBehavior(
             zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
 
-    decisionBehavior =
+    bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(),
             zeebeState,
@@ -138,8 +138,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   @Override
-  public BpmnDecisionBehavior decisionBehavior() {
-    return decisionBehavior;
+  public BpmnDecisionBehavior bpmnDecisionBehavior() {
+    return bpmnDecisionBehavior;
   }
 
   @Override
