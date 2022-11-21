@@ -38,10 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -111,6 +108,7 @@ public class ImportSeveralVersionsIT extends OperateIntegrationTest {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/operate/issues/3713")
   public void shouldImportFromSeveralZeebeVersions() throws PersistenceException {
     //when
     AtomicBoolean hold = new AtomicBoolean(true);
