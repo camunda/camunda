@@ -18,6 +18,7 @@ type Props = {
   onCancel: () => void;
   onOutsideClick?: (event: MouseEvent) => void;
   onApply: ({fromDate, toDate}: {fromDate: Date; toDate: Date}) => void;
+  defaultValues: {fromDate: string; toDate: string};
 };
 
 const DateRangePopover: React.FC<Props> = ({
@@ -25,6 +26,7 @@ const DateRangePopover: React.FC<Props> = ({
   onCancel,
   onApply,
   onOutsideClick,
+  defaultValues,
 }) => {
   const [datePickerRef, setDatePickerRef] = useState<HTMLDivElement | null>(
     null
@@ -50,7 +52,7 @@ const DateRangePopover: React.FC<Props> = ({
       onOutsideClick={onOutsideClick}
       variant="arrow"
     >
-      <Form onSubmit={handleApply}>
+      <Form onSubmit={handleApply} initialValues={defaultValues}>
         {({handleSubmit, form}) => (
           <form onSubmit={handleSubmit}>
             {datePickerRef !== null && (

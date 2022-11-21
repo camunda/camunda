@@ -98,6 +98,7 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
             }
             handleCancel();
           }}
+          defaultValues={{fromDate, toDate}}
         />
       )}
     </>

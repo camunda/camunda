@@ -11,13 +11,19 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
 
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <Form onSubmit={() => {}}>{() => children}</Form>
-      <div>Outside element</div>
-    </ThemeProvider>
-  );
+const getWrapper = (initialValues?: {[key: string]: string}) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    return (
+      <ThemeProvider>
+        <Form onSubmit={() => {}} initialValues={initialValues}>
+          {() => children}
+        </Form>
+        <div>Outside element</div>
+      </ThemeProvider>
+    );
+  };
+
+  return Wrapper;
 };
 
 describe('Date Range', () => {
@@ -28,7 +34,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     expect(screen.getByLabelText('Start Date Range')).toHaveAttribute(
@@ -43,7 +49,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
@@ -63,7 +69,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
@@ -82,7 +88,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
@@ -99,7 +105,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
@@ -124,7 +130,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
@@ -161,6 +167,31 @@ describe('Date Range', () => {
     );
   });
 
+  it('should set default values', async () => {
+    const {user} = render(
+      <DateRangeField
+        label="Start Date Range"
+        fromDateKey="startDateAfter"
+        toDateKey="startDateBefore"
+      />,
+      {
+        wrapper: getWrapper({
+          startDateAfter: '2021-02-03',
+          startDateBefore: '2021-02-06',
+        }),
+      }
+    );
+
+    expect(screen.getByLabelText('Start Date Range')).toHaveValue(
+      '2021-02-03 - 2021-02-06'
+    );
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+
+    expect(screen.getByLabelText('From')).toHaveValue('2021-02-03');
+    expect(screen.getByLabelText('To')).toHaveValue('2021-02-06');
+  });
+
   // will be unskipped when https://github.com/camunda/operate/issues/3650 is done
   it.skip('should apply from and to dates', async () => {
     const {user} = render(
@@ -169,7 +200,7 @@ describe('Date Range', () => {
         fromDateKey="startDateAfter"
         toDateKey="startDateBefore"
       />,
-      {wrapper: Wrapper}
+      {wrapper: getWrapper()}
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));

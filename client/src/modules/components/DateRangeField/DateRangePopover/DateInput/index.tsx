@@ -22,13 +22,14 @@ const DateInput = forwardRef<DatePickerInput, Props>(
     return (
       <Container>
         <Field name={`${type}Date`}>
-          {() => (
+          {({input}) => (
             <DatePickerInput
               {...props}
               size="sm"
               ref={ref}
               placeholder="YYYY-MM-DD"
               pattern={'\\d{4}-\\d{1,2}-\\d{1,2}'}
+              defaultValue={input.value}
             />
           )}
         </Field>
