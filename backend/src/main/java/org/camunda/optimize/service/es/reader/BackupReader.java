@@ -10,9 +10,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.util.SnapshotUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
@@ -24,11 +25,13 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static org.camunda.optimize.service.util.SnapshotUtil.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static org.camunda.optimize.service.util.SnapshotUtil.SNAPSHOT_MISSING_EXCEPTION_TYPE;
-import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
+import static org.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnapshotNamesForBackupId;
 
 @RequiredArgsConstructor
 @Component
@@ -86,10 +89,15 @@ public class BackupReader {
     }
   }
 
+  public Map<String, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
+    return getAllOptimizeSnapshots("").stream()
+      .collect(groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().toString())));
+  }
+
   public List<SnapshotInfo> getAllOptimizeSnapshots(final String backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest = new GetSnapshotsRequest()
       .repository(getRepositoryName())
-      .snapshots(new String[]{getSnapshotPrefixWithBackupId(backupId) + "*"});
+      .snapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
     GetSnapshotsResponse response;
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);

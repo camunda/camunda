@@ -20,8 +20,8 @@ public class BackupRequestDto {
   @NotBlank
   //  max. 3996 chars to avoid too_long_frame_exception (snapshot name must not exceed 4096 chars, minus 100 chars for rest of
   //  snapshot name templates)
-  @Pattern(regexp = "((?![A-Z \"*\\\\<|,>\\/?]).){0,3996}$", message =
+  @Pattern(regexp = "((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$", message =
     "BackupId must be less than 3996 characters and must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >," +
-      " /, ?].")
+      " /, ?, _].")
   private String backupId;
 }
