@@ -13,6 +13,7 @@ spec:
     metadata:
       labels:
         app: worker
+        metrics: gmp
     spec:
       containers:
       - name: worker
