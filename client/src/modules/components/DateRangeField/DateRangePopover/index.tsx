@@ -34,10 +34,10 @@ const DateRangePopover: React.FC<Props> = ({
     fromDate,
     toDate,
   }: {
-    fromDate: string;
-    toDate: string;
+    fromDate?: string;
+    toDate?: string;
   }) => {
-    if (fromDate !== '' && toDate !== '') {
+    if (fromDate !== undefined && toDate !== undefined) {
       onApply({fromDate: new Date(fromDate), toDate: new Date(toDate)});
     }
   };
@@ -95,7 +95,16 @@ const DateRangePopover: React.FC<Props> = ({
               >
                 Cancel
               </Button>
-              <Button type="submit" color="primary" size="medium" title="Apply">
+              <Button
+                type="submit"
+                color="primary"
+                size="medium"
+                title="Apply"
+                disabled={
+                  form.getFieldState('fromDate')?.value === undefined ||
+                  form.getFieldState('toDate')?.value === undefined
+                }
+              >
                 Apply
               </Button>
             </Footer>

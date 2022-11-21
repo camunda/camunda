@@ -6,6 +6,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
+import {pickDateRange} from 'modules/testUtils/pickDateRange';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
@@ -17,17 +18,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       <div>Outside element</div>
     </ThemeProvider>
   );
-};
-
-const getCurrentDate = () => {
-  const month = document.querySelector('.cur-month')?.textContent;
-  const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
-
-  return {
-    month,
-    year,
-    monthNumber: new Date(`${month} 01, ${year}`).getMonth() + 1,
-  };
 };
 
 describe('Date Range', () => {
@@ -114,12 +104,16 @@ describe('Date Range', () => {
 
     await user.click(screen.getByLabelText('Start Date Range'));
 
-    const {month, year, monthNumber} = getCurrentDate();
-    await user.click(screen.getByLabelText(`${month} 10, ${year}`));
-    await user.click(screen.getByLabelText(`${month} 20, ${year}`));
+    const {year, month, fromDay, toDay} = await pickDateRange({
+      user,
+      screen,
+      fromDay: '10',
+      toDay: '20',
+    });
+
     await user.click(screen.getByText('Apply'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      `${year}-${monthNumber}-10 - ${year}-${monthNumber}-20`
+      `${year}-${month}-${fromDay} - ${year}-${month}-${toDay}`
     );
   });
 
@@ -136,12 +130,16 @@ describe('Date Range', () => {
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue('Custom');
 
-    const {month, year, monthNumber} = getCurrentDate();
-    await user.click(screen.getByLabelText(`${month} 10, ${year}`));
-    await user.click(screen.getByLabelText(`${month} 20, ${year}`));
+    const {year, month, fromDay, toDay} = await pickDateRange({
+      user,
+      screen,
+      fromDay: '10',
+      toDay: '20',
+    });
+
     await user.click(screen.getByText('Apply'));
 
-    const expectedValue = `${year}-${monthNumber}-10 - ${year}-${monthNumber}-20`;
+    const expectedValue = `${year}-${month}-${fromDay} - ${year}-${month}-${toDay}`;
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
       expectedValue
     );

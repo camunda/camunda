@@ -180,6 +180,12 @@ const Filters: React.FC = observer(() => {
             ...('variableName' in filters && 'variableValue' in filters
               ? ['variable']
               : []),
+            ...('startDateAfter' in filters && 'startDateBefore' in filters
+              ? ['startDateRange']
+              : []),
+            ...('endDateAfter' in filters && 'endDateBefore' in filters
+              ? ['endDateRange']
+              : []),
           ] as OptionalFilter[]),
         ])
       );

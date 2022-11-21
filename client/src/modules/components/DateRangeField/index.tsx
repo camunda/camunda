@@ -6,9 +6,9 @@
  */
 
 import {useRef, useState} from 'react';
-import {Field, useForm} from 'react-final-form';
+import {Field, useField, useForm} from 'react-final-form';
 import {DateRangePopover} from './DateRangePopover';
-import {formatDate} from './formatDate';
+import {formatDate, formatISODate} from './formatDate';
 import {TextField} from './styled';
 
 type Props = {
@@ -28,15 +28,24 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
   const cmTextFieldRef = useRef<HTMLCmTextfieldElement>(null);
   const textFieldRef = useRef<HTMLDivElement>(null);
   const form = useForm();
+  const fromDate = useField<string>(fromDateKey).input.value;
+  const toDate = useField<string>(toDateKey).input.value;
+
   const [isDateRangePopoverVisible, setIsDateRangePopoverVisible] =
     useState<boolean>(false);
-  const [inputValue, setInputValue] = useState('');
+
+  const getInputValue = () => {
+    if (isDateRangePopoverVisible) {
+      return 'Custom';
+    }
+    if (fromDate !== '' && toDate !== '') {
+      return formatInputValue(new Date(fromDate), new Date(toDate));
+    }
+    return '';
+  };
 
   const handleCancel = () => {
     setIsDateRangePopoverVisible(false);
-    const fromDate: Date | undefined = form.getFieldState(fromDateKey)?.value;
-    const toDate: Date | undefined = form.getFieldState(toDateKey)?.value;
-    setInputValue(formatInputValue(fromDate, toDate));
   };
 
   return (
@@ -50,13 +59,12 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
             icon: 'calendar',
             press: () => {},
           }}
-          value={inputValue}
+          value={getInputValue()}
           ref={cmTextFieldRef}
           readonly
-          title={inputValue}
+          title={getInputValue()}
           onCmClick={() => {
             if (!isDateRangePopoverVisible) {
-              setInputValue('Custom');
               setIsDateRangePopoverVisible(true);
             }
           }}
@@ -77,9 +85,8 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
           onCancel={handleCancel}
           onApply={({fromDate, toDate}) => {
             setIsDateRangePopoverVisible(false);
-            form.change(fromDateKey, fromDate);
-            form.change(toDateKey, toDate);
-            setInputValue(formatInputValue(fromDate, toDate));
+            form.change(fromDateKey, formatISODate(fromDate));
+            form.change(toDateKey, formatISODate(toDate));
           }}
           onOutsideClick={(event) => {
             if (

@@ -138,8 +138,19 @@ const Filters: React.FC = observer(() => {
       (optionalFilters as string[]).includes(param)
     ) as OptionalFilter[];
 
+    const filters = getDecisionInstanceFilters(location.search);
+
     setVisibleFilters((currentVisibleFilters) => {
-      return Array.from(new Set([...currentVisibleFilters, ...params]));
+      return Array.from(
+        new Set([
+          ...currentVisibleFilters,
+          ...params,
+          ...('evaluationDateAfter' in filters &&
+          'evaluationDateBefore' in filters
+            ? ['evaluationDateRange']
+            : []),
+        ] as OptionalFilter[])
+      );
     });
   }, [location.search]);
 

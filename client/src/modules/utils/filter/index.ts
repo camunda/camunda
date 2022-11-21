@@ -126,6 +126,10 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'incidents',
   'completed',
   'canceled',
+  'startDateAfter',
+  'startDateBefore',
+  'endDateAfter',
+  'endDateBefore',
 ];
 const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'name',
@@ -135,6 +139,8 @@ const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'decisionInstanceIds',
   'processInstanceId',
   'evaluationDate',
+  'evaluationDateAfter',
+  'evaluationDateBefore',
 ];
 
 const BOOLEAN_PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
@@ -402,6 +408,21 @@ function getProcessInstancesRequestFilters(): RequestFilters {
             ...getRequestDatePair(parsedDate, key),
           };
         }
+
+        if (
+          [
+            'startDateAfter',
+            'startDateBefore',
+            'endDateAfter',
+            'endDateBefore',
+          ].includes(key) &&
+          value !== undefined
+        ) {
+          return {
+            ...accumulator,
+            [key]: value,
+          };
+        }
       }
 
       return accumulator;
@@ -461,6 +482,13 @@ function getDecisionInstancesRequestFilters() {
           return {
             ...accumulator,
             ...getRequestDatePair(parsedDate, key),
+          };
+        }
+
+        if (['evaluationDateAfter', 'evaluationDateBefore'].includes(key)) {
+          return {
+            ...accumulator,
+            [key]: value,
           };
         }
       }

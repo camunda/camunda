@@ -16,6 +16,7 @@ import {Filters} from './index';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {omit} from 'lodash';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
+import {pickDateRange} from 'modules/testUtils/pickDateRange';
 
 function reset() {
   jest.clearAllTimers();
@@ -140,6 +141,49 @@ describe('<Filters />', () => {
     );
   });
 
+  (IS_DATE_RANGE_FILTERS_ENABLED ? it : it.skip)(
+    'should write filters to url - evaluation date range',
+    async () => {
+      const {user} = render(<Filters />, {
+        wrapper: getWrapper(),
+      });
+
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+
+      await user.click(screen.getByText(/^more filters$/i));
+      await user.click(screen.getByText('Evaluation Date Range'));
+      await user.click(screen.getByLabelText('Evaluation Date Range'));
+      const evaluationDate = await pickDateRange({
+        user,
+        screen,
+        fromDay: '15',
+        toDay: '20',
+      });
+      await user.click(screen.getByText('Apply'));
+
+      await waitFor(() =>
+        expect(
+          Object.fromEntries(
+            new URLSearchParams(
+              screen.getByTestId('search').textContent ?? ''
+            ).entries()
+          )
+        ).toEqual({
+          evaluationDateAfter: evaluationDate.fromDate,
+          evaluationDateBefore: evaluationDate.toDate,
+        })
+      );
+
+      await user.click(screen.getByRole('button', {name: /reset/i}));
+
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?evaluated=true&failed=true$/
+      );
+    }
+  );
+
   it('initialise filter values from url', () => {
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
@@ -159,6 +203,24 @@ describe('<Filters />', () => {
       expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
     }
   });
+
+  (IS_DATE_RANGE_FILTERS_ENABLED ? it : it.skip)(
+    'initialise filter values from url - evaluation date range',
+    () => {
+      const MOCK_PARAMS = {
+        evaluationDateAfter: '2021-02-21 09:00:00',
+        evaluationDateBefore: '2021-02-22 10:00:00',
+      } as const;
+
+      render(<Filters />, {
+        wrapper: getWrapper(`/?${new URLSearchParams(MOCK_PARAMS)}`),
+      });
+
+      expect(
+        screen.getByDisplayValue('2021-02-21 - 2021-02-22')
+      ).toBeInTheDocument();
+    }
+  );
 
   it('should remove enabled filters on unmount', async () => {
     const {unmount, user} = render(<Filters />, {
