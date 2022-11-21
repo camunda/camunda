@@ -5,65 +5,89 @@
  * except in compliance with the proprietary license.
  */
 
-import {TextField} from 'modules/components/TextField';
-import {Dash, Footer, FieldContainer, Popover} from './styled';
-import {Field, Form} from 'react-final-form';
+import {useState} from 'react';
+import {Form} from 'react-final-form';
+import {DatePicker} from '@carbon/react';
 import {Button} from 'modules/components/Button';
+import {formatDate} from '../formatDate';
+import {DateInput} from './DateInput';
+import {DatePickerContainer, Footer, Popover} from './styled';
 
 type Props = {
   referenceElement: HTMLElement;
-  initialValues: {fromDate: string; toDate: string};
   onCancel: () => void;
   onOutsideClick?: (event: MouseEvent) => void;
-  onApply: ({fromDate, toDate}: {fromDate?: string; toDate?: string}) => void;
+  onApply: ({fromDate, toDate}: {fromDate: Date; toDate: Date}) => void;
 };
 
 const DateRangePopover: React.FC<Props> = ({
   referenceElement,
-  initialValues,
   onCancel,
   onApply,
   onOutsideClick,
 }) => {
+  const [datePickerRef, setDatePickerRef] = useState<HTMLDivElement | null>(
+    null
+  );
+
+  const handleApply = ({
+    fromDate,
+    toDate,
+  }: {
+    fromDate: string;
+    toDate: string;
+  }) => {
+    if (fromDate !== '' && toDate !== '') {
+      onApply({fromDate: new Date(fromDate), toDate: new Date(toDate)});
+    }
+  };
+
   return (
     <Popover
       referenceElement={referenceElement}
       offsetOptions={[10]}
-      placement="right"
+      placement="right-start"
       onOutsideClick={onOutsideClick}
       variant="arrow"
     >
-      <Form onSubmit={onApply} initialValues={initialValues}>
-        {({handleSubmit}) => (
+      <Form onSubmit={handleApply}>
+        {({handleSubmit, form}) => (
           <form onSubmit={handleSubmit}>
-            <FieldContainer>
-              <Field name="fromDate">
-                {({input}) => (
-                  <TextField
-                    {...input}
-                    type="text"
-                    label="From"
-                    shouldDebounceError={false}
-                    placeholder="YYYY-MM-DD hh:mm:ss"
-                    autoFocus
-                  />
-                )}
-              </Field>
-              <Dash>&ndash;</Dash>
-              <Field name="toDate">
-                {({input}) => (
-                  <TextField
-                    {...input}
-                    type="text"
-                    label="To"
-                    shouldDebounceError={false}
-                    placeholder="YYYY-MM-DD hh:mm:ss"
-                  />
-                )}
-              </Field>
-            </FieldContainer>
+            {datePickerRef !== null && (
+              <DatePicker
+                datePickerType="range"
+                onChange={(event) => {
+                  const [fromDate, toDate] = event;
+                  if (fromDate !== undefined) {
+                    form.change('fromDate', formatDate(fromDate));
+                  }
+                  if (toDate !== undefined) {
+                    form.change('toDate', formatDate(toDate));
+                  }
+                }}
+                dateFormat="Y-m-d"
+                appendTo={datePickerRef}
+                allowInput={false}
+                light
+                inline
+                short
+              >
+                <DateInput
+                  id="date-picker-input-id-start"
+                  type="from"
+                  labelText="From"
+                />
+                <DateInput
+                  id="date-picker-input-id-finish"
+                  type="to"
+                  labelText="To"
+                />
+              </DatePicker>
+            )}
+            <DatePickerContainer ref={(element) => setDatePickerRef(element)} />
             <Footer>
               <Button
+                type="reset"
                 color="secondary"
                 size="medium"
                 title="Cancel"

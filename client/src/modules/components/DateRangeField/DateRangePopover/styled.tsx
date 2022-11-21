@@ -14,13 +14,6 @@ const Popover = styled(BasePopover)`
   z-index: ${zDateRangePopover};
 `;
 
-const FieldContainer = styled.div`
-  display: flex;
-  padding: 16px;
-  align-items: flex-end;
-  border-bottom: 1px solid ${({theme}) => theme.colors.ui05};
-`;
-
 const Dash = styled.span`
   ${styles.label02};
   margin: 0 8px 6px 8px;
@@ -35,4 +28,13 @@ const Footer = styled.div`
   }
 `;
 
-export {Popover, Footer, Dash, FieldContainer};
+const DatePickerContainer = styled.div`
+  display: flex;
+  justify-content: center;
+
+  .flatpickr-calendar {
+    width: 280px;
+  }
+`;
+
+export {Popover, Footer, Dash, DatePickerContainer};
