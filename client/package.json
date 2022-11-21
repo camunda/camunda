@@ -6,6 +6,7 @@
     "@bpmn-io/element-templates-icons-renderer": "0.3.0",
     "@camunda-cloud/common-ui": "0.0.18-rc10",
     "@camunda-cloud/common-ui-react": "0.0.18-rc10",
+    "@camunda/camunda-composite-components": "^0.0.18",
     "@carbon/elements": "11.9.0",
     "@carbon/react": "1.8.0",
     "@devbookhq/splitter": "1.3.2",
@@ -55,7 +56,7 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "/node_modules/(?!@camunda-cloud/common-ui.*)"
+      "/node_modules/(?!@camunda-cloud/common-ui.*|@camunda/camunda-composite-components)"
     ]
   },
   "devDependencies": {

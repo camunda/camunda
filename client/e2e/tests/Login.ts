@@ -10,6 +10,7 @@ import {screen} from '@testing-library/testcafe';
 import {convertToQueryString} from './utils/convertToQueryString';
 import {getPathname} from './utils/getPathname';
 import {getSearch} from './utils/getSearch';
+import {USE_NEW_APP_HEADER} from '../../src/modules/feature-flags';
 
 fixture('Login')
   .page(config.endpoint)
@@ -41,7 +42,7 @@ test('Log in with valid user account', async (t) => {
   await t.expect(await getPathname()).eql('/');
 });
 
-test('Log out', async (t) => {
+(USE_NEW_APP_HEADER ? test.skip : test)('Log out', async (t) => {
   await t
     .typeText(screen.queryByLabelText('Username'), 'demo')
     .typeText(screen.queryByLabelText('Password'), 'demo')

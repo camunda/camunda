@@ -25,7 +25,7 @@ fixture('Operations')
       .maximizeWindow()
       .click(
         screen.queryByRole('link', {
-          name: /view processes/i,
+          name: /processes/i,
         })
       );
   });

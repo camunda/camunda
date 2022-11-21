@@ -57,6 +57,8 @@ global.beforeEach(() => {
     writable: true,
     value: jest.fn().mockImplementation(() => ({
       matches: false,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
     })),
   });
 });

@@ -6,9 +6,9 @@
  */
 
 import {Container, Link, Label} from './styled';
-import {NavLink, useLocation, matchPath} from 'react-router-dom';
+import {NavLink} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
-import {Paths} from 'modules/routes';
+import {useCurrentPage} from '../../useCurrentPage';
 
 type Props = {
   to: React.ComponentProps<typeof NavLink>['to'];
@@ -31,38 +31,7 @@ const NavElement: React.FC<Props> = ({
   trackingEvent,
   state,
 }) => {
-  const location = useLocation();
-
-  function getCurrentPage():
-    | 'dashboard'
-    | 'processes'
-    | 'decisions'
-    | 'process-details'
-    | 'decision-details'
-    | 'login'
-    | undefined {
-    if (matchPath(Paths.dashboard(), location.pathname) !== null) {
-      return 'dashboard';
-    }
-
-    if (matchPath(Paths.processes(), location.pathname) !== null) {
-      return 'processes';
-    }
-
-    if (matchPath(Paths.decisions(), location.pathname) !== null) {
-      return 'decisions';
-    }
-
-    if (matchPath(Paths.processInstance(), location.pathname) !== null) {
-      return 'process-details';
-    }
-
-    if (matchPath(Paths.decisionInstance(), location.pathname) !== null) {
-      return 'decision-details';
-    }
-
-    return;
-  }
+  const {currentPage} = useCurrentPage();
 
   return (
     <Container>
@@ -76,7 +45,7 @@ const NavElement: React.FC<Props> = ({
           tracking.track({
             eventName: 'navigation',
             link: trackingEvent,
-            currentPage: getCurrentPage(),
+            currentPage,
           });
         }}
         state={state}

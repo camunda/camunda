@@ -26,7 +26,7 @@ fixture('Process Instances Table')
       .maximizeWindow()
       .click(
         screen.queryByRole('link', {
-          name: /view processes/i,
+          name: /processes/i,
         })
       );
 

@@ -125,7 +125,7 @@ test('Add variables', async (t) => {
   // go to instance page, filter and find the instance by added variable
   await t.click(
     screen.queryByRole('link', {
-      name: /view processes/i,
+      name: /processes/i,
     })
   );
 

@@ -31,7 +31,7 @@ test('Navigation between process and decision', async (t) => {
   await t
     .click(
       screen.queryByRole('link', {
-        name: /view processes/i,
+        name: /processes/i,
       })
     )
     .click(
@@ -91,7 +91,7 @@ test('Navigation between process and decision', async (t) => {
   await t
     .click(
       screen.getByRole('link', {
-        name: /view decisions/i,
+        name: /decisions/i,
       })
     )
     .click(
