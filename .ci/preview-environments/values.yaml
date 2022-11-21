@@ -9,7 +9,7 @@
 
 ingress:
   # Defines the domain under which to expose the ingress
-  domain: zeebe-tasklist.camunda.cloud
+  domain: tasklist.camunda.cloud
 
 
 git:

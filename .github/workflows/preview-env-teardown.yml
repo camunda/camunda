@@ -45,6 +45,6 @@ jobs:
       - name: Tear down Preview Environment
         uses: camunda/infra-global-github-actions/preview-env/destroy@main
         with:
-          app_name: ztl-${{ steps.sanitize.outputs.branch_name }}
+          app_name: tasklist-${{ steps.sanitize.outputs.branch_name }}
           revision: ${{ env.BRANCH_NAME }}
           argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}

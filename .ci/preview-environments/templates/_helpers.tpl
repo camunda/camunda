@@ -7,7 +7,7 @@ camunda.cloud/created-by: "{{ .Values.git.repoUrl }}/blob/{{ .Values.git.branch 
 {{ end }}
 
 {{ define "ingress.domain" -}}
-{{ printf "%s.%s" .Release.Name .Values.ingress.domain | trimPrefix "ztl-" }}{{ end }}
+{{ printf "%s.%s" .Release.Name .Values.ingress.domain | trimPrefix "tasklist-" }}{{ end }}
 
 {{ define "operate-ingress.domain" -}}
-{{ printf "%s-operate.%s" .Release.Name .Values.ingress.domain  | trimPrefix "ztl-" }}{{ end }}
+{{ printf "%s-operate.%s" .Release.Name .Values.ingress.domain  | trimPrefix "tasklist-" }}{{ end }}
