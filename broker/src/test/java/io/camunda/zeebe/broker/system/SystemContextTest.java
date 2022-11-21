@@ -409,7 +409,7 @@ final class SystemContextTest {
         .isInstanceOf(InvalidConfigurationException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .cause()
-        .hasMessageContaining("bucketName must not be empty");
+        .hasMessageContaining("Bucket name must not be empty");
   }
 
   @Test

@@ -218,9 +218,12 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_FORCEPATHSTYLEACCESS
           # forcePathStyleAccess: false
 
-          # When enabled, parts of the backup may be compressed.
-          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_ENABLECOMPRESSION
-          # enableCompression: false
+          # When set to an algorithm such as 'zstd', enables compression of backup contents.
+          # When not set or set to 'none', backup content is not compressed.
+          # Enabling compression reduces the required storage space for backups in S3 but also
+          # increases the impact on CPU and disk utilization while taking a backup.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_COMPRESSION
+          # compression: none
 
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster

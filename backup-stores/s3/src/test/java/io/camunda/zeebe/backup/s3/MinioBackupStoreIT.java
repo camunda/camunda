@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.backup.s3;
 
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Credentials;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import java.time.Duration;
-import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.GenericContainer;
@@ -49,14 +48,13 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   @BeforeEach
   void setupBucket() {
     config =
-        new S3BackupConfig(
-            RandomStringUtils.randomAlphabetic(10).toLowerCase(),
-            Optional.of("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT))),
-            Optional.of(Region.US_EAST_1.id()),
-            Optional.of(new Credentials(ACCESS_KEY, SECRET_KEY)),
-            Optional.empty(),
-            true,
-            false);
+        new Builder()
+            .withBucketName(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
+            .withRegion(Region.US_EAST_1.id())
+            .withCredentials(ACCESS_KEY, SECRET_KEY)
+            .forcePathStyleAccess(true)
+            .build();
     client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
     client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();

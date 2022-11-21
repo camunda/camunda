@@ -60,7 +60,7 @@ final class FileSetManager {
   private CompletableFuture<FileSet.FileMetadata> saveFile(
       final String prefix, final String fileName, final Path filePath) {
     if (shouldCompressFile(filePath)) {
-      final var algorithm = COMPRESSION_ALGORITHM;
+      final var algorithm = config.compressionAlgorithm().orElseThrow();
       final var compressed = compressFile(filePath, algorithm);
       LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, compressed, prefix);
       return client
@@ -90,7 +90,8 @@ final class FileSetManager {
 
   private boolean shouldCompressFile(final Path filePath) {
     try {
-      return config.enableCompression() && Files.size(filePath) > COMPRESSION_SIZE_THRESHOLD;
+      return config.compressionAlgorithm().isPresent()
+          && Files.size(filePath) > COMPRESSION_SIZE_THRESHOLD;
     } catch (final IOException e) {
       LOG.warn("Failed to determine if file should be compressed, assuming no: {}", filePath);
       return false;

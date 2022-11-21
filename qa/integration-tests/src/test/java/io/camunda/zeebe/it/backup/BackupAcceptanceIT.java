@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
@@ -94,15 +94,14 @@ final class BackupAcceptanceIT {
   @BeforeEach
   void beforeEach() {
     final var config =
-        S3BackupConfig.from(
-            bucketName,
-            minio.externalEndpoint(),
-            minio.region(),
-            minio.accessKey(),
-            minio.secretKey(),
-            Duration.ofSeconds(25),
-            true,
-            false);
+        new Builder()
+            .withBucketName(bucketName)
+            .withEndpoint(minio.externalEndpoint())
+            .withRegion(minio.region())
+            .withCredentials(minio.accessKey(), minio.secretKey())
+            .withApiCallTimeout(Duration.ofSeconds(25))
+            .forcePathStyleAccess(true)
+            .build();
     store = new S3BackupStore(config);
 
     try (final var client = S3BackupStore.buildClient(config)) {

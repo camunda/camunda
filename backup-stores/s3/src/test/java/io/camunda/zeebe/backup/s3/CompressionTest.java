@@ -12,7 +12,7 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Credentials;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.testkit.support.BackupAssert;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,14 +67,14 @@ final class CompressionTest {
   @BeforeEach
   void setupBucket() {
     final var config =
-        new S3BackupConfig(
-            RandomStringUtils.randomAlphabetic(10).toLowerCase(),
-            Optional.of("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT))),
-            Optional.of(Region.US_EAST_1.id()),
-            Optional.of(new Credentials(ACCESS_KEY, SECRET_KEY)),
-            Optional.empty(),
-            true,
-            true);
+        new Builder()
+            .withBucketName(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
+            .withRegion(Region.US_EAST_1.id())
+            .withCredentials(ACCESS_KEY, SECRET_KEY)
+            .forcePathStyleAccess(true)
+            .withCompressionAlgorithm("zstd")
+            .build();
     final var client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
     client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
