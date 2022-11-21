@@ -393,7 +393,8 @@ public class TaskReaderWriter {
     return taskBefore;
   }
 
-  public void persistTaskClaim(TaskDTO task, final UserDTO currentUser, String assignee) {
+  public void persistTaskClaim(
+      TaskDTO task, final UserDTO currentUser, String assignee, boolean allowOverrideAssignment) {
     if (StringUtils.isEmpty(assignee) && currentUser.isApiUser()) {
       throw new TasklistRuntimeException("Assignee must be specified");
     }
@@ -410,7 +411,11 @@ public class TaskReaderWriter {
 
     task.setAssignee(assignee);
     updateTask(
-        task.getId(), currentUser, TaskValidator.CAN_CLAIM, asMap(TaskTemplate.ASSIGNEE, assignee));
+        task.getId(),
+        currentUser,
+        TaskValidator.CAN_CLAIM,
+        asMap(TaskTemplate.ASSIGNEE, assignee),
+        allowOverrideAssignment);
   }
 
   public void persistTaskUnclaim(TaskDTO task) {
@@ -421,14 +426,15 @@ public class TaskReaderWriter {
       final String taskId,
       final UserDTO currentUser,
       final TaskValidator taskValidator,
-      final Map<String, Object> updateFields) {
+      final Map<String, Object> updateFields,
+      final Object... validatorParams) {
     try {
       final SearchHit searchHit = getTaskRawResponse(taskId);
       final TaskEntity taskBefore =
           fromSearchHit(searchHit.getSourceAsString(), objectMapper, TaskEntity.class);
       // update task with optimistic locking
       // format date fields properly
-      taskValidator.validate(taskBefore, currentUser);
+      taskValidator.validate(taskBefore, currentUser, validatorParams);
       final Map<String, Object> jsonMap =
           objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
       final UpdateRequest updateRequest =

@@ -99,9 +99,12 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
   }
 
   @PreAuthorize("hasPermission('write')")
-  public TaskDTO claimTask(String taskId, String assignee) {
+  public TaskDTO claimTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
+    if (allowOverrideAssignment == null) {
+      allowOverrideAssignment = true;
+    }
     final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
-    taskReaderWriter.persistTaskClaim(task, getCurrentUser(), assignee);
+    taskReaderWriter.persistTaskClaim(task, getCurrentUser(), assignee, allowOverrideAssignment);
     updateClaimedMetric(task);
     return task;
   }

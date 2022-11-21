@@ -139,6 +139,32 @@ public class TaskValidatorTest {
   }
 
   @Test
+  public void apiUserShouldBeAbleToReassignToAnotherUserWhenOverrideAllowed()
+      throws TaskValidationException {
+    final UserDTO user = getTestUser().setApiUser(true);
+    final TaskEntity taskBefore =
+        new TaskEntity().setAssignee("previously assigned user").setState(TaskState.CREATED);
+    TaskValidator.CAN_CLAIM.validate(taskBefore, user, true);
+  }
+
+  @Test
+  public void apiUserShouldNoBeAbleToReassignToAnotherUserWhenOverrideForbidden()
+      throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = getTestUser().setApiUser(true);
+              final TaskEntity taskBefore =
+                  new TaskEntity()
+                      .setAssignee("previously assigned user")
+                      .setState(TaskState.CREATED);
+              TaskValidator.CAN_CLAIM.validate(taskBefore, user, false);
+            });
+    Assertions.assertEquals("Task is already assigned", exception.getMessage());
+  }
+
+  @Test
   public void apiUserShouldNotBeAbleToClaimTaskIfTaskIsCompleted() throws TaskValidationException {
     final TaskValidationException exception =
         Assertions.assertThrows(
@@ -176,6 +202,22 @@ public class TaskValidatorTest {
               final TaskEntity task =
                   new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
               TaskValidator.CAN_CLAIM.validate(task, user);
+            });
+    Assertions.assertEquals("Task is already assigned", exception.getMessage());
+  }
+
+  /** allowOverrideAssignment works only for API user case. */
+  @Test
+  public void nonApiUserShouldNotBeAbleToReassignToAnotherUserWhenOverrideAllowed()
+      throws TaskValidationException {
+    final TaskValidationException exception =
+        Assertions.assertThrows(
+            TaskValidationException.class,
+            () -> {
+              final UserDTO user = getTestUser().setApiUser(false);
+              final TaskEntity task =
+                  new TaskEntity().setAssignee("AnotherTestUser").setState(TaskState.CREATED);
+              TaskValidator.CAN_CLAIM.validate(task, user, true);
             });
     Assertions.assertEquals("Task is already assigned", exception.getMessage());
   }

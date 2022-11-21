@@ -114,8 +114,17 @@ type Query {
 type Mutation {
     # Complete a task with taskId and optional variables. Returns the task.
     completeTask(taskId: String!, variables: [VariableInput!]!): Task!
-    # Claim a task with taskId to currently logged in user. Returns the task.
-    claimTask(taskId: String!, assignee: String): Task!
+    """
+    Claim a task with `taskId` to `assignee`. Returns the task.
+
+    When using Graphql API with JWT authentication token following parameters may be used:
+    * `assignee`. When using a JWT token, the assignee parameter is NOT optional when called directly from the API.
+    The system will not be able to detect the assignee from the JWT token, therefore the assignee parameter needs to be
+    explicitly passed in this instance.
+    * `allowOverrideAssignment`. When `true` the task that is already assigned may be claimed again. Otherwise the task
+    must be first unclaimed and only then claimed again. (Default: `true`)
+    """
+    claimTask(taskId: String!, assignee: String, allowOverrideAssignment: Boolean): Task!
     # Unclaim a task with taskId. Returns the task.
 	unclaimTask(taskId: String!): Task!
     # Delete process instance by given processInstanceId. Returns true if process instance could be deleted.

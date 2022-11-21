@@ -59,6 +59,8 @@ services:
       - identity-network
 
   zeebe:
+    depends_on:
+      - elasticsearch
     container_name: zeebe
     image: camunda/zeebe:8.2.0-alpha1
     environment:

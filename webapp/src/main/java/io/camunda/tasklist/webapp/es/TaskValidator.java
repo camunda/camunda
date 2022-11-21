@@ -14,7 +14,7 @@ import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 public interface TaskValidator {
 
   TaskValidator CAN_COMPLETE =
-      (taskBefore, currentUser) -> {
+      (taskBefore, currentUser, params) -> {
         if (!taskBefore.getState().equals(TaskState.CREATED)) {
           throw new TaskValidationException("Task is not active");
         }
@@ -32,14 +32,26 @@ public interface TaskValidator {
       };
 
   TaskValidator CAN_CLAIM =
-      (taskBefore, currentUser) -> {
+      (taskBefore, currentUser, params) -> {
         if (!taskBefore.getState().equals(TaskState.CREATED)) {
           throw new TaskValidationException("Task is not active");
         }
 
         if (currentUser.isApiUser()) {
-          // JWT Token/API users are allowed to change task assignee
-          return;
+          boolean allowOverrideAssignment = true;
+
+          if (params.length > 0) {
+            if (!(params[0] instanceof Boolean)) {
+              throw new IllegalArgumentException(
+                  "Expected parameter to be of type boolean, but got "
+                      + params[0].getClass().toString());
+            }
+            allowOverrideAssignment = (boolean) params[0];
+          }
+
+          if (allowOverrideAssignment) {
+            return;
+          }
         }
 
         if (taskBefore.getAssignee() != null) {
@@ -48,7 +60,7 @@ public interface TaskValidator {
       };
 
   TaskValidator CAN_UNCLAIM =
-      (taskBefore, currentUser) -> {
+      (taskBefore, currentUser, params) -> {
         if (!taskBefore.getState().equals(TaskState.CREATED)) {
           throw new TaskValidationException("Task is not active");
         }
@@ -57,6 +69,6 @@ public interface TaskValidator {
         }
       };
 
-  void validate(final TaskEntity taskBefore, final UserDTO currentUser)
+  void validate(final TaskEntity taskBefore, final UserDTO currentUser, final Object... params)
       throws TaskValidationException;
 }

@@ -426,7 +426,7 @@ public class TasklistTester {
     if (taskId == null) {
       resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     }
-    taskMutationResolver.claimTask(taskId, null);
+    taskMutationResolver.claimTask(taskId, null, null);
 
     taskIsAssigned(taskId);
 
