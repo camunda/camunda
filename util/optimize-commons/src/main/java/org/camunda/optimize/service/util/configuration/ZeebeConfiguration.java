@@ -19,5 +19,6 @@ public class ZeebeConfiguration {
   private String name;
   private int partitionCount;
   private int maxImportPageSize;
+  private boolean includeObjectVariableValue;
 
 }

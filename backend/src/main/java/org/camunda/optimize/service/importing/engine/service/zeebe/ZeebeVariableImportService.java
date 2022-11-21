@@ -103,8 +103,13 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
       .filter(Optional::isPresent)
       .map(Optional::get)
       .collect(toList());
-    objectVariableService.convertObjectVariablesForImport(variables)
-      .forEach(variable -> instanceToAdd.getVariables().add(convertToSimpleProcessVariableDto(variable)));
+    final List<ProcessVariableDto> processVariablesToImport;
+    if (configurationService.getConfiguredZeebe().isIncludeObjectVariableValue()) {
+      processVariablesToImport = objectVariableService.convertToProcessVariableDtos(variables);
+    } else {
+      processVariablesToImport = objectVariableService.convertToProcessVariableDtosSkippingObjectVariables(variables);
+    }
+    processVariablesToImport.forEach(variable -> instanceToAdd.getVariables().add(convertToSimpleProcessVariableDto(variable)));
     return instanceToAdd;
   }
 

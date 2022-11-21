@@ -56,7 +56,7 @@ public class ObjectVariableService {
     objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
   }
 
-  public List<ProcessVariableDto> convertObjectVariablesForImport(final List<ProcessVariableUpdateDto> variables) {
+  public List<ProcessVariableDto> convertToProcessVariableDtos(final List<ProcessVariableUpdateDto> variables) {
     List<ProcessVariableDto> resultList = new ArrayList<>();
     for (ProcessVariableUpdateDto variableUpdateDto : variables) {
       if (isNonNullNativeJsonVariable(variableUpdateDto) || isNonNullObjectVariable(variableUpdateDto)) {
@@ -75,6 +75,17 @@ public class ObjectVariableService {
       }
     }
     return resultList;
+  }
+
+  public List<ProcessVariableDto> convertToProcessVariableDtosSkippingObjectVariables(final List<ProcessVariableUpdateDto> variables) {
+    return variables.stream()
+      .filter(variable -> (!isNonNullNativeJsonVariable(variable) && !isNonNullObjectVariable(variable)))
+      .map(variable -> createSkeletonVariableDto(variable)
+        .setId(variable.getId())
+        .setName(variable.getName())
+        .setType(variable.getType())
+        .setValue(Collections.singletonList(variable.getValue())))
+      .collect(toList());
   }
 
   private void formatJsonObjectVariableAndAddToResult(final ProcessVariableUpdateDto variableUpdate,
