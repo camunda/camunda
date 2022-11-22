@@ -88,10 +88,17 @@ public class ModelUtil {
 
   public static List<EventDefinition> getEventDefinitionsForLinkCatchEvents(
       final ModelElementInstance element) {
-    return element.getChildElementsByType(IntermediateCatchEvent.class).stream()
-        .flatMap(i -> i.getEventDefinitions().stream())
-        .filter(e -> e instanceof LinkEventDefinition)
-        .collect(Collectors.toList());
+    final List<EventDefinition> definitions =
+        element.getChildElementsByType(IntermediateCatchEvent.class).stream()
+            .flatMap(i -> i.getEventDefinitions().stream())
+            .filter(e -> e instanceof LinkEventDefinition)
+            .collect(Collectors.toList());
+
+    element.getChildElementsByType(SubProcess.class).stream()
+        .map(ModelUtil::getEventDefinitionsForLinkCatchEvents)
+        .forEach(definitions::addAll);
+
+    return definitions;
   }
 
   public static List<EventDefinition> getEventDefinitionsForLinkThrowEvents(
