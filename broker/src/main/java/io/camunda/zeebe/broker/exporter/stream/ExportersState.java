@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.function.BiConsumer;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
 
 public final class ExportersState {
@@ -39,16 +38,8 @@ public final class ExportersState {
 
   public long getPosition(final String exporterId) {
     this.exporterId.wrapString(exporterId);
-    return getPosition();
-  }
 
-  public long getPosition(final DirectBuffer exporterId) {
-    this.exporterId.wrapBuffer(exporterId);
-    return getPosition();
-  }
-
-  private long getPosition() {
-    final ExporterStateEntry pos = exporterPositionColumnFamily.get(exporterId);
+    final ExporterStateEntry pos = exporterPositionColumnFamily.get(this.exporterId);
     return pos == null ? VALUE_NOT_FOUND : pos.getPosition();
   }
 
