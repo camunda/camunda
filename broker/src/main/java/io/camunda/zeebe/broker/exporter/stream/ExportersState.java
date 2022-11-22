@@ -21,15 +21,15 @@ public final class ExportersState {
   public static final long VALUE_NOT_FOUND = -1;
 
   private final DbString exporterId;
-  private final ExporterPosition position = new ExporterPosition();
-  private final ColumnFamily<DbString, ExporterPosition> exporterPositionColumnFamily;
+  private final ExporterStateEntry exporterStateEntry = new ExporterStateEntry();
+  private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
 
   public ExportersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     exporterId = new DbString();
     exporterPositionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, position);
+            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, exporterStateEntry);
   }
 
   public void setPosition(final String exporterId, final long position) {
@@ -48,30 +48,32 @@ public final class ExportersState {
   }
 
   private long getPosition() {
-    final ExporterPosition pos = exporterPositionColumnFamily.get(exporterId);
-    return pos == null ? VALUE_NOT_FOUND : pos.get();
+    final ExporterStateEntry pos = exporterPositionColumnFamily.get(exporterId);
+    return pos == null ? VALUE_NOT_FOUND : pos.getPosition();
   }
 
   private void setPosition(final long position) {
-    this.position.set(position);
-    exporterPositionColumnFamily.upsert(exporterId, this.position);
+    exporterStateEntry.setPosition(position);
+    exporterPositionColumnFamily.upsert(exporterId, exporterStateEntry);
   }
 
-  public void visitPositions(final BiConsumer<String, Long> consumer) {
+  public void visitExporterState(final BiConsumer<String, ExporterStateEntry> consumer) {
     exporterPositionColumnFamily.forEach(
-        (exporterId, position) -> consumer.accept(exporterId.toString(), position.get()));
+        (exporterId, exporterStateEntry) ->
+            consumer.accept(exporterId.toString(), exporterStateEntry));
   }
 
   public long getLowestPosition() {
     final LongArrayList positions = new LongArrayList();
 
-    visitPositions((id, pos) -> positions.addLong(pos));
+    visitExporterState(
+        (exporterId, exporterStateEntry) -> positions.addLong(exporterStateEntry.getPosition()));
     return positions.longStream().min().orElse(-1L);
   }
 
-  public void removePosition(final String exporter) {
-    exporterId.wrapString(exporter);
-    exporterPositionColumnFamily.deleteIfExists(exporterId);
+  public void removeExporterState(final String exporterId) {
+    this.exporterId.wrapString(exporterId);
+    exporterPositionColumnFamily.deleteIfExists(this.exporterId);
   }
 
   public boolean hasExporters() {

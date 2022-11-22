@@ -11,18 +11,18 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 
-public class ExporterPosition extends UnpackedObject implements DbValue {
+public class ExporterStateEntry extends UnpackedObject implements DbValue {
   private final LongProperty positionProp = new LongProperty("exporterPosition");
 
-  public ExporterPosition() {
+  public ExporterStateEntry() {
     declareProperty(positionProp);
   }
 
-  public void set(final long position) {
-    positionProp.setValue(position);
+  public long getPosition() {
+    return positionProp.getValue();
   }
 
-  public long get() {
-    return positionProp.getValue();
+  public void setPosition(final long position) {
+    positionProp.setValue(position);
   }
 }
