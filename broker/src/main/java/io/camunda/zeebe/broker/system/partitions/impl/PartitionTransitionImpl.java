@@ -109,9 +109,12 @@ public final class PartitionTransitionImpl implements PartitionTransition {
       ongoingTransitionFuture = currentTransitionFuture;
 
       final var ongoingTransition = currentTransition;
-
-      LOG.info(
-          "Cancel transition {} in favor of next transition {}", ongoingTransition, nextTransition);
+      if (!ongoingTransition.isCompleted()) {
+        LOG.info(
+            "Cancelling transition {} in favor of next transition {}",
+            ongoingTransition,
+            nextTransition);
+      }
       ongoingTransition.cancel();
     }
 

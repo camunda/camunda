@@ -167,6 +167,10 @@ final class PartitionTransitionProcess {
     cancelRequested = true;
   }
 
+  boolean isCompleted() {
+    return completed;
+  }
+
   @Override
   public String toString() {
     return "PartitionTransitionProcess{"
