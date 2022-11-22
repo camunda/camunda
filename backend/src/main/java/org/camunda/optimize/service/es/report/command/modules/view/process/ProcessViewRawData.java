@@ -181,7 +181,7 @@ public class ProcessViewRawData extends ProcessViewPart {
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    Map<String, Map<String, Integer>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
+    Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
     Function<SearchHit, ProcessInstanceDto> mappingFunction = hit -> {
       try {
         final ProcessInstanceDto processInstance = objectMapper.readValue(

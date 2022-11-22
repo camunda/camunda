@@ -173,6 +173,36 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
+  public void getFlowNodeDurationsAndNamesForProcessInstanceWhenFlowNodeDurationIsLong() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleUserTaskProcessWithFlowNodeNames();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), START_EVENT, 0);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      processInstance.getId(),
+      USER_TASK_1,
+      Long.MAX_VALUE
+    );
+    engineDatabaseExtension.changeFlowNodeTotalDuration(processInstance.getId(), END_EVENT, 0);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(processInstance);
+    final AuthorizedProcessReportEvaluationResponseDto<List<RawDataProcessInstanceDto>> evaluationResult =
+      evaluateRawReportWithDefaultPagination(reportData);
+    assertBasicResultData(evaluationResult, processInstance, 1);
+    RawDataProcessInstanceDto rawDataProcessInstanceDto = evaluationResult.getResult().getData().get(0);
+
+    // then
+    assertThat(rawDataProcessInstanceDto.getFlowNodeDurations()).containsExactlyInAnyOrderEntriesOf(
+      ImmutableMap.of(START_EVENT, new FlowNodeTotalDurationDataDto(START_EVENT, 0),
+                      USER_TASK_1, new FlowNodeTotalDurationDataDto(FLONODE_NAME, Long.MAX_VALUE),
+                      END_EVENT, new FlowNodeTotalDurationDataDto(END_EVENT, 0)
+      )
+    );
+  }
+
+  @Test
   public void getFlowNodeDurationsAndNamesForProcessInstanceWhenAllFlowNodesHaveTheSameName() {
     // given
     ProcessInstanceEngineDto processInstance =

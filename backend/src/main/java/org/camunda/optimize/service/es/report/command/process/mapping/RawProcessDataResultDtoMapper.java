@@ -34,7 +34,7 @@ public class RawProcessDataResultDtoMapper {
   public List<RawDataProcessInstanceDto> mapFrom(final List<ProcessInstanceDto> processInstanceDtos,
                                                  final ObjectMapper objectMapper,
                                                  final Set<String> allVariableNames,
-                                                 final Map<String, Map<String, Integer>> processInstanceIdsToFlowNodeDurations,
+                                                 final Map<String, Map<String, Long>> processInstanceIdsToFlowNodeDurations,
                                                  final Map<String, String> flowNodeIdsToFlowNodeNames) {
     final List<RawDataProcessInstanceDto> rawData = new ArrayList<>();
     processInstanceDtos
@@ -118,13 +118,13 @@ public class RawProcessDataResultDtoMapper {
     return result;
   }
 
-  private Map<String, FlowNodeTotalDurationDataDto> convertToFlowNodeDurationDataDto(final Map<String, Integer> flowNodeIdsToDurations,
+  private Map<String, FlowNodeTotalDurationDataDto> convertToFlowNodeDurationDataDto(final Map<String, Long> flowNodeIdsToDurations,
                                                                                      final Map<String, String> flowNodeIdsToFlowNodeNames) {
     return flowNodeIdsToDurations.entrySet()
       .stream()
       .collect(Collectors.toMap(Map.Entry::getKey, flowNodeIdToDuration -> new FlowNodeTotalDurationDataDto(
         flowNodeIdsToFlowNodeNames.get(flowNodeIdToDuration.getKey()),
-        flowNodeIdToDuration.getValue()
+        ((Number)flowNodeIdToDuration.getValue()).longValue()
       )));
   }
 }
