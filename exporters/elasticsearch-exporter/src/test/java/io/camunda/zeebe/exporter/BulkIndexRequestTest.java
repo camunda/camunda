@@ -9,13 +9,13 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,14 +34,20 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class BulkIndexRequestTest {
+
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
+
+  private static final int PARTITION_ID = 1;
+
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
+      new TypeReference<>() {};
 
   private final ProtocolFactory recordFactory = new ProtocolFactory();
   private final BulkIndexRequest request = new BulkIndexRequest();
 
   @Test
-  void shouldReturnMemoryUsageAsLengthOfAllSerializedRecords() throws JsonProcessingException {
+  void shouldReturnMemoryUsageAsLengthOfAllSerializedRecords() throws IOException {
     // given
     final var records = recordFactory.generateRecords().limit(2).toList();
     final var actions =
@@ -48,15 +55,29 @@ final class BulkIndexRequestTest {
             new BulkIndexAction("index", "id", "routing"),
             new BulkIndexAction("index2", "id2", "routing2"));
 
+    final var recordSequence1 = new RecordSequence(PARTITION_ID, 1);
+    final var recordSequence2 = new RecordSequence(PARTITION_ID, 2);
+
     // when
-    request.index(actions.get(0), records.get(0));
-    request.index(actions.get(1), records.get(1));
+    request.index(actions.get(0), records.get(0), recordSequence1);
+    request.index(actions.get(1), records.get(1), recordSequence2);
 
     // then
     final var expectedMemoryUsage =
-        MAPPER.writeValueAsBytes(records.get(0)).length
-            + MAPPER.writeValueAsBytes(records.get(1)).length;
+        getRecordMemoryUsage(records.get(0), recordSequence1)
+            + getRecordMemoryUsage(records.get(1), recordSequence2);
     assertThat(request.memoryUsageBytes()).isEqualTo(expectedMemoryUsage);
+  }
+
+  private static int getRecordMemoryUsage(
+      final Record<RecordValue> record, final RecordSequence recordSequence) throws IOException {
+
+    final var serializedRecord = MAPPER.writeValueAsBytes(record);
+    final var recordAsMap = MAPPER.readValue(serializedRecord, MAP_TYPE_REFERENCE);
+    // The sequence property is not part of the record itself. It is added additionally in the
+    // Elasticsearch exporter. We need to do the same in the test to get the correct memory usage.
+    recordAsMap.put("sequence", recordSequence.sequence());
+    return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
   @Test
@@ -67,8 +88,8 @@ final class BulkIndexRequestTest {
         List.of(
             new BulkIndexAction("index", "id", "routing"),
             new BulkIndexAction("index2", "id2", "routing2"));
-    request.index(actions.get(0), records.get(0));
-    request.index(actions.get(1), records.get(1));
+    request.index(actions.get(0), records.get(0), new RecordSequence(PARTITION_ID, 1));
+    request.index(actions.get(1), records.get(1), new RecordSequence(PARTITION_ID, 2));
 
     // when
     request.clear();
@@ -90,8 +111,8 @@ final class BulkIndexRequestTest {
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when - doesn't matter what the records are, if the metadata is the same we skip it
-      request.index(action, records.get(0));
-      request.index(action, records.get(1));
+      request.index(action, records.get(0), new RecordSequence(PARTITION_ID, 1));
+      request.index(action, records.get(1), new RecordSequence(PARTITION_ID, 1));
 
       // then
       assertThat(request.bulkOperations())
@@ -111,8 +132,8 @@ final class BulkIndexRequestTest {
               new BulkIndexAction("index2", "id2", "routing2"));
 
       // when
-      request.index(actions.get(0), records.get(0));
-      request.index(actions.get(1), records.get(1));
+      request.index(actions.get(0), records.get(0), new RecordSequence(PARTITION_ID, 1));
+      request.index(actions.get(1), records.get(1), new RecordSequence(PARTITION_ID, 2));
 
       // then
       assertThat(request.bulkOperations())
@@ -132,7 +153,7 @@ final class BulkIndexRequestTest {
       final var action = new BulkIndexAction("index", "id", "routing");
 
       // when
-      request.index(action, record);
+      request.index(action, record, new RecordSequence(PARTITION_ID, 1));
 
       // then
       final var operations = request.bulkOperations();
@@ -150,8 +171,8 @@ final class BulkIndexRequestTest {
           List.of(
               new BulkIndexAction("index", "id", "routing"),
               new BulkIndexAction("index2", "id2", "routing2"));
-      request.index(actions.get(0), records.get(0));
-      request.index(actions.get(1), records.get(1));
+      request.index(actions.get(0), records.get(0), new RecordSequence(PARTITION_ID, 1));
+      request.index(actions.get(1), records.get(1), new RecordSequence(PARTITION_ID, 2));
 
       // when
       final byte[] serializedBuffer;
@@ -174,6 +195,32 @@ final class BulkIndexRequestTest {
           .containsExactly(
               Tuple.tuple(actions.get(0), records.get(0)),
               Tuple.tuple(actions.get(1), records.get(1)));
+    }
+
+    @Test
+    void shouldIndexRecordWithSequence() {
+      // given
+      final var records = recordFactory.generateRecords().limit(2).toList();
+
+      final var actions =
+          List.of(
+              new BulkIndexAction("index", "id", "routing"),
+              new BulkIndexAction("index2", "id2", "routing2"));
+
+      final var recordSequences =
+          List.of(new RecordSequence(PARTITION_ID, 10), new RecordSequence(PARTITION_ID, 20));
+
+      // when
+      request.index(actions.get(0), records.get(0), recordSequences.get(0));
+      request.index(actions.get(1), records.get(1), recordSequences.get(1));
+
+      // then
+      assertThat(request.bulkOperations())
+          .hasSize(2)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("sequence"))
+          .describedAs("Expect that the records are serialized with the sequences")
+          .containsExactly(recordSequences.get(0).sequence(), recordSequences.get(1).sequence());
     }
 
     private Record<?> deserializeSource(final BulkOperation operation) {

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.core.JsonParser.Feature;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
@@ -16,6 +17,7 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.apache.http.entity.ContentProducer;
 
 /**
@@ -23,7 +25,14 @@ import org.apache.http.entity.ContentProducer;
  * avoid having to serialize it again on retry.
  */
 final class BulkIndexRequest implements ContentProducer {
+
   private static final ObjectMapper MAPPER = new ObjectMapper().enable(Feature.ALLOW_SINGLE_QUOTES);
+
+  private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
+      new TypeReference<>() {};
+
+  // The property of the ES record template to store the sequence of the record.
+  private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -39,8 +48,10 @@ final class BulkIndexRequest implements ContentProducer {
    *
    * @param action the bulk action to take
    * @param record the record that will be the source of the document
+   * @param recordSequence the sequence number of the record
    */
-  void index(final BulkIndexAction action, final Record<?> record) {
+  void index(
+      final BulkIndexAction action, final Record<?> record, final RecordSequence recordSequence) {
     // exit early in case we're retrying the last indexed record again
     if (lastIndexedMetadata != null && lastIndexedMetadata.equals(action)) {
       return;
@@ -48,7 +59,8 @@ final class BulkIndexRequest implements ContentProducer {
 
     final byte[] source;
     try {
-      source = MAPPER.writer().writeValueAsBytes(record);
+      source = serializeRecord(record, recordSequence);
+
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
           String.format("Failed to serialize record to JSON for indexing action %s", action), e);
@@ -58,6 +70,20 @@ final class BulkIndexRequest implements ContentProducer {
     memoryUsageBytes += command.source().length;
     lastIndexedMetadata = action;
     operations.add(command);
+  }
+
+  private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
+      throws IOException {
+    final var serializedRecord = MAPPER.writer().writeValueAsBytes(record);
+
+    // Enhance the serialized record by its sequence number. The sequence number is not a part of
+    // the record itself but a special property for Elasticsearch. It can be used to limit the
+    // number of records when reading from the index, for example, by using a range query. Read
+    // https://github.com/camunda/zeebe/issues/10568 for details.
+    final var enhancedRecord = MAPPER.readValue(serializedRecord, MAP_TYPE_REFERENCE);
+    enhancedRecord.put(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence());
+
+    return MAPPER.writer().writeValueAsBytes(enhancedRecord);
   }
 
   /** Returns the number of operations indexed so far. */

@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 final class ElasticsearchExporterTest {
 
@@ -160,7 +163,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client).putComponentTemplate();
@@ -174,7 +179,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client, never()).putComponentTemplate();
@@ -190,7 +197,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client, times(1)).putIndexTemplate(valueType);
@@ -206,7 +215,9 @@ final class ElasticsearchExporterTest {
       exporter.open(controller);
 
       // when
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+      exporter.export(recordMock);
 
       // then
       verify(client, never()).putIndexTemplate(valueType);
@@ -223,8 +234,11 @@ final class ElasticsearchExporterTest {
       when(client.shouldFlush()).thenReturn(false, true);
 
       // when
-      exporter.export(mock(Record.class));
-      exporter.export(mock(Record.class));
+      final var recordMock = mock(Record.class);
+      when(recordMock.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+
+      exporter.export(recordMock);
+      exporter.export(recordMock);
 
       // then
       verify(client, times(1)).flush();
@@ -260,7 +274,11 @@ final class ElasticsearchExporterTest {
     @Test
     void shouldUpdateLastExportedPositionOnFlush() {
       // given
-      final var record = ImmutableRecord.builder().withPosition(10L).build();
+      final var record =
+          ImmutableRecord.builder()
+              .withPosition(10L)
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .build();
       exporter.configure(context);
       exporter.open(controller);
       when(client.shouldFlush()).thenReturn(true);
@@ -275,7 +293,11 @@ final class ElasticsearchExporterTest {
     @Test
     void shouldNotUpdatePositionOnFlushErrors() {
       // given
-      final var record = ImmutableRecord.builder().withPosition(10L).build();
+      final var record =
+          ImmutableRecord.builder()
+              .withPosition(10L)
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .build();
       exporter.configure(context);
       exporter.open(controller);
       when(client.shouldFlush()).thenReturn(true);
@@ -318,6 +340,159 @@ final class ElasticsearchExporterTest {
 
       // when - then
       assertThatCode(() -> exporter.configure(context)).isInstanceOf(ExporterException.class);
+    }
+  }
+
+  @Nested
+  final class RecordSequenceTest {
+
+    private static final int PARTITION_ID = 123;
+
+    @BeforeEach
+    void initExporter() {
+      exporter.configure(context);
+      exporter.open(controller);
+    }
+
+    @Test
+    void shouldIndexRecordWithSequence() {
+      // given
+      final var record = newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE);
+
+      // when
+      exporter.export(record);
+
+      // then
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client).index(any(), recordSequenceCaptor.capture());
+
+      final var value = recordSequenceCaptor.getValue();
+
+      assertThat(value)
+          .describedAs("Expect that the record is indexed with a sequence")
+          .isNotNull();
+
+      assertThat(value.partitionId())
+          .describedAs("Expect that the partition id is equal to the record")
+          .isEqualTo(PARTITION_ID);
+
+      assertThat(value.counter()).describedAs("Expect that the counter starts at 1").isEqualTo(1);
+
+      assertThat(value.sequence())
+          .describedAs(
+              "Expect that the sequence is a combination of the partition id and the counter")
+          .isEqualTo(((long) PARTITION_ID << 51) + 1);
+    }
+
+    @Test
+    void shouldEncodePartitionIdInRecordSequence() {
+      // given
+      final int partitionId1 = 1;
+      final int partitionId2 = 2;
+      final int partitionId3 = 3;
+
+      final var records =
+          List.of(
+              newRecord(partitionId1, ValueType.PROCESS_INSTANCE),
+              newRecord(partitionId2, ValueType.PROCESS_INSTANCE),
+              newRecord(partitionId3, ValueType.PROCESS_INSTANCE),
+              newRecord(partitionId1, ValueType.PROCESS_INSTANCE));
+
+      // when
+      records.forEach(exporter::export);
+
+      // then
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client, times(records.size())).index(any(), recordSequenceCaptor.capture());
+
+      assertThat(recordSequenceCaptor.getAllValues())
+          .extracting(RecordSequence::partitionId)
+          .containsExactly(partitionId1, partitionId2, partitionId3, partitionId1);
+    }
+
+    @Test
+    void shouldIncrementRecordCounterByValueType() {
+      // given
+      final var records =
+          List.of(
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.VARIABLE),
+              newRecord(PARTITION_ID, ValueType.JOB),
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.JOB));
+
+      // when
+      records.forEach(exporter::export);
+
+      // then
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client, times(records.size())).index(any(), recordSequenceCaptor.capture());
+
+      assertThat(recordSequenceCaptor.getAllValues())
+          .extracting(RecordSequence::counter)
+          .containsExactly(1L, 2L, 1L, 1L, 3L, 2L);
+    }
+
+    @Test
+    void shouldNotIncrementCounterOnIndexErrors() {
+      // given
+      final var record = newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE);
+
+      // when
+      doThrow(new ElasticsearchExporterException("failed to index"))
+          .when(client)
+          .index(any(), any());
+
+      assertThatCode(() -> exporter.export(record))
+          .isInstanceOf(ElasticsearchExporterException.class);
+
+      // retry index successfully
+      doNothing().when(client).index(any(), any());
+      exporter.export(record);
+
+      // then
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client, times(2)).index(any(), recordSequenceCaptor.capture());
+
+      assertThat(recordSequenceCaptor.getAllValues())
+          .extracting(RecordSequence::counter)
+          .describedAs("Expect that the record counter is the same on retry")
+          .containsExactly(1L, 1L);
+    }
+
+    @Test
+    void shouldNotIncrementCounterOnFlushErrors() {
+      // given
+      when(client.shouldFlush()).thenReturn(true);
+
+      final var record = newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE);
+
+      // when
+      doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
+
+      assertThatCode(() -> exporter.export(record))
+          .isInstanceOf(ElasticsearchExporterException.class);
+
+      // retry flush successfully
+      doNothing().when(client).flush();
+      exporter.export(record);
+
+      // then
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client, times(2)).index(any(), recordSequenceCaptor.capture());
+
+      assertThat(recordSequenceCaptor.getAllValues())
+          .extracting(RecordSequence::counter)
+          .describedAs("Expect that the record counter is the same on retry")
+          .containsExactly(1L, 1L);
+    }
+
+    private static Record<?> newRecord(final int partitionId, final ValueType valueType) {
+      return ImmutableRecord.builder()
+          .withPartitionId(partitionId)
+          .withValueType(valueType)
+          .build();
     }
   }
 }

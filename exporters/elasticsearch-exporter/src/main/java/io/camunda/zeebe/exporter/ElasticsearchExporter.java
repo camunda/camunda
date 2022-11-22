@@ -16,15 +16,16 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.time.Duration;
+import java.util.EnumMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ElasticsearchExporter implements Exporter {
 
-  public static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
-
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
+
+  private static final long INITIAL_RECORD_COUNTER = 0L;
 
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private Controller controller;
@@ -33,6 +34,11 @@ public class ElasticsearchExporter implements Exporter {
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
+
+  /**
+   * Stores a counter per value type. The counter is used to create a sequence for a given record.
+   */
+  private final EnumMap<ValueType, Long> recordCountersByValueType = new EnumMap<>(ValueType.class);
 
   @Override
   public void configure(final Context context) {
@@ -79,12 +85,29 @@ public class ElasticsearchExporter implements Exporter {
       createIndexTemplates();
     }
 
-    client.index(record);
+    final var recordSequence = getNextRecordSequence(record);
+    client.index(record, recordSequence);
     lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {
       flush();
     }
+    updateRecordCounters(record, recordSequence);
+  }
+
+  private RecordSequence getNextRecordSequence(final Record<?> record) {
+    final var valueType = record.getValueType();
+    final long recordCounter =
+        recordCountersByValueType.getOrDefault(valueType, INITIAL_RECORD_COUNTER);
+
+    final long nextCounter = recordCounter + 1;
+    return new RecordSequence(record.getPartitionId(), nextCounter);
+  }
+
+  private void updateRecordCounters(final Record<?> record, final RecordSequence recordSequence) {
+    final var valueType = record.getValueType();
+    final var counter = recordSequence.counter();
+    recordCountersByValueType.put(valueType, counter);
   }
 
   private void validate(final ElasticsearchExporterConfiguration configuration) {

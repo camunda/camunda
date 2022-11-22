@@ -45,6 +45,8 @@ final class ElasticsearchClientTest {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
+  private static final int PARTITION_ID = 1;
+
   private final RestClient restClient = mock(RestClient.class);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final ElasticsearchExporterConfiguration config =
@@ -52,6 +54,7 @@ final class ElasticsearchClientTest {
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final TemplateReader templateReader = new TemplateReader(config.index);
+
   private final ElasticsearchClient client =
       new ElasticsearchClient(
           config,
@@ -59,7 +62,7 @@ final class ElasticsearchClientTest {
           restClient,
           indexRouter,
           templateReader,
-          new ElasticsearchMetrics(1));
+          new ElasticsearchMetrics(PARTITION_ID));
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
@@ -131,12 +134,12 @@ final class ElasticsearchClientTest {
 
       // when - index a single record, then set the memory limit specifically to be its size + 1
       // this decouples the test from whatever is used to serialize the record
-      client.index(firstRecord);
+      client.index(firstRecord, new RecordSequence(PARTITION_ID, 1));
       config.bulk.memoryLimit = bulkRequest.memoryUsageBytes() + 1;
       assertThat(client.shouldFlush()).isFalse();
 
       // when - then
-      client.index(secondRecord);
+      client.index(secondRecord, new RecordSequence(PARTITION_ID, 1));
       assertThat(client.shouldFlush()).isTrue();
     }
 
@@ -148,11 +151,11 @@ final class ElasticsearchClientTest {
       final var secondRecord = factory.generateRecord();
 
       // when
-      client.index(firstRecord);
+      client.index(firstRecord, new RecordSequence(PARTITION_ID, 1));
       assertThat(client.shouldFlush()).isFalse();
 
       // when - then
-      client.index(secondRecord);
+      client.index(secondRecord, new RecordSequence(PARTITION_ID, 2));
       assertThat(client.shouldFlush()).isTrue();
     }
 
@@ -175,7 +178,7 @@ final class ElasticsearchClientTest {
           mockClientResponse(new BulkIndexResponse(false, List.of()));
 
       // when
-      client.index(factory.generateRecord());
+      client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
       client.flush();
 
       // then
@@ -195,7 +198,7 @@ final class ElasticsearchClientTest {
       mockClientResponse(new BulkIndexResponse(false, List.of()));
 
       // when
-      client.index(factory.generateRecord());
+      client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
       client.flush();
 
       // then
@@ -210,7 +213,7 @@ final class ElasticsearchClientTest {
       doThrow(failure).when(restClient).performRequest(any());
 
       // when
-      client.index(factory.generateRecord());
+      client.index(factory.generateRecord(), new RecordSequence(PARTITION_ID, 1));
       assertThatCode(client::flush).isEqualTo(failure);
 
       // then
