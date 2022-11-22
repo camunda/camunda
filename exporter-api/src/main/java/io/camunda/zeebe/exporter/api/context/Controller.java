@@ -16,6 +16,7 @@
 package io.camunda.zeebe.exporter.api.context;
 
 import java.time.Duration;
+import java.util.Optional;
 
 /** Controls various aspect of the exporting process. */
 public interface Controller {
@@ -25,7 +26,18 @@ public interface Controller {
    *
    * @param position the latest successfully exported record position
    */
-  void updateLastExportedRecordPosition(long position);
+  void updateLastExportedRecordPosition(final long position);
+
+  /**
+   * Signals to the broker that the exporter has successfully exported all records up to and
+   * including the record at {@param position}. Optionally, the exporter can provide arbitrary
+   * metadata that is stored in the broker and can be retrieved when the exporter opens. The
+   * metadata is stored only if the given position is greater than the previous exporter position.
+   *
+   * @param position the latest successfully exported record position
+   * @param metadata arbitrary metadata for the exporter (can be {@code null})
+   */
+  void updateLastExportedRecordPosition(long position, byte[] metadata);
 
   /**
    * Schedules a cancellable {@param task} to be ran after {@param delay} has expired.
@@ -35,4 +47,12 @@ public interface Controller {
    * @return cancellable task.
    */
   ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task);
+
+  /**
+   * Read arbitrary metadata of the exporter that was stored previously by using the exporter
+   * controller.
+   *
+   * @return the restored metadata, or {@link Optional#empty()} if no metadata exist
+   */
+  Optional<byte[]> readMetadata();
 }
