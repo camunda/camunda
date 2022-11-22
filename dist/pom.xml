@@ -176,11 +176,6 @@
     </dependency>
 
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations</artifactId>
     </dependency>
@@ -385,7 +380,6 @@
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
 
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
-            <dependency>javax.annotation:javax.annotation-api</dependency>
 
           </usedDependencies>
         </configuration>
