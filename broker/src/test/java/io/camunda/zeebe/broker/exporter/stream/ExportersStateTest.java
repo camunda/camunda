@@ -9,14 +9,18 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.groups.Tuple;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,6 +29,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public final class ExportersStateTest {
+
+  private static final UnsafeBuffer EMPTY_METADATA = new UnsafeBuffer();
 
   private final AutoCloseableRule autoCloseableRule = new AutoCloseableRule();
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -49,31 +55,67 @@ public final class ExportersStateTest {
   }
 
   @Test
-  public void shouldSetPositionForNewExporter() {
+  public void shouldSetExporterPosition() {
     // given
-    final String id = "exporter";
-    final long position = 123;
+    final var exporterId = "exporter-1";
+    final var exporterPosition = 10L;
 
     // when
-    state.setPosition(id, position);
+    state.setPosition(exporterId, exporterPosition);
 
     // then
-    assertThat(state.getPosition(id)).isEqualTo(position);
+    assertThat(state.getPosition(exporterId)).isEqualTo(exporterPosition);
+    assertThat(state.getExporterMetadata(exporterId)).isEqualTo(EMPTY_METADATA);
   }
 
   @Test
-  public void shouldOverwritePositionOfExporter() {
+  public void shouldSetExporterState() {
     // given
-    final String id = "exporter";
-    final long firstPosition = 123;
-    final long secondPosition = 2034;
+    final var exporterId = "exporter-1";
+    final var exporterPosition = 10L;
+    final var exporterMetadata = BufferUtil.wrapString("metadata-1");
 
     // when
-    state.setPosition(id, firstPosition);
-    state.setPosition(id, secondPosition);
+    state.setExporterState(exporterId, exporterPosition, exporterMetadata);
 
     // then
-    assertThat(state.getPosition(id)).isEqualTo(secondPosition);
+    assertThat(state.getPosition(exporterId)).isEqualTo(exporterPosition);
+    assertThat(state.getExporterMetadata(exporterId)).isEqualTo(exporterMetadata);
+  }
+
+  @Test
+  public void shouldSetExporterStateWithoutMetadata() {
+    // given
+    final var exporterId = "exporter-1";
+    final var exporterPosition = 10L;
+
+    // when
+    state.setExporterState(exporterId, exporterPosition, null);
+
+    // then
+    assertThat(state.getPosition(exporterId)).isEqualTo(exporterPosition);
+    assertThat(state.getExporterMetadata(exporterId)).isEqualTo(EMPTY_METADATA);
+  }
+
+  @Test
+  public void shouldOverrideExporterState() {
+    // given
+    final var exporterId = "exporter-1";
+
+    final var exporterPosition1 = 10L;
+    final var exporterPosition2 = 20L;
+
+    final var exporterMetadata1 = BufferUtil.wrapString("metadata-1");
+    final var exporterMetadata2 = BufferUtil.wrapString("metadata-2");
+
+    state.setExporterState(exporterId, exporterPosition1, exporterMetadata1);
+
+    // when
+    state.setExporterState(exporterId, exporterPosition2, exporterMetadata2);
+
+    // then
+    assertThat(state.getPosition(exporterId)).isEqualTo(exporterPosition2);
+    assertThat(state.getExporterMetadata(exporterId)).isEqualTo(exporterMetadata2);
   }
 
   @Test
@@ -85,35 +127,75 @@ public final class ExportersStateTest {
     final long position = state.getPosition(id);
 
     // then
-    assertThat(position).isEqualTo(-1);
+    assertThat(position).isEqualTo(ExportersState.VALUE_NOT_FOUND);
   }
 
   @Test
-  public void shouldRemovePosition() {
-    // given
-    state.setPosition("e1", 1L);
-    state.setPosition("e2", 2L);
-
+  public void shouldReturnEmptyMetadataForUnknownExporter() {
     // when
-    state.removePosition("e2");
+    final var exporterMetadata = state.getExporterMetadata("unknown-exporter");
 
     // then
-    assertThat(state.getPosition("e1")).isEqualTo(1L);
-    assertThat(state.getPosition("e2")).isEqualTo(-1);
+    assertThat(exporterMetadata)
+        .describedAs("Expect that the metadata is empty if the exporter is unknown")
+        .isEqualTo(EMPTY_METADATA);
   }
 
   @Test
-  public void shouldVisitPositions() {
+  public void shouldRemoveExporterState() {
     // given
-    state.setPosition("e1", 1L);
-    state.setPosition("e2", 2L);
+    final var exporterId1 = "e1";
+    final var exporterMetadata1 = BufferUtil.wrapString("metadata-1");
+    final var exporterPosition1 = 10L;
+
+    final var exporterId2 = "e2";
+    final var exporterPosition2 = 20L;
+    final var exporterMetadata2 = BufferUtil.wrapString("metadata-2");
+
+    state.setExporterState(exporterId1, exporterPosition1, exporterMetadata1);
+    state.setExporterState(exporterId2, exporterPosition2, exporterMetadata2);
 
     // when
-    final Map<String, Long> positions = new HashMap<>();
-    state.visitPositions((exporterId, position) -> positions.put(exporterId, position));
+    state.removeExporterState(exporterId2);
 
     // then
-    assertThat(positions).hasSize(2).contains(entry("e1", 1L), entry("e2", 2L));
+    assertThat(state.getPosition(exporterId2)).isEqualTo(ExportersState.VALUE_NOT_FOUND);
+    assertThat(state.getExporterMetadata(exporterId2)).isEqualTo(EMPTY_METADATA);
+
+    assertThat(state.getPosition(exporterId1)).isEqualTo(exporterPosition1);
+    assertThat(state.getExporterMetadata(exporterId1)).isEqualTo(exporterMetadata1);
+  }
+
+  @Test
+  public void shouldVisitExporterState() {
+    // given
+    final var exporterId1 = "e1";
+    final var exporterMetadata1 = BufferUtil.wrapString("metadata-1");
+    final var exporterPosition1 = 10L;
+
+    final var exporterId2 = "e2";
+    final var exporterPosition2 = 20L;
+    final var exporterMetadata2 = BufferUtil.wrapString("metadata-2");
+
+    state.setExporterState(exporterId1, exporterPosition1, exporterMetadata1);
+    state.setExporterState(exporterId2, exporterPosition2, exporterMetadata2);
+
+    // when
+    final Map<String, Tuple> exporterState = new HashMap<>();
+    state.visitExporterState(
+        (exporterId, exporterStateEntry) ->
+            exporterState.put(
+                exporterId,
+                tuple(
+                    exporterStateEntry.getPosition(),
+                    BufferUtil.cloneBuffer(exporterStateEntry.getMetadata()))));
+
+    // then
+    assertThat(exporterState)
+        .hasSize(2)
+        .contains(
+            entry(exporterId1, tuple(exporterPosition1, exporterMetadata1)),
+            entry(exporterId2, tuple(exporterPosition2, exporterMetadata2)));
   }
 
   @Test
@@ -129,10 +211,11 @@ public final class ExportersStateTest {
   @Test
   public void shouldClearState() {
     // given
-    state.setPosition("e2", 1L);
+    final var exporterId = "e2";
+    state.setExporterState(exporterId, 1L, BufferUtil.wrapString("metadata"));
 
     // when
-    state.removePosition("e2");
+    state.removeExporterState(exporterId);
 
     // then
     assertThat(state.hasExporters()).isFalse();
