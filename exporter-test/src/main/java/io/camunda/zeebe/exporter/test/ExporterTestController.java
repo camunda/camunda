@@ -14,8 +14,10 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import net.jcip.annotations.ThreadSafe;
 
 /**
@@ -39,9 +41,20 @@ public final class ExporterTestController implements Controller {
   private final List<ExporterTestScheduledTask> scheduledTasks = new CopyOnWriteArrayList<>();
   private volatile long lastRanAtMs = 0;
 
+  private final AtomicReference<Optional<byte[]>> exporterMetadata =
+      new AtomicReference<>(Optional.empty());
+
   @Override
   public void updateLastExportedRecordPosition(final long position) {
     this.position.getAndAccumulate(position, Math::max);
+  }
+
+  @Override
+  public void updateLastExportedRecordPosition(final long position, final byte[] metadata) {
+    final var previousValue = this.position.getAndAccumulate(position, Math::max);
+    if (position >= previousValue) {
+      exporterMetadata.set(Optional.of(metadata));
+    }
   }
 
   @Override
@@ -54,6 +67,11 @@ public final class ExporterTestController implements Controller {
 
     scheduledTasks.add(scheduledTask);
     return scheduledTask;
+  }
+
+  @Override
+  public Optional<byte[]> readMetadata() {
+    return exporterMetadata.get();
   }
 
   /**
