@@ -60,6 +60,10 @@ zeebe:
     - name: ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS
       value: "true"
 
+  # Enable metrics collections
+  podLabels:
+    metrics: gmp
+
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limitsS
   resources:
     limits:
@@ -104,6 +108,10 @@ zeebe-gateway:
       value: "true"
     - name: ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS
       value: "1"
+
+  # Enable metrics collections
+  podLabels:
+    metrics: gmp
 
   # Resources configuration to set request and limit configuration for the container https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/#requests-and-limits
   resources:
@@ -168,7 +176,6 @@ elasticsearch:
       cpu: 3
       memory: 8Gi
 
-# PrometheusServiceMonitor configuration for the prometheus service monitor
+# Disable the service monitor as we use Google Managed Prometheus
 prometheusServiceMonitor:
-  # PrometheusServiceMonitor.enabled if true then a service monitor will be deployed, which allows a installed prometheus controller to scrape metrics from the broker pods
-  enabled: true
+  enabled: false
