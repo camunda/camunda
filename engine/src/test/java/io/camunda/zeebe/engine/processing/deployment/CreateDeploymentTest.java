@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.Message;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
@@ -640,6 +641,28 @@ public final class CreateDeploymentTest {
                 + "failed to evaluate expression "
                 + "'INVALID_CYCLE_EXPRESSION': no variable found for name "
                 + "'INVALID_CYCLE_EXPRESSION')\n");
+  }
+
+  @Test
+  public void shouldCreateDeploymentWithMessageStartEventIgnoreExtensionElements() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("processId")
+            .startEvent("startEvent")
+            .messageEventDefinition()
+            .message("messageEvent")
+            .addExtensionElement(
+                ZeebeLoopCharacteristics.class, z -> z.setInputCollection("= inputs"))
+            .messageEventDefinitionDone()
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // then
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
   }
 
   private ProcessMetadataValue findProcess(

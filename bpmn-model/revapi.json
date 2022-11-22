@@ -39,6 +39,12 @@
             "matcher": "java-package",
             "match": "io.camunda.zeebe.model.bpmn.validation.zeebe"
           }
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method java.util.Optional<T> io.camunda.zeebe.model.bpmn.Query<T extends org.camunda.bpm.model.xml.instance.ModelElementInstance>::findSingleResult()",
+          "justification": "add optional method findSingleResult() for the usage of get single result"
         }
       ]
     }
