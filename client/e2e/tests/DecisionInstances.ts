@@ -26,7 +26,7 @@ fixture('Decision Instances')
 test('Switch between Decision versions', async (t) => {
   await t.click(
     screen.queryByRole('link', {
-      name: /view decisions/i,
+      name: /decisions/i,
     })
   );
 

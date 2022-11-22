@@ -32,3 +32,16 @@ declare module '@carbon/elements' {
   } as const;
   export * from '@types/carbon__elements';
 }
+
+declare module '@carbon/react/icons' {
+  type Icon = React.FunctionComponent<
+    {
+      className?: string;
+      alt?: string;
+      'aria-label'?: string;
+      size?: 16 | 20 | 24 | 32;
+    } & React.HTMLAttributes<HTMLOrSVGElement>
+  >;
+
+  export const ArrowRight: Icon;
+}

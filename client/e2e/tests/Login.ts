@@ -55,6 +55,19 @@ test('Log in with valid user account', async (t) => {
   await t.expect(await getPathname()).eql('/login');
 });
 
+(USE_NEW_APP_HEADER ? test : test.skip)('Log out', async (t) => {
+  await t
+    .typeText(screen.queryByLabelText('Username'), 'demo')
+    .typeText(screen.queryByLabelText('Password'), 'demo')
+    .click(screen.queryByRole('button', {name: 'Log in'}));
+
+  await t
+    .click(screen.queryByLabelText('Settings', {selector: 'button'}))
+    .click(screen.queryByRole('button', {name: 'Log out'}));
+
+  await t.expect(await getPathname()).eql('/login');
+});
+
 test('Redirect to initial page after login', async (t) => {
   await t.expect(await getPathname()).eql('/login');
   await t.navigateTo('/processes?active=true&incidents=true');

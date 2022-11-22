@@ -10,9 +10,21 @@ import {C3Navigation} from '@camunda/camunda-composite-components';
 import {Link} from 'react-router-dom';
 import {useCurrentPage} from '../useCurrentPage';
 import {tracking} from 'modules/tracking';
+import {authenticationStore} from 'modules/stores/authentication';
+import {useEffect} from 'react';
+import {ArrowRight} from '@carbon/react/icons';
+import {observer} from 'mobx-react';
 
-const AppHeader: React.FC = () => {
+const AppHeader: React.FC = observer(() => {
   const {currentPage} = useCurrentPage();
+  const {displayName, canLogout, userId, salesPlanType, roles} =
+    authenticationStore.state;
+
+  useEffect(() => {
+    if (userId) {
+      tracking.identifyUser({userId, salesPlanType, roles});
+    }
+  }, [userId, salesPlanType, roles]);
 
   return (
     <C3Navigation
@@ -85,8 +97,32 @@ const AppHeader: React.FC = () => {
         type: 'app',
         ariaLabel: 'App Panel',
       }}
+      userSideBar={{
+        type: 'user',
+        ariaLabel: 'Settings',
+        customElements: {
+          profile: {
+            label: 'Profile',
+            user: {
+              name: displayName ?? '',
+              email: '',
+            },
+          },
+        },
+        bottomElements: canLogout
+          ? [
+              {
+                key: 'logout',
+                label: 'Log out',
+                renderIcon: ArrowRight,
+                kind: 'ghost',
+                onClick: authenticationStore.handleLogout,
+              },
+            ]
+          : undefined,
+      }}
     />
   );
-};
+});
 
 export {AppHeader};
