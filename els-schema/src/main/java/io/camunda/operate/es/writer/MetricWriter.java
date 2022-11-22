@@ -15,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
 
 import static io.camunda.operate.es.contract.MetricContract.EVENT_DECISION_INSTANCE_EVALUATED;
 import static io.camunda.operate.es.contract.MetricContract.EVENT_PROCESS_INSTANCE_FINISHED;
@@ -44,15 +43,13 @@ public class MetricWriter implements Writer {
     return (MetricEntity) new MetricEntity()
         .setEvent(EVENT_PROCESS_INSTANCE_FINISHED)
         .setValue(processInstanceKey)
-        .setEventTime(timestamp)
-        .setId(UUID.randomUUID().toString());
+        .setEventTime(timestamp);
   }
 
   private MetricEntity createDecisionsInstanceEvaluatedKey(String decisionInstanceKey, OffsetDateTime timestamp) {
     return (MetricEntity) new MetricEntity()
         .setEvent(EVENT_DECISION_INSTANCE_EVALUATED)
         .setValue(decisionInstanceKey)
-        .setEventTime(timestamp)
-        .setId(UUID.randomUUID().toString());
+        .setEventTime(timestamp);
   }
 }
