@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -848,6 +849,54 @@ public class ModifyProcessInstanceTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(4))
         .hasSize(4);
+  }
+
+  @Test
+  public void verifyCallActivityWithIncidentInOutputMappingCanBeTerminated() {
+    final var child = Bpmn.createExecutableProcess("child").startEvent().endEvent().done();
+    final var parent =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .callActivity("callActivity", c -> c.zeebeProcessId("child"))
+            .zeebeOutputExpression("x", "y")
+            .manualTask("task")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(child).withXmlResource(parent).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var callActivityElement =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("callActivity")
+            .withElementType(BpmnElementType.CALL_ACTIVITY)
+            .getFirst();
+
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst())
+        .extracting(r -> r.getValue().getElementId())
+        .isEqualTo("callActivity");
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("task")
+        .terminateElement(callActivityElement.getKey())
+        .modify();
+
+    verifyThatRootElementIsActivated(processInstanceKey, "task", BpmnElementType.MANUAL_TASK);
+    verifyThatProcessInstanceIsCompleted(processInstanceKey);
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(callActivityElement.getValue().getElementId())
+                .exists())
+        .isTrue();
   }
 
   private static void verifyThatRootElementIsActivated(
