@@ -9,20 +9,38 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ExporterStateEntry extends UnpackedObject implements DbValue {
+
+  private static final UnsafeBuffer EMPTY_METADATA = new UnsafeBuffer();
+
   private final LongProperty positionProp = new LongProperty("exporterPosition");
+  private final BinaryProperty metadataProp =
+      new BinaryProperty("exporterMetadata", EMPTY_METADATA);
 
   public ExporterStateEntry() {
-    declareProperty(positionProp);
+    declareProperty(positionProp).declareProperty(metadataProp);
   }
 
   public long getPosition() {
     return positionProp.getValue();
   }
 
-  public void setPosition(final long position) {
+  public ExporterStateEntry setPosition(final long position) {
     positionProp.setValue(position);
+    return this;
+  }
+
+  public DirectBuffer getMetadata() {
+    return metadataProp.getValue();
+  }
+
+  public ExporterStateEntry setMetadata(final DirectBuffer metadata) {
+    metadataProp.setValue(metadata);
+    return this;
   }
 }
