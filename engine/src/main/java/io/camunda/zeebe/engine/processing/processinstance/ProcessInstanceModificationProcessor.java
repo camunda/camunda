@@ -572,7 +572,9 @@ public final class ProcessInstanceModificationProcessor
     } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
       final var calledActivityElementInstance =
           elementInstanceState.getInstance(elementInstance.getCalledChildInstanceKey());
-      terminateElement(calledActivityElementInstance, sideEffects);
+      if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
+        terminateElement(calledActivityElementInstance, sideEffects);
+      }
     }
 
     stateWriter.appendFollowUpEvent(
