@@ -9,6 +9,7 @@ package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -41,14 +42,15 @@ final class BackupStoreComponent {
     if (store == BackupStoreType.S3) {
       final var s3Config = backupCfg.getS3();
       final S3BackupConfig storeConfig =
-          S3BackupConfig.from(
-              s3Config.getBucketName(),
-              s3Config.getEndpoint(),
-              s3Config.getRegion(),
-              s3Config.getAccessKey(),
-              s3Config.getSecretKey(),
-              s3Config.getApiCallTimeout(),
-              s3Config.isForcePathStyleAccess());
+          new Builder()
+              .withBucketName(s3Config.getBucketName())
+              .withEndpoint(s3Config.getEndpoint())
+              .withRegion(s3Config.getRegion())
+              .withCredentials(s3Config.getAccessKey(), s3Config.getSecretKey())
+              .withApiCallTimeout(s3Config.getApiCallTimeout())
+              .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
+              .withCompressionAlgorithm(s3Config.getCompression())
+              .build();
       return new S3BackupStore(storeConfig);
     } else {
       throw new IllegalArgumentException(

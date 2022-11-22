@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
@@ -88,14 +88,14 @@ final class RestoreAcceptanceIT {
   @BeforeAll
   static void setupBucket() {
     final var config =
-        S3BackupConfig.from(
-            BUCKET_NAME,
-            MINIO.externalEndpoint(),
-            MINIO.region(),
-            MINIO.accessKey(),
-            MINIO.secretKey(),
-            Duration.ofSeconds(25),
-            true);
+        new Builder()
+            .withBucketName(BUCKET_NAME)
+            .withEndpoint(MINIO.externalEndpoint())
+            .withRegion(MINIO.region())
+            .withCredentials(MINIO.accessKey(), MINIO.secretKey())
+            .withApiCallTimeout(Duration.ofSeconds(25))
+            .forcePathStyleAccess(true)
+            .build();
     try (final var client = S3BackupStore.buildClient(config)) {
       client.createBucket(cfg -> cfg.bucket(BUCKET_NAME)).join();
     }

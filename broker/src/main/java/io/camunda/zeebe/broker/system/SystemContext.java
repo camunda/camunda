@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -181,17 +182,17 @@ public final class SystemContext {
 
     if (backup.getStore() == BackupStoreType.S3) {
       final var s3Config = backup.getS3();
-
-      final S3BackupConfig storeConfig =
-          S3BackupConfig.from(
-              s3Config.getBucketName(),
-              s3Config.getEndpoint(),
-              s3Config.getRegion(),
-              s3Config.getAccessKey(),
-              s3Config.getSecretKey(),
-              s3Config.getApiCallTimeout(),
-              s3Config.isForcePathStyleAccess());
       try {
+        final S3BackupConfig storeConfig =
+            new Builder()
+                .withBucketName(s3Config.getBucketName())
+                .withEndpoint(s3Config.getEndpoint())
+                .withRegion(s3Config.getRegion())
+                .withCredentials(s3Config.getAccessKey(), s3Config.getSecretKey())
+                .withApiCallTimeout(s3Config.getApiCallTimeout())
+                .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
+                .withCompressionAlgorithm(s3Config.getCompression())
+                .build();
         S3BackupStore.validateConfig(storeConfig);
       } catch (final Exception e) {
         throw new InvalidConfigurationException("Cannot configure S3 backup store.", e);

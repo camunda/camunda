@@ -9,7 +9,7 @@ package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
+import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -76,14 +76,14 @@ class BackupReplicatedPartitionTest {
     backupRequestHandler = new BackupRequestHandler(clusteringRule.getGateway().getBrokerClient());
     // Create bucket before for storing backups
     final var s3ClientConfig =
-        S3BackupConfig.from(
-            bucketName,
-            S3.externalEndpoint(),
-            S3.region(),
-            S3.accessKey(),
-            S3.secretKey(),
-            Duration.ofSeconds(15),
-            true);
+        new Builder()
+            .withBucketName(bucketName)
+            .withEndpoint(S3.externalEndpoint())
+            .withRegion(S3.region())
+            .withCredentials(S3.accessKey(), S3.secretKey())
+            .withApiCallTimeout(Duration.ofSeconds(15))
+            .forcePathStyleAccess(true)
+            .build();
     try (final var s3Client = S3BackupStore.buildClient(s3ClientConfig)) {
       s3Client.createBucket(builder -> builder.bucket(bucketName).build()).join();
     }

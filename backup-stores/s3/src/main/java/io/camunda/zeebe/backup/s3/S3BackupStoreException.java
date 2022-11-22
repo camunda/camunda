@@ -63,4 +63,16 @@ public abstract sealed class S3BackupStoreException extends RuntimeException {
       super(message, null);
     }
   }
+
+  /**
+   * Thrown when compression of backup contents failed. This is expected when there's no space
+   * available to create a temporary file for the compressed contents but may happen in other cases
+   * as well.
+   */
+  public static final class BackupCompressionFailed extends S3BackupStoreException {
+
+    public BackupCompressionFailed(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }

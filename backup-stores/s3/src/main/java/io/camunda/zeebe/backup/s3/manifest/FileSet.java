@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,9 +48,13 @@ public record FileSet(Map<String, FileMetadata> files) {
   }
 
   @JsonInclude(Include.NON_EMPTY)
-  public record FileMetadata() {
+  public record FileMetadata(Optional<String> compressionAlgorithm) {
+    public static FileMetadata withCompression(final String algorithm) {
+      return new FileMetadata(Optional.of(algorithm));
+    }
+
     public static FileMetadata none() {
-      return new FileMetadata();
+      return new FileMetadata(Optional.empty());
     }
   }
 
