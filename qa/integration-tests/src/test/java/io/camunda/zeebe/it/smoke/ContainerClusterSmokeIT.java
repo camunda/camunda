@@ -9,6 +9,10 @@ package io.camunda.zeebe.it.smoke;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +43,34 @@ final class ContainerClusterSmokeIT {
       // then
       final var result = topology.join(5L, TimeUnit.SECONDS);
       assertThat(result.getBrokers()).as("There is one connected broker").hasSize(1);
+    }
+  }
+
+  @ContainerSmokeTest
+  void deployModelAndStartInstance() {
+    // given
+    final BpmnModelInstance processModel =
+        Bpmn.createExecutableProcess("smoke").startEvent().endEvent().done();
+    try (final var client = cluster.newClientBuilder().build()) {
+      // when
+      final DeploymentEvent deploymentEvent =
+          client
+              .newDeployResourceCommand()
+              .addProcessModel(processModel, "smoke.bpmn")
+              .send()
+              .join();
+      final ProcessInstanceResult processInstanceResult =
+          client
+              .newCreateInstanceCommand()
+              .bpmnProcessId("smoke")
+              .latestVersion()
+              .withResult()
+              .send()
+              .join();
+
+      // then
+      assertThat(processInstanceResult.getProcessDefinitionKey())
+          .isEqualTo(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
     }
   }
 }
