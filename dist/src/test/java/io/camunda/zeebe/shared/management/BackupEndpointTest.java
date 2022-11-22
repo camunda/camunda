@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
+import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.shared.management.BackupEndpoint.ErrorResponse;
 import io.camunda.zeebe.shared.management.BackupEndpoint.TakeBackupResponse;
@@ -159,7 +160,7 @@ final class BackupEndpointTest {
     private BackupStatus createPartitionBackupStatus() {
       return new BackupStatus(
           1L,
-          BackupStatusCode.COMPLETED,
+          State.COMPLETED,
           Optional.empty(),
           List.of(createPartitionBackupStatus(1), createPartitionBackupStatus(2)));
     }
@@ -180,7 +181,7 @@ final class BackupEndpointTest {
     private BackupStatus createFailedBackupStatus() {
       return new BackupStatus(
           1L,
-          BackupStatusCode.FAILED,
+          State.FAILED,
           Optional.of("Failed backup"),
           List.of(createPartitionBackupStatus(1), createFailedPartitionBackupStatus(2)));
     }

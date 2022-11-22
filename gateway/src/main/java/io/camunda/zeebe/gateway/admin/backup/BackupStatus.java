@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
-import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +26,6 @@ import java.util.Optional;
  */
 public record BackupStatus(
     long backupId,
-    BackupStatusCode status,
+    State status,
     Optional<String> failureReason,
     List<PartitionBackupStatus> partitions) {}
