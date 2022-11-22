@@ -1,0 +1,173 @@
+name: Benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Specifies the name of the benchmark'
+        required: true
+      ref:
+        description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
+        default: 'main'
+        required: false
+      cluster:
+        description: 'Specifies which cluster to deploy the benchmark on'
+        default: 'zeebe-cluster'
+        required: false
+      cluster-region:
+        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
+        default: europe-west1-b
+        required: false
+      load:
+        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish'
+        default: 'worker, starter=200'
+        required: false
+  workflow_call:
+    inputs:
+      name:
+        description: 'Specifies the name of the benchmark'
+        type: string
+        required: true
+      ref:
+        description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
+        default: 'main'
+        type: string
+        required: false
+      cluster:
+        description: 'Specifies which cluster to deploy the benchmark on'
+        default: 'zeebe-cluster'
+        type: string
+        required: false
+      cluster-region:
+        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
+        default: europe-west1-b
+        type: string
+        required: false
+      load:
+        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish'
+        default: 'worker, starter=200'
+        type: string
+        required: false
+jobs:
+  build-zeebe-image:
+    name: Build zeebe image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.branch }}
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: zeebe-io
+          install_components: gke-gcloud-auth-plugin, kubectl
+      - run: gcloud auth configure-docker
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          maven-cache: 'true'
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C
+      - uses: ./.github/actions/build-docker
+        with:
+          repository: gcr.io/zeebe-io/zeebe
+          version: ${{ inputs.name }}
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+  deploy-benchmark-cluster:
+    name: Deploy benchmark cluster
+    needs:
+      - build-zeebe-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: zeebe-io
+          install_components: gke-gcloud-auth-plugin, kubectl
+      - uses: google-github-actions/get-gke-credentials@v0.8.2
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - uses: azure/setup-helm@v3
+      - name: Add camunda helm repo
+        run: |
+          helm repo add camunda https://helm.camunda.io
+          helm repo update
+      - name: Deploy benchmark installation
+        run: >
+          helm upgrade --install
+          --namespace ${{ inputs.ref }}
+          --create-namespace
+          ${{ inputs.name }} camunda/camunda-platform
+          -f benchmarks/setup/default/zeebe-values.yaml
+          --set zeebe.image.repository=gcr.io/zeebe-io/zeebe
+          --set zeebe.image.tag=${{ inputs.name }}
+          --set zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
+          --set zeebe-gateway.image.tag=${{ inputs.name }}
+  deploy-benchmark-load:
+    name: Deploy benchmark load
+    needs:
+      - deploy-benchmark-cluster
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: zeebe-io
+          install_components: gke-gcloud-auth-plugin, kubectl
+      - uses: google-github-actions/get-gke-credentials@v0.8.2
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Deploy and configure additional benchmark components
+        uses: actions/github-script@v6
+        with:
+          # language=javascript
+          script: |
+            const namespace = context.payload.inputs.name
+            const load = context.payload.inputs.load
+            const components = load.split(", ")
+            for (const component of components) {
+              if (component.includes("=")) {
+                const nameAndRate = component.split("=")
+                const name = nameAndRate.at(0)
+                const rate = nameAndRate.at(1)
+                const manifest = `benchmarks/setup/default/${name}.yaml`
+                await exec.exec('kubectl', ['delete',
+                  `--ignore-not-found=true`,
+                  `--namespace=${namespace}`,
+                  'configmap', `${name}-config`])
+                await exec.exec('kubectl', ['create',
+                  `--namespace=${namespace}`, 'configmap', `${name}-config`,
+                  `--from-literal=CONFIG_FORCE_app_starter_rate=${rate}`,
+                  `--from-literal=CONFIG_FORCE_app_brokerUrl=${namespace}-zeebe-gateway:26500`])
+                await exec.exec(`kubectl apply -n ${namespace} -f ${manifest}`)
+              } else {
+                const manifest = `benchmarks/setup/default/${component}.yaml`
+                await exec.exec('kubectl', ['delete',
+                  `--ignore-not-found=true`,
+                  `--namespace=${namespace}`,
+                  'configmap', `${component}-config`])
+                await exec.exec('kubectl', ['create',
+                  `--namespace=${namespace}`,
+                  'configmap', `${component}-config`,
+                  `--from-literal=CONFIG_FORCE_app_brokerUrl=${namespace}-zeebe-gateway:26500`])
+                await exec.exec(`kubectl apply -n ${namespace} -f ${manifest}`)
+              }
+            }
