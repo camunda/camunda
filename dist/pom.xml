@@ -185,22 +185,21 @@
       <artifactId>swagger-annotations</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>com.fasterxml.jackson.datatype</groupId>
-      <artifactId>jackson-datatype-jsr310</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!--
       the following are only used in tests, but we cannot scope them as tests as they're transitive
       dependencies required at runtime by other modules; if we scope them as tests here, they will
       be omitted from the resulting artifact, causing ClassNotFoundException errors at runtime
       -->
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -373,6 +372,8 @@
             <ignoredNonTestScopedDependency>io.netty:netty-handler</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-protocol</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
