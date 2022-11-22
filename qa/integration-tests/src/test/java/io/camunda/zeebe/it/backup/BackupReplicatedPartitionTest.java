@@ -15,9 +15,9 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
+import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -116,7 +116,7 @@ class BackupReplicatedPartitionTest {
     clusteringRule.forceNewLeaderForPartition(anyFollower, 1);
 
     // then
-    assertThat(getBackupStatus(backupId).status()).isEqualTo(BackupStatusCode.COMPLETED);
+    assertThat(getBackupStatus(backupId).status()).isEqualTo(State.COMPLETED);
   }
 
   @Test
@@ -157,7 +157,7 @@ class BackupReplicatedPartitionTest {
         .untilAsserted(
             () -> {
               final var status = getBackupStatus(backupId);
-              assertThat(status.status()).isEqualTo(BackupStatusCode.COMPLETED);
+              assertThat(status.status()).isEqualTo(State.COMPLETED);
               assertThat(status.backupId()).isEqualTo(backupId);
               assertThat(status.partitions()).hasSize(clusteringRule.getPartitionCount());
             });
