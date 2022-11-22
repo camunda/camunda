@@ -9,31 +9,75 @@ package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
 import io.camunda.zeebe.model.bpmn.builder.AbstractActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
-import io.camunda.zeebe.model.bpmn.builder.ExclusiveGatewayBuilder;
+import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
+import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 
 public class BoundaryEventBuilder {
 
-  private final String taskId;
+  private final boolean timerEventHasTerminateEndEvent;
+  private final boolean errorEventHasTerminateEndEvent;
+  private final String flowNodeId;
   private final String joinGatewayId;
-  private final ExclusiveGatewayBuilder exclusiveGatewayBuilder;
+  private boolean joinGatewayCreated;
 
-  public BoundaryEventBuilder(
-      final String taskId, final AbstractActivityBuilder<?, ?> taskBuilder) {
-    this.taskId = taskId;
-    joinGatewayId = "boundary_join_" + taskId;
-    exclusiveGatewayBuilder = taskBuilder.exclusiveGateway(joinGatewayId);
+  public BoundaryEventBuilder(final ConstructionContext context, final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
+    joinGatewayId = "boundary_join_" + flowNodeId;
+    timerEventHasTerminateEndEvent =
+        context.getRandom().nextDouble() < RandomProcessGenerator.PROBABILITY_TERMINATE_END_EVENT;
+    errorEventHasTerminateEndEvent =
+        context.getRandom().nextDouble() < RandomProcessGenerator.PROBABILITY_TERMINATE_END_EVENT;
+  }
+
+  private AbstractFlowNodeBuilder<?, ?> connectJoinGateway(
+      final AbstractFlowNodeBuilder<?, ?> flowNodeBuilder) {
+    joinGatewayCreated = true;
+    return flowNodeBuilder.exclusiveGateway(joinGatewayId);
   }
 
   public AbstractFlowNodeBuilder<?, ?> connectBoundaryErrorEvent(
-      final String boundaryEventId, final String errorCode) {
-    return ((AbstractActivityBuilder<?, ?>) exclusiveGatewayBuilder.moveToNode(taskId))
-        .boundaryEvent(boundaryEventId, b -> b.error(errorCode))
-        .connectTo(joinGatewayId);
+      final AbstractFlowNodeBuilder<?, ?> flowNodeBuilder,
+      final String errorCode,
+      final String boundaryEventId) {
+    var builder = flowNodeBuilder;
+    if (!joinGatewayCreated && !errorEventHasTerminateEndEvent) {
+      builder = connectJoinGateway(flowNodeBuilder);
+    }
+
+    final var boundaryEventBuilder =
+        ((AbstractActivityBuilder<?, ?>) builder.moveToNode(flowNodeId))
+            .boundaryEvent(boundaryEventId, b -> b.error(errorCode));
+
+    if (errorEventHasTerminateEndEvent) {
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(flowNodeId);
+    } else {
+      return boundaryEventBuilder.connectTo(joinGatewayId);
+    }
   }
 
-  public AbstractFlowNodeBuilder<?, ?> connectBoundaryTimerEvent(final String boundaryEventId) {
-    return ((AbstractActivityBuilder<?, ?>) exclusiveGatewayBuilder.moveToNode(taskId))
-        .boundaryEvent(boundaryEventId, b -> b.timerWithDurationExpression(boundaryEventId))
-        .connectTo(joinGatewayId);
+  public AbstractFlowNodeBuilder<?, ?> connectBoundaryTimerEvent(
+      final AbstractFlowNodeBuilder<?, ?> flowNodeBuilder, final String boundaryEventId) {
+    var builder = flowNodeBuilder;
+    if (!joinGatewayCreated && !timerEventHasTerminateEndEvent) {
+      builder = connectJoinGateway(flowNodeBuilder);
+    }
+
+    final var boundaryEventBuilder =
+        ((AbstractActivityBuilder<?, ?>) builder.moveToNode(flowNodeId))
+            .boundaryEvent(boundaryEventId, b -> b.timerWithDurationExpression(boundaryEventId));
+
+    if (timerEventHasTerminateEndEvent) {
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(flowNodeId);
+    } else {
+      return boundaryEventBuilder.connectTo(joinGatewayId);
+    }
+  }
+
+  public boolean timerEventHasTerminateEndEvent() {
+    return timerEventHasTerminateEndEvent;
+  }
+
+  public boolean errorEventHasTerminateEndEvent() {
+    return errorEventHasTerminateEndEvent;
   }
 }

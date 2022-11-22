@@ -21,6 +21,16 @@ mvn dependency:copy -B \
     -Dmdep.stripVersion=true
 ```
 
+## Make sure BuildKit is enabled
+
+The Dockerfile for Zeebe requires [BuildKit](https://docs.docker.com/build/buildkit/#getting-started),
+which is enabled by default if Docker Desktop is installed.
+On Linux you may need to enable it explictly by setting the environment variable
+
+```bash
+DOCKER_BUILDKIT=1
+```
+
 ## Build the Image
 
 Now build the image for your local platform (supported for AMD64 and ARM64):
@@ -30,7 +40,7 @@ docker build --build-arg DISTBALL=camunda-zeebe.tar.gz -t my-zeebe:latest .
 ```
 
 If you need a specific version of the [`eclipse-temurin:17-jre-focal`](https://hub.docker.com/layers/library/eclipse-temurin/17-jre-focal/images/sha256-e7fe469c4e729ff0ed6ff464f41eaff0e4cb9b6fe7efe71754d8935c8118eb87?context=explore) base image,
-you can override the default BASE_DIGEST[_ADM64|ARM64] depending on your local architecture like that:
+you can override the default BASE_DIGEST[_AMD64|ARM64] depending on your local architecture like that:
 amd64: `--build-arg BASE_DIGEST_AMD64="sha256:00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"`
 arm64: `--build-arg BASE_DIGEST_ARM64="sha256:ce46be0c4b4edd9f519e99ad68a6b5765abe577fbf1662d8ad2550838eb29823"`
 

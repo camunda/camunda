@@ -33,6 +33,7 @@ public class SubProcessBlockBuilder extends AbstractBlockBuilder {
   private final String subProcessStartEventId;
   private final String subProcessEndEventId;
   private final String subProcessBoundaryTimerEventId;
+  private final BoundaryEventBuilder boundaryEventBuilder;
 
   private final boolean hasBoundaryEvents;
   private final boolean hasBoundaryTimerEvent;
@@ -50,6 +51,7 @@ public class SubProcessBlockBuilder extends AbstractBlockBuilder {
     subProcessEndEventId = idGenerator.nextId();
 
     subProcessBoundaryTimerEventId = "boundary_timer_" + elementId;
+    boundaryEventBuilder = new BoundaryEventBuilder(context, elementId);
 
     final boolean goDeeper = random.nextInt(maxDepth) > currentDepth;
 
@@ -82,11 +84,10 @@ public class SubProcessBlockBuilder extends AbstractBlockBuilder {
 
     AbstractFlowNodeBuilder result = subProcessBuilderDone;
     if (hasBoundaryEvents) {
-      final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(getElementId(), subProcessBuilderDone);
-
       if (hasBoundaryTimerEvent) {
-        result = boundaryEventBuilder.connectBoundaryTimerEvent(subProcessBoundaryTimerEventId);
+        result =
+            boundaryEventBuilder.connectBoundaryTimerEvent(
+                subProcessBuilderDone, subProcessBoundaryTimerEventId);
       }
     }
 
@@ -114,13 +115,16 @@ public class SubProcessBlockBuilder extends AbstractBlockBuilder {
     final var internalExecutionPath = embeddedSubProcessBuilder.findRandomExecutionPath(context);
 
     if (!hasBoundaryEvents || !internalExecutionPath.canBeInterrupted() || random.nextBoolean()) {
-      result.append(internalExecutionPath);
+      final var isDifferentFlowScope = true;
+      result.append(internalExecutionPath, isDifferentFlowScope);
     } else {
       internalExecutionPath.cutAtRandomPosition(random);
-      result.append(internalExecutionPath);
+      final var isDifferentFlowScope = true;
+      result.append(internalExecutionPath, isDifferentFlowScope);
       if (hasBoundaryTimerEvent) {
         result.appendExecutionSuccessor(
             new StepTriggerTimerBoundaryEvent(subProcessBoundaryTimerEventId), activateSubProcess);
+        result.setReachedTerminateEndEvent(boundaryEventBuilder.timerEventHasTerminateEndEvent());
       } // extend here for other boundary events
     }
 

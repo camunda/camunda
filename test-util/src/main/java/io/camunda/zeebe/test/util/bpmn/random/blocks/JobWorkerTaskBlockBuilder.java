@@ -14,7 +14,6 @@ import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.IDGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.AbstractExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateAndCompleteJob;
@@ -36,6 +35,7 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
   private final String errorCode;
   private final String boundaryErrorEventId;
   private final String boundaryTimerEventId;
+  private final BoundaryEventBuilder boundaryEventBuilder;
 
   private final boolean hasBoundaryEvents;
   private final boolean hasBoundaryErrorEvent;
@@ -45,11 +45,11 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
       taskBuilder;
 
   public JobWorkerTaskBlockBuilder(
-      final IDGenerator idGenerator,
-      final Random random,
+      final ConstructionContext context,
       final Function<AbstractFlowNodeBuilder<?, ?>, AbstractJobWorkerTaskBuilder<?, ?>>
           taskBuilder) {
-    super(idGenerator.nextId());
+    super(context.getIdGenerator().nextId());
+    final Random random = context.getRandom();
     this.taskBuilder = taskBuilder;
 
     jobType = "job_" + elementId;
@@ -57,6 +57,7 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
 
     boundaryErrorEventId = "boundary_error_" + elementId;
     boundaryTimerEventId = "boundary_timer_" + elementId;
+    boundaryEventBuilder = new BoundaryEventBuilder(context, elementId);
 
     hasBoundaryErrorEvent =
         random.nextDouble() < RandomProcessGenerator.PROBABILITY_BOUNDARY_ERROR_EVENT;
@@ -81,15 +82,16 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
     AbstractFlowNodeBuilder<?, ?> result = jobWorkerTaskBuilder;
 
     if (hasBoundaryEvents) {
-      final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(getElementId(), jobWorkerTaskBuilder);
-
       if (hasBoundaryErrorEvent) {
-        result = boundaryEventBuilder.connectBoundaryErrorEvent(boundaryErrorEventId, errorCode);
+        result =
+            boundaryEventBuilder.connectBoundaryErrorEvent(
+                jobWorkerTaskBuilder, errorCode, boundaryErrorEventId);
       }
 
       if (hasBoundaryTimerEvent) {
-        result = boundaryEventBuilder.connectBoundaryTimerEvent(boundaryTimerEventId);
+        result =
+            boundaryEventBuilder.connectBoundaryTimerEvent(
+                jobWorkerTaskBuilder, boundaryTimerEventId);
       }
     }
 
@@ -116,7 +118,7 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
     result.append(buildStepsForFailedExecutions(context.getRandom()));
 
     result.appendExecutionSuccessor(
-        buildStepForSuccessfulExecution(context.getRandom()), activateStep);
+        buildStepForSuccessfulExecution(context.getRandom(), result), activateStep);
 
     return result;
   }
@@ -145,13 +147,18 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
    * Successful execution is any execution which moves the token past the service task, so that the
    * process can continue.
    */
-  private AbstractExecutionStep buildStepForSuccessfulExecution(final Random random) {
+  private AbstractExecutionStep buildStepForSuccessfulExecution(
+      final Random random, final ExecutionPathSegment executionPathSegment) {
     final AbstractExecutionStep result;
 
     if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result = new StepActivateJobAndThrowError(jobType, errorCode, getElementId());
+      executionPathSegment.setReachedTerminateEndEvent(
+          boundaryEventBuilder.errorEventHasTerminateEndEvent());
     } else if (hasBoundaryTimerEvent && random.nextBoolean()) {
       result = new StepTriggerTimerBoundaryEvent(boundaryTimerEventId);
+      executionPathSegment.setReachedTerminateEndEvent(
+          boundaryEventBuilder.timerEventHasTerminateEndEvent());
     } else {
       result = new StepActivateAndCompleteJob(jobType, getElementId());
     }
@@ -188,8 +195,7 @@ public class JobWorkerTaskBlockBuilder extends AbstractBlockBuilder {
 
     @Override
     public BlockBuilder createBlockBuilder(final ConstructionContext context) {
-      return new JobWorkerTaskBlockBuilder(
-          context.getIdGenerator(), context.getRandom(), taskBuilder);
+      return new JobWorkerTaskBlockBuilder(context, taskBuilder);
     }
 
     @Override

@@ -27,6 +27,7 @@ public class UserTaskBlockBuilder extends AbstractBlockBuilder {
 
   private final String boundaryErrorEventId;
   private final String boundaryTimerEventId;
+  private final BoundaryEventBuilder boundaryEventBuilder;
   private final String errorCode;
   private final boolean hasBoundaryEvents;
   private final boolean hasBoundaryErrorEvent;
@@ -38,6 +39,7 @@ public class UserTaskBlockBuilder extends AbstractBlockBuilder {
 
     boundaryErrorEventId = "boundary_error_" + elementId;
     boundaryTimerEventId = "boundary_timer_" + elementId;
+    boundaryEventBuilder = new BoundaryEventBuilder(context, elementId);
     errorCode = "error_" + elementId;
 
     hasBoundaryErrorEvent =
@@ -54,15 +56,14 @@ public class UserTaskBlockBuilder extends AbstractBlockBuilder {
     AbstractFlowNodeBuilder<?, ?> result = taskBuilder;
 
     if (hasBoundaryEvents) {
-      final BoundaryEventBuilder boundaryEventBuilder =
-          new BoundaryEventBuilder(getElementId(), taskBuilder);
-
       if (hasBoundaryErrorEvent) {
-        result = boundaryEventBuilder.connectBoundaryErrorEvent(boundaryErrorEventId, errorCode);
+        result =
+            boundaryEventBuilder.connectBoundaryErrorEvent(
+                taskBuilder, errorCode, boundaryErrorEventId);
       }
 
       if (hasBoundaryTimerEvent) {
-        result = boundaryEventBuilder.connectBoundaryTimerEvent(boundaryTimerEventId);
+        result = boundaryEventBuilder.connectBoundaryTimerEvent(taskBuilder, boundaryTimerEventId);
       }
     }
 
@@ -86,8 +87,10 @@ public class UserTaskBlockBuilder extends AbstractBlockBuilder {
     if (hasBoundaryTimerEvent && random.nextBoolean()) {
       result.appendExecutionSuccessor(
           new StepTriggerTimerBoundaryEvent(boundaryTimerEventId), activateStep);
+      result.setReachedTerminateEndEvent(boundaryEventBuilder.timerEventHasTerminateEndEvent());
     } else if (hasBoundaryErrorEvent && random.nextBoolean()) {
       result.appendExecutionSuccessor(new StepThrowError(getElementId(), errorCode), activateStep);
+      result.setReachedTerminateEndEvent(boundaryEventBuilder.errorEventHasTerminateEndEvent());
     } else {
       result.appendExecutionSuccessor(new StepCompleteUserTask(getElementId()), activateStep);
     }

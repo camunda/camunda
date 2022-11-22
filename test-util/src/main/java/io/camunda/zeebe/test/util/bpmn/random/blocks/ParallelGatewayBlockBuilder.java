@@ -128,7 +128,8 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
       final BlockBuilder blockBuilder) {
     final var branchExecutionPath = blockBuilder.findRandomExecutionPath(context);
     executionPathSegment.mergeVariableDefaults(branchExecutionPath);
-    return new BranchPointer(branchExecutionPath.getScheduledSteps());
+    final boolean shouldStopAfterLastStep = branchExecutionPath.hasReachedTerminateEndEvent();
+    return new BranchPointer(branchExecutionPath.getScheduledSteps(), shouldStopAfterLastStep);
   }
 
   // shuffles the lists together by iteratively taking the first item from one of the lists
@@ -144,11 +145,16 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
     purgeEmptyBranches(branchPointers);
 
     while (!branchPointers.isEmpty()) {
-      final var tuple = branchPointers.get(random.nextInt(branchPointers.size()));
+      final var branchpointer = branchPointers.get(random.nextInt(branchPointers.size()));
 
-      takeNextItemAndAppendToExecutionPath(executionPath, tuple);
-      copyAutomaticSteps(tuple, executionPath);
+      takeNextItemAndAppendToExecutionPath(executionPath, branchpointer);
+      copyAutomaticSteps(branchpointer, executionPath);
       purgeEmptyBranches(branchPointers);
+
+      if (branchpointer.isEmpty() && branchpointer.shouldStopAfterLastStep) {
+        executionPath.setReachedTerminateEndEvent(true);
+        break;
+      }
     }
   }
 
@@ -189,9 +195,12 @@ public class ParallelGatewayBlockBuilder extends AbstractBlockBuilder {
   private static final class BranchPointer {
 
     private final List<ScheduledExecutionStep> remainingSteps;
+    private final boolean shouldStopAfterLastStep;
 
-    private BranchPointer(final List<ScheduledExecutionStep> remainingSteps) {
+    private BranchPointer(
+        final List<ScheduledExecutionStep> remainingSteps, final boolean shouldStopAfterLastStep) {
       this.remainingSteps = new ArrayList<>(remainingSteps);
+      this.shouldStopAfterLastStep = shouldStopAfterLastStep;
     }
 
     private List<ScheduledExecutionStep> getRemainingSteps() {

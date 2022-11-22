@@ -29,6 +29,10 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public final class ExecutionPathSegment {
 
+  // If we have reached a terminate end event we want to stop generating execution steps for a
+  // specific flow scope. By setting this flag to true no new execution steps will be added for the
+  // flow scope this segment is in.
+  private boolean reachedTerminateEndEvent = false;
   private final List<ScheduledExecutionStep> scheduledSteps = new ArrayList<>();
   private final Map<String, Object> variableDefaults = new HashMap<>();
 
@@ -87,10 +91,39 @@ public final class ExecutionPathSegment {
         new ScheduledExecutionStep(logicalPredecessor, executionPredecessor, executionStep));
   }
 
+  /**
+   * Appends the steps of the passed execution path segment to the current segment.
+   *
+   * @param pathToAdd execution path segment to append to this segment
+   */
   public void append(final ExecutionPathSegment pathToAdd) {
+    append(pathToAdd, false);
+  }
+
+  /**
+   * Appends the steps of the passed execution path segment to the current segment.
+   *
+   * <p>The steps are only appended when the current segment has not reached a terminate end event.
+   * The reasoning behind this is that when a terminate end event has been reached processing must
+   * stop. No more steps should get executed.
+   *
+   * <p>This is only true in some cases. The terminate end event terminate the event's flow scope.
+   * When there is nested flow scopes, for example with a subprocess, only steps of this subprocess
+   * should not be appended. The steps of other flow scopes are not terminated by the end event.
+   * These steps should be appended. Because of this a boolean could be passed to force the steps to
+   * be appended.
+   *
+   * @param pathToAdd execution path segment to append to this segment
+   * @param force forces the path to be appended, even when a terminate end event has already been
+   *     reached
+   */
+  public void append(final ExecutionPathSegment pathToAdd, final boolean force) {
     mergeVariableDefaults(pathToAdd);
 
-    pathToAdd.getScheduledSteps().forEach(this::append);
+    if (!hasReachedTerminateEndEvent() || force) {
+      pathToAdd.getScheduledSteps().forEach(this::append);
+    }
+    reachedTerminateEndEvent = pathToAdd.hasReachedTerminateEndEvent() && !force;
   }
 
   public void append(final ScheduledExecutionStep scheduledExecutionStep) {
@@ -257,6 +290,14 @@ public final class ExecutionPathSegment {
   @Override
   public String toString() {
     return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
+  }
+
+  public boolean hasReachedTerminateEndEvent() {
+    return reachedTerminateEndEvent;
+  }
+
+  public void setReachedTerminateEndEvent(final boolean reachedTerminateEndEvent) {
+    this.reachedTerminateEndEvent = reachedTerminateEndEvent;
   }
 
   /**
