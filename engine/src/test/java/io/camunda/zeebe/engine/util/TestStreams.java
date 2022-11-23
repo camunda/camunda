@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -22,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -324,7 +325,7 @@ public final class TestStreams {
     return logStreamBatchWriter;
   }
 
-  public static class FluentLogWriter {
+  public static class FluentLogWriter implements LogStreamWriter {
 
     protected final RecordMetadata metadata = new RecordMetadata();
     protected final LogStreamRecordWriter writer;
@@ -389,6 +390,11 @@ public final class TestStreams {
     }
 
     public long write() {
+      return tryWrite().join();
+    }
+
+    @Override
+    public ActorFuture<Long> tryWrite() {
       writer.sourceRecordPosition(sourceRecordPosition);
 
       if (key >= 0) {
@@ -400,7 +406,7 @@ public final class TestStreams {
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 
-      return doRepeatedly(writer::tryWrite).until(p -> p >= 0);
+      return writer.tryWrite();
     }
   }
 

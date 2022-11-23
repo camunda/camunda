@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -23,7 +24,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 public class StreamProcessingComposite {
 
@@ -132,7 +132,7 @@ public class StreamProcessingComposite {
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
     final var batchWriter = streams.setupBatchWriter(getLogName(partitionId), recordsToWrite);
-    return writeActor.submit(batchWriter::tryWrite).join();
+    return writeActor.submit(batchWriter).join();
   }
 
   public long writeCommandOnPartition(
@@ -143,7 +143,7 @@ public class StreamProcessingComposite {
             .recordType(RecordType.COMMAND)
             .intent(intent)
             .event(value);
-    return writeActor.submit(writer::write).join();
+    return writeActor.submit(writer).join();
   }
 
   public long writeCommandOnPartition(
@@ -155,7 +155,7 @@ public class StreamProcessingComposite {
             .recordType(RecordType.COMMAND)
             .intent(intent)
             .event(value);
-    return writeActor.submit(writer::write).join();
+    return writeActor.submit(writer).join();
   }
 
   public long writeCommand(final long key, final Intent intent, final UnpackedObject value) {
@@ -166,7 +166,7 @@ public class StreamProcessingComposite {
             .key(key)
             .intent(intent)
             .event(value);
-    return writeActor.submit(writer::write).join();
+    return writeActor.submit(writer).join();
   }
 
   public long writeCommand(final Intent intent, final UnpackedObject value) {
@@ -176,7 +176,7 @@ public class StreamProcessingComposite {
             .recordType(RecordType.COMMAND)
             .intent(intent)
             .event(value);
-    return writeActor.submit(writer::write).join();
+    return writeActor.submit(writer).join();
   }
 
   public long writeCommand(
@@ -192,7 +192,7 @@ public class StreamProcessingComposite {
             .requestStreamId(requestStreamId)
             .intent(intent)
             .event(value);
-    return writeActor.submit(writer::write).join();
+    return writeActor.submit(writer).join();
   }
 
   public static String getLogName(final int partitionId) {
@@ -201,8 +201,10 @@ public class StreamProcessingComposite {
 
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
-    public ActorFuture<Long> submit(final Callable<Long> write) {
-      return actor.call(write);
+    public ActorFuture<Long> submit(final LogStreamWriter writer) {
+      final ActorFuture<Long> future = actor.createFuture();
+      actor.runOnCompletion(writer.tryWrite(), future);
+      return future;
     }
   }
 
