@@ -19,6 +19,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 final class PartitionTransitionProcess {
@@ -164,5 +165,31 @@ final class PartitionTransitionProcess {
       LOG.info("Received cancel signal for transition to {} on term {}", role, term);
     }
     cancelRequested = true;
+  }
+
+  boolean isCompleted() {
+    return completed;
+  }
+
+  @Override
+  public String toString() {
+    return "PartitionTransitionProcess{"
+        + "term="
+        + term
+        + ", role="
+        + role
+        + ", cancelRequested="
+        + cancelRequested
+        + ", completed="
+        + completed
+        + ", stepsToPrepare=["
+        + stepsToPrepare.stream()
+            .map(PartitionTransitionStep::getName)
+            .collect(Collectors.joining(", "))
+        + "], pendingSteps=["
+        + pendingSteps.stream()
+            .map(PartitionTransitionStep::getName)
+            .collect(Collectors.joining(", "))
+        + "]}";
   }
 }
