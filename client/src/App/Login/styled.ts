@@ -12,7 +12,7 @@ import {Copyright as BasicCopyright} from 'modules/components/Copyright';
 import {Input} from './Input';
 import {styles} from '@carbon/elements';
 
-const Container = styled.div`
+const Container = styled.main`
   display: flex;
   flex-direction: column;
   align-items: center;

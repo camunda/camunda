@@ -19,42 +19,46 @@ const GlobalStyles = createGlobalStyle<GlobalStylesProps>`
         background-color: ${theme.colors.ui01};
       }
 
-      /*
+      // TODO: remove cm-header when USE_NEW_APP_HEADER is removed
+      main,
+      cm-header {
+        /*
         these elements have custom styling for :focus only on keyboard focus,
         not on mouse click (clicking them does not show the focus style)
       */
-      button:focus,
-      code:focus,
-      a:focus {
-        ${tabKeyPressed
-          ? interactions.focus.css
-          : css`
-              outline: none;
-            `};
-      }
+        button:focus,
+        code:focus,
+        a:focus {
+          ${tabKeyPressed
+            ? interactions.focus.css
+            : css`
+                outline: none;
+              `};
+        }
 
-      /*
+        /*
         these elements have custom styling for :focus on keyboard & mouse focus,
         (clicking them shows the focus style)
       */
-      input,
-      textarea,
-      select {
-        ${interactions.focus.selector};
-      }
+        input,
+        textarea,
+        select {
+          ${interactions.focus.selector};
+        }
 
-      input[aria-invalid='true'],
-      textarea[aria-invalid='true'],
-      select[aria-invalid='true'] {
-        box-shadow: 0 0 0 1px ${theme.colors.incidentsAndErrors},
-          0 0 0 4px ${theme.colors.outlineError};
-      }
+        input[aria-invalid='true'],
+        textarea[aria-invalid='true'],
+        select[aria-invalid='true'] {
+          box-shadow: 0 0 0 1px ${theme.colors.incidentsAndErrors},
+            0 0 0 4px ${theme.colors.outlineError};
+        }
 
-      input:not(:focus)[aria-invalid='true'],
-      textarea:not(:focus)[aria-invalid='true'],
-      select:not(:focus)[aria-invalid='true'] {
-        border-color: ${theme.colors.incidentsAndErrors};
-        box-shadow: none;
+        input:not(:focus)[aria-invalid='true'],
+        textarea:not(:focus)[aria-invalid='true'],
+        select:not(:focus)[aria-invalid='true'] {
+          border-color: ${theme.colors.incidentsAndErrors};
+          box-shadow: none;
+        }
       }
     `;
   }}
