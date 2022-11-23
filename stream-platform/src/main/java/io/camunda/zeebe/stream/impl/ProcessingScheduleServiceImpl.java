@@ -11,10 +11,10 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.util.exception.RecoverableException;
 import java.time.Duration;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -32,8 +32,11 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   private final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier;
   private LogStreamBatchWriter logStreamBatchWriter;
   private ActorControl actorControl;
-  private AbortableRetryStrategy writeRetryStrategy;
   private CompletableActorFuture<Void> openFuture;
+
+  // this flag ensures that we don't overlap multiple scheduled tasks; if a tasks is in the process
+  // of being written out, then new tasks are buffered until that's finished
+  private boolean isWriting;
 
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
@@ -82,7 +85,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
     }
 
     openFuture = new CompletableActorFuture<>();
-    writeRetryStrategy = new AbortableRetryStrategy(control);
     final var writerFuture = writerAsyncSupplier.get();
     control.runOnCompletion(
         writerFuture,
@@ -102,7 +104,6 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   public void close() {
     actorControl = null;
     logStreamBatchWriter = null;
-    writeRetryStrategy = null;
     openFuture = null;
   }
 
@@ -114,7 +115,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
       }
 
       final var currentStreamProcessorPhase = streamProcessorPhaseSupplier.get();
-      if (currentStreamProcessorPhase != Phase.PROCESSING) {
+      if (currentStreamProcessorPhase != Phase.PROCESSING || isWriting) {
 
         // We want to execute the scheduled tasks only if the StreamProcessor is in the PROCESSING
         // PHASE
@@ -125,8 +126,9 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
         //  * we are not running during suspending
         //
         LOG.trace(
-            "Not able to execute scheduled task right now. [streamProcessorPhase: {}]",
-            currentStreamProcessorPhase);
+            "Not able to execute scheduled task right now. [streamProcessorPhase: {}, isWriting: {}]",
+            currentStreamProcessorPhase,
+            isWriting);
         actorControl.submit(toRunnable(task));
         return;
       }
@@ -146,20 +148,18 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
                       .sourceIndex(entry.sourceIndex())
                       .valueWriter(entry.recordValue())
                       .done());
-      // we need to retry the writing if the dispatcher return zero or negative position (this means
-      // it was full during writing)
-      // it will be freed from the LogStorageAppender concurrently, which means we might be able to
-      // write later
-      final var writeFuture =
-          writeRetryStrategy.runWithRetry(
-              () -> {
-                LOG.trace("Write scheduled TaskResult to dispatcher!");
-                return logStreamBatchWriter.tryWrite() >= 0;
-              },
-              abortCondition);
 
+      // no need to check the abortCondition in the callback as the callback is not executed if
+      // close was requested
+      final ActorFuture<Long> writeFuture = actorControl.createFuture();
+
+      // ensure we don't overlap new writes until we're done with this write batch
+      isWriting = true;
+      writeRecords(writeFuture);
       writeFuture.onComplete(
           (v, t) -> {
+            isWriting = false;
+
             if (t != null) {
               // todo handle error;
               //   can happen if we tried to write a too big batch of records
@@ -169,5 +169,26 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
             }
           });
     };
+  }
+
+  private void writeRecords(final ActorFuture<Long> result) {
+    actorControl.runOnCompletion(
+        logStreamBatchWriter.tryWrite(),
+        (position, error) -> {
+          if (error != null) {
+            // we need to retry the writing if the dispatcher return zero or negative position
+            // (this means it was full during writing). it will be freed from the
+            // LogStorageAppender concurrently, which means we might be able to write later
+            if (error instanceof RecoverableException) {
+              LOG.trace("Failed to write records, retrying...", error);
+              actorControl.run(() -> writeRecords(result));
+              actorControl.yieldThread();
+            } else {
+              result.completeExceptionally(error);
+            }
+          } else {
+            result.complete(position);
+          }
+        });
   }
 }

@@ -20,6 +20,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
@@ -45,7 +46,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -323,7 +323,7 @@ public final class StreamPlatform {
   }
 
   public long writeBatch(final LogStreamBatchWriter logStreamBatchWriter) {
-    return writeActor.submit(logStreamBatchWriter::tryWrite).join();
+    return writeActor.submit(logStreamBatchWriter).join();
   }
 
   public void closeStreamProcessor() throws Exception {
@@ -354,8 +354,10 @@ public final class StreamPlatform {
 
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
-    public ActorFuture<Long> submit(final Callable<Long> write) {
-      return actor.call(write);
+    public ActorFuture<Long> submit(final LogStreamWriter writer) {
+      final ActorFuture<Long> future = actor.createFuture();
+      actor.runOnCompletion(writer.tryWrite(), future);
+      return future;
     }
   }
 

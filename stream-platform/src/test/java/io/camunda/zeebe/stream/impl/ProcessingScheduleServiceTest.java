@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.logstreams.impl.log.DispatcherClaimException;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -47,7 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class ProcessingScheduleServiceTest {
+final class ProcessingScheduleServiceTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -242,11 +244,12 @@ public class ProcessingScheduleServiceTest {
               // hard to do in a deterministic controlled way because of the way our timers are
               // scheduled
               if (invocationCount < 5000) {
-                return -1L;
+                return CompletableActorFuture.completedExceptionally(
+                    new DispatcherClaimException("Invocation: " + invocationCount));
               }
 
               Loggers.STREAM_PROCESSING.debug("End tryWrite loop");
-              return 0L;
+              return CompletableActorFuture.completed(1L);
             });
 
     scheduleService.runDelayed(
@@ -351,11 +354,15 @@ public class ProcessingScheduleServiceTest {
 
   private static final class WriterAsyncSupplier
       implements Supplier<ActorFuture<LogStreamBatchWriter>> {
-    AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
-        new AtomicReference<>(CompletableActorFuture.completed(mock(LogStreamBatchWriter.class)));
+    private final AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
+        new AtomicReference<>(null);
 
     @Override
     public ActorFuture<LogStreamBatchWriter> get() {
+      final LogStreamBatchWriter writer = mock(LogStreamBatchWriter.class);
+      doReturn(CompletableActorFuture.completed(1L)).when(writer).tryWrite();
+      writerFutureRef.compareAndSet(null, CompletableActorFuture.completed(writer));
+
       return writerFutureRef.get();
     }
   }

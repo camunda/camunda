@@ -333,42 +333,45 @@ public final class ProcessingStateMachine {
   }
 
   private void writeRecords() {
-    final ActorFuture<Boolean> retryFuture =
-        writeRetryStrategy.runWithRetry(
-            () -> {
-              logStreamBatchWriter.reset();
-              logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
+    if (abortCondition.getAsBoolean()) {
+      LOG.trace("Skip writing records due to ongoing shutdown...");
+      return;
+    }
 
-              currentProcessingResult
-                  .getRecordBatch()
-                  .forEach(
-                      entry ->
-                          logStreamBatchWriter
-                              .event()
-                              .key(entry.key())
-                              .metadataWriter(entry.recordMetadata())
-                              .sourceIndex(entry.sourceIndex())
-                              .valueWriter(entry.recordValue())
-                              .done());
+    logStreamBatchWriter.reset();
+    logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
 
-              final long position = logStreamBatchWriter.tryWrite();
-              if (position > 0) {
-                writtenPosition = position;
-              }
-              return position >= 0;
-            },
-            abortCondition);
+    currentProcessingResult
+        .getRecordBatch()
+        .forEach(
+            entry ->
+                logStreamBatchWriter
+                    .event()
+                    .key(entry.key())
+                    .metadataWriter(entry.recordMetadata())
+                    .sourceIndex(entry.sourceIndex())
+                    .valueWriter(entry.recordValue())
+                    .done());
 
+    // no need to check the abortCondition in the callback as the callback is not executed if close
+    // was requested
     actor.runOnCompletion(
-        retryFuture,
-        (bool, t) -> {
-          if (t != null) {
-            LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, this::writeRecords);
+        logStreamBatchWriter.tryWrite(),
+        (position, error) -> {
+          if (error != null) {
+            if (error instanceof RecoverableException) {
+              LOG.trace("Failed to write records, retrying...", error);
+              actor.run(this::writeRecords);
+              actor.yieldThread();
+            } else {
+              LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, error);
+              onError(error, this::writeRecords);
+            }
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
+            writtenPosition = position;
             final var amount = writtenPosition - lastWrittenPosition;
             metrics.recordsWritten(amount);
             updateState();
