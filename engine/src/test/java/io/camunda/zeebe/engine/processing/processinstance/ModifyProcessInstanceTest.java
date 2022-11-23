@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -46,6 +47,7 @@ public class ModifyProcessInstanceTest {
   private static final String PROCESS_ID = "process";
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldWriteModifiedEventForProcessInstance() {
@@ -766,7 +768,11 @@ public class ModifyProcessInstanceTest {
         .deploy();
 
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "key-1").create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", helper.getCorrelationValue())
+            .create();
 
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
         .withProcessInstanceKey(processInstanceKey)
@@ -776,7 +782,7 @@ public class ModifyProcessInstanceTest {
     ENGINE
         .message()
         .withName("interrupt")
-        .withCorrelationKey("key-1")
+        .withCorrelationKey(helper.getCorrelationValue())
         .withTimeToLive(Duration.ofMinutes(1))
         .publish();
 
@@ -833,10 +839,14 @@ public class ModifyProcessInstanceTest {
         .deploy();
 
     final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "key-1").create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", helper.getCorrelationValue())
+            .create();
 
-    ENGINE.message().withName("msg").withCorrelationKey("key-1").publish();
-    ENGINE.message().withName("msg").withCorrelationKey("key-1").publish();
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
 
     final List<Long> eventSubProcessKeys =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
