@@ -49,7 +49,7 @@ public class BoundaryEventBuilder {
             .boundaryEvent(boundaryEventId, b -> b.error(errorCode));
 
     if (errorEventHasTerminateEndEvent) {
-      return boundaryEventBuilder.endEvent().terminate().moveToNode(flowNodeId);
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(decideNodeToMoveTo());
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
@@ -67,10 +67,16 @@ public class BoundaryEventBuilder {
             .boundaryEvent(boundaryEventId, b -> b.timerWithDurationExpression(boundaryEventId));
 
     if (timerEventHasTerminateEndEvent) {
-      return boundaryEventBuilder.endEvent().terminate().moveToNode(flowNodeId);
+      return boundaryEventBuilder.endEvent().terminate().moveToNode(decideNodeToMoveTo());
     } else {
       return boundaryEventBuilder.connectTo(joinGatewayId);
     }
+  }
+
+  private String decideNodeToMoveTo() {
+    // If a join gateway has been created we have to make sure to move to this gateway, otherwise
+    // we would cause the task to get a second outgoing sequence flow.
+    return joinGatewayCreated ? joinGatewayId : flowNodeId;
   }
 
   public boolean timerEventHasTerminateEndEvent() {
