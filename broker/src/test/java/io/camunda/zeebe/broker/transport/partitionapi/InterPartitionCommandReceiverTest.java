@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.ExpandableArrayBuffer;
@@ -38,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class InterPartitionCommandReceiverTest {
+  private final TestConcurrencyControl executor = new TestConcurrencyControl();
 
   @Test
   void shouldWriteSentCommandToLogStream() {
@@ -55,7 +58,8 @@ final class InterPartitionCommandReceiverTest {
 
     final var logStreamWriter =
         mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    doReturn(executor.completedFuture(1L)).when(logStreamWriter).tryWrite();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, executor);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -80,7 +84,7 @@ final class InterPartitionCommandReceiverTest {
 
     final var logStreamWriter =
         mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, executor);
 
     // when
     receiver.setDiskSpaceAvailable(false);
@@ -104,7 +108,8 @@ final class InterPartitionCommandReceiverTest {
 
     final var logStreamWriter =
         mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    doReturn(executor.completedFuture(1L)).when(logStreamWriter).tryWrite();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, executor);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -146,7 +151,8 @@ final class InterPartitionCommandReceiverTest {
 
     final var logStreamWriter =
         mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    doReturn(executor.completedFuture(1L)).when(logStreamWriter).tryWrite();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, executor);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -182,7 +188,8 @@ final class InterPartitionCommandReceiverTest {
 
     final var logStreamWriter =
         mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    doReturn(executor.completedFuture(1L)).when(logStreamWriter).tryWrite();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, executor);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
@@ -207,7 +214,8 @@ final class InterPartitionCommandReceiverTest {
 
     final var logStreamWriter =
         mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
-    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    doReturn(executor.completedFuture(1L)).when(logStreamWriter).tryWrite();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, executor);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);

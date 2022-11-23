@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.util.Optional;
@@ -29,54 +31,101 @@ final class InterPartitionCommandReceiverImpl {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final Decoder decoder = new Decoder();
   private final LogStreamRecordWriter logStreamWriter;
+  private final ConcurrencyControl executor;
+
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
 
-  InterPartitionCommandReceiverImpl(final LogStreamRecordWriter logStreamWriter) {
+  InterPartitionCommandReceiverImpl(
+      final LogStreamRecordWriter logStreamWriter, final ConcurrencyControl executor) {
     this.logStreamWriter = logStreamWriter;
+    this.executor = executor;
   }
 
-  void handleMessage(final MemberId memberId, final byte[] message) {
+  ActorFuture<Void> handleMessage(final MemberId memberId, final byte[] message) {
+    final ActorFuture<Void> result = executor.createFuture();
+    final DecodedMessage decoded;
     LOG.trace("Received message from {}", memberId);
 
-    final var decoded = decoder.decodeMessage(message);
+    try {
+      decoded = decoder.decodeMessage(message);
+    } catch (final Exception e) {
+      result.completeExceptionally(e);
+      return result;
+    }
 
     if (!diskSpaceAvailable) {
-      LOG.warn(
-          "Ignoring command {} {} from {}, checkpoint {}, no disk space available",
-          decoded.metadata.getValueType(),
-          decoded.metadata.getIntent(),
-          memberId,
-          decoded.checkpointId);
-      return;
+      result.completeExceptionally(
+          new IllegalStateException(
+              "Ignoring command %s %s from %s, checkpoint %d, no disk space available"
+                  .formatted(
+                      decoded.metadata.getValueType(),
+                      decoded.metadata.getIntent(),
+                      memberId,
+                      decoded.checkpointId)));
+      return result;
     }
 
-    if (!writeCheckpoint(decoded)) {
-      LOG.warn(
-          "Failed to write new command for checkpoint {} (currently at {}), ignoring command {} {} from {}",
-          decoded.checkpointId,
-          checkpointId,
-          decoded.metadata.getValueType(),
-          decoded.metadata.getIntent(),
-          memberId);
-      // It's unsafe to write this record without first writing the checkpoint, bail out early.
-      return;
-    }
+    // in both cases (write checkpoint/command), ignore any errors, as there isn't anything to be
+    // done with the error
+    executor.runOnCompletion(
+        writeCheckpoint(decoded),
+        (ok, error) -> onCheckpointWritten(memberId, result, decoded, error));
 
-    if (!writeCommand(decoded)) {
-      LOG.warn(
-          "Failed to write command {} {} from {} to logstream",
-          decoded.metadata.getValueType(),
-          decoded.metadata.getIntent(),
-          memberId);
-    }
+    return result;
   }
 
-  private boolean writeCheckpoint(final DecodedMessage decoded) {
+  private void onCheckpointWritten(
+      final MemberId memberId,
+      final ActorFuture<Void> result,
+      final DecodedMessage decoded,
+      final Throwable writeError) {
+    if (writeError != null) {
+      result.completeExceptionally(
+          new IllegalStateException(
+              "Failed to write new command for checkpoint %d (currently at %d), ignoring command %s %s from %s"
+                  .formatted(
+                      decoded.checkpointId,
+                      checkpointId,
+                      decoded.metadata.getValueType(),
+                      decoded.metadata.getIntent(),
+                      memberId),
+              writeError));
+      return;
+    }
+
+    LOG.trace("Wrote checkpoint command {} from {}", decoded, memberId);
+    executor.runOnCompletion(
+        writeCommand(decoded), (ok, error) -> onCommandWritten(memberId, result, decoded, error));
+  }
+
+  private static void onCommandWritten(
+      final MemberId memberId,
+      final ActorFuture<Void> result,
+      final DecodedMessage decoded,
+      final Throwable error) {
+    if (error != null) {
+      result.completeExceptionally(
+          new IllegalStateException(
+              "Failed to write command %s %s from %s to logstream"
+                  .formatted(
+                      decoded.metadata.getValueType(), decoded.metadata.getIntent(), memberId),
+              error));
+      return;
+    }
+
+    LOG.trace("Wrote remote command {} from {}", decoded, memberId);
+    result.complete(null);
+  }
+
+  private ActorFuture<Void> writeCheckpoint(final DecodedMessage decoded) {
+    final ActorFuture<Void> result = executor.createFuture();
     if (decoded.checkpointId <= checkpointId) {
       // No need to write a new checkpoint create record
-      return true;
+      result.complete(null);
+      return result;
     }
+
     LOG.debug(
         "Received command with checkpoint {}, current checkpoint is {}",
         decoded.checkpointId,
@@ -90,17 +139,36 @@ final class InterPartitionCommandReceiverImpl {
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
     final var writeResult =
         logStreamWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
-    return writeResult > 0;
+    executor.runOnCompletion(
+        writeResult,
+        (ok, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+
+    return result;
   }
 
-  private boolean writeCommand(final DecodedMessage decoded) {
+  private ActorFuture<Void> writeCommand(final DecodedMessage decoded) {
+    final ActorFuture<Void> result = executor.createFuture();
     logStreamWriter.reset();
-
     decoded.recordKey.ifPresent(logStreamWriter::key);
-
     final var writeResult =
         logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
-    return writeResult > 0;
+    executor.runOnCompletion(
+        writeResult,
+        (ignored, error) -> {
+          if (error != null) {
+            result.completeExceptionally(error);
+          } else {
+            result.complete(null);
+          }
+        });
+
+    return result;
   }
 
   void setDiskSpaceAvailable(final boolean available) {

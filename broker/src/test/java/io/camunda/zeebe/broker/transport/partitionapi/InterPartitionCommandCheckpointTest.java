@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.camunda.zeebe.logstreams.impl.log.DispatcherClaimException;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -42,22 +44,24 @@ final class InterPartitionCommandCheckpointTest {
   private final LogStreamRecordWriter logStreamRecordWriter;
   private final InterPartitionCommandSenderImpl sender;
   private final InterPartitionCommandReceiverImpl receiver;
+  private final TestConcurrencyControl executor;
 
   InterPartitionCommandCheckpointTest(
       @Mock final ClusterCommunicationService communicationService,
       @Mock(answer = Answers.RETURNS_SELF) final LogStreamRecordWriter logStreamRecordWriter) {
     this.communicationService = communicationService;
     this.logStreamRecordWriter = logStreamRecordWriter;
+    executor = new TestConcurrencyControl();
 
     sender = new InterPartitionCommandSenderImpl(communicationService);
     sender.setCurrentLeader(1, 2);
-    receiver = new InterPartitionCommandReceiverImpl(logStreamRecordWriter);
+    receiver = new InterPartitionCommandReceiverImpl(logStreamRecordWriter, executor);
   }
 
   @Test
   void shouldHandleMissingCheckpoints() {
     // given
-    when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
+    when(logStreamRecordWriter.tryWrite()).thenReturn(executor.completedFuture(1L));
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -74,7 +78,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldCreateFirstCheckpoint() {
     // given
-    when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
+    when(logStreamRecordWriter.tryWrite()).thenReturn(executor.completedFuture(1L));
     sender.setCheckpointId(1);
 
     // when
@@ -96,7 +100,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldUpdateExistingCheckpoint() {
     // given
-    when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
+    when(logStreamRecordWriter.tryWrite()).thenReturn(executor.completedFuture(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 
@@ -117,7 +121,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotRecreateExistingCheckpoint() {
     // given
-    when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
+    when(logStreamRecordWriter.tryWrite()).thenReturn(executor.completedFuture(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(5);
 
@@ -135,7 +139,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotOverwriteNewerCheckpoint() {
     // given
-    when(logStreamRecordWriter.tryWrite()).thenReturn(1L);
+    when(logStreamRecordWriter.tryWrite()).thenReturn(executor.completedFuture(1L));
     receiver.setCheckpointId(6);
     sender.setCheckpointId(5);
 
@@ -153,7 +157,9 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotWriteCommandIfCheckpointCreateFailed() {
     // given
-    when(logStreamRecordWriter.tryWrite()).thenReturn(-1L, 1L);
+    when(logStreamRecordWriter.tryWrite())
+        .thenReturn(executor.failedFuture(new DispatcherClaimException("failed")))
+        .thenReturn(executor.completedFuture(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 

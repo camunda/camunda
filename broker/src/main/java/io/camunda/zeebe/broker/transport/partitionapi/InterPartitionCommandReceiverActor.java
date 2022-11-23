@@ -40,7 +40,7 @@ public final class InterPartitionCommandReceiverActor extends Actor
       final LogStreamRecordWriter logStreamWriter) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
-    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    receiver = new InterPartitionCommandReceiverImpl(logStreamWriter, actor);
     actorName = buildActorName(nodeId, getClass().getSimpleName(), partitionId);
   }
 
@@ -82,10 +82,12 @@ public final class InterPartitionCommandReceiverActor extends Actor
   }
 
   private void tryHandleMessage(final MemberId memberId, final byte[] message) {
-    try {
-      receiver.handleMessage(memberId, message);
-    } catch (final RuntimeException e) {
-      LOG.error("Error while handling message", e);
-    }
+    actor.runOnCompletion(
+        receiver.handleMessage(memberId, message),
+        (ok, error) -> {
+          if (error != null) {
+            LOG.warn("Failed to handle remote message from {}", memberId, error);
+          }
+        });
   }
 }
