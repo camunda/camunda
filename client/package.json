@@ -80,7 +80,7 @@
     "lint-staged": "13.0.3",
     "monaco-editor": "0.34.1",
     "msw": "0.48.2",
-    "prettier": "2.7.1",
+    "prettier": "2.8.0",
     "react-scripts": "4.0.3",
     "source-map-explorer": "2.5.3",
     "testcafe": "2.1.0",
