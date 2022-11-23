@@ -356,7 +356,7 @@ public final class StreamPlatform {
   private static final class WriteActor extends Actor {
     public ActorFuture<Long> submit(final LogStreamWriter writer) {
       final ActorFuture<Long> future = actor.createFuture();
-      actor.runOnCompletion(writer.tryWrite(), future);
+      actor.run(() -> actor.runOnCompletion(writer.tryWrite(), future));
       return future;
     }
   }
