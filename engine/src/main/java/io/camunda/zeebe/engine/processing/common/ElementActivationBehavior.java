@@ -125,6 +125,7 @@ public final class ElementActivationBehavior {
     return activatedElementKeys;
   }
 
+  /** Collects all the flow scopes of an element, but excludes the root process as an element */
   private Deque<ExecutableFlowElement> collectFlowScopesOfElement(
       final ExecutableFlowElement element) {
     final Deque<ExecutableFlowElement> flowScopes = new ArrayDeque<>();
@@ -174,12 +175,28 @@ public final class ElementActivationBehavior {
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
       // - no need to create a new instance; continue with the remaining flow scopes
+
+      final long elementInstanceKey;
+
       final var elementInstance = elementInstancesOfScope.get(0);
-      createVariablesCallback.accept(flowScope.getId(), elementInstance.getKey());
-      activatedElementKeys.addFlowScopeKey(elementInstance.getKey());
+      if (ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY
+          && elementInstance.getValue().getFlowScopeKey() == ancestorScopeKey) {
+        // we found an instance of flow scope which exists inside the selected ancestor
+        // we need to activate a new instance of the flow scope because it itself was not the
+        // selected ancestor, but its flow scope is selected (which means create new instance of
+        // flow scope)
+        elementInstanceKey =
+            activateFlowScope(
+                processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
+      } else {
+        elementInstanceKey = elementInstance.getKey();
+      }
+
+      createVariablesCallback.accept(flowScope.getId(), elementInstanceKey);
+      activatedElementKeys.addFlowScopeKey(elementInstanceKey);
       return activateFlowScopes(
           processInstanceRecord,
-          elementInstance.getKey(),
+          elementInstanceKey,
           flowScopes,
           ancestorScopeKey,
           createVariablesCallback,
