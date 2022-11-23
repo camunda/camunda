@@ -7,7 +7,6 @@
 
 import {useEffect, useState} from 'react';
 import {useLocation} from 'react-router-dom';
-import mixpanel from 'mixpanel-browser';
 
 import {getMixpanelConfig, getOptimizeVersion} from 'config';
 import {withUser} from 'HOC';
@@ -17,7 +16,7 @@ import './Tracking.scss';
 let trackingEnabled = false;
 export function track(eventName, properties) {
   if (trackingEnabled) {
-    mixpanel.track('optimize:' + eventName, properties);
+    window.mixpanel.track('optimize:' + eventName, properties);
   }
 }
 
@@ -41,15 +40,15 @@ export function Tracking({getUser}) {
         return;
       }
 
-      mixpanel.init(token, {
+      window.mixpanel.init(token, {
         api_host: apiHost,
         batch_requests: true,
         debug: process.env.NODE_ENV === 'development',
       });
 
       const user = await getUser();
-      mixpanel.identify(user.id);
-      mixpanel.register({
+      window.mixpanel.identify(user.id);
+      window.mixpanel.register({
         userId: user.id,
         orgId: organizationId,
         stage: stage,
