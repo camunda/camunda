@@ -14,6 +14,7 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
 import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
+import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
 
 const AppHeader: React.FC = observer(() => {
   const {currentPage} = useCurrentPage();
@@ -106,6 +107,12 @@ const AppHeader: React.FC = observer(() => {
             user: {
               name: displayName ?? '',
               email: '',
+            },
+          },
+          themeSelector: {
+            currentTheme: currentTheme.state.selectedTheme,
+            onChange: (theme: string) => {
+              currentTheme.changeTheme(theme as ThemeType);
             },
           },
         },

@@ -46,8 +46,7 @@ type RenderOptions = {
 
 class BpmnJS {
   #navigatedViewer: NavigatedViewer | null = null;
-  #themeType: typeof currentTheme.state.selectedTheme =
-    currentTheme.state.selectedTheme;
+  #themeType: typeof currentTheme.theme = currentTheme.theme;
   #themeChangeReactionDisposer: IReactionDisposer | null = null;
   #xml: string | null = null;
   #selectableFlowNodes: string[] = [];
@@ -100,11 +99,8 @@ class BpmnJS {
       this.#createViewer(container);
     }
 
-    if (
-      this.#themeType !== currentTheme.state.selectedTheme ||
-      this.#xml !== xml
-    ) {
-      this.#themeType = currentTheme.state.selectedTheme;
+    if (this.#themeType !== currentTheme.theme || this.#xml !== xml) {
+      this.#themeType = currentTheme.theme;
 
       this.#xml = xml;
       await this.import(xml);
@@ -112,7 +108,7 @@ class BpmnJS {
 
     this.#themeChangeReactionDisposer?.();
     this.#themeChangeReactionDisposer = reaction(
-      () => currentTheme.state.selectedTheme,
+      () => currentTheme.theme,
       () => {
         this.#createViewer(container);
         this.render(options);
@@ -211,8 +207,7 @@ class BpmnJS {
     this.#destroy();
     this.#navigatedViewer = new NavigatedViewer({
       container,
-      bpmnRenderer:
-        theme[currentTheme.state.selectedTheme].colors.modules.diagram,
+      bpmnRenderer: theme[currentTheme.theme].colors.modules.diagram,
       additionalModules: [ElementTemplatesIconsRenderer, OutlineModule],
     });
   };

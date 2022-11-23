@@ -23,8 +23,8 @@ const CarbonTheme = styled(BaseCarbonTheme)`
 
 const ThemeProvider = observer<React.FC<Props>>(({children}) => {
   return (
-    <CarbonTheme theme="g10">
-      <DefaultProvider theme={theme[currentTheme.state.selectedTheme]}>
+    <CarbonTheme theme={`${currentTheme.theme === 'light' ? 'g10' : 'g100'}`}>
+      <DefaultProvider theme={theme[currentTheme.theme]}>
         {children}
       </DefaultProvider>
     </CarbonTheme>

@@ -36,7 +36,7 @@ const App: React.FC = () => {
   useEffect(() => {
     tracking.track({
       eventName: 'operate-loaded',
-      theme: currentTheme.state.selectedTheme,
+      theme: currentTheme.theme,
     });
   }, []);
 
