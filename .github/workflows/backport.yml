@@ -27,7 +27,7 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
       - name: Create backport PRs
-        uses: zeebe-io/backport-action@v0.0.8
+        uses: zeebe-io/backport-action@v0.0.9
         with:
           # Required
           # Token to authenticate requests to GitHub
