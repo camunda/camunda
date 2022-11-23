@@ -175,28 +175,27 @@ public final class ElementActivationBehavior {
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
       // - no need to create a new instance; continue with the remaining flow scopes
-
-      final long elementInstanceKey;
-
       final var elementInstance = elementInstancesOfScope.get(0);
+
+      final long activatedInstanceKey;
       if (ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY
           && elementInstance.getValue().getFlowScopeKey() == ancestorScopeKey) {
         // we found an instance of flow scope which exists inside the selected ancestor
         // we need to activate a new instance of the flow scope because it itself was not the
         // selected ancestor, but its flow scope is selected (which means create new instance of
         // flow scope)
-        elementInstanceKey =
+        activatedInstanceKey =
             activateFlowScope(
                 processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
       } else {
-        elementInstanceKey = elementInstance.getKey();
+        activatedInstanceKey = elementInstance.getKey();
       }
 
-      createVariablesCallback.accept(flowScope.getId(), elementInstanceKey);
-      activatedElementKeys.addFlowScopeKey(elementInstanceKey);
+      createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
+      activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
       return activateFlowScopes(
           processInstanceRecord,
-          elementInstanceKey,
+          activatedInstanceKey,
           flowScopes,
           ancestorScopeKey,
           createVariablesCallback,
@@ -212,20 +211,34 @@ public final class ElementActivationBehavior {
             flowScopeId, processInstanceRecord.getBpmnProcessId());
       }
 
-      final var selectedAncestor =
-          elementInstancesOfScope.stream()
-              .filter(instance -> instance.getKey() == ancestorScopeKey)
-              .findAny();
-      if (selectedAncestor.isEmpty()) {
-        // todo: reject
+      final long activatedInstanceKey;
+      if (elementInstancesOfScope.stream()
+          .anyMatch(instance -> instance.getValue().getFlowScopeKey() == ancestorScopeKey)) {
+        // The selected ancestor is the flow scope of one of the existing element instances
+        // - we need to create a new instance inside the selected ancestor instance
+        activatedInstanceKey =
+            activateFlowScope(
+                processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
+
+      } else if (elementInstancesOfScope.stream()
+          .noneMatch(instance -> instance.getKey() == ancestorScopeKey)) {
+        // Even though an ancestor is selected, it's unclear which of the
+        // todo: I'll write a test for this case
+
+        final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
+        throw new MultipleFlowScopeInstancesFoundException(
+            flowScopeId, processInstanceRecord.getBpmnProcessId());
+
+      } else {
+        activatedInstanceKey = ancestorScopeKey;
       }
 
-      // todo: createVariablesCallback.accept(flowScope.getId(), ancestorScopeKey);
-      // todo: activatedElementKeys.addFlowScopeKey(ancestorScopeKey);
+      createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
+      activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
 
       return activateFlowScopes(
           processInstanceRecord,
-          ancestorScopeKey,
+          activatedInstanceKey,
           flowScopes,
           ancestorScopeKey,
           createVariablesCallback,
