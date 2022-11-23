@@ -114,27 +114,6 @@ jobs:
           --set zeebe.image.tag=${{ inputs.name }}
           --set zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
           --set zeebe-gateway.image.tag=${{ inputs.name }}
-  deploy-benchmark-load:
-    name: Deploy benchmark load
-    needs:
-      - deploy-benchmark-cluster
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.ref }}
-      - uses: google-github-actions/auth@v1
-        with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: zeebe-io
-          install_components: gke-gcloud-auth-plugin, kubectl
-      - uses: google-github-actions/get-gke-credentials@v0.8.2
-        with:
-          cluster_name: ${{ inputs.cluster }}
-          location: ${{ inputs.cluster-region }}
       - name: Deploy and configure additional benchmark components
         uses: actions/github-script@v6
         with:
