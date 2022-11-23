@@ -22,7 +22,6 @@ services:
       - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
       - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=1
       - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
-      - CAMUNDA_OPTIMIZE_BACKUP_REPOSITORY_NAME=mysnapshotrrepo
     networks:
       - optimize
       - identity-network
@@ -65,7 +64,6 @@ services:
       - bootstrap.memory_lock=true
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-      - path.repo="MacintoshHD:/Users/andromachirozaki/Documents/mysnapshotrrepo"
     ulimits:
       memlock:
         soft: -1
