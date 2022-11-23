@@ -15,27 +15,32 @@ spec:
         app: publisher
     spec:
       containers:
-      - name: publisher
-        image: gcr.io/zeebe-io/starter:SNAPSHOT
-        imagePullPolicy: Always
-        env:
-          - name: JAVA_OPTIONS
-            value: >-
-              -Dapp.brokerUrl=default-zeebe-gateway:26500
-              -Dapp.starter.rate=100
-              -Dzeebe.client.requestTimeout=62000
-              -XX:+HeapDumpOnOutOfMemoryError
-              -Dapp.starter.bpmnXmlPath=bpmn/msg_one_task.bpmn
-              -Dapp.starter.startViaMessage=true
-          - name: LOG_LEVEL
-            value: "warn"
-        resources:
-          limits:
-            cpu: 250m
-            memory: 256Mi
-          requests:
-            cpu: 250m
-            memory: 256Mi
+        - name: publisher
+          image: gcr.io/zeebe-io/starter:SNAPSHOT
+          imagePullPolicy: Always
+          env:
+            - name: JAVA_OPTIONS
+              value: >-
+                -Dconfig.override_with_env_vars=true
+                -Dapp.brokerUrl=default-zeebe-gateway:26500
+                -Dapp.starter.rate=100
+                -Dzeebe.client.requestTimeout=62000
+                -XX:+HeapDumpOnOutOfMemoryError
+                -Dapp.starter.bpmnXmlPath=bpmn/msg_one_task.bpmn
+                -Dapp.starter.startViaMessage=true
+            - name: LOG_LEVEL
+              value: "warn"
+          envFrom:
+            - configMapRef:
+                name: simple-starter-config
+                optional: true
+          resources:
+            limits:
+              cpu: 250m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
 ---
 apiVersion: v1
 kind: Service
@@ -48,14 +53,14 @@ metadata:
 spec:
   clusterIP: None
   ports:
-  - name: http
-    port: 9600
-    protocol: TCP
-    targetPort: 9600
+    - name: http
+      port: 9600
+      protocol: TCP
+      targetPort: 9600
   publishNotReadyAddresses: true
   selector:
     app: publisher
   sessionAffinity: None
   type: ClusterIP
 status:
-  loadBalancer: {}
+  loadBalancer: { }
