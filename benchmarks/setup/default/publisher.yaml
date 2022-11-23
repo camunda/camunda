@@ -32,7 +32,7 @@ spec:
               value: "warn"
           envFrom:
             - configMapRef:
-                name: simple-starter-config
+                name: publisher-config
                 optional: true
           resources:
             limits:
