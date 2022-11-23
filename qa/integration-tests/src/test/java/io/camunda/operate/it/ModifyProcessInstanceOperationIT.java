@@ -173,7 +173,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .waitUntil()
         .flowNodeIsTerminated("taskA")
         .and()
-        .flowNodeIsActive("taskB");
+        .flowNodesAreActive("taskB", 2);
     // then
 
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
@@ -451,7 +451,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .and()
         .flowNodeIsTerminated("taskA")
         .and()
-        .flowNodeIsActive("taskC");
+        .flowNodesAreActive("taskC", 2);
 
     // then
     var flowNodeStates = tester.getFlowNodeStates();
