@@ -11,19 +11,20 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.logstreams.impl.log.DispatcherClaimException;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.LogStreamWriterRule;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
-import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -104,7 +105,13 @@ public final class LogStreamBatchWriterTest {
 
   private long write(final Consumer<LogStreamBatchWriter> consumer) {
     consumer.accept(writer);
-    return TestUtil.doRepeatedly(() -> writer.tryWrite()).until(pos -> pos > 0);
+
+    // we don't expect any flow control here, so this should never fail for these tests
+    // this is a convenience method, so if you need to handle failure, write manually
+    final var result = writerScheduler.call(writer::tryWrite);
+    writerScheduler.workUntilDone();
+
+    return result.join().join();
   }
 
   @Test
@@ -343,29 +350,27 @@ public final class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException {
+  public void shouldWriteEventWithTimestamp() {
     // given
     final long timestamp = System.currentTimeMillis() + 10;
     writerScheduler.getClock().setCurrentTime(timestamp);
 
     // when
-    final ActorFuture<Long> position =
-        writerScheduler.call(
-            () ->
-                write(
-                    w ->
-                        w.event()
-                            .key(1)
-                            .value(EVENT_VALUE_1)
-                            .done()
-                            .event()
-                            .key(2)
-                            .value(EVENT_VALUE_2)
-                            .done()));
+    final long position =
+        write(
+            w ->
+                w.event()
+                    .key(1)
+                    .value(EVENT_VALUE_1)
+                    .done()
+                    .event()
+                    .key(2)
+                    .value(EVENT_VALUE_2)
+                    .done());
     writerScheduler.workUntilDone();
 
     // then
-    assertThat(getWrittenEvents(position.get()))
+    assertThat(getWrittenEvents(position))
         .extracting(LoggedEvent::getTimestamp)
         .containsExactly(timestamp, timestamp);
   }
@@ -401,7 +406,7 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldNotFailToWriteBatchWithoutEvents() {
     // when
-    final long pos = writer.tryWrite();
+    final long pos = writer.tryWrite().join();
 
     // then
     assertThat(pos).isEqualTo(0);
@@ -413,9 +418,12 @@ public final class LogStreamBatchWriterTest {
     logStreamRule.getLogStream().close();
 
     // when
-    final long pos = writer.event().key(1).value(EVENT_VALUE_1).done().tryWrite();
+    final Future<Long> pos = writer.event().key(1).value(EVENT_VALUE_1).done().tryWrite();
 
     // then
-    assertThat(pos).isEqualTo(-1);
+    assertThat(pos)
+        .failsWithin(Duration.ofSeconds(5))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(DispatcherClaimException.class);
   }
 }

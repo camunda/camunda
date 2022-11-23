@@ -125,7 +125,7 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
     final long claimedPosition = claimLogEntry(valueLength, metadataLength);
     if (claimedPosition < 0) {
       return CompletableActorFuture.completedExceptionally(
-          new IllegalStateException(
+          new DispatcherClaimException(
               "Failed to claim batch (result: %d)".formatted(claimedPosition)));
     }
 

@@ -100,7 +100,7 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
 
     // when
-    final var position = writer.event().valueWriter(value).done().tryWrite();
+    final var position = writer.event().valueWriter(value).done().tryWrite().join();
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
 
@@ -126,7 +126,8 @@ final class LogStorageAppenderTest {
             .event()
             .valueWriter(values.get(1))
             .done()
-            .tryWrite();
+            .tryWrite()
+            .join();
     final var lowestPosition = highestPosition - 1;
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
@@ -183,7 +184,7 @@ final class LogStorageAppenderTest {
     scheduler.submitActor(appender).join();
 
     // when
-    writer.event().valueWriter(value).done().event().valueWriter(value).done().tryWrite();
+    writer.event().valueWriter(value).done().event().valueWriter(value).done().tryWrite().join();
 
     // then
     Awaitility.await("until the actor has failed")

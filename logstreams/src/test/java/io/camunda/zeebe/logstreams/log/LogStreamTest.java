@@ -15,10 +15,10 @@ import static org.junit.Assert.assertNotNull;
 
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.test.util.TestUtil;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -98,14 +98,15 @@ public final class LogStreamTest {
     writer.value(wrapString("value")).tryWrite();
     writer.value(wrapString("value")).tryWrite();
     writer.value(wrapString("value")).tryWrite();
-    final long positionBeforeClose = writer.value(wrapString("value")).tryWrite();
-    TestUtil.waitUntil(() -> logStream.getLastWrittenPosition() >= positionBeforeClose);
+    final long positionBeforeClose = writer.value(wrapString("value")).tryWrite().join();
+    Awaitility.await()
+        .until(() -> logStream.getLastWrittenPosition(), pos -> pos >= positionBeforeClose);
 
     // when
     logStream.close();
     logStreamRule.createLogStream();
     final LogStreamRecordWriter newWriter = logStreamRule.getLogStream().newLogStreamRecordWriter();
-    final long positionAfterReOpen = newWriter.value(wrapString("value")).tryWrite();
+    final long positionAfterReOpen = newWriter.value(wrapString("value")).tryWrite().join();
 
     // then
     assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
@@ -152,7 +153,7 @@ public final class LogStreamTest {
     long position = -1L;
 
     while (position < 0) {
-      position = writer.value(value).tryWrite();
+      position = writer.value(value).tryWrite().join();
     }
 
     final long writtenEventPosition = position;

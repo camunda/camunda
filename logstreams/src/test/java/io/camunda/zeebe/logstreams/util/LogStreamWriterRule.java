@@ -63,7 +63,7 @@ public final class LogStreamWriterRule extends ExternalResource {
               .atMost(Duration.ofSeconds(5))
               .pollDelay(Duration.ofNanos(0))
               .pollInSameThread()
-              .until(logStreamWriter::tryWrite, position -> position >= 0);
+              .until(() -> logStreamWriter.tryWrite().join(), position -> position >= 0);
     }
 
     waitForPositionToBeWritten(lastPosition);
@@ -101,7 +101,7 @@ public final class LogStreamWriterRule extends ExternalResource {
     writer.accept(eventWriter);
     eventWriter.done();
 
-    return logStreamWriter.tryWrite();
+    return logStreamWriter.tryWrite().join();
   }
 
   public void waitForPositionToBeWritten(final long position) {

@@ -57,7 +57,7 @@ final class LogStreamBatchWriterImplTest {
     writer.event().value(value).metadata(metadata).done();
     final boolean canWriteAdditionalEvent =
         writer.canWriteAdditionalEvent(value.capacity() + metadata.capacity());
-    writer.event().value(value).metadata(metadata).done().tryWrite();
+    writer.event().value(value).metadata(metadata).done().tryWrite().join();
 
     // then
     verify(dispatcher, times(1)).canClaimFragmentBatch(expectedFragmentCount, expectedBatchLength);

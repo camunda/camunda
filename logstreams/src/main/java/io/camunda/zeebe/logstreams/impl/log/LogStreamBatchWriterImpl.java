@@ -213,7 +213,7 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
     long position = claimBatchForEvents();
     if (position < 0) {
       return CompletableActorFuture.completedExceptionally(
-          new IllegalStateException("Failed to claim batch (result: %d)".formatted(position)));
+          new DispatcherClaimException("Failed to claim batch (result: %d)".formatted(position)));
     }
 
     try {
