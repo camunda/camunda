@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
+import io.camunda.zeebe.logstreams.impl.log.DispatcherClaimException;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
@@ -45,11 +45,10 @@ final class CommandApiRequestHandler
       final CommandApiRequestReader requestReader,
       final CommandApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
-    return CompletableActorFuture.completed(
-        handle(partitionId, requestId, requestReader, responseWriter, errorWriter));
+    return handle(partitionId, requestId, requestReader, responseWriter, errorWriter);
   }
 
-  private Either<ErrorResponseWriter, CommandApiResponseWriter> handle(
+  private ActorFuture<Either<ErrorResponseWriter, CommandApiResponseWriter>> handle(
       final int partitionId,
       final long requestId,
       final CommandApiRequestReader requestReader,
@@ -59,15 +58,18 @@ final class CommandApiRequestHandler
         partitionId, requestId, requestReader, responseWriter, errorWriter);
   }
 
-  private Either<ErrorResponseWriter, CommandApiResponseWriter> handleExecuteCommandRequest(
-      final int partitionId,
-      final long requestId,
-      final CommandApiRequestReader reader,
-      final CommandApiResponseWriter responseWriter,
-      final ErrorResponseWriter errorWriter) {
-
+  private ActorFuture<Either<ErrorResponseWriter, CommandApiResponseWriter>>
+      handleExecuteCommandRequest(
+          final int partitionId,
+          final long requestId,
+          final CommandApiRequestReader reader,
+          final CommandApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, CommandApiResponseWriter>> result =
+        actor.createFuture();
     if (!isDiskSpaceAvailable) {
-      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+      result.complete(Either.left(errorWriter.outOfDiskSpace(partitionId)));
+      return result;
     }
 
     final var command = reader.getMessageDecoder();
@@ -87,13 +89,15 @@ final class CommandApiRequestHandler
 
     if (logStreamWriter == null) {
       errorWriter.partitionLeaderMismatch(partitionId);
-      return Either.left(errorWriter);
+      result.complete(Either.left(errorWriter));
+      return result;
     }
 
     if (event == null) {
       errorWriter.unsupportedMessage(
           eventType.name(), CommandApiRequestReader.RECORDS_BY_TYPE.keySet().toArray());
-      return Either.left(errorWriter);
+      result.complete(Either.left(errorWriter));
+      return result;
     }
 
     metrics.receivedRequest(partitionId);
@@ -106,25 +110,35 @@ final class CommandApiRequestHandler
           limiter.getInflightCount(),
           requestId);
       errorWriter.resourceExhausted();
-      return Either.left(errorWriter);
+      result.complete(Either.left(errorWriter));
+      return result;
     }
 
-    boolean written = false;
-    try {
-      written = writeCommand(command.key(), metadata, event, logStreamWriter);
-      return Either.right(responseWriter);
-    } catch (final Exception ex) {
-      LOG.error("Unexpected error on writing {} command", intent, ex);
-      errorWriter.internalError("Failed writing response: %s", ex);
-      return Either.left(errorWriter);
-    } finally {
-      if (!written) {
-        limiter.onIgnore(partitionId, requestId);
-      }
-    }
+    // theoretically, if we switch phases here, we would not release the limiter since the callback
+    // will not be called. this should be fine as we only close here when the broker is shutting
+    // down, but this is definitely
+    final var writeResult = writeCommand(command.key(), metadata, event, logStreamWriter);
+    actor.runOnCompletion(
+        writeResult,
+        (position, error) -> {
+          if (error == null) {
+            result.complete(Either.right(responseWriter));
+          } else {
+            limiter.onIgnore(partitionId, requestId);
+            if (error instanceof DispatcherClaimException) {
+              result.complete(Either.right(responseWriter));
+            } else {
+              LOG.error("Unexpected error on writing {} command", intent, error);
+              errorWriter.internalError("Failed writing response: %s", error);
+              result.complete(Either.left(errorWriter));
+            }
+          }
+        });
+
+    return result;
   }
 
-  private boolean writeCommand(
+  private ActorFuture<Long> writeCommand(
       final long key,
       final RecordMetadata eventMetadata,
       final UnpackedObject event,
@@ -137,10 +151,7 @@ final class CommandApiRequestHandler
       logStreamWriter.keyNull();
     }
 
-    final long eventPosition =
-        logStreamWriter.metadataWriter(eventMetadata).valueWriter(event).tryWrite();
-
-    return eventPosition >= 0;
+    return logStreamWriter.metadataWriter(eventMetadata).valueWriter(event).tryWrite();
   }
 
   void addPartition(

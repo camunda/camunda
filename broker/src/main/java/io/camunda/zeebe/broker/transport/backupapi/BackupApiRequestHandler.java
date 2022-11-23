@@ -83,9 +83,8 @@ public final class BackupApiRequestHandler
     }
 
     return switch (requestReader.type()) {
-      case TAKE_BACKUP -> CompletableActorFuture.completed(
-          handleTakeBackupRequest(
-              requestStreamId, requestId, requestReader, responseWriter, errorWriter));
+      case TAKE_BACKUP -> handleTakeBackupRequest(
+          requestStreamId, requestId, requestReader, responseWriter, errorWriter);
       case QUERY_STATUS -> handleQueryStatusHandler(requestReader, responseWriter, errorWriter);
       case LIST -> handleListBackupHandler(responseWriter, errorWriter);
       default -> CompletableActorFuture.completed(
@@ -93,14 +92,17 @@ public final class BackupApiRequestHandler
     };
   }
 
-  private Either<ErrorResponseWriter, BackupApiResponseWriter> handleTakeBackupRequest(
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleTakeBackupRequest(
       final int requestStreamId,
       final long requestId,
       final BackupApiRequestReader requestReader,
       final BackupApiResponseWriter responseWriter,
       final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        actor.createFuture();
     if (!isDiskSpaceAvailable) {
-      return Either.left(errorWriter.outOfDiskSpace(partitionId));
+      result.complete(Either.left(errorWriter.outOfDiskSpace(partitionId)));
+      return result;
     }
 
     final RecordMetadata metadata =
@@ -116,12 +118,19 @@ public final class BackupApiRequestHandler
     final var written =
         logStreamRecordWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
 
-    if (written > 0) {
-      // Response will be sent by the processor
-      return Either.right(responseWriter.noResponse());
-    } else {
-      return Either.left(errorWriter.internalError("Failed to write command to logstream."));
-    }
+    actor.runOnCompletion(
+        written,
+        (position, error) -> {
+          if (error == null) {
+            result.complete(Either.right(responseWriter.noResponse()));
+          } else {
+            LOG.debug("Failed to write command to logstream", error);
+            result.complete(
+                Either.left(errorWriter.internalError("Failed to write command to logstream")));
+          }
+        });
+
+    return result;
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
