@@ -938,6 +938,69 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldActivateInsideNestedSpecificFlowScopeUsingAncestorSelectionWhenMultipleExist() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-sub",
+                    sub ->
+                        sub.startEvent()
+                            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                            .interrupting(false)
+                            .userTask("A")
+                            .userTask("B")
+                            .endEvent())
+                .startEvent()
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", helper.getCorrelationValue())
+            .create();
+
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+    ENGINE.message().withName("msg").withCorrelationKey(helper.getCorrelationValue()).publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit(2))
+        .describedAs(
+            "Expect that task A activated twice and there are 2 active instances of the event sub process")
+        .hasSize(2);
+
+    // when
+    final var ancestorScopeKey = processInstanceKey;
+    final var modifiedRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B", ancestorScopeKey)
+            .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .skipUntil(r -> r.getPosition() >= modifiedRecord.getSourceRecordPosition())
+                .limit(2))
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getElementId)
+        .describedAs("Expect that a new instance of the sub process and task B have been activated")
+        .containsExactly("event-sub", "B");
+  }
+
+  @Test
   public void shouldActivateParallelGateway() {
     // given
     ENGINE
