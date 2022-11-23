@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -29,7 +31,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -262,7 +263,7 @@ public class ModifyProcessInstanceTerminationTest {
     assertThatElementIsTerminated(processInstanceKey, "A");
     assertThatJobIsCancelled(processInstanceKey, "A");
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(1))
@@ -271,7 +272,7 @@ public class ModifyProcessInstanceTerminationTest {
     ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.PROCESS)
@@ -342,7 +343,7 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceTerminated())
@@ -473,7 +474,7 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceTerminated())
@@ -554,7 +555,7 @@ public class ModifyProcessInstanceTerminationTest {
         RecordToWrite.command().modification(modificationCommand).key(processInstanceKey));
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED))
@@ -634,7 +635,7 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceTerminated())
@@ -726,7 +727,7 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limitToProcessInstanceTerminated())
@@ -798,7 +799,7 @@ public class ModifyProcessInstanceTerminationTest {
         .modify();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKeyOrParentProcessInstanceKey(processInstanceKey)
                 .limit(PROCESS_ID, ProcessInstanceIntent.ELEMENT_TERMINATED))
@@ -860,7 +861,7 @@ public class ModifyProcessInstanceTerminationTest {
             .withElementId("A")
             .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
             .getFirst();
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("B")
@@ -880,7 +881,7 @@ public class ModifyProcessInstanceTerminationTest {
     // then
     assertThatElementIsTerminated(processInstanceKey, "A");
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
@@ -954,7 +955,7 @@ public class ModifyProcessInstanceTerminationTest {
     // then
     assertThatElementIsTerminated(processInstanceKey, "A");
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
@@ -1004,7 +1005,7 @@ public class ModifyProcessInstanceTerminationTest {
             .withElementId("A")
             .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
             .getFirst();
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId("B")
@@ -1034,7 +1035,7 @@ public class ModifyProcessInstanceTerminationTest {
     // then
     assertThatElementIsTerminated(processInstanceKey, "A");
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
@@ -1061,6 +1062,83 @@ public class ModifyProcessInstanceTerminationTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
   }
 
+  @Test
+  public void shouldTerminateFlowScopeWhenElementInsideIsActivateAndFlowScopeIsTerminated() {
+    // given
+    final var correlationKey = CLASS_RULE_HELPER.getCorrelationValue();
+    final Consumer<EventSubProcessBuilder> eventSubProcess =
+        esp ->
+            esp.startEvent("startEvent")
+                .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                .interrupting(false)
+                .userTask("B")
+                .endEvent("endEvent");
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess("eventSubProcess", eventSubProcess)
+                .startEvent()
+                .userTask("A")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", correlationKey)
+            .create();
+
+    assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withMessageName("message")
+                .findFirst())
+        .isPresent();
+
+    ENGINE.message().withName("message").withCorrelationKey(correlationKey).publish();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .hasSize(2);
+
+    final long eventSubprocessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("eventSubProcess")
+            .getFirst()
+            .getKey();
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(eventSubprocessKey)
+        .activateElement("endEvent")
+        .modify();
+
+    // then
+    final var rejectedActivateCommand =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ACTIVATE_ELEMENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("endEvent")
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(rejectedActivateCommand.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
+    assertThat(rejectedActivateCommand.getRejectionReason())
+        .isEqualTo(
+            "Expected flow scope instance with key '%s' to be present in state but not found.",
+            eventSubprocessKey);
+    assertThatElementIsTerminated(processInstanceKey, "eventSubProcess");
+  }
+
   private static long getElementInstanceKeyOfElement(
       final long processInstanceKey, final String elementId) {
     return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -1072,7 +1150,7 @@ public class ModifyProcessInstanceTerminationTest {
 
   private void assertThatElementIsTerminated(
       final long processInstanceKey, final String elementId) {
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
@@ -1085,7 +1163,7 @@ public class ModifyProcessInstanceTerminationTest {
   }
 
   private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.jobRecords(JobIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
@@ -1094,7 +1172,7 @@ public class ModifyProcessInstanceTerminationTest {
   }
 
   private void assertThatIncidentIsResolved(final long processInstanceKey, final String elementId) {
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementId(elementId)
@@ -1104,7 +1182,7 @@ public class ModifyProcessInstanceTerminationTest {
 
   private void assertThatTimerEventSubscriptionIsDeleted(
       final long processInstanceKey, final long elementInstanceKey) {
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.timerRecords(TimerIntent.CANCELED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementInstanceKey(elementInstanceKey)
@@ -1114,7 +1192,7 @@ public class ModifyProcessInstanceTerminationTest {
 
   private void assertThatMessageEventSubscriptionIsDeleted(
       final long processInstanceKey, final long elementInstanceKey) {
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementInstanceKey(elementInstanceKey)

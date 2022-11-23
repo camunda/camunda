@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collections;
+import java.util.Objects;
 
 final class ProcessInstanceModifiedEventApplier
     implements TypedEventApplier<
@@ -42,6 +43,9 @@ final class ProcessInstanceModifiedEventApplier
   private void clearInterruptedState(final ProcessInstanceModificationRecord value) {
     value.getAncestorScopeKeys().stream()
         .map(elementInstanceState::getInstance)
+        // These instances can be null when an element in a flow scope gets activated, but the flow
+        // scope gets terminated in this same command
+        .filter(Objects::nonNull)
         .filter(ElementInstance::isInterrupted)
         .forEach(
             instance ->
