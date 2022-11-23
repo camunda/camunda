@@ -25,6 +25,7 @@ var (
 	jobKey       int64
 	errorCode    string
 	errorMessage string
+	variables    string
 )
 
 type ThrowErrorResponseWrapper struct {
@@ -45,10 +46,21 @@ var throwErrorJobCmd = &cobra.Command{
 	Args:    keyArg(&jobKey),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		request, err := client.NewThrowErrorCommand().
+			JobKey(jobKey).
+			ErrorCode(errorCode).
+			ErrorMessage(errorMessage).
+			VariablesFromString(variables)
+
+		if err != nil {
+			return err
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), timeoutFlag)
 		defer cancel()
 
-		resp, err := client.NewThrowErrorCommand().JobKey(jobKey).ErrorCode(errorCode).ErrorMessage(errorMessage).Send(ctx)
+		var resp *pb.ThrowErrorResponse
+		resp, err = request.Send(ctx)
 		if err != nil {
 			return err
 		}
@@ -66,4 +78,5 @@ func init() {
 		panic(err)
 	}
 	throwErrorJobCmd.Flags().StringVar(&errorMessage, "errorMessage", "", "Specify an error message with additional context")
+	throwErrorJobCmd.Flags().StringVar(&variables, "variables", "{}", "Specify variables as JSON object string")
 }
