@@ -1,0 +1,58 @@
+name: Weekly medic benchmark
+on:
+  schedule:
+    # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
+    - cron: 0 1 * * 1
+
+jobs:
+  delete-old-benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: zeebe-io
+          install_components: gke-gcloud-auth-plugin, kubectl
+      - uses: google-github-actions/get-gke-credentials@v0.8.2
+        with:
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
+      - name: Collect benchmark data
+        id: data
+        run: |
+          # Get all namespaces, filter for medic benchmarks and select the oldest one
+          echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
+          echo "mixed=$(kubectl get ns -o name | grep -E namespace/medic-cw-[0-9]+-[a-z0-9]+-benchmark-mixed$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
+      - name: Delete benchmarks
+        run: |
+          kubectl delete ${{ steps.data.normal }}
+          kubectl delete ${{ steps.data.mixed }}
+  setup-new-benchmarks:
+    name: Setup new benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect benchmark data
+        id: data
+        run: |
+          echo "ref=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "cw=$(date +%V)" >> $GITHUB_OUTPUT
+      - uses: ./.github/workflows/benchmark.yaml
+        name: Create normal benchmark
+        with:
+          name: medic-cw-${{ steps.data.outputs.cw }}-${{ steps.data.outputs.ref }}-benchmark
+          cluster: zeebe-cluster
+          cluster-region: europe-west1-b
+          ref: ${{ steps.data.outputs.ref }}
+          load: "worker, starter=200"
+        secrets: inherit
+      - uses: ./.github/workflows/benchmark.yaml
+        name: Create mixed benchmark
+        with:
+          name: medic-cw-${{ steps.data.outputs.cw }}-${{ steps.data.outputs.ref }}-benchmark-mixed
+          cluster: zeebe-cluster
+          cluster-region: europe-west1-b
+          ref: ${{ steps.data.outputs.ref }}
+          load: "worker, starter=100, timer=50, publisher=50"
+        secrets: inherit
