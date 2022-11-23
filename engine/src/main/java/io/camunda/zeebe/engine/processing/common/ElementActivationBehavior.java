@@ -141,6 +141,33 @@ public final class ElementActivationBehavior {
     return flowScopes;
   }
 
+  /**
+   * Activate (if needed) the elements that are the direct and indirect flow scopes of the main
+   * element that we're trying to activate.
+   *
+   * <p>This method uses recursion, each time polling an element from the flowScopes parameter.
+   *
+   * <p>It is able to determine whether a new instance of a flow scope element must be activated, or
+   * that one of the existing instances can be used. In some cases this requires the
+   * ancestorScopeKey to choose between multiple available instances of the same element.
+   *
+   * <p>Note that the ancestorScopeKey is also used to create new instances of in between flow
+   * scopes, if the ancestorScopeKey refers to an indirect flow scope of the element.
+   *
+   * @param processInstanceRecord the record of the process instance
+   * @param flowScopeKey key of the element instance that should be used as direct flow scope of the
+   *     next to activate element in flowScopes
+   * @param flowScopes the elements to activate, these are flow scopes of the main element that
+   *     we're trying to activate, instances may or may not yet exist of these elements
+   * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
+   *     selection, determines whether new instances of flowScopes should be activated or that we
+   *     can use existing ones
+   * @param createVariablesCallback a callback function to create variables in the activated flow
+   *     scopes
+   * @param activatedElementKeys collects the keys of the flow scopes encountered and/or activated
+   * @return the key of the last flow scope, to be used as direct flow scope of the main element
+   *     that we're trying to activate
+   */
   private long activateFlowScopes(
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
@@ -174,20 +201,21 @@ public final class ElementActivationBehavior {
 
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
-      // - no need to create a new instance; continue with the remaining flow scopes
+
       final var elementInstance = elementInstancesOfScope.get(0);
 
       final long activatedInstanceKey;
       if (ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY
-          && elementInstance.getValue().getFlowScopeKey() == ancestorScopeKey) {
-        // we found an instance of flow scope which exists inside the selected ancestor
-        // we need to activate a new instance of the flow scope because it itself was not the
-        // selected ancestor, but its flow scope is selected (which means create new instance of
-        // flow scope)
+          && isAncestorOfElementInstance(ancestorScopeKey, elementInstance)) {
+        // the active instance is a descendant of the selected ancestor
+        // - activate a new instance inside the ancestor
         activatedInstanceKey =
             activateFlowScope(
                 processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
       } else {
+        // no ancestor selection used, or the active instance isn't a descendant of it
+        // most often this means that the active instance IS the selected ancestor
+        // - no need to create a new instance; continue with the remaining flow scopes
         activatedInstanceKey = elementInstance.getKey();
       }
 
@@ -203,9 +231,11 @@ public final class ElementActivationBehavior {
 
     } else {
       // there are multiple active instances of this flow scope
-      // - use the selected ancestor as flow scope
+      // - try to use ancestor selection
 
       if (ancestorScopeKey == NO_ANCESTOR_SCOPE_KEY) {
+        // no ancestor selected
+        // - reject by throwing an exception
         final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
         throw new MultipleFlowScopeInstancesFoundException(
             flowScopeId, processInstanceRecord.getBpmnProcessId());
@@ -213,24 +243,27 @@ public final class ElementActivationBehavior {
 
       final long activatedInstanceKey;
       if (elementInstancesOfScope.stream()
-          .anyMatch(instance -> instance.getValue().getFlowScopeKey() == ancestorScopeKey)) {
-        // The selected ancestor is the flow scope of one of the existing element instances
-        // - we need to create a new instance inside the selected ancestor instance
+          .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
+        // one of the existing element instances of 'flow scope' is the selected ancestor
+        // - no need to create a new instance, because we've selected this instance explicitly
+        activatedInstanceKey = ancestorScopeKey;
+
+      } else if (elementInstancesOfScope.stream()
+          .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
+        // the selected ancestor is the (in)direct flow scope of an existing element instance
+        // - we need to create a new instance of 'flow scope' inside the selected ancestor instance
         activatedInstanceKey =
             activateFlowScope(
                 processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
 
-      } else if (elementInstancesOfScope.stream()
-          .noneMatch(instance -> instance.getKey() == ancestorScopeKey)) {
-        // Even though an ancestor is selected, it's unclear which of the
-        // todo: I'll write a test for this case
-
+      } else {
+        // the selected ancestor is not an ancestor of the existing element instances. It's also not
+        // one of the existing element instances itself. We cannot decide what to do here.
+        // - reject by throwing an exception
+        // todo: verify whether this situation can occur
         final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
         throw new MultipleFlowScopeInstancesFoundException(
             flowScopeId, processInstanceRecord.getBpmnProcessId());
-
-      } else {
-        activatedInstanceKey = ancestorScopeKey;
       }
 
       createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
@@ -244,6 +277,23 @@ public final class ElementActivationBehavior {
           createVariablesCallback,
           activatedElementKeys);
     }
+  }
+
+  private boolean isAncestorOfElementInstance(
+      final long ancestorScopeKey, final ElementInstance instance) {
+    final long directFlowScopeKey = instance.getValue().getFlowScopeKey();
+    if (directFlowScopeKey == -1L) {
+      // the instance has no flow scope, so it does not have an ancestor
+      return false;
+    }
+
+    if (directFlowScopeKey == ancestorScopeKey) {
+      // the instance's direct flow scope is the ancestor
+      return true;
+    }
+
+    final var directFlowScope = elementInstanceState.getInstance(directFlowScopeKey);
+    return isAncestorOfElementInstance(ancestorScopeKey, directFlowScope);
   }
 
   private List<ElementInstance> findElementInstances(
