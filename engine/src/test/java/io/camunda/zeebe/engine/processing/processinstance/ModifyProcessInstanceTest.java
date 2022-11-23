@@ -1001,6 +1001,125 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldUseAncestorSelectionWithMultiInstancesOfNestedInstances() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-sub",
+                    sub ->
+                        sub.zeebeInputExpression("null", "key2")
+                            .startEvent()
+                            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                            .interrupting(false)
+                            .userTask("A")
+                            .boundaryEvent(
+                                "boundary",
+                                b ->
+                                    b.cancelActivity(false)
+                                        .message(
+                                            m ->
+                                                m.name("msg2")
+                                                    .zeebeCorrelationKeyExpression("key2"))
+                                        .subProcess("sub")
+                                        .embeddedSubProcess()
+                                        .startEvent()
+                                        .userTask("B")
+                                        .userTask("C")
+                                        .endEvent()
+                                        .subProcessDone()
+                                        .endEvent()))
+                .startEvent()
+                .userTask("D")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("key", helper.getCorrelationValue())
+            .create();
+
+    ENGINE
+        .message()
+        .withName("msg")
+        .withCorrelationKey(helper.getCorrelationValue())
+        .withVariables(Map.of("key2", helper.getCorrelationValue() + "1"))
+        .publish();
+    ENGINE
+        .message()
+        .withName("msg")
+        .withCorrelationKey(helper.getCorrelationValue())
+        .withVariables(Map.of("key2", helper.getCorrelationValue() + "2"))
+        .publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("A")
+                .limit(2))
+        .describedAs("Expect that task A activated 2 times")
+        .hasSize(2);
+
+    ENGINE
+        .message()
+        .withName("msg2")
+        .withCorrelationKey(helper.getCorrelationValue() + "1")
+        .publish();
+    ENGINE
+        .message()
+        .withName("msg2")
+        .withCorrelationKey(helper.getCorrelationValue() + "1")
+        .publish();
+    ENGINE
+        .message()
+        .withName("msg2")
+        .withCorrelationKey(helper.getCorrelationValue() + "2")
+        .publish();
+    ENGINE
+        .message()
+        .withName("msg2")
+        .withCorrelationKey(helper.getCorrelationValue() + "2")
+        .publish();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("B")
+                .limit(4))
+        .describedAs("Expect that task B activated 4 times, twice per event-subprocess instance")
+        .hasSize(4);
+
+    // when
+    final var ancestorScopeKey = processInstanceKey;
+    final var modifiedRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("C", ancestorScopeKey)
+            .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .skipUntil(r -> r.getPosition() >= modifiedRecord.getSourceRecordPosition())
+                .limit(3))
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getElementId)
+        .describedAs(
+            "Expect that the event sub process, embedded sub process and task C have been activated")
+        .containsExactly("event-sub", "sub", "C");
+
+    assert false;
+  }
+
+  @Test
   public void shouldActivateParallelGateway() {
     // given
     ENGINE
