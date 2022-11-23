@@ -61,7 +61,7 @@ clean-timer:
 
 .PHONY: clean-simpleStarter
 clean-simpleStarter:
-	-kubectl delete -n $(namespace) -f simpleStarter.yaml
+	-kubectl delete -n $(namespace) -f simple-starter.yaml
 
 .PHONY: clean-worker
 clean-worker:
