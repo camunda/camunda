@@ -44,6 +44,7 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
 
   @Override
   protected void before() {
+    clock.reset();
     actorScheduler.start();
   }
 
