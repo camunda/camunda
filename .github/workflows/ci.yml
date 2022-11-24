@@ -18,6 +18,9 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  BUILD_DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+
 jobs:
   integration-tests:
     name: Integration tests
@@ -422,7 +425,7 @@ jobs:
           # we use a local registry for pushing
           repository: localhost:5000/camunda/zeebe
           distball: ${{ steps.build-zeebe.outputs.distball }}
-          platforms: "linux/amd64,linux/arm64"
+          platforms: ${{ env.BUILD_DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
       - name: Verify Docker images
@@ -546,6 +549,7 @@ jobs:
         with:
           repository: camunda/zeebe
           version: SNAPSHOT
+          platforms: ${{ env.BUILD_DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
   notify-if-failed:
