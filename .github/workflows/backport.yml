@@ -5,7 +5,7 @@ on:
   issue_comment:
     types: [created]
 jobs:
-  build:
+  backport:
     name: Create backport PRs
     runs-on: ubuntu-latest
     # Only run when pull request is merged
@@ -27,20 +27,11 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
       - name: Create backport PRs
-        uses: zeebe-io/backport-action@v0.0.9
+        uses: zeebe-io/backport-action@v1-rc1
         with:
-          # Required
+          # Optional
           # Token to authenticate requests to GitHub
           github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
-
-          # Required
-          # Working directory for the backport action
-          github_workspace: ${{ github.workspace }}
-
-          # Optional
-          # Regex pattern to match github labels
-          # Must contain a capture group for target branchname
-          # label_pattern: ^backport ([^ ]+)$
 
           # Optional
           # Template used as description in the pull requests created by this action.
