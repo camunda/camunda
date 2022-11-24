@@ -23,7 +23,6 @@ import {
 import {sortOperations} from './utils/sortOperations';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {tracking} from 'modules/tracking';
 
 type Query = Parameters<typeof applyBatchOperation>['1'];
 type OperationPayload = Parameters<typeof applyOperation>['1'];
@@ -141,17 +140,13 @@ class Operations extends NetworkReconnectionHandler {
     instanceId: string;
     payload: OperationPayload;
     onError?: (operationType: OperationEntityType) => void;
-    onSuccess?: () => void;
+    onSuccess?: (operationType: OperationEntityType) => void;
   }) => {
     const response = await applyOperation(instanceId, payload);
 
     if (response.isSuccess) {
       this.prependOperations(response.data);
-      tracking.track({
-        eventName: 'single-operation',
-        operationType: payload.operationType,
-      });
-      onSuccess?.();
+      onSuccess?.(payload.operationType);
     } else {
       onError?.(payload.operationType);
     }

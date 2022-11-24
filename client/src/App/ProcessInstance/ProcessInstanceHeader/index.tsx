@@ -163,6 +163,13 @@ const ProcessInstanceHeader: React.FC = observer(() => {
                 headline: 'Operation could not be created',
               });
             }}
+            onSuccess={(operationType) => {
+              tracking.track({
+                eventName: 'single-operation',
+                operationType,
+                source: 'instance-header',
+              });
+            }}
             forceSpinner={
               variablesStore.hasActiveOperation ||
               processInstance?.hasActiveOperation

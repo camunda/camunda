@@ -245,7 +245,7 @@ const List: React.FC = observer(() => {
                     cellContent: (
                       <Operations
                         instance={instance}
-                        onOperation={(operationType: OperationEntityType) =>
+                        onOperation={(operationType) =>
                           processInstancesStore.markProcessInstancesWithActiveOperations(
                             {
                               ids: [instance.id],
@@ -253,7 +253,7 @@ const List: React.FC = observer(() => {
                             }
                           )
                         }
-                        onError={(operationType: OperationEntityType) => {
+                        onError={(operationType) => {
                           processInstancesStore.unmarkProcessInstancesWithActiveOperations(
                             {
                               instanceIds: [instance.id],
@@ -262,6 +262,13 @@ const List: React.FC = observer(() => {
                           );
                           notifications.displayNotification('error', {
                             headline: 'Operation could not be created',
+                          });
+                        }}
+                        onSuccess={(operationType) => {
+                          tracking.track({
+                            eventName: 'single-operation',
+                            operationType,
+                            source: 'instances-list',
                           });
                         }}
                       />

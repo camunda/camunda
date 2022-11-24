@@ -30,6 +30,7 @@ type Props = {
   instance: ProcessInstanceEntity;
   onOperation?: (operationType: OperationEntityType) => void;
   onError?: (operationType: OperationEntityType) => void;
+  onSuccess?: (operationType: OperationEntityType) => void;
   forceSpinner?: boolean;
   isInstanceModificationVisible?: boolean;
 };
@@ -39,6 +40,7 @@ const Operations: React.FC<Props> = observer(
     instance,
     onOperation,
     onError,
+    onSuccess,
     forceSpinner,
     isInstanceModificationVisible = false,
   }) => {
@@ -61,6 +63,7 @@ const Operations: React.FC<Props> = observer(
           operationType,
         },
         onError,
+        onSuccess,
       });
 
       onOperation?.(operationType);

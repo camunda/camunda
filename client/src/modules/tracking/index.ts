@@ -53,6 +53,7 @@ type Events =
   | {
       eventName: 'single-operation';
       operationType: OperationEntityType;
+      source: 'instances-list' | 'incident-table' | 'instance-header';
     }
   | {
       eventName: 'instances-loaded';

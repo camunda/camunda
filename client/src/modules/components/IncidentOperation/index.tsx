@@ -16,6 +16,7 @@ import {OperationItem} from 'modules/components/OperationItem';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
+import {tracking} from 'modules/tracking';
 
 type Props = {
   incident: unknown;
@@ -48,6 +49,13 @@ const IncidentOperation: React.FC<Props> = observer(
           incidentId: incident.id,
         },
         onError: handleError,
+        onSuccess: () => {
+          tracking.track({
+            eventName: 'single-operation',
+            operationType: 'RESOLVE_INCIDENT',
+            source: 'incident-table',
+          });
+        },
       });
     };
 
