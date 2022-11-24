@@ -256,6 +256,23 @@ public final class ElementActivationBehavior {
             activateFlowScope(
                 processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
 
+      } else if (elementInstancesOfScope.stream()
+          .anyMatch(
+              instance ->
+                  isAncestorOfElementInstance(
+                      instance.getKey(), elementInstanceState.getInstance(ancestorScopeKey)))) {
+        // we found instances of a flow scope that itself is an ancestor of the ancestor scopeKey.
+        // - no need to create a new instance, because we can use the instance explicitly.
+        activatedInstanceKey =
+            elementInstancesOfScope.stream()
+                .filter(
+                    instance ->
+                        isAncestorOfElementInstance(
+                            instance.getKey(), elementInstanceState.getInstance(ancestorScopeKey)))
+                .findAny()
+                .get()
+                .getKey();
+
       } else {
         // the selected ancestor is not an ancestor of the existing element instances. It's also not
         // one of the existing element instances itself. We cannot decide what to do here.

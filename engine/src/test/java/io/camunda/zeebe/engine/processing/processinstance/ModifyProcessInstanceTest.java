@@ -1086,16 +1086,20 @@ public class ModifyProcessInstanceTest {
         .withCorrelationKey(helper.getCorrelationValue() + "2")
         .publish();
 
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId("B")
-                .limit(4))
+    final var flowscopekeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .limit(4)
+            .map(Record::getValue)
+            .map(ProcessInstanceRecordValue::getFlowScopeKey)
+            .toList();
+    assertThat(flowscopekeys)
         .describedAs("Expect that task B activated 4 times, twice per event-subprocess instance")
         .hasSize(4);
 
     // when
-    final var ancestorScopeKey = processInstanceKey;
+    final var ancestorScopeKey = flowscopekeys.get(0);
     final var modifiedRecord =
         ENGINE
             .processInstance()
@@ -1105,18 +1109,16 @@ public class ModifyProcessInstanceTest {
             .modify();
 
     // then
-    assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withProcessInstanceKey(processInstanceKey)
-                .skipUntil(r -> r.getPosition() >= modifiedRecord.getSourceRecordPosition())
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(ProcessInstanceRecordValue::getElementId)
-        .describedAs(
-            "Expect that the event sub process, embedded sub process and task C have been activated")
-        .containsExactly("event-sub", "sub", "C");
-
-    assert false;
+    final var activatedTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skipUntil(r -> r.getPosition() >= modifiedRecord.getSourceRecordPosition())
+            .limit(1)
+            .getFirst();
+    assertThat(activatedTask.getValue())
+        .describedAs("Expect that task C has been activated")
+        .hasElementId("C")
+        .hasFlowScopeKey(ancestorScopeKey);
   }
 
   @Test
