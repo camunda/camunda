@@ -137,7 +137,8 @@ public class ProcessOverviewWriter {
       processOverviewDto.setProcessDefinitionKey(entry.getKey());
       processOverviewDto.setDigest(new ProcessDigestDto(
         false,
-        Collections.emptyMap()));
+        Collections.emptyMap()
+      ));
       processOverviewDto.setLastKpiEvaluationResults(reportIdToValue);
       UpdateRequest updateRequest = new UpdateRequest()
         .index(PROCESS_OVERVIEW_INDEX_NAME)
@@ -211,6 +212,7 @@ public class ProcessOverviewWriter {
       processUpdateDto.getProcessDigest().isEnabled(),
       Collections.emptyMap()
     ));
+    processOverviewDto.setLastKpiEvaluationResults(Collections.emptyMap());
     return processOverviewDto;
   }
 

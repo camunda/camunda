@@ -40,22 +40,19 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Runn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.SuspendedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 @Component
 @Slf4j
@@ -82,7 +79,8 @@ public class KpiService {
         = (SingleReportEvaluationResult<?>) reportEvaluationHandler
         .evaluateReport(ReportEvaluationInfo.builder(report).timezone(ZoneId.systemDefault()).build())
         .getEvaluationResult();
-      if (evaluationResult.getFirstCommandResult().getFirstMeasureData() instanceof Double || evaluationResult.getFirstCommandResult().getFirstMeasureData() == null) {
+      if (evaluationResult.getFirstCommandResult().getFirstMeasureData() instanceof Double
+        || evaluationResult.getFirstCommandResult().getFirstMeasureData() == null) {
         final Double evaluationValue = (Double) evaluationResult.getFirstCommandResult().getFirstMeasureData();
         KpiResultDto kpiResponseDto = new KpiResultDto();
         kpiResponseDto.setReportId(report.getId());
@@ -97,25 +95,26 @@ public class KpiService {
 
   public List<KpiResultDto> extractKpiResultsForProcessDefinition(final ProcessOverviewDto processOverviewDto) {
     final List<KpiResultDto> kpiResponseDtos = new ArrayList<>();
-      final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
-        processOverviewDto.getProcessDefinitionKey());
-      final Map<String, String> lastKpiEvaluationResults = processOverviewDto.getLastKpiEvaluationResults();
-      for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
-        KpiResultDto kpiResponseDto = new KpiResultDto();
-        if (lastKpiEvaluationResults.containsKey(report.getId())) {
-          kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));
-          getTargetAndUnit(report)
-            .ifPresent(targetAndUnit -> {
-              kpiResponseDto.setTarget(targetAndUnit.getTarget());
-              kpiResponseDto.setUnit(targetAndUnit.getTargetValueUnit());
-            });
-          kpiResponseDto.setReportId(report.getId());
-          kpiResponseDto.setReportName(report.getName());
-          kpiResponseDto.setBelow(getIsBelow(report));
-          kpiResponseDto.setType(getKpiType(report));
-          kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
-          kpiResponseDtos.add(kpiResponseDto);
-        }
+    final List<SingleProcessReportDefinitionRequestDto> kpiReports = getKpiReportsForProcessDefinition(
+      processOverviewDto.getProcessDefinitionKey());
+    final Map<String, String> lastKpiEvaluationResults =
+      Optional.ofNullable(processOverviewDto.getLastKpiEvaluationResults()).orElse(Collections.emptyMap());
+    for (SingleProcessReportDefinitionRequestDto report : kpiReports) {
+      KpiResultDto kpiResponseDto = new KpiResultDto();
+      if (lastKpiEvaluationResults.containsKey(report.getId())) {
+        kpiResponseDto.setValue(lastKpiEvaluationResults.get(report.getId()));
+        getTargetAndUnit(report)
+          .ifPresent(targetAndUnit -> {
+            kpiResponseDto.setTarget(targetAndUnit.getTarget());
+            kpiResponseDto.setUnit(targetAndUnit.getTargetValueUnit());
+          });
+        kpiResponseDto.setReportId(report.getId());
+        kpiResponseDto.setReportName(report.getName());
+        kpiResponseDto.setBelow(getIsBelow(report));
+        kpiResponseDto.setType(getKpiType(report));
+        kpiResponseDto.setMeasure(getViewProperty(report).orElse(null));
+        kpiResponseDtos.add(kpiResponseDto);
+      }
     }
     return kpiResponseDtos;
   }
