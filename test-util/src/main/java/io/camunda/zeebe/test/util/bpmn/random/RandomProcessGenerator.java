@@ -29,6 +29,9 @@ public final class RandomProcessGenerator {
   public static final double PROBABILITY_BOUNDARY_TIMER_EVENT = 0.2;
   public static final double PROBABILITY_BOUNDARY_ERROR_EVENT = 0.2;
   public static final double PROBABILITY_TERMINATE_END_EVENT = 0.2;
+  public static final double PROBABILITY_ESCALATION_END_EVENT = 0.2;
+  public static final double PROBABILITY_INTERRUPTING_ESCALATION_EVENT = 0.2;
+  public static final double PROBABILITY_CALL_ACTIVITY_ESCALATION_EVENT = 0.2;
 
   private static final BlockSequenceBuilderFactory FACTORY = new BlockSequenceBuilderFactory();
 
