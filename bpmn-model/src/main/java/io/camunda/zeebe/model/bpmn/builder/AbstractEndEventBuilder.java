@@ -33,6 +33,16 @@ public abstract class AbstractEndEventBuilder<B extends AbstractEndEventBuilder<
   }
 
   /**
+   * Sets a dynamic error code for the error that is retrieved from the given expression
+   *
+   * @param errorCodeExpression the expression for the error
+   * @return the builder object
+   */
+  public B errorExpression(final String errorCodeExpression) {
+    return error(asZeebeExpression(errorCodeExpression));
+  }
+
+  /**
    * Sets an error definition for the given error code. If already an error with this code exists it
    * will be used, otherwise a new error is created.
    *

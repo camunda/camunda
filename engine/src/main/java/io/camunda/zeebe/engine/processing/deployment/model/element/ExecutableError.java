@@ -7,22 +7,41 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
+import io.camunda.zeebe.el.Expression;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ExecutableError extends AbstractFlowElement {
 
-  private final DirectBuffer errorCode = new UnsafeBuffer();
+  private DirectBuffer errorCode;
+  private Expression errorCodeExpression;
 
   public ExecutableError(final String id) {
     super(id);
   }
 
-  public DirectBuffer getErrorCode() {
-    return errorCode;
+  /**
+   * Returns the error code, if it has been resolved previously (and is independent of the variable
+   * context). If this returns an empty {@code Optional} then the error code must be resolved by
+   * evaluating {@code getErrorCodeExpression()}
+   *
+   * @return the error code, if it has been resolved previously (and is independent of the variable
+   *     context)
+   */
+  public Optional<DirectBuffer> getErrorCode() {
+    return Optional.ofNullable(errorCode);
   }
 
   public void setErrorCode(final DirectBuffer errorCode) {
-    this.errorCode.wrap(errorCode);
+    this.errorCode = new UnsafeBuffer(errorCode);
+  }
+
+  public Expression getErrorCodeExpression() {
+    return errorCodeExpression;
+  }
+
+  public void setErrorCodeExpression(final Expression errorCodeExpression) {
+    this.errorCodeExpression = errorCodeExpression;
   }
 }

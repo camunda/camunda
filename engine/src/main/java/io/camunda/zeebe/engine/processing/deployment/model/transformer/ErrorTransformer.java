@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
@@ -25,13 +28,24 @@ public class ErrorTransformer implements ModelElementTransformer<Error> {
   public void transform(final Error element, final TransformContext context) {
 
     final var error = new ExecutableError(element.getId());
+    final var expressionLanguage = context.getExpressionLanguage();
 
     // ignore error events that are not references by the process
     Optional.ofNullable(element.getErrorCode())
-        .map(BufferUtil::wrapString)
         .ifPresent(
             errorCode -> {
-              error.setErrorCode(errorCode);
+              final Expression errorCodeExpression = expressionLanguage.parseExpression(errorCode);
+
+              error.setErrorCodeExpression(errorCodeExpression);
+              if (errorCodeExpression.isStatic()) {
+                final EvaluationResult errorCodeResult =
+                    expressionLanguage.evaluateExpression(errorCodeExpression, variable -> null);
+
+                if (errorCodeResult.getType() == ResultType.STRING) {
+                  error.setErrorCode(BufferUtil.wrapString(errorCodeResult.getString()));
+                }
+              }
+
               context.addError(error);
             });
   }

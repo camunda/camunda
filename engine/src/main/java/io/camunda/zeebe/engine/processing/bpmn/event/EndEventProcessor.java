@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
 import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
-import static io.camunda.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
@@ -19,8 +18,12 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.agrona.DirectBuffer;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
   private final List<EndEventBehavior> endEventBehaviors =
@@ -31,6 +34,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           new TerminateEndEventBehavior(),
           new EscalationEndEventBehavior());
 
+  private final ExpressionProcessor expressionProcessor;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
@@ -41,6 +45,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   public EndEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     eventPublicationBehavior = bpmnBehaviors.eventPublicationBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
@@ -127,24 +132,36 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-      final var error = element.getError();
-      ensureNotNull("error", error);
-
-      final var errorCode = error.getErrorCode();
-      ensureNotNullOrEmpty("errorCode", errorCode);
 
       // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event
       // or
       // event sub process). This is also why we don't have to transition to the completing state
       // here
-      eventPublicationBehavior
-          .findErrorCatchEvent(errorCode, activating)
+      evaluateErrorCode(element, activating)
+          .flatMap(errorCode -> eventPublicationBehavior.findErrorCatchEvent(errorCode, activating))
           .ifRightOrLeft(
               catchEvent -> {
                 stateTransitionBehavior.transitionToActivated(activating);
                 eventPublicationBehavior.throwErrorEvent(catchEvent);
               },
               failure -> incidentBehavior.createIncident(failure, activating));
+    }
+
+    private Either<Failure, DirectBuffer> evaluateErrorCode(
+        final ExecutableEndEvent element, final BpmnElementContext context) {
+      final var error = element.getError();
+      ensureNotNull("error", error);
+
+      if (error.getErrorCode().isPresent()) {
+        return Either.right(error.getErrorCode().get());
+      }
+
+      final var errorCode =
+          expressionProcessor.evaluateStringExpressionAsDirectBuffer(
+              error.getErrorCodeExpression(), context.getElementInstanceKey());
+      ensureNotNull("errorCode", errorCode);
+
+      return errorCode;
     }
   }
 
