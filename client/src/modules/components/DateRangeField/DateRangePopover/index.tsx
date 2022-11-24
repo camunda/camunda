@@ -10,15 +10,27 @@ import {Form} from 'react-final-form';
 import {DatePicker} from '@carbon/react';
 import {Button} from 'modules/components/Button';
 import {formatDate} from '../formatDate';
-import {DateInput} from './DateInput';
+import {DateTimeInput} from './DateTimeInput';
 import {DatePickerContainer, Footer, Popover} from './styled';
+import {logger} from 'modules/logger';
 
 type Props = {
   referenceElement: HTMLElement;
   onCancel: () => void;
   onOutsideClick?: (event: MouseEvent) => void;
-  onApply: ({fromDate, toDate}: {fromDate: Date; toDate: Date}) => void;
-  defaultValues: {fromDate: string; toDate: string};
+  onApply: ({
+    fromDateTime,
+    toDateTime,
+  }: {
+    fromDateTime: Date;
+    toDateTime: Date;
+  }) => void;
+  defaultValues: {
+    fromDate: string;
+    fromTime: string;
+    toDate: string;
+    toTime: string;
+  };
 };
 
 const DateRangePopover: React.FC<Props> = ({
@@ -34,13 +46,29 @@ const DateRangePopover: React.FC<Props> = ({
 
   const handleApply = ({
     fromDate,
+    fromTime,
     toDate,
+    toTime,
   }: {
     fromDate?: string;
+    fromTime?: string;
     toDate?: string;
+    toTime?: string;
   }) => {
-    if (fromDate !== undefined && toDate !== undefined) {
-      onApply({fromDate: new Date(fromDate), toDate: new Date(toDate)});
+    if (
+      fromDate !== undefined &&
+      fromTime !== undefined &&
+      toDate !== undefined &&
+      toTime !== undefined
+    ) {
+      try {
+        onApply({
+          fromDateTime: new Date(`${fromDate} ${fromTime}`),
+          toDateTime: new Date(`${toDate} ${toTime}`),
+        });
+      } catch (e) {
+        logger.error(e);
+      }
     }
   };
 
@@ -59,12 +87,18 @@ const DateRangePopover: React.FC<Props> = ({
               <DatePicker
                 datePickerType="range"
                 onChange={(event) => {
-                  const [fromDate, toDate] = event;
-                  if (fromDate !== undefined) {
-                    form.change('fromDate', formatDate(fromDate));
+                  const [fromDateTime, toDateTime] = event;
+                  if (fromDateTime !== undefined) {
+                    form.change('fromDate', formatDate(fromDateTime));
+                    if (form.getFieldState('fromTime')?.value === '') {
+                      form.change('fromTime', '00:00:00');
+                    }
                   }
-                  if (toDate !== undefined) {
-                    form.change('toDate', formatDate(toDate));
+                  if (toDateTime !== undefined) {
+                    form.change('toDate', formatDate(toDateTime));
+                    if (form.getFieldState('toTime')?.value === '') {
+                      form.change('toTime', '23:59:59');
+                    }
                   }
                 }}
                 dateFormat="Y-m-d"
@@ -74,12 +108,12 @@ const DateRangePopover: React.FC<Props> = ({
                 inline
                 short
               >
-                <DateInput
+                <DateTimeInput
                   id="date-picker-input-id-start"
                   type="from"
                   labelText="From"
                 />
-                <DateInput
+                <DateTimeInput
                   id="date-picker-input-id-finish"
                   type="to"
                   labelText="To"
@@ -103,8 +137,10 @@ const DateRangePopover: React.FC<Props> = ({
                 size="medium"
                 title="Apply"
                 disabled={
-                  form.getFieldState('fromDate')?.value === undefined ||
-                  form.getFieldState('toDate')?.value === undefined
+                  form.getFieldState('fromDate')?.value === '' ||
+                  form.getFieldState('fromTime')?.value === '' ||
+                  form.getFieldState('toDate')?.value === '' ||
+                  form.getFieldState('toTime')?.value === ''
                 }
               >
                 Apply

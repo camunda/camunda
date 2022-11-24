@@ -308,16 +308,16 @@ const Filters: React.FC = observer(() => {
                           return (
                             <DateRangeField
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
-                              fromDateKey="startDateAfter"
-                              toDateKey="startDateBefore"
+                              fromDateTimeKey="startDateAfter"
+                              toDateTimeKey="startDateBefore"
                             />
                           );
                         case 'endDateRange':
                           return (
                             <DateRangeField
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
-                              fromDateKey="endDateAfter"
-                              toDateKey="endDateBefore"
+                              fromDateTimeKey="endDateAfter"
+                              toDateTimeKey="endDateBefore"
                             />
                           );
                         default:

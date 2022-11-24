@@ -16,7 +16,7 @@ import {Filters} from './index';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {omit} from 'lodash';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {pickDateRange} from 'modules/testUtils/pickDateRange';
+import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
 
 function reset() {
   jest.clearAllTimers();
@@ -154,11 +154,13 @@ describe('<Filters />', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Evaluation Date Range'));
       await user.click(screen.getByLabelText('Evaluation Date Range'));
-      const evaluationDate = await pickDateRange({
+      const evaluationDate = await pickDateTimeRange({
         user,
         screen,
         fromDay: '15',
         toDay: '20',
+        fromTime: '20:30:00',
+        toTime: '11:03:59',
       });
       await user.click(screen.getByText('Apply'));
 
@@ -217,7 +219,7 @@ describe('<Filters />', () => {
       });
 
       expect(
-        screen.getByDisplayValue('2021-02-21 - 2021-02-22')
+        screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
       ).toBeInTheDocument();
     }
   );

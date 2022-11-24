@@ -11,8 +11,12 @@ const formatDate = (date: Date) => {
   return format(date, 'yyyy-MM-dd');
 };
 
+const formatTime = (date: Date) => {
+  return format(date, 'HH:mm:ss');
+};
+
 const formatISODate = (date: Date) => {
   return format(date, "yyyy-MM-dd'T'HH:mm:ss.SSSxx");
 };
 
-export {formatDate, formatISODate};
+export {formatDate, formatISODate, formatTime};

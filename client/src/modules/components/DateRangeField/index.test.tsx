@@ -6,7 +6,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {pickDateRange} from 'modules/testUtils/pickDateRange';
+import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
@@ -31,8 +31,8 @@ describe('Date Range', () => {
     render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );
@@ -46,8 +46,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );
@@ -66,8 +66,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );
@@ -85,8 +85,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );
@@ -98,28 +98,32 @@ describe('Date Range', () => {
     expect(screen.getByTestId('popover')).toBeInTheDocument();
   });
 
-  it('should pick from and to dates', async () => {
+  it('should pick from and to dates and times', async () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
 
-    const {year, month, fromDay, toDay} = await pickDateRange({
+    const fromTime = '11:22:33';
+    const toTime = '08:59:59';
+    const {year, month, fromDay, toDay} = await pickDateTimeRange({
       user,
       screen,
       fromDay: '10',
       toDay: '20',
+      fromTime,
+      toTime,
     });
 
     await user.click(screen.getByText('Apply'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      `${year}-${month}-${fromDay} - ${year}-${month}-${toDay}`
+      `${year}-${month}-${fromDay} ${fromTime} - ${year}-${month}-${toDay} ${toTime}`
     );
   });
 
@@ -127,8 +131,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );
@@ -136,7 +140,7 @@ describe('Date Range', () => {
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue('Custom');
 
-    const {year, month, fromDay, toDay} = await pickDateRange({
+    const {year, month, fromDay, toDay} = await pickDateTimeRange({
       user,
       screen,
       fromDay: '10',
@@ -145,7 +149,7 @@ describe('Date Range', () => {
 
     await user.click(screen.getByText('Apply'));
 
-    const expectedValue = `${year}-${month}-${fromDay} - ${year}-${month}-${toDay}`;
+    const expectedValue = `${year}-${month}-${fromDay} 00:00:00 - ${year}-${month}-${toDay} 23:59:59`;
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
       expectedValue
     );
@@ -171,25 +175,27 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {
         wrapper: getWrapper({
-          startDateAfter: '2021-02-03',
-          startDateBefore: '2021-02-06',
+          startDateAfter: '2021-02-03T12:34:56',
+          startDateBefore: '2021-02-06T01:02:03',
         }),
       }
     );
 
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      '2021-02-03 - 2021-02-06'
+      '2021-02-03 12:34:56 - 2021-02-06 01:02:03'
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
 
     expect(screen.getByLabelText('From')).toHaveValue('2021-02-03');
+    expect(screen.getByTestId('fromTime')).toHaveValue('12:34:56');
     expect(screen.getByLabelText('To')).toHaveValue('2021-02-06');
+    expect(screen.getByTestId('toTime')).toHaveValue('01:02:03');
   });
 
   // will be unskipped when https://github.com/camunda/operate/issues/3650 is done
@@ -197,8 +203,8 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
-        fromDateKey="startDateAfter"
-        toDateKey="startDateBefore"
+        fromDateTimeKey="startDateAfter"
+        toDateTimeKey="startDateBefore"
       />,
       {wrapper: getWrapper()}
     );

@@ -8,28 +8,34 @@
 import {useRef, useState} from 'react';
 import {Field, useField, useForm} from 'react-final-form';
 import {DateRangePopover} from './DateRangePopover';
-import {formatDate, formatISODate} from './formatDate';
+import {formatDate, formatISODate, formatTime} from './formatDate';
 import {TextField} from './styled';
 
 type Props = {
   label: string;
-  fromDateKey: string;
-  toDateKey: string;
+  fromDateTimeKey: string;
+  toDateTimeKey: string;
 };
 
-const formatInputValue = (fromDate?: Date, toDate?: Date) => {
-  if (fromDate === undefined || toDate === undefined) {
+const formatInputValue = (fromDateTime?: Date, toDateTime?: Date) => {
+  if (fromDateTime === undefined || toDateTime === undefined) {
     return '';
   }
-  return `${formatDate(fromDate)} - ${formatDate(toDate)}`;
+  return `${formatDate(fromDateTime)} ${formatTime(
+    fromDateTime
+  )} - ${formatDate(toDateTime)} ${formatTime(toDateTime)}`;
 };
 
-const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
+const DateRangeField: React.FC<Props> = ({
+  label,
+  fromDateTimeKey,
+  toDateTimeKey,
+}) => {
   const cmTextFieldRef = useRef<HTMLCmTextfieldElement>(null);
   const textFieldRef = useRef<HTMLDivElement>(null);
   const form = useForm();
-  const fromDate = useField<string>(fromDateKey).input.value;
-  const toDate = useField<string>(toDateKey).input.value;
+  const fromDateTime = useField<string>(fromDateTimeKey).input.value;
+  const toDateTime = useField<string>(toDateTimeKey).input.value;
 
   const [isDateRangePopoverVisible, setIsDateRangePopoverVisible] =
     useState<boolean>(false);
@@ -38,8 +44,8 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
     if (isDateRangePopoverVisible) {
       return 'Custom';
     }
-    if (fromDate !== '' && toDate !== '') {
-      return formatInputValue(new Date(fromDate), new Date(toDate));
+    if (fromDateTime !== '' && toDateTime !== '') {
+      return formatInputValue(new Date(fromDateTime), new Date(toDateTime));
     }
     return '';
   };
@@ -69,7 +75,7 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
             }
           }}
         />
-        {[fromDateKey, toDateKey].map((filterKey) => (
+        {[fromDateTimeKey, toDateTimeKey].map((filterKey) => (
           <Field
             name={filterKey}
             key={filterKey}
@@ -83,10 +89,10 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
         <DateRangePopover
           referenceElement={textFieldRef.current}
           onCancel={handleCancel}
-          onApply={({fromDate, toDate}) => {
+          onApply={({fromDateTime, toDateTime}) => {
             setIsDateRangePopoverVisible(false);
-            form.change(fromDateKey, formatISODate(fromDate));
-            form.change(toDateKey, formatISODate(toDate));
+            form.change(fromDateTimeKey, formatISODate(fromDateTime));
+            form.change(toDateTimeKey, formatISODate(toDateTime));
           }}
           onOutsideClick={(event) => {
             if (
@@ -98,7 +104,14 @@ const DateRangeField: React.FC<Props> = ({label, fromDateKey, toDateKey}) => {
             }
             handleCancel();
           }}
-          defaultValues={{fromDate, toDate}}
+          defaultValues={{
+            fromDate:
+              fromDateTime === '' ? '' : formatDate(new Date(fromDateTime)),
+            fromTime:
+              fromDateTime === '' ? '' : formatTime(new Date(fromDateTime)),
+            toDate: toDateTime === '' ? '' : formatDate(new Date(toDateTime)),
+            toTime: toDateTime === '' ? '' : formatTime(new Date(toDateTime)),
+          }}
         />
       )}
     </>

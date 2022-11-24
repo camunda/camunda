@@ -12,16 +12,20 @@ const pad = (value: String | Number) => {
   return String(value).padStart(2, '0');
 };
 
-const pickDateRange = async ({
+const pickDateTimeRange = async ({
   user,
   screen,
   fromDay,
   toDay,
+  fromTime,
+  toTime,
 }: {
   user: UserEvent;
   screen: Screen;
   fromDay: string;
   toDay: string;
+  fromTime?: string;
+  toTime?: string;
 }) => {
   expect(screen.getByTestId('popover')).toBeInTheDocument();
 
@@ -32,14 +36,31 @@ const pickDateRange = async ({
   await user.click(screen.getByLabelText(`${monthName} ${fromDay}, ${year}`));
   await user.click(screen.getByLabelText(`${monthName} ${toDay}, ${year}`));
 
+  if (fromTime !== undefined) {
+    await user.clear(screen.getByTestId('fromTime'));
+    await user.type(screen.getByTestId('fromTime'), fromTime);
+  }
+
+  if (toTime !== undefined) {
+    await user.clear(screen.getByTestId('toTime'));
+    await user.type(screen.getByTestId('toTime'), toTime);
+  }
+
+  const fromTimeInput = screen.getByTestId('fromTime') as HTMLInputElement;
+  const toTimeInput = screen.getByTestId('toTime') as HTMLInputElement;
+
   return {
     fromDay: pad(fromDay),
     toDay: pad(toDay),
     month: pad(month),
-    fromDate: formatISODate(new Date(`${year}-${pad(month)}-${pad(fromDay)}`)),
-    toDate: formatISODate(new Date(`${year}-${pad(month)}-${pad(toDay)}`)),
+    fromDate: formatISODate(
+      new Date(`${year}-${pad(month)}-${pad(fromDay)} ${fromTimeInput.value}`)
+    ),
+    toDate: formatISODate(
+      new Date(`${year}-${pad(month)}-${pad(toDay)} ${toTimeInput.value}`)
+    ),
     year,
   };
 };
 
-export {pickDateRange};
+export {pickDateTimeRange};

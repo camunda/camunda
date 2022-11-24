@@ -241,8 +241,8 @@ const Filters: React.FC = observer(() => {
                     {filter === 'evaluationDateRange' ? (
                       <DateRangeField
                         label={OPTIONAL_FILTER_FIELDS[filter].label}
-                        fromDateKey="evaluationDateAfter"
-                        toDateKey="evaluationDateBefore"
+                        fromDateTimeKey="evaluationDateAfter"
+                        toDateTimeKey="evaluationDateBefore"
                       />
                     ) : (
                       <Field

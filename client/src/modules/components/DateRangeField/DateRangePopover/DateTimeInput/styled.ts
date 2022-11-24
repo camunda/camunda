@@ -19,6 +19,10 @@ const Container = styled.div`
     border: 1px solid #b0bac7;
     border-radius: 3px;
   }
+  .cds--text-input-wrapper {
+    width: 98px;
+    margin-left: 3px;
+  }
 `;
 
 export {Container};

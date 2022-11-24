@@ -19,7 +19,7 @@ import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {pickDateRange} from 'modules/testUtils/pickDateRange';
+import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
 
 describe('Filters', () => {
   beforeEach(async () => {
@@ -165,10 +165,10 @@ describe('Filters', () => {
       ).toBeInTheDocument();
       // Non-hidden fields
       expect(
-        screen.getByDisplayValue('2021-02-21 - 2021-02-22')
+        screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
       ).toBeInTheDocument();
       expect(
-        screen.getByDisplayValue('2021-02-23 - 2021-02-24')
+        screen.getByDisplayValue('2021-02-23 11:00:00 - 2021-02-24 12:00:00')
       ).toBeInTheDocument();
     }
   );
@@ -348,7 +348,7 @@ describe('Filters', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('Start Date Range'));
       await user.click(screen.getByLabelText('Start Date Range'));
-      const startDate = await pickDateRange({
+      const startDate = await pickDateTimeRange({
         user,
         screen,
         fromDay: '5',
@@ -358,11 +358,13 @@ describe('Filters', () => {
       await user.click(screen.getByText(/^more filters$/i));
       await user.click(screen.getByText('End Date Range'));
       await user.click(screen.getByLabelText('End Date Range'));
-      const endDate = await pickDateRange({
+      const endDate = await pickDateTimeRange({
         user,
         screen,
         fromDay: '15',
         toDay: '20',
+        fromTime: '11:22:33',
+        toTime: '08:59:59',
       });
       await user.click(screen.getByText('Apply'));
 
