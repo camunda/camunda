@@ -5,16 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.api.records;
+package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
-/**
- * Represents an unmodifiable entry of an {@link ImmutableRecordBatch}. Contains data about a record
- * which has been created by an RecordProcessor.
- */
-public interface ImmutableRecordBatchEntry {
+/** Represents an unmodifiable application record entry to be appended on the log. */
+public interface LogAppendEntry {
 
   /**
    * @return the key of the record

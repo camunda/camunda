@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.stream.api.records;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+
 /**
- * Represents an unmodifiable batch of records, which extends the {@link Iterable<
- * ImmutableRecordBatchEntry >} in order to make sure that the contained entries can be accessed.
+ * Represents an unmodifiable batch of records, which extends the {@link Iterable< LogAppendEntry >}
+ * in order to make sure that the contained entries can be accessed.
  */
-public interface ImmutableRecordBatch extends Iterable<ImmutableRecordBatchEntry> {}
+public interface ImmutableRecordBatch extends Iterable<LogAppendEntry> {}

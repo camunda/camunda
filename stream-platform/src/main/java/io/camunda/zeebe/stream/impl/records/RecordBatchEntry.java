@@ -9,20 +9,20 @@ package io.camunda.zeebe.stream.impl.records;
 
 import static io.camunda.zeebe.stream.impl.TypedEventRegistry.EVENT_REGISTRY;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.util.ReflectUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public record RecordBatchEntry(
     long key, int sourceIndex, RecordMetadata recordMetadata, UnifiedRecordValue unifiedRecordValue)
-    implements ImmutableRecordBatchEntry {
+    implements LogAppendEntry {
 
   @Override
   public UnifiedRecordValue recordValue() {

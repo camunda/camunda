@@ -9,12 +9,12 @@ package io.camunda.zeebe.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.stream.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
@@ -44,31 +44,29 @@ class RecordBatchTest {
     final var batchSize = recordBatch.getBatchSize();
     assertThat(batchSize).isGreaterThan(processInstanceRecord.getLength());
 
-    assertThat(recordBatch).map(ImmutableRecordBatchEntry::key).containsOnly(1L);
-    assertThat(recordBatch).map(ImmutableRecordBatchEntry::sourceIndex).containsOnly(-1);
+    assertThat(recordBatch).map(LogAppendEntry::key).containsOnly(1L);
+    assertThat(recordBatch).map(LogAppendEntry::sourceIndex).containsOnly(-1);
     assertThat(recordBatch)
-        .map(ImmutableRecordBatchEntry::recordMetadata)
+        .map(LogAppendEntry::recordMetadata)
         .map(RecordMetadata::getIntent)
         .containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
     assertThat(recordBatch)
-        .map(ImmutableRecordBatchEntry::recordMetadata)
+        .map(LogAppendEntry::recordMetadata)
         .map(RecordMetadata::getRecordType)
         .containsOnly(RecordType.COMMAND);
     assertThat(recordBatch)
-        .map(ImmutableRecordBatchEntry::recordMetadata)
+        .map(LogAppendEntry::recordMetadata)
         .map(RecordMetadata::getRejectionType)
         .containsOnly(RejectionType.ALREADY_EXISTS);
     assertThat(recordBatch)
-        .map(ImmutableRecordBatchEntry::recordMetadata)
+        .map(LogAppendEntry::recordMetadata)
         .map(RecordMetadata::getValueType)
         .containsOnly(ValueType.PROCESS_INSTANCE);
     assertThat(recordBatch)
-        .map(ImmutableRecordBatchEntry::recordMetadata)
+        .map(LogAppendEntry::recordMetadata)
         .map(RecordMetadata::getRejectionReason)
         .containsOnly("broken somehow");
-    assertThat(recordBatch)
-        .map(ImmutableRecordBatchEntry::recordValue)
-        .containsOnly(processInstanceRecord);
+    assertThat(recordBatch).map(LogAppendEntry::recordValue).containsOnly(processInstanceRecord);
   }
 
   @Test
