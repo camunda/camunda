@@ -241,6 +241,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
         .map(obj -> (Record<ProcessInstanceRecordValue>) obj).collect(Collectors.groupingBy(obj -> obj.getKey()));
     List<Long> flowNodeInstanceKeysOrdered = zeebeRecords.stream()
         .map(Record::getKey)
+        .distinct()
         .collect(Collectors.toList());
     flowNodeInstanceZeebeRecordProcessor.processProcessInstanceRecord(groupedWIRecordsPerActivityInst, flowNodeInstanceKeysOrdered,
         bulkRequest);
