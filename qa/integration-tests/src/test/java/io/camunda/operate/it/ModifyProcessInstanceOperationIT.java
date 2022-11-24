@@ -391,7 +391,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .deployProcess("subProcess.bpmn")
         .waitUntil().processIsDeployed();
 
-    tester.startProcessInstance("prWithSubprocess")
+    tester.startProcessInstance("prWithSubprocess", "{\"items\": [1]}")
         .waitUntil()
         .flowNodeIsActive("taskA");
 
