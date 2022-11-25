@@ -192,6 +192,7 @@ public final class SystemContext {
                 .withApiCallTimeout(s3Config.getApiCallTimeout())
                 .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
                 .withCompressionAlgorithm(s3Config.getCompression())
+                .withBasePath(s3Config.getBasePath())
                 .build();
         S3BackupStore.validateConfig(storeConfig);
       } catch (final Exception e) {

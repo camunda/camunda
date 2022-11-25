@@ -50,6 +50,7 @@ final class BackupStoreComponent {
               .withApiCallTimeout(s3Config.getApiCallTimeout())
               .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
               .withCompressionAlgorithm(s3Config.getCompression())
+              .withBasePath(s3Config.getBasePath())
               .build();
       return new S3BackupStore(storeConfig);
     } else {
