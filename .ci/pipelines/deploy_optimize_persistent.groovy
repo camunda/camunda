@@ -4,7 +4,7 @@
 // https://github.com/camunda/optimize-jenkins-shared-library
 @Library(['camunda-ci', 'optimize-jenkins-shared-library']) _
 
-def static NODE_POOL() { 'agents-n1-standard-32-netssd-preempt' }
+def static NODE_POOL() { 'agents-n1-standard-8-netssd-preempt' }
 def static GCLOUD_DOCKER_IMAGE() { 'gcr.io/google.com/cloudsdktool/cloud-sdk:alpine' }
 
 pipeline {
