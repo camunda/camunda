@@ -4,10 +4,11 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
-package io.camunda.operate.webapp.rest.dto.operation;
+package io.camunda.operate.webapp.zeebe.operation;
 
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;

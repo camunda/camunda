@@ -6,7 +6,7 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.util.TestUtil.createGetAllRunningQuery;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
@@ -16,9 +16,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import io.camunda.operate.qa.util.RestAPITestUtil;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
@@ -221,7 +221,7 @@ public class CallActivityIncidentIT extends OperateZeebeIntegrationTest {
   }
 
   private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
-    ListViewQueryDto q = TestUtil.createGetAllProcessInstancesQuery();
+    ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
     if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
       q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionKeys));
     }

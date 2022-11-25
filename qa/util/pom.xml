@@ -28,6 +28,12 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>

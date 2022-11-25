@@ -42,7 +42,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestValidator;
+import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.*;
@@ -52,7 +52,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.validation.ConstraintViolationException;
 
-import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

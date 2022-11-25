@@ -8,12 +8,14 @@ package io.camunda.operate.property;
 
 public class ZeebeElasticsearchProperties extends ElasticsearchProperties {
 
+  public static final String ZEEBE_INDEX_PREFIX_DEFAULT = "zeebe-record";
+
   public ZeebeElasticsearchProperties() {
     this.setDateFormat("yyyy-MM-dd");   //hard-coded, as not configurable on Zeebe side
     this.setElsDateFormat("date");      //hard-coded, as not configurable on Zeebe side
   }
 
-  private String prefix = "zeebe-record";
+  private String prefix = ZEEBE_INDEX_PREFIX_DEFAULT;
 
   public String getPrefix() {
     return prefix;

@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.it;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,7 +28,6 @@ import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.BatchOperationReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
@@ -127,7 +128,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     final String batchOperationName = "operationName";
-    final ListViewQueryDto allRunningQuery = TestUtil.createGetAllRunningQuery();
+    final ListViewQueryDto allRunningQuery = createGetAllRunningQuery();
     final MvcResult mvcResult = postBatchOperationWithOKResponse(allRunningQuery, OperationType.CANCEL_PROCESS_INSTANCE, batchOperationName);
 
     //then
@@ -257,7 +258,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //no process instances
 
     //when
-    final MvcResult mvcResult = postBatchOperationWithOKResponse(TestUtil.createGetAllRunningQuery(), OperationType.CANCEL_PROCESS_INSTANCE);
+    final MvcResult mvcResult = postBatchOperationWithOKResponse(createGetAllRunningQuery(), OperationType.CANCEL_PROCESS_INSTANCE);
 
     //then
     final BatchOperationEntity batchOperationResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
@@ -563,7 +564,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Collections.singletonList(processInstanceKey.toString()));
     postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
@@ -692,7 +693,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     failTaskWithNoRetriesLeft("taskA", processInstanceKey, "Some error");
 
     //when we call CANCEL_PROCESS_INSTANCE and then RESOLVE_INCIDENT operation on one instance
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Collections.singletonList(processInstanceKey.toString()));
     postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));  //#1
     executeOneBatch();
@@ -725,7 +726,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     zeebeContainer.stop();
 
     //when we call CANCEL_PROCESS_INSTANCE and then RESOLVE_INCIDENT operation on one instance
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Collections.singletonList(processInstanceKey.toString()));
     postOperationWithOKResponse(processInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));  //#1
     executeOneBatch();
@@ -786,7 +787,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Collections.singletonList(processInstanceKey.toString()));
     postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
@@ -821,7 +822,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Collections.singletonList(processInstanceKey.toString()));
     postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
 
@@ -893,7 +894,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     }
 
     //when
-    final MvcResult mvcResult = postBatchOperation(TestUtil.createGetAllRunningQuery(), OperationType.RESOLVE_INCIDENT, null, HttpStatus.SC_BAD_REQUEST);
+    final MvcResult mvcResult = postBatchOperation(createGetAllRunningQuery(), OperationType.RESOLVE_INCIDENT, null, HttpStatus.SC_BAD_REQUEST);
 
     final String expectedErrorMsg = String
       .format("Too many process instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());

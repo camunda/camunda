@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -27,6 +26,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 import java.util.Arrays;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,7 +71,7 @@ public class OperationFailureIT extends OperateZeebeIntegrationTest {
 
     //when
     //we call CANCEL_PROCESS_INSTANCE operation on instance
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Arrays.asList(processInstanceKey1.toString(), processInstanceKey2.toString()));
     try {
       postBatchOperation(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE, null, 500);

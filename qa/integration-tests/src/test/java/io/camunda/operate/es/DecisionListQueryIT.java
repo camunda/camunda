@@ -11,6 +11,8 @@ import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_DEFINITION_
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_1_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.DECISION_INSTANCE_ID_2_1;
 import static io.camunda.operate.data.util.DecisionDataUtil.PROCESS_INSTANCE_ID;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createDecisionInstanceRequest;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllDecisionInstancesRequest;
 import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISION_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_DECISION_NAME;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_DECISION_VERSION;
@@ -79,7 +81,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryAll() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createGetAllDecisionInstancesRequest();
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createGetAllDecisionInstancesRequest();
 
     MvcResult mvcResult = postRequest(query(), decisionInstanceQueryDto);
 
@@ -91,7 +93,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryEvaluated() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createDecisionInstanceRequest(
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createDecisionInstanceRequest(
         q -> q.setEvaluated(true)
     );
 
@@ -107,7 +109,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryFailed() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createDecisionInstanceRequest(
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createDecisionInstanceRequest(
         q -> q.setFailed(true)
     );
 
@@ -123,7 +125,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryByDecisionDefinitionId() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createGetAllDecisionInstancesRequest(
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createGetAllDecisionInstancesRequest(
         q -> q.setDecisionDefinitionIds(asList(DECISION_DEFINITION_ID_1))
     );
 
@@ -139,7 +141,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryByNonExistingDecisionDefinitionId() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createGetAllDecisionInstancesRequest(
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createGetAllDecisionInstancesRequest(
         q -> q.setDecisionDefinitionIds(asList("wrongId"))
     );
 
@@ -153,7 +155,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryByIds() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createGetAllDecisionInstancesRequest(
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createGetAllDecisionInstancesRequest(
         q -> q.setIds(asList(DECISION_INSTANCE_ID_1_1, DECISION_INSTANCE_ID_2_1))
     );
 
@@ -169,7 +171,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   public void testQueryByProcessInstanceId() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceQueryDto = TestUtil.createGetAllDecisionInstancesRequest(
+    DecisionInstanceListRequestDto decisionInstanceQueryDto = createGetAllDecisionInstancesRequest(
         q -> q.setProcessInstanceId(String.valueOf(PROCESS_INSTANCE_ID))
     );
 
@@ -196,7 +198,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(decisionInstance1, decisionInstance2, decisionInstance3);
 
     //when
-    DecisionInstanceListRequestDto query = TestUtil.createGetAllDecisionInstancesRequest(q -> {
+    DecisionInstanceListRequestDto query = createGetAllDecisionInstancesRequest(q -> {
       q.setEvaluationDateAfter(date1.minus(1, ChronoUnit.DAYS));
       q.setEvaluationDateBefore(date3);
     });
@@ -205,7 +207,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
     //test inclusion for startDateAfter and exclusion for startDateBefore
     //when
-    query = TestUtil.createGetAllDecisionInstancesRequest(q -> {
+    query = createGetAllDecisionInstancesRequest(q -> {
       q.setEvaluationDateAfter(date1);
       q.setEvaluationDateBefore(date3);
     });
@@ -213,7 +215,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #2", decisionInstance1.getId(), decisionInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllDecisionInstancesRequest(q -> {
+    query = createGetAllDecisionInstancesRequest(q -> {
       q.setEvaluationDateAfter(date1.plus(1, ChronoUnit.MILLIS));
       q.setEvaluationDateBefore(date3.plus(1, ChronoUnit.MILLIS));
     });
@@ -233,7 +235,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
 
   private void testPagination() throws Exception {
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceRequest = TestUtil.createGetAllDecisionInstancesRequest();
+    DecisionInstanceListRequestDto decisionInstanceRequest = createGetAllDecisionInstancesRequest();
     decisionInstanceRequest.setPageSize(2);
 
     //page 1
@@ -270,7 +272,7 @@ public class DecisionListQueryIT extends OperateIntegrationTest {
       String sortingDescription) throws Exception {
 
     //query running instances
-    DecisionInstanceListRequestDto decisionInstanceRequestDto = TestUtil.createGetAllDecisionInstancesRequest();
+    DecisionInstanceListRequestDto decisionInstanceRequestDto = createGetAllDecisionInstancesRequest();
     if(sorting!=null) {
       decisionInstanceRequestDto.setSorting(sorting);
     }

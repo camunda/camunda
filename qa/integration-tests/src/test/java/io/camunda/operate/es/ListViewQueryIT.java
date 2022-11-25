@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.es;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.util.TestUtil.createFlowNodeInstance;
 import static io.camunda.operate.util.TestUtil.createFlowNodeInstanceWithIncident;
 import static io.camunda.operate.util.TestUtil.createIncident;
@@ -90,7 +91,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   private void testQueryAllRunning() throws Exception {
     //query running instances
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllRunningRequest();
+    ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
 
     MvcResult mvcResult = postRequest(query(), processInstanceQueryDto);
 
@@ -118,7 +119,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
     //when
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date1.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3);
     });
@@ -127,7 +128,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //test inclusion for startDateAfter and exclusion for startDateBefore
     //when
-    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    query = createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date1);
       q.setStartDateBefore(date3);
     });
@@ -135,7 +136,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #2", processInstance1.getId(), processInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    query = createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date1.plus(1, ChronoUnit.MILLIS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.MILLIS));
     });
@@ -144,7 +145,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //test combination of start date and end date
     //when
-    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    query = createGetAllProcessInstancesRequest(q -> {
       q.setStartDateAfter(date2.minus(1, ChronoUnit.DAYS));
       q.setStartDateBefore(date3.plus(1, ChronoUnit.DAYS));
       q.setEndDateAfter(date4.minus(1, ChronoUnit.DAYS));
@@ -155,7 +156,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     //test inclusion for endDateAfter and exclusion for endDateBefore
     //when
-    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    query = createGetAllProcessInstancesRequest(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5);
     });
@@ -163,7 +164,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     requestAndAssertIds(query, "TEST CASE #5", processInstance2.getId());
 
     //when
-    query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    query = createGetAllProcessInstancesRequest(q -> {
       q.setEndDateAfter(date4);
       q.setEndDateBefore(date5.plus(1, ChronoUnit.MILLIS));
     });
@@ -196,7 +197,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(processInstance1, activityInstance1, processInstance2, activityInstance2);
 
     //given
-    ListViewRequestDto query = new ListViewRequestDto(TestUtil.createGetAllProcessInstancesQuery(q -> q.setErrorMessage(errorMessage)));
+    ListViewRequestDto query = new ListViewRequestDto(createGetAllProcessInstancesQuery(q -> q.setErrorMessage(errorMessage)));
     //when
     MvcResult mvcResult = postRequest(query(),query);
 
@@ -213,7 +214,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   private void testQueryByVariableValue() throws Exception {
     //given
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "X")));
 
     //when
@@ -230,7 +231,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   private void testQueryByVariableValueNotExists() throws Exception {
     //given
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(
         q -> q.setVariable(new VariablesQueryDto("var1", "A")));
 
     //when
@@ -251,7 +252,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto query = createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setActive(true)
        .setActivityId(activityId);
@@ -310,7 +311,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto query = createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true)
        .setActivityId(activityId);
@@ -380,7 +381,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto query = createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCanceled(true)
        .setActivityId(activityId);
@@ -456,7 +457,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(data);
 
     //when
-    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto query = createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true)
        .setActive(true)
@@ -511,7 +512,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       processInstance4, completedEndEventWithIdActivityInstance2);
 
     //when
-    ListViewRequestDto query = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto query = createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCompleted(true)
        .setActivityId(activityId);
@@ -537,7 +538,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance3 = createProcessInstance(ProcessInstanceState.COMPLETED);
     elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
       q.setIds(Arrays.asList(processInstance1.getId(), processInstance2.getId()))
     );
 
@@ -553,7 +554,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   public void testQueryByBatchOperationId() throws Exception {
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
       q.setBatchOperationId(batchOperationId)
     );
 
@@ -577,7 +578,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     final ProcessInstanceForListViewEntity processInstance4 = createProcessInstance(ProcessInstanceState.COMPLETED);
     elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
       q.setExcludeIds(Arrays.asList(processInstance1.getId(), processInstance3.getId()))
     );
 
@@ -607,7 +608,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3, processInstance4);
 
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> q.setProcessIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> q.setProcessIds(Arrays.asList(wfKey1.toString(), wfKey3.toString())));
 
     //when
     MvcResult mvcResult = postRequest(query(),query);
@@ -640,7 +641,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> {
       q.setBpmnProcessId(bpmnProcessId1);
       q.setProcessVersion(version1);
     });
@@ -659,7 +660,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   private void testQueryByParentProcessId() throws Exception {
     //given
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
         q.setParentInstanceId(parentInstanceKey1)
     );
 
@@ -680,7 +681,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private void testQueryByNonExistingParentProcessId() throws Exception {
     //given
     long nonExistingParentId = 333L;
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q ->
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q ->
         q.setParentInstanceId(nonExistingParentId)
     );
 
@@ -696,7 +697,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   @Test
   public void testQueryByProcessVersionFail() throws Exception {
     //when
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> {
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> {
       q.setProcessVersion(1);
     });
     //then
@@ -725,7 +726,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persistNew(processInstance1, processInstance2, processInstance3);
 
-    ListViewRequestDto query = TestUtil.createGetAllProcessInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
+    ListViewRequestDto query = createGetAllProcessInstancesRequest(q -> q.setBpmnProcessId(bpmnProcessId1));
 
     //when
     MvcResult mvcResult = postRequest(query(),query);
@@ -741,7 +742,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   private void testPagination() throws Exception {
     //query running instances
-    ListViewRequestDto processInstanceRequest = TestUtil.createGetAllProcessInstancesRequest();
+    ListViewRequestDto processInstanceRequest = createGetAllProcessInstancesRequest();
     processInstanceRequest.setPageSize(5);
 
     //page 1
@@ -779,7 +780,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
       String sortingDescription) throws Exception {
 
     //query running instances
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllProcessInstancesRequest();
+    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
     if(sorting!=null) {
       processInstanceQueryDto.setSorting(sorting);
     }
@@ -1006,7 +1007,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void testQueryAllFinished() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllFinishedRequest();
+    ListViewRequestDto processInstanceQueryDto = createGetAllFinishedRequest();
 
     MvcResult mvcResult =  postRequest(query(),processInstanceQueryDto);
 
@@ -1021,7 +1022,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void testQueryFinishedAndRunning() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllProcessInstancesRequest();
+    ListViewRequestDto processInstanceQueryDto = createGetAllProcessInstancesRequest();
 
     MvcResult mvcResult = postRequest(query(),processInstanceQueryDto);
 
@@ -1032,7 +1033,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void testQueryFinishedCompleted() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCompleted(true);
     });
@@ -1048,7 +1049,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void testQueryFinishedCanceled() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = createProcessInstanceRequest(q -> {
       q.setFinished(true)
        .setCanceled(true);
     });
@@ -1066,7 +1067,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void testQueryRunningWithIncidents() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setIncidents(true);
     });
@@ -1082,7 +1083,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   }
 
   private void testQueryRunningWithoutIncidents() throws Exception {
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createProcessInstanceRequest(q -> {
+    ListViewRequestDto processInstanceQueryDto = createProcessInstanceRequest(q -> {
       q.setRunning(true)
        .setActive(true);
     });
@@ -1137,7 +1138,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
         runningInstance.getProcessInstanceKey().toString(),
         instanceWithoutIncident.getProcessInstanceKey().toString()
     );
-    ListViewRequestDto queryRequest = TestUtil.createGetAllRunningRequest();
+    ListViewRequestDto queryRequest = createGetAllRunningRequest();
     queryRequest.getQuery()
         .setCompleted(false).setCanceled(false)
         // part with empty strings instead of NULL

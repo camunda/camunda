@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -67,7 +68,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
 
     // then
     assertThat(incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey).get(0).getErrorMessage()).isEqualTo(errorMessageWithoutWhiteSpaces);
-    ListViewResponseDto response = listViewReader.queryProcessInstances(TestUtil.createGetAllProcessInstancesRequest());
+    ListViewResponseDto response = listViewReader.queryProcessInstances(createGetAllProcessInstancesRequest());
     ListViewProcessInstanceDto processInstances  = response.getProcessInstances().get(0);
     assertThat(processInstances).isNotNull();
     assertThat(processInstances.getOperations().get(0).getErrorMessage()).doesNotStartWith(" ").doesNotEndWith(" ");
@@ -112,7 +113,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   }
 
   protected ListViewResponseDto searchForErrorMessages(String errorMessage) {
-    ListViewRequestDto queriesRequest = TestUtil.createGetAllProcessInstancesRequest();
+    ListViewRequestDto queriesRequest = createGetAllProcessInstancesRequest();
     queriesRequest.getQuery().setErrorMessage(errorMessage);
     return listViewReader.queryProcessInstances(queriesRequest);
   }

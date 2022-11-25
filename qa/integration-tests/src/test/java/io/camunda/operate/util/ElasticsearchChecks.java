@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.schema.templates.IncidentTemplate.ACTIVE_INCIDENT_QUERY;
 import static io.camunda.operate.schema.templates.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -41,7 +42,6 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -49,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.util.NullableUtils;
 
 @Configuration
 @ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
@@ -778,7 +777,7 @@ public class ElasticsearchChecks {
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getFinishedRequest =
-        TestUtil.createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
+        createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
       getFinishedRequest.setPageSize(ids.size());
       final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getFinishedRequest);
       return responseDto.getTotalCount() == ids.size();
@@ -798,7 +797,7 @@ public class ElasticsearchChecks {
       Long processDefinitionId = (Long)objects[0];
       Integer count = (Integer)objects[1];
       final ListViewRequestDto getActiveRequest =
-          TestUtil.createProcessInstanceRequest(q -> {
+          createProcessInstanceRequest(q -> {
             q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionId));
             q.setRunning(true);
             q.setActive(true);
@@ -822,7 +821,7 @@ public class ElasticsearchChecks {
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getActiveRequest =
-        TestUtil.createProcessInstanceRequest(q -> {
+        createProcessInstanceRequest(q -> {
           q.setIds(CollectionUtil.toSafeListOfStrings(ids));
           q.setRunning(true);
           q.setActive(true);
@@ -845,7 +844,7 @@ public class ElasticsearchChecks {
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getActiveRequest =
-        TestUtil.createGetAllProcessInstancesRequest(q -> {
+        createGetAllProcessInstancesRequest(q -> {
           q.setIds(CollectionUtil.toSafeListOfStrings(ids));
         });
       getActiveRequest.setPageSize(ids.size());

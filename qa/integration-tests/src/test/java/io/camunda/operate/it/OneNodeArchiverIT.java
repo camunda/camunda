@@ -6,13 +6,6 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
@@ -27,7 +20,6 @@ import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
@@ -61,6 +53,13 @@ import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
+
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllFinishedRequest;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 @TestPropertySource(properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".clusterNode.nodeCount = 2",
@@ -148,7 +147,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
       @SuppressWarnings("unchecked")
       List<Long> ids = (List<Long>)objects[0];
       final ListViewRequestDto getFinishedRequest =
-          TestUtil.createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
+          createGetAllFinishedRequest(q -> q.setIds(CollectionUtil.toSafeListOfStrings(ids)));
       getFinishedRequest.setPageSize(ids.size());
       final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(getFinishedRequest);
       return responseDto.getTotalCount() >= ids.size() / operateProperties.getClusterNode().getNodeCount();
@@ -156,7 +155,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   protected void createOperations(List<Long> ids1) {
-    final ListViewQueryDto query = TestUtil.createGetAllProcessInstancesQuery();
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     CreateBatchOperationRequestDto batchOperationRequest = new CreateBatchOperationRequestDto(query, OperationType.CANCEL_PROCESS_INSTANCE);  //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);

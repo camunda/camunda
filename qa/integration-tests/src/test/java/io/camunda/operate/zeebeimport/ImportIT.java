@@ -6,7 +6,9 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
+import static io.camunda.operate.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +23,9 @@ import io.camunda.operate.entities.IncidentState;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.util.*;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
@@ -143,15 +147,14 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   private void assertVariableExists(Long processInstanceKey, String name, String value) {
     ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView(
-      TestUtil.createGetAllProcessInstancesRequest(q -> {
+      createGetAllProcessInstancesRequest(q -> {
         q.setVariable(new VariablesQueryDto(name, value));
       }));
     assertThat(pi.getId()).isEqualTo(processInstanceKey.toString());
   }
 
   private void assertVariableDoesNotExist(Long processInstanceKey, String name, String value) {
-    final ListViewRequestDto request = TestUtil
-        .createGetAllProcessInstancesRequest(q ->
+    final ListViewRequestDto request = createGetAllProcessInstancesRequest(q ->
             q.setVariable(new VariablesQueryDto(name, value)));
     request.setPageSize(100);
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(
@@ -168,7 +171,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   }
 
   private ListViewProcessInstanceDto getSingleProcessInstanceForListView() {
-    return getSingleProcessInstanceForListView(TestUtil.createGetAllProcessInstancesRequest());
+    return getSingleProcessInstanceForListView(createGetAllProcessInstancesRequest());
   }
 
   @Test
@@ -733,7 +736,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
     //find called process instance key
     final ListViewResponseDto response = listViewReader
-        .queryProcessInstances(TestUtil.createGetAllProcessInstancesRequest(q ->
+        .queryProcessInstances(createGetAllProcessInstancesRequest(q ->
             q.setBpmnProcessId(calledProcessId).setProcessVersion(1)));
     assertThat(response.getProcessInstances().size()).isEqualTo(1);
     final String calledProcessInstanceId = response.getProcessInstances().get(0).getId();

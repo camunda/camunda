@@ -34,6 +34,7 @@ public class ConnectionHolder {
   public TestContext getTestContext(){
     final TestContext testContext = new TestContext();
     testContext.setZeebeDataFolder(createTemporaryFolder());
+    testContext.setZeebeIndexPrefix("migration-test");
     return testContext;
   }
 

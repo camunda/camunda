@@ -29,6 +29,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.test.web.servlet.MvcResult;
 import com.fasterxml.jackson.core.type.TypeReference;
+
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.TestUtil.createIncident;
 import static io.camunda.operate.util.TestUtil.createVariable;
@@ -75,7 +77,7 @@ public class OperationReaderIT extends OperateIntegrationTest {
   public void testProcessInstanceQuery() throws Exception {
     when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(USER_1));
 
-    ListViewRequestDto processInstanceQueryDto = TestUtil.createGetAllRunningRequest();
+    ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
     MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
     ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
 

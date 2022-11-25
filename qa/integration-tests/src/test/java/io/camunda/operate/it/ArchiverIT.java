@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.it;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
@@ -50,7 +52,6 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.MetricAssert;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
@@ -186,14 +187,14 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   protected void createOperations(List<Long> ids1) {
-    final ListViewQueryDto query = TestUtil.createGetAllProcessInstancesQuery();
+    final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     CreateBatchOperationRequestDto batchOperationRequest = new CreateBatchOperationRequestDto(query, OperationType.CANCEL_PROCESS_INSTANCE);   //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
   private void assertAllInstancesInAlias(int count) {
-    final ListViewRequestDto request = TestUtil.createGetAllProcessInstancesRequest();
+    final ListViewRequestDto request = createGetAllProcessInstancesRequest();
     request.setPageSize(count + 100);
     final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(request);
     assertThat(responseDto.getTotalCount()).isEqualTo(count);

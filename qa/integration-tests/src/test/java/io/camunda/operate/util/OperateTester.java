@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.util;
 
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.CollectionUtil.filter;
 import static io.camunda.operate.util.ElasticsearchUtil.scroll;
@@ -32,7 +34,6 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -73,7 +74,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
@@ -491,7 +491,7 @@ public class OperateTester {
   }
 
   public OperateTester cancelProcessInstanceOperation() throws Exception {
-    final ListViewQueryDto processInstanceQuery = TestUtil.createGetAllProcessInstancesQuery()
+    final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
         .setIds(Collections.singletonList(processInstanceKey.toString()));
 
     CreateBatchOperationRequestDto batchOperationDto
@@ -719,7 +719,7 @@ public class OperateTester {
   }
 
   public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(String processId) {
-    final ListViewRequestDto request = TestUtil.createGetAllProcessInstancesRequest(q -> q.setProcessIds(
+    final ListViewRequestDto request = createGetAllProcessInstancesRequest(q -> q.setProcessIds(
         Arrays.asList(processId)));
     request.setPageSize(100);
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);

@@ -8,6 +8,7 @@ package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
 import static io.camunda.operate.entities.listview.ProcessInstanceState.ACTIVE;
+import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
@@ -294,7 +295,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   protected ListViewProcessInstanceDto getSingleProcessInstanceForListView() {
-    final ListViewRequestDto request = TestUtil.createGetAllProcessInstancesRequest();
+    final ListViewRequestDto request = createGetAllProcessInstancesRequest();
     request.setPageSize(100);
     final ListViewResponseDto listViewResponse = listViewReader.queryProcessInstances(request);
     assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
@@ -328,7 +329,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   }
 
   protected void assertListViewResponse() throws Exception {
-    ListViewRequestDto listViewRequest = TestUtil.createGetAllProcessInstancesRequest();
+    ListViewRequestDto listViewRequest = createGetAllProcessInstancesRequest();
     listViewRequest.setPageSize(100);
     MockHttpServletRequestBuilder request = post(query())
       .content(mockMvcTestRule.json(listViewRequest))

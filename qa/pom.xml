@@ -30,6 +30,7 @@
         <module>batch-operation-performance-tests</module>
         <module>migration-tests</module>
         <module>migration-performance-test</module>
+        <module>backup-restore-tests</module>
     </modules>
 
 </project>

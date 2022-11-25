@@ -11,6 +11,7 @@ import static io.camunda.operate.util.TestUtil.createFlowNodeInstanceWithInciden
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static org.junit.Assert.assertEquals;
 
+import io.camunda.operate.qa.util.RestAPITestUtil;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -162,7 +163,7 @@ public class ProcessStatisticsIT extends OperateIntegrationTest {
   }
 
   private ListViewQueryDto createGetAllProcessInstancesQuery(Long... processDefinitionKeys) {
-    ListViewQueryDto q = TestUtil.createGetAllProcessInstancesQuery();
+    ListViewQueryDto q = RestAPITestUtil.createGetAllProcessInstancesQuery();
     if (processDefinitionKeys != null && processDefinitionKeys.length > 0) {
       q.setProcessIds(CollectionUtil.toSafeListOfStrings(processDefinitionKeys));
     }

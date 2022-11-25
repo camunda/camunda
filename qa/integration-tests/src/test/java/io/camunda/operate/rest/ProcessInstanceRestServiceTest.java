@@ -30,7 +30,7 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestValidator;
+import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
