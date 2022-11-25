@@ -4,7 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-8-netssd-preempt" }
 
 static String mavenElasticsearchAgent() {
   return """
