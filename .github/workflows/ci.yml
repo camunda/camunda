@@ -175,16 +175,23 @@ jobs:
         with:
           name: "unit tests"
   smoke-tests:
-    name: Smoke tests ${{ matrix.os }} on ${{ matrix.arch }}
+    name: Smoke tests on ${{ matrix.os }} with ${{ matrix.arch }}
     timeout-minutes: 20
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
+        os: [ macos, windows, linux ]
         arch: [ amd64 ]
         include:
-          - os: ubuntu-latest
+          - os: macos
+            runner: macos-latest
+          - os: windows
+            runner: windows-latest
+          - os: linux
+            runner: n1-standard-8-netssd-preempt
+          - os: linux
+            runner: n1-standard-8-netssd-preempt
             arch: arm64
     env:
       JAVA_TOOL_OPTIONS: -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -XX:ReservedCodeCacheSize=64M
@@ -194,7 +201,7 @@ jobs:
         with:
           go: false
           # setting up maven often times out on macOS
-          maven: ${{ matrix.os != 'macos-latest' }}
+          maven: ${{ runner.os != 'macOS' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -225,7 +232,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: always()
         with:
-          name: Smoke Tests ${{ matrix.os }} on ${{ matrix.arch }}
+          name: Smoke Tests on ${{ matrix.os }} with ${{ matrix.arch }}
   property-tests:
     name: Property Tests
     runs-on: [ self-hosted, linux, "16" ]
