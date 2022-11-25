@@ -15,12 +15,16 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class ErrorEventDefinitionValidator implements ModelElementValidator<ErrorEventDefinition> {
+
+  private static final String ZEEBE_EXPRESSION_PREFIX = "=";
 
   @Override
   public Class<ErrorEventDefinition> getElementType() {
@@ -40,6 +44,13 @@ public class ErrorEventDefinitionValidator implements ModelElementValidator<Erro
       final String errorCode = error.getErrorCode();
       if (errorCode == null || errorCode.isEmpty()) {
         validationResultCollector.addError(0, "ErrorCode must be present and not empty");
+        return;
+      }
+
+      final ModelElementInstance parentElement = element.getParentElement();
+      if (errorCode.startsWith(ZEEBE_EXPRESSION_PREFIX) && parentElement instanceof CatchEvent) {
+        validationResultCollector.addError(
+            0, "The errorCode of the error catch event is not allowed to be an expression");
       }
     }
   }

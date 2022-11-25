@@ -121,12 +121,17 @@ public final class CatchEventAnalyzer {
 
     for (final ExecutableCatchEvent catchEvent : element.getEvents()) {
       if (catchEvent.isError()) {
-        availableCatchEvents.getLeft().add(catchEvent.getError().getErrorCode());
-        if (catchEvent.getError().getErrorCode().equals(errorCode)) {
+        final Optional<DirectBuffer> errorCodeOptional = catchEvent.getError().getErrorCode();
+        // Because a catch event can not contain an expression, we ignore it if not set.
+        if (errorCodeOptional.isPresent()) {
+          final var errorCodeBuffer = errorCodeOptional.get();
+          availableCatchEvents.getLeft().add(errorCodeBuffer);
+          if (errorCodeBuffer.equals(errorCode)) {
 
-          catchEventTuple.instance = instance;
-          catchEventTuple.catchEvent = catchEvent;
-          return Either.right(catchEventTuple);
+            catchEventTuple.instance = instance;
+            catchEventTuple.catchEvent = catchEvent;
+            return Either.right(catchEventTuple);
+          }
         }
       }
     }

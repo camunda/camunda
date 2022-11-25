@@ -53,6 +53,18 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType("type"))
+            .boundaryEvent("catch", b -> b.error("= error"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ErrorEventDefinition.class,
+                "The errorCode of the error catch event is not allowed to be an expression"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType("type"))
             .boundaryEvent("catch", b -> b.error("ERROR").cancelActivity(false))
             .endEvent()
             .done(),
@@ -116,6 +128,17 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(SubProcess.class, "Non-Interrupting event of this type is not allowed"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .eventSubProcess("sub", s -> s.startEvent().error("=  error").endEvent())
+            .startEvent()
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ErrorEventDefinition.class,
+                "The errorCode of the error catch event is not allowed to be an expression"))
       },
       {
         Bpmn.createExecutableProcess("process")

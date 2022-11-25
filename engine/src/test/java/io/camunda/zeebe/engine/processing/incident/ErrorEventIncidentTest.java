@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.incident;
 
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.ERROR_THROWN;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -18,10 +20,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
@@ -368,5 +372,105 @@ public final class ErrorEventIncidentTest {
         .hasErrorMessage(
             "Expected to throw an error event with the code 'unknown_error_code' with message 'error message', but it was not caught."
                 + " Available error events are [error_in_subprocess, error]");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfErrorCodeExpressionForTheEndEventCannotBeEvaluated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .endEvent("error", e -> e.errorExpression("unknown_error_code"))
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incidentEvent =
+        RecordingExporter.incidentRecords()
+            .withIntent(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final var endEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.END_EVENT)
+            .getFirst();
+
+    Assertions.assertThat(incidentEvent.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'unknown_error_code': no variable found for name 'unknown_error_code'")
+        .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
+        .hasProcessDefinitionKey(endEvent.getValue().getProcessDefinitionKey())
+        .hasProcessInstanceKey(endEvent.getValue().getProcessInstanceKey())
+        .hasElementId(endEvent.getValue().getElementId())
+        .hasElementInstanceKey(endEvent.getKey())
+        .hasVariableScopeKey(endEvent.getKey())
+        .hasJobKey(-1);
+  }
+
+  @Test
+  public void shouldResolveIncidentIfErrorCodeCouldNotBeEvaluated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sp",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .endEvent("error", e -> e.errorExpression("errorCodeLookup")))
+                .boundaryEvent("boundary", b -> b.error("errorCode").endEvent())
+                .done())
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final Record<IncidentRecordValue> incidentCreatedRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    ENGINE
+        .variables()
+        .ofScope(incidentCreatedRecord.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("errorCodeLookup", "errorCode")))
+        .update();
+
+    // when
+    final Record<IncidentRecordValue> incidentResolvedEvent =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreatedRecord.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .onlyEvents())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.END_EVENT, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }
 }
