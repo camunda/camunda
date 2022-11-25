@@ -18,9 +18,9 @@ spec:
         app: cambpm
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
       tolerations:
-        - key: "agents-n1-standard-32-netssd-stable"
+        - key: "agents-n1-standard-8-netssd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       imagePullSecrets:
