@@ -5,7 +5,7 @@
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
-def static NODE_POOL() { return "agents-n1-standard-32-physsd-stable" }
+def static NODE_POOL() { return "agents-n1-standard-8-physsd-stable" }
 
 String gCloudAndMavenAgent() {
   """
@@ -95,13 +95,11 @@ spec:
             resourceFieldRef:
               resource: limits.cpu
       resources:
-      # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
-      # this is 30 - (cpu of elasticsearch container)
         limits:
-          cpu: 14
+          cpu: 3
           memory: 8Gi
         requests:
-          cpu: 14
+          cpu: 3
           memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:${params.ES_VERSION}
@@ -151,10 +149,10 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 16
+          cpu: 4
           memory: 16Gi
         requests:
-          cpu: 16
+          cpu: 4
           memory: 16Gi
   volumes:
   - name: configdir
