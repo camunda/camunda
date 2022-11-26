@@ -92,8 +92,8 @@
 
     <!-- required for the protocol factory -->
     <dependency>
-      <groupId>org.jeasy</groupId>
-      <artifactId>easy-random-core</artifactId>
+      <groupId>org.instancio</groupId>
+      <artifactId>instancio-core</artifactId>
     </dependency>
 
     <dependency>
