@@ -683,6 +683,24 @@ public final class JobStateTest {
     assertThat(writtenRecord.getTypeBuffer()).isEqualTo(BufferUtil.wrapString("foo"));
   }
 
+  @Test
+  public void shouldMakeJobNotActivatableWhenFailedWithoutRetries() {
+    // given
+    final long key = 1L;
+    final JobRecord jobRecord = newJobRecord().setRetries(0);
+
+    // when
+    jobState.create(key, jobRecord);
+    jobState.fail(key, jobRecord);
+
+    // then
+    assertThat(jobState.exists(key)).isTrue();
+    assertJobState(key, State.FAILED);
+    assertJobRecordIsEqualTo(jobState.getJob(key), jobRecord);
+    refuteListedAsActivatable(key, jobRecord.getTypeBuffer());
+    refuteListedAsTimedOut(key, jobRecord.getDeadline() + 1);
+  }
+
   private void createAndActivateJobRecord(final long key, final JobRecord record) {
     jobState.create(key, record);
     jobState.activate(key, record);
