@@ -40,9 +40,6 @@ final class LocalstackBackupStoreIT implements S3BackupStoreTests {
             .withEndpoint(S3.getEndpointOverride(Service.S3).toString())
             .withRegion(S3.getRegion())
             .withCredentials(S3.getAccessKey(), S3.getSecretKey())
-            .withApiCallTimeout(null)
-            .forcePathStyleAccess(false)
-            .withCompressionAlgorithm(null)
             .build();
     try (final var client = S3BackupStore.buildClient(config)) {
       client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
