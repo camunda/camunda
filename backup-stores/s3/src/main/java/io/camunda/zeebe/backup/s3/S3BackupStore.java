@@ -80,9 +80,8 @@ public final class S3BackupStore implements BackupStore {
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
-  private static final Pattern BACKUP_IDENTIFIER_PATTERN =
-      Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   private static final int SCAN_PARALLELISM = 16;
+  private final Pattern backupIdentifierPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
@@ -95,10 +94,16 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
+    final var basePath = config.basePath();
+    backupIdentifierPattern =
+        Pattern.compile(
+            "^"
+                + basePath.map(base -> base + "/").orElse("")
+                + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   }
 
-  private static Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
-    final var matcher = BACKUP_IDENTIFIER_PATTERN.matcher(key);
+  private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
+    final var matcher = backupIdentifierPattern.matcher(key);
     if (matcher.matches()) {
       try {
         final var nodeId = Integer.parseInt(matcher.group("nodeId"));
@@ -297,7 +302,7 @@ public final class S3BackupStore implements BackupStore {
         .contents()
         .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
         .map(S3Object::key)
-        .map(S3BackupStore::tryParseKeyAsId)
+        .map(this::tryParseKeyAsId)
         .filter(Optional::isPresent)
         .map(Optional::get)
         .filter(wildcard::matches);
