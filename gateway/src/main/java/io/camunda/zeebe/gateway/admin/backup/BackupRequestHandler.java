@@ -124,12 +124,13 @@ public final class BackupRequestHandler implements BackupApi {
     if (statuses.contains(BackupStatusCode.IN_PROGRESS)) {
       return State.IN_PROGRESS;
     }
-    if (statuses.contains(BackupStatusCode.COMPLETED)) {
-      return State.COMPLETED;
-    }
 
     if (statuses.contains(BackupStatusCode.DOES_NOT_EXIST)) {
       return State.DOES_NOT_EXIST;
+    }
+
+    if (statuses.size() == 1 && statuses.contains(BackupStatusCode.COMPLETED)) {
+      return State.COMPLETED;
     }
 
     // This should never happen, because partitionStatuses would never be empty.
