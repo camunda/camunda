@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.msgpack.UnpackedObject;
@@ -117,8 +117,8 @@ public final class StreamProcessorRule implements TestRule {
     return this;
   }
 
-  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
-    return streamProcessingComposite.newLogStreamRecordWriter(partitionId);
+  public LogStreamWriter newLogStreamWriter(final int partitionId) {
+    return streamProcessingComposite.newLogStreamWriter(partitionId);
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {

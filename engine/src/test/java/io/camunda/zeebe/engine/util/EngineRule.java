@@ -25,8 +25,9 @@ import io.camunda.zeebe.engine.util.client.JobClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
@@ -494,7 +495,7 @@ public final class EngineRule extends ExternalResource {
 
   private class TestInterPartitionCommandSender implements InterPartitionCommandSender {
 
-    private final Map<Integer, LogStreamRecordWriter> writers = new HashMap<>();
+    private final Map<Integer, LogStreamWriter> writers = new HashMap<>();
 
     @Override
     public void sendCommand(
@@ -515,11 +516,14 @@ public final class EngineRule extends ExternalResource {
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
       final var writer = writers.get(receiverPartitionId);
-      writer.reset();
+      final LogAppendEntry entry;
       if (recordKey != null) {
-        writer.key(recordKey);
+        entry = LogAppendEntry.of(recordKey, metadata, command);
+      } else {
+        entry = LogAppendEntry.of(metadata, command);
       }
-      writer.metadataWriter(metadata).valueWriter(command).tryWrite();
+
+      writer.tryWrite(entry);
     }
 
     // Pre-initialize dedicated writers.
@@ -528,7 +532,7 @@ public final class EngineRule extends ExternalResource {
     // context where we can't build new `SyncLogStream`s.
     private void initializeWriters(final int partitionCount) {
       for (int i = PARTITION_ID; i < PARTITION_ID + partitionCount; i++) {
-        writers.put(i, environmentRule.newLogStreamRecordWriter(i));
+        writers.put(i, environmentRule.newLogStreamWriter(i));
       }
     }
   }
