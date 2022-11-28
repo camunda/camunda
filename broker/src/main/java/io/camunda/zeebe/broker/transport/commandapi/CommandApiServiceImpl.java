@@ -109,7 +109,7 @@ public final class CommandApiServiceImpl extends Actor
           serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
 
           logStream
-              .newLogStreamRecordWriter()
+              .newLogStreamWriter()
               .onComplete(
                   (recordWriter, error) -> {
                     if (error == null) {
