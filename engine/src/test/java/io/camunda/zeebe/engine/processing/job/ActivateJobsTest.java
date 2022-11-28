@@ -456,6 +456,36 @@ public final class ActivateJobsTest {
         .isEqualTo(Map.of("foo", "x".repeat(variablesSize), "bar", "x".repeat(variablesSize)));
   }
 
+  // regression test for https://github.com/camunda/zeebe/issues/10308
+  @Test
+  public void shouldNotActivateJobWithNoRemainingRetries() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask("task", task -> task.zeebeJobType(taskType))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final long jobKey =
+        jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getKey();
+
+    ENGINE.job().withKey(jobKey).withRetries(0).fail();
+
+    // when
+    final var jobs = activateJobs(taskType, 10);
+
+    // then
+    assertThat(jobs).describedAs("Failed job without retries should not be activated").isEmpty();
+  }
+
   private Record<JobRecordValue> completeJob(final long jobKey) {
     return ENGINE.job().withKey(jobKey).complete();
   }
