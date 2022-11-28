@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.util.Records;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -47,26 +48,26 @@ class RecordBatchTest {
     assertThat(recordBatch).map(LogAppendEntry::key).containsOnly(1L);
     assertThat(recordBatch).map(LogAppendEntry::sourceIndex).containsOnly(-1);
     assertThat(recordBatch)
-        .map(LogAppendEntry::recordMetadata)
+        .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getIntent)
         .containsOnly(ProcessInstanceIntent.ACTIVATE_ELEMENT);
     assertThat(recordBatch)
-        .map(LogAppendEntry::recordMetadata)
+        .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRecordType)
         .containsOnly(RecordType.COMMAND);
     assertThat(recordBatch)
-        .map(LogAppendEntry::recordMetadata)
+        .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRejectionType)
         .containsOnly(RejectionType.ALREADY_EXISTS);
     assertThat(recordBatch)
-        .map(LogAppendEntry::recordMetadata)
+        .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getValueType)
         .containsOnly(ValueType.PROCESS_INSTANCE);
     assertThat(recordBatch)
-        .map(LogAppendEntry::recordMetadata)
+        .map(RecordBatchEntry::recordMetadata)
         .map(RecordMetadata::getRejectionReason)
         .containsOnly("broken somehow");
-    assertThat(recordBatch).map(LogAppendEntry::recordValue).containsOnly(processInstanceRecord);
+    assertThat(recordBatch).map(RecordBatchEntry::recordValue).containsOnly(processInstanceRecord);
   }
 
   @Test

@@ -8,19 +8,17 @@
 package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -36,15 +34,17 @@ import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 import org.agrona.LangUtil;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 public class ProcessingScheduleServiceTest {
@@ -200,10 +200,6 @@ public class ProcessingScheduleServiceTest {
   @Test
   public void shouldWriteRecordAfterTaskWasExecuted() {
     // given
-    final var batchWriter = writerAsyncSupplier.get().join();
-    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
-    final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
-    when(batchWriter.event()).thenReturn(logEntryBuilder);
 
     // when
     scheduleService.runDelayed(
@@ -214,41 +210,39 @@ public class ProcessingScheduleServiceTest {
         });
 
     // then
-    verify(batchWriter, TIMEOUT).event();
-    verify(logEntryBuilder, TIMEOUT).key(1);
-    verify(batchWriter, TIMEOUT).tryWrite();
+
+    Awaitility.await("until the entry is written")
+        .untilAsserted(
+            () ->
+                assertThat(writerAsyncSupplier.writer.entries)
+                    .map(LogAppendEntry::key)
+                    .containsExactly(1L));
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
   public void shouldPreserveOrderingOfWritesEvenWithRetries() {
-    // given
-    final var batchWriter = writerAsyncSupplier.get().join();
-    when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
-    final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
-    when(batchWriter.event()).thenReturn(logEntryBuilder);
-
-    // when - in order to make sure we would interleave tasks without the fix for #10240, we need to
-    // make sure we retry at least twice, such that the second task can be executed in between both
-    // invocations. ensure both tasks have an expiry far away enough such that they expire on
+    // given - in order to make sure we would interleave tasks without the fix for #10240, we need
+    // to make sure we retry at least twice, such that the second task can be executed in between
+    // both invocations. ensure both tasks have an expiry far away enough such that they expire on
     // different ticks, as tasks expiring on the same tick will be submitted in a non-deterministic
     // order
     final var counter = new AtomicInteger(0);
-    when(batchWriter.tryWrite())
-        .then(
-            i -> {
-              final var invocationCount = counter.incrementAndGet();
-              // wait a sufficiently high enough invocation count to ensure the second timer is
-              // expired, gets scheduled, and then the executions are interleaved. this is quite
-              // hard to do in a deterministic controlled way because of the way our timers are
-              // scheduled
-              if (invocationCount < 5000) {
-                return -1L;
-              }
+    writerAsyncSupplier.writer.acceptWrites.set(
+        () -> {
+          final var invocationCount = counter.incrementAndGet();
+          // wait a sufficiently high enough invocation count to ensure the second timer is
+          // expired, gets scheduled, and then the executions are interleaved. this is quite
+          // hard to do in a deterministic controlled way because of the way our timers are
+          // scheduled
+          if (invocationCount < 5000) {
+            return false;
+          }
 
-              Loggers.STREAM_PROCESSING.debug("End tryWrite loop");
-              return 0L;
-            });
+          Loggers.STREAM_PROCESSING.debug("End tryWrite loop");
+          return true;
+        });
 
+    // when
     scheduleService.runDelayed(
         Duration.ofMinutes(1),
         builder -> {
@@ -267,15 +261,16 @@ public class ProcessingScheduleServiceTest {
         });
 
     // then
-    final var inOrder = inOrder(batchWriter, logEntryBuilder);
-
-    inOrder.verify(batchWriter, TIMEOUT).event();
-    inOrder.verify(logEntryBuilder, TIMEOUT).key(1);
-    inOrder.verify(batchWriter, TIMEOUT.times(5000)).tryWrite();
-    inOrder.verify(batchWriter, TIMEOUT).event();
-    inOrder.verify(logEntryBuilder, TIMEOUT).key(2);
-    inOrder.verify(batchWriter, TIMEOUT).tryWrite();
-    inOrder.verifyNoMoreInteractions();
+    Awaitility.await("until both entries are written")
+        .untilAsserted(
+            () ->
+                assertThat(writerAsyncSupplier.writer.entries)
+                    .hasSize(2)
+                    .map(LogAppendEntry::key)
+                    .containsExactly(1L, 2L));
+    assertThat(counter)
+        .as("should have invoked 4999 times before accepting both writes")
+        .hasValue(5001);
   }
 
   @Test
@@ -351,8 +346,9 @@ public class ProcessingScheduleServiceTest {
 
   private static final class WriterAsyncSupplier
       implements Supplier<ActorFuture<LogStreamBatchWriter>> {
+    private final TestWriter writer = new TestWriter();
     AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
-        new AtomicReference<>(CompletableActorFuture.completed(mock(LogStreamBatchWriter.class)));
+        new AtomicReference<>(CompletableActorFuture.completed(writer));
 
     @Override
     public ActorFuture<LogStreamBatchWriter> get() {
@@ -380,6 +376,27 @@ public class ProcessingScheduleServiceTest {
     @Override
     public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
       return RecordBatch::empty;
+    }
+  }
+
+  private static final class TestWriter implements LogStreamBatchWriter {
+    private final List<LogAppendEntry> entries = new CopyOnWriteArrayList<>();
+    private final AtomicReference<BooleanSupplier> acceptWrites = new AtomicReference<>(() -> true);
+
+    @Override
+    public boolean canWriteEvents(final int eventCount, final int batchSize) {
+      return true;
+    }
+
+    @Override
+    public long tryWrite(
+        final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+      if (!acceptWrites.get().getAsBoolean()) {
+        return -1;
+      }
+
+      appendEntries.forEach(entries::add);
+      return entries.size();
     }
   }
 }

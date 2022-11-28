@@ -334,15 +334,7 @@ public final class StreamPlatform {
 
     public LogStreamBatchWriter setupBatchWriter(final RecordToWrite... recordToWrites) {
       final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-      for (final RecordToWrite recordToWrite : recordToWrites) {
-        logStreamBatchWriter
-            .event()
-            .key(recordToWrite.getKey())
-            .sourceIndex(recordToWrite.getSourceIndex())
-            .metadataWriter(recordToWrite.getRecordMetadata())
-            .valueWriter(recordToWrite.getUnifiedRecordValue())
-            .done();
-      }
+      logStreamBatchWriter.tryWrite(recordToWrites);
       return logStreamBatchWriter;
     }
 
