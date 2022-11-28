@@ -198,8 +198,7 @@ describe('Date Range', () => {
     expect(screen.getByTestId('toTime')).toHaveValue('01:02:03');
   });
 
-  // will be unskipped when https://github.com/camunda/operate/issues/3650 is done
-  it.skip('should apply from and to dates', async () => {
+  it('should apply from and to dates', async () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
@@ -210,11 +209,18 @@ describe('Date Range', () => {
     );
 
     await user.click(screen.getByLabelText('Start Date Range'));
-    await user.type(screen.getByLabelText('From'), '2022-01-01 12:30');
-    await user.type(screen.getByLabelText('To'), '2022-12-01 17:15');
+    await user.type(screen.getByLabelText('From'), '2022-01-01');
+    await user.click(screen.getByTestId('fromTime'));
+    await user.clear(screen.getByTestId('fromTime'));
+    await user.type(screen.getByTestId('fromTime'), '12:30:00');
+    await user.type(screen.getByLabelText('To'), '2022-12-01');
+    await user.click(screen.getByTestId('toTime'));
+    await user.clear(screen.getByTestId('toTime'));
+    await user.type(screen.getByTestId('toTime'), '17:15:00');
+
     await user.click(screen.getByText('Apply'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
-      '2022-01-01 12:30 - 2022-12-01 17:15'
+      '2022-01-01 12:30:00 - 2022-12-01 17:15:00'
     );
   });
 });

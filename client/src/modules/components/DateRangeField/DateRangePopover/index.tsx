@@ -103,7 +103,6 @@ const DateRangePopover: React.FC<Props> = ({
                 }}
                 dateFormat="Y-m-d"
                 appendTo={datePickerRef}
-                allowInput={false}
                 light
                 inline
                 short
@@ -112,6 +111,7 @@ const DateRangePopover: React.FC<Props> = ({
                   id="date-picker-input-id-start"
                   type="from"
                   labelText="From"
+                  autoFocus
                 />
                 <DateTimeInput
                   id="date-picker-input-id-finish"

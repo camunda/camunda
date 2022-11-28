@@ -22,15 +22,21 @@ const DateTimeInput = forwardRef<DatePickerInput, Props>(
     return (
       <Container>
         <Field name={`${type}Date`}>
-          {({input}: {input: {value: string}}) => {
+          {({
+            input,
+          }: {
+            input: {value: string; onChange: (value: string) => void};
+          }) => {
             return (
               <DatePickerInput
                 {...props}
                 size="sm"
+                onChange={(event) => input.onChange(event.target.value)}
                 ref={ref}
                 placeholder="YYYY-MM-DD"
                 pattern={'\\d{4}-\\d{1,2}-\\d{1,2}'}
                 defaultValue={input.value}
+                maxLength={10}
               />
             );
           }}
@@ -48,6 +54,7 @@ const DateTimeInput = forwardRef<DatePickerInput, Props>(
                 placeholder="hh:mm:ss"
                 data-testid={`${type}Time`}
                 light
+                maxLength={8}
               />
             );
           }}
