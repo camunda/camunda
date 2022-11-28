@@ -3,10 +3,9 @@ pipelineJob('import-performance-static-dataset') {
   displayName 'Import performance test on static dataset'
   description 'Test Optimize Import performance against a static dataset.'
 
-  // By default, this job is disabled in non-prod envs.
-  if (ENVIRONMENT != "prod") {
-    disabled()
-  }
+  // Disable tests until we fix the timeout issue with OPT-6613
+  disabled()
+
 
   definition {
     cps {
