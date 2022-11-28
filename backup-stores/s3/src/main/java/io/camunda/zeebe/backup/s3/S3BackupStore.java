@@ -60,7 +60,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * {@link BackupStore} for S3. Stores all backups in a given bucket.
  *
  * <p>All created object keys are prefixed by the {@link BackupIdentifier}, with the following
- * scheme: {@code partitionId/checkpointId/nodeId}
+ * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
  *
  * <p>Each backup contains:
  *
@@ -131,7 +131,11 @@ public final class S3BackupStore implements BackupStore {
         .collect(Collectors.joining("/"));
   }
 
-  public static String objectPrefix(final BackupIdentifier id) {
+  public String objectPrefix(final BackupIdentifier id) {
+    final var base = config.basePath();
+    if (base.isPresent()) {
+      return "%s/%s/%s/%s/".formatted(base.get(), id.partitionId(), id.checkpointId(), id.nodeId());
+    }
     return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 

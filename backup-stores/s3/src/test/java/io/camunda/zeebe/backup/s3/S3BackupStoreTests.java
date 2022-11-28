@@ -54,8 +54,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             .getObject(
                 GetObjectRequest.builder()
                     .bucket(getConfig().bucketName())
-                    .key(
-                        S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY)
+                    .key(getStore().objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY)
                     .build(),
                 AsyncResponseTransformer.toBytes())
             .join();
@@ -79,7 +78,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @ArgumentsSource(TestBackupProvider.class)
   default void snapshotFilesExist(final Backup backup) {
     // given
-    final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
+    final var prefix = getStore().objectPrefix(backup.id()) + S3BackupStore.SNAPSHOT_PREFIX;
 
     final var expectedObjects =
         backup.snapshot().names().stream().map(name -> prefix + name).toList();
@@ -101,7 +100,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @ArgumentsSource(TestBackupProvider.class)
   default void segmentFilesExist(final Backup backup) {
     // given
-    final var prefix = S3BackupStore.objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
+    final var prefix = getStore().objectPrefix(backup.id()) + S3BackupStore.SEGMENTS_PREFIX;
 
     final var expectedObjects =
         backup.segments().names().stream().map(name -> prefix + name).toList();
@@ -123,7 +122,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   @ArgumentsSource(TestBackupProvider.class)
   default void bucketContainsExpectedObjectsOnly(final Backup backup) {
     // given
-    final var prefix = S3BackupStore.objectPrefix(backup.id());
+    final var prefix = getStore().objectPrefix(backup.id());
 
     final var manifest = prefix + S3BackupStore.MANIFEST_OBJECT_KEY;
     final var snapshotObjects =
@@ -168,7 +167,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             .listObjectsV2(
                 req ->
                     req.bucket(getConfig().bucketName())
-                        .prefix(S3BackupStore.objectPrefix(backup.id())))
+                        .prefix(getStore().objectPrefix(backup.id())))
             .join();
     Assertions.assertThat(listed.contents()).isEmpty();
   }
@@ -184,9 +183,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
         .putObject(
             req ->
                 req.bucket(getConfig().bucketName())
-                    .key(
-                        S3BackupStore.objectPrefix(backup.id())
-                            + S3BackupStore.MANIFEST_OBJECT_KEY),
+                    .key(getStore().objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY),
             AsyncRequestBody.fromString("{s"))
         .join();
 
@@ -210,9 +207,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
             delete ->
                 delete
                     .bucket(getConfig().bucketName())
-                    .key(
-                        S3BackupStore.objectPrefix(backup.id())
-                            + S3BackupStore.MANIFEST_OBJECT_KEY))
+                    .key(getStore().objectPrefix(backup.id()) + S3BackupStore.MANIFEST_OBJECT_KEY))
         .join();
 
     // then
