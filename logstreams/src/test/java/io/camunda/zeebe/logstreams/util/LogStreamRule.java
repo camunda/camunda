@@ -8,12 +8,14 @@
 package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import java.util.function.Consumer;
+import org.agrona.CloseHelper;
 import org.junit.rules.ExternalResource;
 
 public final class LogStreamRule extends ExternalResource {
@@ -23,6 +25,7 @@ public final class LogStreamRule extends ExternalResource {
   private final Consumer<LogStreamBuilder> streamBuilder;
   private SynchronousLogStream logStream;
   private LogStreamReader logStreamReader;
+  private LogStreamBatchWriter logStreamWriter;
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
   private ListLogStorage listLogStorage;
@@ -78,18 +81,12 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   private void stopLogStream() {
-    if (logStream != null) {
-      logStream.close();
-    }
+    CloseHelper.quietCloseAll(logStreamReader, logStream);
 
-    if (logStreamReader != null) {
-      logStreamReader.close();
-      logStreamReader = null;
-    }
-
-    if (listLogStorage != null) {
-      listLogStorage = null;
-    }
+    logStream = null;
+    logStreamReader = null;
+    logStreamWriter = null;
+    listLogStorage = null;
   }
 
   private void openLogStream() {
@@ -110,7 +107,20 @@ public final class LogStreamRule extends ExternalResource {
     if (logStreamReader == null) {
       logStreamReader = logStream.newLogStreamReader();
     }
+
     return logStreamReader;
+  }
+
+  public LogStreamBatchWriter getLogStreamBatchWriter() {
+    if (logStream == null) {
+      throw new IllegalStateException("Log stream is not open!");
+    }
+
+    if (logStreamWriter == null) {
+      logStreamWriter = logStream.newSyncLogStreamBatchWriter();
+    }
+
+    return logStreamWriter;
   }
 
   public SynchronousLogStream getLogStream() {

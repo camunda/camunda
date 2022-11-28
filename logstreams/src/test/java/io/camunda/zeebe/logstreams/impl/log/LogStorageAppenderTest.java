@@ -22,11 +22,13 @@ import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.dispatcher.Dispatchers;
 import io.camunda.zeebe.dispatcher.Subscription;
 import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
+import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.ByteValue;
@@ -36,6 +38,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 import org.awaitility.Awaitility;
@@ -100,7 +103,7 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
 
     // when
-    final var position = writer.event().valueWriter(value).done().tryWrite();
+    final var position = writer.tryWrite(new MutableLogAppendEntry().recordValue(value));
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
 
@@ -115,18 +118,14 @@ final class LogStorageAppenderTest {
   void shouldAppendMultipleEvents() throws InterruptedException {
     // given
     final var values = List.of(new Value(1), new Value(2));
+    final List<LogAppendEntry> entries =
+        values.stream()
+            .map(v -> new MutableLogAppendEntry().recordValue(v))
+            .collect(Collectors.toList());
     final var latch = new CountDownLatch(1);
 
     // when
-    final var highestPosition =
-        writer
-            .event()
-            .valueWriter(values.get(0))
-            .done()
-            .event()
-            .valueWriter(values.get(1))
-            .done()
-            .tryWrite();
+    final var highestPosition = writer.tryWrite(entries);
     final var lowestPosition = highestPosition - 1;
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
@@ -183,7 +182,9 @@ final class LogStorageAppenderTest {
     scheduler.submitActor(appender).join();
 
     // when
-    writer.event().valueWriter(value).done().event().valueWriter(value).done().tryWrite();
+    writer.tryWrite(
+        new MutableLogAppendEntry().recordValue(value),
+        new MutableLogAppendEntry().recordValue(value));
 
     // then
     Awaitility.await("until the actor has failed")

@@ -12,14 +12,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
-import io.camunda.zeebe.logstreams.util.LogStreamWriterRule;
+import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import io.camunda.zeebe.util.ByteValue;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,22 +37,21 @@ public final class LogStreamReaderTest {
 
   private final LogStreamRule logStreamRule =
       LogStreamRule.startByDefault(builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE));
-  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
-  @Rule
-  public final RuleChain ruleChain =
-      RuleChain.outerRule(logStreamRule).around(readerRule).around(writer);
+  @Rule public final RuleChain ruleChain = RuleChain.outerRule(logStreamRule).around(readerRule);
 
   private final Random random = new Random();
 
   private LogStreamReader reader;
+  private LogStreamBatchWriter writer;
   private long eventKey;
 
   @Before
   public void setUp() {
     eventKey = random.nextLong();
     reader = readerRule.getLogStreamReader();
+    writer = logStreamRule.getLogStreamBatchWriter();
   }
 
   @Test
@@ -78,7 +82,8 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldHaveNext() {
     // given
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
+    final long position =
+        writer.tryWrite(new MutableLogAppendEntry().key(eventKey).recordValue(EVENT_VALUE));
 
     // then
     assertThat(reader.hasNext()).isTrue();
@@ -98,7 +103,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldReturnPositionOfCurrentLoggedEvent() {
     // given
-    final long position = writer.writeEvent(EVENT_VALUE);
+    final long position = writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
     reader.seekToFirstEvent();
 
     // then
@@ -108,7 +113,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldReturnNoPositionIfNotActiveOrInitialized() {
     // given
-    writer.writeEvent(EVENT_VALUE);
+    writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     assertThat(reader.getPosition()).isEqualTo(-1);
@@ -118,7 +123,8 @@ public final class LogStreamReaderTest {
   public void shouldReopenAndReturnLoggedEvent() {
     // given
     reader.close();
-    final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
+    final long position =
+        writer.tryWrite(new MutableLogAppendEntry().key(eventKey).recordValue(EVENT_VALUE));
     reader = readerRule.resetReader();
 
     // then
@@ -130,8 +136,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldWrapAndSeekToEvent() {
     // given
-    writer.writeEvent(EVENT_VALUE);
-    final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
+    writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    final long secondPos =
+        writer.tryWrite(new MutableLogAppendEntry().key(eventKey).recordValue(EVENT_VALUE));
 
     // when
     reader = logStreamRule.newLogStreamReader();
@@ -149,7 +156,7 @@ public final class LogStreamReaderTest {
   public void shouldReturnLastEventAfterSeekToLastEvent() {
     // given
     final int eventCount = 10;
-    final long lastPosition = writer.writeEvents(eventCount, EVENT_VALUE);
+    final long lastPosition = writeEvents(eventCount);
 
     // when
     final long seekedPosition = reader.seekToEnd();
@@ -163,11 +170,12 @@ public final class LogStreamReaderTest {
   public void shouldReturnNextAfterSeekToEnd() {
     // given
     final int eventCount = 10;
-    final long lastEventPosition = writer.writeEvents(eventCount, EVENT_VALUE);
+    final long lastEventPosition = writeEvents(eventCount);
     final long seekedPosition = reader.seekToEnd();
 
     // when
-    final long newLastPosition = writer.writeEvent(EVENT_VALUE);
+    final long newLastPosition =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     assertThat(lastEventPosition).isEqualTo(seekedPosition);
@@ -182,7 +190,7 @@ public final class LogStreamReaderTest {
   public void shouldSeekToEnd() {
     // given
     final int eventCount = 1000;
-    final long lastPosition = writer.writeEvents(eventCount, EVENT_VALUE);
+    final long lastPosition = writeEvents(eventCount);
 
     // when
     final long seekedPosition = reader.seekToEnd();
@@ -196,10 +204,9 @@ public final class LogStreamReaderTest {
   public void shouldIterateOverManyEventsInOrder() {
     // given
     final int eventCount = 10_000;
-    final int batchSize = 10;
 
     // when
-    writer.writeEvents(eventCount / batchSize, batchSize, EVENT_VALUE);
+    writeEvents(eventCount);
 
     // then
     readerRule.assertEvents(eventCount, EVENT_VALUE);
@@ -209,8 +216,8 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToMiddleOfBatch() {
     // given
-    final long firstBatchLastPosition = writer.writeEvents(1, 4, EVENT_VALUE);
-    writer.writeEvents(1, 8, EVENT_VALUE);
+    final long firstBatchLastPosition = writeEvents(4);
+    writeEvents(8);
 
     // when
     reader.seekToNextEvent(firstBatchLastPosition + 1);
@@ -225,8 +232,7 @@ public final class LogStreamReaderTest {
   public void shouldIterateMultipleTimes() {
     // given
     final int eventCount = 500;
-    final int batchSize = 5;
-    writer.writeEvents(eventCount / batchSize, batchSize, EVENT_VALUE);
+    writeEvents(eventCount);
 
     // when
     reader.seekToFirstEvent();
@@ -245,8 +251,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToFirstEvent() {
     // given
-    final long firstPosition = writer.writeEvent(EVENT_VALUE);
-    writer.writeEvents(2, EVENT_VALUE);
+    final long firstPosition =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    writeEvents(2);
 
     // when
     reader.seekToFirstEvent();
@@ -259,8 +266,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToFirstPositionWhenPositionBeforeFirstEvent() {
     // given
-    final long firstPosition = writer.writeEvent(EVENT_VALUE);
-    writer.writeEvents(2, EVENT_VALUE);
+    final long firstPosition =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    writeEvents(2);
 
     // when
     reader.seek(firstPosition - 1);
@@ -273,7 +281,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldNotSeekToEventBeyondLastEvent() {
     // given
-    final long lastEventPosition = writer.writeEvents(100, EVENT_VALUE);
+    final long lastEventPosition = writeEvents(100);
 
     // when
     reader.seek(lastEventPosition + 1);
@@ -297,7 +305,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToNextEventWhenThereIsNone() {
     // given
-    final long lastEventPosition = writer.writeEvents(10, EVENT_VALUE);
+    final long lastEventPosition = writeEvents(10);
 
     // when
     final boolean positionExists = reader.seekToNextEvent(lastEventPosition);
@@ -311,7 +319,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToNextEvent() {
     // given
-    final long lastEventPosition = writer.writeEvents(10, EVENT_VALUE);
+    final long lastEventPosition = writeEvents(10);
 
     // when
     final boolean positionExists = reader.seekToNextEvent(lastEventPosition - 1);
@@ -325,7 +333,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldNotSeekToNextEvent() {
     // given
-    final long lastEventPosition = writer.writeEvents(10, EVENT_VALUE);
+    final long lastEventPosition = writeEvents(10);
 
     // when
     final boolean positionExists = reader.seekToNextEvent(lastEventPosition + 1);
@@ -338,8 +346,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToFirstEventWhenNextIsNegative() {
     // given
-    final long firstEventPosition = writer.writeEvent(EVENT_VALUE);
-    writer.writeEvents(10, EVENT_VALUE);
+    final long firstEventPosition =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    writeEvents(10);
     reader.seekToEnd();
 
     // when
@@ -354,8 +363,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldPeekFirstEvent() {
     // given
-    final var eventPosition1 = writer.writeEvent(EVENT_VALUE);
-    writer.writeEvent(EVENT_VALUE);
+    final var eventPosition1 =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     assertThat(reader.hasNext()).isTrue();
 
@@ -369,8 +379,10 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldPeekNextEvent() {
     // given
-    final var eventPosition1 = writer.writeEvent(EVENT_VALUE);
-    final var eventPosition2 = writer.writeEvent(EVENT_VALUE);
+    final var eventPosition1 =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    final var eventPosition2 =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next().getPosition()).isEqualTo(eventPosition1);
@@ -385,8 +397,10 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldPeekAndReadNextEvent() {
     // given
-    final var eventPosition1 = writer.writeEvent(EVENT_VALUE);
-    final var eventPosition2 = writer.writeEvent(EVENT_VALUE);
+    final var eventPosition1 =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
+    final var eventPosition2 =
+        writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     assertThat(reader.hasNext()).isTrue();
 
@@ -410,5 +424,14 @@ public final class LogStreamReaderTest {
 
     // when / then
     assertThatThrownBy(reader::peekNext).isInstanceOf(NoSuchElementException.class);
+  }
+
+  private long writeEvents(final int eventCount) {
+    final List<LogAppendEntry> entries =
+        IntStream.rangeClosed(1, eventCount)
+            .mapToObj(i -> new MutableLogAppendEntry().key(i).recordValue(EVENT_VALUE))
+            .collect(Collectors.toList());
+
+    return writer.tryWrite(entries);
   }
 }
