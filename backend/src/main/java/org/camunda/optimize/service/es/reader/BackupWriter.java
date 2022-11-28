@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.MappingMetadataUtil;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.ActionListener;
@@ -18,8 +19,10 @@ import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRes
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.elasticsearch.transport.TransportException;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotNameForImportIndices;
@@ -95,9 +98,18 @@ public class BackupWriter {
 
       @Override
       public void onFailure(Exception e) {
-        String reason = String.format("Failed to take snapshot [%s]", snapshotName);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
+        if (e instanceof IOException || e instanceof TransportException) {
+          final String reason = String.format(
+            "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
+            snapshotName
+          );
+          log.error(reason, e);
+          throw new OptimizeElasticsearchConnectionException(reason, e);
+        } else {
+          final String reason = String.format("Failed to take snapshot [%s]", snapshotName);
+          log.error(reason, e);
+          throw new OptimizeRuntimeException(reason, e);
+        }
       }
     };
   }
@@ -124,9 +136,18 @@ public class BackupWriter {
 
       @Override
       public void onFailure(Exception e) {
-        String reason = String.format("Failed to delete snapshots for backupID [%s]", backupId);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
+        if (e instanceof IOException || e instanceof TransportException) {
+          final String reason = String.format(
+            "Encountered an error connecting to Elasticsearch while attempting to delete snapshots for backupID [%s].",
+            backupId
+          );
+          log.error(reason, e);
+          throw new OptimizeElasticsearchConnectionException(reason, e);
+        } else {
+          String reason = String.format("Failed to delete snapshots for backupID [%s]", backupId);
+          log.error(reason, e);
+          throw new OptimizeRuntimeException(reason, e);
+        }
       }
     };
   }

@@ -1428,6 +1428,7 @@
     "notAuthorizedError": "Sie konnten nicht authentifiziert werden, bitte überprüfen Sie Ihren Benutzernamen und Passwort.",
     "notFoundError": "Der Server konnte die angeforderte Seite oder Datei nicht finden.",
     "badRequestError": "Der Server konnte Ihre Anfrage nicht verarbeiten.",
+    "elasticsearchConnectionError": "Der Server konnte keine Verbindung zu Elasticsearch herstellen.",
     "nonTenantScopeCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist in der Datenquelle definiert, jedoch ist mindestens ein Mandant des Berichts nicht in der Datenquelle vorhanden.",
     "nonDefinitionScopeCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist nicht in der Datenquelle der Sammlung vorhanden.",
     "invalidLicenseError": "Die gegebene Lizenz ist ungültig.",

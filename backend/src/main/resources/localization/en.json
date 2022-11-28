@@ -1428,6 +1428,7 @@
     "notAuthorizedError": "Could not authenticate you, please check your credentials.",
     "notFoundError": "The server could not find the requested resource.",
     "badRequestError": "The server was unable to process the request.",
+    "elasticsearchConnectionError": "The server has encountered Elasticsearch connection issues.",
     "nonTenantScopeCompliantConflict": "Could not apply action due to conflicts with the collection data source. The definition for the report is available in the data source yet at least one tenant defined in the report is not available in the data source.",
     "nonDefinitionScopeCompliantConflict": "Could not apply action due to conflicts with the collection data source. The report definition is not defined in the data source.",
     "invalidLicenseError": "Invalid license provided.",

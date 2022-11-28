@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -20,6 +21,7 @@ import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRe
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.elasticsearch.transport.TransportException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -68,10 +70,13 @@ public class BackupReader {
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
-      } catch (IOException e) {
-        final String reason = String.format("Error while retrieving repository with name [%s].", repositoryName);
+      } catch (IOException | TransportException e) {
+        final String reason = String.format(
+          "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
+          repositoryName
+        );
         log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
+        throw new OptimizeElasticsearchConnectionException(reason, e);
       }
     }
   }
@@ -112,10 +117,13 @@ public class BackupReader {
       );
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (IOException e) {
-      final String reason = String.format("Could not retrieve snapshots for backupID [%s].", backupId);
-      log.error(reason);
-      throw new OptimizeRuntimeException(reason, e);
+    } catch (IOException | TransportException e) {
+      final String reason = String.format(
+        "Encountered an error connecting to Elasticsearch while retrieving snapshots for backupID [%s].",
+        backupId
+      );
+      log.error(reason, e);
+      throw new OptimizeElasticsearchConnectionException(reason, e);
     }
     return response.getSnapshots();
   }
