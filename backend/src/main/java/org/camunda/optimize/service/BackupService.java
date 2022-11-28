@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.reader.BackupWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
 import org.springframework.stereotype.Component;
 
@@ -95,7 +96,7 @@ public class BackupService {
           snapshotInfo.snapshot().getSnapshotId().getName(),
           snapshotInfo.state(),
           OffsetDateTime.ofInstant(Instant.ofEpochMilli(snapshotInfo.startTime()), ZoneId.systemDefault()),
-          snapshotInfo.shardFailures()
+          snapshotInfo.shardFailures().stream().map(SnapshotShardFailure::toString).collect(toList())
         ))
         .collect(toList())
     );

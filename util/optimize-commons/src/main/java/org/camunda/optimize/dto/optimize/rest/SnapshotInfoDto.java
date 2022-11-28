@@ -8,7 +8,6 @@ package org.camunda.optimize.dto.optimize.rest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
 
 import java.time.OffsetDateTime;
@@ -21,5 +20,5 @@ public class SnapshotInfoDto {
   private String snapshotName;
   private SnapshotState state;
   private OffsetDateTime startTime;
-  private List<SnapshotShardFailure> failures;
+  private List<String> failures;
 }
