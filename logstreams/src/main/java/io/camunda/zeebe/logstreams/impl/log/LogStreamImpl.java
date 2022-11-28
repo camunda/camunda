@@ -15,7 +15,6 @@ import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
@@ -177,7 +176,7 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
-  public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
+  public ActorFuture<LogStreamWriter> newLogStreamWriter() {
     return newLogStreamWriter(LogStreamWriterImpl::new);
   }
 
