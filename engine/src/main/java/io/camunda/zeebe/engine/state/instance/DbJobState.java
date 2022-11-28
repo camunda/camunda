@@ -198,6 +198,7 @@ public final class DbJobState implements JobState, MutableJobState {
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
+      makeJobNotActivatable(updatedValue.getTypeBuffer());
     }
   }
 
