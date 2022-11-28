@@ -130,22 +130,10 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
         actorControl.submit(toRunnable(task));
         return;
       }
-      final var builder =
-          new BufferedTaskResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+      final var builder = new BufferedTaskResultBuilder(logStreamBatchWriter::canWriteEvents);
       final var result = task.execute(builder);
+      final var recordBatch = result.getRecordBatch();
 
-      logStreamBatchWriter.reset();
-      result
-          .getRecordBatch()
-          .forEach(
-              entry ->
-                  logStreamBatchWriter
-                      .event()
-                      .key(entry.key())
-                      .metadataWriter(entry.recordMetadata())
-                      .sourceIndex(entry.sourceIndex())
-                      .valueWriter(entry.recordValue())
-                      .done());
       // we need to retry the writing if the dispatcher return zero or negative position (this means
       // it was full during writing)
       // it will be freed from the LogStorageAppender concurrently, which means we might be able to
@@ -154,7 +142,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
           writeRetryStrategy.runWithRetry(
               () -> {
                 LOG.trace("Write scheduled TaskResult to dispatcher!");
-                return logStreamBatchWriter.tryWrite() >= 0;
+                return logStreamBatchWriter.tryWrite(recordBatch) >= 0;
               },
               abortCondition);
 

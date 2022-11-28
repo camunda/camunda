@@ -29,16 +29,6 @@ public record RecordBatchEntry(
     return unifiedRecordValue;
   }
 
-  @Override
-  public int getLength() {
-    return Long.BYTES
-        + // key
-        Integer.BYTES
-        + // source Index
-        recordMetadata.getLength()
-        + unifiedRecordValue.getLength();
-  }
-
   public static RecordBatchEntry createEntry(
       final long key,
       final int sourceIndex,

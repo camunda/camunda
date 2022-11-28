@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.stream.impl.records;
 
-import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -26,7 +25,7 @@ import java.util.function.Consumer;
 
 public final class RecordBatch implements MutableRecordBatch {
 
-  final List<LogAppendEntry> recordBatchEntries = new ArrayList<>();
+  final List<RecordBatchEntry> recordBatchEntries = new ArrayList<>();
   private int batchSize;
   private final RecordBatchSizePredicate recordBatchSizePredicate;
 
@@ -81,17 +80,17 @@ public final class RecordBatch implements MutableRecordBatch {
   }
 
   @Override
-  public Iterator<LogAppendEntry> iterator() {
+  public Iterator<RecordBatchEntry> iterator() {
     return recordBatchEntries.iterator();
   }
 
   @Override
-  public void forEach(final Consumer<? super LogAppendEntry> action) {
+  public void forEach(final Consumer<? super RecordBatchEntry> action) {
     recordBatchEntries.forEach(action);
   }
 
   @Override
-  public Spliterator<LogAppendEntry> spliterator() {
+  public Spliterator<RecordBatchEntry> spliterator() {
     return recordBatchEntries.spliterator();
   }
 }
