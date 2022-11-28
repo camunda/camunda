@@ -142,7 +142,10 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
     // then
     final var listedObjects =
         getClient()
-            .listObjectsV2(req -> req.bucket(getConfig().bucketName()))
+            .listObjectsV2(
+                req ->
+                    req.bucket(getConfig().bucketName())
+                        .prefix(getConfig().basePath().map(base -> base + "/").orElse("")))
             .join()
             .contents()
             .stream()
