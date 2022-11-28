@@ -98,7 +98,7 @@ public final class S3BackupStore implements BackupStore {
     backupIdentifierPattern =
         Pattern.compile(
             "^"
-                + basePath.map(base -> base + "/").orElse("")
+                + basePath.map(base -> base + "/").map(Pattern::quote).orElse("")
                 + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   }
 
