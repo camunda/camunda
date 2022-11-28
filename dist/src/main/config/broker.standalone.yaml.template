@@ -285,8 +285,8 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_COMPRESSION
           # compression: none
 
-          # When set, all objects in the bucket will use this prefix. Must not start or end with '/'.
-          # Useful for using the same bucket for multiple Zeebe clusters.
+          # When set, all objects in the bucket will use this prefix. Must be non-empty and not start or end with '/'.
+          # Useful for using the same bucket for multiple Zeebe clusters. In this case, basePath must be unique.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_BASEPATH
           # basePath:
 
