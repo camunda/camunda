@@ -6,12 +6,13 @@
  */
 package io.camunda.operate.webapp.management;
 
-import io.camunda.operate.webapp.api.v1.rest.ErrorController;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.es.backup.BackupManager;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatus;
@@ -28,22 +29,35 @@ public class BackupService {
   @Autowired
   private BackupManager backupManager;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
 
   @PostMapping(produces = { MediaType.APPLICATION_JSON_VALUE})
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
     validateRequest(request);
+    validateRepositoryNameIsConfigured();
     return backupManager.takeBackup(request);
+  }
+
+  private void validateRepositoryNameIsConfigured() {
+    if (operateProperties.getBackup() == null || operateProperties.getBackup()
+        .getRepositoryName() == null || operateProperties.getBackup().getRepositoryName().isEmpty()) {
+      throw new NotFoundException("No backup repository configured.");
+    }
   }
 
   @GetMapping("/{backupId}")
   public GetBackupStateResponseDto getBackupState(@PathVariable String backupId) {
+    validateRepositoryNameIsConfigured();
     return backupManager.getBackupState(backupId);
   }
 
   @DeleteMapping("/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteBackup(@PathVariable String backupId) {
+    validateRepositoryNameIsConfigured();
     validateBackupId(backupId);
     backupManager.deleteBackup(backupId);
   }

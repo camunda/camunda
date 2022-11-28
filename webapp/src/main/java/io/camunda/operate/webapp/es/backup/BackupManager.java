@@ -16,10 +16,7 @@ import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.operate.schema.backup.Prio4Backup;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
-import io.camunda.operate.webapp.management.dto.BackupStateDto;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
+import io.camunda.operate.webapp.management.dto.*;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -36,6 +33,7 @@ import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,8 +44,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.*;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static org.elasticsearch.snapshots.SnapshotState.*;
@@ -163,10 +168,6 @@ public class BackupManager {
 
   private void validateRepositoryExists() {
     String repositoryName = getRepositoryName();
-    if (repositoryName == null || repositoryName.isBlank()) {
-      final String reason = "Cannot trigger backup because no Elasticsearch snapshot repository name found in Operate configuration.";
-      throw new InvalidRequestException(reason);
-    }
     final GetRepositoriesRequest getRepositoriesRequest = new GetRepositoriesRequest()
         .repositories(new String[]{ repositoryName });
     try {
@@ -175,7 +176,7 @@ public class BackupManager {
       if (e instanceof ElasticsearchStatusException
           && ((ElasticsearchStatusException) e).getDetailedMessage().contains(REPOSITORY_MISSING_EXCEPTION_TYPE)) {
         final String reason = String.format(
-            "Cannot trigger backup because no repository with name [%s] could be found.",
+            "No repository with name [%s] could be found.",
             repositoryName
         );
         throw new OperateRuntimeException(reason);
@@ -295,30 +296,63 @@ public class BackupManager {
         logger.error("Exception occurred while creating snapshot: " + e.getMessage(), e);
         //no need to continue
         requestsQueue.clear();
-        return;
       }
     };
   }
 
   public GetBackupStateResponseDto getBackupState(String backupId) {
     List<SnapshotInfo> snapshots = findSnapshots(backupId);
+    GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     Metadata metadata = objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     if (snapshots.size() == expectedSnapshotsCount && snapshots.stream().map(SnapshotInfo::state)
         .allMatch(s -> SUCCESS.equals(s))) {
-      return new GetBackupStateResponseDto(BackupStateDto.COMPLETED);
+      response.setState(BackupStateDto.COMPLETED);
+    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
+      response.setState(BackupStateDto.FAILED);
+    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> INCOMPATIBLE.equals(s))) {
+      response.setState(BackupStateDto.INCOMPATIBLE);
+    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> IN_PROGRESS.equals(s))){
+      response.setState(BackupStateDto.IN_PROGRESS);
+    } else if (snapshots.size() < expectedSnapshotsCount) {
+      response.setState(BackupStateDto.INCOMPLETE);
+    } else {
+      response.setState(BackupStateDto.FAILED);
     }
-    if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
-      return new GetBackupStateResponseDto(BackupStateDto.FAILED);
+    List<GetBackupStateResponseDetailDto> details = new ArrayList<>();
+    for (SnapshotInfo snapshot: snapshots) {
+      GetBackupStateResponseDetailDto detail = new GetBackupStateResponseDetailDto();
+      detail.setSnapshotName(snapshot.snapshotId().getName());
+      detail.setStartTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(snapshot.startTime()), ZoneId.systemDefault()));
+      if (snapshot.shardFailures() != null) {
+        detail.setFailures(
+            snapshot.shardFailures().stream().map(SnapshotShardFailure::toString).toArray(String[]::new));
+      }
+      detail.setState(snapshot.state().name());
+      details.add(detail);
     }
-    if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> INCOMPATIBLE.equals(s))) {
-      return new GetBackupStateResponseDto(BackupStateDto.INCOMPATIBLE);
+    response.setDetails(details);
+    if(response.getState().equals(BackupStateDto.FAILED)) {
+      String failureReason = null;
+      String failedSnapshots = snapshots.stream().filter(s -> s.state().equals(FAILED)).map(s -> s.snapshotId().getName())
+          .collect(Collectors.joining(", "));
+      if (!failedSnapshots.isEmpty()) {
+        failureReason = String.format("There were failures with the following snapshots: %s", failedSnapshots);
+      } else {
+        String partialSnapshot = snapshots.stream().filter(s -> s.state().equals(PARTIAL)).map(s -> s.snapshotId().getName())
+          .collect(Collectors.joining(", "));
+        if (!partialSnapshot.isEmpty()) {
+          failureReason = String.format("Some of the snapshots are partial: %s", partialSnapshot);
+        } else if (snapshots.size() > expectedSnapshotsCount) {
+          failureReason = "More snapshots found than expected.";
+        }
+      }
+      if (failureReason != null) {
+        response.setFailureReason(failureReason);
+      }
     }
-    if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> IN_PROGRESS.equals(s))){
-      return new GetBackupStateResponseDto(BackupStateDto.IN_PROGRESS);
-    }
-    return new GetBackupStateResponseDto(io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPLETE);
+    return response;
   }
 
   private List<SnapshotInfo> findSnapshots(String backupId) {
