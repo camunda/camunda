@@ -106,7 +106,7 @@ jobs:
       - name: Deploy benchmark installation
         run: >
           helm upgrade --install
-          --namespace ${{ inputs.ref }}
+          --namespace ${{ inputs.name }}
           --create-namespace
           ${{ inputs.name }} camunda/camunda-platform
           -f benchmarks/setup/default/zeebe-values.yaml
