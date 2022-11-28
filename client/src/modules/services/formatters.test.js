@@ -135,6 +135,13 @@ describe('durationFormatter', () => {
     expect(durationFormatter('')).toBe('--');
     expect(durationFormatter(null)).toBe('--');
   });
+
+  it('should return value in short notation', () => {
+    expect(durationFormatter(123456789, undefined, true)).toBe(
+      `1d${nbsp}10h${nbsp}17min${nbsp}36s${nbsp}789ms`
+    );
+    expect(durationFormatter(123456789, null, true)).toBe(`1d${nbsp}10h${nbsp}18min`);
+  });
 });
 
 describe('percentageFormatter', () => {

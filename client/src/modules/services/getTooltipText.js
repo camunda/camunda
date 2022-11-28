@@ -14,13 +14,14 @@ export default function getTooltipText(
   alwaysShowAbsolute,
   alwaysShowRelative,
   hideRelative,
-  precision
+  precision,
+  shortNotation
 ) {
   if (!data && data !== 0) {
     return '';
   }
 
-  const absolute = formatter(data, precision);
+  const absolute = formatter(data, precision, shortNotation);
   const relative = getRelativeValue(data, instanceCount);
 
   if (hideRelative) {

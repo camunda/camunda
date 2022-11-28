@@ -72,7 +72,7 @@ export function Heatmap({report, context, user}) {
           const targetDuration = (
             <>
               {t('report.heatTarget.targetDuration')}:{' '}
-              <b>{formatters.duration(target, precision)}</b>
+              <b>{formatters.duration(target, precision, alwaysShow)}</b>
               <br />
             </>
           );
@@ -86,7 +86,7 @@ export function Heatmap({report, context, user}) {
                 {targetDuration}
                 {t(`report.heatTarget.duration.${type}`)}
                 {t('report.heatTarget.actualDuration', {
-                  duration: formatters.duration(real, precision),
+                  duration: formatters.duration(real, precision, alwaysShow),
                   percentage: relation < 1 ? '< 1' : Math.round(relation),
                 })}
               </>
@@ -143,11 +143,10 @@ export function Heatmap({report, context, user}) {
             <table>
               <tbody>
                 {result.measures.map((measure, idx) => {
+                  const measureString = getMeasureString(measure, alwaysShow);
                   return (
                     <tr key={idx}>
-                      <td>
-                        <b>{getMeasureString(measure)}:</b>
-                      </td>
+                      <td>{measureString ? <b>{measureString}:</b> : ''}</td>
                       <td>
                         {getTooltipText(
                           measure.data.find((entry) => entry.key === id)?.value,
@@ -156,7 +155,8 @@ export function Heatmap({report, context, user}) {
                           alwaysShowAbsolute,
                           alwaysShowRelative,
                           measure.property === 'duration',
-                          precision
+                          precision,
+                          alwaysShow
                         )}
                       </td>
                     </tr>
@@ -190,17 +190,25 @@ export function Heatmap({report, context, user}) {
 
 export default withUser(Heatmap);
 
-function getMeasureString(measure) {
+function getMeasureString(measure, shortNotation) {
   let property = measure.property;
   if (property === 'frequency') {
     property = 'count';
   }
   const {aggregationType: aggregation, userTaskDurationTime} = measure;
 
+  let measureString = '';
+  if (shortNotation) {
+    // for short notation we want to show property name just for count measures
+    measureString = property === 'count' ? t('report.view.count') : '';
+  } else {
+    measureString = t('report.view.' + property) + (aggregation ? ' - ' : '');
+  }
+
   return (
-    t('report.view.' + property) +
+    measureString +
     (aggregation
-      ? ` - ${t('report.config.aggregationShort.' + aggregation.type, {value: aggregation.value})}`
+      ? t('report.config.aggregationShort.' + aggregation.type, {value: aggregation.value})
       : '') +
     (userTaskDurationTime
       ? ` (${t('report.config.userTaskDuration.' + userTaskDurationTime)})`
