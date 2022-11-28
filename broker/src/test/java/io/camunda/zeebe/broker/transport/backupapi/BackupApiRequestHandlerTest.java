@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -19,7 +20,8 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
@@ -60,7 +62,7 @@ final class BackupApiRequestHandlerTest {
   @Mock AtomixServerTransport transport;
 
   @Mock(answer = Answers.RETURNS_SELF)
-  LogStreamRecordWriter logStreamRecordWriter;
+  LogStreamWriter logStreamWriter;
 
   @Mock BackupManager backupManager;
 
@@ -70,7 +72,7 @@ final class BackupApiRequestHandlerTest {
 
   @BeforeEach
   void setup() {
-    handler = new BackupApiRequestHandler(transport, logStreamRecordWriter, backupManager, 1, true);
+    handler = new BackupApiRequestHandler(transport, logStreamWriter, backupManager, 1, true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
@@ -110,7 +112,7 @@ final class BackupApiRequestHandlerTest {
     handleRequest(request);
 
     // then
-    verify(logStreamRecordWriter, times(1)).tryWrite();
+    verify(logStreamWriter, times(1)).tryWrite(any(LogAppendEntry.class));
   }
 
   @Test
@@ -135,7 +137,7 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
         .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
-    verify(logStreamRecordWriter, never()).tryWrite();
+    verify(logStreamWriter, never()).tryWrite(any(LogAppendEntry.class));
   }
 
   @Test

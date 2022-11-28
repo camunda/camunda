@@ -10,23 +10,22 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.withSettings;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -54,14 +53,14 @@ final class InterPartitionCommandReceiverTest {
             new byte[100]);
 
     final var logStreamWriter =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then - sent message can be written to log stream
-    verify(logStreamWriter).tryWrite();
+    verify(logStreamWriter).tryWrite(any());
   }
 
   @Test
@@ -79,7 +78,7 @@ final class InterPartitionCommandReceiverTest {
             new byte[100]);
 
     final var logStreamWriter =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
@@ -103,16 +102,16 @@ final class InterPartitionCommandReceiverTest {
         sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, new byte[100]);
 
     final var logStreamWriter =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    final var metadataCaptor = ArgumentCaptor.forClass(BufferWriter.class);
-    verify(logStreamWriter).metadataWriter(metadataCaptor.capture());
-    final var metadataWriter = metadataCaptor.getValue();
+    final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
+    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    final var metadataWriter = entryCaptor.getValue().recordMetadata();
     final var metadataBuffer = new ExpandableArrayBuffer();
     final var metadata = new RecordMetadata();
     metadataWriter.write(metadataBuffer, 0);
@@ -145,16 +144,16 @@ final class InterPartitionCommandReceiverTest {
             commandBytes);
 
     final var logStreamWriter =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    final var valueCaptor = ArgumentCaptor.forClass(BufferWriter.class);
-    verify(logStreamWriter).valueWriter(valueCaptor.capture());
-    final var valueWriter = valueCaptor.getValue();
+    final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
+    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    final var valueWriter = entryCaptor.getValue().recordValue();
     final var bytesWrittenToLogStream = new byte[valueWriter.getLength()];
     final var valueBuffer = new UnsafeBuffer(bytesWrittenToLogStream);
     valueWriter.write(valueBuffer, 0);
@@ -181,18 +180,20 @@ final class InterPartitionCommandReceiverTest {
             new byte[100]);
 
     final var logStreamWriter =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    verify(logStreamWriter).key(recordKey);
+    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    assertThat(entryCaptor.getValue().key()).isEqualTo(recordKey);
   }
 
   @Test
-  void shouldWriteCommandWithKey() {
+  void shouldWriteCommandWithoutKey() {
     // given
     final var receiverBrokerId = 3;
     final var receiverPartitionId = 5;
@@ -206,14 +207,16 @@ final class InterPartitionCommandReceiverTest {
             new byte[100]);
 
     final var logStreamWriter =
-        mock(LogStreamRecordWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
+        mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
     final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+    final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
 
     // when
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then
-    verify(logStreamWriter, never()).key(anyLong());
+    verify(logStreamWriter).tryWrite(entryCaptor.capture());
+    assertThat(entryCaptor.getValue().key()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
   private byte[] sendCommand(
