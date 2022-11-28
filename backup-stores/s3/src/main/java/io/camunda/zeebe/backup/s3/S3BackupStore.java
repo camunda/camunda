@@ -122,13 +122,13 @@ public final class S3BackupStore implements BackupStore {
    * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
    * matches.
    */
-  private static String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
     //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
     return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
         .takeWhile(Optional::isPresent)
         .map(Optional::get)
         .map(Number::toString)
-        .collect(Collectors.joining("/"));
+        .collect(Collectors.joining("/", config.basePath().map(base -> base + "/").orElse(""), ""));
   }
 
   public String objectPrefix(final BackupIdentifier id) {
