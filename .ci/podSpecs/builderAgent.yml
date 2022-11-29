@@ -22,10 +22,10 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 2
+        cpu: 1
         memory: 4Gi
       requests:
-        cpu: 2
+        cpu: 1
         memory: 4Gi
   # this docker-in-docker container is used to spawn containers dynamically inside a docker container
   - name: dind
