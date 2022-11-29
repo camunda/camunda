@@ -56,7 +56,16 @@ public final class BackupRequestHandler implements BackupApi {
                       .toList();
 
               return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-                  .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived));
+                  .thenApply(
+                      ignore -> {
+                        final var partitionStatuses =
+                            statusesReceived.stream()
+                                .map(response -> response.join().getResponse())
+                                .map(PartitionBackupStatus::from)
+                                .toList();
+
+                        return aggregatePartitionStatus(backupId, partitionStatuses);
+                      });
             });
   }
 
@@ -79,14 +88,7 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   private BackupStatus aggregatePartitionStatus(
-      final long backupId,
-      final List<CompletableFuture<BrokerResponse<BackupStatusResponse>>> completedFutures) {
-
-    final var partitionStatuses =
-        completedFutures.stream()
-            .map(response -> response.join().getResponse())
-            .map(PartitionBackupStatus::from)
-            .toList();
+      final long backupId, final List<PartitionBackupStatus> partitionStatuses) {
 
     final var combinedStatus = getAggregatedStatus(partitionStatuses);
 
