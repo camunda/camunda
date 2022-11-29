@@ -36,10 +36,11 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
 
   /**
    * Attempts to write the events to the underlying stream. This method is atomic, either all events
-   * are written, or not are.
+   * are written, or none are.
    *
    * @param appendEntries a set of entries to append; these will be appended in the order
-   * @return the last (i.e. highest) event position or a negative value if fails to write the events
+   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
+   *     or 0 if the batch is empty
    */
   default long tryWrite(final LogAppendEntry... appendEntries) {
     return tryWrite(Arrays.asList(appendEntries));
@@ -47,11 +48,12 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
 
   /**
    * Attempts to write the events to the underlying stream. This method is atomic, either all events
-   * are written, or not are.
+   * are written, or none are.
    *
    * @param appendEntries a set of entries to append; these will be appended in the order in which
    *     the collection is iterated.
-   * @return the last (i.e. highest) event position or a negative value if fails to write the events
+   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
+   *     or 0 if the batch is empty
    */
   default long tryWrite(final Iterable<? extends LogAppendEntry> appendEntries) {
     return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
@@ -59,12 +61,13 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
 
   /**
    * Attempts to write the events to the underlying stream. This method is atomic, either all events
-   * are written, or not are.
+   * are written, or none are.
    *
    * @param appendEntries a set of entries to append; these will be appended in the order in which
    *     the collection is iterated.
    * @param sourcePosition a back-pointer to the record whose processing created these entries
-   * @return the last (i.e. highest) event position or a negative value if fails to write the events
+   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
+   *     or 0 if the batch is empty
    */
   long tryWrite(final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition);
 }
