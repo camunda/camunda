@@ -54,10 +54,10 @@ spec:
         tty: true
         resources:
           limits:
-            cpu: 6
+            cpu: 3
             memory: 1Gi
           requests:
-            cpu: 6
+            cpu: 3
             memory: 1Gi
         volumeMounts:
         - name: ssd-storage
