@@ -238,7 +238,7 @@ public final class ElementActivationBehavior {
       // there is an active instance of this flow scope
       final var elementInstance = elementInstancesOfScope.get(0);
 
-      if (ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY
+      if (isAncestorSelected(ancestorScopeKey)
           && isAncestorOfElementInstance(ancestorScopeKey, elementInstance)) {
         // the active instance is a descendant of the selected ancestor
         // - don't use this instance as the flow scope
@@ -253,7 +253,7 @@ public final class ElementActivationBehavior {
 
     // there are multiple active instances of this flow scope
     // - try to use ancestor selection
-    if (ancestorScopeKey == NO_ANCESTOR_SCOPE_KEY) {
+    if (!isAncestorSelected(ancestorScopeKey)) {
       // no ancestor selected
       // - reject by throwing an exception
       final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
@@ -437,6 +437,10 @@ public final class ElementActivationBehavior {
         throw new EventSubscriptionException(message);
       }
     }
+  }
+
+  private static boolean isAncestorSelected(final long ancestorScopeKey) {
+    return ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY;
   }
 
   public static class ActivatedElementKeys {
