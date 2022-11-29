@@ -32,13 +32,13 @@ public class LivenessResponsiveHealthIndicatorAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(name = "livenessGatewayResponsiveHealthIndicator")
   public HealthIndicator livenessGatewayResponsiveHealthIndicator(
-      GatewayCfg gatewayCfg, LivenessResponsiveHealthIndicatorProperties properties) {
+      final GatewayCfg gatewayCfg, final LivenessResponsiveHealthIndicatorProperties properties) {
     return new DelayedHealthIndicator(
         gatewayResponsiveHealthIndicator(gatewayCfg, properties), properties.getMaxDowntime());
   }
 
   private ResponsiveHealthIndicator gatewayResponsiveHealthIndicator(
-      GatewayCfg gatewayCfg, LivenessResponsiveHealthIndicatorProperties properties) {
-    return new ResponsiveHealthIndicator(gatewayCfg, properties.getRequestTimeout());
+      final GatewayCfg gatewayCfg, final LivenessResponsiveHealthIndicatorProperties properties) {
+    return new ResponsiveHealthIndicator(gatewayCfg, properties.getHealthZeebeClientProperties());
   }
 }

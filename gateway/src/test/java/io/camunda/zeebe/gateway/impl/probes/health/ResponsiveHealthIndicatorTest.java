@@ -13,11 +13,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.impl.probes.health.HealthZeebeClientProperties.SecurityProperties;
+import io.camunda.zeebe.gateway.impl.probes.health.HealthZeebeClientProperties.SecurityProperties.OAuthSecurityProperties;
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
@@ -25,6 +31,8 @@ import org.springframework.boot.actuate.health.Status;
 
 public class ResponsiveHealthIndicatorTest {
   private static final Duration TEST_DURATION = Duration.ofSeconds(123);
+  private static final HealthZeebeClientProperties ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION =
+      new HealthZeebeClientProperties();
   private static final GatewayCfg TEST_CFG = new GatewayCfg();
   private static final String CERTIFICATE_CHAIN_PATH =
       ResponsiveHealthIndicatorTest.class
@@ -37,36 +45,29 @@ public class ResponsiveHealthIndicatorTest {
     TEST_CFG.getNetwork().setPort(1234);
     TEST_CFG.getSecurity().setEnabled(false);
     TEST_CFG.init();
+
+    ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION.setRequestTimeout(TEST_DURATION);
   }
 
   @Test
   public void shouldRejectNullConfigInConstructor() {
-    assertThatThrownBy(() -> new ResponsiveHealthIndicator(null, TEST_DURATION))
+    assertThatThrownBy(
+            () -> new ResponsiveHealthIndicator(null, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION))
         .isExactlyInstanceOf(NullPointerException.class);
   }
 
   @Test
   public void shouldRejectNullDurationInConstructor() {
-    assertThatThrownBy(() -> new ResponsiveHealthIndicator(TEST_CFG, null))
+    assertThatThrownBy(
+            () -> new ResponsiveHealthIndicator(TEST_CFG, (HealthZeebeClientProperties) null))
         .isExactlyInstanceOf(NullPointerException.class);
-  }
-
-  @Test
-  public void shouldRejectZeroDurationIn() {
-    assertThatThrownBy(() -> new ResponsiveHealthIndicator(TEST_CFG, Duration.ofSeconds(0)))
-        .isExactlyInstanceOf(IllegalArgumentException.class);
-  }
-
-  @Test
-  public void shouldRejectNegativeDurationIn() {
-    assertThatThrownBy(() -> new ResponsiveHealthIndicator(TEST_CFG, Duration.ofSeconds(-10)))
-        .isExactlyInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
   public void shouldReportUnknownIfNoZeebeClientCanBeSupplied() {
     // given
-    final var healthIndicator = new ResponsiveHealthIndicator(TEST_CFG, TEST_DURATION);
+    final var healthIndicator =
+        new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     final var spyHealthIndicator = spy(healthIndicator);
     when(spyHealthIndicator.supplyZeebeClient()).thenReturn(null);
@@ -92,7 +93,8 @@ public class ResponsiveHealthIndicatorTest {
     when(mockTopologyRequestStep1.send()).thenReturn(mockZeebeFuture);
     when(mockZeebeFuture.get()).thenThrow(new InterruptedException());
 
-    final var healthIndicator = new ResponsiveHealthIndicator(TEST_CFG, TEST_DURATION);
+    final var healthIndicator =
+        new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
     final var spyHealthIndicator = spy(healthIndicator);
     when(spyHealthIndicator.supplyZeebeClient()).thenReturn(mockZeebeClient);
 
@@ -116,7 +118,8 @@ public class ResponsiveHealthIndicatorTest {
     when(mockZeebeClient.newTopologyRequest()).thenReturn(mockTopologyRequestStep1);
     when(mockTopologyRequestStep1.send()).thenReturn(mockZeebeFuture);
 
-    final var healthIndicator = new ResponsiveHealthIndicator(TEST_CFG, TEST_DURATION);
+    final var healthIndicator =
+        new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
     final var spyHealthIndicator = spy(healthIndicator);
     when(spyHealthIndicator.supplyZeebeClient()).thenReturn(mockZeebeClient);
 
@@ -136,7 +139,8 @@ public class ResponsiveHealthIndicatorTest {
     gatewayCfg.getNetwork().setPort(1234);
     gatewayCfg.getSecurity().setEnabled(false);
 
-    final var healthIndicator = new ResponsiveHealthIndicator(gatewayCfg, TEST_DURATION);
+    final var healthIndicator =
+        new ResponsiveHealthIndicator(gatewayCfg, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // when
     final var actualZeebeClient = healthIndicator.supplyZeebeClient();
@@ -154,7 +158,8 @@ public class ResponsiveHealthIndicatorTest {
     gatewayCfg.getSecurity().setEnabled(false);
     gatewayCfg.init();
 
-    final var healthIndicator = new ResponsiveHealthIndicator(gatewayCfg, TEST_DURATION);
+    final var healthIndicator =
+        new ResponsiveHealthIndicator(gatewayCfg, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // when
     final var actualZeebeClient = healthIndicator.supplyZeebeClient();
@@ -177,7 +182,9 @@ public class ResponsiveHealthIndicatorTest {
   @Test
   public void testCreateZeebeClientShouldConfigureContactPoint() {
     // when
-    final ZeebeClient actual = ResponsiveHealthIndicator.createZeebeClient(TEST_CFG, TEST_DURATION);
+    final ZeebeClient actual =
+        ResponsiveHealthIndicator.createZeebeClient(
+            TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // then
     assertThat(actual.getConfiguration().getGatewayAddress()).isEqualTo("testhost:1234");
@@ -186,7 +193,9 @@ public class ResponsiveHealthIndicatorTest {
   @Test
   public void testCreateZeebeClientShouldConfigureRequestTimeout() {
     // when
-    final ZeebeClient actual = ResponsiveHealthIndicator.createZeebeClient(TEST_CFG, TEST_DURATION);
+    final ZeebeClient actual =
+        ResponsiveHealthIndicator.createZeebeClient(
+            TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // then
     assertThat(actual.getConfiguration().getDefaultRequestTimeout()).isEqualTo(TEST_DURATION);
@@ -195,7 +204,9 @@ public class ResponsiveHealthIndicatorTest {
   @Test
   public void testCreateZeebeClientShouldEnablePlainTextCommunicationIfSecurityIsDisabled() {
     // when
-    final ZeebeClient actual = ResponsiveHealthIndicator.createZeebeClient(TEST_CFG, TEST_DURATION);
+    final ZeebeClient actual =
+        ResponsiveHealthIndicator.createZeebeClient(
+            TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // then
     assertThat(actual.getConfiguration().isPlaintextConnectionEnabled()).isTrue();
@@ -215,11 +226,39 @@ public class ResponsiveHealthIndicatorTest {
 
     // when
     final ZeebeClient actualZeebeClient =
-        ResponsiveHealthIndicator.createZeebeClient(securityEnabledGatewayCfg, TEST_DURATION);
+        ResponsiveHealthIndicator.createZeebeClient(
+            securityEnabledGatewayCfg, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // then
     assertThat(actualZeebeClient.getConfiguration().isPlaintextConnectionEnabled()).isFalse();
     assertThat(actualZeebeClient.getConfiguration().getCaCertificatePath())
         .isEqualTo(CERTIFICATE_CHAIN_PATH);
+  }
+
+  @Test
+  public void shouldCreateZeebeClientReturnClientWithAuthenticationSettings() throws IOException {
+    // given
+    final HealthZeebeClientProperties healthZeebeClientProperties =
+        new HealthZeebeClientProperties();
+    final SecurityProperties securityProperties = new SecurityProperties();
+    final OAuthSecurityProperties oauthSecurityProperties = new OAuthSecurityProperties();
+    oauthSecurityProperties.setClientId("clientId");
+    oauthSecurityProperties.setAudience("audience");
+    oauthSecurityProperties.setAuthorizationServer(new URL("http://localhost:1"));
+    oauthSecurityProperties.setCredentialsCache(File.createTempFile("zeebe", "test"));
+    oauthSecurityProperties.setReadTimeout(Duration.ofSeconds(1));
+    oauthSecurityProperties.setReadTimeout(Duration.ofSeconds(2));
+    oauthSecurityProperties.setClientSecret("clientSecret");
+    securityProperties.setOauthSecurityProperties(oauthSecurityProperties);
+    healthZeebeClientProperties.setSecurityProperties(securityProperties);
+
+    // when
+    final ZeebeClient zeebeClient =
+        ResponsiveHealthIndicator.createZeebeClient(TEST_CFG, healthZeebeClientProperties);
+
+    // then
+    final CredentialsProvider credentialsProvider =
+        zeebeClient.getConfiguration().getCredentialsProvider();
+    assertThat(credentialsProvider).isNotNull().isExactlyInstanceOf(OAuthCredentialsProvider.class);
   }
 }

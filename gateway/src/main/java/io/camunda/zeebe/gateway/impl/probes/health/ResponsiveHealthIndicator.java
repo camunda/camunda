@@ -11,8 +11,10 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
-import java.time.Duration;
+import io.camunda.zeebe.gateway.impl.probes.health.HealthZeebeClientProperties.SecurityProperties.OAuthSecurityProperties;
+import java.util.Map;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Health.Builder;
 import org.springframework.boot.actuate.health.HealthIndicator;
@@ -24,64 +26,68 @@ import org.springframework.boot.actuate.health.HealthIndicator;
  */
 public class ResponsiveHealthIndicator implements HealthIndicator {
   private final GatewayCfg gatewayCfg;
-  private final Duration defaultTimeout;
+
+  private final HealthZeebeClientProperties healthZeebeClientProperties;
 
   private ZeebeClient zeebeClient;
 
-  public ResponsiveHealthIndicator(final GatewayCfg gatewayCfg, final Duration defaultTimeout) {
+  public ResponsiveHealthIndicator(
+      final GatewayCfg gatewayCfg, final HealthZeebeClientProperties healthZeebeClientProperties) {
     this.gatewayCfg = requireNonNull(gatewayCfg);
-
-    requireNonNull(defaultTimeout);
-
-    if (defaultTimeout.toMillis() <= 0) {
-      throw new IllegalArgumentException();
-    }
-
-    this.defaultTimeout = defaultTimeout;
+    this.healthZeebeClientProperties = requireNonNull(healthZeebeClientProperties);
   }
 
   GatewayCfg getGatewayCfg() {
     return gatewayCfg;
   }
 
-  Duration getDefaultTimeout() {
-    return defaultTimeout;
+  HealthZeebeClientProperties getHealthZeebeClientProperties() {
+    return healthZeebeClientProperties;
   }
 
   @Override
   public Health health() {
-    final var zeebeClient = supplyZeebeClient();
     Builder resultBuilder;
+    try (final var zeebeClient = supplyZeebeClient()) {
 
-    if (zeebeClient == null) {
-      resultBuilder = Health.unknown();
-    } else {
-      try {
-        zeebeClient.newTopologyRequest().send().get();
-        resultBuilder = Health.up();
-      } catch (final Throwable t) {
-        resultBuilder = Health.down().withException(t);
+      if (zeebeClient == null) {
+        resultBuilder = Health.unknown();
+      } else {
+        try {
+          zeebeClient.newTopologyRequest().send().get();
+          resultBuilder = Health.up();
+        } catch (final Throwable t) {
+          resultBuilder = Health.down().withException(t);
+        }
       }
     }
 
-    return resultBuilder.withDetail("timeOut", defaultTimeout).build();
+    return resultBuilder
+        .withDetails(
+            Map.of(
+                "timeOut",
+                healthZeebeClientProperties.getRequestTimeout(),
+                "healthZeebeClientProperties",
+                healthZeebeClientProperties))
+        .build();
   }
 
   ZeebeClient supplyZeebeClient() {
     if (zeebeClient == null && gatewayCfg.isInitialized()) {
-      zeebeClient = createZeebeClient(gatewayCfg, defaultTimeout);
+      zeebeClient = createZeebeClient(gatewayCfg, healthZeebeClientProperties);
     }
 
     return zeebeClient;
   }
 
-  static ZeebeClient createZeebeClient(final GatewayCfg gatewayCfg, final Duration defaultTimeout) {
+  static ZeebeClient createZeebeClient(
+      final GatewayCfg gatewayCfg, final HealthZeebeClientProperties healthZeebeClientProperties) {
     final String gatewayAddress = getContactPoint(gatewayCfg);
 
     ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(gatewayAddress)
-            .defaultRequestTimeout(defaultTimeout);
+            .defaultRequestTimeout(healthZeebeClientProperties.getRequestTimeout());
 
     if (gatewayCfg.getSecurity().isEnabled()) {
       clientBuilder =
@@ -89,6 +95,22 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
               gatewayCfg.getSecurity().getCertificateChainPath().getAbsolutePath());
     } else {
       clientBuilder = clientBuilder.usePlaintext();
+    }
+    final OAuthSecurityProperties oauthSecurityProperties =
+        healthZeebeClientProperties.getSecurityProperties().getOauthSecurityProperties();
+    if (oauthSecurityProperties != null) {
+      clientBuilder =
+          clientBuilder.credentialsProvider(
+              new OAuthCredentialsProviderBuilder()
+                  .clientId(oauthSecurityProperties.getClientId())
+                  .clientSecret(oauthSecurityProperties.getClientSecret())
+                  .credentialsCachePath(oauthSecurityProperties.getCredentialsCachePath())
+                  .connectTimeout(oauthSecurityProperties.getConnectTimeout())
+                  .authorizationServerUrl(
+                      oauthSecurityProperties.getAuthorizationServer().toString())
+                  .audience(oauthSecurityProperties.getAudience())
+                  .readTimeout(oauthSecurityProperties.getReadTimeout())
+                  .build());
     }
 
     return clientBuilder.build();

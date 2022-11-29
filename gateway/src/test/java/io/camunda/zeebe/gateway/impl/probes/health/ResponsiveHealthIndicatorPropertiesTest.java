@@ -26,7 +26,7 @@ public class ResponsiveHealthIndicatorPropertiesTest {
   @Test
   public void shouldHaveDefaultTimeoutOf500Millis() {
     // when
-    final Duration actual = sutProperties.getRequestTimeout();
+    final Duration actual = sutProperties.getHealthZeebeClientProperties().getRequestTimeout();
 
     // then
     assertThat(actual).isEqualTo(Duration.ofMillis(500));
@@ -35,26 +35,49 @@ public class ResponsiveHealthIndicatorPropertiesTest {
   @Test
   public void shouldRejectNegativeTimeout() {
     // when + then
-    assertThatThrownBy(() -> sutProperties.setRequestTimeout(Duration.ofMillis(-5)))
+    assertThatThrownBy(
+            () ->
+                sutProperties
+                    .getHealthZeebeClientProperties()
+                    .setRequestTimeout(Duration.ofMillis(-5)))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThat(sutProperties.getRequestTimeout()).isEqualTo(Duration.ofMillis(500));
+    assertThat(sutProperties.getHealthZeebeClientProperties().getRequestTimeout())
+        .isEqualTo(Duration.ofMillis(500));
   }
 
   @Test
   public void shouldRejectZeroTimeout() {
     // when + then
-    assertThatThrownBy(() -> sutProperties.setRequestTimeout(Duration.ofMillis(0)))
+    assertThatThrownBy(
+            () ->
+                sutProperties
+                    .getHealthZeebeClientProperties()
+                    .setRequestTimeout(Duration.ofMillis(0)))
         .isInstanceOf(IllegalArgumentException.class);
-    assertThat(sutProperties.getRequestTimeout()).isEqualTo(Duration.ofMillis(500));
+    assertThat(sutProperties.getHealthZeebeClientProperties().getRequestTimeout())
+        .isEqualTo(Duration.ofMillis(500));
   }
 
   @Test
   public void shouldApplyNewThreshold() {
     // when
-    sutProperties.setRequestTimeout(Duration.ofMillis(123456));
-    final Duration actual = sutProperties.getRequestTimeout();
+    sutProperties.getHealthZeebeClientProperties().setRequestTimeout(Duration.ofMillis(123456));
+    final Duration actual = sutProperties.getHealthZeebeClientProperties().getRequestTimeout();
 
     // then
     assertThat(actual).isEqualTo(Duration.ofMillis(123456));
+  }
+
+  @Test
+  public void shouldSetHealthPropertiesRequestTimeoutWhenSetRequestTimeout() {
+    // given
+    final Duration requestTimeout = Duration.ofSeconds(123);
+
+    // when
+    sutProperties.setRequestTimeout(requestTimeout);
+    final Duration actual = sutProperties.getHealthZeebeClientProperties().getRequestTimeout();
+
+    // then
+    assertThat(actual).isEqualTo(requestTimeout);
   }
 }

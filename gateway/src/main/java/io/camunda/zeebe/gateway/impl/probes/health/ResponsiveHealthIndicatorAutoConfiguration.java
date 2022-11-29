@@ -26,7 +26,7 @@ public class ResponsiveHealthIndicatorAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean(name = "gatewayResponsiveHealthIndicator")
   public ResponsiveHealthIndicator gatewayResponsiveHealthIndicator(
-      GatewayCfg gatewayCfg, ResponsiveHealthIndicatorProperties properties) {
-    return new ResponsiveHealthIndicator(gatewayCfg, properties.getRequestTimeout());
+      final GatewayCfg gatewayCfg, final ResponsiveHealthIndicatorProperties properties) {
+    return new ResponsiveHealthIndicator(gatewayCfg, properties.getHealthZeebeClientProperties());
   }
 }
