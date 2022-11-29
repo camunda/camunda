@@ -30,7 +30,7 @@ public class ResponsiveHealthIndicatorProperties {
     this.healthZeebeClientProperties = healthZeebeClientProperties;
   }
 
-  @Deprecated(forRemoval = true, since = "8.1.0")
+  @Deprecated(forRemoval = true, since = "8.2.0")
   public void setRequestTimeout(final Duration requestTimeout) {
     healthZeebeClientProperties.setRequestTimeout(requestTimeout);
   }

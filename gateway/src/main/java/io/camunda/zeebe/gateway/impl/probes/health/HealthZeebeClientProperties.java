@@ -212,9 +212,6 @@ public class HealthZeebeClientProperties {
             + "clientId='"
             + clientId
             + '\''
-            + ", clientSecret='"
-            + clientSecret
-            + '\''
             + ", audience='"
             + audience
             + '\''
