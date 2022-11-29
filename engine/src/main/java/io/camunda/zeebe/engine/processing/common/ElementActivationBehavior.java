@@ -184,6 +184,7 @@ public final class ElementActivationBehavior {
     final List<ElementInstance> elementInstancesOfScope =
         findElementInstances(flowScope, flowScopeKey);
 
+    final long activatedInstanceKey;
     if (elementInstancesOfScope.isEmpty()) {
       // there is no active instance of this flow scope
       // - create/activate a new instance and continue with the remaining flow scopes
@@ -191,20 +192,13 @@ public final class ElementActivationBehavior {
           activateFlowScope(
               processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
       activatedElementKeys.addFlowScopeKey(elementInstanceKey);
-      return activateFlowScopes(
-          processInstanceRecord,
-          elementInstanceKey,
-          flowScopes,
-          ancestorScopeKey,
-          createVariablesCallback,
-          activatedElementKeys);
+      activatedInstanceKey = elementInstanceKey;
 
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
 
       final var elementInstance = elementInstancesOfScope.get(0);
 
-      final long activatedInstanceKey;
       if (ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY
           && isAncestorOfElementInstance(ancestorScopeKey, elementInstance)) {
         // the active instance is a descendant of the selected ancestor
@@ -221,13 +215,6 @@ public final class ElementActivationBehavior {
 
       createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
       activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
-      return activateFlowScopes(
-          processInstanceRecord,
-          activatedInstanceKey,
-          flowScopes,
-          ancestorScopeKey,
-          createVariablesCallback,
-          activatedElementKeys);
 
     } else {
       // there are multiple active instances of this flow scope
@@ -241,7 +228,6 @@ public final class ElementActivationBehavior {
             flowScopeId, processInstanceRecord.getBpmnProcessId());
       }
 
-      final long activatedInstanceKey;
       if (elementInstancesOfScope.stream()
           .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
         // one of the existing element instances of 'flow scope' is the selected ancestor
@@ -281,15 +267,15 @@ public final class ElementActivationBehavior {
 
       createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
       activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
-
-      return activateFlowScopes(
-          processInstanceRecord,
-          activatedInstanceKey,
-          flowScopes,
-          ancestorScopeKey,
-          createVariablesCallback,
-          activatedElementKeys);
     }
+
+    return activateFlowScopes(
+        processInstanceRecord,
+        activatedInstanceKey,
+        flowScopes,
+        ancestorScopeKey,
+        createVariablesCallback,
+        activatedElementKeys);
   }
 
   private boolean isAncestorOfElementInstance(
