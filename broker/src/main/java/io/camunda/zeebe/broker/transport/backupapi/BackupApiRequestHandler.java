@@ -86,8 +86,8 @@ public final class BackupApiRequestHandler
       case TAKE_BACKUP -> CompletableActorFuture.completed(
           handleTakeBackupRequest(
               requestStreamId, requestId, requestReader, responseWriter, errorWriter));
-      case QUERY_STATUS -> handleQueryStatusHandler(requestReader, responseWriter, errorWriter);
-      case LIST -> handleListBackupHandler(responseWriter, errorWriter);
+      case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
+      case LIST -> handleListBackupRequest(responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
       default -> CompletableActorFuture.completed(
           unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
@@ -126,7 +126,7 @@ public final class BackupApiRequestHandler
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
-      handleQueryStatusHandler(
+      handleQueryStatusRequest(
           final BackupApiRequestReader requestReader,
           final BackupApiResponseWriter responseWriter,
           final ErrorResponseWriter errorWriter) {
@@ -148,7 +148,7 @@ public final class BackupApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupHandler(
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupRequest(
       final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
