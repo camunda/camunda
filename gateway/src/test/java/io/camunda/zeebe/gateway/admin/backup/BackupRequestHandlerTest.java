@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
-import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
@@ -68,7 +67,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future)
         .succeedsWithin(Duration.ofMillis(500))
-        .returns(BackupStatusCode.COMPLETED, BackupStatus::status);
+        .returns(State.COMPLETED, BackupStatus::status);
 
     final var status = future.toCompletableFuture().join();
     assertThat(status.partitions())
@@ -88,7 +87,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future)
         .succeedsWithin(Duration.ofMillis(500))
-        .returns(BackupStatusCode.IN_PROGRESS, BackupStatus::status);
+        .returns(State.IN_PROGRESS, BackupStatus::status);
 
     final var status = future.toCompletableFuture().join();
     assertThat(status.partitions())
@@ -108,7 +107,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future)
         .succeedsWithin(Duration.ofMillis(500))
-        .returns(BackupStatusCode.FAILED, BackupStatus::status);
+        .returns(State.FAILED, BackupStatus::status);
 
     final var status = future.toCompletableFuture().join();
     assertThat(status.failureReason().orElseThrow()).contains("FAILED");
@@ -117,7 +116,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
   }
 
   @Test
-  public void shouldReturnDoesNotExistStatusWhenOnePartitionBackupDoesNotExist() {
+  public void shouldReturnIncompleteStatusWhenOnePartitionBackupDoesNotExist() {
     // given
     final BackupQueryStub stub = new BackupQueryStub();
     stub.withDoesNotExistFor(1).withInProgressResponseFor(2);
@@ -129,7 +128,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
     // then
     assertThat(future)
         .succeedsWithin(Duration.ofMillis(500))
-        .returns(BackupStatusCode.DOES_NOT_EXIST, BackupStatus::status);
+        .returns(State.INCOMPLETE, BackupStatus::status);
 
     final var status = future.toCompletableFuture().join();
     assertThat(status.partitions())

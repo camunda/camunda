@@ -176,11 +176,6 @@
     </dependency>
 
     <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.swagger.core.v3</groupId>
       <artifactId>swagger-annotations</artifactId>
     </dependency>
@@ -190,6 +185,21 @@
       dependencies required at runtime by other modules; if we scope them as tests here, they will
       be omitted from the resulting artifact, causing ClassNotFoundException errors at runtime
       -->
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.datatype</groupId>
+      <artifactId>jackson-datatype-jsr310</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.netty</groupId>
@@ -356,6 +366,9 @@
             <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.netty:netty-handler</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.camunda:zeebe-protocol</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -367,7 +380,6 @@
             <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
 
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
-            <dependency>javax.annotation:javax.annotation-api</dependency>
 
           </usedDependencies>
         </configuration>

@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.s3;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import java.time.Duration;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -25,6 +26,7 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
   public static final String ACCESS_KEY = "letmein";
   public static final String SECRET_KEY = "letmein1234";
   public static final int DEFAULT_PORT = 9000;
+  private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
   @SuppressWarnings("resource")
   @Container
@@ -41,15 +43,31 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
                   .forPort(DEFAULT_PORT)
                   .withStartupTimeout(Duration.ofMinutes(1)));
 
-  private static S3AsyncClient client;
+  private S3AsyncClient client;
   private S3BackupStore store;
   private S3BackupConfig config;
 
+  @BeforeAll
+  static void setupBucket() {
+    final var config =
+        new Builder()
+            .withBucketName(BUCKET_NAME)
+            .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
+            .withRegion(Region.US_EAST_1.id())
+            .withCredentials(ACCESS_KEY, SECRET_KEY)
+            .forcePathStyleAccess(true)
+            .build();
+    try (final var client = S3BackupStore.buildClient(config)) {
+      client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
+    }
+  }
+
   @BeforeEach
-  void setupBucket() {
+  void setup() {
     config =
         new Builder()
-            .withBucketName(RandomStringUtils.randomAlphabetic(10).toLowerCase())
+            .withBucketName(BUCKET_NAME)
+            .withBasePath(RandomStringUtils.randomAlphabetic(10).toLowerCase())
             .withEndpoint("http://%s:%d".formatted(S3.getHost(), S3.getMappedPort(DEFAULT_PORT)))
             .withRegion(Region.US_EAST_1.id())
             .withCredentials(ACCESS_KEY, SECRET_KEY)
@@ -57,7 +75,6 @@ final class MinioBackupStoreIT implements S3BackupStoreTests {
             .build();
     client = S3BackupStore.buildClient(config);
     store = new S3BackupStore(config, client);
-    client.createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build()).join();
   }
 
   @Override

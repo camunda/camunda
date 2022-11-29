@@ -91,7 +91,7 @@ public final class BackupRequestHandler implements BackupApi {
     final var combinedStatus = getAggregatedStatus(partitionStatuses);
 
     String failureReason = null;
-    if (combinedStatus == BackupStatusCode.FAILED) {
+    if (combinedStatus == State.FAILED) {
       failureReason = collectFailureReason(partitionStatuses);
     }
     return new BackupStatus(
@@ -109,37 +109,34 @@ public final class BackupRequestHandler implements BackupApi {
         .collect(Collectors.joining());
   }
 
-  private BackupStatusCode getAggregatedStatus(
-      final List<PartitionBackupStatus> partitionStatuses) {
-    return partitionStatuses.stream()
-        .map(PartitionBackupStatus::status)
-        .reduce(this::combine)
-        .orElseThrow(
-            () ->
-                // This should never happen, because partitionStatuses would never be empty.
-                new IllegalStateException(
-                    "Backup status cannot be calculated from status of partitions backup %s. Possible incomplete topology."
-                        .formatted(partitionStatuses)));
-  }
+  private State getAggregatedStatus(final List<PartitionBackupStatus> partitionStatuses) {
+    final var statuses =
+        partitionStatuses.stream().map(PartitionBackupStatus::status).distinct().toList();
 
-  private BackupStatusCode combine(final BackupStatusCode x, final BackupStatusCode y) {
-    // Failed > DoesNotExist > InProgress > Completed
-
-    if (x == BackupStatusCode.FAILED || y == BackupStatusCode.FAILED) {
-      return BackupStatusCode.FAILED;
+    if (statuses.contains(BackupStatusCode.FAILED)) {
+      return State.FAILED;
     }
-    if (x == BackupStatusCode.DOES_NOT_EXIST || y == BackupStatusCode.DOES_NOT_EXIST) {
-      return BackupStatusCode.DOES_NOT_EXIST;
+    if ((statuses.contains(BackupStatusCode.IN_PROGRESS)
+            || statuses.contains(BackupStatusCode.COMPLETED))
+        && statuses.contains(BackupStatusCode.DOES_NOT_EXIST)) {
+      return State.INCOMPLETE;
     }
-    if (x == BackupStatusCode.IN_PROGRESS || y == BackupStatusCode.IN_PROGRESS) {
-      return BackupStatusCode.IN_PROGRESS;
-    }
-    if (x == BackupStatusCode.COMPLETED && y == BackupStatusCode.COMPLETED) {
-      return BackupStatusCode.COMPLETED;
+    if (statuses.contains(BackupStatusCode.IN_PROGRESS)) {
+      return State.IN_PROGRESS;
     }
 
-    // This would never happen
-    return BackupStatusCode.SBE_UNKNOWN;
+    if (statuses.contains(BackupStatusCode.DOES_NOT_EXIST)) {
+      return State.DOES_NOT_EXIST;
+    }
+
+    if (statuses.size() == 1 && statuses.contains(BackupStatusCode.COMPLETED)) {
+      return State.COMPLETED;
+    }
+
+    // This should never happen, because partitionStatuses would never be empty.
+    throw new IllegalStateException(
+        "Backup status cannot be calculated from status of partitions backup %s. Possible incomplete topology."
+            .formatted(partitionStatuses));
   }
 
   private BackupStatusRequest getStatusQueryForPartition(

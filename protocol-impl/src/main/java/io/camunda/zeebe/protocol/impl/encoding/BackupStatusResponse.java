@@ -30,7 +30,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   private long backupId;
 
   private int partitionId;
-  private int brokerId;
+  private int brokerId = BackupStatusResponseEncoder.brokerIdNullValue();
   private BackupStatusCode status;
 
   private long checkpointPosition = BackupStatusResponseEncoder.checkpointPositionNullValue();
@@ -73,6 +73,10 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     return this;
   }
 
+  public boolean hasBrokerId() {
+    return brokerId == BackupStatusResponseEncoder.brokerIdNullValue();
+  }
+
   public BackupStatusCode getStatus() {
     return status;
   }
@@ -91,6 +95,10 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     return this;
   }
 
+  public boolean hasCheckpointPosition() {
+    return checkpointPosition != BackupStatusResponseEncoder.checkpointPositionNullValue();
+  }
+
   public int getNumberOfPartitions() {
     return numberOfPartitions;
   }
@@ -100,8 +108,12 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
     return this;
   }
 
+  public boolean hasNumberOfPartitions() {
+    return numberOfPartitions != BackupStatusResponseEncoder.numberOfPartitionsNullValue();
+  }
+
   public String getSnapshotId() {
-    return snapshotId;
+    return snapshotId.isEmpty() ? null : snapshotId;
   }
 
   public BackupStatusResponse setSnapshotId(final String snapshotId) {
@@ -123,7 +135,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   }
 
   public String getBrokerVersion() {
-    return brokerVersion;
+    return brokerVersion.isEmpty() ? null : brokerVersion;
   }
 
   public BackupStatusResponse setBrokerVersion(final String brokerVersion) {
@@ -134,7 +146,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   }
 
   public String getCreatedAt() {
-    return createdAt;
+    return createdAt.isEmpty() ? null : createdAt;
   }
 
   public BackupStatusResponse setCreatedAt(final String createdAt) {
@@ -145,7 +157,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   }
 
   public String getLastUpdated() {
-    return lastUpdated;
+    return lastUpdated.isEmpty() ? null : lastUpdated;
   }
 
   public BackupStatusResponse setLastUpdated(final String lastUpdated) {

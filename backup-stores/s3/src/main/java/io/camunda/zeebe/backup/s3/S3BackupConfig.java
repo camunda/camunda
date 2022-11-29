@@ -27,6 +27,8 @@ import org.apache.commons.compress.compressors.CompressorStreamFactory;
  * @param forcePathStyleAccess Forces the AWS SDK to always use paths for accessing the bucket. Off
  *     by default, which allows the AWS SDK to choose virtual-hosted-style bucket access.
  * @param compressionAlgorithm Algorithm to use (if any) for compressing backup contents.
+ * @param basePath Prefix to use for all objects in this bucket. Must be non-empty and not start or
+ *     end with '/'.
  * @see <a
  *     href=https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/region-selection.html#automatically-determine-the-aws-region-from-the-environment>
  *     Automatically determine the Region from the environment</a>
@@ -42,7 +44,8 @@ public record S3BackupConfig(
     Optional<Credentials> credentials,
     Optional<Duration> apiCallTimeout,
     boolean forcePathStyleAccess,
-    Optional<String> compressionAlgorithm) {
+    Optional<String> compressionAlgorithm,
+    Optional<String> basePath) {
 
   public S3BackupConfig {
     if (bucketName == null || bucketName.isEmpty()) {
@@ -60,6 +63,17 @@ public record S3BackupConfig(
         throw new IllegalArgumentException(
             "Can't use compression algorithm %s. Only supports %s"
                 .formatted(compressionAlgorithm.get(), supported));
+      }
+    }
+    if (basePath.isPresent()) {
+      final var prefix = basePath.get();
+      if (prefix.isEmpty()) {
+        throw new IllegalArgumentException(
+            "basePath is set but empty. It must be either unset or not empty.");
+      }
+      if (prefix.startsWith("/") || prefix.endsWith("/")) {
+        throw new IllegalArgumentException(
+            "basePath must not start or end with '/' but was: %s".formatted(prefix));
       }
     }
   }
@@ -87,6 +101,7 @@ public record S3BackupConfig(
     private boolean forcePathStyleAccess = false;
     private String compressionAlgorithm;
     private Credentials credentials;
+    private String basePath;
 
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
@@ -123,6 +138,11 @@ public record S3BackupConfig(
       return this;
     }
 
+    public Builder withBasePath(final String basePath) {
+      this.basePath = basePath;
+      return this;
+    }
+
     public S3BackupConfig build() {
       return new S3BackupConfig(
           bucketName,
@@ -131,7 +151,8 @@ public record S3BackupConfig(
           Optional.ofNullable(credentials),
           Optional.ofNullable(apiCallTimeoutMs),
           forcePathStyleAccess,
-          Optional.ofNullable(compressionAlgorithm));
+          Optional.ofNullable(compressionAlgorithm),
+          Optional.ofNullable(basePath));
     }
   }
 }

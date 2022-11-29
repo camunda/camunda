@@ -7,5 +7,10 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
-public record PartitionBackupDescriptor(
-    String snapshotId, long checkpointPosition, int brokerId, String brokerVersion) {}
+public enum State {
+  DOES_NOT_EXIST,
+  INCOMPLETE,
+  FAILED,
+  IN_PROGRESS,
+  COMPLETED
+}

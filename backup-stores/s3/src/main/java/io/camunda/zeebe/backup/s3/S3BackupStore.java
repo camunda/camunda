@@ -60,7 +60,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * {@link BackupStore} for S3. Stores all backups in a given bucket.
  *
  * <p>All created object keys are prefixed by the {@link BackupIdentifier}, with the following
- * scheme: {@code partitionId/checkpointId/nodeId}
+ * scheme: {@code basePath/partitionId/checkpointId/nodeId}.
  *
  * <p>Each backup contains:
  *
@@ -80,9 +80,8 @@ public final class S3BackupStore implements BackupStore {
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
-  private static final Pattern BACKUP_IDENTIFIER_PATTERN =
-      Pattern.compile("^(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   private static final int SCAN_PARALLELISM = 16;
+  private final Pattern backupIdentifierPattern;
   private final S3BackupConfig config;
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
@@ -95,10 +94,16 @@ public final class S3BackupStore implements BackupStore {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
+    final var basePath = config.basePath();
+    backupIdentifierPattern =
+        Pattern.compile(
+            "^"
+                + basePath.map(base -> base + "/").map(Pattern::quote).orElse("")
+                + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
   }
 
-  private static Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
-    final var matcher = BACKUP_IDENTIFIER_PATTERN.matcher(key);
+  private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
+    final var matcher = backupIdentifierPattern.matcher(key);
     if (matcher.matches()) {
       try {
         final var nodeId = Integer.parseInt(matcher.group("nodeId"));
@@ -122,16 +127,20 @@ public final class S3BackupStore implements BackupStore {
    * BackupIdentifierWildcard#matches(BackupIdentifier id)} to ensure that the listed object
    * matches.
    */
-  private static String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
     //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
     return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
         .takeWhile(Optional::isPresent)
         .map(Optional::get)
         .map(Number::toString)
-        .collect(Collectors.joining("/"));
+        .collect(Collectors.joining("/", config.basePath().map(base -> base + "/").orElse(""), ""));
   }
 
-  public static String objectPrefix(final BackupIdentifier id) {
+  public String objectPrefix(final BackupIdentifier id) {
+    final var base = config.basePath();
+    if (base.isPresent()) {
+      return "%s/%s/%s/%s/".formatted(base.get(), id.partitionId(), id.checkpointId(), id.nodeId());
+    }
     return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 
@@ -293,7 +302,7 @@ public final class S3BackupStore implements BackupStore {
         .contents()
         .filter(obj -> obj.key().endsWith(MANIFEST_OBJECT_KEY))
         .map(S3Object::key)
-        .map(S3BackupStore::tryParseKeyAsId)
+        .map(this::tryParseKeyAsId)
         .filter(Optional::isPresent)
         .map(Optional::get)
         .filter(wildcard::matches);

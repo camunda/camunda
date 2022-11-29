@@ -11,14 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
-import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
-import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
-import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
+import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
+import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
+import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeNode;
@@ -133,10 +133,10 @@ final class BackupAcceptanceIT {
             () -> {
               final var status = actuator.status(response.id());
               assertThat(status)
-                  .extracting(BackupStatus::backupId, BackupStatus::status)
-                  .containsExactly(1L, BackupStatusCode.COMPLETED);
-              assertThat(status.partitions())
-                  .flatExtracting(PartitionBackupStatus::partitionId)
+                  .extracting(BackupInfo::getBackupId, BackupInfo::getState)
+                  .containsExactly(1L, StateCode.COMPLETED);
+              assertThat(status.getDetails())
+                  .flatExtracting(PartitionBackupInfo::getPartitionId)
                   .containsExactlyInAnyOrder(1, 2);
             });
   }

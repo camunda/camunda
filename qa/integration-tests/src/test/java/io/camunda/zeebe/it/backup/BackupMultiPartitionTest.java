@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatusRequest;
 import io.camunda.zeebe.gateway.admin.backup.BrokerBackupRequest;
+import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.it.util.GrpcClientRule;
@@ -277,7 +278,7 @@ class BackupMultiPartitionTest {
         .untilAsserted(
             () -> {
               final var status = getBackupStatus(backupId);
-              assertThat(status.status()).isEqualTo(BackupStatusCode.COMPLETED);
+              assertThat(status.status()).isEqualTo(State.COMPLETED);
               assertThat(status.backupId()).isEqualTo(backupId);
               assertThat(status.partitions()).hasSize(clusteringRule.getPartitionCount());
             });
