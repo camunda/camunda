@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +32,8 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 @Execution(ExecutionMode.CONCURRENT)
 final class ExporterContainerTest {
 
+  private static final String EXPORTER_ID = "fakeExporter";
+
   private ExporterContainerRuntime runtime;
   private FakeExporter exporter;
   private ExporterContainer exporterContainer;
@@ -40,7 +43,7 @@ final class ExporterContainerTest {
     runtime = new ExporterContainerRuntime(storagePath);
 
     final var descriptor =
-        runtime.getRepository().load("fakeExporter", FakeExporter.class, Map.of("key", "value"));
+        runtime.getRepository().load(EXPORTER_ID, FakeExporter.class, Map.of("key", "value"));
     exporterContainer = runtime.newContainer(descriptor);
     exporter = (FakeExporter) exporterContainer.getExporter();
   }
@@ -56,7 +59,7 @@ final class ExporterContainerTest {
     assertThat(exporter.getContext()).isNotNull();
     assertThat(exporter.getContext().getLogger()).isNotNull();
     assertThat(exporter.getContext().getConfiguration()).isNotNull();
-    assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo("fakeExporter");
+    assertThat(exporter.getContext().getConfiguration().getId()).isEqualTo(EXPORTER_ID);
     assertThat(exporter.getContext().getConfiguration().getArguments())
         .isEqualTo(Map.of("key", "value"));
   }
@@ -91,7 +94,7 @@ final class ExporterContainerTest {
   void shouldInitPositionWithStateValues() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0xCAFE);
+    runtime.getState().setPosition(EXPORTER_ID, 0xCAFE);
 
     // when
     exporterContainer.initPosition();
@@ -105,7 +108,7 @@ final class ExporterContainerTest {
   void shouldNotExportWhenRecordPositionIsSmaller() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0xCAFE);
+    runtime.getState().setPosition(EXPORTER_ID, 0xCAFE);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -123,7 +126,7 @@ final class ExporterContainerTest {
   void shouldUpdateUnacknowledgedPositionOnExport() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -144,7 +147,7 @@ final class ExporterContainerTest {
   void shouldUpdateUnacknowledgedPositionMultipleTimes() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -168,7 +171,7 @@ final class ExporterContainerTest {
   void shouldUpdateExporterPosition() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
     exporterContainer.openExporter();
 
@@ -184,14 +187,14 @@ final class ExporterContainerTest {
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
     assertThat(exporterContainer.getPosition()).isEqualTo(1);
-    assertThat(runtime.getState().getPosition("fakeExporter")).isEqualTo(1);
+    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(1);
   }
 
   @Test
   void shouldNotUpdateExporterPositionToSmallerValue() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
     exporterContainer.openExporter();
 
@@ -207,14 +210,14 @@ final class ExporterContainerTest {
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(1);
     assertThat(exporterContainer.getPosition()).isEqualTo(0);
-    assertThat(runtime.getState().getPosition("fakeExporter")).isEqualTo(0);
+    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(0);
   }
 
   @Test
   void shouldNotUpdateExporterPositionInDifferentOrder() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
     exporterContainer.openExporter();
 
@@ -233,7 +236,7 @@ final class ExporterContainerTest {
     // then
     assertThat(exporterContainer.getLastUnacknowledgedPosition()).isEqualTo(2);
     assertThat(exporterContainer.getPosition()).isEqualTo(2);
-    assertThat(runtime.getState().getPosition("fakeExporter")).isEqualTo(2);
+    assertThat(runtime.getState().getPosition(EXPORTER_ID)).isEqualTo(2);
   }
 
   @Test
@@ -241,7 +244,7 @@ final class ExporterContainerTest {
     // given
     exporterContainer.configureExporter();
     exporter.getContext().setFilter(new AlwaysRejectingFilter());
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -261,7 +264,7 @@ final class ExporterContainerTest {
   void shouldUpdatePositionsWhenRecordIsFilteredAndPositionsAreEqual() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
 
     final var mockedRecord = mock(TypedRecord.class);
@@ -287,7 +290,7 @@ final class ExporterContainerTest {
       throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
 
     final var firstRecord = mock(TypedRecord.class);
@@ -312,7 +315,7 @@ final class ExporterContainerTest {
   void shouldCloseExporter() throws Exception {
     // given
     exporterContainer.configureExporter();
-    runtime.getState().setPosition("fakeExporter", 0);
+    runtime.getState().setPosition(EXPORTER_ID, 0);
     exporterContainer.initPosition();
 
     // when
@@ -320,6 +323,84 @@ final class ExporterContainerTest {
 
     // then
     assertThat(exporter.isClosed()).isTrue();
+  }
+
+  @Test
+  void shouldReturnEmptyMetadataIfNotExistInState() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+
+    // when
+    final var metadata = exporterContainer.readMetadata();
+
+    // then
+    assertThat(metadata).isNotPresent();
+  }
+
+  @Test
+  void shouldReadMetadataFromState() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+
+    final var metadata = "metadata".getBytes();
+    runtime.getState().setExporterState(EXPORTER_ID, 10, BufferUtil.wrapArray(metadata));
+
+    // when
+    final var readMetadata = exporterContainer.readMetadata();
+
+    // then
+    assertThat(readMetadata).isPresent().hasValue(metadata);
+  }
+
+  @Test
+  void shouldStoreMetadataInState() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+
+    // when
+    final var metadata = "metadata".getBytes();
+    exporterContainer.updateLastExportedRecordPosition(10, metadata);
+    awaitPreviousCall();
+
+    // then
+    final var metadataInState = runtime.getState().getExporterMetadata(EXPORTER_ID);
+    assertThat(metadataInState).isNotNull().isEqualTo(BufferUtil.wrapArray(metadata));
+  }
+
+  @Test
+  void shouldNotUpdateMetadataInStateIfPositionIsSmaller() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+
+    final var metadataBefore = "m1".getBytes();
+    exporterContainer.updateLastExportedRecordPosition(20, metadataBefore);
+    awaitPreviousCall();
+
+    // when
+    final var metadataUpdated = "m2".getBytes();
+    exporterContainer.updateLastExportedRecordPosition(10, metadataUpdated);
+    awaitPreviousCall();
+
+    // then
+    final var metadataInState = runtime.getState().getExporterMetadata(EXPORTER_ID);
+    assertThat(metadataInState).isNotNull().isEqualTo(BufferUtil.wrapArray(metadataBefore));
+  }
+
+  @Test
+  void shouldStoreAndReadMetadata() throws Exception {
+    // given
+    exporterContainer.configureExporter();
+
+    final var metadata = "metadata".getBytes();
+
+    // when
+    exporterContainer.updateLastExportedRecordPosition(10, metadata);
+    awaitPreviousCall();
+
+    final var readMetadata = exporterContainer.readMetadata();
+
+    // then
+    assertThat(readMetadata).isPresent().hasValue(metadata);
   }
 
   private void awaitPreviousCall() {
