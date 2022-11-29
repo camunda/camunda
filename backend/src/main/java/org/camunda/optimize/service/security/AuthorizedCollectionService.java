@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
 @AllArgsConstructor
@@ -125,22 +124,18 @@ public class AuthorizedCollectionService {
         .map(GroupDto::getId)
         .collect(Collectors.toSet());
 
-      final Optional<CollectionRoleRequestDto> highestGrantedAuthorizationFromUsersGroups = collectionRoles.stream()
-        .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.GROUP))
-        .filter(roleDto -> userGroupIds.contains(roleDto.getIdentity().getId()))
-        .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
-
-      final Optional<CollectionRoleRequestDto> highestGrantedAuthorizationByUserId = collectionRoles.stream()
+      Optional<CollectionRoleRequestDto> highestGrantedAuthorization = collectionRoles.stream()
         .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.USER))
         .filter(roleDto -> userId.equals(roleDto.getIdentity().getId()))
         .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
-
-      // the stream order reflects the priority here, user assigned roles have priority over group roles
-      userRole = Stream.of(highestGrantedAuthorizationByUserId, highestGrantedAuthorizationFromUsersGroups)
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .findFirst()
-        .map(CollectionRoleRequestDto::getRole);
+      // user roles have priority so we only fetch groups if no user role is defined
+      if (highestGrantedAuthorization.isEmpty()) {
+        highestGrantedAuthorization = collectionRoles.stream()
+          .filter(roleDto -> roleDto.getIdentity().getType().equals(IdentityType.GROUP))
+          .filter(roleDto -> userGroupIds.contains(roleDto.getIdentity().getId()))
+          .reduce(BinaryOperator.maxBy(Comparator.comparing(CollectionRoleRequestDto::getRole)));
+      }
+      userRole = highestGrantedAuthorization.map(CollectionRoleRequestDto::getRole);
     }
     return userRole.map(roleType -> new AuthorizedCollectionDefinitionDto(roleType, collectionDefinition));
   }
