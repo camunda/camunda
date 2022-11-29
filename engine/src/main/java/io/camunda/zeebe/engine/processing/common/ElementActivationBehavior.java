@@ -230,10 +230,9 @@ public final class ElementActivationBehavior {
         findElementInstances(flowScope, flowScopeKey);
 
     // we need to find the element instance that we want to use as flow scope
-    final long flowScopeInstanceKey;
     if (elementInstancesOfScope.isEmpty()) {
       // there is no active instance of this flow scope
-      flowScopeInstanceKey = -1;
+      return -1;
 
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
@@ -244,13 +243,13 @@ public final class ElementActivationBehavior {
           && isAncestorOfElementInstance(ancestorScopeKey, elementInstance)) {
         // the active instance is a descendant of the selected ancestor
         // - don't use this instance as the flow scope
-        flowScopeInstanceKey = -1;
+        return -1;
 
       } else {
         // no ancestor selection used, or the active instance isn't a descendant of it.
         // most often this means that the active instance IS the selected ancestor
         // - no need to create a new instance; we can use this one
-        flowScopeInstanceKey = elementInstance.getKey();
+        return elementInstance.getKey();
       }
 
     } else {
@@ -269,13 +268,13 @@ public final class ElementActivationBehavior {
           .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
         // one of the existing element instances of 'flow scope' is the selected ancestor
         // - we can use the selected instance
-        flowScopeInstanceKey = ancestorScopeKey;
+        return ancestorScopeKey;
 
       } else if (elementInstancesOfScope.stream()
           .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
         // the selected ancestor is the (in)direct flow scope one of the element instances
         // - we need to create a new instance of 'flow scope' inside the selected ancestor instance
-        flowScopeInstanceKey = -1;
+        return -1;
 
       } else {
         final var selectedAncestor = elementInstanceState.getInstance(ancestorScopeKey);
@@ -287,7 +286,7 @@ public final class ElementActivationBehavior {
         if (activatedInstance.isPresent()) {
           // we found an instance of a flow scope that is an ancestor of the selected ancestor
           // - we can use that instance directly
-          flowScopeInstanceKey = activatedInstance.get().getKey();
+          return activatedInstance.get().getKey();
 
         } else {
           // the selected ancestor is not an ancestor of the existing element instances. It's also
@@ -300,7 +299,6 @@ public final class ElementActivationBehavior {
         }
       }
     }
-    return flowScopeInstanceKey;
   }
 
   private boolean isAncestorOfElementInstance(
