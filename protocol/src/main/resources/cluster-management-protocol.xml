@@ -17,6 +17,7 @@
       <validValue name="TAKE_BACKUP">0</validValue>
       <validValue name="QUERY_STATUS">1</validValue>
       <validValue name="LIST">2</validValue>
+      <validValue name="DELETE">3</validValue>
     </enum>
 
     <enum name="BackupStatusCode" encodingType="uint8">
