@@ -129,6 +129,25 @@ final class BackupEndpointTest {
     }
 
     @Test
+    void shouldReturn404WhenBackupDoesNotExist() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var backupStatus =
+          new BackupStatus(1, State.DOES_NOT_EXIST, Optional.empty(), List.of());
+      doReturn(CompletableFuture.completedFuture(backupStatus)).when(api).getStatus(anyLong());
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.status(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(404);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("Backup with id 1 does not exist"));
+    }
+
+    @Test
     void shouldReturnCompletedBackupStatus() throws JsonProcessingException {
       // given
       final var api = mock(BackupApi.class);

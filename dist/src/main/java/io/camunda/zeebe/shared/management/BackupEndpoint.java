@@ -66,6 +66,9 @@ final class BackupEndpoint {
   public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
     try {
       final BackupStatus status = api.getStatus(id).toCompletableFuture().join();
+      if (status.status() == State.DOES_NOT_EXIST) {
+        return doestNotExistResponse(status.backupId());
+      }
       final BackupInfo backupInfo =
           new BackupInfo().backupId(status.backupId()).state(getBackupStateCode(status.status()));
       status.failureReason().ifPresent(backupInfo::setFailureReason);
@@ -80,6 +83,12 @@ final class BackupEndpoint {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
+  }
+
+  private static WebEndpointResponse<Error> doestNotExistResponse(final long backupId) {
+    return new WebEndpointResponse<>(
+        new Error().message("Backup with id %d does not exist".formatted(backupId)),
+        WebEndpointResponse.STATUS_NOT_FOUND);
   }
 
   private PartitionBackupInfo toPartitionBackupInfo(final PartitionBackupStatus partitionStatus) {
