@@ -181,6 +181,51 @@ public final class ElementActivationBehavior {
     }
     final var flowScope = flowScopes.poll();
 
+    final long flowScopeInstanceKey =
+        findScopeKey(processInstanceRecord, flowScopeKey, ancestorScopeKey, flowScope);
+
+    final long activatedInstanceKey;
+    if (flowScopeInstanceKey == -1) {
+      // no subprocess instance found, let's create a new one
+      activatedInstanceKey =
+          activateFlowScope(
+              processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
+    } else {
+      activatedInstanceKey = flowScopeInstanceKey;
+      createVariablesCallback.accept(flowScope.getId(), flowScopeInstanceKey);
+    }
+
+    activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
+
+    return activateFlowScopes(
+        processInstanceRecord,
+        activatedInstanceKey,
+        flowScopes,
+        ancestorScopeKey,
+        createVariablesCallback,
+        activatedElementKeys);
+  }
+
+  /**
+   * This method finds the instance that should be used as the flow scope of the next recursion of
+   * {@link #activateFlowScopes(ProcessInstanceRecord, long, Deque, long, BiConsumer,
+   * ActivatedElementKeys)}.
+   *
+   * <p>If a new instance should be created, it simply doesn't find the instance.
+   *
+   * @param processInstanceRecord the record of the process instance
+   * @param flowScopeKey the key of the flow scope instance whose children are the only instances
+   *     considered
+   * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
+   *     selection, determines whether we may consider existing instances, or should ignore them
+   * @param flowScope the specific model element that we hope to find an instance of
+   * @return the key of the instance it found, otherwise -1.
+   */
+  private long findScopeKey(
+      final ProcessInstanceRecord processInstanceRecord,
+      final long flowScopeKey,
+      final long ancestorScopeKey,
+      final ExecutableFlowElement flowScope) {
     final List<ElementInstance> elementInstancesOfScope =
         findElementInstances(flowScope, flowScopeKey);
 
@@ -255,27 +300,7 @@ public final class ElementActivationBehavior {
         }
       }
     }
-
-    final long activatedInstanceKey;
-    if (flowScopeInstanceKey == -1) {
-      // no subprocess instance found, let's create a new one
-      activatedInstanceKey =
-          activateFlowScope(
-              processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
-    } else {
-      activatedInstanceKey = flowScopeInstanceKey;
-      createVariablesCallback.accept(flowScope.getId(), flowScopeInstanceKey);
-    }
-
-    activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
-
-    return activateFlowScopes(
-        processInstanceRecord,
-        activatedInstanceKey,
-        flowScopes,
-        ancestorScopeKey,
-        createVariablesCallback,
-        activatedElementKeys);
+    return flowScopeInstanceKey;
   }
 
   private boolean isAncestorOfElementInstance(
