@@ -286,10 +286,10 @@ public final class ElementActivationBehavior {
       return Optional.of(activatedInstance.get().getKey());
     }
 
-    // the selected ancestor is not an ancestor of the existing element instances. It's also
-    // not one of the existing element instances itself. We cannot decide what to do here.
+    // the selected ancestor is not one of the existing element instances, nor an ancestor of them,
+    // nor a descendant of them. It might be a completely unrelated element instance, or a
+    // non-existing element instance. We cannot decide what to do here.
     // - reject by throwing an exception
-    // todo: verify whether this situation can occur
     final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
     throw new MultipleFlowScopeInstancesFoundException(
         flowScopeId, processInstanceRecord.getBpmnProcessId());
