@@ -75,25 +75,25 @@ final class CommandApiRequestHandler
     final var logStreamWriter = leadingStreams.get(partitionId);
     final var limiter = partitionLimiters.get(partitionId);
 
-    final var eventType = command.valueType();
-    final var intent = Intent.fromProtocolValue(eventType, command.intent());
-    final var event = reader.event();
+    final var valueType = command.valueType();
+    final var intent = Intent.fromProtocolValue(valueType, command.intent());
+    final var value = reader.value();
     final var metadata = reader.metadata();
 
     metadata.requestId(requestId);
     metadata.requestStreamId(partitionId);
     metadata.recordType(RecordType.COMMAND);
     metadata.intent(intent);
-    metadata.valueType(eventType);
+    metadata.valueType(valueType);
 
     if (logStreamWriter == null) {
       errorWriter.partitionLeaderMismatch(partitionId);
       return Either.left(errorWriter);
     }
 
-    if (event == null) {
+    if (value == null) {
       errorWriter.unsupportedMessage(
-          eventType.name(), CommandApiRequestReader.RECORDS_BY_TYPE.keySet().toArray());
+          valueType.name(), CommandApiRequestReader.RECORDS_BY_TYPE.keySet().toArray());
       return Either.left(errorWriter);
     }
 
@@ -112,7 +112,7 @@ final class CommandApiRequestHandler
 
     boolean written = false;
     try {
-      written = writeCommand(command.key(), metadata, event, logStreamWriter);
+      written = writeCommand(command.key(), metadata, value, logStreamWriter);
       return Either.right(responseWriter);
     } catch (final Exception ex) {
       LOG.error("Unexpected error on writing {} command", intent, ex);
@@ -127,14 +127,14 @@ final class CommandApiRequestHandler
 
   private boolean writeCommand(
       final long key,
-      final RecordMetadata eventMetadata,
-      final UnifiedRecordValue event,
+      final RecordMetadata metadata,
+      final UnifiedRecordValue value,
       final LogStreamWriter logStreamWriter) {
     final LogAppendEntry appendEntry;
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
-      appendEntry = LogAppendEntry.of(key, eventMetadata, event);
+      appendEntry = LogAppendEntry.of(key, metadata, value);
     } else {
-      appendEntry = LogAppendEntry.of(eventMetadata, event);
+      appendEntry = LogAppendEntry.of(metadata, value);
     }
 
     return logStreamWriter.tryWrite(appendEntry) >= 0;

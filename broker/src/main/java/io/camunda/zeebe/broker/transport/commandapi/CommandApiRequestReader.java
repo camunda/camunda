@@ -47,18 +47,18 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecord::new);
   }
 
-  private UnifiedRecordValue event;
-  private final RecordMetadata eventMetadata = new RecordMetadata();
+  private UnifiedRecordValue value;
+  private final RecordMetadata metadata = new RecordMetadata();
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ExecuteCommandRequestDecoder commandRequestDecoder =
       new ExecuteCommandRequestDecoder();
 
   @Override
   public void reset() {
-    if (event != null) {
-      event.reset();
+    if (value != null) {
+      value.reset();
     }
-    eventMetadata.reset();
+    metadata.reset();
   }
 
   @Override
@@ -82,22 +82,22 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         messageHeaderDecoder.blockLength(),
         messageHeaderDecoder.version());
 
-    eventMetadata.protocolVersion(messageHeaderDecoder.version());
+    metadata.protocolVersion(messageHeaderDecoder.version());
     final var recordSupplier = RECORDS_BY_TYPE.get(commandRequestDecoder.valueType());
     if (recordSupplier != null) {
       final int valueOffset =
           commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
       final int valueLength = commandRequestDecoder.valueLength();
-      event = recordSupplier.get();
-      event.wrap(buffer, valueOffset, valueLength);
+      value = recordSupplier.get();
+      value.wrap(buffer, valueOffset, valueLength);
     }
   }
 
-  public UnifiedRecordValue event() {
-    return event;
+  public UnifiedRecordValue value() {
+    return value;
   }
 
   public RecordMetadata metadata() {
-    return eventMetadata;
+    return metadata;
   }
 }
