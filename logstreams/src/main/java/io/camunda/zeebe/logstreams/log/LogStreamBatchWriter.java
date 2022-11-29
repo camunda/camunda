@@ -7,37 +7,17 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
-import io.camunda.zeebe.util.buffer.BufferWriter;
-import org.agrona.DirectBuffer;
+import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import java.util.Arrays;
+import java.util.Collections;
 
 /**
- * Write log entries to the log stream write buffer as batch. This ensures that the log entries are
- * written atomically.
+ * A {@link LogStreamWriter} which can write multiple entries at the same time.
  *
- * <p>Note that the log entry data is buffered until {@link #tryWrite()} is called.
+ * <p>TODO: should be collapsed with the {@link LogStreamWriter} once the dispatcher is replaced,
+ * since we won't really need to differentiate between batches and single entries.
  */
 public interface LogStreamBatchWriter extends LogStreamWriter {
-  /** Set the source event for all log entries. */
-  LogStreamBatchWriter sourceRecordPosition(long position);
-
-  /** Returns the builder to add a new log entry to the batch. */
-  LogEntryBuilder event();
-
-  int getMaxFragmentLength();
-
-  /** Discard all non-written batch data. */
-  void reset();
-
-  /**
-   * Returns whether an additional event of length {@code length} could be written to the batch or
-   * not.
-   *
-   * @param length the length of the event's value and metadata summed, i.e. {@link
-   *     LoggedEvent#getValueLength()} + {@link LoggedEvent#getMetadataLength()}
-   * @return true if the additional event could be written, false otherwise
-   */
-  boolean canWriteAdditionalEvent(final int length);
-
   /**
    * Returns true if the given eventCount with the given batchLength could potentially be written
    * with the BatchWriter, false otherwise.
@@ -46,42 +26,48 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
    * @param batchSize the potential batch Size (in bytes) we want to check
    * @return true if the event count with corresponding size could be written, false otherwise
    */
-  boolean canWriteAdditionalEvent(final int eventCount, final int batchSize);
+  boolean canWriteEvents(final int eventCount, final int batchSize);
 
-  /** Builder to add a log entry to the batch. */
-  interface LogEntryBuilder {
-    /** Use the default values as key. */
-    LogEntryBuilder keyNull();
-
-    /** Set the log entry key. */
-    LogEntryBuilder key(long key);
-
-    /**
-     * Can be used if command and event, which is caused by this command is written in batch.
-     *
-     * @param index the index in this batch
-     */
-    LogEntryBuilder sourceIndex(int index);
-
-    /** Set the log entry metadata. */
-    LogEntryBuilder metadata(DirectBuffer buffer, int offset, int length);
-
-    /** Set the log entry metadata. */
-    LogEntryBuilder metadata(DirectBuffer buffer);
-
-    /** Set the log entry metadata. */
-    LogEntryBuilder metadataWriter(BufferWriter writer);
-
-    /** Set the log entry value. */
-    LogEntryBuilder value(DirectBuffer value, int valueOffset, int valueLength);
-
-    /** Set the log entry value. */
-    LogEntryBuilder value(DirectBuffer value);
-
-    /** Set the log entry value. */
-    LogEntryBuilder valueWriter(BufferWriter writer);
-
-    /** Add the log entry to the batch. */
-    LogStreamBatchWriter done();
+  /** {@inheritDoc} */
+  @Override
+  default long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
+    return tryWrite(Collections.singleton(appendEntry), sourcePosition);
   }
+
+  /**
+   * Attempts to write the events to the underlying stream. This method is atomic, either all events
+   * are written, or none are.
+   *
+   * @param appendEntries a set of entries to append; these will be appended in the order
+   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
+   *     or 0 if the batch is empty
+   */
+  default long tryWrite(final LogAppendEntry... appendEntries) {
+    return tryWrite(Arrays.asList(appendEntries));
+  }
+
+  /**
+   * Attempts to write the events to the underlying stream. This method is atomic, either all events
+   * are written, or none are.
+   *
+   * @param appendEntries a set of entries to append; these will be appended in the order in which
+   *     the collection is iterated.
+   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
+   *     or 0 if the batch is empty
+   */
+  default long tryWrite(final Iterable<? extends LogAppendEntry> appendEntries) {
+    return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
+  }
+
+  /**
+   * Attempts to write the events to the underlying stream. This method is atomic, either all events
+   * are written, or none are.
+   *
+   * @param appendEntries a set of entries to append; these will be appended in the order in which
+   *     the collection is iterated.
+   * @param sourcePosition a back-pointer to the record whose processing created these entries
+   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
+   *     or 0 if the batch is empty
+   */
+  long tryWrite(final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition);
 }

@@ -19,7 +19,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -39,7 +39,7 @@ final class BackupApiRequestHandlerStepTest {
   @Mock AtomixServerTransport serverTransport;
 
   @Mock LogStream logStream;
-  @Mock LogStreamRecordWriter logStreamRecordWriter;
+  @Mock LogStreamWriter logStreamWriter;
 
   @Mock DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
@@ -69,8 +69,8 @@ final class BackupApiRequestHandlerStepTest {
   @Test
   void shouldInstallBackupRequestHandler() {
     // given
-    when(logStream.newLogStreamRecordWriter())
-        .thenReturn(TestActorFuture.completedFuture(logStreamRecordWriter));
+    when(logStream.newLogStreamWriter())
+        .thenReturn(TestActorFuture.completedFuture(logStreamWriter));
     when(actorSchedulingService.submitActor(any()))
         .thenReturn(TestActorFuture.completedFuture(null));
 

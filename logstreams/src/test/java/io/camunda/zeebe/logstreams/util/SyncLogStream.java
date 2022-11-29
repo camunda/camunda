@@ -7,11 +7,15 @@
  */
 package io.camunda.zeebe.logstreams.util;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import java.time.Duration;
+import java.util.function.LongSupplier;
+import org.awaitility.Awaitility;
 
 public class SyncLogStream implements SynchronousLogStream {
 
@@ -66,12 +70,80 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public LogStreamRecordWriter newLogStreamRecordWriter() {
-    return logStream.newLogStreamRecordWriter().join();
+  public LogStreamWriter newLogStreamWriter() {
+    return logStream.newLogStreamWriter().join();
   }
 
   @Override
   public LogStreamBatchWriter newLogStreamBatchWriter() {
     return logStream.newLogStreamBatchWriter().join();
+  }
+
+  @Override
+  public SynchronousLogStreamWriter newSyncLogStreamWriter() {
+    return new Writer(newLogStreamWriter());
+  }
+
+  @Override
+  public SynchronousLogStreamBatchWriter newSyncLogStreamBatchWriter() {
+    return new BatchWriter(newLogStreamBatchWriter());
+  }
+
+  @Override
+  public void awaitPositionWritten(final long position) {
+    Awaitility.await("until position " + position + " is written")
+        .atMost(Duration.ofSeconds(5))
+        .pollDelay(Duration.ZERO)
+        .pollInterval(Duration.ofMillis(50))
+        .pollInSameThread()
+        .until(this::getLastWrittenPosition, p -> p >= position);
+  }
+
+  private long syncTryWrite(final LongSupplier writeOperation) {
+    final long position =
+        Awaitility.await("until dispatcher accepts writer")
+            .pollDelay(Duration.ZERO)
+            .pollInterval(Duration.ofMillis(50))
+            .pollInSameThread()
+            .until(writeOperation::getAsLong, p -> p >= 0);
+
+    // 0 is a special position which is returned when a 'write' is "skipped"
+    if (position > 0) {
+      awaitPositionWritten(position);
+    }
+
+    return position;
+  }
+
+  private final class Writer implements SynchronousLogStreamWriter {
+    private final LogStreamWriter delegate;
+
+    private Writer(final LogStreamWriter delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
+      return syncTryWrite(() -> delegate.tryWrite(appendEntry, sourcePosition));
+    }
+  }
+
+  private final class BatchWriter implements SynchronousLogStreamBatchWriter {
+    private final LogStreamBatchWriter delegate;
+
+    private BatchWriter(final LogStreamBatchWriter delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public boolean canWriteEvents(final int eventCount, final int batchSize) {
+      return delegate.canWriteEvents(eventCount, batchSize);
+    }
+
+    @Override
+    public long tryWrite(
+        final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+      return syncTryWrite(() -> delegate.tryWrite(appendEntries, sourcePosition));
+    }
   }
 }

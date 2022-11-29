@@ -246,7 +246,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+          new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteEvents);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -324,7 +324,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+              new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteEvents);
 
           currentProcessingResult =
               currentProcessor.onProcessingError(
@@ -333,25 +333,14 @@ public final class ProcessingStateMachine {
   }
 
   private void writeRecords() {
+    final var sourceRecordPosition = typedCommand.getPosition();
+
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              logStreamBatchWriter.reset();
-              logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
-
-              currentProcessingResult
-                  .getRecordBatch()
-                  .forEach(
-                      entry ->
-                          logStreamBatchWriter
-                              .event()
-                              .key(entry.key())
-                              .metadataWriter(entry.recordMetadata())
-                              .sourceIndex(entry.sourceIndex())
-                              .valueWriter(entry.recordValue())
-                              .done());
-
-              final long position = logStreamBatchWriter.tryWrite();
+              final long position =
+                  logStreamBatchWriter.tryWrite(
+                      currentProcessingResult.getRecordBatch(), sourceRecordPosition);
               if (position > 0) {
                 writtenPosition = position;
               }

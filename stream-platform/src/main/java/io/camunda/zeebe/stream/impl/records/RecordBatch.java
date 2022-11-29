@@ -13,7 +13,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
-import io.camunda.zeebe.stream.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.util.Either;
@@ -26,7 +25,7 @@ import java.util.function.Consumer;
 
 public final class RecordBatch implements MutableRecordBatch {
 
-  final List<ImmutableRecordBatchEntry> recordBatchEntries = new ArrayList<>();
+  final List<RecordBatchEntry> recordBatchEntries = new ArrayList<>();
   private int batchSize;
   private final RecordBatchSizePredicate recordBatchSizePredicate;
 
@@ -81,17 +80,17 @@ public final class RecordBatch implements MutableRecordBatch {
   }
 
   @Override
-  public Iterator<ImmutableRecordBatchEntry> iterator() {
+  public Iterator<RecordBatchEntry> iterator() {
     return recordBatchEntries.iterator();
   }
 
   @Override
-  public void forEach(final Consumer<? super ImmutableRecordBatchEntry> action) {
+  public void forEach(final Consumer<? super RecordBatchEntry> action) {
     recordBatchEntries.forEach(action);
   }
 
   @Override
-  public Spliterator<ImmutableRecordBatchEntry> spliterator() {
+  public Spliterator<RecordBatchEntry> spliterator() {
     return recordBatchEntries.spliterator();
   }
 }

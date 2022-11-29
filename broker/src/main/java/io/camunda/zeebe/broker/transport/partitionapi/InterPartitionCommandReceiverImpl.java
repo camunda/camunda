@@ -12,7 +12,8 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageDecoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -28,11 +29,11 @@ import org.slf4j.Logger;
 final class InterPartitionCommandReceiverImpl {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final Decoder decoder = new Decoder();
-  private final LogStreamRecordWriter logStreamWriter;
+  private final LogStreamWriter logStreamWriter;
   private boolean diskSpaceAvailable = true;
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
 
-  InterPartitionCommandReceiverImpl(final LogStreamRecordWriter logStreamWriter) {
+  InterPartitionCommandReceiverImpl(final LogStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
   }
 
@@ -81,26 +82,23 @@ final class InterPartitionCommandReceiverImpl {
         "Received command with checkpoint {}, current checkpoint is {}",
         decoded.checkpointId,
         checkpointId);
-    logStreamWriter.reset();
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    final var writeResult =
-        logStreamWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
-    return writeResult > 0;
+    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord)) >= 0;
   }
 
   private boolean writeCommand(final DecodedMessage decoded) {
-    logStreamWriter.reset();
+    final var appendEntry =
+        decoded
+            .recordKey()
+            .map(key -> LogAppendEntry.of(key, decoded.metadata(), decoded.command()))
+            .orElseGet(() -> LogAppendEntry.of(decoded.metadata(), decoded.command()));
 
-    decoded.recordKey.ifPresent(logStreamWriter::key);
-
-    final var writeResult =
-        logStreamWriter.metadataWriter(decoded.metadata).valueWriter(decoded.command).tryWrite();
-    return writeResult > 0;
+    return logStreamWriter.tryWrite(appendEntry) >= 0;
   }
 
   void setDiskSpaceAvailable(final boolean available) {

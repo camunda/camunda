@@ -15,6 +15,7 @@ import io.camunda.zeebe.dispatcher.Dispatcher;
 import io.camunda.zeebe.dispatcher.Dispatchers;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.util.ByteValue;
@@ -70,7 +71,7 @@ public final class LogStorageAppenderHealthTest {
         (pos, listener) -> listener.onWriteError(new RuntimeException("foo")));
 
     // when
-    writer.value(wrapString("value")).tryWrite();
+    writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
     schedulerRule.submitActor(appender).join();
 
     // then
@@ -84,7 +85,7 @@ public final class LogStorageAppenderHealthTest {
         (pos, listener) -> listener.onCommitError(pos, new RuntimeException("foo")));
 
     // when
-    writer.value(wrapString("value")).tryWrite();
+    writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
     schedulerRule.submitActor(appender).join();
 
     // then
@@ -102,7 +103,7 @@ public final class LogStorageAppenderHealthTest {
         });
 
     // when
-    writer.value(wrapString("value")).tryWrite();
+    writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
     schedulerRule.submitActor(appender).join();
 
     // then

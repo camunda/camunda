@@ -13,7 +13,8 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -40,7 +41,7 @@ public final class BackupApiRequestHandler
     extends AsyncApiRequestHandler<BackupApiRequestReader, BackupApiResponseWriter>
     implements DiskSpaceUsageListener {
   private boolean isDiskSpaceAvailable = true;
-  private final LogStreamRecordWriter logStreamRecordWriter;
+  private final LogStreamWriter logStreamWriter;
   private final BackupManager backupManager;
   private final AtomixServerTransport transport;
   private final int partitionId;
@@ -48,12 +49,12 @@ public final class BackupApiRequestHandler
 
   public BackupApiRequestHandler(
       final AtomixServerTransport transport,
-      final LogStreamRecordWriter logStreamRecordWriter,
+      final LogStreamWriter logStreamWriter,
       final BackupManager backupManager,
       final int partitionId,
       final boolean backupFeatureEnabled) {
     super(BackupApiRequestReader::new, BackupApiResponseWriter::new);
-    this.logStreamRecordWriter = logStreamRecordWriter;
+    this.logStreamWriter = logStreamWriter;
     this.transport = transport;
     this.backupManager = backupManager;
     this.partitionId = partitionId;
@@ -111,11 +112,8 @@ public final class BackupApiRequestHandler
             .intent(CheckpointIntent.CREATE)
             .requestId(requestId)
             .requestStreamId(requestStreamId);
-    final CheckpointRecord checkpointRecord =
-        new CheckpointRecord().setCheckpointId(requestReader.backupId());
-
-    final var written =
-        logStreamRecordWriter.metadataWriter(metadata).valueWriter(checkpointRecord).tryWrite();
+    final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
+    final var written = logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
 
     if (written > 0) {
       // Response will be sent by the processor

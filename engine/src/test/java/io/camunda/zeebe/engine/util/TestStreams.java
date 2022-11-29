@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import static io.camunda.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -19,9 +18,10 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -50,6 +50,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -61,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.awaitility.Awaitility;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 
@@ -164,8 +166,8 @@ public final class TestStreams {
     return logContextMap.get(name).getLogStream();
   }
 
-  public LogStreamRecordWriter newLogStreamRecordWriter(final String name) {
-    return logContextMap.get(name).newLogStreamRecordWriter();
+  public LogStreamWriter newLogStreamWriter(final String name) {
+    return logContextMap.get(name).newLogStreamWriter();
   }
 
   public Stream<LoggedEvent> events(final String logName) {
@@ -182,7 +184,7 @@ public final class TestStreams {
   }
 
   public FluentLogWriter newRecord(final String logName) {
-    return new FluentLogWriter(newLogStreamRecordWriter(logName));
+    return new FluentLogWriter(newLogStreamWriter(logName));
   }
 
   public Path createRuntimeFolder(final SynchronousLogStream stream) {
@@ -312,28 +314,21 @@ public final class TestStreams {
       final String logName, final RecordToWrite[] recordToWrites) {
     final SynchronousLogStream logStream = getLogStream(logName);
     final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-    for (final RecordToWrite recordToWrite : recordToWrites) {
-      logStreamBatchWriter
-          .event()
-          .key(recordToWrite.getKey())
-          .sourceIndex(recordToWrite.getSourceIndex())
-          .metadataWriter(recordToWrite.getRecordMetadata())
-          .valueWriter(recordToWrite.getUnifiedRecordValue())
-          .done();
-    }
+    logStreamBatchWriter.tryWrite(recordToWrites);
+
     return logStreamBatchWriter;
   }
 
   public static class FluentLogWriter {
 
     protected final RecordMetadata metadata = new RecordMetadata();
-    protected final LogStreamRecordWriter writer;
+    protected final LogStreamWriter writer;
     protected UnpackedObject value;
     protected long key = -1;
     private long sourceRecordPosition = -1;
 
-    public FluentLogWriter(final LogStreamRecordWriter logStreamRecordWriter) {
-      writer = logStreamRecordWriter;
+    public FluentLogWriter(final LogStreamWriter logStreamWriter) {
+      writer = logStreamWriter;
 
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
     }
@@ -389,18 +384,18 @@ public final class TestStreams {
     }
 
     public long write() {
-      writer.sourceRecordPosition(sourceRecordPosition);
-
+      final LogAppendEntry entry;
       if (key >= 0) {
-        writer.key(key);
+        entry = LogAppendEntry.of(key, metadata, value);
       } else {
-        writer.keyNull();
+        entry = LogAppendEntry.of(metadata, value);
       }
 
-      writer.metadataWriter(metadata);
-      writer.valueWriter(value);
-
-      return doRepeatedly(writer::tryWrite).until(p -> p >= 0);
+      return Awaitility.await("until entry is written")
+          .pollInSameThread()
+          .pollDelay(Duration.ZERO)
+          .pollInterval(Duration.ofMillis(50))
+          .until(() -> writer.tryWrite(entry, sourceRecordPosition), p -> p >= 0);
     }
   }
 
@@ -424,8 +419,8 @@ public final class TestStreams {
       return logStream;
     }
 
-    public LogStreamRecordWriter newLogStreamRecordWriter() {
-      return logStream.newLogStreamRecordWriter();
+    public LogStreamWriter newLogStreamWriter() {
+      return logStream.newLogStreamWriter();
     }
   }
 

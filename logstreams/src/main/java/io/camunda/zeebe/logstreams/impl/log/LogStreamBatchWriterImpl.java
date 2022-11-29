@@ -17,285 +17,113 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPositio
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
-import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
-import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.camunda.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.camunda.zeebe.dispatcher.Dispatcher;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
-import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.LangUtil;
-import org.agrona.MutableDirectBuffer;
 
-final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
-  private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
+final class LogStreamBatchWriterImpl implements LogStreamBatchWriter {
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
-
-  private final MutableDirectBuffer eventBuffer =
-      new ExpandableDirectByteBuffer(INITIAL_BUFFER_CAPACITY);
-
-  private final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
-  private final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
-
-  private int eventBufferOffset;
-  private int eventLength;
-  private int eventCount;
-
   private final Dispatcher logWriteBuffer;
   private final int logId;
-
-  private long key;
-
-  private long sourceEventPosition;
-  private int sourceIndex;
-
-  private BufferWriter metadataWriter;
-  private BufferWriter valueWriter;
 
   LogStreamBatchWriterImpl(final int partitionId, final Dispatcher dispatcher) {
     logWriteBuffer = dispatcher;
     logId = partitionId;
-
-    reset();
   }
 
   @Override
-  public LogStreamBatchWriter sourceRecordPosition(final long position) {
-    sourceEventPosition = position;
-    return this;
-  }
-
-  @Override
-  public LogEntryBuilder event() {
-    copyExistingEventToBuffer();
-    resetEvent();
-    return this;
-  }
-
-  @Override
-  public int getMaxFragmentLength() {
-    return logWriteBuffer.getMaxFragmentLength();
-  }
-
-  @Override
-  public void reset() {
-    eventBufferOffset = 0;
-    eventLength = 0;
-    eventCount = 0;
-    sourceEventPosition = -1L;
-    resetEvent();
-  }
-
-  @Override
-  public boolean canWriteAdditionalEvent(final int length) {
-    final var count = eventCount + 1;
-    final var batchLength = computeBatchLength(count, eventLength + length);
-    return logWriteBuffer.canClaimFragmentBatch(count, batchLength);
-  }
-
-  @Override
-  public boolean canWriteAdditionalEvent(final int eventCount, final int batchSize) {
+  public boolean canWriteEvents(final int eventCount, final int batchSize) {
     return logWriteBuffer.canClaimFragmentBatch(eventCount, batchSize);
   }
 
   @Override
-  public LogEntryBuilder keyNull() {
-    return key(LogEntryDescriptor.KEY_NULL_VALUE);
-  }
+  public long tryWrite(
+      final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+    int batchBytes = 0;
+    int batchCount = 0;
 
-  @Override
-  public LogEntryBuilder key(final long key) {
-    this.key = key;
-    return this;
-  }
-
-  @Override
-  public LogEntryBuilder sourceIndex(final int index) {
-    sourceIndex = index;
-    return this;
-  }
-
-  @Override
-  public LogEntryBuilder metadata(final DirectBuffer buffer, final int offset, final int length) {
-    metadataWriterInstance.wrap(buffer, offset, length);
-    return this;
-  }
-
-  @Override
-  public LogEntryBuilder metadata(final DirectBuffer buffer) {
-    return metadata(buffer, 0, buffer.capacity());
-  }
-
-  @Override
-  public LogEntryBuilder metadataWriter(final BufferWriter writer) {
-    metadataWriter = writer;
-    return this;
-  }
-
-  @Override
-  public LogEntryBuilder value(
-      final DirectBuffer value, final int valueOffset, final int valueLength) {
-    return valueWriter(bufferWriterInstance.wrap(value, valueOffset, valueLength));
-  }
-
-  @Override
-  public LogEntryBuilder value(final DirectBuffer value) {
-    return value(value, 0, value.capacity());
-  }
-
-  @Override
-  public LogEntryBuilder valueWriter(final BufferWriter writer) {
-    valueWriter = writer;
-    return this;
-  }
-
-  @Override
-  public LogStreamBatchWriter done() {
-    ensureNotNull("value", valueWriter);
-    copyExistingEventToBuffer();
-    resetEvent();
-    return this;
-  }
-
-  private void copyExistingEventToBuffer() {
-    // validation
-    if (valueWriter == null) {
-      return;
+    for (final var entry : appendEntries) {
+      batchBytes += entry.getLength();
+      batchCount++;
     }
 
-    // copy event to buffer
-    final int metadataLength = metadataWriter.getLength();
-    final int valueLength = valueWriter.getLength();
-
-    eventBuffer.putLong(eventBufferOffset, key, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_LONG;
-
-    eventBuffer.putInt(eventBufferOffset, sourceIndex, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
-
-    eventBuffer.putInt(eventBufferOffset, metadataLength, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
-
-    eventBuffer.putInt(eventBufferOffset, valueLength, Protocol.ENDIANNESS);
-    eventBufferOffset += SIZE_OF_INT;
-
-    if (metadataLength > 0) {
-      metadataWriter.write(eventBuffer, eventBufferOffset);
-      eventBufferOffset += metadataLength;
+    if (batchCount == 0) {
+      return 0;
     }
 
-    valueWriter.write(eventBuffer, eventBufferOffset);
-    eventBufferOffset += valueLength;
-
-    eventLength += metadataLength + valueLength;
-    eventCount += 1;
-  }
-
-  @Override
-  public long tryWrite() {
-    if (eventCount == 0) {
-      if (valueWriter == null) {
-        return 0;
-      }
-
-      copyExistingEventToBuffer();
-    }
-
-    long position = claimBatchForEvents();
+    final long position = claimBatchForEvents(batchCount, batchBytes);
     if (position >= 0) {
       try {
         // return position of last event
-        writeEventsToBuffer(claimedBatch.getBuffer(), position);
-        position += eventCount - 1;
-
+        writeEntries(appendEntries, position, sourcePosition);
         claimedBatch.commit();
       } catch (final Exception e) {
         claimedBatch.abort();
         LangUtil.rethrowUnchecked(e);
-      } finally {
-        reset();
       }
     }
-    return position;
+    return position + batchCount - 1;
   }
 
-  private long claimBatchForEvents() {
-    final var batchLength = computeBatchLength(eventCount, eventLength);
-
+  private long claimBatchForEvents(final int batchCount, final int batchBytes) {
+    final var batchLength = computeBatchLength(batchCount, batchBytes);
     long claimedPosition;
+
     do {
-      claimedPosition = logWriteBuffer.claimFragmentBatch(claimedBatch, eventCount, batchLength);
+      claimedPosition = logWriteBuffer.claimFragmentBatch(claimedBatch, batchCount, batchLength);
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
     return claimedPosition;
   }
 
-  private void writeEventsToBuffer(
-      final MutableDirectBuffer writeBuffer, final long firstPosition) {
-    eventBufferOffset = 0;
+  private void writeEntries(
+      final Iterable<? extends LogAppendEntry> appendEntries,
+      final long firstPosition,
+      final long sourcePosition) {
+    final var entryTimestamp = ActorClock.currentTimeMillis();
+    int index = 0;
 
-    for (int i = 0; i < eventCount; i++) {
-      final long key = eventBuffer.getLong(eventBufferOffset, Protocol.ENDIANNESS);
-      eventBufferOffset += SIZE_OF_LONG;
+    for (final var entry : appendEntries) {
+      final var sourceIndex = entry.sourceIndex();
+      final var entrySourcePosition =
+          (sourceIndex >= 0 && sourceIndex < index) ? firstPosition + sourceIndex : sourcePosition;
+      final var position = firstPosition + index;
 
-      final int sourceIndex = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
-      eventBufferOffset += SIZE_OF_INT;
-
-      final int metadataLength = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
-      eventBufferOffset += SIZE_OF_INT;
-
-      final int valueLength = eventBuffer.getInt(eventBufferOffset, Protocol.ENDIANNESS);
-      eventBufferOffset += SIZE_OF_INT;
-
-      final int fragmentLength = headerLength(metadataLength) + valueLength;
-
-      // allocate fragment for log entry
-      claimedBatch.nextFragment(fragmentLength, logId);
-      final int bufferOffset = claimedBatch.getFragmentOffset();
-
-      // write log entry header
-      setPosition(writeBuffer, bufferOffset, firstPosition + i);
-
-      if (sourceIndex >= 0 && sourceIndex < i) {
-        setSourceEventPosition(writeBuffer, bufferOffset, firstPosition + sourceIndex);
-      } else {
-        setSourceEventPosition(writeBuffer, bufferOffset, sourceEventPosition);
-      }
-
-      setKey(writeBuffer, bufferOffset, key);
-      setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
-      setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
-
-      if (metadataLength > 0) {
-        writeBuffer.putBytes(
-            metadataOffset(bufferOffset), eventBuffer, eventBufferOffset, metadataLength);
-        eventBufferOffset += metadataLength;
-      }
-
-      // write log entry value
-      writeBuffer.putBytes(
-          valueOffset(bufferOffset, metadataLength), eventBuffer, eventBufferOffset, valueLength);
-      eventBufferOffset += valueLength;
+      writeEntry(entry, position, entrySourcePosition, entryTimestamp);
+      index++;
     }
   }
 
-  private void resetEvent() {
-    key = LogEntryDescriptor.KEY_NULL_VALUE;
-    sourceIndex = -1;
+  private void writeEntry(
+      final LogAppendEntry entry,
+      final long position,
+      final long sourcePosition,
+      final long entryTimestamp) {
+    final var writeBuffer = claimedBatch.getBuffer();
+    final var key = entry.key();
+    final var metadataLength = entry.recordMetadata().getLength();
+    final var valueLength = entry.recordValue().getLength();
+    final var fragmentLength = headerLength(metadataLength) + valueLength;
 
-    metadataWriter = metadataWriterInstance;
-    valueWriter = null;
+    // allocate fragment for log entry
+    claimedBatch.nextFragment(fragmentLength, logId);
+    final var bufferOffset = claimedBatch.getFragmentOffset();
 
-    bufferWriterInstance.reset();
-    metadataWriterInstance.reset();
+    setPosition(writeBuffer, bufferOffset, position);
+    setSourceEventPosition(writeBuffer, bufferOffset, sourcePosition);
+    setKey(writeBuffer, bufferOffset, key);
+    setTimestamp(writeBuffer, bufferOffset, entryTimestamp);
+    setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
+    if (metadataLength > 0) {
+      entry.recordMetadata().write(writeBuffer, metadataOffset(bufferOffset));
+    }
+
+    entry.recordValue().write(writeBuffer, valueOffset(bufferOffset, metadataLength));
   }
 
   private int computeBatchLength(final int eventsCount, final int eventsLength) {

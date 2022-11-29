@@ -12,9 +12,10 @@ import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -28,7 +29,7 @@ final class CommandApiRequestHandler
     extends AsyncApiRequestHandler<CommandApiRequestReader, CommandApiResponseWriter> {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-  private final Int2ObjectHashMap<LogStreamRecordWriter> leadingStreams = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<LogStreamWriter> leadingStreams = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
       new Int2ObjectHashMap<>();
   private final BackpressureMetrics metrics = new BackpressureMetrics();
@@ -127,25 +128,21 @@ final class CommandApiRequestHandler
   private boolean writeCommand(
       final long key,
       final RecordMetadata eventMetadata,
-      final UnpackedObject event,
-      final LogStreamRecordWriter logStreamWriter) {
-    logStreamWriter.reset();
-
+      final UnifiedRecordValue event,
+      final LogStreamWriter logStreamWriter) {
+    final LogAppendEntry appendEntry;
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
-      logStreamWriter.key(key);
+      appendEntry = LogAppendEntry.of(key, eventMetadata, event);
     } else {
-      logStreamWriter.keyNull();
+      appendEntry = LogAppendEntry.of(eventMetadata, event);
     }
 
-    final long eventPosition =
-        logStreamWriter.metadataWriter(eventMetadata).valueWriter(event).tryWrite();
-
-    return eventPosition >= 0;
+    return logStreamWriter.tryWrite(appendEntry) >= 0;
   }
 
   void addPartition(
       final int partitionId,
-      final LogStreamRecordWriter logStreamWriter,
+      final LogStreamWriter logStreamWriter,
       final RequestLimiter<Intent> limiter) {
     actor.submit(
         () -> {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.util;
 
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -35,7 +36,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 
-public final class RecordToWrite {
+public final class RecordToWrite implements LogAppendEntry {
 
   private static final long DEFAULT_KEY = 1;
 
@@ -166,19 +167,23 @@ public final class RecordToWrite {
     return this;
   }
 
-  public long getKey() {
+  @Override
+  public long key() {
     return key;
   }
 
-  public RecordMetadata getRecordMetadata() {
+  @Override
+  public int sourceIndex() {
+    return sourceIndex;
+  }
+
+  @Override
+  public RecordMetadata recordMetadata() {
     return recordMetadata;
   }
 
-  public UnifiedRecordValue getUnifiedRecordValue() {
+  @Override
+  public UnifiedRecordValue recordValue() {
     return unifiedRecordValue;
-  }
-
-  public int getSourceIndex() {
-    return sourceIndex;
   }
 }

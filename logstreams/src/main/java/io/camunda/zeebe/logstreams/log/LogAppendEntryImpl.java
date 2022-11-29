@@ -5,12 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.stream.api.records;
+package io.camunda.zeebe.logstreams.log;
 
-import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 
-/**
- * Represents an unmodifiable batch of records, which extends the {@link Iterable<RecordBatchEntry>}
- * in order to make sure that the contained entries can be accessed.
- */
-public interface ImmutableRecordBatch extends Iterable<RecordBatchEntry> {}
+record LogAppendEntryImpl(
+    long key, int sourceIndex, BufferWriter recordMetadata, BufferWriter recordValue)
+    implements LogAppendEntry {}
