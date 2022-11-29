@@ -181,18 +181,18 @@ public final class ElementActivationBehavior {
     }
     final var flowScope = flowScopes.poll();
 
-    final long flowScopeInstanceKey =
+    final Optional<Long> flowScopeInstanceKey =
         findScopeKey(processInstanceRecord, flowScopeKey, ancestorScopeKey, flowScope);
 
     final long activatedInstanceKey;
-    if (flowScopeInstanceKey == -1) {
+    if (flowScopeInstanceKey.isPresent()) {
+      activatedInstanceKey = flowScopeInstanceKey.get();
+      createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
+    } else {
       // no subprocess instance found, let's create a new one
       activatedInstanceKey =
           activateFlowScope(
               processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
-    } else {
-      activatedInstanceKey = flowScopeInstanceKey;
-      createVariablesCallback.accept(flowScope.getId(), flowScopeInstanceKey);
     }
 
     activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
@@ -219,9 +219,9 @@ public final class ElementActivationBehavior {
    * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
    *     selection, determines whether we may consider existing instances, or should ignore them
    * @param flowScope the specific model element that we hope to find an instance of
-   * @return the key of the instance it found, otherwise -1.
+   * @return optionally the key of the instance it found, otherwise an empty optional.
    */
-  private long findScopeKey(
+  private Optional<Long> findScopeKey(
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
       final long ancestorScopeKey,
@@ -231,7 +231,7 @@ public final class ElementActivationBehavior {
 
     if (elementInstancesOfScope.isEmpty()) {
       // there is no active instance of this flow scope
-      return -1;
+      return Optional.empty();
     }
 
     if (elementInstancesOfScope.size() == 1) {
@@ -242,13 +242,13 @@ public final class ElementActivationBehavior {
           && isAncestorOfElementInstance(ancestorScopeKey, elementInstance)) {
         // the active instance is a descendant of the selected ancestor
         // - don't use this instance as the flow scope
-        return -1;
+        return Optional.empty();
       }
 
       // no ancestor selection used, or the active instance isn't a descendant of it.
       // most often this means that the active instance IS the selected ancestor
       // - no need to create a new instance; we can use this one
-      return elementInstance.getKey();
+      return Optional.of(elementInstance.getKey());
     }
 
     // there are multiple active instances of this flow scope
@@ -265,14 +265,14 @@ public final class ElementActivationBehavior {
         .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
       // one of the existing element instances of 'flow scope' is the selected ancestor
       // - we can use the selected instance
-      return ancestorScopeKey;
+      return Optional.of(ancestorScopeKey);
     }
 
     if (elementInstancesOfScope.stream()
         .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
       // the selected ancestor is the (in)direct flow scope one of the element instances
       // - we need to create a new instance of 'flow scope' inside the selected ancestor instance
-      return -1;
+      return Optional.empty();
     }
 
     final var selectedAncestor = elementInstanceState.getInstance(ancestorScopeKey);
@@ -283,7 +283,7 @@ public final class ElementActivationBehavior {
     if (activatedInstance.isPresent()) {
       // we found an instance of a flow scope that is an ancestor of the selected ancestor
       // - we can use that instance directly
-      return activatedInstance.get().getKey();
+      return Optional.of(activatedInstance.get().getKey());
     }
 
     // the selected ancestor is not an ancestor of the existing element instances. It's also
