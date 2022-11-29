@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
+import io.camunda.zeebe.el.EvaluationResult;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.Escalation;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Optional;
 
 public class EscalationTransformer implements ModelElementTransformer<Escalation> {
 
@@ -23,10 +26,24 @@ public class EscalationTransformer implements ModelElementTransformer<Escalation
 
   @Override
   public void transform(final Escalation element, final TransformContext context) {
+    final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
     final var escalation = new ExecutableEscalation(element.getId());
-    Optional.ofNullable(element.getEscalationCode())
-        .map(BufferUtil::wrapString)
-        .ifPresent(escalation::setEscalationCode);
+
+    if (element.getEscalationCode() != null) {
+      final Expression escalationCodeExpression =
+          expressionLanguage.parseExpression(element.getEscalationCode());
+
+      escalation.setEscalationCodeExpression(escalationCodeExpression);
+      if (escalationCodeExpression.isStatic()) {
+        final EvaluationResult escalationCodeResult =
+            expressionLanguage.evaluateExpression(escalationCodeExpression, variable -> null);
+
+        if (escalationCodeResult.getType() == ResultType.STRING) {
+          final String escalationCode = escalationCodeResult.getString();
+          escalation.setEscalationCode(BufferUtil.wrapString(escalationCode));
+        }
+      }
+    }
     context.addEscalation(escalation);
   }
 }

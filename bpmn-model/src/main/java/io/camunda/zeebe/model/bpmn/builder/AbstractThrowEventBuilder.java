@@ -124,6 +124,16 @@ public abstract class AbstractThrowEventBuilder<
   }
 
   /**
+   * Sets a dynamic escalation code for the escalation that is retrieved from the given expression
+   *
+   * @param escalationCodeExpression the expression for the escalation
+   * @return the builder object
+   */
+  public B escalationExpression(final String escalationCodeExpression) {
+    return escalation(asZeebeExpression(escalationCodeExpression));
+  }
+
+  /**
    * Sets an escalation definition for the given escalation code. If already an escalation with this
    * code exists it will be used, otherwise a new escalation is created.
    *

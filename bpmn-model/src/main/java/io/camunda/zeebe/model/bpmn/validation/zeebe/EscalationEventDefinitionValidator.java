@@ -15,7 +15,9 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.EndEvent;
+import io.camunda.zeebe.model.bpmn.instance.Escalation;
 import io.camunda.zeebe.model.bpmn.instance.EscalationEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -24,6 +26,8 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class EscalationEventDefinitionValidator
     implements ModelElementValidator<EscalationEventDefinition> {
+
+  private static final String ZEEBE_EXPRESSION_PREFIX = "=";
 
   @Override
   public Class<EscalationEventDefinition> getElementType() {
@@ -34,14 +38,24 @@ public class EscalationEventDefinitionValidator
   public void validate(
       final EscalationEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
+    final Escalation escalation = element.getEscalation();
+    final ModelElementInstance parentElement = element.getParentElement();
 
-    if (isEscalationThrowEvent(element) && element.getEscalation() == null) {
+    if (isEscalationThrowEvent(parentElement) && escalation == null) {
       validationResultCollector.addError(0, "Must reference an escalation");
+    }
+
+    if (parentElement instanceof CatchEvent && escalation != null) {
+      final String escalationCode = escalation.getEscalationCode();
+      if (escalationCode != null && escalationCode.startsWith(ZEEBE_EXPRESSION_PREFIX)) {
+        validationResultCollector.addError(
+            0,
+            "The escalationCode of the escalation catch event is not allowed to be an expression");
+      }
     }
   }
 
-  private boolean isEscalationThrowEvent(final EscalationEventDefinition element) {
-    final ModelElementInstance parentElement = element.getParentElement();
+  private boolean isEscalationThrowEvent(final ModelElementInstance parentElement) {
     return parentElement instanceof IntermediateThrowEvent || parentElement instanceof EndEvent;
   }
 }

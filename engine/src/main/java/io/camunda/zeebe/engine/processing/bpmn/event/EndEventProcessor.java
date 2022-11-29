@@ -156,12 +156,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
         return Either.right(error.getErrorCode().get());
       }
 
-      final var errorCode =
-          expressionProcessor.evaluateStringExpressionAsDirectBuffer(
-              error.getErrorCodeExpression(), context.getElementInstanceKey());
-      ensureNotNull("errorCode", errorCode);
-
-      return errorCode;
+      return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
+          error.getErrorCodeExpression(), context.getElementInstanceKey());
     }
   }
 
@@ -231,15 +227,19 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      evaluateEscalationCode(element, activating)
+          .ifRightOrLeft(
+              escalationCode -> {
+                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                final boolean canBeCompleted =
+                    eventPublicationBehavior.throwEscalationEvent(
+                        element.getId(), escalationCode, activated);
 
-      final var activated = stateTransitionBehavior.transitionToActivated(activating);
-      final boolean canBeCompleted =
-          eventPublicationBehavior.throwEscalationEvent(
-              element.getId(), element.getEscalation(), activated);
-
-      if (canBeCompleted) {
-        stateTransitionBehavior.completeElement(activated);
-      }
+                if (canBeCompleted) {
+                  stateTransitionBehavior.completeElement(activated);
+                }
+              },
+              failure -> incidentBehavior.createIncident(failure, activating));
     }
 
     @Override
@@ -250,6 +250,19 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .ifRightOrLeft(
               completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
               failure -> incidentBehavior.createIncident(failure, completing));
+    }
+
+    private Either<Failure, DirectBuffer> evaluateEscalationCode(
+        final ExecutableEndEvent element, final BpmnElementContext context) {
+      final var escalation = element.getEscalation();
+      ensureNotNull("escalation", escalation);
+
+      if (escalation.getEscalationCode().isPresent()) {
+        return Either.right(escalation.getEscalationCode().get());
+      }
+
+      return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
+          escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
     }
   }
 }
