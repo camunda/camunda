@@ -188,11 +188,9 @@ public final class ElementActivationBehavior {
     if (elementInstancesOfScope.isEmpty()) {
       // there is no active instance of this flow scope
       // - create/activate a new instance and continue with the remaining flow scopes
-      final long elementInstanceKey =
+      activatedInstanceKey =
           activateFlowScope(
               processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
-      activatedElementKeys.addFlowScopeKey(elementInstanceKey);
-      activatedInstanceKey = elementInstanceKey;
 
     } else if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
@@ -214,7 +212,6 @@ public final class ElementActivationBehavior {
       }
 
       createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
-      activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
 
     } else {
       // there are multiple active instances of this flow scope
@@ -266,8 +263,9 @@ public final class ElementActivationBehavior {
       }
 
       createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
-      activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
     }
+
+    activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
 
     return activateFlowScopes(
         processInstanceRecord,
