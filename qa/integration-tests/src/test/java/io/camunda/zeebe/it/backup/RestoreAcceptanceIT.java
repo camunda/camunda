@@ -116,6 +116,7 @@ final class RestoreAcceptanceIT {
     assertThat(response).isEqualTo(new TakeBackupResponse(BACKUP_ID));
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
               final var status = actuator.status(response.id());
@@ -143,6 +144,7 @@ final class RestoreAcceptanceIT {
     assertThat(response).isEqualTo(new TakeBackupResponse(BACKUP_ID));
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
               final var status = actuator.status(response.id());
