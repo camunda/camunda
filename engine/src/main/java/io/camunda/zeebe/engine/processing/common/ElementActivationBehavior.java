@@ -208,8 +208,6 @@ public final class ElementActivationBehavior {
         flowScopeInstanceKey = elementInstance.getKey();
       }
 
-      createVariablesCallback.accept(flowScope.getId(), flowScopeInstanceKey);
-
     } else {
       // there are multiple active instances of this flow scope
       // - try to use ancestor selection
@@ -256,8 +254,6 @@ public final class ElementActivationBehavior {
               flowScopeId, processInstanceRecord.getBpmnProcessId());
         }
       }
-
-      createVariablesCallback.accept(flowScope.getId(), flowScopeInstanceKey);
     }
 
     final long activatedInstanceKey;
@@ -268,6 +264,7 @@ public final class ElementActivationBehavior {
               processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
     } else {
       activatedInstanceKey = flowScopeInstanceKey;
+      createVariablesCallback.accept(flowScope.getId(), flowScopeInstanceKey);
     }
 
     activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
