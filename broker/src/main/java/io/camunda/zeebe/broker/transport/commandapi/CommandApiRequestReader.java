@@ -27,22 +27,24 @@ import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
 public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequestDecoder> {
-  static final Map<ValueType, UnifiedRecordValue> RECORDS_BY_TYPE = new EnumMap<>(ValueType.class);
+  static final Map<ValueType, Supplier<UnifiedRecordValue>> RECORDS_BY_TYPE =
+      new EnumMap<>(ValueType.class);
 
   static {
-    RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, new DeploymentRecord());
-    RECORDS_BY_TYPE.put(ValueType.JOB, new JobRecord());
-    RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE, new ProcessInstanceRecord());
-    RECORDS_BY_TYPE.put(ValueType.MESSAGE, new MessageRecord());
-    RECORDS_BY_TYPE.put(ValueType.JOB_BATCH, new JobBatchRecord());
-    RECORDS_BY_TYPE.put(ValueType.INCIDENT, new IncidentRecord());
-    RECORDS_BY_TYPE.put(ValueType.VARIABLE_DOCUMENT, new VariableDocumentRecord());
-    RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_CREATION, new ProcessInstanceCreationRecord());
+    RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, DeploymentRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.JOB, JobRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE, ProcessInstanceRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.MESSAGE, MessageRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.JOB_BATCH, JobBatchRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.INCIDENT, IncidentRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecord::new);
     RECORDS_BY_TYPE.put(
-        ValueType.PROCESS_INSTANCE_MODIFICATION, new ProcessInstanceModificationRecord());
+        ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecord::new);
   }
 
   private UnifiedRecordValue event;
@@ -80,13 +82,14 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
         messageHeaderDecoder.blockLength(),
         messageHeaderDecoder.version());
 
-    final int eventOffset =
-        commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
-    final int eventLength = commandRequestDecoder.valueLength();
     eventMetadata.protocolVersion(messageHeaderDecoder.version());
-    event = RECORDS_BY_TYPE.get(commandRequestDecoder.valueType());
-    if (event != null) {
-      event.wrap(buffer, eventOffset, eventLength);
+    final var recordSupplier = RECORDS_BY_TYPE.get(commandRequestDecoder.valueType());
+    if (recordSupplier != null) {
+      final int valueOffset =
+          commandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
+      final int valueLength = commandRequestDecoder.valueLength();
+      event = recordSupplier.get();
+      event.wrap(buffer, valueOffset, valueLength);
     }
   }
 
