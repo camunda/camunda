@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.transport.backupapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -323,6 +324,45 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
         .returns("list failed", error -> BufferUtil.bufferAsString(error.getErrorData()));
+  }
+
+  @Test
+  void shouldDeleteBackup() {
+    // given
+    final var request = new BackupRequest().setType(BackupRequestType.DELETE).setPartitionId(1);
+
+    when(backupManager.deleteBackup(anyLong())).thenReturn(CompletableActorFuture.completed(null));
+
+    // when
+    final BackupStatusResponse statusResponse = new BackupStatusResponse();
+    serverOutput.setResponseObject(statusResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(statusResponse.getStatus()).isEqualTo(BackupStatusCode.DOES_NOT_EXIST);
+  }
+
+  @Test
+  void shouldReturnErrorWhenDeleteFails() {
+    // given
+    final var request = new BackupRequest().setType(BackupRequestType.DELETE).setPartitionId(1);
+
+    when(backupManager.deleteBackup(anyLong()))
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(
+                new RuntimeException("Expected failure")));
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMillis(100))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
+        .returns("Expected failure", error -> BufferUtil.bufferAsString(error.getErrorData()));
   }
 
   private void handleRequest(final BackupRequest request) {
