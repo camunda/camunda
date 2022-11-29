@@ -229,14 +229,13 @@ public final class ElementActivationBehavior {
     final List<ElementInstance> elementInstancesOfScope =
         findElementInstances(flowScope, flowScopeKey);
 
-    // we need to find the element instance that we want to use as flow scope
     if (elementInstancesOfScope.isEmpty()) {
       // there is no active instance of this flow scope
       return -1;
+    }
 
-    } else if (elementInstancesOfScope.size() == 1) {
+    if (elementInstancesOfScope.size() == 1) {
       // there is an active instance of this flow scope
-
       final var elementInstance = elementInstancesOfScope.get(0);
 
       if (ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY
@@ -244,61 +243,56 @@ public final class ElementActivationBehavior {
         // the active instance is a descendant of the selected ancestor
         // - don't use this instance as the flow scope
         return -1;
-
-      } else {
-        // no ancestor selection used, or the active instance isn't a descendant of it.
-        // most often this means that the active instance IS the selected ancestor
-        // - no need to create a new instance; we can use this one
-        return elementInstance.getKey();
       }
 
-    } else {
-      // there are multiple active instances of this flow scope
-      // - try to use ancestor selection
-
-      if (ancestorScopeKey == NO_ANCESTOR_SCOPE_KEY) {
-        // no ancestor selected
-        // - reject by throwing an exception
-        final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-        throw new MultipleFlowScopeInstancesFoundException(
-            flowScopeId, processInstanceRecord.getBpmnProcessId());
-      }
-
-      if (elementInstancesOfScope.stream()
-          .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
-        // one of the existing element instances of 'flow scope' is the selected ancestor
-        // - we can use the selected instance
-        return ancestorScopeKey;
-
-      } else if (elementInstancesOfScope.stream()
-          .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
-        // the selected ancestor is the (in)direct flow scope one of the element instances
-        // - we need to create a new instance of 'flow scope' inside the selected ancestor instance
-        return -1;
-
-      } else {
-        final var selectedAncestor = elementInstanceState.getInstance(ancestorScopeKey);
-        final var activatedInstance =
-            elementInstancesOfScope.stream()
-                .filter(
-                    instance -> isAncestorOfElementInstance(instance.getKey(), selectedAncestor))
-                .findAny();
-        if (activatedInstance.isPresent()) {
-          // we found an instance of a flow scope that is an ancestor of the selected ancestor
-          // - we can use that instance directly
-          return activatedInstance.get().getKey();
-
-        } else {
-          // the selected ancestor is not an ancestor of the existing element instances. It's also
-          // not one of the existing element instances itself. We cannot decide what to do here.
-          // - reject by throwing an exception
-          // todo: verify whether this situation can occur
-          final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-          throw new MultipleFlowScopeInstancesFoundException(
-              flowScopeId, processInstanceRecord.getBpmnProcessId());
-        }
-      }
+      // no ancestor selection used, or the active instance isn't a descendant of it.
+      // most often this means that the active instance IS the selected ancestor
+      // - no need to create a new instance; we can use this one
+      return elementInstance.getKey();
     }
+
+    // there are multiple active instances of this flow scope
+    // - try to use ancestor selection
+    if (ancestorScopeKey == NO_ANCESTOR_SCOPE_KEY) {
+      // no ancestor selected
+      // - reject by throwing an exception
+      final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
+      throw new MultipleFlowScopeInstancesFoundException(
+          flowScopeId, processInstanceRecord.getBpmnProcessId());
+    }
+
+    if (elementInstancesOfScope.stream()
+        .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
+      // one of the existing element instances of 'flow scope' is the selected ancestor
+      // - we can use the selected instance
+      return ancestorScopeKey;
+    }
+
+    if (elementInstancesOfScope.stream()
+        .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
+      // the selected ancestor is the (in)direct flow scope one of the element instances
+      // - we need to create a new instance of 'flow scope' inside the selected ancestor instance
+      return -1;
+    }
+
+    final var selectedAncestor = elementInstanceState.getInstance(ancestorScopeKey);
+    final var activatedInstance =
+        elementInstancesOfScope.stream()
+            .filter(instance -> isAncestorOfElementInstance(instance.getKey(), selectedAncestor))
+            .findAny();
+    if (activatedInstance.isPresent()) {
+      // we found an instance of a flow scope that is an ancestor of the selected ancestor
+      // - we can use that instance directly
+      return activatedInstance.get().getKey();
+    }
+
+    // the selected ancestor is not an ancestor of the existing element instances. It's also
+    // not one of the existing element instances itself. We cannot decide what to do here.
+    // - reject by throwing an exception
+    // todo: verify whether this situation can occur
+    final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
+    throw new MultipleFlowScopeInstancesFoundException(
+        flowScopeId, processInstanceRecord.getBpmnProcessId());
   }
 
   private boolean isAncestorOfElementInstance(
