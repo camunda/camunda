@@ -86,8 +86,9 @@ public final class BackupApiRequestHandler
       case TAKE_BACKUP -> CompletableActorFuture.completed(
           handleTakeBackupRequest(
               requestStreamId, requestId, requestReader, responseWriter, errorWriter));
-      case QUERY_STATUS -> handleQueryStatusHandler(requestReader, responseWriter, errorWriter);
-      case LIST -> handleListBackupHandler(responseWriter, errorWriter);
+      case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
+      case LIST -> handleListBackupRequest(responseWriter, errorWriter);
+      case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
       default -> CompletableActorFuture.completed(
           unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
     };
@@ -125,7 +126,7 @@ public final class BackupApiRequestHandler
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
-      handleQueryStatusHandler(
+      handleQueryStatusRequest(
           final BackupApiRequestReader requestReader,
           final BackupApiResponseWriter responseWriter,
           final ErrorResponseWriter errorWriter) {
@@ -147,7 +148,7 @@ public final class BackupApiRequestHandler
     return result;
   }
 
-  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupHandler(
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupRequest(
       final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
@@ -165,6 +166,33 @@ public final class BackupApiRequestHandler
                         errorWriter
                             .errorCode(ErrorCode.INTERNAL_ERROR)
                             .errorMessage(error.getMessage())));
+              }
+            });
+    return result;
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleDeleteBackupRequest(
+          final BackupApiRequestReader requestReader,
+          final BackupApiResponseWriter responseWriter,
+          final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    final var backupId = requestReader.backupId();
+    backupManager
+        .deleteBackup(backupId)
+        .onComplete(
+            (ignore, error) -> {
+              if (error == null) {
+                final BackupStatusResponse response =
+                    new BackupStatusResponse()
+                        .setBackupId(backupId)
+                        .setStatus(BackupStatusCode.DOES_NOT_EXIST)
+                        .setPartitionId(requestReader.partitionId());
+                result.complete(Either.right(responseWriter.withStatus(response)));
+              } else {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
               }
             });
     return result;
