@@ -129,6 +129,7 @@ final class BackupAcceptanceIT {
     assertThat(response).isEqualTo(new TakeBackupResponse(1L));
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
+        .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
               final var status = actuator.status(response.id());
