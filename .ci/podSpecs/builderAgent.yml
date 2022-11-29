@@ -71,8 +71,8 @@ spec:
             resource: limits.cpu
     resources:
       limits:
-        cpu: 4
+        cpu: 3
         memory: 4Gi
       requests:
-        cpu: 4
+        cpu: 3
         memory: 4Gi
