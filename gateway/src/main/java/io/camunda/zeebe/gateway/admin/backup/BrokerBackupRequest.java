@@ -99,7 +99,7 @@ public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
 
   @Override
   public String getType() {
-    return "backup#take";
+    return "Backup#take";
   }
 
   @Override

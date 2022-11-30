@@ -83,7 +83,7 @@ public class BackupStatusRequest extends BrokerRequest<BackupStatusResponse> {
 
   @Override
   public String getType() {
-    return "backup#status";
+    return "Backup#status";
   }
 
   @Override

@@ -83,7 +83,7 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
 
   @Override
   public String getType() {
-    return "backup#list";
+    return "Backup#list";
   }
 
   @Override
