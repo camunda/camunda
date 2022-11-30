@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -30,8 +31,11 @@ import org.agrona.DirectBuffer;
  */
 public final class CatchEventAnalyzer {
 
+  private static final Comparator<ExecutableCatchEvent> ERROR_CODE_COMPARATOR =
+      Comparator.comparing(
+              (ExecutableCatchEvent catchEvent) -> catchEvent.getError().getErrorCode().get())
+          .reversed();
   private final CatchEventTuple catchEventTuple = new CatchEventTuple();
-
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
 
@@ -119,24 +123,32 @@ public final class CatchEventAnalyzer {
 
     final var element = process.getElementById(elementId, elementType, ExecutableActivity.class);
 
-    for (final ExecutableCatchEvent catchEvent : element.getEvents()) {
-      if (catchEvent.isError()) {
-        final Optional<DirectBuffer> errorCodeOptional = catchEvent.getError().getErrorCode();
-        // Because a catch event can not contain an expression, we ignore it if not set.
-        if (errorCodeOptional.isPresent()) {
-          final var errorCodeBuffer = errorCodeOptional.get();
-          availableCatchEvents.getLeft().add(errorCodeBuffer);
-          if (errorCodeBuffer.equals(errorCode)) {
+    final Optional<ExecutableCatchEvent> errorCatchEvent =
+        element.getEvents().stream()
+            .filter(ExecutableCatchEvent::isError)
+            // Because a catch event can not contain an expression, we ignore it if not set.
+            .filter(catchEvent -> catchEvent.getError().getErrorCode().isPresent())
+            // Order by errorCode to prioritize code-specific error events within the same scope.
+            .sorted(ERROR_CODE_COMPARATOR)
+            .filter(event -> matchesErrorCode(event, errorCode, availableCatchEvents))
+            .findFirst();
 
-            catchEventTuple.instance = instance;
-            catchEventTuple.catchEvent = catchEvent;
-            return Either.right(catchEventTuple);
-          }
-        }
-      }
+    if (errorCatchEvent.isPresent()) {
+      catchEventTuple.instance = instance;
+      catchEventTuple.catchEvent = errorCatchEvent.get();
+      return Either.right(catchEventTuple);
     }
 
     return availableCatchEvents;
+  }
+
+  private boolean matchesErrorCode(
+      final ExecutableCatchEvent catchEvent,
+      final DirectBuffer errorCode,
+      final Either<List<DirectBuffer>, CatchEventTuple> availableCatchEvents) {
+    final var eventErrorCode = catchEvent.getError().getErrorCode().get();
+    availableCatchEvents.getLeft().add(eventErrorCode);
+    return eventErrorCode.capacity() == 0 || eventErrorCode.equals(errorCode);
   }
 
   public Optional<CatchEventTuple> findEscalationCatchEvent(

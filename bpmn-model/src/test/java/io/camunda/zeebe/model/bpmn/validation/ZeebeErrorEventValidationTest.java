@@ -183,21 +183,6 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
       },
       {
         Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType("type"))
-            .boundaryEvent("catch-1", AbstractBoundaryEventBuilder::error)
-            .endEvent()
-            .moveToActivity("task")
-            .boundaryEvent("catch-2", b -> b.error("ERROR"))
-            .endEvent()
-            .done(),
-        singletonList(
-            expect(
-                ServiceTask.class,
-                "The same scope can not contain an error catch event without error code and another one with error code. An error catch event without error code catches all errors."))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
             .eventSubProcess("sub-1", s -> s.startEvent().interrupting(true).error().endEvent())
             .eventSubProcess("sub-2", s -> s.startEvent().interrupting(true).error().endEvent())
             .startEvent()
@@ -233,19 +218,6 @@ public class ZeebeErrorEventValidationTest extends AbstractZeebeValidationTest {
             expect(
                 Process.class,
                 "The same scope can not contain more than one error catch event without error code. An error catch event without error code catches all errors."))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .eventSubProcess("sub-1", s -> s.startEvent().interrupting(true).error().endEvent())
-            .eventSubProcess(
-                "sub-2", s -> s.startEvent().interrupting(true).error("ERROR").endEvent())
-            .startEvent()
-            .endEvent()
-            .done(),
-        singletonList(
-            expect(
-                Process.class,
-                "The same scope can not contain an error catch event without error code and another one with error code. An error catch event without error code catches all errors."))
       },
     };
   }

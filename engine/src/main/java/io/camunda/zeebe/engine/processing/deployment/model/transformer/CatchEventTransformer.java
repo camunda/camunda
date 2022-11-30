@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEscalation;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
@@ -145,7 +146,16 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
       final ErrorEventDefinition errorEventDefinition) {
 
     final var error = errorEventDefinition.getError();
-    final var executableError = context.getError(error.getId());
+    final ExecutableError executableError;
+
+    // If 'errorRef' is omitted, an empty error without errorCode will be created to facilitate
+    // finding the corresponding catch event
+    if (error == null) {
+      executableError = new ExecutableError("");
+      executableError.setErrorCode(BufferUtil.wrapString(""));
+    } else {
+      executableError = context.getError(error.getId());
+    }
     executableElement.setError(executableError);
     executableElement.setEventType(BpmnEventType.ERROR);
   }
@@ -173,7 +183,7 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final ExecutableEscalation executableEscalation;
 
     // If 'escalationRef' is omitted, an empty escalation without escalationCode will be created
-    // for the boundary event to facilitate finding the corresponding catch event
+    // to facilitate finding the corresponding catch event
     if (escalation == null) {
       executableEscalation = new ExecutableEscalation("");
       executableEscalation.setEscalationCode(BufferUtil.wrapString(""));

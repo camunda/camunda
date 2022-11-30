@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractStartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.EventSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
@@ -141,6 +142,208 @@ public class ErrorEventTest {
                 .withElementType(BpmnElementType.BOUNDARY_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("error-2");
+  }
+
+  @Test
+  public void shouldCatchErrorEventsOnBoundaryEventWithoutErrorRef() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                serviceTask ->
+                    serviceTask.boundaryEvent(
+                        "error",
+                        b -> b.errorEventDefinition().errorEventDefinitionDone().endEvent())))
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode("error")
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.BOUNDARY_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("error");
+  }
+
+  @Test
+  public void shouldCatchErrorEventsOnBoundaryEventWithoutErrorCode() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(serviceTask -> serviceTask.boundaryEvent("error", b -> b.error().endEvent())))
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode("error")
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.BOUNDARY_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("error");
+  }
+
+  @Test
+  public void shouldCatchErrorEventsOnBoundaryEventWithSpecificErrorCode() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(
+                serviceTask -> {
+                  serviceTask.boundaryEvent("catch-all", b -> b.error().endEvent());
+                  serviceTask.boundaryEvent("code-specific", b -> b.error(ERROR_CODE).endEvent());
+                }))
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.BOUNDARY_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("code-specific");
+  }
+
+  @Test
+  public void shouldCatchErrorEventsOnErrorStartEventWithoutErrorRef() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "sub",
+                e ->
+                    e.startEvent("error", AbstractStartEventBuilder::errorEventDefinition)
+                        .endEvent())
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode("errorCode")
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsSubsequence("start", "error");
+  }
+
+  @Test
+  public void shouldCatchErrorEventsOnErrorStartEventWithoutErrorCode() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "sub", e -> e.startEvent("error", AbstractStartEventBuilder::error).endEvent())
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode("errorCode")
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsSubsequence("start", "error");
+  }
+
+  @Test
+  public void shouldCatchErrorEventsOnErrorStartEventWithSpecificErrorCode() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .eventSubProcess(
+                "sub-1",
+                e -> e.startEvent("catch-all", AbstractStartEventBuilder::error).endEvent())
+            .eventSubProcess(
+                "sub-2", e -> e.startEvent("code-specific", s -> s.error(ERROR_CODE)).endEvent())
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
+            .endEvent()
+            .done();
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withErrorCode(ERROR_CODE)
+        .throwError();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsSubsequence("start", "code-specific");
   }
 
   @Test

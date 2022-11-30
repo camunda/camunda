@@ -315,13 +315,6 @@ public class ModelUtil {
             .map(error -> Optional.ofNullable(error.getErrorCode()))
             .collect(groupingBy(errorCode -> errorCode, counting()));
 
-    if (definitionWithoutErrorCount >= 1 && !errorCodeOccurrences.isEmpty()) {
-      errorCollector.accept(
-          "The same scope can not contain an error catch event without error code "
-              + "and another one with error code. An error catch event without "
-              + "error code catches all errors.");
-    }
-
     errorCodeOccurrences.forEach(
         (errorCode, occurrences) -> {
           if (occurrences > 1) {
