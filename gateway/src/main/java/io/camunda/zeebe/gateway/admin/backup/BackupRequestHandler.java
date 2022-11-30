@@ -15,7 +15,6 @@ import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -91,60 +90,50 @@ public final class BackupRequestHandler implements BackupApi {
 
   private List<BackupStatus> aggregateBackupList(
       final List<CompletableFuture<BrokerResponse<BackupListResponse>>> backupsReceived) {
-    final var backupStatuses =
+    // backupId -> [partitiondId -> partitionBackupStatus]
+    final var statusByBackupAndPartition =
         backupsReceived.stream()
             .map(f -> f.join().getResponse())
-            .map(BackupListResponse::getBackups)
-            .flatMap(List::stream)
-            .toList();
-
-    // backupId -> [partitiondId -> partitionBackupStatus]
-    final var backups =
-        backupStatuses.stream()
-            .map(BackupListResponse.BackupStatus::backupId)
-            .distinct()
+            .flatMap(backupListResponse -> backupListResponse.getBackups().stream())
             .collect(
-                Collectors.toMap(
-                    Function.identity(),
-                    backupId -> {
-                      // If a partition does not have this backup, it is not included in the
-                      // response received. So when aggregating backup status, an incomplete
-                      // backup can be determined as completed. To prevent that initialize all
-                      // partitions status to DOES_NOT_EXIST. This will be overwritten with the
-                      // actual status returned if it exists.
-                      final var partitionStatus = new HashMap<Integer, PartitionBackupStatus>();
-                      topologyManager
-                          .getTopology()
-                          .getPartitions()
-                          .forEach(
-                              p ->
-                                  partitionStatus.put(
-                                      p, PartitionBackupStatus.notExistingStatus(p)));
-                      return partitionStatus;
-                    }));
+                Collectors.groupingBy(
+                    BackupListResponse.BackupStatus::backupId,
+                    Collectors.toMap(
+                        BackupListResponse.BackupStatus::partitionId, Function.identity())));
 
-    backupStatuses.forEach(
-        status ->
-            backups
-                .get(status.backupId())
-                .put(
-                    status.partitionId(),
-                    new PartitionBackupStatus(
-                        status.partitionId(),
-                        status.status(),
-                        Optional.ofNullable(status.failureReason()),
-                        Optional.ofNullable(status.createdAt()),
-                        Optional.empty(),
-                        Optional.empty(),
-                        OptionalLong.empty(),
-                        OptionalInt.empty(),
-                        Optional.ofNullable(status.brokerVersion()))));
-
-    return backups.entrySet().stream()
+    final var partitions = topologyManager.getTopology().getPartitions();
+    // calculate status of each backup from the status of each partition
+    return statusByBackupAndPartition.entrySet().stream()
         .map(
-            entry ->
-                aggregatePartitionStatus(
-                    entry.getKey(), entry.getValue().values().stream().toList()))
+            entry -> {
+              final var backupId = entry.getKey();
+              final var statusByPartition = entry.getValue();
+              return aggregatePartitionStatus(
+                  backupId,
+                  partitions.stream()
+                      .map(
+                          partitionId -> {
+                            if (!statusByPartition.containsKey(partitionId)) {
+                              // If a partition does not have this backup, it is not included in the
+                              // response received. So when aggregating backup status, an incomplete
+                              // backup can be determined as completed. To prevent that replace a
+                              // missing status with all DOES_NOT_EXIST.
+                              return PartitionBackupStatus.notExistingStatus(partitionId);
+                            }
+                            final var status = statusByPartition.get(partitionId);
+                            return new PartitionBackupStatus(
+                                status.partitionId(),
+                                status.status(),
+                                Optional.ofNullable(status.failureReason()),
+                                Optional.ofNullable(status.createdAt()),
+                                Optional.empty(),
+                                Optional.empty(),
+                                OptionalLong.empty(),
+                                OptionalInt.empty(),
+                                Optional.ofNullable(status.brokerVersion()));
+                          })
+                      .toList());
+            })
         .toList();
   }
 
