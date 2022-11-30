@@ -6,20 +6,11 @@
  */
 
 import {render, screen, within} from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {AppHeader} from '../index';
-import {MemoryRouter} from 'react-router-dom';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 import {createUser} from 'modules/testUtils';
-
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children} </MemoryRouter>
-    </ThemeProvider>
-  );
-};
+import {Wrapper} from './mocks';
 
 describe('App switcher', () => {
   afterEach(() => {

@@ -10,13 +10,12 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogout} from 'modules/mocks/api/logout';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 import {createUser} from 'modules/testUtils';
-import {MemoryRouter} from 'react-router-dom';
+import {Wrapper} from './mocks';
 
 const mockUser = createUser({
   displayName: 'Franz Kafka',
@@ -27,14 +26,6 @@ const mockSsoUser = createUser({
   displayName: 'Michael Jordan',
   canLogout: false,
 });
-
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter>{children} </MemoryRouter>
-    </ThemeProvider>
-  );
-};
 
 describe('User info', () => {
   afterEach(() => {
