@@ -181,8 +181,9 @@ public final class ElementActivationBehavior {
     }
     final var flowScope = flowScopes.poll();
 
+    final var bpmnProcessId = processInstanceRecord.getBpmnProcessId();
     final Optional<Long> flowScopeInstanceKey =
-        findScopeKey(processInstanceRecord, flowScopeKey, ancestorScopeKey, flowScope);
+        findScopeKey(bpmnProcessId, flowScopeKey, ancestorScopeKey, flowScope);
 
     final long activatedInstanceKey;
     if (flowScopeInstanceKey.isPresent()) {
@@ -213,7 +214,7 @@ public final class ElementActivationBehavior {
    *
    * <p>If a new instance should be created, it simply doesn't find the instance.
    *
-   * @param processInstanceRecord the record of the process instance
+   * @param bpmnProcessId the id of the process
    * @param flowScopeKey the key of the flow scope instance whose children are the only instances
    *     considered
    * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
@@ -222,7 +223,7 @@ public final class ElementActivationBehavior {
    * @return optionally the key of the instance it found, otherwise an empty optional.
    */
   private Optional<Long> findScopeKey(
-      final ProcessInstanceRecord processInstanceRecord,
+      final String bpmnProcessId,
       final long flowScopeKey,
       final long ancestorScopeKey,
       final ExecutableFlowElement flowScope) {
@@ -257,8 +258,7 @@ public final class ElementActivationBehavior {
       // no ancestor selected
       // - reject by throwing an exception
       final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-      throw new MultipleFlowScopeInstancesFoundException(
-          flowScopeId, processInstanceRecord.getBpmnProcessId());
+      throw new MultipleFlowScopeInstancesFoundException(flowScopeId, bpmnProcessId);
     }
 
     if (elementInstancesOfScope.stream()
@@ -291,8 +291,7 @@ public final class ElementActivationBehavior {
     // non-existing element instance. We cannot decide what to do here.
     // - reject by throwing an exception
     final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-    throw new MultipleFlowScopeInstancesFoundException(
-        flowScopeId, processInstanceRecord.getBpmnProcessId());
+    throw new MultipleFlowScopeInstancesFoundException(flowScopeId, bpmnProcessId);
   }
 
   private boolean isAncestorOfElementInstance(
