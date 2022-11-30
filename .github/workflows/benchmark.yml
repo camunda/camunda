@@ -52,6 +52,8 @@ jobs:
     name: Build zeebe image
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -67,6 +69,10 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           maven-cache: 'true'
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -74,7 +80,7 @@ jobs:
       - uses: ./.github/actions/build-docker
         with:
           repository: gcr.io/zeebe-io/zeebe
-          version: ${{ inputs.name }}
+          version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
   deploy-benchmark-cluster:
@@ -111,9 +117,9 @@ jobs:
           ${{ inputs.name }} camunda/camunda-platform
           -f benchmarks/setup/default/zeebe-values.yaml
           --set zeebe.image.repository=gcr.io/zeebe-io/zeebe
-          --set zeebe.image.tag=${{ inputs.name }}
+          --set zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
           --set zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
-          --set zeebe-gateway.image.tag=${{ inputs.name }}
+          --set zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
       - name: Deploy and configure additional benchmark components
         uses: actions/github-script@v6
         with:
