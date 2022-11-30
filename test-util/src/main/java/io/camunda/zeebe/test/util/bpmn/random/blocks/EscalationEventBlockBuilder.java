@@ -16,10 +16,9 @@ import io.camunda.zeebe.test.util.bpmn.random.BlockBuilderFactory;
 import io.camunda.zeebe.test.util.bpmn.random.ConstructionContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathContext;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPathSegment;
-import io.camunda.zeebe.test.util.bpmn.random.RandomProcessGenerator;
 import io.camunda.zeebe.test.util.bpmn.random.steps.StepActivateBPMNElement;
 
-public class EscalationEventBuilder extends AbstractBlockBuilder {
+public class EscalationEventBlockBuilder extends AbstractBlockBuilder {
   private final boolean usesCallActivity;
   private final boolean usesInterruptingEscalationEvent;
   private final boolean usesEscalationEndEvent;
@@ -32,18 +31,15 @@ public class EscalationEventBuilder extends AbstractBlockBuilder {
   private final String intermediateEscalationThrowEventId;
   private final ConstructionContext context;
 
-  public EscalationEventBuilder(final ConstructionContext context) {
+  public EscalationEventBlockBuilder(final ConstructionContext context) {
     super(context.getIdGenerator().nextId());
 
     this.context = context;
 
     final var random = context.getRandom();
-    usesCallActivity =
-        random.nextDouble() < RandomProcessGenerator.PROBABILITY_CALL_ACTIVITY_ESCALATION_EVENT;
-    usesEscalationEndEvent =
-        random.nextDouble() < RandomProcessGenerator.PROBABILITY_ESCALATION_END_EVENT;
-    usesInterruptingEscalationEvent =
-        random.nextDouble() < RandomProcessGenerator.PROBABILITY_INTERRUPTING_ESCALATION_EVENT;
+    usesCallActivity = random.nextBoolean();
+    usesEscalationEndEvent = random.nextBoolean();
+    usesInterruptingEscalationEvent = random.nextBoolean();
 
     if (usesCallActivity) {
       calledProcessId = "process_child_" + elementId;
@@ -149,7 +145,7 @@ public class EscalationEventBuilder extends AbstractBlockBuilder {
 
     @Override
     public BlockBuilder createBlockBuilder(final ConstructionContext context) {
-      return new EscalationEventBuilder(context);
+      return new EscalationEventBlockBuilder(context);
     }
 
     @Override
