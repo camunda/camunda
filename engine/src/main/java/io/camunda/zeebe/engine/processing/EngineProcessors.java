@@ -71,10 +71,9 @@ public final class EngineProcessors {
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
     final var sideEffectQueue = new SideEffectQueue();
 
-    final var decisionBehavior = new DecisionBehavior(
-        DecisionEngineFactory.createDecisionEngine(),
-        zeebeState,
-        processEngineMetrics);
+    final var decisionBehavior =
+        new DecisionBehavior(
+            DecisionEngineFactory.createDecisionEngine(), zeebeState, processEngineMetrics);
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             zeebeState,

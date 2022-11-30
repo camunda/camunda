@@ -57,7 +57,8 @@ public class DecisionBehavior {
         .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)));
   }
 
-  public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(final PersistedDecision persistedDecision) {
+  public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
+      final PersistedDecision persistedDecision) {
     return Either.<Failure, PersistedDecision>right(persistedDecision)
         .flatMap(this::findDrgByDecision)
         .mapLeft(
@@ -77,8 +78,7 @@ public class DecisionBehavior {
   }
 
   public Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> createDecisionEvaluationEvent(
-      final PersistedDecision decision,
-      final DecisionEvaluationResult decisionResult) {
+      final PersistedDecision decision, final DecisionEvaluationResult decisionResult) {
 
     final var decisionEvaluationEvent =
         new DecisionEvaluationRecord()
@@ -126,8 +126,7 @@ public class DecisionBehavior {
 
   public void updateDecisionMetrics(final DecisionEvaluationResult evaluationResult) {
     if (evaluationResult.isFailure()) {
-      metrics.increaseFailedEvaluatedDmnElements(
-          evaluationResult.getEvaluatedDecisions().size());
+      metrics.increaseFailedEvaluatedDmnElements(evaluationResult.getEvaluatedDecisions().size());
     } else {
       metrics.increaseSuccessfullyEvaluatedDmnElements(
           evaluationResult.getEvaluatedDecisions().size());

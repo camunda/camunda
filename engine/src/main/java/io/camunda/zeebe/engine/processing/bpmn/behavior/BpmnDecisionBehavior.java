@@ -73,32 +73,33 @@ public final class BpmnDecisionBehavior {
     final var decisionId = decisionIdOrFailure.get();
     final var variables = variableState.getVariablesAsDocument(scopeKey);
     final var decisionOrFailure = decisionBehavior.findDecisionById(decisionId);
-    final var resultOrFailure = decisionOrFailure
-        .flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision))
-        // any failures above have the same error type and the correct scope
-        .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
-            .flatMap(drg -> {
+    final var resultOrFailure =
+        decisionOrFailure
+            .flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision))
+            // any failures above have the same error type and the correct scope
+            .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
+            .flatMap(
+                drg -> {
+                  final var decision = decisionOrFailure.get();
+                  final var evaluationResult =
+                      decisionBehavior.evaluateDecisionInDrg(drg, decisionId, variables);
 
-              final var decision = decisionOrFailure.get();
-              final var evaluationResult =
-                  decisionBehavior.evaluateDecisionInDrg(drg, decisionId, variables);
+                  final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> eventTuple =
+                      decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
+                  writeDecisionEvaluationEvent(eventTuple, context);
 
-              final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> eventTuple =
-                  decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
-              writeDecisionEvaluationEvent(eventTuple, context);
+                  decisionBehavior.updateDecisionMetrics(evaluationResult);
 
-              decisionBehavior.updateDecisionMetrics(evaluationResult);
-
-              if (evaluationResult.isFailure()) {
-                return Either.left(
-                    new Failure(
-                        evaluationResult.getFailureMessage(),
-                        ErrorType.DECISION_EVALUATION_ERROR,
-                        scopeKey));
-              } else {
-                return Either.right(evaluationResult);
-              }
-            });
+                  if (evaluationResult.isFailure()) {
+                    return Either.left(
+                        new Failure(
+                            evaluationResult.getFailureMessage(),
+                            ErrorType.DECISION_EVALUATION_ERROR,
+                            scopeKey));
+                  } else {
+                    return Either.right(evaluationResult);
+                  }
+                });
 
     resultOrFailure.ifRight(
         result -> {
@@ -119,7 +120,8 @@ public final class BpmnDecisionBehavior {
   }
 
   private void writeDecisionEvaluationEvent(
-      final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> decisionEvaluationEventTuple, final BpmnElementContext context) {
+      final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> decisionEvaluationEventTuple,
+      final BpmnElementContext context) {
 
     final DecisionEvaluationRecord evaluationEvent = decisionEvaluationEventTuple.getRight();
 
