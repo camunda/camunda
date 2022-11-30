@@ -50,6 +50,11 @@ class CurrentTheme {
   }
 
   changeTheme = (theme: ThemeType) => {
+    tracking.track({
+      eventName: 'theme-toggle',
+      toggledTo: theme,
+    });
+
     this.state.selectedTheme = theme;
 
     storeStateLocally({

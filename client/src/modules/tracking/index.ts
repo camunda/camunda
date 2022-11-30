@@ -44,7 +44,7 @@ type Events =
     }
   | {
       eventName: 'theme-toggle';
-      toggledTo: 'light' | 'dark';
+      toggledTo: 'light' | 'dark' | 'system';
     }
   | {
       eventName: 'batch-operation';
@@ -77,7 +77,7 @@ type Events =
     }
   | {
       eventName: 'operate-loaded';
-      theme: 'dark' | 'light';
+      theme: 'dark' | 'light' | 'system';
     }
   | {
       eventName: 'process-instance-details-loaded';
@@ -195,6 +195,18 @@ type Events =
     }
   | {
       eventName: 'leave-modification-mode';
+    }
+  | {
+      eventName: 'app-switcher-item-clicked';
+      app: string;
+    }
+  | {
+      eventName: 'user-side-bar';
+      link: 'cookies' | 'terms-conditions' | 'privacy-policy' | 'imprint';
+    }
+  | {
+      eventName: 'info-bar';
+      link: 'documentation' | 'academy' | 'feedback' | 'slack';
     };
 
 const STAGE_ENV = getStage(window.location.host);

@@ -121,6 +121,12 @@ const AppHeader: React.FC = observer(() => {
               }
             : {}),
         })),
+        elementClicked: (app) => {
+          tracking.track({
+            eventName: 'app-switcher-item-clicked',
+            app,
+          });
+        },
       }}
       infoSideBar={{
         type: 'info',
@@ -131,6 +137,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'docs',
             label: 'Documentation',
             onClick: () => {
+              tracking.track({
+                eventName: 'info-bar',
+                link: 'documentation',
+              });
+
               window.open('https://docs.camunda.io/', '_blank');
             },
           },
@@ -138,6 +149,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'academy',
             label: 'Camunda Academy',
             onClick: () => {
+              tracking.track({
+                eventName: 'info-bar',
+                link: 'academy',
+              });
+
               window.open('https://academy.camunda.com/', '_blank');
             },
           },
@@ -145,6 +161,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'feedbackAndSupport',
             label: 'Feedback and Support',
             onClick: () => {
+              tracking.track({
+                eventName: 'info-bar',
+                link: 'feedback',
+              });
+
               if (
                 salesPlanType === 'paid-cc' ||
                 salesPlanType === 'enterprise'
@@ -162,6 +183,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'slackCommunityChannel',
             label: 'Slack Community Channel',
             onClick: () => {
+              tracking.track({
+                eventName: 'info-bar',
+                link: 'slack',
+              });
+
               window.open(
                 'https://camunda-slack-invite.herokuapp.com/',
                 '_blank'
@@ -195,6 +221,11 @@ const AppHeader: React.FC = observer(() => {
                   key: 'cookie',
                   label: 'Cookie preferences',
                   onClick: () => {
+                    tracking.track({
+                      eventName: 'user-side-bar',
+                      link: 'cookies',
+                    });
+
                     window.Osano?.cm?.showDrawer(
                       'osano-cm-dom-info-dialog-open'
                     );
@@ -206,6 +237,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'terms',
             label: 'Terms of use',
             onClick: () => {
+              tracking.track({
+                eventName: 'user-side-bar',
+                link: 'terms-conditions',
+              });
+
               window.open(
                 'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
                 '_blank'
@@ -216,6 +252,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'privacy',
             label: 'Privacy policy',
             onClick: () => {
+              tracking.track({
+                eventName: 'user-side-bar',
+                link: 'privacy-policy',
+              });
+
               window.open('https://camunda.com/legal/privacy/', '_blank');
             },
           },
@@ -223,6 +264,11 @@ const AppHeader: React.FC = observer(() => {
             key: 'imprint',
             label: 'Imprint',
             onClick: () => {
+              tracking.track({
+                eventName: 'user-side-bar',
+                link: 'imprint',
+              });
+
               window.open('https://camunda.com/legal/imprint/', '_blank');
             },
           },
