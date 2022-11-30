@@ -87,6 +87,7 @@ const ModificationDropdown: React.FC<Props> = observer(
               {canNewTokensBeAdded && (
                 <Option
                   title="Add single flow node instance"
+                  aria-label="Add single flow node instance"
                   onClick={() => {
                     tracking.track({
                       eventName: 'add-token',

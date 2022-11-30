@@ -29,6 +29,7 @@ const ViewFullVariableButton: React.FC<Props> = ({onClick, variableName}) => {
           icon={<ModalIcon />}
           size="large"
           title={`View full value of ${variableName}`}
+          aria-label={`View full value of ${variableName}`}
           onClick={async () => {
             setIsLoading(true);
 

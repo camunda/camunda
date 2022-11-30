@@ -26,6 +26,7 @@ const ActionButton: React.FC<Props> = ({
     <Button
       type="button"
       title={title}
+      aria-label={title}
       onClick={onClick}
       size="large"
       disabled={disabled}

@@ -22,6 +22,7 @@ const AddVariableButton: React.FC<Props> = ({
     <Button
       type="button"
       title="Add variable"
+      aria-label="Add variable"
       size="small"
       onClick={onClick}
       disabled={disabled}

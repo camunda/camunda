@@ -77,6 +77,7 @@ const ColumnHeader: React.FC<Props> = ({
           });
         }}
         title={`Sort by ${label}`}
+        aria-label={`Sort by ${label}`}
         data-testid={`sort-by-${sortKey}`}
         $showExtraPadding={!displaySortIcon}
         $paddingWidth={22}

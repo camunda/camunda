@@ -201,6 +201,7 @@ const Header: React.FC<HeaderProps> = function ({children, ...props}) {
             // @ts-expect-error ts-migrate(2339) FIXME: Property 'onModalClose' does not exist on type '{}... Remove this comment to see the full error message
             onClick={modalContext.onModalClose}
             title="Exit Modal"
+            aria-label="Exit Modal"
           >
             <Styled.CrossIcon />
           </Styled.CrossButton>

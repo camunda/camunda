@@ -32,6 +32,7 @@ const VariableModification: React.FC<Props> = ({
       <TruncatedValue>{`${name}: ${newValue}`}</TruncatedValue>
       <ModalIconButton
         title="Open JSON Editor Modal"
+        aria-label="Open JSON Editor Modal"
         icon={<ModalIcon />}
         size="large"
         onClick={() => {

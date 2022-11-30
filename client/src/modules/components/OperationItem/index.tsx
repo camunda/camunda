@@ -38,6 +38,7 @@ const OperationItem: React.FC<ItemProps> = ({
         {...rest}
         onClick={onClick}
         title={title}
+        aria-label={title}
         disabled={disabled}
         type="button"
       >

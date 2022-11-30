@@ -24,13 +24,25 @@ const DiagramControls: React.FC<Props> = ({
 }) => {
   return (
     <Styled.DiagramControls>
-      <Styled.ZoomReset onClick={handleZoomReset} title="Reset diagram zoom">
+      <Styled.ZoomReset
+        onClick={handleZoomReset}
+        title="Reset diagram zoom"
+        aria-label="Reset diagram zoom"
+      >
         <DiagramReset />
       </Styled.ZoomReset>
-      <Styled.ZoomIn onClick={handleZoomIn} title="Zoom in diagram">
+      <Styled.ZoomIn
+        onClick={handleZoomIn}
+        title="Zoom in diagram"
+        aria-label="Zoom in diagram"
+      >
         <Plus />
       </Styled.ZoomIn>
-      <Styled.ZoomOut onClick={handleZoomOut} title="Zoom out diagram">
+      <Styled.ZoomOut
+        onClick={handleZoomOut}
+        title="Zoom out diagram"
+        aria-label="Zoom out diagram"
+      >
         <Minus />
       </Styled.ZoomOut>
     </Styled.DiagramControls>

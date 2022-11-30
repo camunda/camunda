@@ -81,6 +81,7 @@ const Drd: React.FC = observer(() => {
           {panelState === 'minimized' && (
             <Button
               title="Maximize DRD Panel"
+              aria-label="Maximize DRD Panel"
               size="large"
               icon={<Maximize />}
               onClick={() => {
@@ -95,6 +96,7 @@ const Drd: React.FC = observer(() => {
           {panelState === 'maximized' && (
             <Button
               title="Minimize DRD Panel"
+              aria-label="Minimize DRD Panel"
               size="large"
               icon={<Minimize />}
               onClick={() => {
@@ -108,6 +110,7 @@ const Drd: React.FC = observer(() => {
           )}
           <Button
             title="Close DRD Panel"
+            aria-label="Close DRD Panel"
             size="large"
             icon={<Close />}
             onClick={() => {
