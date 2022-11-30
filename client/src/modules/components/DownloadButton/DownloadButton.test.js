@@ -13,6 +13,8 @@ import {get} from 'request';
 
 import {DownloadButton} from './DownloadButton';
 
+HTMLAnchorElement.prototype.click = jest.fn();
+
 jest.mock('request', () => ({get: jest.fn().mockReturnValue({blob: jest.fn()})}));
 
 jest.mock('config', () => ({

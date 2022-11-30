@@ -8,9 +8,11 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {colors} from './colors.json';
+import colorsObj from './colors.json';
 
 import './ColorPicker.scss';
+
+const {colors} = colorsObj;
 
 export const ColorPicker = ({onChange, className, selectedColor = ColorPicker.dark.steelBlue}) => {
   const handleChange = ({target}) => onChange(target.getAttribute('color'));

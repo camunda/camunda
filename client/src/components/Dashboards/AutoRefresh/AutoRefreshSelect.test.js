@@ -12,6 +12,8 @@ import AutoRefreshSelect from './AutoRefreshSelect';
 import {Select} from 'components';
 
 jest.useFakeTimers();
+jest.spyOn(global, 'setInterval');
+jest.spyOn(global, 'clearInterval');
 
 const interval = 600;
 

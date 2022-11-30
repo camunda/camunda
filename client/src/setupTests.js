@@ -13,6 +13,7 @@ import './modules/polyfills/array_flat';
 import {initTranslation} from 'translation';
 import * as request from 'request';
 import translation from '../../backend/src/main/resources/localization/en.json';
+import {setImmediate} from 'timers';
 
 Enzyme.configure({adapter: new Adapter()});
 document.execCommand = jest.fn();

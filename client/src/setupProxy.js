@@ -49,7 +49,7 @@ module.exports = function (app) {
   );
 
   app.use(
-    createProxyMiddleware('/ws', {
+    createProxyMiddleware('/ws/status', {
       target: 'http://localhost:8090',
       ws: true,
     })

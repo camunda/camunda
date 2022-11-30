@@ -11,6 +11,8 @@ import {mount} from 'enzyme';
 import AutoRefreshBehavior from './AutoRefreshBehavior';
 
 jest.useFakeTimers();
+jest.spyOn(global, 'setInterval');
+jest.spyOn(global, 'clearInterval');
 
 const ReportSpy = jest.fn();
 const interval = 600;
@@ -40,6 +42,6 @@ it('should update the interval when the interval property changes', () => {
 
 it('should invoke the loadReportData function after the interval duration ends', async () => {
   mount(<AutoRefreshBehavior loadReportData={ReportSpy} interval={interval} />);
-  jest.runTimersToTime(700);
+  jest.advanceTimersByTime(700);
   expect(ReportSpy).toHaveBeenCalled();
 });
