@@ -141,6 +141,7 @@ const createUser = (options: Partial<UserDto> = {}): UserDto => ({
   permissions: ['read', 'write'],
   roles: null,
   salesPlanType: null,
+  c8Links: {},
   ...options,
 });
 

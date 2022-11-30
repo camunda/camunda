@@ -30,6 +30,7 @@ type State = {
   userId: string | null;
   salesPlanType: string | null;
   roles: ReadonlyArray<string> | null;
+  c8Links: UserDto['c8Links'];
 };
 
 const DEFAULT_STATE: State = {
@@ -40,6 +41,7 @@ const DEFAULT_STATE: State = {
   userId: null,
   salesPlanType: null,
   roles: [],
+  c8Links: {},
 };
 
 class Authentication {
@@ -159,6 +161,7 @@ class Authentication {
     userId,
     salesPlanType,
     roles,
+    c8Links,
   }: UserDto) => {
     storeStateLocally({
       wasReloaded: false,
@@ -171,6 +174,7 @@ class Authentication {
     this.state.salesPlanType = salesPlanType;
     this.state.roles = roles ?? [];
     this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
+    this.state.c8Links = c8Links ?? {};
   };
 
   handleLogout = async () => {

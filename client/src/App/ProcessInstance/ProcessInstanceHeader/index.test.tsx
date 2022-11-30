@@ -337,6 +337,7 @@ describe('InstanceHeader', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});
@@ -372,6 +373,7 @@ describe('InstanceHeader', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(<ProcessInstanceHeader />, {wrapper: Wrapper});

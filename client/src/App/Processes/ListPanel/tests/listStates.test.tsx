@@ -90,6 +90,7 @@ describe('display instances List', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     mockFetchProcessInstances().withSuccess({

@@ -15,10 +15,19 @@ import {useEffect} from 'react';
 import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
+import {capitalize} from 'lodash';
+
+const orderedApps = [
+  'console',
+  'modeler',
+  'tasklist',
+  'operate',
+  'optimize',
+] as const;
 
 const AppHeader: React.FC = observer(() => {
   const {currentPage} = useCurrentPage();
-  const {displayName, canLogout, userId, salesPlanType, roles} =
+  const {displayName, canLogout, userId, salesPlanType, roles, c8Links} =
     authenticationStore.state;
 
   useEffect(() => {
@@ -97,6 +106,21 @@ const AppHeader: React.FC = observer(() => {
       appBar={{
         type: 'app',
         ariaLabel: 'App Panel',
+        isOpen: false,
+        elements: orderedApps.map((appName) => ({
+          key: appName,
+          label: capitalize(appName),
+          href: c8Links[appName],
+          target: '_blank',
+          ...(appName === 'operate'
+            ? {
+                active: true,
+                routeProps: {
+                  to: Paths.dashboard(),
+                },
+              }
+            : {}),
+        })),
       }}
       userSideBar={{
         type: 'user',

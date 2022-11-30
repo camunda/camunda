@@ -5,8 +5,31 @@
  * except in compliance with the proprietary license.
  */
 
-import {RequestHandler} from 'msw';
+import {USE_NEW_APP_HEADER} from 'modules/feature-flags';
+import {RequestHandler, rest} from 'msw';
 
-const handlers: RequestHandler[] = [];
+const handlers: RequestHandler[] = [
+  ...(USE_NEW_APP_HEADER
+    ? [
+        rest.get('/api/authentications/user', async (req, res, ctx) => {
+          const response = await ctx.fetch(req);
+          const userInfo = await response.json();
+
+          return res(
+            ctx.json({
+              ...userInfo,
+              c8Links: {
+                operate: 'https://link-to-operate',
+                tasklist: 'https://link-to-tasklist',
+                modeler: 'https://link-to-modeler',
+                console: 'https://link-to-console',
+                optimize: 'https://link-to-optimize',
+              },
+            })
+          );
+        }),
+      ]
+    : []),
+];
 
 export {handlers};

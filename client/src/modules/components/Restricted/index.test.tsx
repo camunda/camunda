@@ -22,6 +22,7 @@ describe('Restricted', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(
@@ -41,6 +42,7 @@ describe('Restricted', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(
@@ -60,6 +62,7 @@ describe('Restricted', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(
@@ -79,6 +82,7 @@ describe('Restricted', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(
@@ -98,6 +102,7 @@ describe('Restricted', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
     const mockFallback = 'i am a fallback';
 

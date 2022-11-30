@@ -51,6 +51,7 @@ describe('Restricted user', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
   });
 

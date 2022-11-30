@@ -52,6 +52,7 @@ describe('<SessionWatcher />', () => {
       userId: 'jon',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
     authenticationStore.expireSession();
 
@@ -68,6 +69,7 @@ describe('<SessionWatcher />', () => {
       userId: 'jon',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     await waitFor(() => expect(mockRemoveNotification).toHaveBeenCalled());
@@ -85,6 +87,7 @@ describe('<SessionWatcher />', () => {
       userId: 'jon',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
     authenticationStore.expireSession();
 
@@ -107,6 +110,7 @@ describe('<SessionWatcher />', () => {
       userId: 'jon',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
     authenticationStore.expireSession();
 

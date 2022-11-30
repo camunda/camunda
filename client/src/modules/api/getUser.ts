@@ -16,6 +16,14 @@ type UserDto = {
   permissions?: PermissionsDto;
   roles: ReadonlyArray<string> | null;
   salesPlanType: string | null;
+  c8Links: {
+    [key in
+      | 'console'
+      | 'modeler'
+      | 'tasklist'
+      | 'operate'
+      | 'optimize']?: string;
+  };
 };
 
 const getUser = async (options: Parameters<typeof requestAndParse>[1]) => {

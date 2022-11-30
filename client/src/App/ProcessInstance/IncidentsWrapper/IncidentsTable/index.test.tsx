@@ -94,6 +94,7 @@ describe('IncidentsTable', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
@@ -167,6 +168,7 @@ describe('IncidentsTable', () => {
       userId: 'demo',
       roles: null,
       salesPlanType: null,
+      c8Links: {},
     });
 
     render(<IncidentsTable />, {wrapper: Wrapper});
