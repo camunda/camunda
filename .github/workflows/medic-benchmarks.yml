@@ -29,8 +29,8 @@ jobs:
         run: |
           kubectl delete ${{ steps.data.normal }}
           kubectl delete ${{ steps.data.mixed }}
-  setup-new-benchmarks:
-    name: Setup new benchmarks
+  benchmark-data:
+    name: Collect benchmark data
     runs-on: ubuntu-latest
     steps:
       - name: Collect benchmark data
@@ -38,21 +38,27 @@ jobs:
         run: |
           echo "ref=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "cw=$(date +%V)" >> $GITHUB_OUTPUT
-      - uses: ./.github/workflows/benchmark.yaml
-        name: Create normal benchmark
-        with:
-          name: medic-cw-${{ steps.data.outputs.cw }}-${{ steps.data.outputs.ref }}-benchmark
-          cluster: zeebe-cluster
-          cluster-region: europe-west1-b
-          ref: ${{ steps.data.outputs.ref }}
-          load: "worker, starter=200"
-        secrets: inherit
-      - uses: ./.github/workflows/benchmark.yaml
-        name: Create mixed benchmark
-        with:
-          name: medic-cw-${{ steps.data.outputs.cw }}-${{ steps.data.outputs.ref }}-benchmark-mixed
-          cluster: zeebe-cluster
-          cluster-region: europe-west1-b
-          ref: ${{ steps.data.outputs.ref }}
-          load: "worker, starter=100, timer=50, publisher=50"
-        secrets: inherit
+  setup-normal-benchmark:
+    name: Setup normal benchmark
+    needs:
+      - benchmark-data
+    uses: ./.github/workflows/benchmark.yaml
+    secrets: inherit
+    with:
+      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ steps.data.outputs.ref }}
+      load: "worker, starter=200"
+  setup-mixed-benchmark:
+    name: Setup mixed benchmark
+    uses: ./.github/workflows/benchmark.yaml
+    secrets: inherit
+    needs:
+      - benchmark-data
+    with:
+      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ steps.data.outputs.ref }}
+      load: "worker, starter=100, timer=50, publisher=50"
