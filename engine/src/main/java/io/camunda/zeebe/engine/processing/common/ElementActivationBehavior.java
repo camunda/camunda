@@ -106,7 +106,7 @@ public final class ElementActivationBehavior {
 
     final var flowScopes = collectFlowScopesOfElement(elementToActivate);
     final var flowScopeKey =
-        activateFlowScopes(
+        activateAncestralSubprocesses(
             processInstanceRecord,
             processInstanceRecord.getProcessInstanceKey(),
             flowScopes,
@@ -142,156 +142,161 @@ public final class ElementActivationBehavior {
   }
 
   /**
-   * Activate (if needed) the elements that are the direct and indirect flow scopes of the main
-   * element that we're trying to activate.
+   * Activate (if needed) the subprocesses that are the direct and indirect flow scopes (ancestors)
+   * of the element targeted for activation.
    *
-   * <p>This method uses recursion, each time polling an element from the flowScopes parameter.
+   * <p>This method uses recursion, each time polling an element from the subprocesses parameter.
    *
-   * <p>It is able to determine whether a new instance of a flow scope element must be activated, or
-   * that one of the existing instances can be used. In some cases this requires the
-   * ancestorScopeKey to choose between multiple available instances of the same element.
+   * <p>It is able to determine whether a new instance of an ancestral subprocess must be activated,
+   * or that one of the existing instances can be used. In some cases this requires the
+   * ancestorScopeKey to choose between multiple available instances of the same subprocess.
    *
-   * <p>Note that the ancestorScopeKey is also used to create new instances of in between flow
-   * scopes, if the ancestorScopeKey refers to an indirect flow scope of the element.
+   * <p>Note that the ancestorScopeKey is also used to create new instances of in between
+   * subprocesses, if the ancestorScopeKey refers to an ancestor of that subprocess.
    *
-   * @param processInstanceRecord the record of the process instance
+   * @param processInstanceRecord the record of the process instance in which an element is being
+   *     activated
    * @param flowScopeKey key of the element instance that should be used as direct flow scope of the
-   *     next to activate element in flowScopes
-   * @param flowScopes the elements to activate, these are flow scopes of the main element that
-   *     we're trying to activate, instances may or may not yet exist of these elements
+   *     next to poll subprocess from subprocesses
+   * @param subprocesses the elements to activate, these are ancestors of the element targeted for
+   *     activation, instances may or may not yet exist of these elements
    * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
-   *     selection, determines whether new instances of flowScopes should be activated or that we
+   *     selection, determines whether new instances of subprocesses should be activated or that we
    *     can use existing ones
-   * @param createVariablesCallback a callback function to create variables in the activated flow
-   *     scopes
-   * @param activatedElementKeys collects the keys of the flow scopes encountered and/or activated
-   * @return the key of the last flow scope, to be used as direct flow scope of the main element
-   *     that we're trying to activate
+   * @param createVariablesCallback a callback function to create variables in the activated
+   *     subprocesses, and the selected instances
+   * @param activatedElementKeys collects the keys of the subprocesses encountered and/or activated
+   * @return the key of the last subprocess, to be used as direct flow scope of the element targeted
+   *     for activation
    */
-  private long activateFlowScopes(
+  private long activateAncestralSubprocesses(
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
-      final Deque<ExecutableFlowElement> flowScopes,
+      final Deque<ExecutableFlowElement> subprocesses,
       final long ancestorScopeKey,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback,
       final ActivatedElementKeys activatedElementKeys) {
 
-    if (flowScopes.isEmpty()) {
+    if (subprocesses.isEmpty()) {
       return flowScopeKey;
     }
-    final var flowScope = flowScopes.poll();
+    final var nextSubprocess = subprocesses.poll();
 
     final var bpmnProcessId = processInstanceRecord.getBpmnProcessId();
-    final Optional<Long> flowScopeInstanceKey =
-        findScopeKey(bpmnProcessId, flowScopeKey, ancestorScopeKey, flowScope);
+    final Optional<Long> subprocessKey =
+        findReusableSubprocessInstanceKey(
+            bpmnProcessId, nextSubprocess, flowScopeKey, ancestorScopeKey);
 
     final long activatedInstanceKey;
-    if (flowScopeInstanceKey.isPresent()) {
-      activatedInstanceKey = flowScopeInstanceKey.get();
-      createVariablesCallback.accept(flowScope.getId(), activatedInstanceKey);
+    if (subprocessKey.isPresent()) {
+      activatedInstanceKey = subprocessKey.get();
+      createVariablesCallback.accept(nextSubprocess.getId(), activatedInstanceKey);
     } else {
       // no subprocess instance found, let's create a new one
       activatedInstanceKey =
           activateFlowScope(
-              processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
+              processInstanceRecord, flowScopeKey, nextSubprocess, createVariablesCallback);
     }
 
     activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
 
-    return activateFlowScopes(
+    return activateAncestralSubprocesses(
         processInstanceRecord,
         activatedInstanceKey,
-        flowScopes,
+        subprocesses,
         ancestorScopeKey,
         createVariablesCallback,
         activatedElementKeys);
   }
 
   /**
-   * This method finds the instance that should be used as the flow scope of the next recursion of
-   * {@link #activateFlowScopes(ProcessInstanceRecord, long, Deque, long, BiConsumer,
-   * ActivatedElementKeys)}.
+   * This method tries to find the instance of the subprocess that should be used as the flow scope
+   * of the next recursion of {@link #activateAncestralSubprocesses(ProcessInstanceRecord, long,
+   * Deque, long, BiConsumer, ActivatedElementKeys)}.
    *
-   * <p>If a new instance should be created, it simply doesn't find the instance.
+   * <p>This method works by looking up element instances of the specific subprocess, and then
+   * considers whether we can use one of the instances that are found, or whether a new instance
+   * should be created instead.
+   *
+   * <p>If a new instance should be created, it returns an empty optional.
    *
    * @param bpmnProcessId the id of the process
+   * @param subprocess the specific subprocess that we hope to find an instance of
    * @param flowScopeKey the key of the flow scope instance whose children are the only instances
    *     considered
    * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
    *     selection, determines whether we may consider existing instances, or should ignore them
-   * @param flowScope the specific model element that we hope to find an instance of
    * @return optionally the key of the instance it found, otherwise an empty optional.
    */
-  private Optional<Long> findScopeKey(
+  private Optional<Long> findReusableSubprocessInstanceKey(
       final String bpmnProcessId,
+      final ExecutableFlowElement subprocess,
       final long flowScopeKey,
-      final long ancestorScopeKey,
-      final ExecutableFlowElement flowScope) {
-    final List<ElementInstance> elementInstancesOfScope =
-        findElementInstances(flowScope, flowScopeKey);
+      final long ancestorScopeKey) {
+    final List<ElementInstance> subprocessInstances =
+        findElementInstances(subprocess, flowScopeKey);
 
-    if (elementInstancesOfScope.isEmpty()) {
-      // there is no active instance of this flow scope
+    if (subprocessInstances.isEmpty()) {
+      // there is no active instance of this subprocess
       return Optional.empty();
     }
 
-    if (elementInstancesOfScope.size() == 1) {
-      // there is an active instance of this flow scope
-      final var elementInstance = elementInstancesOfScope.get(0);
+    if (subprocessInstances.size() == 1) {
+      // there is an active instance of this subprocess
+      final var subprocessInstance = subprocessInstances.get(0);
 
       if (isAncestorSelected(ancestorScopeKey)
-          && isAncestorOfElementInstance(ancestorScopeKey, elementInstance)) {
-        // the active instance is a descendant of the selected ancestor
-        // - don't use this instance as the flow scope
+          && isAncestorOfElementInstance(ancestorScopeKey, subprocessInstance)) {
+        // the subprocess instance is a descendant of the selected ancestor
+        // - don't reuse this instance
         return Optional.empty();
       }
 
-      // no ancestor selection used, or the active instance isn't a descendant of it.
-      // most often this means that the active instance IS the selected ancestor
-      // - no need to create a new instance; we can use this one
-      return Optional.of(elementInstance.getKey());
+      // no ancestor selection used, or the subprocess instance isn't a descendant of it.
+      // most often this means that the subprocess instance IS the selected ancestor
+      // - no need to create a new instance; we can reuse this one
+      return Optional.of(subprocessInstance.getKey());
     }
 
-    // there are multiple active instances of this flow scope
+    // there are multiple active instances of this subprocess
     // - try to use ancestor selection
     if (!isAncestorSelected(ancestorScopeKey)) {
       // no ancestor selected
       // - reject by throwing an exception
-      final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-      throw new MultipleFlowScopeInstancesFoundException(flowScopeId, bpmnProcessId);
+      final var subprocessId = BufferUtil.bufferAsString(subprocess.getId());
+      throw new MultipleFlowScopeInstancesFoundException(subprocessId, bpmnProcessId);
     }
 
-    if (elementInstancesOfScope.stream()
-        .anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
-      // one of the existing element instances of 'flow scope' is the selected ancestor
-      // - we can use the selected instance
+    if (subprocessInstances.stream().anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
+      // one of the existing subprocess instances is the selected ancestor
+      // - we can reuse the selected instance
       return Optional.of(ancestorScopeKey);
     }
 
-    if (elementInstancesOfScope.stream()
+    if (subprocessInstances.stream()
         .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
-      // the selected ancestor is the (in)direct flow scope one of the element instances
-      // - we need to create a new instance of 'flow scope' inside the selected ancestor instance
+      // the selected ancestor is the (in)direct flow scope one of the subprocess instances
+      // - don't reuse any of these instances
       return Optional.empty();
     }
 
     final var selectedAncestor = elementInstanceState.getInstance(ancestorScopeKey);
-    final var activatedInstance =
-        elementInstancesOfScope.stream()
+    final var ancestorOfAncestorInstance =
+        subprocessInstances.stream()
             .filter(instance -> isAncestorOfElementInstance(instance.getKey(), selectedAncestor))
             .findAny();
-    if (activatedInstance.isPresent()) {
-      // we found an instance of a flow scope that is an ancestor of the selected ancestor
-      // - we can use that instance directly
-      return Optional.of(activatedInstance.get().getKey());
+    if (ancestorOfAncestorInstance.isPresent()) {
+      // we found a subprocess instance that is an ancestor of the selected ancestor
+      // - we can reuse that instance
+      return Optional.of(ancestorOfAncestorInstance.get().getKey());
     }
 
-    // the selected ancestor is not one of the existing element instances, nor an ancestor of them,
-    // nor a descendant of them. It might be a completely unrelated element instance, or a
+    // the selected ancestor is not one of the existing subprocesses instances, nor an ancestor of
+    // them, nor a descendant of them. It might be a completely unrelated element instance, or a
     // non-existing element instance. We cannot decide what to do here.
     // - reject by throwing an exception
-    final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-    throw new MultipleFlowScopeInstancesFoundException(flowScopeId, bpmnProcessId);
+    final var subprocessId = BufferUtil.bufferAsString(subprocess.getId());
+    throw new MultipleFlowScopeInstancesFoundException(subprocessId, bpmnProcessId);
   }
 
   private boolean isAncestorOfElementInstance(
