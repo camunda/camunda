@@ -9,23 +9,23 @@ package io.camunda.zeebe.gateway.admin.backup;
 
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
-import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.management.BackupListResponseDecoder;
 import io.camunda.zeebe.protocol.management.BackupRequestType;
-import io.camunda.zeebe.protocol.management.BackupStatusResponseDecoder;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class BackupStatusRequest extends BrokerRequest<BackupStatusResponse> {
+public class BackupListRequest extends BrokerRequest<BackupListResponse> {
 
   protected final BackupRequest request = new BackupRequest();
-  protected final BackupStatusResponse response = new BackupStatusResponse();
+  protected final BackupListResponse response = new BackupListResponse();
 
-  public BackupStatusRequest() {
-    super(BackupStatusResponseDecoder.SCHEMA_ID, BackupStatusResponseDecoder.TEMPLATE_ID);
-    request.setType(BackupRequestType.QUERY_STATUS);
+  public BackupListRequest() {
+    super(BackupListResponseDecoder.SCHEMA_ID, BackupListResponseDecoder.TEMPLATE_ID);
+    request.setType(BackupRequestType.LIST);
   }
 
   public long getBackupId() {
@@ -72,18 +72,18 @@ public class BackupStatusRequest extends BrokerRequest<BackupStatusResponse> {
   }
 
   @Override
-  protected BrokerResponse<BackupStatusResponse> readResponse() {
-    return new BrokerResponse<>(response, response.getPartitionId(), -1);
+  protected BrokerResponse<BackupListResponse> readResponse() {
+    return new BrokerResponse<>(response, getPartitionId(), -1);
   }
 
   @Override
-  protected BackupStatusResponse toResponseDto(final DirectBuffer buffer) {
+  protected BackupListResponse toResponseDto(final DirectBuffer buffer) {
     return response;
   }
 
   @Override
   public String getType() {
-    return "Backup#status";
+    return "Backup#list";
   }
 
   @Override

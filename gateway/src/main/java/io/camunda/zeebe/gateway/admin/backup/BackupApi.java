@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
+import java.util.List;
 import java.util.concurrent.CompletionStage;
 
 public interface BackupApi {
@@ -34,4 +35,9 @@ public interface BackupApi {
    * @return the status of the backup
    */
   CompletionStage<BackupStatus> getStatus(long backupId);
+
+  /**
+   * @return a list of available backups
+   */
+  CompletionStage<List<BackupStatus>> listBackups();
 }

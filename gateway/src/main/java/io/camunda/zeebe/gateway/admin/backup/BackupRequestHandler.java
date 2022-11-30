@@ -13,12 +13,15 @@ import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public final class BackupRequestHandler implements BackupApi {
@@ -56,8 +59,82 @@ public final class BackupRequestHandler implements BackupApi {
                       .toList();
 
               return CompletableFuture.allOf(statusesReceived.toArray(CompletableFuture[]::new))
-                  .thenApply(ignore -> aggregatePartitionStatus(backupId, statusesReceived));
+                  .thenApply(
+                      ignore -> {
+                        final var partitionStatuses =
+                            statusesReceived.stream()
+                                .map(response -> response.join().getResponse())
+                                .map(PartitionBackupStatus::from)
+                                .toList();
+
+                        return aggregatePartitionStatus(backupId, partitionStatuses);
+                      });
             });
+  }
+
+  @Override
+  public CompletionStage<List<BackupStatus>> listBackups() {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology -> {
+              final var backupsReceived =
+                  topology.getPartitions().stream()
+                      .map(this::getListRequest)
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(backupsReceived.toArray(CompletableFuture[]::new))
+                  .thenApply(ignore -> aggregateBackupList(backupsReceived));
+            });
+  }
+
+  private List<BackupStatus> aggregateBackupList(
+      final List<CompletableFuture<BrokerResponse<BackupListResponse>>> backupsReceived) {
+    // backupId -> [partitiondId -> partitionBackupStatus]
+    final var statusByBackupAndPartition =
+        backupsReceived.stream()
+            .map(f -> f.join().getResponse())
+            .flatMap(backupListResponse -> backupListResponse.getBackups().stream())
+            .collect(
+                Collectors.groupingBy(
+                    BackupListResponse.BackupStatus::backupId,
+                    Collectors.toMap(
+                        BackupListResponse.BackupStatus::partitionId, Function.identity())));
+
+    final var partitions = topologyManager.getTopology().getPartitions();
+    // calculate status of each backup from the status of each partition
+    return statusByBackupAndPartition.entrySet().stream()
+        .map(
+            entry -> {
+              final var backupId = entry.getKey();
+              final var statusByPartition = entry.getValue();
+              return aggregatePartitionStatus(
+                  backupId,
+                  partitions.stream()
+                      .map(
+                          partitionId -> {
+                            if (!statusByPartition.containsKey(partitionId)) {
+                              // If a partition does not have this backup, it is not included in the
+                              // response received. So when aggregating backup status, an incomplete
+                              // backup can be determined as completed. To prevent that replace a
+                              // missing status with all DOES_NOT_EXIST.
+                              return PartitionBackupStatus.notExistingStatus(partitionId);
+                            }
+                            final var status = statusByPartition.get(partitionId);
+                            return new PartitionBackupStatus(
+                                status.partitionId(),
+                                status.status(),
+                                Optional.ofNullable(status.failureReason()),
+                                Optional.ofNullable(status.createdAt()),
+                                Optional.empty(),
+                                Optional.empty(),
+                                OptionalLong.empty(),
+                                OptionalInt.empty(),
+                                Optional.ofNullable(status.brokerVersion()));
+                          })
+                      .toList());
+            })
+        .toList();
   }
 
   private CompletionStage<BrokerClusterState> checkTopologyComplete() {
@@ -79,14 +156,7 @@ public final class BackupRequestHandler implements BackupApi {
   }
 
   private BackupStatus aggregatePartitionStatus(
-      final long backupId,
-      final List<CompletableFuture<BrokerResponse<BackupStatusResponse>>> completedFutures) {
-
-    final var partitionStatuses =
-        completedFutures.stream()
-            .map(response -> response.join().getResponse())
-            .map(PartitionBackupStatus::from)
-            .toList();
+      final long backupId, final List<PartitionBackupStatus> partitionStatuses) {
 
     final var combinedStatus = getAggregatedStatus(partitionStatuses);
 
@@ -151,6 +221,12 @@ public final class BackupRequestHandler implements BackupApi {
       final long backupId, final int partitionId) {
     final var request = new BrokerBackupRequest();
     request.setBackupId(backupId);
+    request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private BackupListRequest getListRequest(final Integer partitionId) {
+    final var request = new BackupListRequest();
     request.setPartitionId(partitionId);
     return request;
   }

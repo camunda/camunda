@@ -29,7 +29,7 @@ public record PartitionBackupStatus(
     final var status = response.getStatus();
     return switch (status) {
       case FAILED -> failedStatus(response);
-      case DOES_NOT_EXIST -> notExistingStatus(response);
+      case DOES_NOT_EXIST -> notExistingStatus(response.getPartitionId());
       case IN_PROGRESS, COMPLETED -> validStatus(response);
       default -> throw new IllegalArgumentException("Unknown backup status %s".formatted(status));
     };
@@ -50,9 +50,9 @@ public record PartitionBackupStatus(
         Optional.ofNullable(response.getBrokerVersion()));
   }
 
-  private static PartitionBackupStatus notExistingStatus(final BackupStatusResponse response) {
+  static PartitionBackupStatus notExistingStatus(final int partitionId) {
     return new PartitionBackupStatus(
-        response.getPartitionId(),
+        partitionId,
         BackupStatusCode.DOES_NOT_EXIST,
         Optional.empty(),
         Optional.empty(),

@@ -11,7 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Test;
@@ -150,5 +154,107 @@ public class BackupRequestHandlerTest extends GatewayTest {
         .failsWithin(Duration.ofMillis(500))
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(BrokerErrorException.class);
+  }
+
+  @Test
+  public void shouldListAllBackups() {
+    // given
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request ->
+            new BrokerResponse<>(
+                new BackupListResponse(
+                    List.of(
+                        getCompletedBackup(1, request.getPartitionId()),
+                        getCompletedBackup(2, request.getPartitionId())))));
+
+    // when
+    final var future = requestHandler.listBackups();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups)
+        .hasSize(2)
+        .extracting(BackupStatus::backupId)
+        .containsExactlyInAnyOrder(1L, 2L);
+
+    assertThat(backups)
+        .extracting(BackupStatus::status)
+        .containsExactly(State.COMPLETED, State.COMPLETED);
+  }
+
+  @Test
+  public void shouldListAllBackupsWhenIncomplete() {
+    // given
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request -> {
+          final List<BackupListResponse.BackupStatus> backups;
+          if (request.getPartitionId() == 1) {
+            backups = List.of(getCompletedBackup(2, request.getPartitionId()));
+          } else {
+            backups =
+                List.of(
+                    getCompletedBackup(1, request.getPartitionId()),
+                    getCompletedBackup(2, request.getPartitionId()));
+          }
+          return new BrokerResponse<>(new BackupListResponse(backups));
+        });
+
+    // when
+    final var future = requestHandler.listBackups();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(1L, 2L);
+
+    assertThat(backups)
+        .extracting(BackupStatus::status)
+        .containsExactly(State.INCOMPLETE, State.COMPLETED);
+  }
+
+  @Test
+  public void shouldListAllBackupsWhenOneIsInProgress() {
+    // given
+    brokerClient.registerHandler(
+        BackupListRequest.class,
+        request -> {
+          final List<BackupListResponse.BackupStatus> backups;
+          if (request.getPartitionId() == 1) {
+            backups = List.of(getCompletedBackup(1, 1), getInProgressBackup(2, 1));
+          } else {
+            backups =
+                List.of(
+                    getCompletedBackup(1, request.getPartitionId()),
+                    getCompletedBackup(2, request.getPartitionId()));
+          }
+          return new BrokerResponse<>(new BackupListResponse(backups));
+        });
+
+    // when
+    final var future = requestHandler.listBackups();
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+    final var backups = future.toCompletableFuture().join();
+    assertThat(backups).hasSize(2).extracting(BackupStatus::backupId).containsExactly(1L, 2L);
+
+    assertThat(backups)
+        .extracting(BackupStatus::status)
+        .containsExactly(State.COMPLETED, State.IN_PROGRESS);
+  }
+
+  private static BackupListResponse.BackupStatus getCompletedBackup(
+      final int backupId, final int partitionId) {
+    return new BackupListResponse.BackupStatus(
+        backupId, partitionId, BackupStatusCode.COMPLETED, null, "test", "now");
+  }
+
+  private static BackupListResponse.BackupStatus getInProgressBackup(
+      final int backupId, final int partitionId) {
+    return new BackupListResponse.BackupStatus(
+        backupId, partitionId, BackupStatusCode.IN_PROGRESS, null, "test", "now");
   }
 }

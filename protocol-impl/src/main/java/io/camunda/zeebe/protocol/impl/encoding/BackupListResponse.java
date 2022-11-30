@@ -34,6 +34,10 @@ public class BackupListResponse implements BufferReader, BufferWriter {
   // Consists of backup statuses with encoded string
   private List<InternalBackupStatus> internalBackups;
 
+  public BackupListResponse() {
+    // Need an empty constructor to be used in the gateway
+  }
+
   public BackupListResponse(final List<BackupStatus> statuses) {
     internalBackups = statuses.stream().map(InternalBackupStatus::new).toList();
   }
