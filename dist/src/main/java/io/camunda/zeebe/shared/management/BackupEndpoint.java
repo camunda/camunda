@@ -69,11 +69,7 @@ final class BackupEndpoint {
       if (status.status() == State.DOES_NOT_EXIST) {
         return doestNotExistResponse(status.backupId());
       }
-      final BackupInfo backupInfo =
-          new BackupInfo().backupId(status.backupId()).state(getBackupStateCode(status.status()));
-      status.failureReason().ifPresent(backupInfo::setFailureReason);
-      final var details = status.partitions().stream().map(this::toPartitionBackupInfo).toList();
-      backupInfo.setDetails(details);
+      final BackupInfo backupInfo = getBackupInfoFromBackupStatus(status);
       return new WebEndpointResponse<>(backupInfo);
     } catch (final CompletionException e) {
       return new WebEndpointResponse<>(
@@ -83,6 +79,31 @@ final class BackupEndpoint {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
+  }
+
+  @ReadOperation
+  public WebEndpointResponse<?> list() {
+    try {
+      final var backups = api.listBackups().toCompletableFuture().join();
+      final var response = backups.stream().map(this::getBackupInfoFromBackupStatus).toList();
+      return new WebEndpointResponse<>(response);
+    } catch (final CompletionException e) {
+      return new WebEndpointResponse<>(
+          new Error().message(e.getCause().getMessage()),
+          WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    } catch (final Exception e) {
+      return new WebEndpointResponse<>(
+          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  private BackupInfo getBackupInfoFromBackupStatus(final BackupStatus status) {
+    final BackupInfo backupInfo =
+        new BackupInfo().backupId(status.backupId()).state(getBackupStateCode(status.status()));
+    status.failureReason().ifPresent(backupInfo::setFailureReason);
+    final var details = status.partitions().stream().map(this::toPartitionBackupInfo).toList();
+    backupInfo.setDetails(details);
+    return backupInfo;
   }
 
   private static WebEndpointResponse<Error> doestNotExistResponse(final long backupId) {
