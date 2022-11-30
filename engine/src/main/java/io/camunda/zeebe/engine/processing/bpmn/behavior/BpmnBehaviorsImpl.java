@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
-import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -49,7 +48,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MutableZeebeState zeebeState,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics,
+      final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker) {
@@ -78,13 +77,12 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(),
+            decisionBehavior,
             zeebeState,
             eventTriggerBehavior,
             writers.state(),
             zeebeState.getKeyGenerator(),
-            expressionBehavior,
-            processEngineMetrics);
+            expressionBehavior);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
 

@@ -9,9 +9,11 @@ package io.camunda.zeebe.engine.processing;
 
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
+import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
+import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
@@ -69,6 +71,10 @@ public final class EngineProcessors {
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
     final var sideEffectQueue = new SideEffectQueue();
 
+    final var decisionBehavior = new DecisionBehavior(
+        DecisionEngineFactory.createDecisionEngine(),
+        zeebeState,
+        processEngineMetrics);
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             zeebeState,
@@ -77,7 +83,7 @@ public final class EngineProcessors {
             partitionsCount,
             timerChecker,
             jobMetrics,
-            processEngineMetrics,
+            decisionBehavior,
             sideEffectQueue);
 
     addDeploymentRelatedProcessorAndServices(
@@ -121,14 +127,14 @@ public final class EngineProcessors {
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics,
+      final DecisionBehavior decisionBehavior,
       final SideEffectQueue sideEffectQueue) {
     return new BpmnBehaviorsImpl(
         sideEffectQueue,
         zeebeState,
         writers,
         jobMetrics,
-        processEngineMetrics,
+        decisionBehavior,
         subscriptionCommandSender,
         partitionsCount,
         timerChecker);
