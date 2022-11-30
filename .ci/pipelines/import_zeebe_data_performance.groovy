@@ -96,10 +96,10 @@ spec:
               resource: limits.cpu
       resources:
         limits:
-          cpu: 3
+          cpu: 2
           memory: 8Gi
         requests:
-          cpu: 3
+          cpu: 2
           memory: 8Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch:${params.ES_VERSION}
@@ -149,10 +149,10 @@ spec:
           protocol: TCP
       resources:
         limits:
-          cpu: 4
+          cpu: 3
           memory: 16Gi
         requests:
-          cpu: 4
+          cpu: 3
           memory: 16Gi
   volumes:
   - name: configdir
