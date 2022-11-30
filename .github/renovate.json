@@ -15,6 +15,18 @@
   "enabledManagers": [
     "dockerfile"
   ],
+  "packageRules": [
+    {
+      "matchBaseBranches": [
+        "/^stable\/.*"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    }
+  ],
   "dockerfile": {
     "ignorePaths": [
       "benchmarks/**",
