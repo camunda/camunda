@@ -13,7 +13,6 @@ updates:
       include: "scope"
     ignore:
       - dependency-name: "org.camunda.bpm:camunda-engine"
-      - dependency-name: "com.h2database:h2"
       - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
     reviewers:

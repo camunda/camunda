@@ -76,8 +76,7 @@
     <sonar.junit.reportPaths>
       ${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/
     </sonar.junit.reportPaths>
-    <!-- update blocked by https://jira.camunda.com/browse/CAM-14205 -->
-    <h2.version>2.0.202</h2.version>
+    <h2.version>2.1.214</h2.version>
   </properties>
 
   <dependencyManagement>
