@@ -59,14 +59,12 @@ public class DecisionBehavior {
 
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
-    return Either.<Failure, PersistedDecision>right(persistedDecision)
-        .flatMap(this::findDrgByDecision)
-        .mapLeft(
-            failure ->
-                new Failure(
-                    "Expected to evaluate decision '%s', but %s"
-                        .formatted(persistedDecision.getDecisionId(), failure.getMessage())))
-        .flatMap(drg -> parseDrg(drg.getResource()));
+    return findDrgByDecision(persistedDecision).flatMap(drg -> parseDrg(drg.getResource()));
+  }
+
+  public Failure formatDecisionLookupFailure(final Failure failure, final String decisionId) {
+    return new Failure(
+        "Expected to evaluate decision '%s', but %s".formatted(decisionId, failure.getMessage()));
   }
 
   public DecisionEvaluationResult evaluateDecisionInDrg(

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
+import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -71,35 +72,42 @@ public final class BpmnDecisionBehavior {
     }
 
     final var decisionId = decisionIdOrFailure.get();
-    final var variables = variableState.getVariablesAsDocument(scopeKey);
     final var decisionOrFailure = decisionBehavior.findDecisionById(decisionId);
+    final Either<Failure, ParsedDecisionRequirementsGraph> drgOrFailure =
+        decisionOrFailure.flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision));
+    if (drgOrFailure.isLeft()) {
+      // any failures above have the same error type and the correct scope
+      final Failure formattedFailure =
+          decisionBehavior.formatDecisionLookupFailure(drgOrFailure.getLeft(), decisionId);
+      // decisions invoked by business rule tasks have a different error type
+      return Either.left(
+          new Failure(formattedFailure.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey));
+    }
+
+    final var variables = variableState.getVariablesAsDocument(scopeKey);
     final var resultOrFailure =
-        decisionOrFailure
-            .flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision))
-            // any failures above have the same error type and the correct scope
-            .mapLeft(f -> new Failure(f.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey))
-            .flatMap(
-                drg -> {
-                  final var decision = decisionOrFailure.get();
-                  final var evaluationResult =
-                      decisionBehavior.evaluateDecisionInDrg(drg, decisionId, variables);
+        drgOrFailure.flatMap(
+            drg -> {
+              final var decision = decisionOrFailure.get();
+              final var evaluationResult =
+                  decisionBehavior.evaluateDecisionInDrg(drg, decisionId, variables);
 
-                  final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> eventTuple =
-                      decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
-                  writeDecisionEvaluationEvent(eventTuple, context);
+              final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> eventTuple =
+                  decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
+              writeDecisionEvaluationEvent(eventTuple, context);
 
-                  decisionBehavior.updateDecisionMetrics(evaluationResult);
+              decisionBehavior.updateDecisionMetrics(evaluationResult);
 
-                  if (evaluationResult.isFailure()) {
-                    return Either.left(
-                        new Failure(
-                            evaluationResult.getFailureMessage(),
-                            ErrorType.DECISION_EVALUATION_ERROR,
-                            scopeKey));
-                  } else {
-                    return Either.right(evaluationResult);
-                  }
-                });
+              if (evaluationResult.isFailure()) {
+                return Either.left(
+                    new Failure(
+                        evaluationResult.getFailureMessage(),
+                        ErrorType.DECISION_EVALUATION_ERROR,
+                        scopeKey));
+              } else {
+                return Either.right(evaluationResult);
+              }
+            });
 
     resultOrFailure.ifRight(
         result -> {
