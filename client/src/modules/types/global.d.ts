@@ -33,6 +33,7 @@ export declare global {
     Osano?: {
       cm?: {
         analytics: boolean;
+        showDrawer: (arg: string) => void;
       };
     };
     Appcues?: Appcues;

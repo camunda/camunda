@@ -28,7 +28,7 @@ type State = {
   displayName: string | null;
   canLogout: boolean;
   userId: string | null;
-  salesPlanType: string | null;
+  salesPlanType: UserDto['salesPlanType'];
   roles: ReadonlyArray<string> | null;
   c8Links: UserDto['c8Links'];
 };

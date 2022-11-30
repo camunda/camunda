@@ -114,4 +114,86 @@ describe('User info', () => {
 
     await waitForElementToBeRemoved(() => screen.getByText('Franz Kafka'));
   });
+
+  it('should render links', async () => {
+    const originalWindowOpen = window.open;
+    const mockOpenFn = jest.fn();
+    window.open = mockOpenFn;
+
+    mockGetUser().withSuccess(mockUser);
+
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    authenticationStore.authenticate();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /settings/i,
+      })
+    );
+
+    expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Terms of use'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
+      '_blank'
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Privacy policy'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://camunda.com/legal/privacy/',
+      '_blank'
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Imprint'}));
+    expect(mockOpenFn).toHaveBeenLastCalledWith(
+      'https://camunda.com/legal/imprint/',
+      '_blank'
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Cookie preferences'})
+    ).not.toBeInTheDocument();
+
+    window.open = originalWindowOpen;
+  });
+
+  it('should cookie preferences with correct link', async () => {
+    const originalWindowOpen = window.open;
+    const mockOpenFn = jest.fn();
+    const mockShowDrawer = jest.fn();
+
+    window.open = mockOpenFn;
+    window.Osano = {
+      cm: {analytics: false, showDrawer: mockShowDrawer},
+    };
+
+    mockGetUser().withSuccess(mockUser);
+
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    authenticationStore.authenticate();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /settings/i,
+      })
+    );
+
+    expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Cookie preferences'}));
+
+    expect(mockShowDrawer).toHaveBeenLastCalledWith(
+      'osano-cm-dom-info-dialog-open'
+    );
+
+    window.open = originalWindowOpen;
+    window.Osano = undefined;
+  });
 });

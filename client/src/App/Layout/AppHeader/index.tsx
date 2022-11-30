@@ -122,6 +122,54 @@ const AppHeader: React.FC = observer(() => {
             : {}),
         })),
       }}
+      infoSideBar={{
+        type: 'info',
+        isOpen: false,
+        ariaLabel: 'Info',
+        elements: [
+          {
+            key: 'docs',
+            label: 'Documentation',
+            onClick: () => {
+              window.open('https://docs.camunda.io/', '_blank');
+            },
+          },
+          {
+            key: 'academy',
+            label: 'Camunda Academy',
+            onClick: () => {
+              window.open('https://academy.camunda.com/', '_blank');
+            },
+          },
+          {
+            key: 'feedbackAndSupport',
+            label: 'Feedback and Support',
+            onClick: () => {
+              if (
+                salesPlanType === 'paid-cc' ||
+                salesPlanType === 'enterprise'
+              ) {
+                window.open(
+                  'https://jira.camunda.com/projects/SUPPORT/queues',
+                  '_blank'
+                );
+              } else {
+                window.open('https://forum.camunda.io/', '_blank');
+              }
+            },
+          },
+          {
+            key: 'slackCommunityChannel',
+            label: 'Slack Community Channel',
+            onClick: () => {
+              window.open(
+                'https://camunda-slack-invite.herokuapp.com/',
+                '_blank'
+              );
+            },
+          },
+        ],
+      }}
       userSideBar={{
         type: 'user',
         ariaLabel: 'Settings',
@@ -140,6 +188,45 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         },
+        elements: [
+          ...(window.Osano?.cm !== undefined
+            ? [
+                {
+                  key: 'cookie',
+                  label: 'Cookie preferences',
+                  onClick: () => {
+                    window.Osano?.cm?.showDrawer(
+                      'osano-cm-dom-info-dialog-open'
+                    );
+                  },
+                },
+              ]
+            : []),
+          {
+            key: 'terms',
+            label: 'Terms of use',
+            onClick: () => {
+              window.open(
+                'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
+                '_blank'
+              );
+            },
+          },
+          {
+            key: 'privacy',
+            label: 'Privacy policy',
+            onClick: () => {
+              window.open('https://camunda.com/legal/privacy/', '_blank');
+            },
+          },
+          {
+            key: 'imprint',
+            label: 'Imprint',
+            onClick: () => {
+              window.open('https://camunda.com/legal/imprint/', '_blank');
+            },
+          },
+        ],
         bottomElements: canLogout
           ? [
               {

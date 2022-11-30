@@ -9,13 +9,23 @@ import {requestAndParse} from 'modules/request';
 
 type PermissionsDto = Array<'read' | 'write'>;
 
+type SalesPlanType =
+  | 'paid'
+  | 'paid-cc'
+  | 'enterprise'
+  | 'trial'
+  | 'free'
+  | 'free-to-paid-request'
+  | 'in-negotiation'
+  | 'internal';
+
 type UserDto = {
   userId: string;
   displayName: string | null;
   canLogout: boolean;
   permissions?: PermissionsDto;
   roles: ReadonlyArray<string> | null;
-  salesPlanType: string | null;
+  salesPlanType: SalesPlanType | null;
   c8Links: {
     [key in
       | 'console'
