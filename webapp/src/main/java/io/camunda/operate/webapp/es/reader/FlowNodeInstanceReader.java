@@ -951,6 +951,7 @@ public class FlowNodeInstanceReader extends AbstractReader {
           .source(new SearchSourceBuilder()
               .query(constantScoreQuery(termQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceId)))
               .aggregation(terms(FLOW_NODE_ID_AGG).field(FLOW_NODE_ID)
+                  .size(TERMS_AGG_SIZE)
                   .subAggregation(
                     filter(COUNT_INCIDENT, termQuery(INCIDENT, true)))
                   .subAggregation(

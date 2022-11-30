@@ -8,6 +8,10 @@ package io.camunda.operate.es;
 
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.FlowNodeStatisticsDto;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -59,7 +63,46 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     assertStatistic(flowNodeStatistics, "StartEvent_1", 1, 0, 0, 0);
     assertStatistic(flowNodeStatistics, "task", 0, 0, 2, 0);
   }
-  @Ignore("Build fails often in CI")
+
+  @Test
+  public void testFlowNodeStatisticsForManyFlowNodes() throws Exception {
+    // given
+    String startEvent = "start";
+    String endEvent = "end";
+    String jobType = "taskA";
+    ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
+    AbstractFlowNodeBuilder flowNodeBuilder = processBuilder.startEvent(startEvent);
+    for (int i = 0; i < 20; i++) {
+      flowNodeBuilder = flowNodeBuilder.serviceTask("task" + i).zeebeJobType(jobType);
+    }
+    BpmnModelInstance modelInstance = flowNodeBuilder
+        .endEvent(endEvent)
+        .done();
+    //complete all tasks and the whole instance
+    tester.deployProcess(modelInstance, "20task.bpmn")
+        .waitUntil().processIsDeployed()
+        .then()
+        .startProcessInstance("process");
+    for (int i = 0; i < 20; i++) {
+      tester.completeTask("task" + i, jobType);
+    }
+    final Long processInstanceKey = tester.waitUntil()
+        .processInstanceIsCompleted()
+        .getProcessInstanceKey();
+
+    //when
+    List<FlowNodeStatisticsDto> flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
+
+    //then
+    assertThat(flowNodeStatistics.size()).as("FlowNodeStatistics size should be 22").isEqualTo(22);
+    assertStatistic(flowNodeStatistics, startEvent, 1, 0, 0, 0);
+    for (int i = 0; i < 20; i++) {
+      assertStatistic(flowNodeStatistics, "task" + i, 1, 0, 0, 0);
+    }
+    assertStatistic(flowNodeStatistics, endEvent, 1, 0, 0, 0);
+
+  }
+
   @Test
   public void testFlowNodeStatisticsForAComplexProcessInstance() throws Exception {
     // given
@@ -70,7 +113,8 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
         .waitUntil().processInstanceIsStarted()
         .and().waitUntil()
           .flowNodeIsCompleted("startEvent")
-          .and().flowNodeIsActive("upperTask")
+        //no input var is provided, upperTask will fail
+          .and().flowNodeIsActive("upperTask").incidentsInAnyInstanceAreActive(3)
           .and().flowNodeIsActive("alwaysFailingTask")
         .then()
         .getProcessInstanceKey();
@@ -78,7 +122,7 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     List<FlowNodeStatisticsDto> flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
     assertThat(flowNodeStatistics.size()).as("flowNodeStatistics size should be 6").isEqualTo(6);
     assertStatistic(flowNodeStatistics, "startEvent", 1, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "upperTask", 0, 1, 0, 0);
+    assertStatistic(flowNodeStatistics, "upperTask", 0, 0, 0, 1);
     assertStatistic(flowNodeStatistics, "alwaysFailingTask", 0, 1, 0, 0);
 
     // when
@@ -93,17 +137,17 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     assertStatistic(flowNodeStatistics, "upperTask", 0, 0, 0, 1);
     assertStatistic(flowNodeStatistics, "alwaysFailingTask", 0, 0, 1, 0);
     // and when
-    tester.activateFlowNode("upperTask")
+    tester.activateFlowNode("alwaysFailingTask")
         .and()
-        .activateFlowNode("upperTask")
+        .activateFlowNode("alwaysFailingTask")
         .waitUntil()
-        .flowNodesAreActive("upperTask", 3);
+        .flowNodesExist("alwaysFailingTask", 3);
     flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
     // then
     assertThat(flowNodeStatistics.size()).as("flowNodeStatistics size should be 6").isEqualTo(6);
     assertStatistic(flowNodeStatistics, "startEvent", 1, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "upperTask", 0, 2, 0, 1);
-    assertStatistic(flowNodeStatistics, "alwaysFailingTask", 0, 0, 1, 0);
+    assertStatistic(flowNodeStatistics, "upperTask", 0, 0, 0, 1);
+    assertStatistic(flowNodeStatistics, "alwaysFailingTask", 0, 2, 1, 0);
   }
 
   @Ignore("Build fails often in CI")

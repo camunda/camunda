@@ -428,6 +428,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       }
 
     }
+    if (version == 1) {
+      processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "timerProcess", null));
+    }
   }
 
   private void createBigProcess(int loopCardinality, int numberOfClients) {
@@ -455,6 +458,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   protected void deployVersion2() {
     super.deployVersion2();
 //    deploy processes v.2
+    ZeebeTestUtil.deployProcess(client, "develop/timerProcess_v_2.bpmn");
+
     ZeebeTestUtil.deployProcess(client, "develop/complexProcess_v_2.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "develop/eventBasedGatewayProcess_v_2.bpmn");
