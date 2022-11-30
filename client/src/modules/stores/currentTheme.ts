@@ -14,6 +14,7 @@ import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 type ThemeType = 'light' | 'dark' | 'system';
 type State = {
   selectedTheme: ThemeType;
+  systemPreference: 'light' | 'dark';
 };
 
 const STORAGE_KEY = 'theme';
@@ -30,6 +31,9 @@ const INITIAL_STATE: State = {
     : USE_NEW_APP_HEADER
     ? THEME_NAME.SYSTEM
     : THEME_NAME.LIGHT,
+  systemPreference: window.matchMedia?.('(prefers-color-scheme: dark)').matches
+    ? 'dark'
+    : 'light',
 };
 
 class CurrentTheme {
@@ -37,13 +41,16 @@ class CurrentTheme {
 
   constructor() {
     makeAutoObservable(this);
+    window
+      .matchMedia?.('(prefers-color-scheme: dark)')
+      .addEventListener('change', (event) => {
+        this.updateSystemPreference(event.matches ? 'dark' : 'light');
+      });
   }
 
   get theme() {
     if (this.state.selectedTheme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)')?.matches
-        ? 'dark'
-        : 'light';
+      return this.state.systemPreference;
     }
 
     return this.state.selectedTheme;
@@ -60,6 +67,10 @@ class CurrentTheme {
     storeStateLocally({
       [STORAGE_KEY]: theme,
     });
+  };
+
+  updateSystemPreference = (theme: 'light' | 'dark') => {
+    this.state.systemPreference = theme;
   };
 
   toggle = () => {
