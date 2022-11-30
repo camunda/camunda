@@ -286,4 +286,136 @@ final class BackupEndpointTest {
           Optional.empty());
     }
   }
+
+  @Nested
+  final class ListTest {
+    @Test
+    void shouldReturnErrorOnCompletionException() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var failure = new RuntimeException("failure");
+      doReturn(CompletableFuture.failedFuture(failure)).when(api).listBackups();
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.list();
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
+    }
+
+    @Test
+    void shouldReturnErrorOnException() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var failure = new RuntimeException("failure");
+      doThrow(failure).when(api).listBackups();
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.list();
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
+    }
+
+    @Test
+    void shouldReturnListOfBackups() throws JsonProcessingException {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var backup1 =
+          new BackupStatus(
+              1,
+              State.COMPLETED,
+              Optional.empty(),
+              List.of(createPartialPartitionStatus(BackupStatusCode.COMPLETED)));
+      final var backup2 =
+          new BackupStatus(
+              2,
+              State.IN_PROGRESS,
+              Optional.empty(),
+              List.of(createPartialPartitionStatus(BackupStatusCode.IN_PROGRESS)));
+      doReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)))
+          .when(api)
+          .listBackups();
+
+      final String expectedJson =
+          """
+          [
+            {
+               "backupId" : 1,
+               "state" : "COMPLETED",
+               "details": [
+                 {
+                   "partitionId": 1,
+                   "state": "COMPLETED",
+                   "createdAt": "2022-09-19T14:44:17.340409393Z",
+                   "brokerVersion": "8.0.6"
+                 }
+               ]
+             },
+             {
+               "backupId" : 2,
+               "state" : "IN_PROGRESS",
+               "details": [
+                 {
+                   "partitionId": 1,
+                   "state": "IN_PROGRESS",
+                   "createdAt": "2022-09-19T14:44:17.340409393Z",
+                   "brokerVersion": "8.0.6"
+                 }
+               ]
+             }
+           ]
+          """;
+      final ObjectMapper mapper = new ObjectMapper();
+      mapper.registerModule(new JavaTimeModule());
+      final List<BackupInfo> expectedResponse =
+          mapper.readValue(
+              expectedJson,
+              mapper.getTypeFactory().constructCollectionType(List.class, BackupInfo.class));
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.list();
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.list(BackupInfo.class))
+          .containsExactlyInAnyOrderElementsOf(expectedResponse);
+    }
+
+    @Test
+    void shouldReturnEmptyList() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups();
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.list();
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.list(BackupInfo.class))
+          .isEmpty();
+    }
+
+    private PartitionBackupStatus createPartialPartitionStatus(final BackupStatusCode completed) {
+      return new PartitionBackupStatus(
+          1,
+          completed,
+          Optional.empty(),
+          Optional.of("2022-09-19T14:44:17.340409393Z"),
+          Optional.empty(),
+          Optional.empty(),
+          OptionalLong.empty(),
+          OptionalInt.empty(),
+          Optional.of("8.0.6"));
+    }
+  }
 }
