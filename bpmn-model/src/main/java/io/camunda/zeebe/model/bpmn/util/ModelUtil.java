@@ -130,6 +130,7 @@ public class ModelUtil {
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
+    verifyNoDuplicatedErrorHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicateSignalStartEvents(
@@ -203,6 +204,7 @@ public class ModelUtil {
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
+    verifyNoDuplicatedErrorHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicatedEventDefinition(
@@ -219,15 +221,6 @@ public class ModelUtil {
     getDuplicatedEntries(messageNames)
         .map(ModelUtil::duplicatedMessageNames)
         .forEach(errorCollector);
-
-    final Stream<String> errorCodes =
-        getEventDefinition(definitions, ErrorEventDefinition.class)
-            .filter(def -> def.getError() != null)
-            .map(ErrorEventDefinition::getError)
-            .filter(error -> error.getErrorCode() != null && !error.getErrorCode().isEmpty())
-            .map(Error::getErrorCode);
-
-    getDuplicatedEntries(errorCodes).map(ModelUtil::duplicatedErrorCodes).forEach(errorCollector);
 
     final Stream<String> signalNames =
         getEventDefinition(definitions, SignalEventDefinition.class)
@@ -292,6 +285,55 @@ public class ModelUtil {
                     : "The same scope can not contain more than one escalation catch event without"
                         + " escalation code. An escalation catch event without escalation code catches"
                         + " all escalations.");
+          }
+        });
+  }
+
+  private static void verifyNoDuplicatedErrorHandler(
+      final List<EventDefinition> definitions, final Consumer<String> errorCollector) {
+    final List<Error> errors =
+        getEventDefinition(definitions, ErrorEventDefinition.class)
+            .map(ErrorEventDefinition::getError)
+            .collect(Collectors.toList());
+
+    if (errors.isEmpty()) {
+      return;
+    }
+
+    final long definitionWithoutErrorCount = errors.stream().filter(Objects::isNull).count();
+
+    if (definitionWithoutErrorCount > 1) {
+      errorCollector.accept(
+          "The same scope can not contain more than one error catch event without"
+              + " error code. An error catch event without error code catches"
+              + " all errors.");
+    }
+
+    final Map<Optional<String>, Long> errorCodeOccurrences =
+        errors.stream()
+            .filter(Objects::nonNull)
+            .map(error -> Optional.ofNullable(error.getErrorCode()))
+            .collect(groupingBy(errorCode -> errorCode, counting()));
+
+    if (definitionWithoutErrorCount >= 1 && !errorCodeOccurrences.isEmpty()) {
+      errorCollector.accept(
+          "The same scope can not contain an error catch event without error code "
+              + "and another one with error code. An error catch event without "
+              + "error code catches all errors.");
+    }
+
+    errorCodeOccurrences.forEach(
+        (errorCode, occurrences) -> {
+          if (occurrences > 1) {
+            errorCollector.accept(
+                errorCode.isPresent()
+                    ? String.format(
+                        "Multiple error catch events with the same error code '%s' are "
+                            + "not supported on the same scope.",
+                        errorCode.get())
+                    : "The same scope can not contain more than one error catch event without"
+                        + " error code. An error catch event without error code catches"
+                        + " all errors.");
           }
         });
   }
