@@ -270,7 +270,7 @@ describe('TopPanel', () => {
     await user.click(screen.getByRole('button', {name: /move/i}));
 
     expect(
-      screen.getByText(/select the target flow node in the diagram/i)
+      await screen.findByText(/select the target flow node in the diagram/i)
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Discard'}));

@@ -268,9 +268,7 @@ describe('VariablePanel', () => {
       headline: 'Variable added',
     });
 
-    await waitFor(() =>
-      expect(withinVariablesList.getByTestId('foo')).toBeInTheDocument()
-    );
+    expect(await withinVariablesList.findByTestId('foo')).toBeInTheDocument();
 
     expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
@@ -318,7 +316,10 @@ describe('VariablePanel', () => {
       flowNodeInstanceId: '2',
     });
 
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('variables-spinner')
+    );
     expect(
       screen.queryByTestId('edit-variable-spinner')
     ).not.toBeInTheDocument();
@@ -360,7 +361,9 @@ describe('VariablePanel', () => {
       headline: 'Variable could not be saved',
     });
 
-    expect(screen.getByText('Name should be unique')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Name should be unique')
+    ).toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-name'), '2');
     expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
@@ -493,9 +496,7 @@ describe('VariablePanel', () => {
     await waitForElementToBeRemoved(
       screen.getByTestId('edit-variable-spinner')
     );
-    await waitFor(() =>
-      expect(screen.getByRole('cell', {name: 'foo'})).toBeInTheDocument()
-    );
+    expect(await screen.findByRole('cell', {name: 'foo'})).toBeInTheDocument();
 
     expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
     jest.clearAllTimers();
@@ -514,7 +515,7 @@ describe('VariablePanel', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
+    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-spinner')
@@ -537,8 +538,7 @@ describe('VariablePanel', () => {
       flowNodeInstanceId: '2',
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-    expect(screen.getByText('test2')).toBeInTheDocument();
+    expect(await screen.findByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Input Mappings'}));
 
@@ -551,7 +551,9 @@ describe('VariablePanel', () => {
       flowNodeId: 'Event_0bonl61',
     });
 
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No Input Mappings defined')
+    ).toBeInTheDocument();
 
     flowNodeSelectionStore.clearSelection();
 
@@ -577,7 +579,9 @@ describe('VariablePanel', () => {
       flowNodeId: 'StartEvent_1',
     });
 
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+    expect(
+      await screen.findByText('No Input Mappings defined')
+    ).toBeInTheDocument();
 
     expect(
       screen.queryByRole('heading', {name: 'Variables'})
@@ -676,7 +680,7 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables')
     ).toBeInTheDocument();
 
     expect(
@@ -701,7 +705,7 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.getByText(
+      await screen.findByText(
         'To view the Variables, select a single Flow Node Instance in the Instance History.'
       )
     ).toBeInTheDocument();
@@ -718,7 +722,7 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables')
     ).toBeInTheDocument();
 
     expect(
@@ -803,13 +807,13 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.queryByRole('button', {name: /add variable/i})
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
+      await screen.findByText(
         'To view the Variables, select a single Flow Node Instance in the Instance History.'
       )
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /add variable/i})
+    ).not.toBeInTheDocument();
 
     // select only one of the scopes
     flowNodeSelectionStore.selectFlowNode({
@@ -819,7 +823,7 @@ describe('VariablePanel', () => {
     });
 
     expect(
-      screen.getByText('The Flow Node has no Variables')
+      await screen.findByText('The Flow Node has no Variables')
     ).toBeInTheDocument();
 
     expect(

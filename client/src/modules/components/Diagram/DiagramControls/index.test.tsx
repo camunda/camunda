@@ -23,7 +23,9 @@ describe('<DiagramControls />', () => {
       {wrapper: ThemeProvider}
     );
 
-    await user.click(screen.getByRole('button', {name: 'Reset diagram zoom'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Reset diagram zoom'})
+    );
 
     expect(handleZoomReset).toHaveBeenCalled();
     expect(handleZoomIn).not.toHaveBeenCalled();

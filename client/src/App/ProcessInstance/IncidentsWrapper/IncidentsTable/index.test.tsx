@@ -277,11 +277,12 @@ describe('IncidentsTable', () => {
     await user.click(withinSecondRow.getByText('More...'));
 
     const modal = screen.getByTestId('modal');
+
     expect(
-      within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`)
+      await within(modal).findByText(secondIncident.errorMessage)
     ).toBeInTheDocument();
     expect(
-      within(modal).getByText(secondIncident.errorMessage)
+      within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`)
     ).toBeInTheDocument();
   });
 

@@ -86,12 +86,12 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
         },
       },
     });
-    expect(screen.getByText('Sub Process 1')).toBeInTheDocument();
+    expect(await screen.findByText('Sub Process 1')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', {name: 'Unfold Sub Process 1'})
     );
-    expect(screen.getByText('Sub Process 2')).toBeInTheDocument();
+    expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', {name: 'Unfold Sub Process 2'})
@@ -140,12 +140,12 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
         },
       },
     });
-    expect(screen.getByText('Sub Process 1')).toBeInTheDocument();
+    expect(await screen.findByText('Sub Process 1')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', {name: 'Unfold Sub Process 1'})
     );
-    expect(screen.getByText('Sub Process 2')).toBeInTheDocument();
+    expect(await screen.findByText('Sub Process 2')).toBeInTheDocument();
 
     await user.click(
       screen.getByRole('button', {name: 'Unfold Sub Process 2'})

@@ -79,9 +79,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByRole('columnheader', {
-        name: /operation/i,
-      })
+      await screen.findByRole('columnheader', {name: /operation/i})
     ).toBeInTheDocument();
     expect(
       screen.getByRole('cell', {
@@ -130,7 +128,7 @@ describe('Modification Summary Modal', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete variable modification'})
+      await screen.findByRole('button', {name: 'Delete variable modification'})
     );
 
     expect(
@@ -158,7 +156,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByRole('columnheader', {
+      await screen.findByRole('columnheader', {
         name: /operation/i,
       })
     ).toBeInTheDocument();
@@ -208,7 +206,9 @@ describe('Modification Summary Modal', () => {
       },
     });
 
-    expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled();
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
+    );
 
     await user.click(
       screen.getByRole('button', {name: 'Delete flow node modification'})
@@ -268,9 +268,12 @@ describe('Modification Summary Modal', () => {
       },
     });
 
-    const [jsonEditorModal, diffEditorModal] = screen.getAllByRole('button', {
-      name: /open json editor modal/i,
-    });
+    const [jsonEditorModal, diffEditorModal] = await screen.findAllByRole(
+      'button',
+      {
+        name: /open json editor modal/i,
+      }
+    );
 
     await user.click(jsonEditorModal!);
 
@@ -360,7 +363,7 @@ describe('Modification Summary Modal', () => {
     const [
       addModificationAffectedTokenCount,
       cancelModificationAfectedTokenCount,
-    ] = screen.getAllByTestId('affected-token-count');
+    ] = await screen.findAllByTestId('affected-token-count');
     expect(addModificationAffectedTokenCount).toHaveTextContent('1');
     expect(cancelModificationAfectedTokenCount).toHaveTextContent('7');
   });
@@ -497,7 +500,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByText(
+      await screen.findByText(
         'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
       )
     ).toBeInTheDocument();
@@ -585,7 +588,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      screen.getByText(
+      await screen.findByText(
         /This set of planned modifications cannot be applied. This instance is a child instance of/gi
       )
     ).toBeInTheDocument();

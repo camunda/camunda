@@ -75,7 +75,7 @@ describe('IncidentsFilter', () => {
     });
 
     incidentsStore.setIncidentBarOpen(true);
-    const table = within(screen.getByRole('table'));
+    const table = within(await screen.findByRole('table'));
 
     expect(table.getByText(/^Incident Type/)).toBeInTheDocument();
     expect(table.getByText(/^Failing Flow Node/)).toBeInTheDocument();
@@ -85,13 +85,15 @@ describe('IncidentsFilter', () => {
     expect(table.getByText(/^Operations/)).toBeInTheDocument();
   });
 
-  it('should render the filters', () => {
+  it('should render the filters', async () => {
     render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
       wrapper: Wrapper,
     });
     incidentsStore.setIncidentBarOpen(true);
 
-    const errorFilters = within(screen.getByTestId(/incidents-by-errortype/i));
+    const errorFilters = within(
+      await screen.findByTestId(/incidents-by-errortype/i)
+    );
     const flowNodeFilters = within(
       screen.getByTestId(/incidents-by-flownode/i)
     );
@@ -128,7 +130,7 @@ describe('IncidentsFilter', () => {
         }
       );
 
-      const table = within(screen.getByRole('table'));
+      const table = within(await screen.findByRole('table'));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       expect(table.getByText(/Condition errortype/)).toBeInTheDocument();
@@ -155,7 +157,7 @@ describe('IncidentsFilter', () => {
         }
       );
 
-      const table = within(screen.getByRole('table'));
+      const table = within(await screen.findByRole('table'));
 
       expect(screen.getAllByLabelText(/^incident/i)).toHaveLength(2);
       expect(

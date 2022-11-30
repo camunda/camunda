@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
@@ -13,7 +12,7 @@ import {TimeStampLabel} from './index';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 describe('TimeStampLabel', () => {
-  it('should hide/display time stamp on time stamp toggle', () => {
+  it('should hide/display time stamp on time stamp toggle', async () => {
     render(
       <TimeStampLabel
         isSelected={false}
@@ -23,7 +22,7 @@ describe('TimeStampLabel', () => {
     );
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
     flowNodeTimeStampStore.toggleTimeStampVisibility();
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     flowNodeTimeStampStore.toggleTimeStampVisibility();
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
   });

@@ -195,7 +195,7 @@ describe('Operations', () => {
       storeStateLocally({
         [`hideModificationHelperModal`]: true,
       });
-      await user.click(screen.getByTitle('Modify Instance instance_1'));
+      await user.click(await screen.findByTitle('Modify Instance instance_1'));
 
       expect(
         screen.queryByTitle('Retry Instance instance_1')
@@ -446,7 +446,7 @@ describe('Operations', () => {
         }
       );
 
-      await user.click(screen.getByTitle('Modify Instance instance_1'));
+      await user.click(await screen.findByTitle('Modify Instance instance_1'));
       expect(
         screen.queryByTestId('apply-modifications-button')
       ).not.toBeInTheDocument();
@@ -473,7 +473,7 @@ describe('Operations', () => {
 
       expect(modificationsStore.state.status).toBe('disabled');
 
-      await user.click(screen.getByTitle('Modify Instance instance_1'));
+      await user.click(await screen.findByTitle('Modify Instance instance_1'));
 
       expect(modificationsStore.state.status).toBe('enabled');
 

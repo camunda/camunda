@@ -222,8 +222,8 @@ describe('Add variable', () => {
     await user.type(screen.getByTestId('add-variable-name'), '"invalid"');
     await user.type(screen.getByTestId('add-variable-value'), '123');
 
+    expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-    expect(screen.getByText('Name is invalid')).toBeInTheDocument();
 
     await user.clear(screen.getByTestId('add-variable-name'));
     await user.type(screen.getByTestId('add-variable-name'), 'someOtherName');

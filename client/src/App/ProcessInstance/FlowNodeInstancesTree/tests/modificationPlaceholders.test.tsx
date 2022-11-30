@@ -104,9 +104,13 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
         parentScopeIds: modificationsStore.generateParentScopeIds('peterJoin'),
       },
     });
+
+    await waitFor(() =>
+      expect(screen.getAllByText('Peter Join')).toHaveLength(2)
+    );
+
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
     expect(screen.getByText('Peter Fork')).toBeInTheDocument();
-    expect(screen.getAllByText('Peter Join')).toHaveLength(2);
 
     // modification icons
     expect(screen.getAllByText('plus.svg')).toHaveLength(2);
@@ -174,7 +178,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.getAllByText('Peter Join')).toHaveLength(2);
 
     // modification icons
-    expect(screen.getByText('stop.svg')).toBeInTheDocument();
+    expect(await screen.findByText('stop.svg')).toBeInTheDocument();
     expect(screen.queryByText('plus.svg')).not.toBeInTheDocument();
     expect(
       screen.queryByText('warning-message-icon.svg')
@@ -279,8 +283,10 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
       },
     });
 
-    expect(screen.getAllByLabelText('Unfold parent_sub_process')).toHaveLength(
-      3
+    await waitFor(() =>
+      expect(
+        screen.getAllByLabelText('Unfold parent_sub_process')
+      ).toHaveLength(3)
     );
 
     mockFetchFlowNodeInstances().withSuccess(

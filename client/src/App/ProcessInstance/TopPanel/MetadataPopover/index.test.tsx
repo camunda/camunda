@@ -204,7 +204,7 @@ describe('MetadataPopover', () => {
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
     expect(
-      screen.getByText(/"flowNodeId": "Activity_0zqism7"/)
+      await screen.findByText(/"flowNodeId": "Activity_0zqism7"/)
     ).toBeInTheDocument();
     expect(
       screen.getByText(/"flowNodeInstanceKey": "2251799813699889"/)

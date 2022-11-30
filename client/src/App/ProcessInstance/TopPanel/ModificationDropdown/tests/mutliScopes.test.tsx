@@ -68,8 +68,10 @@ describe('Modification Dropdown - Multi Scopes', () => {
       flowNodeId: 'TaskB',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
@@ -113,8 +115,10 @@ describe('Modification Dropdown - Multi Scopes', () => {
       flowNodeId: 'TaskB',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
@@ -158,8 +162,10 @@ describe('Modification Dropdown - Multi Scopes', () => {
       flowNodeId: 'TaskB',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
@@ -213,10 +219,10 @@ describe('Modification Dropdown - Multi Scopes', () => {
       flowNodeId: 'TaskB',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
     expect(
-      await screen.findByText(/No modifications available/)
+      await screen.findByText(/Flow Node Modifications/)
     ).toBeInTheDocument();
+    expect(screen.getByText(/No modifications available/)).toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();

@@ -55,7 +55,9 @@ describe('LastModification', () => {
         parentScopeIds: {},
       },
     });
-    expect(screen.getByText(/Last added modification/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Last added modification/)
+    ).toBeInTheDocument();
     expect(screen.getByText(/Add "flowNode1"/)).toBeInTheDocument();
 
     modificationsStore.addModification({
@@ -68,7 +70,7 @@ describe('LastModification', () => {
       },
     });
 
-    expect(screen.getByText(/Cancel "flowNode2"/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel "flowNode2"/)).toBeInTheDocument();
 
     modificationsStore.addModification({
       type: 'token',
@@ -84,7 +86,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      screen.getByText(/Move "flowNode3" to "flowNode4"/)
+      await screen.findByText(/Move "flowNode3" to "flowNode4"/)
     ).toBeInTheDocument();
 
     createAddVariableModification({
@@ -96,7 +98,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      screen.getByText(/Add new variable "variableName1"/)
+      await screen.findByText(/Add new variable "variableName1"/)
     ).toBeInTheDocument();
 
     createEditVariableModification({
@@ -108,7 +110,7 @@ describe('LastModification', () => {
     });
 
     expect(
-      screen.getByText(/Edit variable "variableName2"/)
+      await screen.findByText(/Edit variable "variableName2"/)
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Undo'}));

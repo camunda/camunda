@@ -31,7 +31,7 @@ describe('<Diagram />', () => {
     expect(await screen.findByText('Diagram mock')).toBeInTheDocument();
 
     expect(
-      screen.getByRole('button', {name: 'Reset diagram zoom'})
+      await screen.findByRole('button', {name: 'Reset diagram zoom'})
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'Zoom in diagram'})

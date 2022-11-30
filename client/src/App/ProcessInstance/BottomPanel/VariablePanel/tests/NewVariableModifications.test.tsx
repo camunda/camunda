@@ -52,7 +52,7 @@ const editValueFromTextfieldAndBlur = async (
 const editValueFromJSONEditor = async (user: UserEvent, value: string) => {
   const [jsonEditor] = screen.getAllByTitle(/open json editor modal/i);
   await user.click(jsonEditor!);
-  await user.click(screen.getByTestId('monaco-editor'));
+  await user.click(await screen.findByTestId('monaco-editor'));
   await user.type(screen.getByTestId('monaco-editor'), value);
   await user.click(screen.getByRole('button', {name: /apply/i}));
 };
@@ -165,7 +165,9 @@ describe('New Variable Modifications', () => {
       expect(
         screen.getByRole('button', {name: /add variable/i})
       ).toBeDisabled();
-      expect(screen.getByText(/Name has to be filled/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/Name has to be filled/i)
+      ).toBeInTheDocument();
       expect(modificationsStore.state.modifications.length).toBe(0);
     }
   );
@@ -192,7 +194,9 @@ describe('New Variable Modifications', () => {
       expect(
         screen.getByRole('button', {name: /add variable/i})
       ).toBeDisabled();
-      expect(screen.getByText(/Name should be unique/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/Name should be unique/i)
+      ).toBeInTheDocument();
       expect(modificationsStore.state.modifications.length).toBe(0);
 
       await user.clear(screen.getByTestId('new-variable-name'));
@@ -215,7 +219,9 @@ describe('New Variable Modifications', () => {
       await user.click(screen.getByRole('button', {name: /add variable/i}));
       await editNameFromTextfieldAndBlur(user, 'test2');
       await editValue(type, user, '1234');
-      expect(screen.getByText(/Name should be unique/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/Name should be unique/i)
+      ).toBeInTheDocument();
       expect(modificationsStore.state.modifications).toEqual([
         {
           payload: {
@@ -248,10 +254,14 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByTestId('new-variable-value'));
     await user.tab();
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
-    expect(screen.getByText(/Value has to be filled/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Value has to be filled/i)
+    ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
     await editValueFromTextfieldAndBlur(user, 'invalid value');
-    expect(screen.getByText(/Value has to be JSON/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Value has to be JSON/i)
+    ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
   });
 

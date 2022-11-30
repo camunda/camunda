@@ -241,19 +241,15 @@ describe('Instances', () => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    await user.click(screen.getByRole('link', {name: 'View Processes'}));
+    await user.click(await screen.findByRole('link', {name: 'View Processes'}));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument()
-    );
+    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument()
     );
 
-    await waitFor(() =>
-      expect(screen.getByTestId('instances-loader')).toBeInTheDocument()
-    );
+    expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument()

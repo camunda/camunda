@@ -252,7 +252,7 @@ describe('<InstancesTable />', () => {
 
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
 
-    expect(screen.getByTestId('instances-loader')).toBeInTheDocument();
+    expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
   });
@@ -273,11 +273,9 @@ describe('<InstancesTable />', () => {
 
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
-    await user.click(screen.getByRole('link', {name: 'View Decisions'}));
+    await user.click(await screen.findByRole('link', {name: 'View Decisions'}));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('instances-loader')).toBeInTheDocument()
-    );
+    expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(screen.queryByTestId('instances-loader')).not.toBeInTheDocument()

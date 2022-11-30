@@ -206,7 +206,7 @@ describe('OperationsEntry', () => {
     expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByText('3 Instances'));
-    expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
+    expect(await screen.findByLabelText(/operation id/i)).toBeInTheDocument();
 
     await user.click(screen.getByText('3 Instances'));
     expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();

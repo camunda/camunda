@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {TimeStampPill} from './index';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -26,12 +26,12 @@ describe('TimeStampPill', () => {
     flowNodeInstanceStore.reset();
   });
 
-  it('should render "Show" / "Hide" label', () => {
+  it('should render "Show" / "Hide" label', async () => {
     render(<TimeStampPill />, {wrapper: ThemeProvider});
 
     expect(screen.getByText('Show End Date')).toBeInTheDocument();
     flowNodeTimeStampStore.toggleTimeStampVisibility();
-    expect(screen.getByText('Hide End Date')).toBeInTheDocument();
+    expect(await screen.findByText('Hide End Date')).toBeInTheDocument();
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {
@@ -40,6 +40,6 @@ describe('TimeStampPill', () => {
     expect(screen.getByRole('button')).toBeDisabled();
     await flowNodeInstanceStore.fetchInstanceExecutionHistory('1');
     await processInstanceDetailsDiagramStore.fetchProcessXml('1');
-    expect(screen.getByRole('button')).toBeEnabled();
+    await waitFor(() => expect(screen.getByRole('button')).toBeEnabled());
   });
 });

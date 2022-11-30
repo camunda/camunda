@@ -82,7 +82,10 @@ describe('spinner', () => {
     await user.click(screen.getByText(/apply operation on/i));
     await user.click(screen.getByText(/cancel/i));
     await user.click(screen.getByText(/^apply$/i));
-    expect(screen.getAllByTestId('operation-spinner')).toHaveLength(3);
+
+    await waitFor(() =>
+      expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(3)
+    );
     await waitFor(() =>
       expect(screen.queryAllByTestId('operation-spinner')).toHaveLength(0)
     );

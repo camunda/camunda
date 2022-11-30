@@ -158,7 +158,7 @@ describe('<DecisionInstance />', () => {
     const {unmount, user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await user.click(
-      within(screen.getByTestId('drd')).getByRole('button', {
+      await screen.findByRole('button', {
         name: 'Close DRD Panel',
       })
     );

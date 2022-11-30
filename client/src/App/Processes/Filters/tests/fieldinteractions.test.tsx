@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 
@@ -381,14 +381,10 @@ describe('Interaction with other fields during validation', () => {
 
     await user.type(screen.getByLabelText(/parent process instance key/i), '1');
 
-    await waitFor(() =>
-      expect(
-        screen.getByText('Key has to be a 16 to 19 digit number')
-      ).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByText('Key has to be a 16 to 19 digit number')
+    ).toBeInTheDocument();
 
-    await waitFor(() =>
-      expect(screen.getByText('Id has to be a UUID')).toBeInTheDocument()
-    );
+    expect(await screen.findByText('Id has to be a UUID')).toBeInTheDocument();
   });
 });

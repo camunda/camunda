@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
@@ -47,9 +47,9 @@ describe('<Drd />', () => {
   it('should render DRD', async () => {
     render(<Drd />, {wrapper: Wrapper});
 
-    await waitFor(() =>
-      expect(screen.getByText('Default View mock')).toBeInTheDocument()
-    );
-    expect(screen.getByText('Definitions Name Mock')).toBeInTheDocument();
+    expect(await screen.findByText('Default View mock')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Definitions Name Mock')
+    ).toBeInTheDocument();
   });
 });

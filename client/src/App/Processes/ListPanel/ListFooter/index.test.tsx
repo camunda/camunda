@@ -72,7 +72,7 @@ describe('ListFooter', () => {
     expect(dropdownButton).toBeNull();
   });
 
-  it('should show Dropdown when there is selection', () => {
+  it('should show Dropdown when there is selection', async () => {
     processInstancesStore.setProcessInstances({
       filteredProcessInstancesCount: 9,
       processInstances: mockInstances,
@@ -80,10 +80,9 @@ describe('ListFooter', () => {
     render(<ListFooter />, {wrapper: ThemeProvider});
     processInstancesSelectionStore.selectProcessInstance('1');
     processInstancesSelectionStore.selectProcessInstance('2');
-    const dropdownButton = screen.getByText(
-      'Apply Operation on 2 Instances...'
-    );
-    expect(dropdownButton).toBeInTheDocument();
+    expect(
+      await screen.findByText('Apply Operation on 2 Instances...')
+    ).toBeInTheDocument();
 
     const copyrightText = screen.getByText(COPYRIGHT_REGEX);
     expect(copyrightText).toBeInTheDocument();

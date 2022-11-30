@@ -287,7 +287,7 @@ describe('InstanceHeader', () => {
       onError: () => {},
     });
 
-    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
 
@@ -423,9 +423,9 @@ describe('InstanceHeader', () => {
     );
 
     await user.click(screen.getByRole('button', {name: /Delete Instance/i}));
-    await waitFor(() =>
-      expect(screen.getByText(/About to delete Instance/)).toBeInTheDocument()
-    );
+    expect(
+      await screen.findByText(/About to delete Instance/)
+    ).toBeInTheDocument();
 
     mockApplyOperation().withSuccess(mockOperationCreated);
 

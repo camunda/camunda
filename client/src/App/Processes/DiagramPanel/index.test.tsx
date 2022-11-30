@@ -144,6 +144,7 @@ describe('DiagramPanel', () => {
 
     processDiagramStore.fetchProcessDiagram('2');
 
+    expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('diagram-spinner'));
 
     expect(

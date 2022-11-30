@@ -38,7 +38,7 @@ describe('<Bar />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should toggle the timestamp', () => {
+  it('should toggle the timestamp', async () => {
     render(
       <Bar
         flowNodeInstance={mockStartNode}
@@ -57,6 +57,6 @@ describe('<Bar />', () => {
 
     flowNodeTimeStampStore.toggleTimeStampVisibility();
 
-    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
   });
 });
