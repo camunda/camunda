@@ -119,8 +119,8 @@ jobs:
         with:
           # language=javascript
           script: |
-            const namespace = context.payload.inputs.name
-            const load = context.payload.inputs.load
+            const namespace = '${{ inputs.name }}'
+            const load = '${{ inputs.load }}'
             const components = load.split(", ")
             for (const component of components) {
               if (component.includes("=")) {
