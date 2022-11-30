@@ -2,7 +2,7 @@
 ARG BASE_SHA="00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"
 
 # Building builder image
-FROM ubuntu:focal as builder
+FROM ubuntu:jammy as builder
 ARG DISTBALL
 
 ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
