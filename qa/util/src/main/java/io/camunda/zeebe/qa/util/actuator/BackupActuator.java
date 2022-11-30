@@ -85,6 +85,9 @@ public interface BackupActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   BackupInfo status(@Param final long id);
 
+  @RequestLine("GET /")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  List<BackupInfo> list();
   /**
    * Custom error handler, mapping errors with body to custom types for easier
    * verification/handling. This is somewhat verbose, so any suggestions for improvements are
