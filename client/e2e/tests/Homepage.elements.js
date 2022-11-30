@@ -8,6 +8,9 @@
 import {Selector} from 'testcafe';
 
 export const createNewMenu = Selector('.CreateNewButton');
+export const createNewDashboardButton = Selector('.Button').withText('Create New Dashboard');
+export const emptyStateComponent = Selector('.EmptyState');
+export const blankDashboardButton = Selector('.Button').withText('Blank Dashboard');
 export const newReportOption = Selector('.CreateNewButton .Submenu');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
