@@ -1,0 +1,90 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      releaseVersion:
+        description: 'The version to be build and released, expecting a release branch `release-$releaseVersion` to already exist.'
+        required: true
+      nextDevelopmentVersion:
+        description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
+        required: true
+
+jobs:
+  release:
+    name: Maven & Go Release
+    runs-on: n1-standard-16-netssd-preempt-quick
+    timeout-minutes: 30
+    env:
+      RELEASE_VERSION: ${{ inputs.releaseVersion }}
+      DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
+      RELEASE_BRANCH: "release-${{ inputs.releaseVersion }}"
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_USR;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_PSW;
+      - name: Git User Setup
+        shell: bash
+        run: |
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
+      - name: Install Maven Central GPG Key
+        shell: bash
+        # setup-maven supports this as well but needs the key in the armor ascii format,
+        # while we only have it plain bas64 encoded
+        # see https://github.com/actions/setup-java/issues/100#issuecomment-742679976
+        run: |
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC }}" \
+            | base64 --decode \
+            | gpg -q --allow-secret-key-import --import --no-tty --batch --yes
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
+            | base64 --decode \
+            | gpg -q --import --no-tty --batch --yes
+      - uses: ./.github/actions/setup-zeebe
+      - name: Go tooling setup
+        shell: bash
+        run: |
+          go install github.com/go-bindata/go-bindata/...@v3
+          if ! command -v go-bindata > /dev/null 2>&1; then
+            echo "Failed to install go-bindata, go-bindata is not available on the path"
+            exit 1
+          fi
+
+          go install github.com/smola/gocompat/...@v0.3.0
+          if ! command -v gocompat > /dev/null 2>&1; then
+            echo "Failed to install gocompat, gocompat is not available on the path"
+            exit 1
+          fi
+      - name: Set and commit Go Client version
+        shell: bash
+        run: |
+          pushd clients/go/internal/embedded
+          echo "${RELEASE_VERSION}" > data/VERSION
+          go-bindata -pkg embedded -o embedded.go -prefix data data/
+
+          git commit -am "build(project): update go embedded version data"
+          if [ "$PUSH_CHANGES" = "true" ]; then
+            git push origin "${RELEASE_BRANCH}"
+          fi
+      - name: Build Go Client
+        uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -T1C -Pprepare-offline,-PcheckFormat,-autoFormat
+      - name: Cleanup Maven Central GPG Key
+        # make sure we always remove the imported signing key to avoid it leaking on runners
+        if: always()
+        shell: bash
+        run: rm -rf $HOME/.gnupg
