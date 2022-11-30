@@ -226,13 +226,11 @@ public class SchemaUpgradeClient {
   }
 
   public void updateOptimizeVersion(final UpgradePlan upgradePlan) {
-    if (!upgradePlan.isSilentUpgrade()) {
-      log.info(
-        "Updating Optimize Elasticsearch data structure version tag from {} to {}.",
-        upgradePlan.getFromVersion().toString(),
-        upgradePlan.getToVersion().toString()
-      );
-    }
+    log.info(
+      "Updating Optimize Elasticsearch data structure version tag from {} to {}.",
+      upgradePlan.getFromVersion().toString(),
+      upgradePlan.getToVersion().toString()
+    );
     metadataService.upsertMetadata(elasticsearchClient, upgradePlan.getToVersion().toString());
   }
 

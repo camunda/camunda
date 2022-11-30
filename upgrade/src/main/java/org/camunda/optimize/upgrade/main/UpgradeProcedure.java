@@ -59,16 +59,12 @@ public class UpgradeProcedure {
           throw new UpgradeRuntimeException("Upgrade failed.", e);
         }
       } else {
-        if (!upgradePlan.isSilentUpgrade()) {
-          log.info(
-            "Target schemaVersion or a newer version is already present, no update to perform to {}.", targetVersion
-          );
-        }
+        log.info(
+          "Target schemaVersion or a newer version is already present, no update to perform to {}.", targetVersion
+        );
       }
     } else {
-      if (!upgradePlan.isSilentUpgrade()) {
-        log.info("No Connection to elasticsearch or no Optimize Metadata index found, skipping update to {}.", targetVersion);
-      }
+      log.info("No Connection to elasticsearch or no Optimize Metadata index found, skipping update to {}.", targetVersion);
     }
   }
 

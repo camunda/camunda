@@ -21,10 +21,7 @@ public class UpgradePlanRegistryTest {
   void upgradePlansAreSortedAsExpected() {
     // given
     final List<Pair<String, String>> upgradePlanVersions = List.of(
-      Pair.of("3.8", "3.9.0-preview-1"),
       Pair.of("3.8", "3.8.1"),
-      Pair.of("3.9.0-preview-1", "3.9.0-preview-2"),
-      Pair.of("3.9.0-preview-2", "3.9.0"),
       Pair.of("3.7", "3.8.0")
     );
     final UpgradePlanRegistry registry = new UpgradePlanRegistry(
@@ -38,14 +35,6 @@ public class UpgradePlanRegistryTest {
       .extracting(UpgradePlan::getToVersion)
       .map(Semver::getOriginalValue)
       .containsExactly("3.8.0", "3.8.1");
-    assertThat(registry.getSequentialUpgradePlansToTargetVersion("3.9.0-preview-2"))
-      .extracting(UpgradePlan::getToVersion)
-      .map(Semver::getOriginalValue)
-      .containsExactly("3.8.0", "3.8.1", "3.9.0-preview-1", "3.9.0-preview-2");
-    assertThat(registry.getSequentialUpgradePlansToTargetVersion("3.9.0"))
-      .extracting(UpgradePlan::getToVersion)
-      .map(Semver::getOriginalValue)
-      .containsExactly("3.8.0", "3.8.1", "3.9.0-preview-1", "3.9.0-preview-2", "3.9.0");
   }
 
   private UpgradePlan createUpgradePlan(final String fromVersion, final String toVersion) {
