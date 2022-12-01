@@ -9,21 +9,12 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.dispatcher.BlockPeek;
-import io.camunda.zeebe.dispatcher.Dispatcher;
-import io.camunda.zeebe.dispatcher.Dispatchers;
-import io.camunda.zeebe.dispatcher.Subscription;
-import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
@@ -31,30 +22,25 @@ import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class LogStorageAppenderTest {
-  private static final int MAX_FRAGMENT_SIZE = 1024;
+
   private static final int PARTITION_ID = 0;
   private static final long INITIAL_POSITION = 2L;
-  private static final long WRONG_POSITION = 10L;
 
   private final ActorScheduler scheduler =
       ActorScheduler.newActorScheduler()
@@ -64,36 +50,21 @@ final class LogStorageAppenderTest {
 
   private final ListLogStorage logStorage = spy(new ListLogStorage());
 
-  private Dispatcher dispatcher;
-  private Subscription subscription;
+  private Sequencer sequencer;
   private LogStorageAppender appender;
-  private LogStreamBatchWriter writer;
   private LogStreamReader reader;
 
   @BeforeEach
   void beforeEach() {
     scheduler.start();
-
-    dispatcher =
-        Dispatchers.create("0")
-            .actorSchedulingService(scheduler)
-            .bufferSize((int) ByteValue.ofMegabytes(100 * MAX_FRAGMENT_SIZE))
-            .maxFragmentLength(MAX_FRAGMENT_SIZE)
-            .initialPosition(INITIAL_POSITION)
-            .build();
-    subscription = spy(dispatcher.openSubscription("log"));
-    Mockito.reset(subscription, logStorage);
-
-    appender =
-        new LogStorageAppender(
-            "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
-    writer = new LogStreamBatchWriterImpl(PARTITION_ID, dispatcher);
+    sequencer = new Sequencer(INITIAL_POSITION);
+    appender = new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer);
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 
   @AfterEach
   public void tearDown() {
-    CloseHelper.quietCloseAll(appender, dispatcher, scheduler);
+    CloseHelper.quietCloseAll(appender, sequencer, scheduler);
   }
 
   @Test
@@ -103,7 +74,7 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
 
     // when
-    final var position = writer.tryWrite(new MutableLogAppendEntry().recordValue(value));
+    final var position = sequencer.tryWrite(new MutableLogAppendEntry().recordValue(value));
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
 
@@ -125,7 +96,7 @@ final class LogStorageAppenderTest {
     final var latch = new CountDownLatch(1);
 
     // when
-    final var highestPosition = writer.tryWrite(entries);
+    final var highestPosition = sequencer.tryWrite(entries);
     final var lowestPosition = highestPosition - 1;
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
