@@ -24,12 +24,15 @@ import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
+import io.camunda.zeebe.shared.management.openapi.models.TakeBackupRequest;
+import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.zeebe.containers.ZeebeNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * Java interface for the node's backup actuator. To instantiate this interface, you can use {@link
@@ -77,9 +80,9 @@ public interface BackupActuator {
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
-  @RequestLine("POST /{id}")
+  @RequestLine("POST /")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  TakeBackupResponse take(@Param final long id);
+  TakeBackupResponse take(@RequestBody final TakeBackupRequest request);
 
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
@@ -119,8 +122,6 @@ public interface BackupActuator {
       return FeignException.errorStatus(methodKey, response);
     }
   }
-
-  record TakeBackupResponse(long id) {}
 
   final class ErrorResponse extends InternalServerError {
     private final Payload payload;
