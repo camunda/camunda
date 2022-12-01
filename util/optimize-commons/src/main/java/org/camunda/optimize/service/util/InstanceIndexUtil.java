@@ -47,6 +47,9 @@ public class InstanceIndexUtil {
   }
 
   public static String[] getProcessInstanceIndexAliasNames(final ProcessReportDataDto reportDataDto) {
+    if (reportDataDto.isManagementReport()) {
+      return new String[]{PROCESS_INSTANCE_MULTI_ALIAS};
+    }
     return !reportDataDto.getDefinitions().isEmpty()
       ? reportDataDto.getDefinitions().stream()
       .map(ReportDataDefinitionDto::getKey)
