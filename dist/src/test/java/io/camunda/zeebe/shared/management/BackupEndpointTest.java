@@ -16,6 +16,7 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
@@ -71,6 +72,23 @@ final class BackupEndpointTest {
       assertThat(response.getBody())
           .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
           .isEqualTo(new Error().message("failure"));
+    }
+
+    @Test
+    void shouldReturn409WhenBackupAlreadyExists() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var failure = new BackupAlreadyExistException(2, 1);
+      doReturn(CompletableFuture.failedFuture(failure)).when(api).takeBackup(anyLong());
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(409);
+      assertThat(response.getBody()).isInstanceOf(Error.class);
     }
   }
 
