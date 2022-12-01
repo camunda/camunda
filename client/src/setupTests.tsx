@@ -59,6 +59,8 @@ global.beforeEach(() => {
       matches: false,
       addListener: jest.fn(),
       removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
     })),
   });
 });
