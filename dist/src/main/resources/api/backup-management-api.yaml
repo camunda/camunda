@@ -17,6 +17,31 @@ servers:
         description: Management server schema
 paths:
   /:
+    post:
+      summary: Takes a backup
+      description: Start taking a backup with the given backupId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TakeBackupRequest'
+      responses:
+        '202':
+          description: A backup has been successfully scheduled
+          $ref: '#/components/responses/TakeBackupResponse'
+        '400':
+          description: Backup is not enabled or configured on the brokers. Or the given BackupId is not valid.
+          $ref: '#/components/responses/Error'
+        '409':
+          description: A backup with same or higher id already exists
+          $ref: '#/components/responses/Error'
+        '500':
+          description: Internal Error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
     get:
       summary: Lists all available backups
       description: |
@@ -87,6 +112,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/BackupInfo'
+
+    TakeBackupResponse:
+      description: Response for take backup request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TakeBackupResponse'
 
   schemas:
     Error:
@@ -231,3 +263,24 @@ components:
       required:
         - partitionId
         - state
+
+    TakeBackupRequest:
+      title: TakeBackupRequest
+      description: Request body for take backup
+      type: object
+      required:
+        - backupId
+      properties:
+        backupId:
+          description: The ID of the backup to be taken
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
+
+    TakeBackupResponse:
+      title: TakeBackupResponse
+      description: Request body for take backup
+      type: object
+      properties:
+        message:
+          description: A message indicating backup has been triggered
+          type: string
