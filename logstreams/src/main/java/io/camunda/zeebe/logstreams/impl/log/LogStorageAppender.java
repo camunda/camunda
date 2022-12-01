@@ -9,8 +9,6 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
-import io.camunda.zeebe.dispatcher.BlockPeek;
-import io.camunda.zeebe.dispatcher.Subscription;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.backpressure.AlgorithmCfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.AppendBackpressureMetrics;
@@ -25,16 +23,13 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Environment;
-import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.prometheus.client.Histogram.Timer;
-import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
@@ -45,13 +40,12 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
       Map.of("vegas", new AppenderVegasCfg(), "gradient2", new AppenderGradient2Cfg());
 
   private final String name;
-  private final Subscription writeBufferSubscription;
-  private final int maxAppendBlockSize;
+  private final Sequencer sequencer;
+  private final Serializer serializer = new Serializer();
   private final LogStorage logStorage;
   private final AppendLimiter appendEntryLimiter;
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
-  private final LoggedEventImpl positionReader = new LoggedEventImpl();
   private final AppenderMetrics appenderMetrics;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
@@ -61,15 +55,13 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
       final String name,
       final int partitionId,
       final LogStorage logStorage,
-      final Subscription writeBufferSubscription,
-      final int maxBlockSize) {
+      final Sequencer sequencer) {
     appenderMetrics = new AppenderMetrics(Integer.toString(partitionId));
     env = new Environment();
     this.name = name;
     this.partitionId = partitionId;
     this.logStorage = logStorage;
-    this.writeBufferSubscription = writeBufferSubscription;
-    maxAppendBlockSize = maxBlockSize;
+    this.sequencer = sequencer;
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =
@@ -108,42 +100,6 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
     return new NoopAppendLimiter();
   }
 
-  /**
-   * Appends the passed block to the {@link LogStorage}.
-   *
-   * @param blockPeek block to append
-   * @return true when the block could be appended to log storage, otherwise, false is returned
-   */
-  private boolean appendBlock(final BlockPeek blockPeek) {
-    final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
-    final int bytes = rawBuffer.remaining();
-    final ByteBuffer copiedBuffer = ByteBuffer.allocate(bytes).put(rawBuffer).flip();
-    final Tuple<Long, Long> positions = readLowestHighestPosition(copiedBuffer);
-
-    // Commit position is the position of the last event.
-    appendBackpressureMetrics.newEntryToAppend();
-    if (appendEntryLimiter.tryAcquire(positions.getRight())) {
-      final var listener =
-          new Listener(
-              this,
-              positions.getRight(),
-              appenderMetrics.startAppendLatencyTimer(),
-              appenderMetrics.startCommitLatencyTimer());
-      logStorage.append(positions.getLeft(), positions.getRight(), copiedBuffer, listener);
-
-      blockPeek.markCompleted();
-      return true;
-    } else {
-      appendBackpressureMetrics.deferred();
-      LOG.trace(
-          "Backpressure happens: in flight {} limit {}",
-          appendEntryLimiter.getInflight(),
-          appendEntryLimiter.getLimit());
-      // we will be called later again
-      return false;
-    }
-  }
-
   @Override
   protected Map<String, String> createContext() {
     final var context = super.createContext();
@@ -158,7 +114,8 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
 
   @Override
   protected void onActorStarting() {
-    actor.consume(writeBufferSubscription, this::onWriteBufferAvailable);
+    sequencer.registerConsumer(actor.onCondition("sequencer", this::writeBatch));
+    actor.submit(this::writeBatch);
   }
 
   @Override
@@ -185,49 +142,6 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
     closeFuture.complete(null);
   }
 
-  private void onWriteBufferAvailable() {
-    final var blockPeek = new BlockPeek();
-    final var readBytes = writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true);
-
-    final var canAppend = readBytes > 0;
-    var appendBlockSucceeded = false;
-
-    if (canAppend) {
-      appendBlockSucceeded = appendBlock(blockPeek);
-    }
-
-    if (!canAppend || !appendBlockSucceeded) {
-      actor.yieldThread();
-    }
-  }
-
-  private Tuple<Long, Long> readLowestHighestPosition(final ByteBuffer buffer) {
-    final var view = new UnsafeBuffer(buffer);
-    final var positions = new Tuple<>(-1L, -1L);
-    var offset = 0;
-    var lastPosition = -1L;
-
-    do {
-      positionReader.wrap(view, offset);
-      final long pos = positionReader.getPosition();
-      if (lastPosition == -1) {
-        positions.setLeft(pos);
-      } else if (pos != lastPosition + 1) {
-        throw new IllegalStateException(
-            String.format(
-                "Expected all positions in a single log"
-                    + " entry batch to increase by 1 starting at %d, but got %d followed by %d",
-                positions.getLeft(), lastPosition, pos));
-      }
-
-      positions.setRight(pos);
-      lastPosition = pos;
-      offset += positionReader.getLength();
-    } while (offset < view.capacity());
-
-    return positions;
-  }
-
   @Override
   public HealthReport getHealthReport() {
     return actor.isClosed()
@@ -243,6 +157,40 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
   @Override
   public void removeFailureListener(final FailureListener failureListener) {
     actor.run(() -> failureListeners.remove(failureListener));
+  }
+
+  private void writeBatch() {
+    final var peek = sequencer.peek();
+    if (peek == null) {
+      // wait for signal from sequencer
+      return;
+    }
+    appendBackpressureMetrics.newEntryToAppend();
+
+    final var highestPosition = peek.firstPosition() + peek.entries().size() - 1;
+    if (appendEntryLimiter.tryAcquire(highestPosition)) {
+      final var sequencedBatch = sequencer.tryRead();
+      // Peeked something, so we should be able to read the same item because we are the only
+      // reader. If not, something has gone very wrong.
+      assert sequencedBatch == peek;
+
+      final var serialized = serializer.serializeBatch(sequencedBatch);
+      final var listener =
+          new Listener(
+              this,
+              highestPosition,
+              appenderMetrics.startAppendLatencyTimer(),
+              appenderMetrics.startCommitLatencyTimer());
+      logStorage.append(sequencedBatch.firstPosition(), highestPosition, serialized, listener);
+      actor.run(this::writeBatch);
+    } else {
+      appendBackpressureMetrics.deferred();
+      LOG.trace(
+          "Backpressure happens: in flight {} limit {}",
+          appendEntryLimiter.getInflight(),
+          appendEntryLimiter.getLimit());
+      // we will be called later again
+    }
   }
 
   private void onFailure(final Throwable error) {
