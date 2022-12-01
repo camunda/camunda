@@ -21,8 +21,6 @@ import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
-import io.camunda.zeebe.shared.management.BackupEndpoint.ErrorResponse;
-import io.camunda.zeebe.shared.management.BackupEndpoint.TakeBackupResponse;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.Error;
 import java.util.List;
@@ -54,8 +52,8 @@ final class BackupEndpointTest {
 
       // then
       assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
-          .isEqualTo(new ErrorResponse(1, "failure"));
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
     }
 
     @Test
@@ -71,24 +69,8 @@ final class BackupEndpointTest {
 
       // then
       assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(ErrorResponse.class))
-          .isEqualTo(new ErrorResponse(1, "failure"));
-    }
-
-    @Test
-    void shouldReturnNewBackupIdOnSuccess() {
-      // given
-      final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
-      doReturn(CompletableFuture.completedFuture(3L)).when(api).takeBackup(anyLong());
-
-      // when
-      final WebEndpointResponse<?> response = endpoint.take(1);
-
-      // then
-      assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(TakeBackupResponse.class))
-          .isEqualTo(new TakeBackupResponse(3));
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
     }
   }
 
