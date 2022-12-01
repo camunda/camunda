@@ -8,7 +8,7 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
 
-import {Button, DocsLink, EntityList, Icon, Tooltip} from 'components';
+import {Button, DocsLink, EntityList, Icon, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -81,6 +81,7 @@ export function Processes({mightFail, user}) {
 
   return (
     <div className="Processes">
+      <PageTitle pageName={t('processes.processOverview')} />
       <h1 className="processOverview">
         {t('processes.processOverview')}
         {processes && (

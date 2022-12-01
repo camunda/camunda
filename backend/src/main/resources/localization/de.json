@@ -14,6 +14,7 @@
     "help": "Hilfe"
   },
   "login": {
+    "label": "Einloggen",
     "appName": "Optimize",
     "username": "Nutzername",
     "password": "Passwort",
@@ -31,6 +32,7 @@
     "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
   },
   "license": {
+    "label": "Lizenz",
     "licensedFor": "Lizenziert für",
     "validUntil": "Gültig bis",
     "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
@@ -928,6 +930,7 @@
     "viewMore": "Mehr sehen",
     "viewLess": "Weniger sehen",
     "configure": "Konfigurieren",
+    "new": "Neuer",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"

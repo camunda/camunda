@@ -8,7 +8,7 @@
 import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Deleter, Dropdown, Input} from 'components';
+import {Deleter, Dropdown} from 'components';
 
 import {deleteEvents, loadIngestedEvents} from './service';
 import {IngestedEvents} from './IngestedEvents';

@@ -23,6 +23,7 @@ import {
   ReportTemplateModal,
   DashboardTemplateModal,
   Badge,
+  PageTitle,
 } from 'components';
 import {formatters, loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
@@ -147,6 +148,7 @@ export class Collection extends React.Component {
 
     return (
       <div className="Collection">
+        <PageTitle pageName={t('common.collection.label')} resourceName={collection?.name} />
         <div className="header">
           <Icon size="24" type="collection" />
           {collection && (

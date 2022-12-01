@@ -14,6 +14,7 @@
     "help": "Help"
   },
   "login": {
+    "label": "Log in",
     "appName": "Optimize",
     "username": "Username",
     "password": "Password",
@@ -31,6 +32,7 @@
     "timezone": "Date and Time displayed in local timezone:"
   },
   "license": {
+    "label": "License",
     "licensedFor": "Licensed for",
     "validUntil": "Valid until",
     "redirectMessage": "You will be redirected to login page shortly. <a href=\"./\">Click here to go to login page immediately</a>",
@@ -928,6 +930,7 @@
     "viewMore": "View More",
     "viewLess": "View Less",
     "configure": "Configure",
+    "new": "New",
     "process": {
       "label": "Process",
       "label-plural": "Processes"

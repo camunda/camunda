@@ -8,7 +8,7 @@
 import React from 'react';
 import equal from 'fast-deep-equal';
 
-import {BPMNDiagram, MessageBox} from 'components';
+import {BPMNDiagram, MessageBox, PageTitle} from 'components';
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
@@ -47,6 +47,7 @@ export class BranchAnalysis extends React.Component {
 
     return (
       <div className="BranchAnalysis">
+        <PageTitle pageName={t('analysis.branchAnalysis')} />
         <BranchControlPanel
           {...config}
           hoveredControl={hoveredControl}
