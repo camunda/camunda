@@ -1,0 +1,51 @@
+name: Pull Request Benchmark
+on:
+  pull_request:
+    types:
+      - labeled
+      - unlabeled
+      - synchronize
+      - closed
+
+jobs:
+  create-benchmark:
+    name: Create PR benchmark
+    if: github.event.action == 'labeled' && github.event.label.name == 'benchmark'
+    uses: ./.github/workflows/benchmark.yml
+    secrets: inherit
+    with:
+      name: pr-${{github.event.pull_request.number}}-benchmark
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ github.event.pull_request.head.ref }}
+  update-benchmark:
+    name: Update PR benchmark
+    if: github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')
+    uses: ./.github/workflows/benchmark.yml
+    secrets: inherit
+    with:
+      name: pr-${{github.event.pull_request.number}}-benchmark
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ github.event.pull_request.head.ref }}
+  delete-benchmark:
+    name: Delete PR benchmark
+    if: >
+      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
+      || (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: google-github-actions/auth@v1
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: zeebe-io
+          install_components: gke-gcloud-auth-plugin, kubectl
+      - uses: google-github-actions/get-gke-credentials@v1.0.0
+        with:
+          cluster_name: zeebe-cluster
+          location: europe-west1-b
+      - name: Delete benchmarks
+        run: |
+          kubectl delete ns pr-${{github.event.pull_request.number}}-benchmark
