@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.admin.backup;
 
+import static java.lang.Long.max;
+
 import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.cmd.NoTopologyAvailableException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
@@ -38,13 +40,49 @@ public final class BackupRequestHandler implements BackupApi {
   public CompletionStage<Long> takeBackup(final long backupId) {
     return checkTopologyComplete()
         .thenCompose(
-            topology ->
-                CompletableFuture.allOf(
-                        topology.getPartitions().stream()
-                            .map(partitionId -> getBackupRequestForPartition(backupId, partitionId))
-                            .map(brokerClient::sendRequestWithRetry)
-                            .toArray(CompletableFuture[]::new))
-                    .thenApply(ignore -> backupId));
+            topology -> {
+              final var backupsTaken =
+                  topology.getPartitions().stream()
+                      .map(partitionId -> getBackupRequestForPartition(backupId, partitionId))
+                      .map(brokerClient::sendRequestWithRetry)
+                      .toList();
+
+              return CompletableFuture.allOf(backupsTaken.toArray(CompletableFuture[]::new))
+                  .thenApply(
+                      ignore -> {
+
+                        // If all partition created checkpoint, then return success.
+                        // If all partitions rejected with the requested id or some rejected with a
+                        // higher id, then fail.
+                        // If some partitions created checkpoint, other partition
+                        // rejected with the same id then return success. The partitions that
+                        // rejected might have created a checkpoint due to inter-partition
+                        // communication, or it had already created one in a previous attempt to
+                        // take the backup. Since it is difficult to distinguish these cases, we
+                        // assume it as a success because other partitions have created a new
+                        // backup.
+                        final var aggregatedResponse =
+                            backupsTaken.stream()
+                                .map(response -> response.join().getResponse())
+                                .distinct()
+                                .reduce(
+                                    (r1, r2) ->
+                                        new BackupResponse(
+                                            r1.created() || r2.created(),
+                                            max(r1.checkpointId(), r2.checkpointId())))
+                                .orElseThrow();
+
+                        if (aggregatedResponse.created()
+                            && aggregatedResponse.checkpointId() == backupId) {
+                          // atleast one partition created a new checkpoint && all partitions have
+                          // the latest checkpoint at backupId
+                          return backupId;
+                        } else {
+                          throw new BackupAlreadyExistException(
+                              backupId, aggregatedResponse.checkpointId());
+                        }
+                      });
+            });
   }
 
   @Override
