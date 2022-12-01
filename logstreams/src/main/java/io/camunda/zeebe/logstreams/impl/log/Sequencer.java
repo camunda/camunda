@@ -153,5 +153,6 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
     this.consumer = consumer;
   }
 
-  record SequencedBatch(long firstPosition, long sourcePosition, List<LogAppendEntry> entries) {}
+  public record SequencedBatch(
+      long firstPosition, long sourcePosition, List<LogAppendEntry> entries) {}
 }

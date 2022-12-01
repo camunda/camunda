@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants;
 import io.camunda.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
+import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -41,7 +42,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
 
   private final String name;
   private final Sequencer sequencer;
-  private final Serializer serializer = new Serializer();
+  private final SequencedBatchSerializer serializer = new SequencedBatchSerializer();
   private final LogStorage logStorage;
   private final AppendLimiter appendEntryLimiter;
   private final AppendBackpressureMetrics appendBackpressureMetrics;

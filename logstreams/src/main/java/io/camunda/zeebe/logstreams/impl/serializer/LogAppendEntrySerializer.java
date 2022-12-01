@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.serializer;
 
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
@@ -15,22 +15,19 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceE
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
+import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 
-/**
- * Temporary central point to serialize log entries to the dispatcher.
- *
- * <p>TODO: once we get rid of the dispatcher, we need to maintain backwards compatibility by adding
- * some padded framing around each entry, unfortunately.
- */
+/** Serializes {@link LogAppendEntry}, including legacy dispatcher framing. */
 final class LogAppendEntrySerializer {
 
   /**
    * Serializes an entry into the given destination buffer. Returns the length of the serialized
-   * entry, unframed and unaligned.
+   * entry, framed but unaligned.
    *
    * @param writeBuffer the buffer to serialize into
    * @param writeBufferOffset the offset to start serializing at in the {@code writeBuffer}
@@ -38,7 +35,7 @@ final class LogAppendEntrySerializer {
    * @param position the position of the entry
    * @param sourcePosition the source record position of the entry
    * @param entryTimestamp the timestamp; useful to pass the same for a complete batch, for example
-   * @return the length of the serialized entry, without dispatcher framing/alignment
+   * @return the length of the serialized entry, with dispatcher framing but not aligned
    * @throws IllegalArgumentException if the entry's value is empty, i.e. has a length of 0
    */
   int serialize(
@@ -55,6 +52,7 @@ final class LogAppendEntrySerializer {
     final var metadata = entry.recordMetadata();
     final var value = entry.recordValue();
     final var metadataLength = metadata.getLength();
+    final var framedEntryLength = framedLength(entry);
 
     if (writeBufferOffset < 0) {
       throw new IllegalArgumentException(
@@ -79,14 +77,25 @@ final class LogAppendEntrySerializer {
               .formatted(entryTimestamp));
     }
 
-    setPosition(writeBuffer, writeBufferOffset, position);
-    setSourceEventPosition(writeBuffer, writeBufferOffset, sourcePosition);
-    setKey(writeBuffer, writeBufferOffset, key);
-    setTimestamp(writeBuffer, writeBufferOffset, entryTimestamp);
-    writeMetadata(writeBuffer, writeBufferOffset, metadata, metadataLength);
-    value.write(writeBuffer, valueOffset(writeBufferOffset, metadataLength));
+    // Write the dispatcher framing
+    writeBuffer.putInt(DataFrameDescriptor.lengthOffset(writeBufferOffset), framedEntryLength);
+    final var entryOffset = writeBufferOffset + DataFrameDescriptor.HEADER_LENGTH;
 
-    return LogEntryDescriptor.headerLength(metadataLength) + value.getLength();
+    // Write the entry
+    setPosition(writeBuffer, entryOffset, position);
+    setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
+    setKey(writeBuffer, entryOffset, key);
+    setTimestamp(writeBuffer, entryOffset, entryTimestamp);
+    writeMetadata(writeBuffer, entryOffset, metadata, metadataLength);
+    value.write(writeBuffer, valueOffset(entryOffset, metadataLength));
+
+    return framedEntryLength;
+  }
+
+  int framedLength(final LogAppendEntry entry) {
+    return DataFrameDescriptor.HEADER_LENGTH
+        + LogEntryDescriptor.headerLength(entry.recordMetadata().getLength())
+        + entry.recordValue().getLength();
   }
 
   private void writeMetadata(
