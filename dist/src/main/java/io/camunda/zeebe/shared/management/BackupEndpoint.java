@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
@@ -63,9 +64,11 @@ final class BackupEndpoint {
                       .formatted(backupId, backupId)),
           202);
     } catch (final CompletionException e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getCause().getMessage()),
-          WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      final var errorCode =
+          e.getCause() instanceof BackupAlreadyExistException
+              ? 409
+              : WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+      return new WebEndpointResponse<>(new Error().message(e.getCause().getMessage()), errorCode);
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
