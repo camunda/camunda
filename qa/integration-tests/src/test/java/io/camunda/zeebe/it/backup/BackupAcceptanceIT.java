@@ -12,13 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
-import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
+import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
 import io.zeebe.containers.ZeebeNode;
@@ -124,10 +124,10 @@ final class BackupAcceptanceIT {
     }
 
     // when
-    final var response = actuator.take(1L);
+    final var response = actuator.take(1);
 
     // then
-    assertThat(response).isEqualTo(new TakeBackupResponse(1L));
+    assertThat(response).isInstanceOf(TakeBackupResponse.class);
     waitUntilBackupIsCompleted(actuator, 1L);
   }
 
@@ -157,8 +157,8 @@ final class BackupAcceptanceIT {
     }
 
     // when
-    actuator.take(1L);
-    actuator.take(2L);
+    actuator.take(1);
+    actuator.take(2);
 
     waitUntilBackupIsCompleted(actuator, 1L);
     waitUntilBackupIsCompleted(actuator, 2L);

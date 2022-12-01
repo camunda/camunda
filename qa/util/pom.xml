@@ -81,5 +81,6 @@
       <groupId>eu.rekawek.toxiproxy</groupId>
       <artifactId>toxiproxy-java</artifactId>
     </dependency>
+
   </dependencies>
 </project>

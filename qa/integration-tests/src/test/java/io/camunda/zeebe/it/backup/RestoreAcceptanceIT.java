@@ -15,12 +15,12 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
-import io.camunda.zeebe.qa.util.actuator.BackupActuator.TakeBackupResponse;
 import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
+import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.util.Map;
@@ -41,7 +41,7 @@ final class RestoreAcceptanceIT {
   private static final Network NETWORK = Network.newNetwork();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
-  private static final int BACKUP_ID = 1;
+  private static final long BACKUP_ID = 1;
 
   @Container
   private static final MinioContainer MINIO =
@@ -72,7 +72,7 @@ final class RestoreAcceptanceIT {
           .withStartupCheckStrategy(
               new OneShotStartupCheckStrategy().withTimeout(Duration.ofMinutes(1)))
           .withEnv("ZEEBE_RESTORE", "true")
-          .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", Integer.toString(BACKUP_ID))
+          .withEnv("ZEEBE_RESTORE_FROM_BACKUP_ID", Long.toString(BACKUP_ID))
           .withEnv("ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEBACKUP", "true")
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
           .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME)
@@ -113,13 +113,13 @@ final class RestoreAcceptanceIT {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
     final var response = actuator.take(BACKUP_ID);
-    assertThat(response).isEqualTo(new TakeBackupResponse(BACKUP_ID));
+    assertThat(response).isInstanceOf(TakeBackupResponse.class);
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
-              final var status = actuator.status(response.id());
+              final var status = actuator.status(BACKUP_ID);
               assertThat(status)
                   .extracting(BackupInfo::getBackupId, BackupInfo::getState)
                   .containsExactly(1L, StateCode.COMPLETED);
@@ -141,13 +141,13 @@ final class RestoreAcceptanceIT {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
     final var response = actuator.take(BACKUP_ID);
-    assertThat(response).isEqualTo(new TakeBackupResponse(BACKUP_ID));
+    assertThat(response).isInstanceOf(TakeBackupResponse.class);
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
         .ignoreExceptions() // 404 NOT_FOUND throws exception
         .untilAsserted(
             () -> {
-              final var status = actuator.status(response.id());
+              final var status = actuator.status(BACKUP_ID);
               assertThat(status)
                   .extracting(BackupInfo::getBackupId, BackupInfo::getState)
                   .containsExactly(1L, StateCode.COMPLETED);
