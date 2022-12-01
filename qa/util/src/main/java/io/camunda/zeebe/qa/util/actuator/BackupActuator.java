@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.actuator;
 
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import feign.Body;
 import feign.Feign;
 import feign.FeignException;
 import feign.FeignException.InternalServerError;
@@ -24,7 +25,6 @@ import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
-import io.camunda.zeebe.shared.management.openapi.models.TakeBackupRequest;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.zeebe.containers.ZeebeNode;
 import java.io.IOException;
@@ -32,7 +32,6 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.springframework.web.bind.annotation.RequestBody;
 
 /**
  * Java interface for the node's backup actuator. To instantiate this interface, you can use {@link
@@ -82,7 +81,8 @@ public interface BackupActuator {
    */
   @RequestLine("POST /")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  TakeBackupResponse take(@RequestBody final TakeBackupRequest request);
+  @Body("%7B\"backupId\": \"{backupId}\"%7D")
+  TakeBackupResponse take(@Param("backupId") long backupId);
 
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})

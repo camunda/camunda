@@ -18,7 +18,6 @@ import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
-import io.camunda.zeebe.shared.management.openapi.models.TakeBackupRequest;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.containers.ZeebeBrokerNode;
@@ -125,7 +124,7 @@ final class BackupAcceptanceIT {
     }
 
     // when
-    final var response = actuator.take(new TakeBackupRequest().backupId(1L));
+    final var response = actuator.take(1);
 
     // then
     assertThat(response).isInstanceOf(TakeBackupResponse.class);
@@ -158,8 +157,8 @@ final class BackupAcceptanceIT {
     }
 
     // when
-    actuator.take(new TakeBackupRequest().backupId(1L));
-    actuator.take(new TakeBackupRequest().backupId(2L));
+    actuator.take(1);
+    actuator.take(2);
 
     waitUntilBackupIsCompleted(actuator, 1L);
     waitUntilBackupIsCompleted(actuator, 2L);

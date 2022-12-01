@@ -20,7 +20,6 @@ import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
-import io.camunda.zeebe.shared.management.openapi.models.TakeBackupRequest;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
@@ -113,7 +112,7 @@ final class RestoreAcceptanceIT {
             .build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
-    final var response = actuator.take(new TakeBackupRequest().backupId(BACKUP_ID));
+    final var response = actuator.take(BACKUP_ID);
     assertThat(response).isInstanceOf(TakeBackupResponse.class);
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
@@ -141,7 +140,7 @@ final class RestoreAcceptanceIT {
             .build()) {
       client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
     }
-    final var response = actuator.take(new TakeBackupRequest().backupId(BACKUP_ID));
+    final var response = actuator.take(BACKUP_ID);
     assertThat(response).isInstanceOf(TakeBackupResponse.class);
     Awaitility.await("until a backup exists with the given ID")
         .atMost(Duration.ofSeconds(30))
