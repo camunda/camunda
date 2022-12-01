@@ -143,6 +143,43 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
+  void shouldNotCreateCheckpointIfHigherCheckpointExists() {
+    // given
+    final long checkpointId = 10;
+    final long checkpointPosition = 10;
+    state.setCheckpointInfo(checkpointId, checkpointPosition);
+
+    final int lowerCheckpointId = 1;
+    final CheckpointRecord value = new CheckpointRecord().setCheckpointId(lowerCheckpointId);
+    final MockTypedCheckpointRecord record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 10, 0, CheckpointIntent.CREATE, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then
+
+    // backup is not triggered
+    verify(backupManager, never()).takeBackup(lowerCheckpointId, checkpointPosition + 10);
+
+    // followup event is written
+    assertThat(result.records()).hasSize(1);
+    final Event followupEvent = result.records().get(0);
+    assertThat(followupEvent.intent()).isEqualTo(CheckpointIntent.IGNORED);
+    assertThat(followupEvent.type()).isEqualTo(RecordType.EVENT);
+
+    // followup event contains latest checkpoint info
+    final CheckpointRecord followupRecord = (CheckpointRecord) followupEvent.value();
+    assertThat(followupRecord.getCheckpointId()).isEqualTo(checkpointId);
+    assertThat(followupRecord.getCheckpointPosition()).isEqualTo(checkpointPosition);
+
+    // state not changed
+    assertThat(state.getCheckpointId()).isEqualTo(checkpointId);
+    assertThat(state.getCheckpointPosition()).isEqualTo(checkpointPosition);
+  }
+
+  @Test
   void shouldReplayCreatedRecord() {
     // given
     final long checkpointId = 1;

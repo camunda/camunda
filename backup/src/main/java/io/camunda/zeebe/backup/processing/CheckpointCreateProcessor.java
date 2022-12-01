@@ -64,10 +64,16 @@ public final class CheckpointCreateProcessor {
           record, CheckpointIntent.CREATED, followupRecord, resultBuilder);
     } else {
       metrics.ignored();
-      // A checkpoint already exists. Hence ignore the command. Note:- this is not an error, so not
-      // considered as a "rejection"
+      // A checkpoint already exists. Ignore the command. Use the latest checkpoint info in
+      // the record so that the response sent contains the latest checkpointId. This is useful to
+      // return useful information back to the client.
       return createFollowUpAndResponse(
-          record, CheckpointIntent.IGNORED, checkpointRecord, resultBuilder);
+          record,
+          CheckpointIntent.IGNORED,
+          new CheckpointRecord()
+              .setCheckpointId(checkpointState.getCheckpointId())
+              .setCheckpointPosition(checkpointState.getCheckpointPosition()),
+          resultBuilder);
     }
   }
 
