@@ -63,7 +63,7 @@ public final class LogStreamWriterTest {
     final LoggedEvent event = readerRule.readEventAtPosition(position);
 
     assertThat(event)
-        .withFailMessage("No written event found at position: {}", position)
+        .withFailMessage("No written event found at position: <%s>", position)
         .isNotNull();
 
     return event;
