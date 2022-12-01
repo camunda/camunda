@@ -15,10 +15,6 @@ import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
@@ -31,11 +27,6 @@ import org.junit.rules.RuleChain;
 public final class LogStreamWriterTest {
   private static final DirectBuffer EVENT_VALUE = wrapString("value");
   private static final DirectBuffer EVENT_METADATA = wrapString("metadata");
-
-  /** used by some test to write to the logstream in an actor thread. */
-  @Rule
-  public final ControlledActorSchedulerRule writerScheduler = new ControlledActorSchedulerRule();
-
   private final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
@@ -209,33 +200,6 @@ public final class LogStreamWriterTest {
     assertThat(secondPosition).isGreaterThan(firstPosition);
     assertThat(getWrittenEvent(firstPosition).getKey()).isEqualTo(123L);
     assertThat(getWrittenEvent(secondPosition).getKey()).isEqualTo(124L);
-  }
-
-  @Test
-  public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException {
-    final Callable<Long> doWrite = () -> tryWrite(appendEntry.recordValue(EVENT_VALUE));
-
-    // given
-    final long firstTimestamp = System.currentTimeMillis();
-    writerScheduler.getClock().setCurrentTime(firstTimestamp);
-
-    // when
-    final ActorFuture<Long> firstPosition = writerScheduler.call(doWrite);
-    writerScheduler.workUntilDone();
-
-    // then
-    assertThat(getWrittenEvent(firstPosition.get()).getTimestamp()).isEqualTo(firstTimestamp);
-
-    // given
-    final long secondTimestamp = firstTimestamp + 1_000;
-    writerScheduler.getClock().setCurrentTime(secondTimestamp);
-
-    // when
-    final ActorFuture<Long> secondPosition = writerScheduler.call(doWrite);
-    writerScheduler.workUntilDone();
-
-    // then
-    assertThat(getWrittenEvent(secondPosition.get()).getTimestamp()).isEqualTo(secondTimestamp);
   }
 
   @Test
