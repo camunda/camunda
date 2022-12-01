@@ -109,20 +109,6 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
-  public static List<String> getDuplicateMessageNames(
-      final Stream<MessageEventDefinition> eventDefinitions) {
-
-    final Stream<Message> messages =
-        eventDefinitions
-            .map(MessageEventDefinition::getMessage)
-            .filter(m -> m.getName() != null && !m.getName().isEmpty());
-
-    return messages.collect(groupingBy(Message::getName, counting())).entrySet().stream()
-        .filter(e -> e.getValue() > 1)
-        .map(Entry::getKey)
-        .collect(Collectors.toList());
-  }
-
   public static void verifyNoDuplicatedBoundaryEvents(
       final Activity activity, final Consumer<String> errorCollector) {
 
@@ -345,12 +331,6 @@ public class ModelUtil {
   private static String duplicatedMessageNames(final String messageName) {
     return String.format(
         "Multiple message event definitions with the same name '%s' are not allowed.", messageName);
-  }
-
-  private static String duplicatedErrorCodes(final String errorCode) {
-    return String.format(
-        "Multiple error event definitions with the same errorCode '%s' are not allowed.",
-        errorCode);
   }
 
   private static String duplicatedSignalNames(final String signalName) {
