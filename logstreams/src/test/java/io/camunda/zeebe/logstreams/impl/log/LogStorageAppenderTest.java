@@ -120,51 +120,6 @@ final class LogStorageAppenderTest {
     }
   }
 
-  @Test
-  void shouldFailActorWhenDetectingGapsInPositions() {
-    // given
-    final var value = new Value(1);
-
-    // the stub has to be defined before we start the actor, as otherwise it is accessed by multiple
-    // threads, which is undefined behavior in Mockito. See the FAQ,
-    // https://github.com/mockito/mockito/wiki/FAQ#is-mockito-thread-safe. The FAQ doesn't mention
-    // this case in particular, but you can test this yourself - if you stub it after, it will
-    // sometimes receive the invocation pointing to a different method than peekBlock.
-    when(subscription.peekBlock(any(BlockPeek.class), anyInt(), anyBoolean()))
-        .thenAnswer(
-            a -> {
-              final var result = (int) a.callRealMethod();
-              if (result <= 0) {
-                return result;
-              }
-
-              final BlockPeek block = a.getArgument(0);
-              final LoggedEventImpl event = new LoggedEventImpl();
-              event.wrap(block.getBuffer(), 0);
-
-              // corrupt second entry
-              LogEntryDescriptor.setPosition(
-                  block.getBuffer(),
-                  DataFrameDescriptor.messageOffset(event.getLength()),
-                  WRONG_POSITION);
-
-              return result;
-            });
-    scheduler.submitActor(appender).join();
-
-    // when
-    writer.tryWrite(
-        new MutableLogAppendEntry().recordValue(value),
-        new MutableLogAppendEntry().recordValue(value));
-
-    // then
-    Awaitility.await("until the actor has failed")
-        .atMost(Duration.ofSeconds(10))
-        .until(appender::isActorClosed);
-    reader.seekToFirstEvent();
-    assertThat(reader.hasNext()).isFalse();
-  }
-
   private record Value(int value) implements BufferWriter {
     private static Value of(final LoggedEvent event) {
       return new Value(event.getValueBuffer().getInt(event.getValueOffset(), Protocol.ENDIANNESS));
