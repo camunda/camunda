@@ -9,9 +9,6 @@
     "stable/8.1"
   ],
   "dependencyDashboard": false,
-  "semanticCommits": "enabled",
-  "semanticCommitType": "deps",
-  "semanticCommitScope": "docker",
   "enabledManagers": [
     "dockerfile"
   ],
@@ -28,6 +25,9 @@
     }
   ],
   "dockerfile": {
+    "semanticCommits": "enabled",
+    "semanticCommitType": "deps",
+    "semanticCommitScope": "docker",
     "ignorePaths": [
       "benchmarks/**",
       "clients/go/vendor/**"
