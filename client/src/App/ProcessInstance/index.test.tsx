@@ -53,6 +53,11 @@ import {mockModify} from 'modules/mocks/api/processInstances/modify';
 import {mockIncidents} from 'modules/mocks/incidents';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 
+const handleRefetchSpy = jest.spyOn(
+  processInstanceDetailsStore,
+  'handleRefetch'
+);
+
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
     displayNotification: jest.fn(),
@@ -154,9 +159,7 @@ describe('Instance', () => {
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.getByTestId('diagram-panel-body')).toBeInTheDocument();
     expect(screen.getByText('Instance History')).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument()
-    );
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     expect(
       within(screen.getByTestId('instance-header')).getByTestId('INCIDENT-icon')
     ).toBeInTheDocument();
@@ -226,12 +229,15 @@ describe('Instance', () => {
 
     mockFetchProcessInstance().withServerError(404);
     jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
     mockFetchProcessInstance().withServerError(404);
     jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
 
     mockFetchProcessInstance().withServerError(404);
     jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
@@ -390,7 +396,9 @@ describe('Instance', () => {
     });
 
     await user.click(
-      screen.getByRole('button', {name: /add single flow node instance/i})
+      await screen.findByRole('button', {
+        name: /add single flow node instance/i,
+      })
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
@@ -404,7 +412,9 @@ describe('Instance', () => {
 
     expect(screen.getByText(/flow node modifications/i)).toBeInTheDocument();
 
-    expect(screen.getByText(/variable modifications/gi)).toBeInTheDocument();
+    expect(
+      screen.getByText('No planned variable modifications')
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
@@ -517,7 +527,7 @@ describe('Instance', () => {
     ).toHaveBeenCalledTimes(1);
 
     await user.click(screen.getByTestId('discard-all-button'));
-    await user.click(screen.getByTestId('discard-button'));
+    await user.click(await screen.findByTestId('discard-button'));
 
     clearPollingStates();
     mockRequests();
@@ -578,13 +588,15 @@ describe('Instance', () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     await user.click(
-      screen.getByRole('button', {name: /add single flow node instance/i})
+      await screen.findByRole('button', {
+        name: /add single flow node instance/i,
+      })
     );
 
     expect(await screen.findByTestId('badge-plus-icon')).toBeInTheDocument();
 
     await user.click(screen.getByTestId('apply-modifications-button'));
-    await user.click(screen.getByRole('button', {name: 'Apply'}));
+    await user.click(await screen.findByRole('button', {name: 'Apply'}));
     expect(screen.getByText(/applying modifications.../i)).toBeInTheDocument();
 
     mockRequests();

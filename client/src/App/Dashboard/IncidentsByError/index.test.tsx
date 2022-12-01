@@ -11,6 +11,7 @@ import {
   within,
   screen,
   waitForElementToBeRemoved,
+  waitFor,
 } from 'modules/testing-library';
 import {IncidentsByError} from './index';
 import {
@@ -125,7 +126,7 @@ describe('IncidentsByError', () => {
 
     await user.click(expandButton);
 
-    const firstVersion = withinIncident.getByRole('link', {
+    const firstVersion = await withinIncident.findByRole('link', {
       name: "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Process mockProcess",
     });
     expect(
@@ -206,7 +207,7 @@ describe('IncidentsByError', () => {
     await user.click(expandButton);
 
     expect(
-      screen.getByRole('link', {
+      await screen.findByRole('link', {
         name: `View 37 Instances with error ${bigErrorMessage} in version 1 of Process mockProcess`,
       })
     ).toHaveAttribute(
@@ -238,8 +239,10 @@ describe('IncidentsByError', () => {
     });
     await user.click(processLink);
 
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?errorMessage=JSON\+path\+%27%24.paid%27\+has\+no\+result.&incidents=true$/
+      )
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });

@@ -6,7 +6,7 @@
  */
 
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {render, within, screen} from 'modules/testing-library';
+import {render, within, screen, waitFor} from 'modules/testing-library';
 import {InstancesByProcess} from './index';
 import {mockWithSingleVersion, mockWithMultipleVersions} from './index.setup';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -126,7 +126,7 @@ describe('InstancesByProcess', () => {
 
     await user.click(expandButton);
 
-    const firstVersion = screen.getByRole('link', {
+    const firstVersion = await screen.findByRole('link', {
       name: /View 42 Instances in Version 1 of Process First Version/,
     });
 
@@ -222,8 +222,10 @@ describe('InstancesByProcess', () => {
 
     await user.click(processLink);
 
-    expect(screen.getByTestId('search')).toHaveTextContent(
-      /^\?process=loanProcess&version=1&active=true&incidents=true$/
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?process=loanProcess&version=1&active=true&incidents=true$/
+      )
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
   });

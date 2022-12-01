@@ -6,7 +6,7 @@
  */
 
 import {incidentsByErrorStore} from './incidentsByError';
-import {waitFor} from '@testing-library/dom';
+import {waitFor} from 'modules/testing-library';
 import {mockFetchIncidentsByError} from 'modules/mocks/api/incidents/fetchIncidentsByError';
 
 describe('stores/incidentsByError', () => {

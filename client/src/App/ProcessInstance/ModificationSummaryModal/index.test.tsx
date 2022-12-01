@@ -554,26 +554,26 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        /This set of planned modifications cannot be applied. This instance is a child instance of/gi
+        /This set of planned modifications cannot be applied. This instance is a child instance of/i
       )
     ).not.toBeInTheDocument();
 
     expect(
-      screen.queryByText(/This instance is the child instance of/gi)
+      screen.queryByText(/This instance is the child instance of/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/some parent process - 2/gi)
+      screen.queryByText(/some parent process - 2/i)
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(
-        /, and cannot be canceled entirely. To cancel this instance, the root instance/gi
+        /, and cannot be canceled entirely. To cancel this instance, the root instance/i
       )
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/some root process - 3/gi)
+      screen.queryByText(/some root process - 3/i)
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/needs to be canceled./gi)
+      screen.queryByText(/needs to be canceled./i)
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
@@ -589,17 +589,17 @@ describe('Modification Summary Modal', () => {
 
     expect(
       await screen.findByText(
-        /This set of planned modifications cannot be applied. This instance is a child instance of/gi
+        /This set of planned modifications cannot be applied. This instance is a child instance of/i
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/some parent process - 2/gi)).toBeInTheDocument();
+    expect(screen.getByText(/some parent process - 2/i)).toBeInTheDocument();
     expect(
       screen.getByText(
-        /, and cannot be canceled entirely. To cancel this instance, the root instance/gi
+        /, and cannot be canceled entirely. To cancel this instance, the root instance/i
       )
     ).toBeInTheDocument();
-    expect(screen.getByText(/some root process - 3/gi)).toBeInTheDocument();
-    expect(screen.getByText(/needs to be canceled./gi)).toBeInTheDocument();
+    expect(screen.getByText(/some root process - 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/needs to be canceled./i)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
   });
 });

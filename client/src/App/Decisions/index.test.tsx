@@ -25,6 +25,8 @@ import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 
+const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
+
 jest.mock('modules/notifications', () => {
   const mockUseNotifications = {
     displayNotification: jest.fn(),
@@ -107,13 +109,17 @@ describe('<Decisions />', () => {
 
     expect(screen.getByTestId('search').textContent).toBe(queryString);
 
-    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(1));
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 
     jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
+
+    mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+
+    jest.runOnlyPendingTimers();
+    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
 
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 

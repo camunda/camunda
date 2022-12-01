@@ -63,9 +63,7 @@ describe('<DecisionInstance />', () => {
     expect(screen.getByTestId('drd')).toBeInTheDocument();
 
     await user.click(
-      within(screen.getByTestId('drd')).getByRole('button', {
-        name: 'Close DRD Panel',
-      })
+      await screen.findByRole('button', {name: 'Close DRD Panel'})
     );
 
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();

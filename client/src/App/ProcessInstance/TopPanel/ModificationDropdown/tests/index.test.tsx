@@ -115,7 +115,9 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'service-task-7',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
     expect(
       screen.getByTitle(/Add single flow node instance/)
     ).toHaveTextContent(/Add/);
@@ -146,7 +148,9 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'service-task-7',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
     await user.click(await screen.findByText(/Move/));
     expect(
       screen.queryByText(/Flow Node Modifications/)
@@ -168,8 +172,10 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'service-task-1',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Add/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
   });
@@ -189,8 +195,10 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'message-boundary',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
@@ -210,10 +218,10 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'boundary-event',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
     expect(
-      await screen.findByText(/Unsupported flow node type/)
+      await screen.findByText(/Flow Node Modifications/)
     ).toBeInTheDocument();
+    expect(screen.getByText(/Unsupported flow node type/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
@@ -274,8 +282,10 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'message_intermediate_catch_non_selectable',
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
 
@@ -283,8 +293,8 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'message_intermediate_catch_selectable',
     });
 
+    expect(await screen.findByText(/Add/)).toBeInTheDocument();
     expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
 
@@ -301,8 +311,8 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'message_intermediate_throw_selectable',
     });
 
+    expect(await screen.findByText(/Add/)).toBeInTheDocument();
     expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
 
@@ -344,8 +354,10 @@ describe('Modification Dropdown', () => {
       isMultiInstance: true,
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(await screen.findByText(/Add/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
 

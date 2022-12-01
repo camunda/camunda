@@ -6,7 +6,7 @@
  */
 
 import {processInstancesByNameStore} from './processInstancesByName';
-import {waitFor} from '@testing-library/dom';
+import {waitFor} from 'modules/testing-library';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 
 describe('stores/processInstancesByName', () => {
