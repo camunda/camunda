@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -486,6 +487,57 @@ final class ElasticsearchExporterTest {
           .extracting(RecordSequence::counter)
           .describedAs("Expect that the record counter is the same on retry")
           .containsExactly(1L, 1L);
+    }
+
+    @Test
+    void shouldStoreRecordCountersOnFlush() {
+      // given
+      when(client.shouldFlush()).thenReturn(true);
+
+      final var records =
+          List.of(
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.VARIABLE));
+
+      // when
+      records.forEach(exporter::export);
+
+      // then
+      final var expectedMetadataAsJSON =
+          "{\"recordCountersByValueType\":{\"PROCESS_INSTANCE\":2,\"VARIABLE\":1}}";
+      assertThat(controller.readMetadata())
+          .isPresent()
+          .map(metadata -> new String(metadata, StandardCharsets.UTF_8))
+          .hasValue(expectedMetadataAsJSON);
+    }
+
+    @Test
+    void shouldRestoreRecordCountersOnOpen() {
+      // given
+      final var storedMetadataAsJSON =
+          "{\"recordCountersByValueType\":{\"PROCESS_INSTANCE\":2,\"VARIABLE\":1}}";
+      final var serializedMetadata = storedMetadataAsJSON.getBytes(StandardCharsets.UTF_8);
+      controller.updateLastExportedRecordPosition(0L, serializedMetadata);
+
+      exporter.open(controller);
+
+      final var records =
+          List.of(
+              newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE),
+              newRecord(PARTITION_ID, ValueType.VARIABLE),
+              newRecord(PARTITION_ID, ValueType.JOB));
+
+      // when
+      records.forEach(exporter::export);
+
+      // then
+      final var recordSequenceCaptor = ArgumentCaptor.forClass(RecordSequence.class);
+      verify(client, times(records.size())).index(any(), recordSequenceCaptor.capture());
+
+      assertThat(recordSequenceCaptor.getAllValues())
+          .extracting(RecordSequence::counter)
+          .containsExactly(3L, 2L, 1L);
     }
 
     private static Record<?> newRecord(final int partitionId, final ValueType valueType) {
