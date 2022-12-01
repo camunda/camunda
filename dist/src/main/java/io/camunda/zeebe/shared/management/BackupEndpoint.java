@@ -18,7 +18,7 @@ import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.Error;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
-import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -48,17 +48,27 @@ final class BackupEndpoint {
   }
 
   @WriteOperation
-  public WebEndpointResponse<?> take(@Selector @NonNull final long id) {
+  public WebEndpointResponse<?> take(final long backupId) {
     try {
-      final long backupId = api.takeBackup(id).toCompletableFuture().join();
-      return new WebEndpointResponse<>(new TakeBackupResponse(backupId));
+      if (backupId <= 0) {
+        return new WebEndpointResponse<>(
+            new Error().message("A backupId must be provided and it must be > 0"),
+            WebEndpointResponse.STATUS_BAD_REQUEST);
+      }
+      api.takeBackup(backupId).toCompletableFuture().join();
+      return new WebEndpointResponse<>(
+          new TakeBackupResponse()
+              .message(
+                  "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
+                      .formatted(backupId, backupId)),
+          202);
     } catch (final CompletionException e) {
       return new WebEndpointResponse<>(
-          new ErrorResponse(id, e.getCause().getMessage()),
+          new Error().message(e.getCause().getMessage()),
           WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
-          new ErrorResponse(id, e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -158,10 +168,4 @@ final class BackupEndpoint {
       default -> throw new IllegalStateException("Unknown BackupState %s".formatted(status));
     };
   }
-
-  @VisibleForTesting
-  record ErrorResponse(long id, String failure) {}
-
-  @VisibleForTesting
-  record TakeBackupResponse(long id) {}
 }
