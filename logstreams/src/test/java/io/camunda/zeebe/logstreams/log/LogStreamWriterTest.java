@@ -241,15 +241,6 @@ public final class LogStreamWriterTest {
     assertThat(getWrittenEvent(position).getKey()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
-  @Test
-  public void shouldFailToWriteEventWithoutValue() {
-    // when
-    final long pos = tryWrite(appendEntry.reset());
-
-    // then
-    assertThat(pos).isEqualTo(0);
-  }
-
   // TODO: unclear if this is still necessary, and presumably we have more control with the
   //  replacement so we could get rid of this failsafe
   private long tryWrite(final LogAppendEntry entry) {
