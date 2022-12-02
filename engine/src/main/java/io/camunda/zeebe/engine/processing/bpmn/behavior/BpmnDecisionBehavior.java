@@ -74,15 +74,13 @@ public final class BpmnDecisionBehavior {
     final var decisionId = decisionIdOrFailure.get();
     final var decisionOrFailure = decisionBehavior.findDecisionById(decisionId);
     final Either<Failure, ParsedDecisionRequirementsGraph> drgOrFailure =
-        decisionOrFailure.flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision));
-    if (drgOrFailure.isLeft()) {
-      // any failures above have the same error type and the correct scope
-      final Failure formattedFailure =
-          decisionBehavior.formatDecisionLookupFailure(drgOrFailure.getLeft(), decisionId);
-      // decisions invoked by business rule tasks have a different error type
-      return Either.left(
-          new Failure(formattedFailure.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey));
-    }
+        decisionOrFailure
+            .flatMap(decision -> decisionBehavior.findAndParseDrgByDecision(decision))
+            // any failures above have the same error type and the correct scope
+            // decisions invoked by business rule tasks have a different error type
+            .mapLeft(
+                failure ->
+                    new Failure(failure.getMessage(), ErrorType.CALLED_DECISION_ERROR, scopeKey));
 
     final var variables = variableState.getVariablesAsDocument(scopeKey);
     final var resultOrFailure =

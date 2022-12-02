@@ -54,12 +54,18 @@ public class DecisionBehavior {
   public Either<Failure, PersistedDecision> findDecisionById(final String decisionId) {
     return Either.ofOptional(
             decisionState.findLatestDecisionById(BufferUtil.wrapString(decisionId)))
-        .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)));
+        .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)))
+        .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
   }
 
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
-    return findDrgByDecision(persistedDecision).flatMap(drg -> parseDrg(drg.getResource()));
+    return findDrgByDecision(persistedDecision)
+        .flatMap(drg -> parseDrg(drg.getResource()))
+        .mapLeft(
+            failure ->
+                formatDecisionLookupFailure(
+                    failure, BufferUtil.bufferAsString(persistedDecision.getDecisionId())));
   }
 
   public Failure formatDecisionLookupFailure(final Failure failure, final String decisionId) {
