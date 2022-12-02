@@ -117,7 +117,7 @@ jobs:
           helm dependency build
       - name: Helm install
         working-directory: benchmark-helm/zeebe-benchmark
-        run: |
+        run: >
           helm upgrade --install ${{ inputs.name }} . 
           --namespace ${{ inputs.name }}
           --create-namespace

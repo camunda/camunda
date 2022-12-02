@@ -60,7 +60,7 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ steps.data.outputs.ref }}
-      bechmark-load: |
+      bechmark-load: >
          --set starter.rate=100
          --set timer.replicas=1
          --set timer.rate=50
