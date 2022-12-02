@@ -98,8 +98,15 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     progressProcessInstances();
 
+    deployAndStartUndefinedTaskInstance();
+
     return true;
 
+  }
+
+  private void deployAndStartUndefinedTaskInstance() {
+    ZeebeTestUtil.deployProcess(client, "develop/undefined-task.bpmn");
+    ZeebeTestUtil.startProcessInstance(client, "undefined-task-process", null);
   }
 
   private void createInputOutputMappingInstances() {
