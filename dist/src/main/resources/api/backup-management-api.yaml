@@ -65,13 +65,7 @@ paths:
       summary: Get information of a backup
       description: A detailed information of the backup with the give backup id.
       parameters:
-        - name: backupId
-          in : path
-          description: Backup ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/BackupId'
       responses:
         '200':
           description: OK
@@ -92,13 +86,7 @@ paths:
       summary: Delete a backup
       description: Delete a backup with the given id
       parameters:
-        - name: backupId
-          in: path
-          description: Backup ID
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: '#/components/parameters/BackupId'
       responses:
         '204':
           description: Backup is deleted
@@ -110,6 +98,15 @@ paths:
           $ref: '#/components/responses/Error'
 
 components:
+  parameters:
+    BackupId:
+      name: backupId
+      required: true
+      in: path
+      description: Id of the backup
+      schema:
+        $ref: '#/components/schemas/BackupId'
+
   responses:
     Error:
       description: Generic error response
