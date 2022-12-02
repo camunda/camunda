@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import java.util.Optional;
 
 public final class MessageTransformer implements ModelElementTransformer<Message> {
 
@@ -35,12 +36,17 @@ public final class MessageTransformer implements ModelElementTransformer<Message
     final ExtensionElements extensionElements = element.getExtensionElements();
 
     if (extensionElements != null) {
-      final ZeebeSubscription subscription =
-          extensionElements.getElementsQuery().filterByType(ZeebeSubscription.class).singleResult();
-      final Expression correlationKeyExpression =
-          expressionLanguage.parseExpression(subscription.getCorrelationKey());
+      final Optional<ZeebeSubscription> subscription =
+          extensionElements
+              .getElementsQuery()
+              .filterByType(ZeebeSubscription.class)
+              .findSingleResult();
+      if (subscription.isPresent()) {
+        final Expression correlationKeyExpression =
+            expressionLanguage.parseExpression(subscription.get().getCorrelationKey());
 
-      executableElement.setCorrelationKeyExpression(correlationKeyExpression);
+        executableElement.setCorrelationKeyExpression(correlationKeyExpression);
+      }
     }
 
     if (element.getName() != null) {
