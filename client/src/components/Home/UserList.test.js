@@ -30,7 +30,6 @@ jest.mock('./service', () => ({
         type: 'user', // or group
       },
       role: 'manager', // or editor, viewer
-      hasFullScopeAuthorizations: false,
     },
     {
       id: 'GROUP:sales',

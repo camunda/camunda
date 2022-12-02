@@ -98,7 +98,7 @@ export default withErrorHandling(
             data={
               users &&
               users.map((user) => {
-                const {identity, role, hasFullScopeAuthorizations} = user;
+                const {identity, role} = user;
 
                 const numberOfManagers = users.filter(({role}) => role === 'manager').length;
                 const isLastManager = role === 'manager' && numberOfManagers === 1;
@@ -117,9 +117,6 @@ export default withErrorHandling(
                       )}`,
                     formatRole(role),
                   ],
-                  warning:
-                    hasFullScopeAuthorizations === false &&
-                    t('home.roles.missingAuthorizationsWarning'),
                   actions: !readOnly &&
                     !isLastManager && [
                       {

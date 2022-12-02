@@ -28,7 +28,6 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
   private String id;
   private IdentityWithMetadataResponseDto identity;
   private RoleType role;
-  private Boolean hasFullScopeAuthorizations;
 
   public CollectionRoleResponseDto(CollectionRoleResponseDto oldRole) {
     if (oldRole.getIdentity().getType().equals(IdentityType.USER)) {

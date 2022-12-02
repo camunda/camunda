@@ -14,7 +14,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateRequestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
@@ -28,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,20 +51,20 @@ public class CollectionRoleService {
     collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, userId);
   }
 
-  public void addUserAsEditorToAutomaticallyCreatedCollection (final String collectionId,
-                                                               final IdentityDto user) {
+  public void addUserAsEditorToAutomaticallyCreatedCollection(final String collectionId,
+                                                              final IdentityDto user) {
     Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
     collectionDefinition.ifPresent(collectionDefinitionDto -> {
       CollectionRoleRequestDto roleRequestDto = new CollectionRoleRequestDto(user, RoleType.EDITOR);
       if (collectionDefinitionDto.isAutomaticallyCreated()) {
-       if(!userAlreadyHasAtLeastEditorAccessToCollection(roleRequestDto, collectionDefinitionDto.getData().getRoles())) {
+        if (!userAlreadyHasAtLeastEditorAccessToCollection(roleRequestDto, collectionDefinitionDto.getData().getRoles())) {
 
-         final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(
-           user.getId(),
-           List.of(roleRequestDto)
-         );
-         collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, user.getId());
-       }
+          final List<CollectionRoleRequestDto> resolvedRolesToAdd = validateAndResolveIdentities(
+            user.getId(),
+            List.of(roleRequestDto)
+          );
+          collectionWriter.addRoleToCollection(collectionId, resolvedRolesToAdd, user.getId());
+        }
       } else {
         throw new NotAuthorizedException("User " + user.getId() + " is not authorized to edit membership for " +
                                            "collection " + collectionId);
@@ -76,10 +74,10 @@ public class CollectionRoleService {
 
   private boolean userAlreadyHasAtLeastEditorAccessToCollection(final CollectionRoleRequestDto roleRequestDto,
                                                                 final List<CollectionRoleRequestDto> roles) {
-    for(CollectionRoleRequestDto role : roles) {
+    for (CollectionRoleRequestDto role : roles) {
       if (role.getIdentity().equals(roleRequestDto.getIdentity()) &&
-          role.getRole().compareTo(roleRequestDto.getRole()) >= 0) {
-          return true;
+        role.getRole().compareTo(roleRequestDto.getRole()) >= 0) {
+        return true;
       }
     }
     return false;
@@ -164,7 +162,7 @@ public class CollectionRoleService {
     AuthorizedCollectionDefinitionDto authCollectionDto =
       authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
-    List<CollectionRoleResponseDto> roles = authCollectionDto.getDefinitionDto()
+    return authCollectionDto.getDefinitionDto()
       .getData()
       .getRoles()
       .stream()
@@ -175,26 +173,7 @@ public class CollectionRoleService {
           log.info("Identity with id {} is present in roles but does not exist anymore.", roleDto.getId());
           return CollectionRoleResponseDto.from(roleDto, new UserDto(roleDto.getIdentity().getId()));
         })
-      )
-      .collect(toList());
-
-    if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
-      for (CollectionRoleResponseDto role : roles) {
-        List<CollectionScopeEntryDto> scopes = authCollectionDto.getDefinitionDto().getData().getScope();
-        Boolean hasFullScopeAuthorizations = scopes.stream()
-          .allMatch(s -> definitionAuthorizationService.isAuthorizedToAccessDefinition(
-            role.getIdentity().getId(),
-            role.getIdentity().getType(),
-            s.getDefinitionKey(),
-            s.getDefinitionType(),
-            s.getTenants()
-          ));
-        role.setHasFullScopeAuthorizations(hasFullScopeAuthorizations);
-      }
-    }
-
-    Collections.sort(roles);
-    return roles;
+      ).sorted().collect(toList());
   }
 
 }
