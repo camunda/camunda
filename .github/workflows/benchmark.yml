@@ -127,4 +127,4 @@ jobs:
           --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
-          ${{ inputs.bechmarkLoad }}
+          ${{ inputs.bechmark-load }}
