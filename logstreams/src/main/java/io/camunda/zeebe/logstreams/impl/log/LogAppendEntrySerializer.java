@@ -38,7 +38,7 @@ final class LogAppendEntrySerializer {
    * @param position the position of the entry
    * @param sourcePosition the source record position of the entry
    * @param entryTimestamp the timestamp; useful to pass the same for a complete batch, for example
-   * @return the length of the serialized entry, unframed/unaligned
+   * @return the length of the serialized entry, without dispatcher framing/alignment
    * @throws IllegalArgumentException if the entry's value is empty, i.e. has a length of 0
    */
   int serialize(
