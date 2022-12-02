@@ -12,20 +12,16 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
 public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
 
-  @Ignore("Build fails often in CI")
   @Test
   public void testFlowNodeStatisticsForASimpleProcessInstance() throws Exception {
     // given
@@ -150,7 +146,6 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     assertStatistic(flowNodeStatistics, "alwaysFailingTask", 0, 2, 1, 0);
   }
 
-  @Ignore("Build fails often in CI")
   @Test
   public void testFlowNodeStatisticsForSubProcess() throws Exception {
     // given
@@ -182,23 +177,52 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     assertStatistic(flowNodeStatistics, "startEventSubprocess", 1, 0, 0, 0);
     assertStatistic(flowNodeStatistics, "innerSubprocess", 0, 1, 0, 0);
     assertStatistic(flowNodeStatistics, "startEventInnerSubprocess", 1, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "taskB", 0, 1, 0, 0);
+    assertStatistic(flowNodeStatistics, "taskB", 0, 0, 0, 0);
   }
 
-  @Ignore("Build fails often in CI")
+  @Test // due to https://github.com/camunda/operate/issues/3362
+  public void testMultiInstanceActiveCount() throws Exception {
+      var processInstanceKey = tester.deployProcess("develop/multi-instance-service-task.bpmn")
+          .waitUntil().processIsDeployed()
+          .then().startProcessInstance("multiInstanceServiceProcess", tester.getItemsPayloadFor(3))
+          .waitUntil().processInstanceIsStarted()
+          .then()
+          .getProcessInstanceKey();
+      tester.waitUntil().flowNodesAreActive("serviceTask", 3);
+
+      var flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
+       assertStatistic(flowNodeStatistics, "serviceTask", 0, 3, 0, 0);
+  }
+
+  @Test // due to https://github.com/camunda/operate/issues/3362
+  public void testMultiInstanceCountWithIncidentInBody() throws Exception {
+    // given
+    var  wrongPayload = "{\"items\": \"\"}";
+    // when
+    tester.deployProcess("develop/multi-instance-service-task.bpmn")
+        .waitUntil().processIsDeployed()
+        .then().startProcessInstance("multiInstanceServiceProcess", wrongPayload)
+        .waitUntil().processInstanceIsStarted()
+        .then().waitUntil().incidentIsActive();
+
+    // then
+    var flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(
+        tester.getProcessInstanceKey());
+    assertStatistic(flowNodeStatistics, "serviceTask", 0, 0, 0, 1);
+  }
+
   @Test
-  public void testFlowNodeStatisticsForAMultiInstanceProcessInstance() throws Exception {
+  public void testFlowNodeStatisticsForASequentialMultiInstance() throws Exception {
     // given
     final Long processInstanceKey = tester.deployProcess("sequential-noop.bpmn")
         .waitUntil().processIsDeployed()
         .then()
-        .startProcessInstance("sequential-noop",
-            "{\"items\": [" + IntStream.range(0, 23).boxed().map(Object::toString).collect(
-                Collectors.joining(",")) + "]}")
+        .startProcessInstance("sequential-noop", tester.getItemsPayloadFor(3))
         .waitUntil().processInstanceIsStarted()
         .and().waitUntil()
-        .flowNodesAreActive("subprcess-start-event", 23)
-        .then()
+        .flowNodesAreCompleted("subprocess-end-event", 3)
+        .and().waitUntil()
+        .flowNodeIsCompleted("end-event")
         .getProcessInstanceKey();
 
     // when
@@ -206,11 +230,11 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     // then statistics without sequential sub process
     assertThat(flowNodeStatistics.size()).as("flowNodeStatistics size should be 7").isEqualTo(7);
     assertStatistic(flowNodeStatistics, "start-event", 1, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "sequential-sub-process", 24, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "fork", 23, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "join", 23, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "subprcess-start-event", 23, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "subprocess-end-event", 23, 0, 0, 0);
+    assertStatistic(flowNodeStatistics, "sequential-sub-process", 3, 0, 0, 0);
+    assertStatistic(flowNodeStatistics, "fork", 3, 0, 0, 0);
+    assertStatistic(flowNodeStatistics, "join", 3, 0, 0, 0);
+    assertStatistic(flowNodeStatistics, "subprcess-start-event", 3, 0, 0, 0);
+    assertStatistic(flowNodeStatistics, "subprocess-end-event", 3, 0, 0, 0);
     assertStatistic(flowNodeStatistics, "end-event", 1, 0, 0, 0);
   }
 

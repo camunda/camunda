@@ -953,13 +953,21 @@ public class FlowNodeInstanceReader extends AbstractReader {
               .aggregation(terms(FLOW_NODE_ID_AGG).field(FLOW_NODE_ID)
                   .size(TERMS_AGG_SIZE)
                   .subAggregation(
-                    filter(COUNT_INCIDENT, termQuery(INCIDENT, true)))
+                      filter(COUNT_INCIDENT, boolQuery()
+                          // Need to count when MULTI_INSTANCE_BODY itself has an incident
+                          // .mustNot(termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
+                          .must(termQuery(INCIDENT, true))))
                   .subAggregation(
-                      filter(COUNT_CANCELED, termQuery(STATE, TERMINATED)))
+                      filter(COUNT_CANCELED, boolQuery()
+                          .mustNot(termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
+                          .must(termQuery(STATE, TERMINATED))))
                   .subAggregation(
-                      filter(COUNT_COMPLETED, termQuery(STATE, COMPLETED)))
+                      filter(COUNT_COMPLETED, boolQuery()
+                          .mustNot(termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
+                          .must(termQuery(STATE, COMPLETED))))
                   .subAggregation(
                       filter(COUNT_ACTIVE, boolQuery()
+                          .mustNot(termQuery(TYPE, FlowNodeType.MULTI_INSTANCE_BODY))
                           .must(termQuery(STATE, ACTIVE))
                           .must(termQuery(INCIDENT, false)))))
               .size(0));

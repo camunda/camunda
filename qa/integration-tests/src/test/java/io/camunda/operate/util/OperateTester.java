@@ -44,6 +44,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import io.camunda.operate.archiver.AbstractArchiverJob;
@@ -63,7 +66,6 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -161,6 +163,9 @@ public class OperateTester {
   private Predicate<Object[]> flowNodeIsCompletedCheck;
 
   @Autowired
+  @Qualifier("flowNodesAreCompletedCheck")
+  private Predicate<Object[]> flowNodesAreCompletedCheck;
+  @Autowired
   @Qualifier("flowNodeIsTerminatedCheck")
   private Predicate<Object[]> flowNodeIsTerminatedCheck;
   @Autowired
@@ -186,9 +191,6 @@ public class OperateTester {
   @Autowired
   @Qualifier("variableHasValue")
   private Predicate<Object[]> variableHasValue;
-
-  @Autowired
-  private ZeebeImporter zeebeImporter;
 
   @Autowired
   protected OperationExecutor operationExecutor;
@@ -390,6 +392,13 @@ public class OperateTester {
     logger.debug("FlowNode {} is completed.", activityId);
     return this;
   }
+
+  public OperateTester flowNodesAreCompleted(String activityId, int count) {
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodesAreCompletedCheck, processInstanceKey, activityId, count);
+    logger.debug("{} FlowNodes {} is completed.", count, activityId);
+    return this;
+  }
+
 
   public Long getFlowNodeInstanceKeyFor(final String flowNodeId) {
     return Long.parseLong(
@@ -778,6 +787,11 @@ public class OperateTester {
         .andExpect(status().isOk())
         .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
         .andReturn();
+  }
+
+  public String getItemsPayloadFor(int size) {
+    return "{\"items\": [" + IntStream.range(0, size).boxed().map(Object::toString).collect(Collectors.joining(","))
+        + "]}";
   }
 
   public List<Long> getFlowNodeInstanceKeysFor(final String flowNodeId) {
