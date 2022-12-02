@@ -19,7 +19,6 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -71,7 +70,6 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
   }
 
-  @Disabled("Disabled until fixed with OPT-6298")
   @Test
   public void upgradeSucceedsOnSchemaVersionOfPreviousPatchVersion() {
     // given
