@@ -64,6 +64,12 @@
           "old": "method void io.camunda.zeebe.model.bpmn.builder.ProcessBuilder::setEventSubProcessCoordinates(io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape)",
           "justification": "change the name to reuse for EventSubProcess and Link Events"
 
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method java.util.Optional<T> io.camunda.zeebe.model.bpmn.Query<T extends org.camunda.bpm.model.xml.instance.ModelElementInstance>::findSingleResult()",
+          "justification": "add optional method findSingleResult() for the usage of get single result"
         }
       ]
     }
