@@ -41,7 +41,7 @@ export const reportDiagram = reportRenderer.find('.djs-container > svg');
 export const reportNumber = reportRenderer.find('.Number .data');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');
-export const configurationButton = Selector('.Configuration .Popover');
+export const configurationButton = Selector('.Configuration .Popover .buttonWrapper button');
 export const resetButton = Selector('.resetButton');
 export const goalSwitch = Selector('.Configuration .Popover fieldset')
   .withText('Set Target')
