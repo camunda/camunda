@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
-import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
-import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -27,7 +26,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
   private final ExpressionProcessor expressionBehavior;
-  private final BpmnDecisionBehavior decisionBehavior;
+  private final BpmnDecisionBehavior bpmnDecisionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
@@ -49,7 +48,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final MutableZeebeState zeebeState,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics,
+      final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker) {
@@ -76,15 +75,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new EventTriggerBehavior(
             zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
 
-    decisionBehavior =
+    bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(),
+            decisionBehavior,
             zeebeState,
             eventTriggerBehavior,
             writers.state(),
             zeebeState.getKeyGenerator(),
-            expressionBehavior,
-            processEngineMetrics);
+            expressionBehavior);
 
     stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
 
@@ -138,8 +136,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   }
 
   @Override
-  public BpmnDecisionBehavior decisionBehavior() {
-    return decisionBehavior;
+  public BpmnDecisionBehavior bpmnDecisionBehavior() {
+    return bpmnDecisionBehavior;
   }
 
   @Override

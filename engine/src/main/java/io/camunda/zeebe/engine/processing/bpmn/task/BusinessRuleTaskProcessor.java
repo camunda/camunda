@@ -80,7 +80,7 @@ public final class BusinessRuleTaskProcessor
     public CalledDecisionBehavior(
         final BpmnBehaviors bpmnBehaviors,
         final BpmnStateTransitionBehavior stateTransitionBehavior) {
-      decisionBehavior = bpmnBehaviors.decisionBehavior();
+      decisionBehavior = bpmnBehaviors.bpmnDecisionBehavior();
       eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
       incidentBehavior = bpmnBehaviors.incidentBehavior();
       this.stateTransitionBehavior = stateTransitionBehavior;
