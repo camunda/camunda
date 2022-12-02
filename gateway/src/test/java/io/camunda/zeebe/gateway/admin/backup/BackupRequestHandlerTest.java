@@ -60,6 +60,62 @@ public class BackupRequestHandlerTest extends GatewayTest {
   }
 
   @Test
+  public void shouldFailTakeBackupIfAHigherCheckpointExists() {
+    // given
+    final BackupStub stub = new BackupStub();
+    stub.registerWith(brokerClient);
+    stub.withResponse(new BackupResponse(false, 2), 1);
+
+    // when
+    final var future = requestHandler.takeBackup(1);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(500))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(BackupAlreadyExistException.class);
+  }
+
+  @Test
+  public void shouldFailTakeBackupIfAllPartitionsReject() {
+    // given
+    final BackupStub stub = new BackupStub();
+    stub.registerWith(brokerClient);
+    brokerClient
+        .getTopologyManager()
+        .getTopology()
+        .getPartitions()
+        .forEach(
+            p -> {
+              stub.withResponse(new BackupResponse(false, 1), p);
+            });
+
+    // when
+    final var future = requestHandler.takeBackup(1);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(500))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(BackupAlreadyExistException.class);
+  }
+
+  @Test
+  public void shouldNotFailIfOnlySomePartitionsReject() {
+    // given
+    final BackupStub stub = new BackupStub();
+    stub.registerWith(brokerClient);
+    // only partition 1 rejects, all other partitions return (true, 1)
+    stub.withResponse(new BackupResponse(false, 1), 1);
+
+    // when
+    final var future = requestHandler.takeBackup(1);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+  }
+
+  @Test
   public void shouldReturnCompleteStatusWhenAllPartitionsHaveCompleteBackup() {
     // given
     final BackupQueryStub stub = new BackupQueryStub();

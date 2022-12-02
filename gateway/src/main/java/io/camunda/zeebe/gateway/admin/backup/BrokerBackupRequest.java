@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /** Wraps the request and response for "Take Backup" sent between gateway and broker */
-public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
+public final class BrokerBackupRequest extends BrokerRequest<BackupResponse> {
 
   final BackupRequest request = new BackupRequest();
   final ExecuteCommandResponse response = new ExecuteCommandResponse();
@@ -72,7 +72,7 @@ public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
   }
 
   @Override
-  protected BrokerResponse<CheckpointRecord> readResponse() {
+  protected BrokerResponse<BackupResponse> readResponse() {
     if (response.getRecordType() == RecordType.COMMAND_REJECTION) {
       final BrokerRejection brokerRejection =
           new BrokerRejection(
@@ -82,7 +82,7 @@ public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
               response.getRejectionReason());
       return new BrokerRejectionResponse<>(brokerRejection);
     } else if (response.getValueType() == ValueType.CHECKPOINT) {
-      final CheckpointRecord responseDto = toResponseDto(response.getValue());
+      final var responseDto = toResponseDto(response.getValue());
       return new BrokerResponse<>(responseDto, response.getPartitionId(), response.getKey());
     } else {
       throw new UnsupportedBrokerResponseException(
@@ -91,10 +91,12 @@ public final class BrokerBackupRequest extends BrokerRequest<CheckpointRecord> {
   }
 
   @Override
-  protected CheckpointRecord toResponseDto(final DirectBuffer buffer) {
+  protected BackupResponse toResponseDto(final DirectBuffer buffer) {
     final CheckpointRecord responseDto = new CheckpointRecord();
     responseDto.wrap(buffer);
-    return responseDto;
+
+    return new BackupResponse(
+        response.getIntent() == CheckpointIntent.CREATED, responseDto.getCheckpointId());
   }
 
   @Override

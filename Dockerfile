@@ -5,7 +5,7 @@ ARG BASE_DIGEST_AMD64="sha256:00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af973
 ARG BASE_DIGEST_ARM64="sha256:ce46be0c4b4edd9f519e99ad68a6b5765abe577fbf1662d8ad2550838eb29823"
 
 #### Builder image ####
-FROM ubuntu:focal as builder
+FROM ubuntu:jammy as builder
 ARG DISTBALL
 
 ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
@@ -18,7 +18,7 @@ RUN mkdir -p ${TMP_DIR} && \
     # already create volume dir to later have correct rights
     mkdir ${TMP_DIR}/data && \
     apt-get -qq update && \
-    apt-get install -y --no-install-recommends tini=0.18.0-1 && \
+    apt-get install -y --no-install-recommends tini=0.19.0-1 && \
     cp /usr/bin/tini ${TMP_DIR}/bin/tini
 
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
