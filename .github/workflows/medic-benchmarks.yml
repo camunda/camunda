@@ -49,7 +49,6 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ steps.data.outputs.ref }}
-      load: "worker, starter=200"
   setup-mixed-benchmark:
     name: Setup mixed benchmark
     uses: ./.github/workflows/benchmark.yaml
@@ -61,4 +60,9 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ steps.data.outputs.ref }}
-      load: "worker, starter=100, timer=50, publisher=50"
+      bechmark-load: |
+         --set starter.rate=100
+         --set timer.replicas=1
+         --set timer.rate=50
+         --set publisher.replica=1
+         --set publisher.rate=50
