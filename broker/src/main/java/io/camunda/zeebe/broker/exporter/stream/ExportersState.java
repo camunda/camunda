@@ -25,7 +25,6 @@ public final class ExportersState {
   private static final UnsafeBuffer METADATA_NOT_FOUND = new UnsafeBuffer();
 
   private final DbString exporterId;
-  private final ExporterStateEntry exporterStateEntry = new ExporterStateEntry();
   private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
 
   public ExportersState(
@@ -33,7 +32,7 @@ public final class ExportersState {
     exporterId = new DbString();
     exporterPositionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, exporterStateEntry);
+            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, new ExporterStateEntry());
   }
 
   public void setPosition(final String exporterId, final long position) {
@@ -44,6 +43,8 @@ public final class ExportersState {
       final String exporterId, final long position, final DirectBuffer metadata) {
     this.exporterId.wrapString(exporterId);
 
+    final var exporterStateEntry =
+        findExporterStateEntry(exporterId).orElse(new ExporterStateEntry());
     exporterStateEntry.setPosition(position);
     if (metadata != null) {
       exporterStateEntry.setMetadata(metadata);

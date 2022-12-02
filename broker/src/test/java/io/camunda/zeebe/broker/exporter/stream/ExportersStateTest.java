@@ -119,6 +119,44 @@ public final class ExportersStateTest {
   }
 
   @Test
+  public void shouldNotClearMetadataIfEmpty() {
+    // given
+    final var exporterId = "e1";
+    final var exporterMetadata1 = BufferUtil.wrapString("metadata-1");
+    final var exporterPosition1 = 10L;
+
+    state.setExporterState(exporterId, exporterPosition1, exporterMetadata1);
+
+    // when
+    state.setExporterState(exporterId, exporterPosition1, null);
+
+    // then
+    assertThat(state.getPosition(exporterId)).isEqualTo(exporterPosition1);
+    assertThat(state.getExporterMetadata(exporterId)).isEqualTo(exporterMetadata1);
+  }
+
+  @Test
+  public void shouldSetExporterStateWithAndWithoutMetadata() {
+    // given
+    final var exporterId1 = "e1";
+    final var exporterMetadata1 = BufferUtil.wrapString("metadata-1");
+    final var exporterPosition1 = 10L;
+
+    final var exporterId2 = "e2";
+    final var exporterPosition2 = 20L;
+
+    // when
+    state.setExporterState(exporterId1, exporterPosition1, exporterMetadata1);
+    state.setExporterState(exporterId2, exporterPosition2, null);
+
+    // then
+    assertThat(state.getPosition(exporterId1)).isEqualTo(exporterPosition1);
+    assertThat(state.getExporterMetadata(exporterId1)).isEqualTo(exporterMetadata1);
+    assertThat(state.getPosition(exporterId2)).isEqualTo(exporterPosition2);
+    assertThat(state.getExporterMetadata(exporterId2)).isEqualTo(EMPTY_METADATA);
+  }
+
+  @Test
   public void shouldReturnUnknownPositionForUnknownExporter() {
     // given
     final String id = "exporter";
