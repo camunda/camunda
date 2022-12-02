@@ -14,7 +14,6 @@ import io.prometheus.client.hotspot.GarbageCollectorExports;
 import io.prometheus.client.hotspot.MemoryAllocationExports;
 import io.prometheus.client.hotspot.MemoryPoolsExports;
 import io.prometheus.client.hotspot.ThreadExports;
-import io.prometheus.client.hotspot.VersionInfoExports;
 import org.springframework.boot.actuate.autoconfigure.metrics.export.prometheus.PrometheusMetricsExportAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -22,7 +21,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@SuppressWarnings("unused")
 @AutoConfigureBefore(PrometheusMetricsExportAutoConfiguration.class)
 public class PrometheusRegistryConfiguration {
 
@@ -37,7 +35,6 @@ public class PrometheusRegistryConfiguration {
     (new GarbageCollectorExports()).register(registry);
     (new ThreadExports()).register(registry);
     (new ClassLoadingExports()).register(registry);
-    (new VersionInfoExports()).register(registry);
 
     return registry;
   }
