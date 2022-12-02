@@ -17,9 +17,8 @@ on:
         description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
         default: europe-west1-b
         required: false
-      load:
+      bechmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish'
-        default: 'worker, starter=200'
         required: false
   workflow_call:
     inputs:
@@ -42,9 +41,8 @@ on:
         default: europe-west1-b
         type: string
         required: false
-      load:
+      bechmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish'
-        default: 'worker, starter=200'
         type: string
         required: false
 jobs:
@@ -109,50 +107,22 @@ jobs:
         run: |
           helm repo add camunda https://helm.camunda.io
           helm repo update
-      - name: Deploy benchmark installation
+      - uses: actions/checkout@v3
+        with:
+          repository: zeebe-io/benchmark-helm
+          path: benchmark-helm
+      - name: Helm dependency build
+        working-directory: benchmark-helm/zeebe-benchmark
+        run: |
+          helm dependency build
+      - name: Helm install
+        working-directory: benchmark-helm/zeebe-benchmark
         run: >
-          helm upgrade --install
+          helm upgrade --install ${{ inputs.name }} . 
           --namespace ${{ inputs.name }}
           --create-namespace
-          ${{ inputs.name }} camunda/camunda-platform
-          -f benchmarks/setup/default/zeebe-values.yaml
-          --set zeebe.image.repository=gcr.io/zeebe-io/zeebe
-          --set zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
-          --set zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
-          --set zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
-      - name: Deploy and configure additional benchmark components
-        uses: actions/github-script@v6
-        with:
-          # language=javascript
-          script: |
-            const namespace = '${{ inputs.name }}'
-            const load = '${{ inputs.load }}'
-            const components = load.split(", ")
-            for (const component of components) {
-              if (component.includes("=")) {
-                const nameAndRate = component.split("=")
-                const name = nameAndRate.at(0)
-                const rate = nameAndRate.at(1)
-                const manifest = `benchmarks/setup/default/${name}.yaml`
-                await exec.exec('kubectl', ['delete',
-                  `--ignore-not-found=true`,
-                  `--namespace=${namespace}`,
-                  'configmap', `${name}-config`])
-                await exec.exec('kubectl', ['create',
-                  `--namespace=${namespace}`, 'configmap', `${name}-config`,
-                  `--from-literal=CONFIG_FORCE_app_starter_rate=${rate}`,
-                  `--from-literal=CONFIG_FORCE_app_brokerUrl=${namespace}-zeebe-gateway:26500`])
-                await exec.exec(`kubectl apply -n ${namespace} -f ${manifest}`)
-              } else {
-                const manifest = `benchmarks/setup/default/${component}.yaml`
-                await exec.exec('kubectl', ['delete',
-                  `--ignore-not-found=true`,
-                  `--namespace=${namespace}`,
-                  'configmap', `${component}-config`])
-                await exec.exec('kubectl', ['create',
-                  `--namespace=${namespace}`,
-                  'configmap', `${component}-config`,
-                  `--from-literal=CONFIG_FORCE_app_brokerUrl=${namespace}-zeebe-gateway:26500`])
-                await exec.exec(`kubectl apply -n ${namespace} -f ${manifest}`)
-              }
-            }
+          --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
+          --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
+          --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          ${{ inputs.bechmark-load }}
