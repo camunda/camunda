@@ -88,6 +88,26 @@ paths:
         '502':
           description: Operation failed because connection to the broker or to the backup storage is lost.
           $ref: '#/components/responses/Error'
+    delete:
+      summary: Delete a backup
+      description: Delete a backup with the given id
+      parameters:
+        - name: backupId
+          in: path
+          description: Backup ID
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Backup is deleted
+        '500':
+          description: Internal error
+          $ref: '#/components/responses/Error'
+        '502':
+          description: Operation failed because connection to the broker or to the backup storage is lost.
+          $ref: '#/components/responses/Error'
 
 components:
   responses:
