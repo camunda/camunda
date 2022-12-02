@@ -24,11 +24,11 @@ jobs:
         run: |
           # Get all namespaces, filter for medic benchmarks and select the oldest one
           echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
-          echo "mixed=$(kubectl get ns -o name | grep -E namespace/medic-cw-[0-9]+-[a-z0-9]+-benchmark-mixed$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
       - name: Delete benchmarks
         run: |
           kubectl delete ${{ steps.data.normal }}
-          kubectl delete ${{ steps.data.mixed }}
+          kubectl delete ${{ steps.data.normal }}-mixed
+          kubectl delete ${{ steps.data.normal }}-latency
   benchmark-data:
     name: Collect benchmark data
     runs-on: ubuntu-latest
