@@ -7,7 +7,9 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim"
-
+// general properties for CI execution
+static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
+static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 static String TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
 static String DOCKERHUB_IMAGE() { return 'camunda/optimize' }
 
@@ -321,6 +323,134 @@ String gcloudContainerSpec() {
   """
 }
 
+String smoketestPodSpec(String camBpmVersion, String esVersion) {
+  return """---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+  - key: "${NODE_POOL()}"
+    operator: "Exists"
+    effect: "NoSchedule"
+  imagePullSecrets:
+  - name: registry-camunda-cloud
+
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+    - name: LIMITS_CPU
+      valueFrom:
+        resourceFieldRef:
+          resource: limits.cpu
+    - name: TZ
+      value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 4
+        memory: 3Gi
+      requests:
+        cpu: 4
+        memory: 3Gi
+  - name: optimize
+    securityContext:
+      runAsUser: 1000620000
+      runAsGroup: 0
+    image: ${TEAM_DOCKER_IMAGE()}:${getImageTag()}
+    imagePullPolicy: Always
+    env:
+    - name: OPTIMIZE_JAVA_OPTS
+      value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
+    - name: OPTIMIZE_ELASTICSEARCH_HOST
+      value: localhost
+
+    livenessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+      httpGet:
+        path: /
+        port: 8090
+    readinessProbe:
+      initialDelaySeconds: 50
+      periodSeconds: 10
+      failureThreshold: 10
+      httpGet:
+        path: /api/readyz
+        port: 8090
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 2Gi
+  - name: cambpm
+    image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}
+    imagePullPolicy: Always
+    tty: true
+    env:
+    - name: JAVA_OPTS
+      value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
+    - name: TZ
+      value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 2Gi
+  - name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:${esVersion}
+    securityContext:
+      privileged: true
+      capabilities:
+        add: ["IPC_LOCK", "SYS_RESOURCE"]
+    resources:
+      limits:
+        cpu: 1
+        memory: 2Gi
+      requests:
+        cpu: 1
+        memory: 2Gi
+    env:
+      - name: ES_NODE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.name
+      - name: ES_JAVA_OPTS
+        value: "-Xms1g -Xmx1g"
+      - name: bootstrap.memory_lock
+        value: true
+      - name: discovery.type
+        value: single-node
+      - name: http.port
+        value: 9200
+      - name: cluster.name
+        value: elasticsearch
+  - name: gcloud
+    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+"""
+}
+
 String upgradeTestPodSpec(String camBpmVersion, String esVersion, String prevEsVersion) {
   return basePodSpec(1, 2) +
       camBpmContainerSpec(camBpmVersion) +
@@ -574,6 +704,131 @@ pipeline {
     }
     stage('Deploy') {
       parallel {
+        stage("Docker Operations") {
+          when {
+            expression {
+              // first part of the expression covers pure branch builds,
+              // the second covers PR builds where BRANCH_NAME is not available
+              isMainOrMaintenanceBranch() || isMainOrMaintenanceBranch(CHANGE_BRANCH)
+            }
+          }
+          stages {
+            stage('Build Docker') {
+              environment {
+                CRED_REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
+                DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
+                DOCKER_BRANCH_TAG = getBranchSlug()
+                DOCKER_IMAGE_TEAM = TEAM_DOCKER_IMAGE()
+                DOCKER_IMAGE_DOCKER_HUB = DOCKERHUB_IMAGE()
+                DOCKER_LATEST_TAG = getLatestTag()
+                DOCKER_TAG = getImageTag()
+                PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
+                VERSION = readMavenPom().getVersion()
+                IS_MAIN = "${isMainBranch() ? "TRUE" : "FALSE"}"
+                REVISION = "${env.GIT_COMMIT}"
+                DATE = java.time.Instant.now().toString()
+              }
+              steps {
+                container('docker') {
+                  sh("""#!/bin/bash -eux
+                  echo '${CRED_REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
+
+                  tags=('${DOCKER_IMAGE_TEAM}:${DOCKER_TAG}' '${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}')
+
+                  if [ "${PUSH_LATEST_TAG}" = "TRUE" ]; then
+                    tags+=('${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}')
+                  fi
+
+                  if [ "${IS_MAIN}" = "TRUE" ]; then
+                    docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
+                    tags+=('${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT')
+                  fi
+
+                  printf -v tag_arguments -- "-t %s " "\${tags[@]}"
+                  docker buildx create --use
+
+                  export VERSION=${VERSION}
+                  export DATE=${DATE}
+                  export REVISION=${REVISION}
+                  export BASE_IMAGE=docker.io/library/alpine:3.16.2
+                  apk update
+                  apk add jq
+
+                  # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
+                  # able to perform the checks before pushing
+                  # First amd64
+                  docker buildx build \
+                    \${tag_arguments} \
+                    --build-arg VERSION=${VERSION} \
+                    --build-arg DATE=${DATE} \
+                    --build-arg REVISION=${REVISION} \
+                    --platform linux/amd64 \
+                    --load \
+                    .
+                  export ARCHITECTURE=amd64
+                  ./docker/test/verify.sh \${tags[@]}
+
+                  # Now arm64
+                  docker buildx build \
+                    \${tag_arguments} \
+                    --build-arg VERSION=${VERSION} \
+                    --build-arg DATE=${DATE} \
+                    --build-arg REVISION=${REVISION} \
+                    --platform linux/arm64 \
+                    --load \
+                    .
+                  export ARCHITECTURE=arm64
+                  ./docker/test/verify.sh \${tags[@]}
+
+                  # If we made it to here, all checks were successful. So let's build it to push. This is not as
+                  # inefficient as it looks, since docker retrieves the previously generated images from the build cache
+                  docker buildx build \
+                    \${tag_arguments} \
+                    --build-arg VERSION=${VERSION} \
+                    --build-arg DATE=${DATE} \
+                    --build-arg REVISION=${REVISION} \
+                    --platform linux/amd64,linux/arm64 \
+                    --push \
+                    .
+                  """)
+                }
+              }
+            }
+            stage('Smoketest Docker Image') {
+              agent {
+                kubernetes {
+                  cloud 'optimize-ci'
+                  label "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+                  defaultContainer 'jnlp'
+                  yaml smoketestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
+                }
+              }
+              environment {
+                LABEL = "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              }
+              steps {
+                container('maven') {
+                  sh("""#!/bin/bash -eux
+                  echo Giving Optimize some time to start up
+                  echo Smoke testing if Optimize is ready
+                  curl -q -f -I http://localhost:8090/api/readyz | grep -q "200 OK"
+                  echo Smoke testing if Optimize Frontend resources are accessible
+                  curl -q -f http://localhost:8090/index.html | grep -q html
+                  """)
+                }
+              }
+              post {
+                always {
+                  container('gcloud') {
+                    sh 'apt-get install kubectl'
+                    sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch.log'
+                    archiveArtifacts artifacts: 'elasticsearch.log', onlyIfSuccessful: false
+                  }
+                }
+              }
+            }
+          }
+        }
         stage('Deploy to Nexus') {
           when {
             expression {
@@ -583,94 +838,6 @@ pipeline {
           steps {
             container('maven') {
               runMaven('deploy -Dskip.fe.build -DskipTests -Dskip.docker')
-            }
-          }
-        }
-        stage('Build Docker') {
-          when {
-            expression {
-              // first part of the expression covers pure branch builds,
-              // the second covers PR builds where BRANCH_NAME is not available
-              isMainOrMaintenanceBranch() || isMainOrMaintenanceBranch(CHANGE_BRANCH)
-            }
-          }
-          environment {
-            CRED_REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
-            DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
-            DOCKER_BRANCH_TAG = getBranchSlug()
-            DOCKER_IMAGE_TEAM = TEAM_DOCKER_IMAGE()
-            DOCKER_IMAGE_DOCKER_HUB = DOCKERHUB_IMAGE()
-            DOCKER_LATEST_TAG = getLatestTag()
-            DOCKER_TAG = getImageTag()
-            PUSH_LATEST_TAG = "${isMainOrMaintenanceBranch() ? "TRUE" : "FALSE"}"
-            VERSION = readMavenPom().getVersion()
-            IS_MAIN = "${isMainBranch() ? "TRUE" : "FALSE"}"
-            REVISION = "${env.GIT_COMMIT}"
-            DATE = java.time.Instant.now().toString()
-          }
-          steps {
-            container('docker') {
-              sh("""#!/bin/bash -eux
-              echo '${CRED_REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
-
-              tags=('${DOCKER_IMAGE_TEAM}:${DOCKER_TAG}' '${DOCKER_IMAGE_TEAM}:${DOCKER_BRANCH_TAG}')
-
-              if [ "${PUSH_LATEST_TAG}" = "TRUE" ]; then
-                tags+=('${DOCKER_IMAGE_TEAM}:${DOCKER_LATEST_TAG}')
-              fi
-
-              if [ "${IS_MAIN}" = "TRUE" ]; then
-                docker login --username ${DOCKERHUB_REGISTRY_CREDENTIALS_USR} --password ${DOCKERHUB_REGISTRY_CREDENTIALS_PSW}
-                tags+=('${DOCKER_IMAGE_DOCKER_HUB}:SNAPSHOT')
-              fi
-
-              printf -v tag_arguments -- "-t %s " "\${tags[@]}"
-              docker buildx create --use
-
-              export VERSION=${VERSION}
-              export DATE=${DATE}
-              export REVISION=${REVISION}
-              export BASE_IMAGE=docker.io/library/alpine:3.16.2
-              apk update
-              apk add jq
-
-              # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
-              # able to perform the checks before pushing
-              # First amd64
-              docker buildx build \
-                \${tag_arguments} \
-                --build-arg VERSION=${VERSION} \
-                --build-arg DATE=${DATE} \
-                --build-arg REVISION=${REVISION} \
-                --platform linux/amd64 \
-                --load \
-                .
-              export ARCHITECTURE=amd64
-              ./docker/test/verify.sh \${tags[@]}
-
-              # Now arm64
-              docker buildx build \
-                \${tag_arguments} \
-                --build-arg VERSION=${VERSION} \
-                --build-arg DATE=${DATE} \
-                --build-arg REVISION=${REVISION} \
-                --platform linux/arm64 \
-                --load \
-                .
-              export ARCHITECTURE=arm64
-              ./docker/test/verify.sh \${tags[@]}
-
-              # If we made it to here, all checks were successful. So let's build it to push. This is not as
-              # inefficient as it looks, since docker retrieves the previously generated images from the build cache
-              docker buildx build \
-                \${tag_arguments} \
-                --build-arg VERSION=${VERSION} \
-                --build-arg DATE=${DATE} \
-                --build-arg REVISION=${REVISION} \
-                --platform linux/amd64,linux/arm64 \
-                --push \
-                .
-              """)
             }
           }
         }

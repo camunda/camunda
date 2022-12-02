@@ -169,6 +169,9 @@ spec:
         cpu: 4
         memory: 3Gi
   - name: optimize
+    securityContext:
+      runAsUser: 1000620000
+      runAsGroup: 0
     image: ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${params.RELEASE_VERSION}
     imagePullPolicy: Always
     env:
