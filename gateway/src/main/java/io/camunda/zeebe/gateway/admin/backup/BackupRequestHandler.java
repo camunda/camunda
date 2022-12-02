@@ -126,6 +126,18 @@ public final class BackupRequestHandler implements BackupApi {
             });
   }
 
+  @Override
+  public CompletionStage<Void> deleteBackup(final long backupId) {
+    return checkTopologyComplete()
+        .thenCompose(
+            topology ->
+                CompletableFuture.allOf(
+                    topology.getPartitions().stream()
+                        .map(partitionId -> getDeleteRequest(backupId, partitionId))
+                        .map(brokerClient::sendRequestWithRetry)
+                        .toArray(CompletableFuture[]::new)));
+  }
+
   private List<BackupStatus> aggregateBackupList(
       final List<CompletableFuture<BrokerResponse<BackupListResponse>>> backupsReceived) {
     // backupId -> [partitiondId -> partitionBackupStatus]
@@ -266,6 +278,13 @@ public final class BackupRequestHandler implements BackupApi {
   private BackupListRequest getListRequest(final Integer partitionId) {
     final var request = new BackupListRequest();
     request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private BackupDeleteRequest getDeleteRequest(final long backupId, final Integer partitionId) {
+    final var request = new BackupDeleteRequest();
+    request.setPartitionId(partitionId);
+    request.setBackupId(backupId);
     return request;
   }
 }
