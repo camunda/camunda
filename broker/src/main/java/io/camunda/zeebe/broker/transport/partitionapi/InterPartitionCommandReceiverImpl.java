@@ -113,13 +113,14 @@ final class InterPartitionCommandReceiverImpl {
       long checkpointId, Optional<Long> recordKey, RecordMetadata metadata, BufferWriter command) {}
 
   private static final class Decoder {
-    private final UnsafeBuffer messageBuffer = new UnsafeBuffer();
-    private final RecordMetadata recordMetadata = new RecordMetadata();
     private final InterPartitionMessageDecoder messageDecoder = new InterPartitionMessageDecoder();
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    private final DirectBufferWriter commandBuffer = new DirectBufferWriter();
 
     DecodedMessage decodeMessage(final byte[] message) {
+      final var messageBuffer = new UnsafeBuffer();
+      final var recordMetadata = new RecordMetadata();
+      final var commandBuffer = new DirectBufferWriter();
+
       messageBuffer.wrap(message);
       messageDecoder.wrapAndApplyHeader(messageBuffer, 0, headerDecoder);
 

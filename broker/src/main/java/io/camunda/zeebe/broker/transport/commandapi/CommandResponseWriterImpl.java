@@ -142,13 +142,13 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
 
     offset = responseEncoder.limit();
 
-    final int eventLength = valueWriter.getLength();
-    buffer.putInt(offset, eventLength, Protocol.ENDIANNESS);
+    final int valueLength = valueWriter.getLength();
+    buffer.putInt(offset, valueLength, Protocol.ENDIANNESS);
 
     offset += valueHeaderLength();
     valueWriter.write(buffer, offset);
 
-    offset += eventLength;
+    offset += valueLength;
 
     responseEncoder.limit(offset);
     responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
