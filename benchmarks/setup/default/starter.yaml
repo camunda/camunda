@@ -24,7 +24,7 @@ spec:
               value: >-
                 -Dconfig.override_with_env_vars=true
                 -Dapp.brokerUrl=default-zeebe-gateway:26500
-                -Dapp.starter.rate=200
+                -Dapp.starter.rate=75
                 -Dapp.starter.durationLimit=0
                 -Dzeebe.client.requestTimeout=62000
                 -XX:+HeapDumpOnOutOfMemoryError
