@@ -18,7 +18,7 @@ RUN mkdir -p ${TMP_DIR} && \
     # already create volume dir to later have correct rights
     mkdir ${TMP_DIR}/data && \
     apt-get -qq update && \
-    apt-get install -y --no-install-recommends tini=0.18.0-1 && \
+    apt-get install -y --no-install-recommends tini=0.19.0-1 && \
     cp /usr/bin/tini ${TMP_DIR}/bin/tini
 
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
