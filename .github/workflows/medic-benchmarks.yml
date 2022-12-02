@@ -74,7 +74,7 @@ jobs:
     needs:
       - benchmark-data
     with:
-      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
+      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-latency
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ steps.data.outputs.ref }}
