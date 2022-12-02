@@ -8,6 +8,9 @@ on:
       nextDevelopmentVersion:
         description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
         required: true
+      pushReleaseArtifacts:
+        description: 'Whether to push release commits and artifacts to remote (Git tags, Maven artifacts, Github Release)'
+        default: false
 
 jobs:
   release:
@@ -18,6 +21,7 @@ jobs:
       RELEASE_VERSION: ${{ inputs.releaseVersion }}
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       RELEASE_BRANCH: "release-${{ inputs.releaseVersion }}"
+      PUSH_CHANGES: ${{ inputs.pushReleaseArtifacts }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -36,6 +40,8 @@ jobs:
             secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB;
             secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_USR;
             secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
       - name: Git User Setup
         shell: bash
         run: |
@@ -84,6 +90,48 @@ jobs:
         uses: ./.github/actions/build-zeebe
         with:
           java: false
+      - uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: |
+            [{
+                "id": "camunda-nexus",
+                "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+                "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+            },
+            {
+                "id": "central",
+                "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
+                "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            }]
+      - name: Maven Release
+        id: maven-release
+        shell: bash
+        env:
+          SKIP_REPO_DEPLOY: ${{ inputs.pushReleaseArtifacts == 'false' }}
+        run : |
+          # This var is used to include the previously built go artifacts into the final maven release build.
+          # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          export ZBCTL_ROOT_DIR=${PWD}
+          mvn release:prepare release:perform -B \
+            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
+            -Dresume=false \
+            -Dtag=${RELEASE_VERSION} \
+            -DreleaseVersion=${RELEASE_VERSION} \
+            -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
+            -DpushChanges=${PUSH_CHANGES} \
+            -DremoteTagging=${PUSH_CHANGES} \
+            -DlocalCheckout=${{ inputs.pushReleaseArtifacts == 'false' }} \
+            -DcompletionGoals="spotless:apply" \
+            -P-autoFormat \
+            -Darguments='-T1C -P-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+
+          # switch to the directory to which maven checks out the release tag
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          pushd target/checkout
+          export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
+          echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
+          popd
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
