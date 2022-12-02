@@ -62,11 +62,11 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ steps.data.outputs.ref }}
       bechmark-load: >
-         --set starter.rate=100
+         --set starter.rate=25
          --set timer.replicas=1
-         --set timer.rate=50
+         --set timer.rate=25
          --set publisher.replica=1
-         --set publisher.rate=50
+         --set publisher.rate=25
   setup-latency-benchmark:
     name: Setup latency benchmark
     uses: ./.github/workflows/benchmark.yaml
