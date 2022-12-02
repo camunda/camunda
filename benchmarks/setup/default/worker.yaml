@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       app: worker
-  replicas: 6
+  replicas: 3
   template:
     metadata:
       labels:
@@ -25,7 +25,7 @@ spec:
                 -Dconfig.override_with_env_vars=true
                 -Dapp.brokerUrl=default-zeebe-gateway:26500
                 -Dzeebe.client.requestTimeout=62000
-                -Dapp.worker.capacity=120
+                -Dapp.worker.capacity=60
                 -Dapp.worker.pollingDelay=1ms
                 -Dapp.worker.completionDelay=50ms
                 -XX:+HeapDumpOnOutOfMemoryError
