@@ -10,13 +10,6 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
 import io.camunda.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.camunda.zeebe.dispatcher.Dispatcher;
@@ -28,6 +21,7 @@ import org.agrona.LangUtil;
 final class LogStreamBatchWriterImpl implements LogStreamBatchWriter {
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
+  private final LogAppendEntrySerializer serializer = new LogAppendEntrySerializer();
   private final Dispatcher logWriteBuffer;
   private final int logId;
 
@@ -104,26 +98,17 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter {
       final long position,
       final long sourcePosition,
       final long entryTimestamp) {
-    final var writeBuffer = claimedBatch.getBuffer();
-    final var key = entry.key();
-    final var metadataLength = entry.recordMetadata().getLength();
-    final var valueLength = entry.recordValue().getLength();
-    final var fragmentLength = headerLength(metadataLength) + valueLength;
-
-    // allocate fragment for log entry
+    final var fragmentLength =
+        headerLength(entry.recordMetadata().getLength()) + entry.recordValue().getLength();
     claimedBatch.nextFragment(fragmentLength, logId);
-    final var bufferOffset = claimedBatch.getFragmentOffset();
 
-    setPosition(writeBuffer, bufferOffset, position);
-    setSourceEventPosition(writeBuffer, bufferOffset, sourcePosition);
-    setKey(writeBuffer, bufferOffset, key);
-    setTimestamp(writeBuffer, bufferOffset, entryTimestamp);
-    setMetadataLength(writeBuffer, bufferOffset, (short) metadataLength);
-    if (metadataLength > 0) {
-      entry.recordMetadata().write(writeBuffer, metadataOffset(bufferOffset));
-    }
-
-    entry.recordValue().write(writeBuffer, valueOffset(bufferOffset, metadataLength));
+    serializer.serialize(
+        claimedBatch.getBuffer(),
+        claimedBatch.getFragmentOffset(),
+        entry,
+        position,
+        sourcePosition,
+        entryTimestamp);
   }
 
   private int computeBatchLength(final int eventsCount, final int eventsLength) {

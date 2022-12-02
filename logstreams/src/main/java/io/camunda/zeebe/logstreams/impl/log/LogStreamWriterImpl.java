@@ -9,13 +9,6 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
 import io.camunda.zeebe.dispatcher.ClaimedFragment;
 import io.camunda.zeebe.dispatcher.Dispatcher;
@@ -26,8 +19,8 @@ import org.agrona.LangUtil;
 
 final class LogStreamWriterImpl implements LogStreamWriter {
   private final ClaimedFragment claimedFragment = new ClaimedFragment();
+  private final LogAppendEntrySerializer serializer = new LogAppendEntrySerializer();
   private final Dispatcher logWriteBuffer;
-
   private final int partitionId;
 
   LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
@@ -36,9 +29,9 @@ final class LogStreamWriterImpl implements LogStreamWriter {
   }
 
   @Override
-  public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
-    final var recordValue = appendEntry.recordValue();
-    final var recordMetadata = appendEntry.recordMetadata();
+  public long tryWrite(final LogAppendEntry entry, final long sourcePosition) {
+    final var recordValue = entry.recordValue();
+    final var recordMetadata = entry.recordMetadata();
 
     final int valueLength = recordValue.getLength();
     final int metadataLength = recordMetadata.getLength();
@@ -51,7 +44,13 @@ final class LogStreamWriterImpl implements LogStreamWriter {
     final long claimedPosition = claimLogEntry(valueLength, metadataLength);
     if (claimedPosition >= 0) {
       try {
-        writeEntry(appendEntry, claimedPosition, sourcePosition);
+        serializer.serialize(
+            claimedFragment.getBuffer(),
+            claimedFragment.getOffset(),
+            entry,
+            claimedPosition,
+            sourcePosition,
+            ActorClock.currentTimeMillis());
         claimedFragment.commit();
       } catch (final Exception e) {
         claimedFragment.abort();
@@ -72,24 +71,5 @@ final class LogStreamWriterImpl implements LogStreamWriter {
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
     return claimedPosition;
-  }
-
-  private void writeEntry(
-      final LogAppendEntry appendEntry, final long position, final long sourcePosition) {
-    final var writeBuffer = claimedFragment.getBuffer();
-    final var bufferOffset = claimedFragment.getOffset();
-    final var metadataLength = (short) appendEntry.recordMetadata().getLength();
-
-    setPosition(writeBuffer, bufferOffset, position);
-    setSourceEventPosition(writeBuffer, bufferOffset, sourcePosition);
-    setKey(writeBuffer, bufferOffset, appendEntry.key());
-    setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());
-    setMetadataLength(writeBuffer, bufferOffset, metadataLength);
-
-    if (metadataLength > 0) {
-      appendEntry.recordMetadata().write(writeBuffer, metadataOffset(bufferOffset));
-    }
-
-    appendEntry.recordValue().write(writeBuffer, valueOffset(bufferOffset, metadataLength));
   }
 }
