@@ -18,7 +18,7 @@ on:
         default: europe-west1-b
         required: false
       bechmark-load:
-        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish'
+        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
         required: false
   workflow_call:
     inputs:
@@ -42,7 +42,7 @@ on:
         type: string
         required: false
       bechmark-load:
-        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish'
+        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
         type: string
         required: false
 jobs:
