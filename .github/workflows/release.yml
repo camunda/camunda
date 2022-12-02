@@ -136,6 +136,23 @@ jobs:
           export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
           echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
           popd
+      - name: Update Compat Version
+        shell: bash
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+            exit 0
+          fi
+
+          pushd clients/go
+          gocompat save ./...
+          git commit -am "build(project): update go versions"
+          popd
+
+          mvn -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
+          FILE=$(mvn -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
+          rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
+          git commit -am "build(project): update java compat versions"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
