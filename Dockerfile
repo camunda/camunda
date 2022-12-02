@@ -2,7 +2,7 @@
 ARG BASE_SHA="00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"
 
 # Building builder image
-FROM ubuntu:focal as builder
+FROM ubuntu:jammy as builder
 ARG DISTBALL
 
 ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
@@ -15,7 +15,7 @@ RUN mkdir -p ${TMP_DIR} && \
     # already create volume dir to later have correct rights
     mkdir ${TMP_DIR}/data && \
     apt-get -qq update && \
-    apt-get install -y --no-install-recommends tini=0.18.0-1 && \
+    apt-get install -y --no-install-recommends tini=0.19.0-1 && \
     cp /usr/bin/tini ${TMP_DIR}/bin/tini
 
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
@@ -24,7 +24,7 @@ RUN chmod +x -R ${TMP_DIR}/bin/ && \
 
 # Building application image
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
+FROM eclipse-temurin:17.0.5_8-jre-focal@sha256:${BASE_SHA} as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_SHA
