@@ -151,8 +151,6 @@ static String elasticSearchContainerSpec(esVersion) {
       value: 9200
     - name: bootstrap.memory_lock
       value: true
-    - name: xpack.security.enabled
-      value: false
     # We usually run our integration tests concurrently, as some cleanup methods like #deleteAllOptimizeData
     # internally make usage of scroll contexts this lead to hits on the scroll limit.
     # Thus this increased scroll context limit.
@@ -342,58 +340,6 @@ pipeline {
                 sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_717.log'
               }
               archiveArtifacts artifacts: 'elasticsearch_717.log', onlyIfSuccessful: false
-            }
-          }
-        }
-        stage("Elasticsearch 8.4.3 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-8.4.3_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.4.3", "${env.CAMBPM_VERSION}")
-            }
-          }
-          environment {
-            LABEL = "optimize-ci-build_es-8.4.3_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
-              container('gcloud') {
-                sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_843.log'
-              }
-              archiveArtifacts artifacts: 'elasticsearch_843.log', onlyIfSuccessful: false
-            }
-          }
-        }
-        stage("Elasticsearch 8.5.2 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-8.5.2_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("8.5.2", "${env.CAMBPM_VERSION}")
-            }
-          }
-          environment {
-            LABEL = "optimize-ci-build_es-8.5.2_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-          }
-          steps {
-            integrationTestSteps()
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: false
-              container('gcloud') {
-                sh 'apt-get install kubectl'
-                sh 'kubectl logs -l jenkins/label=$LABEL -c elasticsearch > elasticsearch_852.log'
-              }
-              archiveArtifacts artifacts: 'elasticsearch_852.log', onlyIfSuccessful: false
             }
           }
         }
