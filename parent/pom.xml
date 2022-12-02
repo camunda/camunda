@@ -1044,6 +1044,13 @@
         <version>${version.gson}</version>
       </dependency>
 
+      <!-- between micrometer-core 1.10.2 and spring-web 6.0.0 -->
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-observation</artifactId>
+        <version>${version.micrometer}</version>
+      </dependency>
+
       <dependency>
         <groupId>com.cronutils</groupId>
         <artifactId>cron-utils</artifactId>
