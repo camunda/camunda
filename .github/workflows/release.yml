@@ -53,8 +53,9 @@ jobs:
           echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
             | base64 --decode \
             | gpg -q --import --no-tty --batch --yes
-      - uses: ./.github/actions/setup-zeebe
-      - name: Go tooling setup
+      - name: Setup Zeebe Build Tooling
+        uses: ./.github/actions/setup-zeebe
+      - name: Additional Go tooling setup
         shell: bash
         run: |
           go install github.com/go-bindata/go-bindata/...@v3
@@ -82,7 +83,7 @@ jobs:
       - name: Build Go Client
         uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -Pprepare-offline,-PcheckFormat,-autoFormat
+          java: false
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
