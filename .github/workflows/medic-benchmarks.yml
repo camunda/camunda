@@ -38,6 +38,7 @@ jobs:
         run: |
           echo "ref=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "cw=$(date +%V)" >> $GITHUB_OUTPUT
+
   setup-normal-benchmark:
     name: Setup normal benchmark
     needs:
@@ -66,3 +67,17 @@ jobs:
          --set timer.rate=50
          --set publisher.replica=1
          --set publisher.rate=50
+  setup-latency-benchmark:
+    name: Setup latency benchmark
+    uses: ./.github/workflows/benchmark.yaml
+    secrets: inherit
+    needs:
+      - benchmark-data
+    with:
+      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
+      cluster: zeebe-cluster
+      cluster-region: europe-west1-b
+      ref: ${{ steps.data.outputs.ref }}
+      bechmark-load: >
+         --set starter.rate=1
+         --set worker.replicas=1
