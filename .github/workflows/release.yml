@@ -2,8 +2,12 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      releaseBranch:
+        description: 'The branch to perform the release on, defaults to `release-$releaseVersion`'
+        required: false
+        default: ''
       releaseVersion:
-        description: 'The version to be build and released, expecting a release branch `release-$releaseVersion` to already exist.'
+        description: 'The version to be build and released. If no releaseBranch specified, expecting `release-$releaseVersion` to already exist.'
         required: true
       nextDevelopmentVersion:
         description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
@@ -20,7 +24,7 @@ jobs:
     env:
       RELEASE_VERSION: ${{ inputs.releaseVersion }}
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
-      RELEASE_BRANCH: "release-${{ inputs.releaseVersion }}"
+      RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
       PUSH_CHANGES: ${{ inputs.pushReleaseArtifacts }}
     steps:
       - uses: actions/checkout@v3
