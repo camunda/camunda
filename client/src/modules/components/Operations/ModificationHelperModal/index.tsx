@@ -32,10 +32,6 @@ type Props = {
 
 const ModificationHelperModal: React.FC<Props> = observer(
   ({isVisible, onClose}) => {
-    const {
-      state: {selectedTheme},
-    } = currentTheme;
-
     return (
       <InformationModal
         size="CUSTOM"
@@ -85,7 +81,11 @@ const ModificationHelperModal: React.FC<Props> = observer(
               applied after the confirmation of the summary.
             </Text>
 
-            {selectedTheme === 'light' ? <DiagramLight /> : <DiagramDark />}
+            {currentTheme.theme === 'light' ? (
+              <DiagramLight />
+            ) : (
+              <DiagramDark />
+            )}
           </Container>
         }
         footer={
