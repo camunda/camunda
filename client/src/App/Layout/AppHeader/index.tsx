@@ -16,6 +16,7 @@ import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
 import {capitalize} from 'lodash';
+import {InlineLink} from './styled';
 
 const orderedApps = [
   'console',
@@ -102,6 +103,40 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         ],
+        tags:
+          window.clientConfig?.isEnterprise === true ||
+          window.clientConfig?.organizationId
+            ? []
+            : [
+                {
+                  key: 'non-production-license',
+                  label: 'Non-Production License',
+                  color: 'cool-gray',
+                  tooltip: {
+                    content: (
+                      <div>
+                        Non-Production License. If you would like information on
+                        production usage, please refer to our{' '}
+                        <InlineLink
+                          href="https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/"
+                          target="_blank"
+                        >
+                          terms & conditions page
+                        </InlineLink>{' '}
+                        or{' '}
+                        <InlineLink
+                          href="https://camunda.com/contact/"
+                          target="_blank"
+                        >
+                          contact sales
+                        </InlineLink>
+                        .
+                      </div>
+                    ),
+                    buttonLabel: 'Non-Production License',
+                  },
+                },
+              ],
       }}
       appBar={{
         type: 'app',
