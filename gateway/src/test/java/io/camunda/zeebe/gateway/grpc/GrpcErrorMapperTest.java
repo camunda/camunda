@@ -144,4 +144,27 @@ final class GrpcErrorMapperTest {
       assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
     }
   }
+
+  @Test
+  void shouldLogIllegalArgumentExceptionOnDebugWithBigIntTooLong() {
+    // given
+    try {
+      MsgPackConverter.convertToMsgPack("{\"mybigintistoolong\":123456789012345678901234567890}");
+      fail("Expected to throw exception");
+    } catch (final RuntimeException runtimeException) {
+      assertThat(runtimeException.getCause()).isInstanceOf(IllegalArgumentException.class);
+      final IllegalArgumentException exception =
+          (IllegalArgumentException) runtimeException.getCause();
+
+      // when
+      log.setLevel(Level.DEBUG);
+      final StatusRuntimeException statusException = errorMapper.mapError(exception, logger);
+
+      // then
+      assertThat(statusException.getStatus().getCode()).isEqualTo(Code.INVALID_ARGUMENT);
+      assertThat(recorder.getAppendedEvents()).hasSize(1);
+      final LogEvent event = recorder.getAppendedEvents().get(0);
+      assertThat(event.getLevel()).isEqualTo(Level.DEBUG);
+    }
+  }
 }

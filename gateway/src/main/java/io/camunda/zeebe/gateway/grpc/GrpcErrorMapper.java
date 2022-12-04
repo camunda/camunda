@@ -76,6 +76,9 @@ public final class GrpcErrorMapper {
     } else if (error instanceof JsonParseException) {
       builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
       logger.debug("Expected to handle gRPC request, but JSON property was invalid", rootError);
+    } else if (error instanceof IllegalArgumentException) {
+      builder.setCode(Code.INVALID_ARGUMENT_VALUE).setMessage(error.getMessage());
+      logger.debug("Expected to handle gRPC request, but JSON property was invalid 123", rootError);
     } else if (error instanceof PartitionNotFoundException) {
       builder.setCode(Code.UNAVAILABLE_VALUE).setMessage(error.getMessage());
       logger.debug(
