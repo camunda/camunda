@@ -17,6 +17,7 @@
 package io.camunda.zeebe.model.bpmn;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
@@ -35,4 +36,6 @@ public interface Query<T extends ModelElementInstance> {
   <V extends ModelElementInstance> Query<V> filterByType(Class<V> elementClass);
 
   T singleResult();
+
+  Optional<T> findSingleResult();
 }
