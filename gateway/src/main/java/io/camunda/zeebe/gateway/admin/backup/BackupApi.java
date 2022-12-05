@@ -40,4 +40,11 @@ public interface BackupApi {
    * @return a list of available backups
    */
   CompletionStage<List<BackupStatus>> listBackups();
+
+  /**
+   * Deletes the backup with the given id
+   *
+   * @param backupId id of the backup to delete
+   */
+  CompletionStage<Void> deleteBackup(long backupId);
 }

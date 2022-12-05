@@ -11,9 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerError;
+import io.camunda.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.camunda.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
+import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -300,6 +304,51 @@ public class BackupRequestHandlerTest extends GatewayTest {
     assertThat(backups)
         .extracting(BackupStatus::status)
         .containsExactly(State.COMPLETED, State.IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldSucceedWhenAllPartitionsDeleteBackup() {
+    // given
+    final int backupId = 1;
+    brokerClient.registerHandler(
+        BackupDeleteRequest.class,
+        request ->
+            new BrokerResponse<>(
+                new BackupStatusResponse()
+                    .setBackupId(backupId)
+                    .setPartitionId(request.getPartitionId())));
+
+    // when
+    final var future = requestHandler.deleteBackup(backupId);
+
+    // then
+    assertThat(future).succeedsWithin(Duration.ofMillis(500));
+  }
+
+  @Test
+  public void shouldFailWhenOnePartitionsFailsToDeleteBackup() {
+    // given
+    final int backupId = 1;
+    brokerClient.registerHandler(
+        BackupDeleteRequest.class,
+        request -> {
+          if (request.getPartitionId() == 1) {
+            return new BrokerErrorResponse<>(new BrokerError(ErrorCode.INTERNAL_ERROR, "ERROR"));
+          }
+          return new BrokerResponse<>(
+              new BackupStatusResponse()
+                  .setBackupId(backupId)
+                  .setPartitionId(request.getPartitionId()));
+        });
+
+    // when
+    final var future = requestHandler.deleteBackup(backupId);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(500))
+        .withThrowableOfType(ExecutionException.class)
+        .withCauseInstanceOf(BrokerErrorException.class);
   }
 
   private static BackupListResponse.BackupStatus getCompletedBackup(

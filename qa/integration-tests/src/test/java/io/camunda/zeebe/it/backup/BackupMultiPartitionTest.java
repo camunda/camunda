@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
@@ -227,6 +228,24 @@ class BackupMultiPartitionTest {
     }
   }
 
+  @Test
+  @Timeout(value = 180)
+  void shouldDeleteBackup() {
+    // given
+    final var backupId = 4;
+    backup(backupId);
+    waitUntilBackupIsCompleted(backupId);
+
+    // when
+    delete(backupId);
+
+    // then
+    Awaitility.await("Backup must be deleted.")
+        .timeout(Duration.ofSeconds(30))
+        .ignoreExceptions()
+        .until(() -> getBackupStatus(backupId).status(), isEqual(State.DOES_NOT_EXIST));
+  }
+
   private Set<Long> createJobsOnAllPartitions() {
     final Set<Integer> partitions = new HashSet<>();
     final Set<Long> jobKeys = new HashSet<>();
@@ -258,6 +277,11 @@ class BackupMultiPartitionTest {
 
   private void backup(final long backupId) {
     assertThat(backupRequestHandler.takeBackup(backupId).toCompletableFuture())
+        .succeedsWithin(Duration.ofSeconds(30));
+  }
+
+  private void delete(final long backupId) {
+    assertThat(backupRequestHandler.deleteBackup(backupId).toCompletableFuture())
         .succeedsWithin(Duration.ofSeconds(30));
   }
 
