@@ -18,8 +18,11 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
 import java.time.Duration;
+import java.util.Optional;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 @SuppressWarnings("java:S112") // allow generic exception when calling Exporter#configure
@@ -93,16 +96,26 @@ final class ExporterContainer implements Controller {
   void updatePositionOnSkipIfUpToDate(final long eventPosition) {
     if (position >= lastUnacknowledgedPosition && position < eventPosition) {
       try {
-        updateExporterLastExportedRecordPosition(eventPosition);
+        updateExporterState(eventPosition);
       } catch (final Exception e) {
         LOG.warn(SKIP_POSITION_UPDATE_ERROR_MESSAGE, e);
       }
     }
   }
 
-  private void updateExporterLastExportedRecordPosition(final long eventPosition) {
+  private void updateExporterState(final long eventPosition) {
+    updateExporterState(eventPosition, null);
+  }
+
+  private void updateExporterState(final long eventPosition, final byte[] metadata) {
     if (position < eventPosition) {
-      exportersState.setPosition(getId(), eventPosition);
+
+      DirectBuffer metadataBuffer = null;
+      if (metadata != null) {
+        metadataBuffer = BufferUtil.wrapArray(metadata);
+      }
+      exportersState.setExporterState(getId(), eventPosition, metadataBuffer);
+
       metrics.setLastUpdatedExportedPosition(getId(), eventPosition);
       position = eventPosition;
     }
@@ -110,13 +123,25 @@ final class ExporterContainer implements Controller {
 
   @Override
   public void updateLastExportedRecordPosition(final long position) {
-    actor.run(() -> updateExporterLastExportedRecordPosition(position));
+    actor.run(() -> updateExporterState(position));
+  }
+
+  @Override
+  public void updateLastExportedRecordPosition(final long position, final byte[] metadata) {
+    actor.run(() -> updateExporterState(position, metadata));
   }
 
   @Override
   public ScheduledTask scheduleCancellableTask(final Duration delay, final Runnable task) {
     final var scheduledTimer = actor.runDelayed(delay, task);
     return scheduledTimer::cancel;
+  }
+
+  @Override
+  public Optional<byte[]> readMetadata() {
+    return Optional.ofNullable(exportersState.getExporterMetadata(getId()))
+        .filter(metadata -> metadata.capacity() > 0)
+        .map(BufferUtil::bufferAsArray);
   }
 
   public String getId() {

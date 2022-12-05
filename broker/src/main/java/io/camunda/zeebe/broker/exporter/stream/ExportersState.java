@@ -12,66 +12,80 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExportersState {
 
   public static final long VALUE_NOT_FOUND = -1;
 
+  private static final UnsafeBuffer METADATA_NOT_FOUND = new UnsafeBuffer();
+
   private final DbString exporterId;
-  private final ExporterPosition position = new ExporterPosition();
-  private final ColumnFamily<DbString, ExporterPosition> exporterPositionColumnFamily;
+  private final ColumnFamily<DbString, ExporterStateEntry> exporterPositionColumnFamily;
 
   public ExportersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     exporterId = new DbString();
     exporterPositionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, position);
+            ZbColumnFamilies.EXPORTER, transactionContext, exporterId, new ExporterStateEntry());
   }
 
   public void setPosition(final String exporterId, final long position) {
+    setExporterState(exporterId, position, null);
+  }
+
+  public void setExporterState(
+      final String exporterId, final long position, final DirectBuffer metadata) {
     this.exporterId.wrapString(exporterId);
-    setPosition(position);
+
+    final var exporterStateEntry =
+        findExporterStateEntry(exporterId).orElse(new ExporterStateEntry());
+    exporterStateEntry.setPosition(position);
+    if (metadata != null) {
+      exporterStateEntry.setMetadata(metadata);
+    }
+    exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
   }
 
   public long getPosition(final String exporterId) {
+    return findExporterStateEntry(exporterId)
+        .map(ExporterStateEntry::getPosition)
+        .orElse(VALUE_NOT_FOUND);
+  }
+
+  public DirectBuffer getExporterMetadata(final String exporterId) {
+    return findExporterStateEntry(exporterId)
+        .map(ExporterStateEntry::getMetadata)
+        .orElse(METADATA_NOT_FOUND);
+  }
+
+  private Optional<ExporterStateEntry> findExporterStateEntry(final String exporterId) {
     this.exporterId.wrapString(exporterId);
-    return getPosition();
+    return Optional.ofNullable(exporterPositionColumnFamily.get(this.exporterId));
   }
 
-  public long getPosition(final DirectBuffer exporterId) {
-    this.exporterId.wrapBuffer(exporterId);
-    return getPosition();
-  }
-
-  private long getPosition() {
-    final ExporterPosition pos = exporterPositionColumnFamily.get(exporterId);
-    return pos == null ? VALUE_NOT_FOUND : pos.get();
-  }
-
-  private void setPosition(final long position) {
-    this.position.set(position);
-    exporterPositionColumnFamily.upsert(exporterId, this.position);
-  }
-
-  public void visitPositions(final BiConsumer<String, Long> consumer) {
+  public void visitExporterState(final BiConsumer<String, ExporterStateEntry> consumer) {
     exporterPositionColumnFamily.forEach(
-        (exporterId, position) -> consumer.accept(exporterId.toString(), position.get()));
+        (exporterId, exporterStateEntry) ->
+            consumer.accept(exporterId.toString(), exporterStateEntry));
   }
 
   public long getLowestPosition() {
     final LongArrayList positions = new LongArrayList();
 
-    visitPositions((id, pos) -> positions.addLong(pos));
+    visitExporterState(
+        (exporterId, exporterStateEntry) -> positions.addLong(exporterStateEntry.getPosition()));
     return positions.longStream().min().orElse(-1L);
   }
 
-  public void removePosition(final String exporter) {
-    exporterId.wrapString(exporter);
-    exporterPositionColumnFamily.deleteIfExists(exporterId);
+  public void removeExporterState(final String exporterId) {
+    this.exporterId.wrapString(exporterId);
+    exporterPositionColumnFamily.deleteIfExists(this.exporterId);
   }
 
   public boolean hasExporters() {

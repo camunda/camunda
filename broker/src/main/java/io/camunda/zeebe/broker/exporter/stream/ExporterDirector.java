@@ -361,7 +361,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void distributeExporterPositions() {
     final var exportPositionsMessage = new ExporterPositionsMessage();
-    state.visitPositions(exportPositionsMessage::putExporter);
+    state.visitExporterState(
+        (exporterId, exporterStateEntry) ->
+            exportPositionsMessage.putExporter(exporterId, exporterStateEntry.getPosition()));
     exporterDistributionService.distributeExporterPositions(exportPositionsMessage);
   }
 
@@ -433,10 +435,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final List<String> exporterIds =
         containers.stream().map(ExporterContainer::getId).collect(Collectors.toList());
 
-    state.visitPositions(
-        (exporterId, position) -> {
+    state.visitExporterState(
+        (exporterId, exporterStateEntry) -> {
           if (!exporterIds.contains(exporterId)) {
-            state.removePosition(exporterId);
+            state.removeExporterState(exporterId);
             LOG.info(
                 "The exporter '{}' is not configured anymore. Its lastExportedPosition is removed from the state.",
                 exporterId);

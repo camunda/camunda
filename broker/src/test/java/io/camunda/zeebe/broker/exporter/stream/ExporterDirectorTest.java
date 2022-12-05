@@ -481,6 +481,49 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldRecoverMetadataFromState() throws Exception {
+    // given
+    startExporterDirector(exporterDescriptors);
+
+    final long eventPosition1 = writeEvent();
+    final long eventPosition2 = writeEvent();
+    final var exporterMetadata1 = "e1".getBytes();
+    final var exporterMetadata2 = "e2".getBytes();
+
+    Awaitility.await("wait until the exporters read the records")
+        .until(
+            () ->
+                exporters.get(0).getExportedRecords().size() == 2
+                    && exporters.get(1).getExportedRecords().size() == 2);
+
+    exporters
+        .get(0)
+        .getController()
+        .updateLastExportedRecordPosition(eventPosition2, exporterMetadata1);
+    exporters
+        .get(1)
+        .getController()
+        .updateLastExportedRecordPosition(eventPosition1, exporterMetadata2);
+
+    rule.closeExporterDirector();
+    exporters.get(0).getExportedRecords().clear();
+    exporters.get(1).getExportedRecords().clear();
+
+    // then
+    startExporterDirector(exporterDescriptors);
+    Awaitility.await("wait until the exporters are opened")
+        .until(() -> exporters.get(1).getExportedRecords().size() >= 1);
+
+    // then
+    assertThat(exporters.get(0).getController().readMetadata())
+        .isPresent()
+        .hasValue(exporterMetadata1);
+    assertThat(exporters.get(1).getController().readMetadata())
+        .isPresent()
+        .hasValue(exporterMetadata2);
+  }
+
+  @Test
   public void shouldNotUpdatePositionToSmallerValue() throws Exception {
     // given
     final CountDownLatch latch = new CountDownLatch(1);

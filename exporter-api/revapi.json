@@ -10,5 +10,18 @@
         ]
       }
     }
+  },
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "differences": [
+        {
+          "justification": "The controller is used by the exporters. Extending the controller interface is not a breaking change.",
+          "code": "java.method.addedToInterface",
+          "classQualifiedName": "io.camunda.zeebe.exporter.api.context.Controller"
+        }
+      ]
+    }
   }
 ]
