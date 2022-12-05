@@ -134,32 +134,34 @@ public final class ProcessProcessor
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext) {
+    final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeContext);
 
     if (stateBehavior.isInterrupted(flowScopeContext)) {
-      // an interrupting event subprocess was triggered
-      eventSubscriptionBehavior
-          .findEventTrigger(flowScopeContext)
-          .ifPresent(
-              eventTrigger ->
-                  eventSubscriptionBehavior.activateTriggeredEvent(
-                      flowScopeContext.getElementInstanceKey(),
-                      flowScopeContext.getElementInstanceKey(),
-                      eventTrigger,
-                      flowScopeContext));
+      final boolean interruptedByTerminateEndEvent =
+          stateBehavior.isInterruptedByTerminateEndEvent(flowScopeContext, flowScopeInstance);
 
+      if (interruptedByTerminateEndEvent && stateBehavior.canBeTerminated(childContext)) {
+        // the child element instances were terminated by a terminate end event in the process
+        stateTransitionBehavior.completeElement(flowScopeContext);
+      } else {
+        // an interrupting event subprocess was triggered
+        eventSubscriptionBehavior
+            .findEventTrigger(flowScopeContext)
+            .ifPresent(
+                eventTrigger ->
+                    eventSubscriptionBehavior.activateTriggeredEvent(
+                        flowScopeContext.getElementInstanceKey(),
+                        flowScopeContext.getElementInstanceKey(),
+                        eventTrigger,
+                        flowScopeContext));
+      }
     } else if (stateBehavior.canBeTerminated(childContext)) {
-
-      final var flowScopeInstance = stateBehavior.getElementInstance(flowScopeContext);
       if (flowScopeInstance.isTerminating()) {
         // the process instance was canceled, or interrupted by a parent process instance
         transitionTo(
             element,
             flowScopeContext,
             context -> Either.right(stateTransitionBehavior.transitionToTerminated(context)));
-
-      } else if (flowScopeInstance.isActive()) {
-        // the child element instances were terminated by a terminate end event in the process
-        stateTransitionBehavior.completeElement(flowScopeContext);
       }
     }
   }
