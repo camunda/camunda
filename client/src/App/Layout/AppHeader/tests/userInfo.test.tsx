@@ -159,7 +159,11 @@ describe('User info', () => {
 
     window.open = mockOpenFn;
     window.Osano = {
-      cm: {analytics: false, showDrawer: mockShowDrawer},
+      cm: {
+        analytics: false,
+        showDrawer: mockShowDrawer,
+        addEventListener: jest.fn(),
+      },
     };
 
     mockGetUser().withSuccess(mockUser);

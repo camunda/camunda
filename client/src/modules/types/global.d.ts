@@ -34,6 +34,10 @@ export declare global {
       cm?: {
         analytics: boolean;
         showDrawer: (arg: string) => void;
+        addEventListener: (
+          eventType: string,
+          callback: (arg: any) => void
+        ) => void;
       };
     };
     Appcues?: Appcues;
