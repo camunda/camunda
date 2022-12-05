@@ -67,6 +67,7 @@ final class ProcessInstanceElementCompletedApplier
 
     if (isTerminateEndEvent(value)) {
       flowScopeInstance.resetActiveSequenceFlows();
+      flowScopeInstance.setInterruptingElementId(value.getElementIdBuffer());
       elementInstanceState.updateInstance(flowScopeInstance);
     }
   }
