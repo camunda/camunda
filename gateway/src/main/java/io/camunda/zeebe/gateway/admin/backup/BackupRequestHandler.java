@@ -43,7 +43,7 @@ public final class BackupRequestHandler implements BackupApi {
             topology -> {
               final var backupsTaken =
                   topology.getPartitions().stream()
-                      .map(partitionId -> getBackupRequestForPartition(backupId, partitionId))
+                      .map(partitionId -> createBackupRequest(backupId, partitionId))
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
 
@@ -92,7 +92,7 @@ public final class BackupRequestHandler implements BackupApi {
             topology -> {
               final var statusesReceived =
                   topology.getPartitions().stream()
-                      .map(partitionId -> getStatusQueryForPartition(backupId, partitionId))
+                      .map(partitionId -> createStatusQueryRequest(backupId, partitionId))
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
 
@@ -117,7 +117,7 @@ public final class BackupRequestHandler implements BackupApi {
             topology -> {
               final var backupsReceived =
                   topology.getPartitions().stream()
-                      .map(this::getListRequest)
+                      .map(this::createListRequest)
                       .map(brokerClient::sendRequestWithRetry)
                       .toList();
 
@@ -133,7 +133,7 @@ public final class BackupRequestHandler implements BackupApi {
             topology ->
                 CompletableFuture.allOf(
                     topology.getPartitions().stream()
-                        .map(partitionId -> getDeleteRequest(backupId, partitionId))
+                        .map(partitionId -> createDeleteRequest(backupId, partitionId))
                         .map(brokerClient::sendRequestWithRetry)
                         .toArray(CompletableFuture[]::new)));
   }
@@ -259,15 +259,14 @@ public final class BackupRequestHandler implements BackupApi {
             .formatted(partitionStatuses));
   }
 
-  private BackupStatusRequest getStatusQueryForPartition(
-      final long backupId, final int partitionId) {
+  private BackupStatusRequest createStatusQueryRequest(final long backupId, final int partitionId) {
     final var request = new BackupStatusRequest();
     request.setBackupId(backupId);
     request.setPartitionId(partitionId);
     return request;
   }
 
-  private static BrokerBackupRequest getBackupRequestForPartition(
+  private static BrokerBackupRequest createBackupRequest(
       final long backupId, final int partitionId) {
     final var request = new BrokerBackupRequest();
     request.setBackupId(backupId);
@@ -275,13 +274,13 @@ public final class BackupRequestHandler implements BackupApi {
     return request;
   }
 
-  private BackupListRequest getListRequest(final Integer partitionId) {
+  private BackupListRequest createListRequest(final Integer partitionId) {
     final var request = new BackupListRequest();
     request.setPartitionId(partitionId);
     return request;
   }
 
-  private BackupDeleteRequest getDeleteRequest(final long backupId, final Integer partitionId) {
+  private BackupDeleteRequest createDeleteRequest(final long backupId, final Integer partitionId) {
     final var request = new BackupDeleteRequest();
     request.setPartitionId(partitionId);
     request.setBackupId(backupId);
