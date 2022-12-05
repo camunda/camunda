@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.Query;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.type.ModelElementType;
@@ -36,6 +37,7 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
     this.collection = collection;
   }
 
+  @Override
   public Stream<T> stream() {
     return collection.stream();
   }
@@ -72,11 +74,21 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
 
   @Override
   public T singleResult() {
-    if (collection.size() == 1) {
-      return collection.iterator().next();
+    final Optional<T> optionalSingleResult = findSingleResult();
+    if (optionalSingleResult.isPresent()) {
+      return optionalSingleResult.get();
     } else {
       throw new BpmnModelException(
           "Collection expected to have <1> entry but has <" + collection.size() + ">");
+    }
+  }
+
+  @Override
+  public Optional<T> findSingleResult() {
+    if (collection.size() == 1) {
+      return Optional.of(collection.iterator().next());
+    } else {
+      return Optional.empty();
     }
   }
 }
