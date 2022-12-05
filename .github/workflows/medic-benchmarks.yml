@@ -27,9 +27,9 @@ jobs:
           echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
       - name: Delete benchmarks
         run: |
-          kubectl delete ${{ steps.data.normal }}
-          kubectl delete ${{ steps.data.normal }}-mixed
-          kubectl delete ${{ steps.data.normal }}-latency
+          kubectl delete ${{ steps.data.outputs.normal }}
+          kubectl delete ${{ steps.data.outputs.normal }}-mixed
+          kubectl delete ${{ steps.data.outputs.normal }}-latency
   benchmark-data:
     name: Collect benchmark data
     runs-on: ubuntu-latest
