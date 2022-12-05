@@ -15,9 +15,15 @@ import {Wrapper} from './mocks';
 describe('App switcher', () => {
   afterEach(() => {
     authenticationStore.reset();
+    window.clientConfig = undefined;
   });
 
   it('should render with correct links', async () => {
+    window.clientConfig = {
+      isEnterprise: false,
+      organizationId: 'some-organization-id',
+    };
+
     mockGetUser().withSuccess(
       createUser({
         c8Links: {
@@ -64,5 +70,57 @@ describe('App switcher', () => {
     expect(
       withinAppPanel.getByRole('link', {name: 'Optimize'})
     ).toHaveAttribute('href', 'https://link-to-optimize');
+  });
+
+  it('should not render links for CCSM', async () => {
+    window.clientConfig = {
+      isEnterprise: false,
+      organizationId: null,
+    };
+
+    mockGetUser().withSuccess(
+      createUser({
+        c8Links: {
+          operate: 'https://link-to-operate',
+          tasklist: 'https://link-to-tasklist',
+          modeler: 'https://link-to-modeler',
+          console: 'https://link-to-console',
+          optimize: 'https://link-to-optimize',
+        },
+      })
+    );
+
+    await authenticationStore.authenticate();
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /app switcher/i,
+      })
+    );
+
+    const withinAppPanel = within(
+      screen.getByRole('navigation', {
+        name: /app panel/i,
+      })
+    );
+
+    expect(
+      withinAppPanel.queryByRole('link', {name: 'Console'})
+    ).not.toBeInTheDocument();
+
+    expect(
+      withinAppPanel.queryByRole('link', {name: 'Modeler'})
+    ).not.toBeInTheDocument();
+
+    expect(
+      withinAppPanel.queryByRole('link', {name: 'Tasklist'})
+    ).not.toBeInTheDocument();
+
+    expect(
+      withinAppPanel.queryByRole('link', {name: 'Optimize'})
+    ).not.toBeInTheDocument();
   });
 });

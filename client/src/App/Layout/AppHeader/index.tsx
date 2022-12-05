@@ -142,20 +142,17 @@ const AppHeader: React.FC = observer(() => {
         type: 'app',
         ariaLabel: 'App Panel',
         isOpen: false,
-        elements: orderedApps.map((appName) => ({
-          key: appName,
-          label: capitalize(appName),
-          href: c8Links[appName],
-          target: '_blank',
-          ...(appName === 'operate'
-            ? {
-                active: true,
-                routeProps: {
-                  to: Paths.dashboard(),
-                },
-              }
-            : {}),
-        })),
+        elements: window.clientConfig?.organizationId
+          ? orderedApps.map((appName) => ({
+              key: appName,
+              label: capitalize(appName),
+              href: c8Links[appName],
+              target: '_blank',
+              active: appName === 'operate',
+              routeProps:
+                appName === 'operate' ? {to: Paths.dashboard()} : undefined,
+            }))
+          : [],
         elementClicked: (app) => {
           tracking.track({
             eventName: 'app-switcher-item-clicked',
