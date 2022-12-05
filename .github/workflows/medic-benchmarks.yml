@@ -1,6 +1,6 @@
 name: Weekly medic benchmark
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: { }
   schedule:
     # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
     - cron: 0 1 * * 1
@@ -50,7 +50,7 @@ jobs:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ steps.data.outputs.ref }}
+      ref: ${{ needs.benchmark-data.outputs.ref }}
   setup-mixed-benchmark:
     name: Setup mixed benchmark
     uses: ./.github/workflows/benchmark.yml
@@ -61,13 +61,13 @@ jobs:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ steps.data.outputs.ref }}
+      ref: ${{ needs.benchmark-data.outputs.ref }}
       bechmark-load: >
-         --set starter.rate=25
-         --set timer.replicas=1
-         --set timer.rate=25
-         --set publisher.replica=1
-         --set publisher.rate=25
+        --set starter.rate=25
+        --set timer.replicas=1
+        --set timer.rate=25
+        --set publisher.replica=1
+        --set publisher.rate=25
   setup-latency-benchmark:
     name: Setup latency benchmark
     uses: ./.github/workflows/benchmark.yml
@@ -78,7 +78,7 @@ jobs:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-latency
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ steps.data.outputs.ref }}
+      ref: ${{ needs.benchmark-data.outputs.ref }}
       bechmark-load: >
-         --set starter.rate=1
-         --set worker.replicas=1
+        --set starter.rate=1
+        --set worker.replicas=1
