@@ -43,7 +43,7 @@ jobs:
     name: Setup normal benchmark
     needs:
       - benchmark-data
-    uses: ./.github/workflows/benchmark.yaml
+    uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark
@@ -52,7 +52,7 @@ jobs:
       ref: ${{ steps.data.outputs.ref }}
   setup-mixed-benchmark:
     name: Setup mixed benchmark
-    uses: ./.github/workflows/benchmark.yaml
+    uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     needs:
       - benchmark-data
@@ -69,7 +69,7 @@ jobs:
          --set publisher.rate=25
   setup-latency-benchmark:
     name: Setup latency benchmark
-    uses: ./.github/workflows/benchmark.yaml
+    uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     needs:
       - benchmark-data
