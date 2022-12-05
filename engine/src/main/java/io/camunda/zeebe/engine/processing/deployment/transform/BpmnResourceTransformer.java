@@ -29,9 +29,9 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
+import org.xml.sax.SAXException;
 
 public final class BpmnResourceTransformer implements DeploymentResourceTransformer {
 
@@ -60,24 +60,35 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   @Override
   public Either<Failure, Void> transformResource(
       final DeploymentResource resource, final DeploymentRecord deployment) {
+    try {
+      final BpmnModelInstance definition = readProcessDefinition(resource);
+      final String validationError = validator.validate(definition);
 
-    final BpmnModelInstance definition = readProcessDefinition(resource);
-    final String validationError = validator.validate(definition);
+      if (validationError == null) {
+        // transform the model to avoid unexpected failures that are not covered by the validator
+        bpmnTransformer.transformDefinitions(definition);
 
-    if (validationError == null) {
-      // transform the model to avoid unexpected failures that are not covered by the validator
-      bpmnTransformer.transformDefinitions(definition);
+        return checkForDuplicateBpmnId(definition, resource, deployment)
+            .map(
+                ok -> {
+                  transformProcessResource(deployment, resource, definition);
+                  return null;
+                });
 
-      return checkForDuplicateBpmnId(definition, resource, deployment)
-          .map(
-              ok -> {
-                transformProcessResource(deployment, resource, definition);
-                return null;
-              });
-
-    } else {
-      final var failureMessage =
-          String.format("'%s': %s", resource.getResourceName(), validationError);
+      } else {
+        final var failureMessage =
+            String.format("'%s': %s", resource.getResourceName(), validationError);
+        return Either.left(new Failure(failureMessage));
+      }
+    } catch (final Exception e) {
+      final var cause = e.getCause();
+      final String failureMessage;
+      if (cause instanceof SAXException) {
+        failureMessage =
+            String.format("'%s': SAXException %s", resource.getResourceName(), cause.getMessage());
+      } else {
+        failureMessage = String.format("'%s': %s", resource.getResourceName(), e.getMessage());
+      }
       return Either.left(new Failure(failureMessage));
     }
   }
@@ -96,7 +107,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     final var bpmnProcessIds =
         process.getDefinitions().getChildElementsByType(Process.class).stream()
             .map(BaseElement::getId)
-            .collect(Collectors.toList());
+            .toList();
 
     return record.getProcessesMetadata().stream()
         .filter(metadata -> bpmnProcessIds.contains(metadata.getBpmnProcessId()))
