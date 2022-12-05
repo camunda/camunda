@@ -17,7 +17,7 @@ on:
         description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
         default: europe-west1-b
         required: false
-      bechmark-load:
+      benchmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
         required: false
   workflow_call:
@@ -41,7 +41,7 @@ on:
         default: europe-west1-b
         type: string
         required: false
-      bechmark-load:
+      benchmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
         type: string
         required: false
@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v1
         with:
           credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
@@ -118,11 +118,11 @@ jobs:
       - name: Helm install
         working-directory: benchmark-helm/zeebe-benchmark
         run: >
-          helm upgrade --install ${{ inputs.name }} . 
+          helm upgrade --install ${{ inputs.name }} .
           --namespace ${{ inputs.name }}
           --create-namespace
           --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
-          ${{ inputs.bechmark-load }}
+          ${{ inputs.benchmark-load }}
