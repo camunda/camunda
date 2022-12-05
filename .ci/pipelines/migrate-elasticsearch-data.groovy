@@ -2,7 +2,6 @@
 
 String agent() {
   boolean isStage = env.JENKINS_URL.contains('stage')
-  String vaultPrefix = isStage ? 'stage.' : ''
   String prefix = isStage ? 'stage-' : ''
   """
 ---
@@ -24,29 +23,6 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   initContainers:
-    - name: vault-template
-      image: gcr.io/camunda-public/camunda-internal_vault-template
-      imagePullPolicy: Always
-      env:
-      - name: VAULT_ADDR
-        value: https://${vaultPrefix}vault.int.camunda.com/
-      - name: CLUSTER
-        value: camunda-ci
-      - name: SA_NAMESPACE
-        valueFrom:
-          fieldRef:
-            apiVersion: v1
-            fieldPath: metadata.namespace
-      - name: SA_NAME
-        valueFrom:
-          fieldRef:
-            apiVersion: v1
-            fieldPath: spec.serviceAccountName
-      volumeMounts:
-      - mountPath: /etc/consul-templates
-        name: vault-config
-      - mountPath: /etc/vault-output
-        name: vault-output
     - name: init-sysctl
       image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
       command:
@@ -80,7 +56,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/plugins/
         name: plugindir
       - mountPath: /usr/share/elasticsearch/svc/
-        name: vault-output
+        name: vault-secret
         readOnly: true
   containers:
     - name: maven
@@ -119,12 +95,9 @@ spec:
     emptyDir: {}
   - name: plugindir
     emptyDir: {}
-  - name: vault-output
-    emptyDir:
-      medium: Memory
-  - name: vault-config
-    configMap:
-      name: ${prefix}ci-operate-vault-templates
+  - name: vault-secret
+    secret:
+      secretName: ci-operate-extra-secrets
 """ as String
 }
 
