@@ -50,7 +50,7 @@ it('should have a switch for every column', () => {
     />
   );
 
-  expect(node.find('Switch').length).toBe(7);
+  expect(node.find('ColumnSwitch').length).toBe(7);
 });
 
 it('should change the switches labels to space case instead of camelCase for non variables', () => {
@@ -64,10 +64,8 @@ it('should change the switches labels to space case instead of camelCase for non
     />
   );
 
-  expect(node.find('.columnSelectionSwitch').at(0).prop('label').props.children).toContain(
-    'Process Definition Key'
-  );
-  expect(node.find('.columnSelectionSwitch').at(1).prop('label').props.children).toMatchSnapshot();
+  expect(node.find('ColumnSwitch').at(0).prop('label')).toContain('Process Definition Key');
+  expect(node.find('ColumnSwitch').at(1).prop('label')).toContain('testVariable');
 });
 
 it('should call onChange with an empty included if all columns are excluded', () => {
@@ -117,7 +115,16 @@ it('should provide a sane interface for decision tables', () => {
     />
   );
 
-  expect(node).toMatchSnapshot();
+  const columns = node.find('ColumnSwitch');
+  const sections = node.find('CollapsibleSection');
+
+  expect(columns.at(0).prop('label')).toBe('Decision Definition Id');
+  expect(columns.at(1).prop('label')).toBe('Decision Definition Key');
+  expect(columns.at(2).prop('label')).toBe('Cool Name');
+  expect(columns.at(3).prop('label')).toBe('Klaus Seven');
+
+  expect(sections.at(0).prop('sectionTitle')).toBe('Input Variables:');
+  expect(sections.at(1).prop('sectionTitle')).toBe('Output Variables:');
 });
 
 it('should update configuration when changing include variables checkbox', () => {
@@ -169,7 +176,7 @@ it('should resolve the label of the variable if it exists', () => {
     />
   );
 
-  expect(node.find('Switch').prop('label').props.children[1]).toBe('variableLabel');
+  expect(node.find('ColumnSwitch').prop('label')).toBe('variableLabel');
 });
 
 it('should resolve the label of the flow node duration if it exists', () => {
@@ -182,7 +189,7 @@ it('should resolve the label of the flow node duration if it exists', () => {
     />
   );
 
-  expect(node.find('Switch').prop('label').props.children[1]).toBe('dur1Name');
+  expect(node.find('ColumnSwitch').prop('label')).toBe('dur1Name');
 });
 
 it('should fallback the label of the flow node duration to key if name doesnt exist', () => {
@@ -195,5 +202,5 @@ it('should fallback the label of the flow node duration to key if name doesnt ex
     />
   );
 
-  expect(node.find('Switch').prop('label').props.children[1]).toBe('dur1');
+  expect(node.find('ColumnSwitch').prop('label')).toBe('dur1');
 });

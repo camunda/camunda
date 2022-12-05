@@ -1121,7 +1121,11 @@
         "flowNodeSelection": "Flow Node Selection",
         "flowNodeDate": "Flow Node Date",
         "flowNodeStartDate": "Flow Node Start Date",
-        "flowNodeEndDate": "Flow Node End Date"
+        "flowNodeEndDate": "Flow Node End Date",
+        "variable-plural": "Variables",
+        "inputVariable-plural": "Input Variables",
+        "outputVariable-plural": "Output Variables",
+        "flowNodeDuration-plural": "Flow Nodes Duration"
       },
       "list": {
         "appliedTo": "Applied to",

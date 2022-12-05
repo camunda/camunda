@@ -1121,7 +1121,11 @@
         "flowNodeSelection": "Prozessknotenauswahl",
         "flowNodeDate": "Prozessknoten-Datum",
         "flowNodeStartDate": "Prozessknoten Startdatum",
-        "flowNodeEndDate": "Prozessknoten Enddatum"
+        "flowNodeEndDate": "Prozessknoten Enddatum",
+        "variable-plural": "Variablen",
+        "inputVariable-plural": "Eingangsvariablen",
+        "outputVariable-plural": "Ausgabevariablen",
+        "flowNodeDuration-plural": "Prozessknoten Dauer"
       },
       "list": {
         "appliedTo": "Angewendet auf",

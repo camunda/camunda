@@ -1,7 +1,8 @@
+@import 'shared-styles/shared-styles.scss';
+
 .ColumnSelection {
-  .columnSelectionSwitch .label {
-    white-space: nowrap;
-  }
+  max-width: 280px;
+  min-width: 0;
 
   .includeNew {
     font-size: 12px;

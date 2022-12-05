@@ -68,6 +68,7 @@ export const processPartButton = Selector('.ReportControlPanel .Button').withTex
   'Process Instance Part'
 );
 export const modalFlowNode = (id) => Selector(`.Modal [data-element-id="${id}"]`);
+export const selectSectionWithLabel = (label) => Selector('section .sectionTitle').withText(label);
 export const selectSwitchLabel = (label) => Selector('.Switch .label').withText(label);
 export const tableGroup = (idx) => Selector('.Table thead tr.groupRow th').nth(idx);
 export const tableHeader = (idx) => Selector('.Table thead tr:last-child th').nth(idx);
