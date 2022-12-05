@@ -112,7 +112,9 @@ public final class SubProcessProcessor
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(subProcessContext);
     final var subProcessInstance = stateBehavior.getElementInstance(subProcessContext);
 
-    if (stateBehavior.isInterrupted(subProcessContext)) {
+    final boolean interruptedByTerminateEndEvent =
+        stateBehavior.isInterruptedByTerminateEndEvent(subProcessContext, subProcessInstance);
+    if (stateBehavior.isInterrupted(subProcessContext) && !interruptedByTerminateEndEvent) {
       // an interrupting event subprocess was triggered
       eventSubscriptionBehavior
           .findEventTrigger(subProcessContext)
@@ -146,7 +148,7 @@ public final class SubProcessProcessor
                       stateTransitionBehavior.transitionToTerminated(subProcessContext);
                   stateTransitionBehavior.onElementTerminated(element, terminated);
 
-                } else if (subProcessInstance.isActive()) {
+                } else if (interruptedByTerminateEndEvent) {
                   // the child element instances were terminated by a terminate end event in the
                   // subprocess
                   stateTransitionBehavior.completeElement(subProcessContext);
