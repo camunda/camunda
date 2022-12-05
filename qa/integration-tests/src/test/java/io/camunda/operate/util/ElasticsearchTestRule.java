@@ -284,7 +284,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  private void runPostImportActions() {
+  public void runPostImportActions() {
     if (zeebePostImporter.getPostImportActions().size() == 0) {
       zeebePostImporter.initPostImporters();
     }
@@ -402,5 +402,9 @@ public class ElasticsearchTestRule extends TestWatcher {
       logger.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.",e);
       return Optional.empty();
     }
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 }

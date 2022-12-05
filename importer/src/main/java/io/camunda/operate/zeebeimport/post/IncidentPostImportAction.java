@@ -173,7 +173,7 @@ public class IncidentPostImportAction implements PostImportAction {
       if (!bulkProcessAndFlowNodeInstanceUpdate.requests().isEmpty()) {
         ElasticsearchUtil.processBulkRequest(esClient, bulkProcessAndFlowNodeInstanceUpdate);
         ElasticsearchUtil.processBulkRequest(esClient, bulkPendingIncidentUpdate);
-        ThreadUtil.sleepFor(1000L);
+        ThreadUtil.sleepFor(3000L);
       }
       if (logger.isDebugEnabled() && !incidents.isEmpty()) {
         logger.debug("Finished processing");
@@ -202,27 +202,36 @@ public class IncidentPostImportAction implements PostImportAction {
                     partitionQ
                     )
             )
+            .fetchSource(INCIDENT_KEYS, null)
             .sort(ID)
             .size(operateProperties.getZeebeElasticsearch().getBatchSize())
     );
-    final List<String> flowNodeInstanceIds = new ArrayList<>();
+    final List incidentIds = new ArrayList<>();
     try {
       final SearchResponse response = esClient.search(listViewRequest, RequestOptions.DEFAULT);
-      flowNodeInstanceIds.addAll(mapSearchHits(response.getHits().getHits(), sh -> {
+      mapSearchHits(response.getHits().getHits(), sh -> {
         listViewFlowNodeIndices.put(sh.getId(), sh.getIndex());
-        return sh.getId();
-      }));
+        if (sh.getSourceAsMap().get(INCIDENT_KEYS) != null) {
+          incidentIds.addAll((List)sh.getSourceAsMap().get(INCIDENT_KEYS));
+        }
+        return true;
+      });
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while processing pending incidents: %s",
           e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
+    if (logger.isDebugEnabled() && !listViewFlowNodeIndices.isEmpty()) {
+      logger.debug("Processing flow node instances: " + listViewFlowNodeIndices.keySet());
+    }
 
-    final SearchRequest request = ElasticsearchUtil.createSearchRequest(incidentTemplate).source(
-        new SearchSourceBuilder().query(
-                joinWithAnd(termsQuery(FLOW_NODE_INSTANCE_KEY, flowNodeInstanceIds), termQuery(PENDING, true)))
-            .sort(KEY).size(operateProperties.getZeebeElasticsearch().getBatchSize()));
     List<IncidentEntity> incidents = new ArrayList<>();
+    if (incidentIds.size() == 0) {
+      return incidents;
+    }
+    final SearchRequest request = ElasticsearchUtil.createSearchRequest(incidentTemplate).source(
+        new SearchSourceBuilder().query(idsQuery().addIds((String[])incidentIds.stream().map(String::valueOf).toArray(String[]::new)))
+            .sort(KEY).size(operateProperties.getZeebeElasticsearch().getBatchSize()));
     final SearchResponse response;
     try {
       response = esClient.search(request, RequestOptions.DEFAULT);

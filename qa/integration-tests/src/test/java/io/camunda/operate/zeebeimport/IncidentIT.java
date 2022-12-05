@@ -7,8 +7,11 @@
 package io.camunda.operate.zeebeimport;
 
 import static io.camunda.operate.entities.ErrorType.JOB_NO_RETRIES;
+import static io.camunda.operate.schema.templates.ListViewTemplate.*;
+import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
@@ -17,21 +20,30 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.entities.ErrorType;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.OperateZeebeIntegrationTest;
-import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
-import io.camunda.operate.zeebeimport.v8_1.processors.IncidentZeebeRecordProcessor;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+
+import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -55,12 +67,10 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   private IncidentNotifier incidentNotifier;
 
   @Autowired
-  @InjectMocks
-  private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor2;
+  private RestHighLevelClient esClient;
 
   @Autowired
-  @InjectMocks
-  private io.camunda.operate.zeebeimport.v8_1.processors.IncidentZeebeRecordProcessor incidentZeebeRecordProcessor1;
+  private ListViewTemplate listViewTemplate;
 
   @Before
   public void before() {
@@ -170,6 +180,60 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
     //verify that incidents notification was called
     verify(incidentNotifier, atLeastOnce()).notifyOnIncidents(any());
+  }
+
+  @Test
+  public void testIncidentsArePostProcessedAfterMigrationTo8_1() throws Exception {
+    // having
+    String processId = "complexProcess";
+    deployProcess("complexProcess_v_3.bpmn");
+    final long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"count\":3}");
+    final String errorMsg = "some error";
+    final String activityId = "alwaysFailingTask";
+    ZeebeTestUtil.failTask(zeebeClient, activityId, getWorkerName(), 3, errorMsg);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, 4L);
+
+    MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));
+    IncidentResponseDto incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+
+    //imitate fields after migration 8.0.x -> 8.1.4
+    incidentResponse.getIncidents().forEach(incident -> {
+      //update list view similar to migration
+      UpdateRequest updateRequest = new UpdateRequest();
+      updateRequest.id(incident.getFlowNodeInstanceId());
+      updateRequest.index(listViewTemplate.getFullQualifiedName());
+      updateRequest.script(new Script(ScriptType.INLINE, "painless",
+          "ctx._source.pendingIncident = true; ctx._source.incidentKeys = new Long []{" + incident.getId() + "L}",
+          Collections.emptyMap()));
+      try {
+        esClient.update(updateRequest, RequestOptions.DEFAULT);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+    ThreadUtil.sleepFor(1000L);
+
+    //when
+    elasticsearchTestRule.runPostImportActions();
+
+    //then
+    //flow node instances pendingIncident = false
+    final SearchRequest listViewRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate).source(
+        new SearchSourceBuilder().query(
+            joinWithAnd(termQuery(PENDING_INCIDENT, true),
+                termQuery(JOIN_RELATION, ACTIVITIES_JOIN_RELATION))
+            )
+    );
+    final SearchResponse response = esClient.search(listViewRequest, RequestOptions.DEFAULT);
+    assertThat(response.getHits().getTotalHits().value).isEqualTo(0);
+
+    //incidents are still the same
+    mvcResult = getRequest(getIncidentsURL(processInstanceKey));
+    incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
+    });
+    assertThat(incidentResponse).isNotNull();
+    assertThat(incidentResponse.getCount()).isEqualTo(4);
+    assertThat(incidentResponse.getIncidents()).hasSize(4);
   }
 
   /**
