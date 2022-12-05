@@ -35,8 +35,6 @@ it('should call toggle function when section title is clicked', () => {
   const spy = jest.fn();
   const node = shallow(<CollapsibleSection {...props} toggleSectionOpen={spy} />);
 
-  console.log(node.debug());
-
   node.find('.sectionTitle').simulate('click');
 
   expect(spy).toHaveBeenCalled();
