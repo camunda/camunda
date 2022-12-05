@@ -77,7 +77,7 @@ export function getCombinedTableProps(
     instanceCount: [],
   };
 
-  const combinedProps = reports.reduce((prevReport, {id}) => {
+  const combinedProps = reports.reduce((prevReport, {id}, idx) => {
     const report = reportResult[id];
     const {data, result, name} = report;
 
@@ -122,7 +122,7 @@ export function getCombinedTableProps(
     const reportsNames = [...prevReport.reportsNames, name];
 
     // 2d array of all ids
-    const reportsIds = [...prevReport.reportsIds, id];
+    const reportsIds = [...prevReport.reportsIds, id || `${idx}`];
 
     // 2d array of all results
     const reportsResult = [
