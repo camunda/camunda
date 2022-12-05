@@ -34,6 +34,7 @@ jobs:
     name: Collect benchmark data
     runs-on: ubuntu-latest
     outputs:
+      full-ref: ${{ steps.data.outputs.full-ref }}
       ref: ${{ steps.data.outputs.ref }}
       cw: ${{ steps.data.outputs.cw }}
     steps:
@@ -41,6 +42,7 @@ jobs:
       - name: Collect benchmark data
         id: data
         run: |
+          echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
           echo "ref=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
           echo "cw=$(date +%V)" >> $GITHUB_OUTPUT
 
@@ -55,7 +57,7 @@ jobs:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.ref }}
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
   setup-mixed-benchmark:
     name: Setup mixed benchmark
     uses: ./.github/workflows/benchmark.yml
@@ -67,7 +69,7 @@ jobs:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.ref }}
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       benchmark-load: >
         --set starter.rate=25
         --set timer.replicas=1
@@ -85,7 +87,7 @@ jobs:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-latency
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
-      ref: ${{ needs.benchmark-data.outputs.ref }}
+      ref: ${{ needs.benchmark-data.outputs.full-ref }}
       benchmark-load: >
         --set starter.rate=1
         --set worker.replicas=1
