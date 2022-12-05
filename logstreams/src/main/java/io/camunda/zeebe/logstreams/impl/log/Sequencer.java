@@ -30,16 +30,19 @@ import org.slf4j.LoggerFactory;
  * until they are handed off to the consumer.
  */
 public final class Sequencer implements LogStreamBatchWriter, Closeable {
-  private final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
+  private final int partitionId;
+
   private volatile long position;
   private volatile boolean isClosed = false;
   private ActorCondition consumer;
   private final Queue<SequencedBatch> queue = new ArrayBlockingQueue<>(128);
   private final ReentrantLock lock = new ReentrantLock();
 
-  public Sequencer(final long initialPosition) {
+  public Sequencer(final int partitionId, final long initialPosition) {
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     this.position = initialPosition;
+    this.partitionId = partitionId;
   }
 
   /**
@@ -60,6 +63,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   @Override
   public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
     if (isClosed) {
+
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntry);
       return -1;
     }

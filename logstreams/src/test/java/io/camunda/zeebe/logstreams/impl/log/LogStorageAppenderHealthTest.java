@@ -38,7 +38,7 @@ public final class LogStorageAppenderHealthTest {
   @Before
   public void setUp() {
     failingLogStorage = new ControllableLogStorage();
-    sequencer = new Sequencer(0);
+    sequencer = new Sequencer(1, 0);
 
     appender = new LogStorageAppender("appender", PARTITION_ID, failingLogStorage, sequencer);
   }

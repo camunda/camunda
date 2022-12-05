@@ -302,7 +302,7 @@ public final class LogStreamImpl extends Actor
   }
 
   private Sequencer createAndScheduleWriteBuffer(final long initialPosition) {
-    return new Sequencer(initialPosition);
+    return new Sequencer(partitionId, initialPosition);
   }
 
   private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
