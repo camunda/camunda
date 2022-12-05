@@ -33,6 +33,9 @@ jobs:
   benchmark-data:
     name: Collect benchmark data
     runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.data.outputs.ref }}
+      cw: ${{ steps.data.outputs.cw }}
     steps:
       - name: Collect benchmark data
         id: data
