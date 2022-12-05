@@ -44,6 +44,7 @@ jobs:
     name: Setup normal benchmark
     needs:
       - benchmark-data
+      - delete-old-benchmarks
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
@@ -57,6 +58,7 @@ jobs:
     secrets: inherit
     needs:
       - benchmark-data
+      - delete-old-benchmarks
     with:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
       cluster: zeebe-cluster
@@ -74,6 +76,7 @@ jobs:
     secrets: inherit
     needs:
       - benchmark-data
+      - delete-old-benchmarks
     with:
       name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-latency
       cluster: zeebe-cluster
