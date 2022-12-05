@@ -101,7 +101,8 @@ public final class EventSubProcessProcessor
         final var terminated = stateTransitionBehavior.transitionToTerminated(flowScopeContext);
         stateTransitionBehavior.onElementTerminated(element, terminated);
 
-      } else if (flowScopeInstance.isActive()) {
+      } else if (stateBehavior.isInterruptedByTerminateEndEvent(
+          flowScopeContext, flowScopeInstance)) {
         // the child element instances were terminated by a terminate end event in the
         // event subprocess
         stateTransitionBehavior.completeElement(flowScopeContext);
