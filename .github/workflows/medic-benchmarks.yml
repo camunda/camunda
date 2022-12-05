@@ -1,5 +1,6 @@
 name: Weekly medic benchmark
 on:
+  workflow_dispatch: {}
   schedule:
     # Runs at 1am every monday https://crontab.guru/#0_1_*_*_1
     - cron: 0 1 * * 1
