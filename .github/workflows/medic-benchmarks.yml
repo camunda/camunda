@@ -67,7 +67,7 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.ref }}
-      bechmark-load: >
+      benchmark-load: >
         --set starter.rate=25
         --set timer.replicas=1
         --set timer.rate=25
@@ -85,6 +85,6 @@ jobs:
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.ref }}
-      bechmark-load: >
+      benchmark-load: >
         --set starter.rate=1
         --set worker.replicas=1
