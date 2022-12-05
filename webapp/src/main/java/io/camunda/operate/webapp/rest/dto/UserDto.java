@@ -6,9 +6,10 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 import io.camunda.operate.webapp.security.Permission;
-import java.util.List;
 
-import java.util.Objects;
+import java.util.*;
+
+import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import org.springframework.util.StringUtils;
 
 public class UserDto {
@@ -25,6 +26,7 @@ public class UserDto {
 
   private String salesPlanType;
 
+  private Map<ClusterMetadata.AppName,String> c8Links =  new HashMap<>();
 
   public boolean isCanLogout() {
     return canLogout;
@@ -88,6 +90,16 @@ public class UserDto {
     return salesPlanType;
   }
 
+  public Map<ClusterMetadata.AppName, String> getC8Links() {
+    return c8Links;
+  }
+
+  public UserDto setC8Links(Map<ClusterMetadata.AppName, String> c8Links) {
+    if(c8Links!=null){
+      this.c8Links = c8Links;
+    }
+    return this;
+  }
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -100,11 +112,12 @@ public class UserDto {
     return canLogout == userDto.canLogout && userId.equals(userDto.userId) && displayName.equals(
         userDto.displayName) && permissions.equals(userDto.permissions) &&
         Objects.equals(roles, userDto.roles) &&
-        Objects.equals(salesPlanType, userDto.salesPlanType);
+        Objects.equals(salesPlanType, userDto.salesPlanType) &&
+        Objects.equals(c8Links, userDto.c8Links);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(userId, displayName, canLogout, permissions, roles, salesPlanType);
+    return Objects.hash(userId, displayName, canLogout, permissions, roles, salesPlanType, c8Links);
   }
 }

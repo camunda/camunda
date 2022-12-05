@@ -20,6 +20,7 @@ public class CloudProperties {
   private String permissionUrl;
 
   private String permissionAudience;
+  private String consoleUrl;
 
   public String getPermissionUrl() {
     return permissionUrl;
@@ -70,6 +71,15 @@ public class CloudProperties {
 
   public CloudProperties setMixpanelAPIHost(final String mixpanelAPIHost) {
     this.mixpanelAPIHost = mixpanelAPIHost;
+    return this;
+  }
+
+  public String getConsoleUrl() {
+    return consoleUrl;
+  }
+
+  public CloudProperties setConsoleUrl(final String consoleUrl){
+    this.consoleUrl = consoleUrl;
     return this;
   }
 }

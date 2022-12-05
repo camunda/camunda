@@ -15,9 +15,7 @@ import static io.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
 import static io.camunda.operate.webapp.security.OperateURIs.NO_PERMISSION;
 import static io.camunda.operate.webapp.security.OperateURIs.ROOT;
 import static io.camunda.operate.webapp.security.OperateProfileService.SSO_AUTH_PROFILE;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNotNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -47,6 +45,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.OperateURIs;
+import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -78,6 +77,7 @@ import org.springframework.web.client.RestTemplate;
         CCSaaSJwtAuthenticationTokenValidator.class,
         SSOWebSecurityConfig.class,
         Auth0Service.class,
+        C8ConsoleService.class,
         SSOController.class,
         TokenAuthentication.class,
         SSOUserService.class,
@@ -92,11 +92,13 @@ import org.springframework.web.client.RestTemplate;
         "camunda.operate.auth0.clientId=1",
         "camunda.operate.auth0.clientSecret=2",
         "camunda.operate.cloud.organizationId=3",
+        "camunda.operate.cloud.clusterId=test-clusterId",
         "camunda.operate.auth0.domain=domain",
         "camunda.operate.auth0.backendDomain=backendDomain",
         "camunda.operate.auth0.claimName=claimName",
         "camunda.operate.cloud.permissionaudience=audience",
-        "camunda.operate.cloud.permissionurl=https://permissionurl"
+        "camunda.operate.cloud.permissionurl=https://permissionurl",
+        "camunda.operate.cloud.consoleUrl=https://consoleUrl"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
@@ -147,7 +149,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.build()).willReturn(
         "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo");
-
   }
 
   @Test
@@ -374,6 +375,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), response.getHeaders());
     // Step 2 Get Login provider url
     mockPermissionAllowed();
+    mockClusterMetadata();
     response = get(LOGIN_RESOURCE, httpEntity);
 
     assertThat(redirectLocationIn(response)).contains(
@@ -389,11 +391,25 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     response = get(SSO_CALLBACK_URI, httpEntity);
     httpEntity = httpEntityWithCookie(response);
+
+    // Test no ClusterMetadata
+    mockEmptyClusterMetadata();
     response = get(userInfoUrl, httpEntity);
+    assertThat(response.getBody()).contains("\"c8Links\":{}" );
+
+    mockClusterMetadata();
+    response = get(userInfoUrl, httpEntity);
+    final String c8Links = "{\"console\":\"https://console.audience/org/3/cluster/test-clusterId\","
+        + "\"operate\":\"http://operate-url\","
+        + "\"optimize\":\"http://optimize-url\","
+        + "\"modeler\":\"https://modeler.audience/org/3\","
+        + "\"tasklist\":\"http://tasklist-url\","
+        + "\"zeebe\":\"grpc://zeebe-url\"}";
     assertThat(response.getBody()).contains("\"displayName\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"username\":\"operate-testuser\"");
     assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
     assertThat(response.getBody()).contains("\"roles\":[\"user\",\"analyst\"]");
+    assertThat(response.getBody()).contains("\"c8Links\":" + c8Links);
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
@@ -498,5 +514,27 @@ public class AuthenticationIT implements AuthenticationTestable {
         (HttpEntity) any(),
         (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
+  }
+
+  private void mockClusterMetadata(){
+    ClusterMetadata clusterMetadata = new ClusterMetadata()
+        .setName("test-cluster")
+        .setUuid("test-clusterId")
+        .setUrls(Map.of(
+            ClusterMetadata.AppName.OPERATE,"http://operate-url",
+            ClusterMetadata.AppName.TASKLIST,"http://tasklist-url",
+            ClusterMetadata.AppName.OPTIMIZE,"http://optimize-url",
+            ClusterMetadata.AppName.ZEEBE,"grpc://zeebe-url"
+            ));
+    ClusterMetadata[] clusterMetadatas = new ClusterMetadata[]{clusterMetadata};
+    when(restTemplate.exchange(
+        eq("https://consoleUrl/external/organizations/3/clusters"), eq(HttpMethod.GET), (HttpEntity) any(), eq(ClusterMetadata[].class)))
+        .thenReturn(new ResponseEntity<>(clusterMetadatas, HttpStatus.OK));
+  }
+
+  private void mockEmptyClusterMetadata(){
+    when(restTemplate.exchange(
+        eq("https://consoleUrl/external/organizations/3/clusters"), eq(HttpMethod.GET), (HttpEntity) any(), eq(ClusterMetadata[].class)))
+        .thenReturn(new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
   }
 }

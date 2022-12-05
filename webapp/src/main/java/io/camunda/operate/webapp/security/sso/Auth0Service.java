@@ -16,19 +16,18 @@ import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -75,8 +74,8 @@ public class Auth0Service {
     try {
       final Tokens tokens = retrieveTokens(req, res);
       final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
+      authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken(), tokens.getAccessToken());
       checkPermission(authentication, tokens.getAccessToken());
-      authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
       SecurityContextHolder.getContext().setAuthentication(authentication);
       sessionExpiresWhenAuthenticationExpires(req);
     } catch (Exception e) {
@@ -158,4 +157,5 @@ public class Auth0Service {
       return redirectUri + req.getContextPath() + redirectTo;
     }
   }
+
 }

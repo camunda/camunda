@@ -38,9 +38,9 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
 
-    public static final String ORGANIZATION_ID = "id";
-    public static final String ROLES_KEY = "roles";
-    private transient Logger logger = LoggerFactory.getLogger(this.getClass());
+  public static final String ORGANIZATION_ID = "id";
+  public static final String ROLES_KEY = "roles";
+  private transient Logger logger = LoggerFactory.getLogger(this.getClass());
 
   @Value("${" + OperateProperties.PREFIX + ".auth0.claimName}")
   private String claimName;
@@ -58,6 +58,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   private String clientSecret;
   private String idToken;
   private String refreshToken;
+
+  private String accessToken;
 
   private String salesPlanType;
   private List<Permission> permissions = new ArrayList<>();
@@ -81,12 +83,12 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {
-      getLogger().info("Access token is expired");
+      getLogger().info("Tokens are expired");
       if (refreshToken == null) {
         setAuthenticated(false);
         getLogger().info("No refresh token available. Authentication is invalid.");
       } else {
-        getLogger().info("Get a new access token by using refresh token");
+        getLogger().info("Get a new tokens by using refresh token");
         getNewTokenByRefreshToken();
       }
     }
@@ -105,8 +107,8 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     try {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
       final TokenHolder tokenHolder = tokenRequest.execute();
-      authenticate(tokenHolder.getIdToken(), tokenHolder.getRefreshToken());
-      getLogger().info("New access token received and validated.");
+      authenticate(tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
+      getLogger().info("New tokens received and validated.");
     } catch (Auth0Exception e) {
       getLogger().error(e.getMessage(), e.getCause());
       setAuthenticated(false);
@@ -136,8 +138,9 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return JWT.decode(idToken).getSubject();
   }
 
-  public void authenticate(final String idToken, final String refreshToken) {
+  public void authenticate(final String idToken, final String refreshToken, final String accessToken) {
     this.idToken = idToken;
+    this.accessToken = accessToken;
     // Normally the refresh token will be issued only once
     // after first successfully getting the access token
     // ,so we need to avoid that the refreshToken will be overridden with null
@@ -148,7 +151,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     tryAuthenticateAsListOfMaps(claim);
     if (!isAuthenticated()) {
       throw new InsufficientAuthenticationException(
-          "No permission for operate - check your organization id");
+          "No permission for Operate - check your organization id");
     }
   }
 
@@ -233,5 +236,9 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   public int hashCode() {
     return Objects.hash(super.hashCode(), claimName, organization, domain, clientId, clientSecret,
         idToken, refreshToken, salesPlanType);
+  }
+
+  public String getAccessToken() {
+    return accessToken;
   }
 }
