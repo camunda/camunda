@@ -7,7 +7,7 @@
     "@bpmn-io/form-js": "0.9.9",
     "@camunda-cloud/common-ui": "0.0.18-rc9",
     "@camunda-cloud/common-ui-react": "0.0.18-rc9",
-    "@carbon/elements": "11.14.0",
+    "@carbon/elements": "11.15.0",
     "@carbon/react": "1.18.0",
     "@monaco-editor/react": "4.4.6",
     "date-fns": "2.29.3",
