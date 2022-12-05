@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The sequencer is a multiple-producer, single-consumer queue of {@link LogAppendEntry}. It buffers
@@ -28,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * until they are handed off to the consumer.
  */
 public final class Sequencer implements LogStreamBatchWriter, Closeable {
+  private final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private volatile long position;
   private volatile boolean isClosed = false;
   private ActorCondition consumer;
@@ -35,6 +38,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
 
   public Sequencer(final long initialPosition) {
+    LOG.trace("Starting new sequencer at position {}", initialPosition);
     this.position = initialPosition;
   }
 
@@ -56,6 +60,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   @Override
   public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
     if (isClosed) {
+      LOG.warn("Rejecting write of {}, sequencer is closed", appendEntry);
       return -1;
     }
     lock.lock();
@@ -70,6 +75,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
         }
         return currentPosition;
       } else {
+        LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntry);
         return -1;
       }
     } finally {
@@ -88,6 +94,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   public long tryWrite(
       final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
     if (isClosed) {
+      LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
       return -1;
     }
 
@@ -113,6 +120,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
         }
         return nextPosition - 1;
       } else {
+        LOG.trace("Rejecting write of {}, sequencer queue is full", entries);
         return -1;
       }
     } finally {
@@ -139,6 +147,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
    */
   @Override
   public void close() {
+    LOG.info("Closing sequencer for writing");
     isClosed = true;
   }
 
