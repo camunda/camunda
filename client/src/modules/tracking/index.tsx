@@ -43,6 +43,7 @@ function injectScript(src: string): Promise<void> {
 class Tracking {
   #mixpanel: null | Mixpanel = null;
   #appCues: null | NonNullable<typeof window.Appcues> = null;
+
   #baseProperties = {
     organizationId: window.clientConfig?.organizationId,
     clusterId: window.clientConfig?.clusterId,
@@ -50,7 +51,25 @@ class Tracking {
     version: process.env.REACT_APP_VERSION,
   } as const;
 
+  #isTrackingSupported = () => {
+    return (
+      process.env.NODE_ENV !== 'development' &&
+      ['prod', 'int'].includes(STAGE_ENV) &&
+      window.clientConfig?.organizationId
+    );
+  };
+
   track(events: Events) {
+    if (!this.#isTrackingSupported() || !this.#isTrackingAllowed()) {
+      return;
+    }
+
+    if (this.#mixpanel === null) {
+      console.warn(
+        'Could not track event because mixpanel was not properly loaded.',
+      );
+    }
+
     const {eventName, ...properties} = events;
     const prefixedEventName = `${EVENT_PREFIX}${eventName}`;
 
@@ -69,7 +88,7 @@ class Tracking {
     this.#mixpanel?.identify(user.userId);
     this.#appCues?.identify(user.userId, {
       orgId: this.#baseProperties.organizationId,
-      salesPlanType: user.salesPlanType,
+      salesPlanType: user.salesPlanType ?? '',
       roles: user.roles?.join('|'),
       clusters: this.#baseProperties.clusterId,
     });
@@ -84,10 +103,6 @@ class Tracking {
   };
 
   #loadMixpanel = (): Promise<void> => {
-    if (!this.#isTrackingAllowed()) {
-      return Promise.resolve();
-    }
-
     return import('mixpanel-browser').then(({default: mixpanel}) => {
       mixpanel.init(
         window.clientConfig?.mixpanelToken ??
@@ -96,9 +111,10 @@ class Tracking {
           api_host:
             window.clientConfig?.mixpanelAPIHost ??
             process.env.REACT_MIXPANEL_HOST,
+          opt_out_tracking_by_default: true,
         },
       );
-      this.#mixpanel?.register(this.#baseProperties);
+      mixpanel.register(this.#baseProperties);
       this.#mixpanel = mixpanel;
     });
   };
@@ -122,10 +138,6 @@ class Tracking {
   };
 
   #loadAppCues = (): Promise<void> => {
-    if (!this.#isTrackingAllowed()) {
-      return Promise.resolve();
-    }
-
     return new Promise((resolve) => {
       return injectScript(process.env.REACT_APP_CUES_HOST).then(() => {
         if (window.Appcues) {
@@ -138,16 +150,25 @@ class Tracking {
   };
 
   loadAnalyticsToWillingUsers(): Promise<void[] | void> {
-    if (
-      process.env.NODE_ENV === 'development' ||
-      !['prod', 'int'].includes(STAGE_ENV) ||
-      !window.clientConfig?.organizationId
-    ) {
+    if (!this.#isTrackingSupported()) {
+      console.warn('Tracking is not supported for this environment');
       return Promise.resolve();
     }
 
     return this.#loadOsano().then(() =>
-      Promise.all([this.#loadMixpanel(), this.#loadAppCues()]),
+      Promise.all([this.#loadMixpanel(), this.#loadAppCues()]).then(() => {
+        window.Osano?.cm?.addEventListener(
+          'osano-cm-consent-saved',
+          ({ANALYTICS}) => {
+            if (ANALYTICS === 'ACCEPT') {
+              this.#mixpanel?.opt_in_tracking();
+            }
+            if (ANALYTICS === 'DENY') {
+              this.#mixpanel?.opt_out_tracking();
+            }
+          },
+        );
+      }),
     );
   }
 }

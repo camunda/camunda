@@ -30,6 +30,10 @@ export declare global {
     Osano?: {
       cm?: {
         analytics: boolean;
+        addEventListener: (
+          eventType: string,
+          callback: (arg: any) => void,
+        ) => void;
       };
     };
     Appcues?: Appcues;
