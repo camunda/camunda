@@ -11,39 +11,6 @@ import {MemoryRouter} from 'react-router-dom';
 import {RedirectDeprecatedRoutes} from './RedirectDeprecatedRoutes';
 
 describe('<RedirectDeprecatedRoutes />', () => {
-  it('should replace hash routes', () => {
-    render(
-      <MemoryRouter initialEntries={['#/']}>
-        <RedirectDeprecatedRoutes />
-        <LocationLog />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
-  });
-
-  it('should replace hash routes and old routes with new routes', () => {
-    const {unmount} = render(
-      <MemoryRouter initialEntries={['/#/instances']}>
-        <RedirectDeprecatedRoutes />
-        <LocationLog />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-
-    unmount();
-
-    render(
-      <MemoryRouter initialEntries={['#/instances']}>
-        <RedirectDeprecatedRoutes />
-        <LocationLog />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
-  });
-
   it('should replace old routes with new routes', () => {
     const {unmount} = render(
       <MemoryRouter initialEntries={['/instances?foo=bar']}>

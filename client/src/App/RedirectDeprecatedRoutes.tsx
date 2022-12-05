@@ -15,24 +15,6 @@ const RedirectDeprecatedRoutes: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (location.hash !== '') {
-      const url = new URL(
-        location.hash.replace(/^#/, ''),
-        'https://camunda.com'
-      );
-
-      return navigate(
-        {
-          pathname: url.pathname.replace(/instances/, 'processes'),
-          search: url.search,
-          hash: '',
-        },
-        {
-          replace: true,
-        }
-      );
-    }
-
     if (
       DEPRECATED_ROUTES.some(
         (route) => matchPath(route, location.pathname) !== null
