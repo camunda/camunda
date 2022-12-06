@@ -48,7 +48,6 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.camunda.zeebe.journal.JournalException;
 import java.nio.ByteBuffer;
@@ -83,7 +82,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     // Append initial entries to the log, including an initial no-op entry and the server's
     // configuration.
-    appendInitialEntries().join();
+    appendInitialEntries();
 
     // Commit the initial leader entries.
     commitInitialEntriesFuture = commitInitialEntries();
@@ -229,9 +228,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /** Appends initial entries to the log to take leadership. */
-  private CompletableFuture<Void> appendInitialEntries() {
+  private void appendInitialEntries() {
     final long term = raft.getTerm();
-    return append(new RaftLogEntry(term, new InitialEntry())).thenApply(index -> null);
+    append(new RaftLogEntry(term, new InitialEntry()));
   }
 
   /** Commits a no-op entry to the log, ensuring any entries from a previous term are committed. */
@@ -305,36 +304,31 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /** Commits the given configuration. */
-  protected CompletableFuture<Long> configure(final Collection<RaftMember> members) {
+  private CompletableFuture<Long> configure(final Collection<RaftMember> members) {
     raft.checkThread();
 
     final long term = raft.getTerm();
 
     final ConfigurationEntry configurationEntry =
         new ConfigurationEntry(System.currentTimeMillis(), members);
-    return append(new RaftLogEntry(term, configurationEntry))
-        .thenCompose(
-            entry -> {
-              // Store the index of the configuration entry in order to prevent other configurations
-              // from
-              // being logged and committed concurrently. This is an important safety property of
-              // Raft.
-              configuring = entry.index();
-              raft.getCluster()
-                  .configure(
-                      new Configuration(
-                          entry.index(),
-                          entry.term(),
-                          configurationEntry.timestamp(),
-                          configurationEntry.members()));
+    final var entry = append(new RaftLogEntry(term, configurationEntry));
+    // Store the index of the configuration entry in order to prevent other configurations from
+    // being logged and committed concurrently. This is an important safety property of Raft.
+    configuring = entry.index();
+    raft.getCluster()
+        .configure(
+            new Configuration(
+                entry.index(),
+                entry.term(),
+                configurationEntry.timestamp(),
+                configurationEntry.members()));
 
-              return appender
-                  .appendEntries(entry.index())
-                  .whenComplete(
-                      (commitIndex, commitError) -> {
-                        raft.checkThread();
-                        configuring = 0;
-                      });
+    return appender
+        .appendEntries(entry.index())
+        .whenComplete(
+            (commitIndex, commitError) -> {
+              raft.checkThread();
+              configuring = 0;
             });
   }
 
@@ -478,13 +472,13 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
    * @param entry the entry to append
    * @return a completable future to be completed once the entry has been appended
    */
-  private CompletableFuture<IndexedRaftLogEntry> append(final RaftLogEntry entry) {
-    CompletableFuture<IndexedRaftLogEntry> resultingFuture = null;
+  private IndexedRaftLogEntry append(final RaftLogEntry entry) {
+    IndexedRaftLogEntry result = null;
     int retries = 0;
 
     do {
       try {
-        resultingFuture = tryToAppend(entry);
+        result = tryToAppend(entry);
       } catch (final JournalException storageException) {
 
         // storage exception wraps IOException's
@@ -493,7 +487,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           // only solution is to step down now
           log.info("Failed to append after {} retries, stepping down", retries, storageException);
           raft.transition(Role.FOLLOWER);
-          resultingFuture = Futures.exceptionalFuture(storageException);
+          throw storageException;
         }
 
         log.error("Error on appending entry {}, retry.", entry, storageException);
@@ -501,21 +495,19 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       } catch (final Exception e) {
         // on any other exception - we will fail the append attempt
         log.error("Unexpected exception on appending entry {}.", entry, e);
-        resultingFuture = Futures.exceptionalFuture(e);
+        throw e;
       }
-    } while (resultingFuture == null);
+    } while (result == null);
 
-    return resultingFuture;
+    return result;
   }
 
-  private CompletableFuture<IndexedRaftLogEntry> tryToAppend(final RaftLogEntry entry) {
-    CompletableFuture<IndexedRaftLogEntry> resultingFuture = null;
-
+  private IndexedRaftLogEntry tryToAppend(final RaftLogEntry entry) {
     try {
       final IndexedRaftLogEntry indexedEntry = raft.getLog().append(entry);
       raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
-      resultingFuture = CompletableFuture.completedFuture(indexedEntry);
+      return indexedEntry;
     } catch (final JournalException.OutOfDiskSpace e) {
 
       // if this happens then compact will also not help, since we need to create a snapshot
@@ -525,10 +517,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
       // only solution is to step down now
       raft.transition(Role.FOLLOWER);
-      resultingFuture = Futures.exceptionalFuture(e);
+      throw e;
     }
-
-    return resultingFuture;
   }
 
   @Override
@@ -560,27 +550,23 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (result.failed()) {
       appendListener.onWriteError(new IllegalStateException(result.errorMessage()));
       raft.transition(Role.FOLLOWER);
-    } else {
-      append(new RaftLogEntry(raft.getTerm(), entry))
-          .whenComplete(
-              (indexed, error) -> {
-                if (error != null) {
-                  appendListener.onWriteError(Throwables.getRootCause(error));
-                  if (!(error instanceof JournalException)) {
-                    // step down. Otherwise the following event can get appended resulting in gaps
-                    log.info(
-                        "Unexpected error occurred while appending to local log, stepping down");
-                    raft.transition(Role.FOLLOWER);
-                  }
-                } else {
-                  if (indexed.isApplicationEntry()) {
-                    lastZbEntry = indexed.getApplicationEntry();
-                  }
+      return;
+    }
 
-                  appendListener.onWrite(indexed);
-                  replicate(indexed, appendListener);
-                }
-              });
+    try {
+      final var indexed = append(new RaftLogEntry(raft.getTerm(), entry));
+      if (indexed.isApplicationEntry()) {
+        lastZbEntry = indexed.getApplicationEntry();
+      }
+
+      appendListener.onWrite(indexed);
+      replicate(indexed, appendListener);
+    } catch (final JournalException journalException) {
+      appendListener.onWriteError(Throwables.getRootCause(journalException));
+    } catch (final Throwable e) {
+      appendListener.onWriteError(Throwables.getRootCause(e));
+      log.info("Unexpected error occurred while appending to local log, stepping down");
+      raft.transition(Role.FOLLOWER);
     }
   }
 
