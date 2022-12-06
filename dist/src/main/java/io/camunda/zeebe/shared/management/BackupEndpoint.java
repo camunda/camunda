@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.concurrent.CompletionException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
@@ -100,6 +101,21 @@ final class BackupEndpoint {
       final var backups = api.listBackups().toCompletableFuture().join();
       final var response = backups.stream().map(this::getBackupInfoFromBackupStatus).toList();
       return new WebEndpointResponse<>(response);
+    } catch (final CompletionException e) {
+      return new WebEndpointResponse<>(
+          new Error().message(e.getCause().getMessage()),
+          WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    } catch (final Exception e) {
+      return new WebEndpointResponse<>(
+          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @DeleteOperation
+  public WebEndpointResponse<?> delete(@Selector @NonNull final long id) {
+    try {
+      api.deleteBackup(id).toCompletableFuture().join();
+      return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final CompletionException e) {
       return new WebEndpointResponse<>(
           new Error().message(e.getCause().getMessage()),

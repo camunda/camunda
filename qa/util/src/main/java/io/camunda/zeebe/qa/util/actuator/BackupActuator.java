@@ -91,6 +91,11 @@ public interface BackupActuator {
   @RequestLine("GET /")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   List<BackupInfo> list();
+
+  @RequestLine("DELETE /{id}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void delete(@Param final long id);
+
   /**
    * Custom error handler, mapping errors with body to custom types for easier
    * verification/handling. This is somewhat verbose, so any suggestions for improvements are

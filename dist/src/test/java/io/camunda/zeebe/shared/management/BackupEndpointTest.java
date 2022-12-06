@@ -418,4 +418,55 @@ final class BackupEndpointTest {
           Optional.of("8.0.6"));
     }
   }
+
+  @Nested
+  final class DeleteTest {
+    @Test
+    void shouldReturnErrorOnCompletionException() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var failure = new RuntimeException("failure");
+      doReturn(CompletableFuture.failedFuture(failure)).when(api).deleteBackup(1);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.delete(1);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
+    }
+
+    @Test
+    void shouldReturnErrorOnException() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      final var failure = new RuntimeException("failure");
+      doThrow(failure).when(api).deleteBackup(1);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.delete(1);
+
+      // then
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .isEqualTo(new Error().message("failure"));
+    }
+
+    @Test
+    void shouldDeleteBackup() {
+      // given
+      final var api = mock(BackupApi.class);
+      final var endpoint = new BackupEndpoint(api);
+      doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.delete(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(204);
+    }
+  }
 }

@@ -8,7 +8,9 @@
 package io.camunda.zeebe.it.backup;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import feign.FeignException;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
@@ -28,6 +30,7 @@ import io.zeebe.containers.engine.ContainerEngine;
 import java.time.Duration;
 import org.agrona.CloseHelper;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.groups.Tuple;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -170,6 +173,28 @@ final class BackupAcceptanceIT {
         .extracting(BackupInfo::getBackupId, BackupInfo::getState)
         .containsExactly(
             Tuple.tuple(1L, StateCode.COMPLETED), Tuple.tuple(2L, StateCode.COMPLETED));
+  }
+
+  @Test
+  void shouldDeleteBackup() {
+    // given
+    final var actuator = BackupActuator.of(cluster.getAvailableGateway());
+    final long backupId = 1;
+    actuator.take(backupId);
+    waitUntilBackupIsCompleted(actuator, backupId);
+
+    // when
+    actuator.delete(backupId);
+
+    // then
+    Awaitility.await("Backup is deleted")
+        .timeout(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThatThrownBy(() -> actuator.status(backupId))
+                    .asInstanceOf(InstanceOfAssertFactories.type(FeignException.class))
+                    .extracting(FeignException::status)
+                    .isEqualTo(404));
   }
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
