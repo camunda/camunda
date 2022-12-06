@@ -10,6 +10,7 @@ package io.camunda.zeebe.exporter;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
@@ -26,7 +27,8 @@ import org.apache.http.entity.ContentProducer;
  */
 final class BulkIndexRequest implements ContentProducer {
 
-  private static final ObjectMapper MAPPER = new ObjectMapper().enable(Feature.ALLOW_SINGLE_QUOTES);
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new BlackbirdModule()).enable(Feature.ALLOW_SINGLE_QUOTES);
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
       new TypeReference<>() {};

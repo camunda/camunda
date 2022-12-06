@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
@@ -43,7 +44,9 @@ import org.mockito.ArgumentCaptor;
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientTest {
   private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      new ObjectMapper()
+          .registerModule(new BlackbirdModule())
+          .registerModule(new ZeebeProtocolModule());
 
   private static final int PARTITION_ID = 1;
 

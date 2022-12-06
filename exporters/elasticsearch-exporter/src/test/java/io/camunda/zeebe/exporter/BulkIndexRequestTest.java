@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.camunda.zeebe.exporter.BulkIndexRequest.BulkOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
@@ -36,7 +37,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 final class BulkIndexRequestTest {
 
   private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      new ObjectMapper()
+          .registerModule(new BlackbirdModule())
+          .registerModule(new ZeebeProtocolModule());
 
   private static final int PARTITION_ID = 1;
 

@@ -13,6 +13,7 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.dto.Template;
@@ -34,7 +35,9 @@ import org.elasticsearch.client.RestClient;
  */
 final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
+      new ObjectMapper()
+          .registerModule(new BlackbirdModule())
+          .registerModule(new ZeebeProtocolModule());
 
   private final ElasticsearchExporterConfiguration config;
   private final RestClient restClient;

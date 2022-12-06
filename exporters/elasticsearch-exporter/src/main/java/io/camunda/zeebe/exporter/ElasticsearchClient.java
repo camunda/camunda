@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
@@ -25,7 +26,8 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 
 class ElasticsearchClient implements AutoCloseable {
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new BlackbirdModule());
 
   private final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;

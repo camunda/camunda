@@ -9,6 +9,8 @@ package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.module.blackbird.BlackbirdModule;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -28,7 +30,8 @@ public class ElasticsearchExporter implements Exporter {
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
 
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
-  private final ObjectMapper exporterMetadataObjectMapper = new ObjectMapper();
+  private final ObjectMapper exporterMetadataObjectMapper =
+      new JsonMapper().registerModule(new BlackbirdModule());
 
   private final ElasticsearchExporterMetadata exporterMetadata =
       new ElasticsearchExporterMetadata();
