@@ -5,6 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+import {ClientFunction} from 'testcafe';
+
 import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
@@ -249,6 +251,17 @@ test('external datasources', async (t) => {
   await t.typeText(e.externalSourceInput, 'http://example.com/');
 
   await t.click(e.addReportButton);
+
+  const checkIframeLoaded = ClientFunction(() => {
+    return new Promise((resolve) => {
+      const iframe = document.querySelector('iframe');
+      iframe.addEventListener('load', function () {
+        resolve();
+      });
+    });
+  });
+
+  await checkIframeLoaded();
 
   await t.switchToIframe(e.externalReport);
 
