@@ -96,7 +96,9 @@ public class BackupReader {
 
   public Map<String, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
     return getAllOptimizeSnapshots("*").stream()
-      .collect(groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().toString())));
+      .collect(
+        groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().getSnapshotId().getName()))
+      );
   }
 
   public List<SnapshotInfo> getAllOptimizeSnapshots(final String backupId) {

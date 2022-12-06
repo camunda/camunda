@@ -34,8 +34,10 @@ public class SnapshotUtil {
   }
 
   public static String getBackupIdFromSnapshotName(final String snapshotName) {
+    // if the name is camunda_optimize_testid_3.10.0_part_1_of_2, remove COMPONENT_PREFIX to get testid_3.10.0_part_1_of_2
     final String snapshotNameWithoutComponentPrefix = snapshotName.substring(COMPONENT_PREFIX.length());
-    return snapshotNameWithoutComponentPrefix.substring(0, snapshotName.indexOf("_") + 1);
+    // next, locate the first _ in testid_3.10.0_part_1_of_2 to extract "testid". Note underscores are not permitted in backupIDs
+    return snapshotNameWithoutComponentPrefix.substring(0, snapshotNameWithoutComponentPrefix.indexOf("_"));
   }
 
   public static String[] getAllWildcardedSnapshotNamesForBackupId(final String backupId) {

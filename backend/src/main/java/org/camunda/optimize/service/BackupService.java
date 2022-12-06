@@ -80,7 +80,7 @@ public class BackupService {
     if (BackupState.FAILED == backupState) {
       failureReason = String.format(
         "The following snapshots failed: [%s]",
-        snapshotInfosPerState.get(SnapshotState.FAILED).stream()
+        snapshotInfosPerState.getOrDefault(SnapshotState.FAILED, Collections.emptyList()).stream()
           .map(snapshotInfo -> snapshotInfo.snapshot().getSnapshotId().getName())
           .collect(joining(", "))
       );
