@@ -1,7 +1,7 @@
 #!/bin/sh -eux
 
 echo "Building Zeebe Docker image ${IMAGE}:${TAG}"
-docker build --no-cache \
+DOCKER_BUILDKIT=1 docker build --no-cache \
   --build-arg DISTBALL=camunda-zeebe.tar.gz \
   --build-arg DATE="${DATE}" \
   --build-arg REVISION="${REVISION}" \
