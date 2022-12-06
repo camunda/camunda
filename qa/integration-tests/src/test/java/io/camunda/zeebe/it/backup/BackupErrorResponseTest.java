@@ -110,4 +110,57 @@ class BackupErrorResponseTest {
       assertThat(backupEndpoint.take(backupIdToTake).getStatus()).isEqualTo(409);
     }
   }
+
+  @Nested
+  final class BackupNotConfiguredTest {
+    @RegisterExtension
+    private final ClusteringRuleExtension clusteringRule =
+        new ClusteringRuleExtension(1, 1, 1, this::disableBackup);
+
+    private BackupEndpoint backupEndpoint;
+
+    private void disableBackup(final BrokerCfg config) {
+      config.getExperimental().getFeatures().setEnableBackup(false);
+    }
+
+    @BeforeEach
+    void setup() {
+      backupEndpoint = new BackupEndpoint(clusteringRule.getGateway().getBrokerClient());
+    }
+
+    @Timeout(value = 60)
+    @Test
+    void shouldReturn400() {
+      // when - then
+      assertThat(backupEndpoint.status(1).getStatus()).isEqualTo(400);
+    }
+  }
+
+  @Nested
+  final class RequestTimeoutTest {
+    @RegisterExtension
+    private final ClusteringRuleExtension clusteringRule =
+        new ClusteringRuleExtension(1, 1, 1, (cfg) -> {}, this::lowerTimeout);
+
+    private BackupEndpoint backupEndpoint;
+
+    private void lowerTimeout(final GatewayCfg config) {
+      config.getCluster().setRequestTimeout(Duration.ofMillis(1));
+    }
+
+    @BeforeEach
+    void setup() {
+      backupEndpoint = new BackupEndpoint(clusteringRule.getGateway().getBrokerClient());
+    }
+
+    @Timeout(value = 60)
+    @Test
+    void shouldReturn504() {
+      // given
+      clusteringRule.disconnect(clusteringRule.getBroker(0));
+
+      // when - then
+      assertThat(backupEndpoint.status(1).getStatus()).isEqualTo(504);
+    }
+  }
 }
