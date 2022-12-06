@@ -35,7 +35,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
 
   private volatile long position;
   private volatile boolean isClosed = false;
-  private ActorCondition consumer;
+  private volatile ActorCondition consumer;
   private final Queue<SequencedBatch> queue = new ArrayBlockingQueue<>(128);
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
@@ -131,6 +131,9 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
         return nextPosition - 1;
       } else {
         LOG.trace("Rejecting write of {}, sequencer queue is full", entries);
+        if (consumer != null) {
+          consumer.signal();
+        }
         return -1;
       }
     } finally {
@@ -171,6 +174,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
 
   public void registerConsumer(final ActorCondition consumer) {
     this.consumer = consumer;
+    consumer.signal();
   }
 
   public record SequencedBatch(
