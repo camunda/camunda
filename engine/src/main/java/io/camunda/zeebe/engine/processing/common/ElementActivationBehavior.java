@@ -35,6 +35,8 @@ import org.agrona.DirectBuffer;
 
 public final class ElementActivationBehavior {
 
+  public static final long NO_ANCESTOR_SCOPE_KEY = -1L;
+
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,15 @@ public final class ElementActivationBehavior {
   }
 
   /**
-   * Activates the given element. If the element is nested inside a flow scope and there is no
-   * active instance of the flow scope then it creates a new instance. This is used when modifying a
-   * process instance or starting a process instance at a different place than the start event.
+   * Activates the given element.
+   *
+   * <p>If the element is nested inside a flow scope and there is no active instance of the flow
+   * scope then it creates a new instance. This is used when modifying a process instance or
+   * starting a process instance at a different place than the start event.
+   *
+   * <p>If there are multiple flow scope instances, then you should use {@link
+   * #activateElement(ProcessInstanceRecord, AbstractFlowElement, long, BiConsumer)} to select a
+   * specific ancestor.
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
@@ -68,31 +76,41 @@ public final class ElementActivationBehavior {
   public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate) {
-    return activateElement(processInstanceRecord, elementToActivate, (empty, function) -> {});
+    return activateElement(
+        processInstanceRecord, elementToActivate, NO_ANCESTOR_SCOPE_KEY, (empty, function) -> {});
   }
 
   /**
-   * Activates the given element. If the element is nested inside a flow scope and there is no
-   * active instance of the flow scope then it creates a new instance. This is used when modifying a
-   * process instance or starting a process instance at a different place than the start event.
+   * Activates the given element.
+   *
+   * <p>If the element is nested inside a flow scope and there is no active instance of the flow
+   * scope then it creates a new instance. This is used when modifying a process instance or
+   * starting a process instance at a different place than the start event.
+   *
+   * <p>If there are multiple flow scope instances, then the ancestor scope key must be provided to
+   * choose one.
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
+   * @param ancestorScopeKey The key of the chosen ancestor scope in case there are multiple flow
+   *     scope instances
    * @param createVariablesCallback Callback to create variables at a given scope
    * @return The key of the activated element instance and the keys of all it's flow scopes
    */
   public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate,
+      final long ancestorScopeKey,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
     final var activatedElementKeys = new ActivatedElementKeys();
 
     final var flowScopes = collectFlowScopesOfElement(elementToActivate);
     final var flowScopeKey =
-        activateFlowScopes(
+        activateAncestralSubprocesses(
             processInstanceRecord,
             processInstanceRecord.getProcessInstanceKey(),
             flowScopes,
+            ancestorScopeKey,
             createVariablesCallback,
             activatedElementKeys);
 
@@ -107,6 +125,7 @@ public final class ElementActivationBehavior {
     return activatedElementKeys;
   }
 
+  /** Collects all the flow scopes of an element, but excludes the root process as an element */
   private Deque<ExecutableFlowElement> collectFlowScopesOfElement(
       final ExecutableFlowElement element) {
     final Deque<ExecutableFlowElement> flowScopes = new ArrayDeque<>();
@@ -122,53 +141,179 @@ public final class ElementActivationBehavior {
     return flowScopes;
   }
 
-  private long activateFlowScopes(
+  /**
+   * Activate (if needed) the subprocesses that are the direct and indirect flow scopes (ancestors)
+   * of the element targeted for activation.
+   *
+   * <p>This method uses recursion, each time polling an element from the subprocesses parameter.
+   *
+   * <p>It is able to determine whether a new instance of an ancestral subprocess must be activated,
+   * or that one of the existing instances can be used. In some cases this requires the
+   * ancestorScopeKey to choose between multiple available instances of the same subprocess.
+   *
+   * <p>Note that the ancestorScopeKey is also used to create new instances of in between
+   * subprocesses, if the ancestorScopeKey refers to an ancestor of that subprocess.
+   *
+   * @param processInstanceRecord the record of the process instance in which an element is being
+   *     activated
+   * @param flowScopeKey key of the element instance that should be used as direct flow scope of the
+   *     next to poll subprocess from subprocesses
+   * @param subprocesses the elements to activate, these are ancestors of the element targeted for
+   *     activation, instances may or may not yet exist of these elements
+   * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
+   *     selection, determines whether new instances of subprocesses should be activated or that we
+   *     can use existing ones
+   * @param createVariablesCallback a callback function to create variables in the activated
+   *     subprocesses, and the selected instances
+   * @param activatedElementKeys collects the keys of the subprocesses encountered and/or activated
+   * @return the key of the last subprocess, to be used as direct flow scope of the element targeted
+   *     for activation
+   */
+  private long activateAncestralSubprocesses(
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
-      final Deque<ExecutableFlowElement> flowScopes,
+      final Deque<ExecutableFlowElement> subprocesses,
+      final long ancestorScopeKey,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback,
       final ActivatedElementKeys activatedElementKeys) {
 
-    if (flowScopes.isEmpty()) {
+    if (subprocesses.isEmpty()) {
       return flowScopeKey;
     }
-    final var flowScope = flowScopes.poll();
+    final var nextSubprocess = subprocesses.poll();
 
-    final List<ElementInstance> elementInstancesOfScope =
-        findElementInstances(flowScope, flowScopeKey);
+    final var bpmnProcessId = processInstanceRecord.getBpmnProcessId();
+    final Optional<Long> subprocessKey =
+        findReusableSubprocessInstanceKey(
+            bpmnProcessId, nextSubprocess, flowScopeKey, ancestorScopeKey);
 
-    if (elementInstancesOfScope.isEmpty()) {
-      // there is no active instance of this flow scope
-      // - create/activate a new instance and continue with the remaining flow scopes
-      final long elementInstanceKey =
-          activateFlowScope(
-              processInstanceRecord, flowScopeKey, flowScope, createVariablesCallback);
-      activatedElementKeys.addFlowScopeKey(elementInstanceKey);
-      return activateFlowScopes(
-          processInstanceRecord,
-          elementInstanceKey,
-          flowScopes,
-          createVariablesCallback,
-          activatedElementKeys);
-
-    } else if (elementInstancesOfScope.size() == 1) {
-      // there is an active instance of this flow scope
-      // - no need to create a new instance; continue with the remaining flow scopes
-      final var elementInstance = elementInstancesOfScope.get(0);
-      createVariablesCallback.accept(flowScope.getId(), elementInstance.getKey());
-      activatedElementKeys.addFlowScopeKey(elementInstance.getKey());
-      return activateFlowScopes(
-          processInstanceRecord,
-          elementInstance.getKey(),
-          flowScopes,
-          createVariablesCallback,
-          activatedElementKeys);
-
+    final long activatedInstanceKey;
+    if (subprocessKey.isPresent()) {
+      activatedInstanceKey = subprocessKey.get();
+      createVariablesCallback.accept(nextSubprocess.getId(), activatedInstanceKey);
     } else {
-      final var flowScopeId = BufferUtil.bufferAsString(flowScope.getId());
-      throw new MultipleFlowScopeInstancesFoundException(
-          flowScopeId, processInstanceRecord.getBpmnProcessId());
+      // no subprocess instance found, let's create a new one
+      activatedInstanceKey =
+          activateFlowScope(
+              processInstanceRecord, flowScopeKey, nextSubprocess, createVariablesCallback);
     }
+
+    activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
+
+    return activateAncestralSubprocesses(
+        processInstanceRecord,
+        activatedInstanceKey,
+        subprocesses,
+        ancestorScopeKey,
+        createVariablesCallback,
+        activatedElementKeys);
+  }
+
+  /**
+   * This method tries to find the instance of the subprocess that should be used as the flow scope
+   * of the next recursion of {@link #activateAncestralSubprocesses(ProcessInstanceRecord, long,
+   * Deque, long, BiConsumer, ActivatedElementKeys)}.
+   *
+   * <p>This method works by looking up element instances of the specific subprocess, and then
+   * considers whether we can use one of the instances that are found, or whether a new instance
+   * should be created instead.
+   *
+   * <p>If a new instance should be created, it returns an empty optional.
+   *
+   * @param bpmnProcessId the id of the process
+   * @param subprocess the specific subprocess that we hope to find an instance of
+   * @param flowScopeKey the key of the flow scope instance whose children are the only instances
+   *     considered
+   * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
+   *     selection, determines whether we may consider existing instances, or should ignore them
+   * @return optionally the key of the instance it found, otherwise an empty optional.
+   */
+  private Optional<Long> findReusableSubprocessInstanceKey(
+      final String bpmnProcessId,
+      final ExecutableFlowElement subprocess,
+      final long flowScopeKey,
+      final long ancestorScopeKey) {
+    final List<ElementInstance> subprocessInstances =
+        findElementInstances(subprocess, flowScopeKey);
+
+    if (subprocessInstances.isEmpty()) {
+      // there is no active instance of this subprocess
+      return Optional.empty();
+    }
+
+    if (subprocessInstances.size() == 1) {
+      // there is an active instance of this subprocess
+      final var subprocessInstance = subprocessInstances.get(0);
+
+      if (isAncestorSelected(ancestorScopeKey)
+          && isAncestorOfElementInstance(ancestorScopeKey, subprocessInstance)) {
+        // the subprocess instance is a descendant of the selected ancestor
+        // - don't reuse this instance
+        return Optional.empty();
+      }
+
+      // no ancestor selection used, or the subprocess instance isn't a descendant of it.
+      // most often this means that the subprocess instance IS the selected ancestor
+      // - no need to create a new instance; we can reuse this one
+      return Optional.of(subprocessInstance.getKey());
+    }
+
+    // there are multiple active instances of this subprocess
+    // - try to use ancestor selection
+    if (!isAncestorSelected(ancestorScopeKey)) {
+      // no ancestor selected
+      // - reject by throwing an exception
+      final var subprocessId = BufferUtil.bufferAsString(subprocess.getId());
+      throw new MultipleFlowScopeInstancesFoundException(subprocessId, bpmnProcessId);
+    }
+
+    if (subprocessInstances.stream().anyMatch(instance -> instance.getKey() == ancestorScopeKey)) {
+      // one of the existing subprocess instances is the selected ancestor
+      // - we can reuse the selected instance
+      return Optional.of(ancestorScopeKey);
+    }
+
+    if (subprocessInstances.stream()
+        .anyMatch(instance -> isAncestorOfElementInstance(ancestorScopeKey, instance))) {
+      // the selected ancestor is the (in)direct flow scope one of the subprocess instances
+      // - don't reuse any of these instances
+      return Optional.empty();
+    }
+
+    final var selectedAncestor = elementInstanceState.getInstance(ancestorScopeKey);
+    final var ancestorOfAncestorInstance =
+        subprocessInstances.stream()
+            .filter(instance -> isAncestorOfElementInstance(instance.getKey(), selectedAncestor))
+            .findAny();
+    if (ancestorOfAncestorInstance.isPresent()) {
+      // we found a subprocess instance that is an ancestor of the selected ancestor
+      // - we can reuse that instance
+      return Optional.of(ancestorOfAncestorInstance.get().getKey());
+    }
+
+    // the selected ancestor is not one of the existing subprocesses instances, nor an ancestor of
+    // them, nor a descendant of them. It might be a completely unrelated element instance, or a
+    // non-existing element instance. We cannot decide what to do here.
+    // - reject by throwing an exception
+    final var subprocessId = BufferUtil.bufferAsString(subprocess.getId());
+    throw new MultipleFlowScopeInstancesFoundException(subprocessId, bpmnProcessId);
+  }
+
+  private boolean isAncestorOfElementInstance(
+      final long ancestorScopeKey, final ElementInstance instance) {
+    final long directFlowScopeKey = instance.getValue().getFlowScopeKey();
+    if (directFlowScopeKey == -1L) {
+      // the instance has no flow scope, so it does not have an ancestor
+      return false;
+    }
+
+    if (directFlowScopeKey == ancestorScopeKey) {
+      // the instance's direct flow scope is the ancestor
+      return true;
+    }
+
+    final var directFlowScope = elementInstanceState.getInstance(directFlowScopeKey);
+    return isAncestorOfElementInstance(ancestorScopeKey, directFlowScope);
   }
 
   private List<ElementInstance> findElementInstances(
@@ -296,6 +441,10 @@ public final class ElementActivationBehavior {
         throw new EventSubscriptionException(message);
       }
     }
+  }
+
+  private static boolean isAncestorSelected(final long ancestorScopeKey) {
+    return ancestorScopeKey != NO_ANCESTOR_SCOPE_KEY;
   }
 
   public static class ActivatedElementKeys {

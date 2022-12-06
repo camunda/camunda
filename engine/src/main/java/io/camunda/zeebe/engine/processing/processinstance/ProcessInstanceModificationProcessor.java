@@ -177,11 +177,13 @@ public final class ProcessInstanceModificationProcessor
                 instruction -> {
                   final var elementToActivate =
                       process.getProcess().getElementById(instruction.getElementId());
+                  final var ancestorScopeKey = instruction.getAncestorScopeKey();
 
                   final ActivatedElementKeys activatedElementKeys =
                       elementActivationBehavior.activateElement(
                           processInstanceRecord,
                           elementToActivate,
+                          ancestorScopeKey,
                           (elementId, scopeKey) ->
                               executeVariableInstruction(
                                   BufferUtil.bufferAsString(elementId),
