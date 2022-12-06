@@ -131,11 +131,7 @@ public final class RaftMemberContext {
    * @return Indicates whether an append request can be sent to the member.
    */
   public boolean canAppend() {
-    return inFlightAppendCount == 0
-        || (appendSucceeded
-            && inFlightAppendCount < maxAppendsPerMember
-            && System.currentTimeMillis() - (timeStats.getMean() / maxAppendsPerMember)
-                >= appendTime);
+    return inFlightAppendCount < maxAppendsPerMember;
   }
 
   /**
