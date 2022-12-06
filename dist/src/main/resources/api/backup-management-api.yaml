@@ -40,7 +40,10 @@ paths:
           description: Internal Error
           $ref: '#/components/responses/Error'
         '502':
-          description: Operation failed because connection to the broker or to the backup storage is lost.
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
     get:
       summary: Lists all available backups
@@ -58,7 +61,10 @@ paths:
           description: Internal Error
           $ref: '#/components/responses/Error'
         '502':
-          description: Operation failed because connection to the broker or to the backup storage is lost.
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
   /{backupId}:
     get:
@@ -80,7 +86,10 @@ paths:
           description: Internal Error
           $ref: '#/components/responses/Error'
         '502':
-          description: Operation failed because connection to the broker or to the backup storage is lost.
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
     delete:
       summary: Delete a backup
@@ -94,7 +103,10 @@ paths:
           description: Internal error
           $ref: '#/components/responses/Error'
         '502':
-          description: Operation failed because connection to the broker or to the backup storage is lost.
+          description: Gateway failed to send request to the broker.
+          $ref: '#/components/responses/Error'
+        '504':
+          description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
 
 components:
