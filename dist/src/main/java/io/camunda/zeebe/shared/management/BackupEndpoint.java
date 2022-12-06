@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.gateway.admin.IncompleteTopologyException;
 import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
 import io.camunda.zeebe.gateway.admin.backup.BackupApi;
 import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.gateway.admin.backup.BackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.PartitionBackupStatus;
 import io.camunda.zeebe.gateway.admin.backup.State;
+import io.camunda.zeebe.gateway.cmd.BrokerErrorException;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.camunda.zeebe.shared.management.openapi.models.BackupInfo;
@@ -20,10 +22,13 @@ import io.camunda.zeebe.shared.management.openapi.models.Error;
 import io.camunda.zeebe.shared.management.openapi.models.PartitionBackupInfo;
 import io.camunda.zeebe.shared.management.openapi.models.StateCode;
 import io.camunda.zeebe.shared.management.openapi.models.TakeBackupResponse;
+import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.TimeoutException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -65,11 +70,7 @@ final class BackupEndpoint {
                       .formatted(backupId, backupId)),
           202);
     } catch (final CompletionException e) {
-      final var errorCode =
-          e.getCause() instanceof BackupAlreadyExistException
-              ? 409
-              : WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
-      return new WebEndpointResponse<>(new Error().message(e.getCause().getMessage()), errorCode);
+      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
@@ -86,9 +87,7 @@ final class BackupEndpoint {
       final BackupInfo backupInfo = getBackupInfoFromBackupStatus(status);
       return new WebEndpointResponse<>(backupInfo);
     } catch (final CompletionException e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getCause().getMessage()),
-          WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
@@ -102,9 +101,7 @@ final class BackupEndpoint {
       final var response = backups.stream().map(this::getBackupInfoFromBackupStatus).toList();
       return new WebEndpointResponse<>(response);
     } catch (final CompletionException e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getCause().getMessage()),
-          WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
@@ -117,9 +114,7 @@ final class BackupEndpoint {
       api.deleteBackup(id).toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
     } catch (final CompletionException e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getCause().getMessage()),
-          WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
       return new WebEndpointResponse<>(
           new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
@@ -186,5 +181,39 @@ final class BackupEndpoint {
       case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
       default -> throw new IllegalStateException("Unknown BackupState %s".formatted(status));
     };
+  }
+
+  private WebEndpointResponse<Error> mapErrorResponse(final Throwable error) {
+    final int errorCode;
+    final String message;
+
+    if (error instanceof BackupAlreadyExistException) {
+      errorCode = 409;
+      message = error.getMessage();
+    } else if (error instanceof IncompleteTopologyException) {
+      errorCode = 502;
+      message = error.getMessage();
+    } else if (error instanceof TimeoutException || error instanceof ConnectTimeoutException) {
+      errorCode = 504;
+      message = "Request from gateway to broker timed out. " + error.getMessage();
+    } else if (error instanceof ConnectException) {
+      errorCode = 502;
+      message = "Failed to send request from gateway to broker." + error.getMessage();
+    } else if (error instanceof BrokerErrorException brokerError) {
+      final var rootError = brokerError.getError();
+      errorCode =
+          switch (rootError.getCode()) {
+            case PARTITION_LEADER_MISMATCH -> 502;
+            case RESOURCE_EXHAUSTED -> WebEndpointResponse.STATUS_SERVICE_UNAVAILABLE;
+            case UNSUPPORTED_MESSAGE -> WebEndpointResponse.STATUS_BAD_REQUEST;
+            default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+          };
+      message = rootError.getMessage();
+    } else {
+      errorCode = WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+      message = error.getMessage();
+    }
+
+    return new WebEndpointResponse<>(new Error().message(message), errorCode);
   }
 }
