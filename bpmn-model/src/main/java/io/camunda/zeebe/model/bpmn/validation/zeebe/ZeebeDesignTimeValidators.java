@@ -46,6 +46,7 @@ public final class ZeebeDesignTimeValidators {
         ExtensionElementsValidator.verifyThat(CallActivity.class)
             .hasSingleExtensionElement(
                 ZeebeCalledElement.class, ZeebeConstants.ELEMENT_CALLED_ELEMENT));
+    validators.add(new ConditionalEventDefinitionValidator());
     validators.add(new DefinitionsValidator());
     validators.add(new EndEventValidator());
     validators.add(new EventDefinitionValidator());

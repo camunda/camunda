@@ -21,6 +21,7 @@ import static java.util.stream.Collectors.groupingBy;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.ConditionalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Escalation;
@@ -57,7 +58,8 @@ public class ModelUtil {
           MessageEventDefinition.class,
           TimerEventDefinition.class,
           SignalEventDefinition.class,
-          EscalationEventDefinition.class);
+          EscalationEventDefinition.class,
+          ConditionalEventDefinition.class);
 
   private static final List<Class<? extends Activity>>
       ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES =
@@ -66,6 +68,14 @@ public class ModelUtil {
   public static List<EventDefinition> getEventDefinitionsForBoundaryEvents(final Activity element) {
     return element.getBoundaryEvents().stream()
         .flatMap(event -> event.getEventDefinitions().stream())
+        .collect(Collectors.toList());
+  }
+
+  public static List<EventDefinition> getEventDefinitionsForConditionalStartEvents(
+      final ModelElementInstance element) {
+    return element.getChildElementsByType(StartEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(e -> e instanceof ConditionalEventDefinition)
         .collect(Collectors.toList());
   }
 
@@ -117,6 +127,14 @@ public class ModelUtil {
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
     verifyNoDuplicatedErrorHandler(definitions, errorCollector);
+  }
+
+  public static void verifyNoDuplicatedConditionalStartEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions = getEventDefinitionsForConditionalStartEvents(element);
+
+    verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicateSignalStartEvents(
@@ -223,6 +241,14 @@ public class ModelUtil {
             .map(LinkEventDefinition::getName);
 
     getDuplicatedEntries(linkNames).map(ModelUtil::duplicatedLinkNames).forEach(errorCollector);
+
+    final Stream<String> conditions =
+        getEventDefinition(definitions, ConditionalEventDefinition.class)
+            .filter(
+                def -> def.getCondition() != null && !def.getCondition().getTextContent().isEmpty())
+            .map(def -> def.getCondition().getTextContent());
+
+    getDuplicatedEntries(conditions).map(ModelUtil::duplicatedConditions).forEach(errorCollector);
   }
 
   private static void verifyNoDuplicatedEscalationHandler(
@@ -313,6 +339,12 @@ public class ModelUtil {
   public static <T extends EventDefinition> Stream<T> getEventDefinition(
       final Collection<? extends EventDefinition> collection, final Class<T> type) {
     return collection.stream().filter(type::isInstance).map(type::cast);
+  }
+
+  private static String duplicatedConditions(final String condition) {
+    return String.format(
+        "Cannot have more than one conditional event subscription with the same condition '%s'",
+        condition);
   }
 
   public static Stream<String> getDuplicatedEntries(final Stream<String> stream) {

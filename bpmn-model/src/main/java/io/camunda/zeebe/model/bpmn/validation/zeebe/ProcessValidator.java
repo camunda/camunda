@@ -41,6 +41,9 @@ public class ProcessValidator implements ModelElementValidator<Process> {
       validationResultCollector.addError(0, "Multiple none start events are not allowed");
     }
 
+    ModelUtil.verifyNoDuplicatedConditionalStartEvents(
+        element, error -> validationResultCollector.addError(0, error));
+
     ModelUtil.verifyNoDuplicatedEventSubprocesses(
         element, error -> validationResultCollector.addError(0, error));
 
