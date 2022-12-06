@@ -876,7 +876,7 @@ public class ModifyProcessInstanceTest {
             .findAny();
     assertThat(activatedTaskB).describedAs("Expect that task B is activated").isPresent();
     assertThat(activatedTaskB.get().getValue())
-        .describedAs("Expect that task B is exists inside of flow scope " + ancestorScopeKey)
+        .describedAs("Expect that task B exists inside of flow scope " + ancestorScopeKey)
         .hasFlowScopeKey(ancestorScopeKey);
   }
 
