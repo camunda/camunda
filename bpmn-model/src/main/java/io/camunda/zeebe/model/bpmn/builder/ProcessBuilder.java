@@ -46,6 +46,12 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
     return start.builder();
   }
 
+  public StartEventBuilder startEvent(final String id, final Consumer<StartEventBuilder> consumer) {
+    final StartEventBuilder builder = startEvent(id);
+    consumer.accept(builder);
+    return builder;
+  }
+
   public EventSubProcessBuilder eventSubProcess() {
     return eventSubProcess(null);
   }
