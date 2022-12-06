@@ -47,6 +47,11 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MINKEEPALIVEINTERVAL.
       # minKeepAliveInterval: 30s
 
+      # Sets the maximum size of the incoming and outgoing messages (i.e. commands and events).
+      # Apply the same setting on the broker too, see ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MAXMESSAGESIZE.
+      # maxMessageSize: 4MB
+
     # cluster:
       # Sets initial contact points (brokers), which the gateway should contact to
       # The contact points of the internal network configuration must be specified.

@@ -12,12 +12,14 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Objects;
+import org.springframework.util.unit.DataSize;
 
 public final class NetworkCfg {
 
   private String host;
   private int port = DEFAULT_PORT;
   private Duration minKeepAliveInterval = Duration.ofSeconds(30);
+  private DataSize maxMessageSize = DataSize.ofMegabytes(4);
 
   public void init(final String defaultHost) {
     if (host == null) {
@@ -49,6 +51,15 @@ public final class NetworkCfg {
 
   public NetworkCfg setMinKeepAliveInterval(final Duration keepAlive) {
     minKeepAliveInterval = keepAlive;
+    return this;
+  }
+
+  public DataSize getMaxMessageSize() {
+    return maxMessageSize;
+  }
+
+  public NetworkCfg setMaxMessageSize(final DataSize maxMessageSize) {
+    this.maxMessageSize = maxMessageSize;
     return this;
   }
 

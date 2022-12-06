@@ -149,7 +149,13 @@ public final class Gateway {
       throw new IllegalArgumentException("Minimum keep alive interval must be positive.");
     }
 
+    final var maxMessageSize = (int) cfg.getMaxMessageSize().toBytes();
+    if (maxMessageSize <= 0) {
+      throw new IllegalArgumentException("maxMessageSize must be positive");
+    }
+
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
+        .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
         .permitKeepAliveWithoutCalls(false);
   }
