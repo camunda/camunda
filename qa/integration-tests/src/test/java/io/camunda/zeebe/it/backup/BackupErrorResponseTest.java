@@ -13,12 +13,10 @@ import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.gateway.admin.backup.BackupAlreadyExistException;
-import io.camunda.zeebe.gateway.admin.backup.BackupRequestHandler;
 import io.camunda.zeebe.it.clustering.ClusteringRuleExtension;
 import io.camunda.zeebe.qa.util.testcontainers.MinioContainer;
+import io.camunda.zeebe.shared.management.BackupEndpoint;
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +31,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class BackupErrorResponseTest {
 
   @Container private static final MinioContainer S3 = new MinioContainer();
-  private BackupRequestHandler backupRequestHandler;
+  private BackupEndpoint backupEndpoint;
+
   private String bucketName;
 
   @RegisterExtension
@@ -83,7 +82,7 @@ class BackupErrorResponseTest {
 
   @BeforeEach
   void setup() {
-    backupRequestHandler = new BackupRequestHandler(clusteringRule.getGateway().getBrokerClient());
+    backupEndpoint = new BackupEndpoint(clusteringRule.getGateway().getBrokerClient());
     createBucket();
   }
 
@@ -99,12 +98,9 @@ class BackupErrorResponseTest {
   void shouldFailTakeBackupIfCheckpointAlreadyExists(
       final long existingCheckpoint, final long backupIdToTake) {
     // given
-    backupRequestHandler.takeBackup(existingCheckpoint).toCompletableFuture().join();
+    backupEndpoint.take(existingCheckpoint);
 
     // when - then
-    assertThat(backupRequestHandler.takeBackup(backupIdToTake))
-        .failsWithin(Duration.ofSeconds(30))
-        .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BackupAlreadyExistException.class);
+    assertThat(backupEndpoint.take(backupIdToTake).getStatus()).isEqualTo(409);
   }
 }

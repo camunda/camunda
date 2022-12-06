@@ -41,7 +41,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backups", enableByDefault = false)
-final class BackupEndpoint {
+public final class BackupEndpoint {
   private final BackupApi api;
 
   @SuppressWarnings("unused") // used by Spring
