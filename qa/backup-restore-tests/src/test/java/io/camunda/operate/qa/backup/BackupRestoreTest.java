@@ -133,7 +133,11 @@ public class BackupRestoreTest {
         RestClient.builder(new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    testContainerUtil.startZeebe(ZeebeClient.class.getPackage().getImplementationVersion(), testContext);
+    String zeebeVersion = ZeebeClient.class.getPackage().getImplementationVersion();
+    if (zeebeVersion.toLowerCase().contains("snapshot")) {
+      zeebeVersion = "SNAPSHOT";
+    }
+    testContainerUtil.startZeebe(zeebeVersion, testContext);
 
     operateContainer = testContainerUtil.createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
         .withLogConsumer(new Slf4jLogConsumer(logger));
