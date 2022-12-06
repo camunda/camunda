@@ -5,13 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {HEADER_HEIGHT} from 'modules/constants';
+import {PAGE_TOP_PADDING} from 'modules/constants';
 import styled, {css} from 'styled-components';
 
 const Container = styled.div`
   display: flex;
   position: absolute;
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  height: calc(100vh - ${PAGE_TOP_PADDING}px);
   right: 0;
 `;
 

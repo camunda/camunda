@@ -19,9 +19,7 @@ const GlobalStyles = createGlobalStyle<GlobalStylesProps>`
         background-color: ${theme.colors.ui01};
       }
 
-      // TODO: remove cm-header when USE_NEW_APP_HEADER is removed
-      main,
-      cm-header {
+      main {
         /*
         these elements have custom styling for :focus only on keyboard focus,
         not on mouse click (clicking them does not show the focus style)

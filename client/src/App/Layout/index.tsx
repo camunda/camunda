@@ -6,15 +6,12 @@
  */
 
 import {Outlet, useMatch} from 'react-router-dom';
-import {Header} from './Header';
 import {AppHeader} from './AppHeader';
 import {Footer, Grid, PageContent} from './styled';
 import {Copyright} from 'modules/components/Copyright';
 import {Paths} from 'modules/routes';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
-import {USE_NEW_APP_HEADER} from 'modules/feature-flags';
-import {HEADER_HEIGHT} from 'modules/constants';
 
 const Layout: React.FC = observer(() => {
   const instancesMatch = useMatch(Paths.processes());
@@ -26,12 +23,9 @@ const Layout: React.FC = observer(() => {
     !modificationsStore.isModificationModeEnabled;
 
   return (
-    <Grid
-      numberOfRows={showFooter ? 3 : 2}
-      $headerHeight={USE_NEW_APP_HEADER ? 0 : HEADER_HEIGHT}
-    >
-      {USE_NEW_APP_HEADER ? <AppHeader /> : <Header />}
-      <PageContent $topPadding={USE_NEW_APP_HEADER ? '48px' : '0'}>
+    <Grid numberOfRows={showFooter ? 3 : 2}>
+      <AppHeader />
+      <PageContent>
         <Outlet />
       </PageContent>
       {showFooter && (

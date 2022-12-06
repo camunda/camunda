@@ -10,6 +10,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
+  within,
 } from 'modules/testing-library';
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -27,7 +28,7 @@ import {processDiagramStore} from 'modules/stores/processDiagram';
 import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
-import {Header} from 'App/Layout/Header';
+import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
@@ -228,7 +229,7 @@ describe('Instances', () => {
 
     const {user} = render(
       <>
-        <Header />
+        <AppHeader />
         <Processes />
       </>,
       {
@@ -238,11 +239,22 @@ describe('Instances', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('table-skeleton'));
 
+    await waitFor(() =>
+      expect(screen.queryByTestId('diagram-spinner')).not.toBeInTheDocument()
+    );
+
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
 
-    await user.click(await screen.findByRole('link', {name: 'View Processes'}));
-
+    await user.click(
+      within(
+        screen.getByRole('navigation', {
+          name: /camunda operate/i,
+        })
+      ).getByRole('link', {
+        name: /processes/i,
+      })
+    );
     expect(await screen.findByTestId('diagram-spinner')).toBeInTheDocument();
 
     await waitFor(() =>

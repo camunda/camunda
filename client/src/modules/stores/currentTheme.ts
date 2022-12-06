@@ -6,7 +6,6 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import {USE_NEW_APP_HEADER} from 'modules/feature-flags';
 import {tracking} from 'modules/tracking';
 
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
@@ -28,9 +27,7 @@ const STORED_THEME: ThemeType = getStateLocally()[STORAGE_KEY];
 const INITIAL_STATE: State = {
   selectedTheme: Object.values(THEME_NAME).includes(STORED_THEME)
     ? STORED_THEME
-    : USE_NEW_APP_HEADER
-    ? THEME_NAME.SYSTEM
-    : THEME_NAME.LIGHT,
+    : THEME_NAME.SYSTEM,
   systemPreference: window.matchMedia?.('(prefers-color-scheme: dark)').matches
     ? 'dark'
     : 'light',

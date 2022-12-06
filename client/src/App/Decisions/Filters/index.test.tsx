@@ -6,7 +6,7 @@
  */
 
 import {render, screen, waitFor, within} from 'modules/testing-library';
-import {Header} from 'App/Layout/Header';
+import {AppHeader} from 'App/Layout/AppHeader';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -30,7 +30,7 @@ function getWrapper(initialPath: string = '/decisions') {
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
-          <Header />
+          <AppHeader />
           {children}
           <LocationLog />
         </MemoryRouter>
@@ -534,11 +534,27 @@ describe('<Filters />', () => {
       )
     );
 
-    await user.click(screen.getByText('Dashboard'));
+    await user.click(
+      within(
+        screen.getByRole('navigation', {
+          name: /camunda operate/i,
+        })
+      ).getByRole('link', {
+        name: /dashboard/i,
+      })
+    );
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/);
     expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-    await user.click(screen.getByText('Decisions'));
+    await user.click(
+      within(
+        screen.getByRole('navigation', {
+          name: /camunda operate/i,
+        })
+      ).getByRole('link', {
+        name: /decisions/i,
+      })
+    );
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     expect(screen.getByTestId('search')).toHaveTextContent(
       /^\?evaluated=true&failed=true$/

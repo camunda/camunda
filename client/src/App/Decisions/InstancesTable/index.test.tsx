@@ -20,7 +20,7 @@ import {Routes, Route, MemoryRouter} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDecisions';
-import {Header} from 'App/Layout/Header';
+import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
 
@@ -263,7 +263,7 @@ describe('<InstancesTable />', () => {
 
     const {user} = render(
       <>
-        <Header />
+        <AppHeader />
         <InstancesTable />
       </>,
       {wrapper: createWrapper()}
@@ -273,7 +273,15 @@ describe('<InstancesTable />', () => {
 
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
-    await user.click(await screen.findByRole('link', {name: 'View Decisions'}));
+    await user.click(
+      within(
+        screen.getByRole('navigation', {
+          name: /camunda operate/i,
+        })
+      ).getByRole('link', {
+        name: /decisions/i,
+      })
+    );
 
     expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
 

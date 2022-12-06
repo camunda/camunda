@@ -5,48 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import {FOOTER_HEIGHT} from 'modules/constants';
+import {FOOTER_HEIGHT, PAGE_TOP_PADDING} from 'modules/constants';
 import styled, {css} from 'styled-components';
 
 type GridProps = {
   numberOfRows?: 2 | 3;
-  $headerHeight: number;
 };
 
 const Grid = styled.div<GridProps>`
-  ${({numberOfRows, $headerHeight}) => {
+  ${({numberOfRows}) => {
     return css`
       width: 100%;
       height: 100%;
       display: grid;
       grid-template-columns: 100%;
       grid-template-rows: ${numberOfRows === 2
-        ? css`
-            ${$headerHeight === 0
-              ? '100%'
-              : `${$headerHeight}px calc(100% - ${$headerHeight}px)`}
-          `
-        : css`
-            ${$headerHeight === 0
-              ? `calc(100% - ${FOOTER_HEIGHT}px) ${FOOTER_HEIGHT}px`
-              : `${$headerHeight}px calc(100% - ${
-                  $headerHeight + FOOTER_HEIGHT
-                }px) ${FOOTER_HEIGHT}px`}
-          `};
+        ? css`100%`
+        : css`calc(100% - ${FOOTER_HEIGHT}px) ${FOOTER_HEIGHT}px`};
     `;
   }}
 `;
 
-type PageContentProps = {
-  $topPadding: string;
-};
-
-const PageContent = styled.div<PageContentProps>`
-  ${({$topPadding}) => {
-    return css`
-      padding-top: ${$topPadding};
-    `;
-  }}
+const PageContent = styled.div`
+  padding-top: ${PAGE_TOP_PADDING}px;
 `;
 
 type Props = {

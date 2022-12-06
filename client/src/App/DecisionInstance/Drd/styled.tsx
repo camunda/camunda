@@ -8,7 +8,7 @@
 import styled, {css} from 'styled-components';
 import BasePanelHeader from 'modules/components/Panel/PanelHeader';
 import {IconButton} from 'modules/components/IconButton';
-import {HEADER_HEIGHT} from 'modules/constants';
+import {PAGE_TOP_PADDING} from 'modules/constants';
 
 const Container = styled.div`
   ${({theme}) => {
@@ -17,7 +17,7 @@ const Container = styled.div`
     return css`
       display: grid;
       grid-template-rows: 56px 1fr;
-      height: calc(100vh - ${HEADER_HEIGHT}px);
+      height: calc(100vh - ${PAGE_TOP_PADDING}px);
       position: relative;
       z-index: 1;
       width: 100%;

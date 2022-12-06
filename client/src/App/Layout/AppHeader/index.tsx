@@ -78,6 +78,7 @@ const AppHeader: React.FC = observer(() => {
             isCurrentPage: currentPage === 'processes',
             routeProps: {
               to: Locations.processes(),
+              state: {refreshContent: true, hideOptionalFilters: true},
               onClick: () => {
                 tracking.track({
                   eventName: 'navigation',
@@ -93,6 +94,7 @@ const AppHeader: React.FC = observer(() => {
             isCurrentPage: currentPage === 'decisions',
             routeProps: {
               to: Locations.decisions(),
+              state: {refreshContent: true, hideOptionalFilters: true},
               onClick: () => {
                 tracking.track({
                   eventName: 'navigation',
