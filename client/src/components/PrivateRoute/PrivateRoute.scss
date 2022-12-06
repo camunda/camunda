@@ -1,9 +1,9 @@
-.PrivateRoute,
-.PrivateRoute > div {
-  height: 100%;
-  width: 100%;
+.PrivateRoute {
+  padding-top: 48px;
 
-  &.showLogin {
-    display: none;
+  &,
+  & > div {
+    height: 100%;
+    width: 100%;
   }
 }

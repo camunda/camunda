@@ -1,5 +1,7 @@
 {
+  "companyName": "Camunda",
   "appName": "Optimize",
+  "appFullName": "Camunda Optimize",
   "navigation": {
     "homepage": "Home",
     "analysis": "Analyse",
@@ -11,7 +13,9 @@
     "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
     "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten",
     "userGuide": "Benutzerhandbuch",
-    "help": "Hilfe"
+    "help": "Hilfe",
+    "profile": "Profil",
+    "appSwitcher": "App Switcher"
   },
   "login": {
     "label": "Einloggen",

@@ -5,17 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {NavItem} from 'components';
+import WhatsNewModal from './WhatsNewModal';
 
-import './HeaderNav.scss';
-
-export default function HeaderNav(props) {
-  return (
-    <ul role="navigation" className="HeaderNav">
-      {props.children}
-    </ul>
-  );
-}
-
-HeaderNav.Item = NavItem;
+export default WhatsNewModal;

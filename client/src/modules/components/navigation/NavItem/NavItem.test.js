@@ -66,7 +66,8 @@ it('should render a breadcrumbs links when specified', async () => {
   await node.update();
   expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did', reportId: 'rid'});
 
-  expect(node).toMatchSnapshot();
+  expect(node.find({to: '/dashboard/did/'})).toExist();
+  expect(node.find({to: '/dashboard/did/report/rid/'})).toExist();
 });
 
 it('should update breadcrumbs when requested', async () => {

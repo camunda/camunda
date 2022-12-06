@@ -1,95 +1,10 @@
-.Header {
-  border-bottom: 1px solid var(--silver-darken-87);
-  font-size: 15px;
-  padding: 15px 20px;
-  display: flex;
-  flex-shrink: 0;
-
-  &.text-light {
-    .NavItem {
-      border-left: 1px solid rgba(255, 255, 255, 0.3);
-      &:last-child {
-        border-right: 1px solid rgba(255, 255, 255, 0.3);
-      }
-
-      a {
-        color: rgba(255, 255, 255, 0.7);
-      }
-
-      &.active a {
-        color: rgba(255, 255, 255, 0.9);
-      }
-    }
-
-    .appLink {
-      color: rgba(255, 255, 255, 0.9);
-
-      &:visited {
-        color: rgba(255, 255, 255, 0.9);
-      }
-    }
-
-    .Dropdown .activateButton {
-      color: rgba(255, 255, 255, 0.7);
-    }
-  }
-
-  .Dropdown .activateButton {
-    border: none;
-    background-color: transparent;
-    height: 100%;
-    padding-top: 0;
-    padding-bottom: 0;
-    padding-left: 0;
-    font-size: 15px;
-    color: var(--grey-lighten-56);
-    font-weight: 500;
-    white-space: nowrap;
-
-    .Icon {
-      top: 5px;
-    }
-  }
-
-  a {
-    text-decoration: none;
-    white-space: nowrap;
-  }
+.cds--header {
+  z-index: var(--z-header);
 
   .appLink {
-    color: var(--grey-base-40);
-    height: 100%;
-    display: flex;
-    align-items: center;
-    margin-right: 20px;
-    white-space: nowrap;
-    font-weight: 500;
-
-    img {
-      width: auto;
-      margin-right: 20px;
-      height: 26px;
-      display: inline-block;
-    }
-  }
-
-  .appLink:visited {
-    color: var(--grey-base-40);
-  }
-
-  .licenseWarning {
-    padding-right: 20px;
-    border-right: 1px solid var(--silver-darken-87);
-    margin-right: 20px;
-
-    .warning {
-      background-color: var(--orange-base-60);
-      font-size: 14px;
-      font-weight: 500;
-      padding: 4px 15px;
-      white-space: nowrap;
-      border-radius: 5px;
-      color: var(--white);
+    &,
+    &:visited {
+      color: var(--grey-base-40);
     }
   }
 }

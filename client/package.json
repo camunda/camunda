@@ -5,6 +5,8 @@
   "homepage": ".",
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
+    "@camunda/camunda-composite-components": "^0.0.19",
+    "@carbon/react": "^1.16.0",
     "@ibm/plex": "^6.1.1",
     "@ungap/structured-clone": "^1.0.1",
     "bpmn-js": "10.3.0",
@@ -109,7 +111,13 @@
     "**/kind-of": "^6.0.3"
   },
   "jest": {
-    "resetMocks": false
+    "resetMocks": false,
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@camunda/camunda-composite-components)"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js"
+    }
   },
   "browserslist": [
     ">0.2%",

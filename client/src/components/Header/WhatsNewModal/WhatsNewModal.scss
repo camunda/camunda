@@ -1,14 +1,4 @@
-.HelpMenu {
-  display: flex;
-
-  .helpDropdown.Dropdown .activateButton span .Icon {
-    position: relative;
-    top: -2px;
-    margin-right: 5px;
-  }
-}
-
-.ChangeLogModal {
+.WhatsNewModal {
   font-size: 0.875em;
 
   .Modal__content {
