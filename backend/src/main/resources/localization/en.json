@@ -167,7 +167,11 @@
     "empty": "There are no items created yet",
     "contactEditor": "Please contact an Optimize editor to create new items",
     "contactManager": "Please contact the collection manager to create new items",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "emptyState": {
+      "title": "Start by creating a Dashboard",
+      "description": "Click Create New Dashboard to get insights into business processes"
+    }
   },
   "processes": {
     "label": "process",

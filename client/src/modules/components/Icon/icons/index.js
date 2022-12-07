@@ -64,6 +64,7 @@ import {ReactComponent as hide} from './hide.svg';
 import {ReactComponent as warningOutline} from './warning-outline.svg';
 import {ReactComponent as infoOutline} from './info-outline.svg';
 import {ReactComponent as questionMark} from './question-mark.svg';
+import {ReactComponent as dashboardOptimize} from './dashboard-optimize.svg';
 
 const icons = {
   autorefresh,
@@ -125,6 +126,7 @@ const icons = {
   'warning-outline': warningOutline,
   'info-outline': infoOutline,
   'question-mark': questionMark,
+  'dashboard-optimize': dashboardOptimize,
 };
 
 export default icons;
