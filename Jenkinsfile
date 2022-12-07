@@ -6,16 +6,14 @@
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
 
-def masterBranchName = 'master'
-def isMasterBranch = env.BRANCH_NAME == masterBranchName
-def developBranchName = 'develop'
-def isDevelopBranch = env.BRANCH_NAME == developBranchName
+def mainBranchName = 'main'
+def isMainBranch = env.BRANCH_NAME == mainBranchName
 def latestStableBranchName = 'stable/1.1'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
-//for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
-def daysToKeep = isDevelopBranch ? '7' : '-1'
-def numToKeep = isDevelopBranch ? '-1' : '10'
+// for the main branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
+def daysToKeep = isMainBranch ? '7' : '-1'
+def numToKeep = isMainBranch ? '-1' : '10'
 
 // single step timeouts - remember to be generous to avoid occasional slow downs, e.g. waiting to be
 // scheduled by Kubernetes, slow downloads of remote docker images, etc.
@@ -24,12 +22,17 @@ def longTimeoutMinutes = 45
 
 // the IT agent needs to share some files for post analysis, and since they share the same name as
 // those in the main agent, we unstash them in a separate directory
-itAgentUnstashDirectory = '.tmp/it'
-itFlakyTestStashName = 'it-flakyTests'
+def itAgentUnstashDirectory = '.tmp/it'
+def itFlakyTestStashName = 'it-flakyTests'
 
-// the develop branch should be run at midnight to do a nightly build including QA test run
+// the main branch should be run at midnight to do a nightly build including QA test run
 // the latest stable branch is run two hour later at 01:00 AM.
-def cronTrigger = isDevelopBranch ? '0 0 * * *' : isLatestStable ? '0 2 * * *' : ''
+def cronTrigger = isMainBranch ? '0 0 * * *' : isLatestStable ? '0 2 * * *' : ''
+
+// since we report the build status to CI analytics at the very end, when the build is finished, we
+// need to share the result of the flaky test analysis between different stages, so using a global
+// variable is a necessary evil here
+def flakyTestCases = []
 
 pipeline {
     agent {
@@ -117,12 +120,6 @@ pipeline {
                 timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
                     container('docker') {
                         sh '.ci/scripts/docker/build.sh'
-
-                        // the hazelcast exporter is used by the BPMN TCK, and must therefore be
-                        // built beforehand - if this ever becomes too slow, we can move this to a
-                        // BPMN TCK agent and make this is a sequential stage prior to running the
-                        // TCK
-                        sh '.ci/scripts/docker/build_zeebe-hazelcast-exporter.sh'
                     }
                 }
             }
@@ -139,21 +136,6 @@ pipeline {
                     }
                 }
 
-                stage('BPMN TCK') {
-                    when { expression { return false } } // disable TCK until migrated to new API
-                    steps {
-                        timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
-                            runMavenContainerCommand('.ci/scripts/distribution/test-tck.sh')
-                        }
-                    }
-
-                    post {
-                        always {
-                            junit testResults: "bpmn-tck/**/*/TEST*.xml", keepLongStdio: true
-                        }
-                    }
-                }
-
                 stage('Test (Go)') {
                     steps {
                         timeout(time: longTimeoutMinutes, unit: 'MINUTES') {
@@ -165,7 +147,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST-go.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST-go.xml", keepLongStdio: true, allowEmptyResults: true
                         }
                     }
                 }
@@ -190,6 +172,9 @@ pipeline {
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true, allowEmptyResults: true
                         }
+                        failure {
+                            archiveArtifacts artifacts: '**/FlakyTests.txt, **/DuplicateTests.txt', allowEmptyArchive: true
+                        }
                     }
                 }
 
@@ -208,6 +193,9 @@ pipeline {
                         always {
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true, allowEmptyResults: true
                             junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}-FLAKY.xml", keepLongStdio: true, allowEmptyResults: true
+                        }
+                        failure {
+                            archiveArtifacts artifacts: '**/FlakyTests.txt, **/DuplicateTests.txt', allowEmptyArchive: true
                         }
                     }
                 }
@@ -282,6 +270,7 @@ pipeline {
                                 failure {
                                     zip zipFile: 'test-reports-it.zip', archive: true, glob: "**/*/failsafe-reports/**"
                                     zip zipFile: 'test-errors-it.zip', archive: true, glob: "**/hs_err_*.log"
+                                    archiveArtifacts artifacts: '**/FlakyTests.txt, **/DuplicateTests.txt', allowEmptyArchive: true
                                 }
                             }
                         }
@@ -305,8 +294,9 @@ pipeline {
                         def flakeFiles = ['./FlakyTests.txt', "${itAgentUnstashDirectory}/FlakyTests.txt"]
                         def flakes = combineFlakeResults(flakeFiles)
 
+                        flakyTestCases = [flakes].flatten()
                         if (flakes) {
-                            currentBuild.description = "Flaky Tests: <br>" + flakes.join('<br>')
+                            currentBuild.description = "Flaky tests (#${flakyTestCases.size()}): [<br />${flakyTestCases.join(',<br />')}]"
                         }
                     }
                 }
@@ -319,7 +309,7 @@ pipeline {
                     expression { params.RUN_QA }
                     allOf {
                         anyOf {
-                            branch developBranchName
+                            branch mainBranchName
                             branch latestStableBranchName
                         }
                         triggeredBy 'TimerTrigger'
@@ -372,7 +362,7 @@ pipeline {
         }
 
         stage('Upload') {
-            when { allOf { branch developBranchName; not { triggeredBy 'TimerTrigger' } } }
+            when { allOf { branch mainBranchName; not { triggeredBy 'TimerTrigger' } } }
             steps {
                 retry(3) {
                     timeout(time: shortTimeoutMinutes, unit: 'MINUTES') {
@@ -387,7 +377,7 @@ pipeline {
 
             parallel {
                 stage('Docker') {
-                    when { branch developBranchName }
+                    when { branch mainBranchName }
 
                     environment {
                         VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
@@ -399,8 +389,8 @@ pipeline {
                                 build job: 'zeebe-docker', parameters: [
                                     string(name: 'BRANCH', value: env.BRANCH_NAME),
                                     string(name: 'VERSION', value: env.VERSION),
-                                    booleanParam(name: 'IS_LATEST', value: isMasterBranch),
-                                    booleanParam(name: 'PUSH', value: isDevelopBranch)
+                                    booleanParam(name: 'IS_LATEST', value: false),
+                                    booleanParam(name: 'PUSH', value: isMainBranch)
                                 ]
                             }
                         }
@@ -424,24 +414,29 @@ pipeline {
                     }
                 }
 
-                String userReason = null
-                if (currentBuild.description ==~ /.*Flaky Tests.*/) {
-                    userReason = 'flaky-tests'
+                // we track each flaky test as a separate result so we can count how "flaky" a test is
+                if (flakyTestCases) {
+                    for (flakyTestCase in flakyTestCases) {
+                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flakyTestCase)
+                    }
+                } else {
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
                 }
-                org.camunda.helper.CIAnalytics.trackBuildStatus(this, userReason)
             }
         }
+
         failure {
             script {
-                if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
+                if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
                     return
                 }
                 sendZeebeSlackMessage()
             }
         }
+
         changed {
             script {
-                if (env.BRANCH_NAME != 'develop' || agentDisconnected()) {
+                if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
                     return
                 }
                 if (currentBuild.currentResult == 'FAILURE') {
@@ -509,9 +504,9 @@ def templatePodspec(String podspecPath, flags = [:]) {
         /* Criteria for using stable node pools:
          * - staging branch: to have smooth staging builds and avoid unnecessary retries
          * - params.RUN_QA: during QA stage the node must wait for the result. This can take several hours. Therefore a stable node is needed
-         * - env.isDevelopBranch: the core requirement is to have a stable node for nightly builds, which also rn QA (see above)
+         * - env.isMainBranch: the core requirement is to have a stable node for nightly builds, which also rn QA (see above)
          */
-        useStableNodePool: isBorsStagingBranch() || params.RUN_QA || env.isDevelopBranch
+        useStableNodePool: isBorsStagingBranch() || params.RUN_QA || env.isMainBranch
     ]
     // will merge Maps by overwriting left Map with values of the right Map
     def effectiveFlags = defaultFlags + flags
