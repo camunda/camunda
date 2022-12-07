@@ -5,43 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
-import {Link} from 'react-router-dom';
-import {Dropdown} from './Dropdown';
+import {Link} from '@carbon/react';
+import styled from 'styled-components';
 
-const BrandInfo = styled.div`
-  display: flex;
-  align-items: center;
+const InlineLink = styled(Link)`
+  display: inline;
 `;
 
-const Brand = styled(Link)`
-  display: flex;
-  align-items: center;
-  color: ${({theme}) => theme.colors.ui06};
-  font-size: 15px;
-  font-weight: 500;
-`;
-
-const UserControls = styled(Dropdown)`
-  margin-top: 3px;
-  margin-left: auto;
-`;
-
-const AppName = styled.div`
-  margin-left: 19px;
-`;
-
-const Separator = styled.div`
-  ${({theme}) => {
-    const colors = theme.colors.header;
-
-    return css`
-      width: 1px;
-      height: 24px;
-      background-color: ${colors.separator};
-      margin: 0 15px;
-    `;
-  }}
-`;
-
-export {BrandInfo, Brand, UserControls, AppName, Separator};
+export {InlineLink};

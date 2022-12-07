@@ -22,6 +22,10 @@ const GET_CURRENT_USER = gql`
       permissions
       salesPlanType
       roles
+      c8Links {
+        name
+        link
+      }
     }
   }
 `;

@@ -28,10 +28,24 @@ beforeAll(() => {
   });
 });
 
+beforeEach(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(() => ({
+      matches: false,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+    })),
+  });
+});
+
 afterEach(async () => {
   mockServer.resetHandlers();
   await clearClientCache();
 });
+
 afterAll(() => mockServer.close());
 
 // mock app version

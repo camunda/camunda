@@ -7,6 +7,7 @@
     "@bpmn-io/form-js": "0.9.9",
     "@camunda-cloud/common-ui": "0.0.18-rc9",
     "@camunda-cloud/common-ui-react": "0.0.18-rc9",
+    "@camunda/camunda-composite-components": "0.0.20",
     "@carbon/elements": "11.15.0",
     "@carbon/react": "1.18.0",
     "@monaco-editor/react": "4.4.6",
@@ -45,18 +46,12 @@
     "postinstall": "cd .. && husky install",
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
+  "browserslist": [
+    ">0.2%",
+    "not dead",
+    "not ie <= 11",
+    "not op_mini all"
+  ],
   "devDependencies": {
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "11.2.7",
@@ -107,7 +102,7 @@
     },
     "resetMocks": true,
     "transformIgnorePatterns": [
-      "/node_modules/(?!@camunda-cloud/common-ui.*)"
+      "/node_modules/(?!@camunda-cloud/common-ui.*|@camunda/camunda-composite-components)"
     ]
   },
   "scarfSettings": {

@@ -180,7 +180,7 @@ test.after(async (t) => {
     .typeText(variableValueField, '"updatedValue"');
 
   await t
-    .click(screen.queryByTestId('logo'))
+    .click(screen.getByText('Tasklist'))
     .click(
       within(screen.getByTestId('expanded-panel'))
         .getAllByText('usertask_with_variables')

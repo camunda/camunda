@@ -18,7 +18,18 @@ type Events =
       eventName: 'task-completed';
       isCamundaForm: boolean;
     }
-  | {eventName: 'tasks-filtered'; filter: string};
+  | {eventName: 'tasks-filtered'; filter: string}
+  | {eventName: 'navigation'; link: 'header-logo'}
+  | {eventName: 'app-switcher-item-clicked'; app: string}
+  | {
+      eventName: 'info-bar';
+      link: 'documentation' | 'academy' | 'feedback' | 'slack';
+    }
+  | {
+      eventName: 'user-side-bar';
+      link: 'cookies' | 'terms-conditions' | 'privacy-policy' | 'imprint';
+    };
+
 const STAGE_ENV = getStage(window.location.host);
 
 function injectScript(src: string): Promise<void> {

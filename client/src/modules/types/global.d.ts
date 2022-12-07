@@ -30,6 +30,7 @@ export declare global {
     Osano?: {
       cm?: {
         analytics: boolean;
+        showDrawer: (arg: string) => void;
         addEventListener: (
           eventType: string,
           callback: (arg: any) => void,

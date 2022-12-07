@@ -15,6 +15,10 @@ type User = Readonly<{
   permissions: Permissions;
   roles: ReadonlyArray<string> | null;
   salesPlanType: string | null;
+  c8Links: ReadonlyArray<{
+    name: 'console' | 'modeler' | 'tasklist' | 'operate' | 'optimize';
+    link: string;
+  }>;
   __typename: string;
 }>;
 

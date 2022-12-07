@@ -18,7 +18,8 @@ const TasksPanel = styled(CollapsablePanel)`
 
 const Container = styled.main`
   display: flex;
-  height: calc(100% - 56px);
+  height: 100%;
+  padding-top: 50px;
 `;
 
 const DetailsPanel = styled(Panel)`

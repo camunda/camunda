@@ -13,6 +13,7 @@ const currentUser: User = {
   permissions: ['read', 'write'],
   salesPlanType: null,
   roles: [],
+  c8Links: [],
   __typename: 'User',
 };
 
@@ -22,6 +23,7 @@ const currentRestrictedUser: User = {
   permissions: ['read'],
   salesPlanType: null,
   roles: [],
+  c8Links: [],
   __typename: 'User',
 };
 
@@ -32,6 +34,7 @@ const currentUserWithUnknownRole: User = {
   permissions: ['unknown'],
   salesPlanType: null,
   roles: [],
+  c8Links: [],
   __typename: 'User',
 };
 
@@ -42,6 +45,7 @@ const currentUserWithOutRole: User = {
   permissions: [],
   salesPlanType: null,
   roles: [],
+  c8Links: [],
   __typename: 'User',
 };
 

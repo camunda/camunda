@@ -55,9 +55,9 @@ const Style = createGlobalStyle`
     outline: none;
   }
 
-  body.${USING_KEYBOARD_CLASS_NAME} button:focus,
-  body.${USING_KEYBOARD_CLASS_NAME} code:focus,
-  body.${USING_KEYBOARD_CLASS_NAME} a:focus {
+  body.${USING_KEYBOARD_CLASS_NAME} main button:focus,
+  body.${USING_KEYBOARD_CLASS_NAME} main code:focus,
+  body.${USING_KEYBOARD_CLASS_NAME} main a:focus {
     box-shadow: ${({theme}) => theme.shadows.fakeOutline};
     transition: box-shadow 0.05s ease-out;
   }

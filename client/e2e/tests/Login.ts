@@ -43,14 +43,14 @@ test('persistency of a session', async (t) => {
   await t.expect(await getPathname()).eql('/');
 });
 
-test('logout redirect', async (t) => {
+test('Log out redirect', async (t) => {
   await t
     .typeText(screen.getByLabelText('Username'), 'demo')
     .typeText(screen.getByLabelText('Password'), 'demo')
     .click(screen.getByRole('button', {name: 'Login'}));
 
-  await t.click(screen.getByRole('button', {name: 'demo'}));
-  await t.click(screen.getByRole('button', {name: 'Logout'}));
+  await t.click(screen.queryByLabelText('Settings', {selector: 'button'}));
+  await t.click(screen.getByRole('button', {name: 'Log out'}));
 
   await t.expect(await getPathname()).eql('/login');
 });
@@ -95,8 +95,8 @@ test('redirect to the correct URL after login', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedTaskURL)
-    .click(screen.getByRole('button', {name: 'demo'}))
-    .click(screen.getByRole('button', {name: /logout/i}));
+    .click(screen.queryByLabelText('Settings', {selector: 'button'}))
+    .click(screen.getByRole('button', {name: /Log out/i}));
 
   await t
     .navigateTo(selectedFilterUrl)
@@ -105,8 +105,8 @@ test('redirect to the correct URL after login', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedFilterUrl)
-    .click(screen.getByRole('button', {name: 'demo'}))
-    .click(screen.getByRole('button', {name: /logout/i}));
+    .click(screen.queryByLabelText('Settings', {selector: 'button'}))
+    .click(screen.getByRole('button', {name: /Log out/i}));
 
   await t
     .navigateTo(selectedTaskAndFilterURL)
@@ -115,6 +115,6 @@ test('redirect to the correct URL after login', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}))
     .expect(getURL())
     .eql(selectedTaskAndFilterURL)
-    .click(screen.getByRole('button', {name: 'demo'}))
-    .click(screen.getByRole('button', {name: /logout/i}));
+    .click(screen.queryByLabelText('Settings', {selector: 'button'}))
+    .click(screen.getByRole('button', {name: /Log out/i}));
 });
