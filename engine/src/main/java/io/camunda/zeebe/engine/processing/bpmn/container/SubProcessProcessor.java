@@ -131,6 +131,7 @@ public final class SubProcessProcessor
       eventSubscriptionBehavior
           .findEventTrigger(subProcessContext)
           .filter(eventTrigger -> flowScopeInstance.isActive())
+          .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
           .ifPresentOrElse(
               eventTrigger -> {
                 final var terminated =
