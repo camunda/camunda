@@ -10,6 +10,8 @@ import static io.camunda.operate.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALI
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -46,6 +48,7 @@ public class Archiver {
 
   private static final String INDEX_NAME_PATTERN = "%s%s";
   private static final Logger logger = LoggerFactory.getLogger(Archiver.class);
+  private static final int DEFAULT_RETRY_DELETE_DOCUMENTS = 3;
 
   private boolean shutdown = false;
 
@@ -123,13 +126,9 @@ public class Archiver {
     final var deleteFuture = new CompletableFuture<Long>();
     final var deleteRequest = createDeleteByQueryRequestWithDefaults(sourceIndexName)
         .setQuery(termsQuery(idFieldName, processInstanceKeys));
-    final var startTimer = Timer.start();
 
-    sendDeleteRequest(deleteRequest)
+    sendDeleteRequestWithRetries(deleteRequest)
       .whenComplete((response, e) -> {
-        final var timer = getArchiverDeleteQueryTimer();
-        startTimer.stop(timer);
-
         final var result = handleResponse(response, e, sourceIndexName, "delete");
         result.ifRightOrLeft(deleteFuture::complete, deleteFuture::completeExceptionally);
       });
@@ -192,6 +191,48 @@ public class Archiver {
   private DeleteByQueryRequest createDeleteByQueryRequestWithDefaults(final String index) {
     final var deleteRequest = new DeleteByQueryRequest(index);
     return applyDefaultSettings(deleteRequest);
+  }
+
+  private CompletableFuture<BulkByScrollResponse> sendDeleteRequestWithRetries(final DeleteByQueryRequest deleteRequest) {
+    final var deleteRequestFuture = new CompletableFuture<BulkByScrollResponse>();
+    sendDeleteRequestWithRetries(deleteRequest, deleteRequestFuture, DEFAULT_RETRY_DELETE_DOCUMENTS);
+    return deleteRequestFuture;
+  }
+
+  private void sendDeleteRequestWithRetries(final DeleteByQueryRequest deleteRequest,
+      final CompletableFuture<BulkByScrollResponse> deleteRequestFuture, final int retries) {
+    final var startTimer = Timer.start();
+    sendDeleteRequest(deleteRequest)
+      .whenComplete((response, failure) -> {
+        final var timer = getArchiverDeleteQueryTimer();
+        startTimer.stop(timer);
+
+        if (failure != null) {
+          deleteRequestFuture.completeExceptionally(failure);
+          return;
+        }
+
+        final var versionConflicts = response.getVersionConflicts();
+        if (versionConflicts <= 0) {
+          deleteRequestFuture.complete(response);
+        } else {
+          final var nextRetries = retries - 1;
+          final var areRetriesLeft = nextRetries > 0;
+
+          if (areRetriesLeft) {
+            final var delay = operateProperties.getArchiver().getDelayBetweenRuns();
+            archiverExecutor.schedule(() -> {
+              sendDeleteRequestWithRetries(deleteRequest, deleteRequestFuture, nextRetries);
+            }, Date.from(Instant.now().plusMillis(delay)));
+          } else {
+            final var exceptionMessage = String.format("Failed to delete archived documents "
+                + "due to version conflicts %d, no retries left.", versionConflicts);
+            final var ex = new OperateRuntimeException(exceptionMessage);
+            deleteRequestFuture.completeExceptionally(ex);
+          }
+
+        }
+      });
   }
 
   private CompletableFuture<BulkByScrollResponse> sendDeleteRequest(final DeleteByQueryRequest deleteRequest) {

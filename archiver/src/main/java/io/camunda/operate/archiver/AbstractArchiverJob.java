@@ -14,16 +14,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
-import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
 
-import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
@@ -35,6 +31,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class AbstractArchiverJob implements Runnable {
+
+  private static final Logger logger = LoggerFactory.getLogger(AbstractArchiverJob.class);
 
   protected static final String DATES_AGG = "datesAgg";
   protected static final String INSTANCES_AGG = "instancesAgg";
@@ -83,8 +81,12 @@ public abstract class AbstractArchiverJob implements Runnable {
         return delay;
       })
       .exceptionally((t) -> {
+        logger.error("Error occurred while archiving data. Will be retried.", t);
         errorStrategy.idle();
-        return errorStrategy.idleTime();
+        final var delay = Math.max(
+            operateProperties.getArchiver().getDelayBetweenRuns(),
+            errorStrategy.idleTime());
+        return delay;
       })
       .thenAccept((delay) -> {
         if (!shutdown) {
