@@ -22,6 +22,8 @@ public class UserDTO {
 
   private String salesPlanType;
 
+  private List<C8AppLink> c8Links = List.of();
+
   public String getUserId() {
     return userId;
   }
@@ -79,9 +81,20 @@ public class UserDTO {
     return salesPlanType;
   }
 
+  public List<C8AppLink> getC8Links() {
+    return c8Links;
+  }
+
+  public UserDTO setC8Links(final List<C8AppLink> c8Links) {
+    if (c8Links != null) {
+      this.c8Links = c8Links;
+    }
+    return this;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(userId, displayName, apiUser, permissions, roles, salesPlanType);
+    return Objects.hash(userId, displayName, apiUser, permissions, roles, salesPlanType, c8Links);
   }
 
   @Override
@@ -101,6 +114,7 @@ public class UserDTO {
         && Objects.equals(userId, other.userId)
         && Objects.equals(permissions, other.permissions)
         && Objects.equals(roles, other.roles)
-        && Objects.equals(salesPlanType, other.salesPlanType);
+        && Objects.equals(salesPlanType, other.salesPlanType)
+        && Objects.equals(c8Links, other.c8Links);
   }
 }

@@ -26,9 +26,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
+import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
+import io.camunda.tasklist.webapp.security.sso.model.ClusterMetadata;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
@@ -64,9 +66,12 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.auth0.domain=domain",
       "camunda.tasklist.auth0.backendDomain=backendDomain",
       "camunda.tasklist.auth0.claimName=claimName",
+      "camunda.tasklist.cloud.clusterId=test-clusterId",
       "camunda.tasklist.cloud.permissionaudience=audience",
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
-      "camunda.tasklist.persistentSessionsEnabled = true"
+      "camunda.tasklist.persistentSessionsEnabled = true",
+      "camunda.tasklist.cloud.permissionurl=https://permissionurl",
+      "camunda.tasklist.cloud.consoleUrl=https://consoleUrl"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "test"})
@@ -265,12 +270,19 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     response = get(SSO_CALLBACK, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(GRAPHQL_URL));
 
-    // when
-    final ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(cookies);
+    // Test no ClusterMetadata
+    mockEmptyClusterMetadata();
+    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(cookies);
+    GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
+    assertThat(graphQLResponse.get("$.data.currentUser.c8Links", List.class)).isEmpty();
 
-    // then
+    // Test with ClusterMetadata
+    mockClusterMetadata();
+    // when
+    responseEntity = getCurrentUserByGraphQL(cookies);
+
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
+    graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
     assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
     assertThat(graphQLResponse.get("$.data.currentUser.salesPlanType"))
@@ -278,6 +290,16 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThat(graphQLResponse.get("$.data.currentUser.roles", List.class))
         .asList()
         .isEqualTo(TASKLIST_TEST_ROLES);
+    assertThat(graphQLResponse.getList("$.data.currentUser.c8Links", C8AppLink.class))
+        .containsExactly(
+            new C8AppLink()
+                .setName("console")
+                .setLink("https://console.audience/org/3/cluster/test-clusterId"),
+            new C8AppLink().setName("operate").setLink("http://operate-url"),
+            new C8AppLink().setName("optimize").setLink("http://optimize-url"),
+            new C8AppLink().setName("modeler").setLink("https://modeler.audience/org/3"),
+            new C8AppLink().setName("tasklist").setLink("http://tasklist-url"),
+            new C8AppLink().setName("zeebe").setLink("grpc://zeebe-url"));
   }
 
   @Test
@@ -371,5 +393,34 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     when(restTemplate.exchange(
             eq("https://permissionurl/3"), eq(HttpMethod.GET), (HttpEntity) any(), (Class) any()))
         .thenReturn(clusterInfoResponseEntity);
+  }
+
+  private void mockClusterMetadata() {
+    final ClusterMetadata clusterMetadata =
+        new ClusterMetadata()
+            .setName("test-cluster")
+            .setUuid("test-clusterId")
+            .setUrls(
+                Map.of(
+                    ClusterMetadata.AppName.OPERATE, "http://operate-url",
+                    ClusterMetadata.AppName.TASKLIST, "http://tasklist-url",
+                    ClusterMetadata.AppName.OPTIMIZE, "http://optimize-url",
+                    ClusterMetadata.AppName.ZEEBE, "grpc://zeebe-url"));
+    final ClusterMetadata[] clusterMetadatas = new ClusterMetadata[] {clusterMetadata};
+    when(restTemplate.exchange(
+            eq("https://consoleUrl/external/organizations/3/clusters"),
+            eq(HttpMethod.GET),
+            (HttpEntity) any(),
+            eq(ClusterMetadata[].class)))
+        .thenReturn(new ResponseEntity<>(clusterMetadatas, HttpStatus.OK));
+  }
+
+  private void mockEmptyClusterMetadata() {
+    when(restTemplate.exchange(
+            eq("https://consoleUrl/external/organizations/3/clusters"),
+            eq(HttpMethod.GET),
+            (HttpEntity) any(),
+            eq(ClusterMetadata[].class)))
+        .thenReturn(new ResponseEntity<>(null, HttpStatus.NOT_FOUND));
   }
 }

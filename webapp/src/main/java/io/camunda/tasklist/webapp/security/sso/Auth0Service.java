@@ -4,6 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
+
 package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
@@ -27,10 +28,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -39,7 +37,6 @@ import org.springframework.web.client.RestTemplate;
 @Component
 @Profile(TasklistProfileService.SSO_AUTH_PROFILE)
 public class Auth0Service {
-
   private static final Logger LOGGER = LoggerFactory.getLogger(Auth0Service.class);
   private static final String LOGOUT_URL_TEMPLATE = "https://%s/v2/logout?client_id=%s&returnTo=%s";
   private static final String PERMISSION_URL_TEMPLATE = "%s/%s";
@@ -62,16 +59,17 @@ public class Auth0Service {
   public void authenticate(final HttpServletRequest req, final HttpServletResponse res) {
     final Tokens tokens = retrieveTokens(req, res);
     final TokenAuthentication authentication = beanFactory.getBean(TokenAuthentication.class);
-    checkPermission(authentication, tokens.getAccessToken());
-    authentication.authenticate(tokens.getIdToken(), tokens.getRefreshToken());
+    authentication.authenticate(
+        tokens.getIdToken(), tokens.getRefreshToken(), tokens.getAccessToken());
+    checkPermission(authentication);
     SecurityContextHolder.getContext().setAuthentication(authentication);
     sessionExpiresWhenAuthenticationExpires(req);
   }
 
-  private void checkPermission(final TokenAuthentication authentication, final String accessToken) {
+  private void checkPermission(final TokenAuthentication authentication) {
     final HttpHeaders headers = new HttpHeaders();
 
-    headers.setBearerAuth(accessToken);
+    headers.setBearerAuth(authentication.getAccessToken());
     final String urlDomain = tasklistProperties.getCloud().getPermissionUrl();
     final String url =
         String.format(

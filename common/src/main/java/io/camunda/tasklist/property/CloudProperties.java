@@ -13,6 +13,10 @@ public class CloudProperties {
   private String permissionUrl;
   private String permissionAudience;
 
+  private String clusterId;
+
+  private String consoleUrl;
+
   public String getPermissionUrl() {
     return permissionUrl;
   }
@@ -29,21 +33,41 @@ public class CloudProperties {
     this.permissionAudience = permissionAudience;
   }
 
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public CloudProperties setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
+    return this;
+  }
+
+  public String getConsoleUrl() {
+    return consoleUrl;
+  }
+
+  public CloudProperties setConsoleUrl(final String consoleUrl) {
+    this.consoleUrl = consoleUrl;
+    return this;
+  }
+
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof CloudProperties)) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
     final CloudProperties that = (CloudProperties) o;
     return Objects.equals(permissionUrl, that.permissionUrl)
-        && Objects.equals(permissionAudience, that.permissionAudience);
+        && Objects.equals(permissionAudience, that.permissionAudience)
+        && Objects.equals(clusterId, that.clusterId)
+        && Objects.equals(consoleUrl, that.consoleUrl);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(permissionUrl, permissionAudience);
+    return Objects.hash(permissionUrl, permissionAudience, clusterId, consoleUrl);
   }
 }

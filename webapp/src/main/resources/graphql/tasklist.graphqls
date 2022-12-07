@@ -87,6 +87,11 @@ input VariableInput {
     # Value of the variable. Complex values, e.g. a list of objects, must be serialized as JSON.
     value: String!
 }
+
+type C8AppLink {
+    name: String!
+    link: String!
+}
 # Describes the user.
 type User {
     userId: ID!
@@ -94,6 +99,7 @@ type User {
     permissions: [String!]
     roles: [String]
     salesPlanType: String
+    c8Links: [C8AppLink]
 }
 # What can be searched for.
 type Query {
