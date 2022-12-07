@@ -71,29 +71,13 @@ final class BackupEndpointTest {
               new BrokerErrorException(new BrokerError(ErrorCode.INTERNAL_ERROR, "failure")), 500),
           Arguments.of(
               new BrokerErrorException(new BrokerError(ErrorCode.UNSUPPORTED_MESSAGE, "failure")),
-              400));
+              400),
+          Arguments.of(new RuntimeException("failure"), 500));
     }
   }
 
   @Nested
   final class TakeTest {
-    @Test
-    void shouldReturnErrorOnCompletionException() {
-      // given
-      final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
-      final var failure = new RuntimeException("failure");
-      doReturn(CompletableFuture.failedFuture(failure)).when(api).takeBackup(anyLong());
-
-      // when
-      final WebEndpointResponse<?> response = endpoint.take(1);
-
-      // then
-      assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
-          .isEqualTo(new Error().message("failure"));
-    }
-
     @Test
     void shouldReturnErrorOnException() {
       // given
@@ -136,30 +120,21 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api);
       doReturn(CompletableFuture.failedFuture(error)).when(api).takeBackup(anyLong());
 
-      // when - then
-      assertThat(endpoint.take(1).getStatus()).isEqualTo(expectedCode);
+      // when
+      final var response = endpoint.take(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(expectedCode);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .contains("failure");
     }
   }
 
   @Nested
   final class StatusTest {
-    @Test
-    void shouldReturnErrorOnCompletionException() {
-      // given
-      final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
-      final var failure = new RuntimeException("failure");
-      doReturn(CompletableFuture.failedFuture(failure)).when(api).getStatus(anyLong());
-
-      // when
-      final WebEndpointResponse<?> response = endpoint.status(1);
-
-      // then
-      assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
-          .isEqualTo(new Error().message("failure"));
-    }
-
     @Test
     void shouldReturnErrorOnException() {
       // given
@@ -204,8 +179,16 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api);
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
 
-      // when - then
-      assertThat(endpoint.status(1).getStatus()).isEqualTo(expectedCode);
+      // when
+      final var response = endpoint.status(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(expectedCode);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .contains("failure");
     }
 
     @Test
@@ -351,23 +334,6 @@ final class BackupEndpointTest {
   @Nested
   final class ListTest {
     @Test
-    void shouldReturnErrorOnCompletionException() {
-      // given
-      final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
-      final var failure = new RuntimeException("failure");
-      doReturn(CompletableFuture.failedFuture(failure)).when(api).listBackups();
-
-      // when
-      final WebEndpointResponse<?> response = endpoint.list();
-
-      // then
-      assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
-          .isEqualTo(new Error().message("failure"));
-    }
-
-    @Test
     void shouldReturnErrorOnException() {
       // given
       final var api = mock(BackupApi.class);
@@ -392,8 +358,16 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api);
       doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups();
 
-      // when - then
-      assertThat(endpoint.list().getStatus()).isEqualTo(expectedCode);
+      // when
+      final var response = endpoint.list();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(expectedCode);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .contains("failure");
     }
 
     @Test
@@ -494,22 +468,6 @@ final class BackupEndpointTest {
 
   @Nested
   final class DeleteTest {
-    @Test
-    void shouldReturnErrorOnCompletionException() {
-      // given
-      final var api = mock(BackupApi.class);
-      final var endpoint = new BackupEndpoint(api);
-      final var failure = new RuntimeException("failure");
-      doReturn(CompletableFuture.failedFuture(failure)).when(api).deleteBackup(1);
-
-      // when
-      final WebEndpointResponse<?> response = endpoint.delete(1);
-
-      // then
-      assertThat(response.getBody())
-          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
-          .isEqualTo(new Error().message("failure"));
-    }
 
     @Test
     void shouldReturnErrorOnException() {
@@ -536,8 +494,16 @@ final class BackupEndpointTest {
       final var endpoint = new BackupEndpoint(api);
       doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
 
-      // when - then
-      assertThat(endpoint.delete(1).getStatus()).isEqualTo(expectedCode);
+      // when
+      final var response = endpoint.delete(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(expectedCode);
+      assertThat(response.getBody())
+          .asInstanceOf(InstanceOfAssertFactories.type(Error.class))
+          .extracting(Error::getMessage)
+          .asString()
+          .contains("failure");
     }
 
     @Test
