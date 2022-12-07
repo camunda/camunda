@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -198,6 +200,22 @@ public final class BpmnStateBehavior {
     return flowScopeInstance.getNumberOfActiveElementInstances() == 0
         && flowScopeInstance.isInterrupted()
         && flowScopeInstance.isActive();
+  }
+
+  public boolean isInterruptedByTerminateEndEvent(
+      final BpmnElementContext flowScopeContext, final ElementInstance flowScopeInstance) {
+    final var process = getProcess(flowScopeContext.getProcessDefinitionKey());
+    if (process.isEmpty() || !isInterrupted(flowScopeContext)) {
+      return false;
+    }
+
+    final var interruptingElement =
+        process.get().getProcess().getElementById(flowScopeInstance.getInterruptingElementId());
+    if (interruptingElement.getElementType().equals(BpmnElementType.END_EVENT)) {
+      return ((ExecutableEndEvent) interruptingElement).isTerminateEndEvent();
+    }
+
+    return false;
   }
 
   public int getNumberOfTakenSequenceFlows(
