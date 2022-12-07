@@ -14,9 +14,9 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
-import org.testcontainers.shaded.org.awaitility.Awaitility;
 
 final class AsyncAggregatingSubscriberTest {
 

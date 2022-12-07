@@ -68,8 +68,8 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
             }
           } else {
             LOG.trace("Future failed.", throwable);
-            phaser.forceTermination();
             resultsFuture.completeExceptionally(throwable);
+            phaser.forceTermination();
           }
           return null;
         });
@@ -78,8 +78,8 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
   @Override
   public void onError(final Throwable t) {
     LOG.trace("Subscription failed.", t);
-    phaser.forceTermination();
     resultsFuture.completeExceptionally(t);
+    phaser.forceTermination();
   }
 
   @Override
