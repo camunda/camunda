@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * futures are requested whenever a future completes. The maximum number of requested futures must
  * be provided in {@link AsyncAggregatingSubscriber#AsyncAggregatingSubscriber(long parallelism)}}
  *
- * <p>Futures that complete exceptionally are omitted from the result!
+ * <p>If a futures completes exceptionally, the result is completed exceptionally.
  */
 @SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFuture<T>> {
@@ -67,7 +67,7 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
               subscription.cancel();
             }
           } else {
-            LOG.warn("Future failed, omitted from result", throwable);
+            LOG.trace("Future failed.", throwable);
             phaser.forceTermination();
             resultsFuture.completeExceptionally(throwable);
           }
