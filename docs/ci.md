@@ -64,7 +64,7 @@ When you run the tests locally, they will use your local Docker environment. How
 
 #### How it works
 
-Grossly simplified, TCC works by setting up an agent which will act as Docker daemon, but proxy requests to remote VMs. It will then write a [Testcontainers configuration file](https://www.testcontainers.org/features/configuration/) that the Testcontainers library will automatically use when a test is ran.
+Grossly simplified, TCC works by setting up an agent which will act as a Docker daemon, but proxy requests to remote VMs. It will then write a [Testcontainers configuration file](https://www.testcontainers.org/features/configuration/) that the Testcontainers library will automatically use when a test is executed.
 
 > Note that AtomicJar specifically mentions that TCC is not a Docker-as-a-Service product, and shouldn't be treated as such.
 
