@@ -16,12 +16,16 @@ import {Accordion} from './Accordion';
 import {AccordionItems} from './AccordionItems';
 import {EmptyState} from 'modules/components/EmptyState';
 import {ReactComponent as EmptyStateProcessInstancesByName} from 'modules/components/Icon/empty-state-process-instances-by-name.svg';
+import {authenticationStore} from 'modules/stores/authentication';
+import {tracking} from 'modules/tracking';
 
 const InstancesByProcess: React.FC = observer(() => {
   const {
     state: {processInstances, status},
     hasNoInstances,
   } = processInstancesByNameStore;
+
+  const modelerLink = authenticationStore.state.c8Links.modeler;
 
   if (['initial', 'first-fetch'].includes(status)) {
     return <Skeleton />;
@@ -38,7 +42,25 @@ const InstancesByProcess: React.FC = observer(() => {
         link={{
           label: 'Learn more about Operate',
           href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
+          onClick: () =>
+            tracking.track({
+              eventName: 'dashboard-link-clicked',
+              link: 'operate-docs',
+            }),
         }}
+        button={
+          modelerLink !== undefined
+            ? {
+                label: 'Go to Modeler',
+                href: modelerLink,
+                onClick: () =>
+                  tracking.track({
+                    eventName: 'dashboard-link-clicked',
+                    link: 'modeler',
+                  }),
+              }
+            : undefined
+        }
       />
     );
   }

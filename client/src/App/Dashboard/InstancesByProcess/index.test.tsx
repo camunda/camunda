@@ -14,6 +14,8 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
+import {createUser} from 'modules/testUtils';
+import {authenticationStore} from 'modules/stores/authentication';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -277,5 +279,45 @@ describe('InstancesByProcess', () => {
 
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  it('should render modeler button', async () => {
+    mockFetchProcessInstancesByName().withSuccess([]);
+
+    authenticationStore.setUser(
+      createUser({
+        c8Links: {
+          modeler: 'https://link-to-modeler',
+        },
+      })
+    );
+
+    render(<InstancesByProcess />, {
+      wrapper: createWrapper(),
+    });
+    processInstancesByNameStore.getProcessInstancesByName();
+
+    expect(
+      await screen.findByRole('button', {name: 'Go to Modeler'})
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('button', {name: 'Go to Modeler'}).closest('a')
+    ).toHaveAttribute('href', 'https://link-to-modeler');
+  });
+
+  it('should not render modeler button', async () => {
+    mockFetchProcessInstancesByName().withSuccess([]);
+
+    authenticationStore.setUser(createUser());
+
+    render(<InstancesByProcess />, {
+      wrapper: createWrapper(),
+    });
+    processInstancesByNameStore.getProcessInstancesByName();
+
+    expect(
+      screen.queryByRole('button', {name: 'Go to Modeler'})
+    ).not.toBeInTheDocument();
   });
 });

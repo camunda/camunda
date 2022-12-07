@@ -14,11 +14,13 @@ type Props = {
   icon: React.ReactNode;
   button?: {
     label: string;
-    onClick: () => void;
+    href?: string;
+    onClick?: () => void;
   };
   link?: {
     label: string;
     href: string;
+    onClick?: () => void;
   };
 };
 
@@ -36,18 +38,20 @@ const EmptyState: React.FC<Props> = ({
         <Title>{heading}</Title>
         <Description>{description}</Description>
         {button !== undefined && (
-          <Button
-            color="primary"
-            title={button.label}
-            size="medium"
-            onClick={button.onClick}
-          >
-            {button.label}
-          </Button>
+          <a href={button.href} target="_blank" rel="noreferrer">
+            <Button
+              color="primary"
+              title={button.label}
+              size="medium"
+              onClick={button.onClick}
+            >
+              {button.label}
+            </Button>
+          </a>
         )}
         {link !== undefined && (
           <LinkContainer>
-            <Anchor href={link.href} target="_blank">
+            <Anchor href={link.href} target="_blank" onClick={link.onClick}>
               {link.label}
             </Anchor>
           </LinkContainer>

@@ -207,6 +207,10 @@ type Events =
   | {
       eventName: 'info-bar';
       link: 'documentation' | 'academy' | 'feedback' | 'slack';
+    }
+  | {
+      eventName: 'dashboard-link-clicked';
+      link: 'modeler' | 'operate-docs';
     };
 
 const STAGE_ENV = getStage(window.location.host);

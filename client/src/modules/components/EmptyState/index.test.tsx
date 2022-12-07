@@ -17,13 +17,14 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 describe('EmptyState', () => {
   it('should render EmptyState with button and link', async () => {
     const buttonSpy = jest.fn();
+    const linkSpy = jest.fn();
 
     const {user} = render(
       <EmptyState
         heading="Nothing to see"
         description="Please move on"
         icon={<EmptyStateProcessIncidents title="Alt Text" />}
-        link={{href: '/link-to-home', label: 'Go Home'}}
+        link={{href: '/link-to-home', label: 'Go Home', onClick: linkSpy}}
         button={{label: 'Okay', onClick: buttonSpy}}
       />,
       {wrapper: Wrapper}
@@ -38,9 +39,11 @@ describe('EmptyState', () => {
     await user.click(screen.getByRole('button', {name: 'Okay'}));
     expect(buttonSpy).toHaveBeenCalledTimes(1);
 
-    expect(screen.getByRole('link', {name: 'Go Home'})).toBeInTheDocument();
+    await user.click(screen.getByRole('link', {name: 'Go Home'}));
+    expect(linkSpy).toHaveBeenCalledTimes(1);
 
     buttonSpy.mockClear();
+    linkSpy.mockClear();
   });
 
   it('should render EmptyState without button and link', () => {
