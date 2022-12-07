@@ -37,7 +37,6 @@ import org.camunda.optimize.service.util.ProcessReportDataType;
 import org.camunda.optimize.service.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.util.BpmnModels;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -988,7 +987,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getDuration()).isNotNull();
   }
 
-  @Disabled("Disabled until we fix the time shift issue.")
   @EnumSource(SortOrder.class)
   @ParameterizedTest
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {

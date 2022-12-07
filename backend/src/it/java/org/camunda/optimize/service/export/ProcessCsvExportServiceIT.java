@@ -177,8 +177,8 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(actualContent).isEqualTo(stringExpected);
   }
 
-  @Disabled("Disabled until we fix the time shift issue.")
   @Test
+  @Disabled("Disabled until https://jira.camunda.com/browse/OPT-6642 is resolved")
   public void durationIsSetCorrectlyEvenWhenNotSortingByDurationOnCsvExport() {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
@@ -244,7 +244,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     assertThat(getResponseContentAsString(response)).isNotEmpty();
   }
 
-  @Disabled("Disabled until we fix the time shift issue.")
+  @Disabled("Disabled until https://jira.camunda.com/browse/OPT-6642 is resolved")
   @MethodSource("getSortingParamsAndExpectedResults")
   @ParameterizedTest
   public void runningAndCompletedProcessInstancesSortByDuration(SortOrder order) {
