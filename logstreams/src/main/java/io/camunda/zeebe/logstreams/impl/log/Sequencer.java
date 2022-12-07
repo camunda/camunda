@@ -78,26 +78,31 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntry);
       return -1;
     }
+    final boolean isEnqueued;
+    final long currentPosition;
+
     lock.lock();
     try {
-      final var currentPosition = position;
-      final var isEnqueued =
+      currentPosition = position;
+      isEnqueued =
           queue.offer(new SequencedBatch(currentPosition, sourcePosition, List.of(appendEntry)));
       if (isEnqueued) {
-        if (consumer != null) {
-          consumer.signal();
-        }
-        metrics.observeBatchSize(1);
-
         position = currentPosition + 1;
-        return currentPosition;
-      } else {
-        LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntry);
-        return -1;
       }
     } finally {
-      metrics.setQueueSize(queue.size());
       lock.unlock();
+    }
+
+    if (consumer != null) {
+      consumer.signal();
+    }
+    metrics.observeBatchSize(1);
+    metrics.setQueueSize(queue.size());
+    if (isEnqueued) {
+      return currentPosition;
+    } else {
+      LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntry);
+      return -1;
     }
   }
 
@@ -125,30 +130,29 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
       return 0;
     }
 
+    final long currentPosition;
+    final boolean isEnqueued;
     lock.lock();
     try {
-      final var firstPosition = position;
-      final var isEnqueued =
-          queue.offer(new SequencedBatch(firstPosition, sourcePosition, entries));
+      currentPosition = position;
+      isEnqueued = queue.offer(new SequencedBatch(currentPosition, sourcePosition, entries));
       if (isEnqueued) {
-        if (consumer != null) {
-          consumer.signal();
-        }
-        metrics.observeBatchSize(batchSize);
-
-        final var nextPosition = firstPosition + batchSize;
-        position = nextPosition;
-        return nextPosition - 1;
-      } else {
-        LOG.trace("Rejecting write of {}, sequencer queue is full", entries);
-        if (consumer != null) {
-          consumer.signal();
-        }
-        return -1;
+        position = currentPosition + batchSize;
       }
     } finally {
-      metrics.setQueueSize(queue.size());
       lock.unlock();
+    }
+
+    if (consumer != null) {
+      consumer.signal();
+    }
+    metrics.setQueueSize(queue.size());
+    if (isEnqueued) {
+      metrics.observeBatchSize(batchSize);
+      return currentPosition + batchSize - 1;
+    } else {
+      LOG.trace("Rejecting write of {}, sequencer queue is full", entries);
+      return -1;
     }
   }
 
