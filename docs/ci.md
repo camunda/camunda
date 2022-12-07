@@ -88,8 +88,8 @@ env:
 Let's break this down a bit.
 
 1. Ensure the agent logs are verbose. TCC is still a beta product, so we want to make sure we can provide as much feedback as possible when troubleshooting any issues.
-1. Define how many concurrent remote VMs our tests can use to start containers on.
-1. Specify the name of the image our container based tests should use.
+2. Define how many concurrent remote VMs our tests can use to start containers on.
+3. Specify the name of the image our container based tests should use.
 
 You'll notice the image name starts with a URL, because we'll be using a local Docker registry. This is required because we want to use the image that we build as part of the pipeline, without pushing it to any public Docker registry. By using a local registry and exposing it to TCC, we can use "private" images.
 
