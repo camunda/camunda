@@ -8,7 +8,9 @@ package io.camunda.tasklist.zeebeimport.v810.record.value;
 
 import io.camunda.tasklist.zeebeimport.v810.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.Objects;
 
 public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements ProcessInstanceRecordValue {
@@ -20,6 +22,7 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private long processInstanceKey;
   private long flowScopeKey;
   private BpmnElementType bpmnElementType;
+  private BpmnEventType bpmnEventType;
   private long parentProcessInstanceKey;
   private long parentElementInstanceKey;
 
@@ -61,6 +64,11 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
+  public BpmnEventType getBpmnEventType() {
+    return bpmnEventType;
+  }
+
+  @Override
   public long getParentProcessInstanceKey() {
     return parentProcessInstanceKey;
   }
@@ -68,21 +76,6 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   @Override
   public long getParentElementInstanceKey() {
     return parentElementInstanceKey;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
-    result = 31 * result + version;
-    result = 31 * result + (int) (processDefinitionKey ^ (processDefinitionKey >>> 32));
-    result = 31 * result + (int) (processInstanceKey ^ (processInstanceKey >>> 32));
-    result = 31 * result + (int) (flowScopeKey ^ (flowScopeKey >>> 32));
-    result = 31 * result + (bpmnElementType != null ? bpmnElementType.hashCode() : 0);
-    result = 31 * result + (int) (parentProcessInstanceKey ^ (parentProcessInstanceKey >>> 32));
-    result = 31 * result + (int) (parentElementInstanceKey ^ (parentElementInstanceKey >>> 32));
-    return result;
   }
 
   @Override
@@ -96,36 +89,33 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     if (!super.equals(o)) {
       return false;
     }
-
     final ProcessInstanceRecordValueImpl that = (ProcessInstanceRecordValueImpl) o;
+    return version == that.version
+        && processDefinitionKey == that.processDefinitionKey
+        && processInstanceKey == that.processInstanceKey
+        && flowScopeKey == that.flowScopeKey
+        && parentProcessInstanceKey == that.parentProcessInstanceKey
+        && parentElementInstanceKey == that.parentElementInstanceKey
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
+        && bpmnElementType == that.bpmnElementType
+        && bpmnEventType == that.bpmnEventType;
+  }
 
-    if (version != that.version) {
-      return false;
-    }
-    if (processDefinitionKey != that.processDefinitionKey) {
-      return false;
-    }
-    if (processInstanceKey != that.processInstanceKey) {
-      return false;
-    }
-    if (flowScopeKey != that.flowScopeKey) {
-      return false;
-    }
-    if (bpmnProcessId != null
-        ? !bpmnProcessId.equals(that.bpmnProcessId)
-        : that.bpmnProcessId != null) {
-      return false;
-    }
-    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null) {
-      return false;
-    }
-    if (bpmnElementType != that.bpmnElementType) {
-      return false;
-    }
-    if (parentProcessInstanceKey != that.parentProcessInstanceKey) {
-      return false;
-    }
-    return parentElementInstanceKey != that.parentElementInstanceKey;
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        bpmnProcessId,
+        elementId,
+        version,
+        processDefinitionKey,
+        processInstanceKey,
+        flowScopeKey,
+        bpmnElementType,
+        bpmnEventType,
+        parentProcessInstanceKey,
+        parentElementInstanceKey);
   }
 
   @Override
@@ -147,11 +137,12 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + flowScopeKey
         + ", bpmnElementType="
         + bpmnElementType
+        + ", bpmnEventType="
+        + bpmnEventType
         + ", parentProcessInstanceKey="
         + parentProcessInstanceKey
         + ", parentElementInstanceKey="
         + parentElementInstanceKey
-        + "} "
-        + super.toString();
+        + '}';
   }
 }
