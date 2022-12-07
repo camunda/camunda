@@ -31,6 +31,7 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
   private static final Logger LOG = LoggerFactory.getLogger(AsyncAggregatingSubscriber.class);
 
   final ConcurrentLinkedDeque<T> results = new ConcurrentLinkedDeque<>();
+  final CompletableFuture<Collection<T>> resultsFuture = new CompletableFuture<>();
 
   // Phaser used to await for all results. New parties are registered for every new future in
   // onNext().
@@ -59,19 +60,26 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
           if (throwable == null) {
             LOG.trace("Completed: {}", result);
             results.add(result);
+            phaser.arrive();
+            if (!phaser.isTerminated()) {
+              subscription.request(1);
+            } else {
+              subscription.cancel();
+            }
           } else {
             LOG.warn("Future failed, omitted from result", throwable);
+            phaser.forceTermination();
+            resultsFuture.completeExceptionally(throwable);
           }
-          phaser.arrive();
-          subscription.request(1); // one future completed, request a new one
           return null;
         });
   }
 
   @Override
   public void onError(final Throwable t) {
-    LOG.warn("Subscription failed, result might be incomplete", t);
+    LOG.trace("Subscription failed.", t);
     phaser.forceTermination();
+    resultsFuture.completeExceptionally(t);
   }
 
   @Override
@@ -85,10 +93,12 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
    */
   public CompletableFuture<Collection<T>> result() {
     return CompletableFuture.supplyAsync(phaser::arriveAndAwaitAdvance)
-        .thenApply(
+        .thenCompose(
             ignored -> {
-              LOG.trace("Result is available: {}", results);
-              return results;
+              if (!resultsFuture.isDone()) {
+                resultsFuture.complete(results);
+              }
+              return resultsFuture;
             });
   }
 }
