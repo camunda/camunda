@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
+
+import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.scheduler.ActorCondition;
@@ -32,6 +35,7 @@ import org.slf4j.LoggerFactory;
 public final class Sequencer implements LogStreamBatchWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int partitionId;
+  private final int maxFragmentSize;
 
   private volatile long position;
   private volatile boolean isClosed = false;
@@ -40,21 +44,27 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
 
-  public Sequencer(final int partitionId, final long initialPosition) {
+  public Sequencer(final int partitionId, final long initialPosition, final int maxFragmentSize) {
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     this.position = initialPosition;
     this.partitionId = partitionId;
+    this.maxFragmentSize = maxFragmentSize;
     this.metrics = new SequencerMetrics(partitionId);
   }
 
   /**
    * @param eventCount the potential event count we want to check
    * @param batchSize the potential batch Size (in bytes) we want to check
-   * @return Always returns true, regardless of the batch size.
+   * @return True if the serialized batch would fit within {@link Sequencer#maxFragmentSize}, false
+   *     otherwise.
    */
   @Override
   public boolean canWriteEvents(final int eventCount, final int batchSize) {
-    return true;
+    final int framedMessageLength =
+        batchSize
+            + eventCount * (DataFrameDescriptor.HEADER_LENGTH + FRAME_ALIGNMENT)
+            + FRAME_ALIGNMENT;
+    return framedMessageLength <= maxFragmentSize;
   }
 
   /**

@@ -40,6 +40,7 @@ public final class LogStreamImpl extends Actor
   private final int partitionId;
   private final ActorSchedulingService actorSchedulingService;
   private final List<LogStreamReader> readers;
+  private final int maxFragmentSize;
   private final LogStorage logStorage;
   private final CompletableActorFuture<Void> closeFuture;
   private final int nodeId;
@@ -56,6 +57,7 @@ public final class LogStreamImpl extends Actor
       final String logName,
       final int partitionId,
       final int nodeId,
+      final int maxFragmentSize,
       final LogStorage logStorage) {
     this.actorSchedulingService = actorSchedulingService;
     this.logName = logName;
@@ -64,6 +66,7 @@ public final class LogStreamImpl extends Actor
     this.nodeId = nodeId;
     actorName = buildActorName(nodeId, "LogStream", partitionId);
 
+    this.maxFragmentSize = maxFragmentSize;
     this.logStorage = logStorage;
     closeFuture = new CompletableActorFuture<>();
 
@@ -302,7 +305,7 @@ public final class LogStreamImpl extends Actor
   }
 
   private Sequencer createAndScheduleWriteBuffer(final long initialPosition) {
-    return new Sequencer(partitionId, initialPosition);
+    return new Sequencer(partitionId, initialPosition, maxFragmentSize);
   }
 
   private ActorFuture<Void> createAndScheduleLogStorageAppender(final Sequencer sequencer) {
