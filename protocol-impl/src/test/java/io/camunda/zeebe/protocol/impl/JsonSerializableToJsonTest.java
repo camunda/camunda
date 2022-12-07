@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -1083,6 +1084,42 @@ final class JsonSerializableToJsonTest {
               "catchElementId": ""
           }
           """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// SignalSubscriptionRecord ///////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "SignalSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String signalName = "name";
+              final String catchEventId = "startEvent";
+              final int processDefinitionKey = 22334;
+              final String bpmnProcessId = "process";
+
+              return new SignalSubscriptionRecord()
+                  .setSignalName(wrapString(signalName))
+                  .setCatchEventId(wrapString(catchEventId))
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
+                  .setCatchEventInstanceKey(3L);
+            },
+        "{'processDefinitionKey':22334,'signalName':'name','catchEventId':'startEvent','bpmnProcessId':'process','catchEventInstanceKey':3}"
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty SignalSubscriptionRecord /////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty SignalStartEventSubscriptionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final int processDefinitionKey = 22334;
+
+              return new SignalSubscriptionRecord().setProcessDefinitionKey(processDefinitionKey);
+            },
+        "{'processDefinitionKey':22334,'signalName':'','catchEventId':'','bpmnProcessId':'','catchEventInstanceKey':-1}"
       },
     };
   }
