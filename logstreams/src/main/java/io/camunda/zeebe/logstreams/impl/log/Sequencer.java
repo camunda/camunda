@@ -116,7 +116,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
       return -1;
     }
 
-    final var entries = new ArrayList<LogAppendEntry>();
+    final var entries = new ArrayList<LogAppendEntry>(16);
     for (final var entry : appendEntries) {
       entries.add(entry);
     }
