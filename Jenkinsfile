@@ -8,7 +8,7 @@ def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-
 
 def mainBranchName = 'main'
 def isMainBranch = env.BRANCH_NAME == mainBranchName
-def latestStableBranchName = 'stable/1.3'
+def latestStableBranchName = 'stable/8.1'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
 // for the main branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
