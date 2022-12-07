@@ -63,18 +63,20 @@ export default function NumberConfig({report, onChange}) {
               }
             />
           )}
-          {view.entity !== 'variable' && report.reportType !== 'decision' && isSingleProcessReport && (
-            <>
-              <LabeledInput
-                disabled={!targetValue.active}
-                type="checkbox"
-                checked={!targetValue.active || targetValue.isKpi}
-                onChange={(evt) => onChange({targetValue: {isKpi: {$set: evt.target.checked}}})}
-                label={t('report.config.goal.setKpi')}
-              />
-              <p>{t('report.config.goal.kpiDescription')}</p>
-            </>
-          )}
+          {view.entity !== 'variable' &&
+            report.reportType !== 'decision' &&
+            isSingleProcessReport && (
+              <>
+                <LabeledInput
+                  disabled={!targetValue.active}
+                  type="checkbox"
+                  checked={!targetValue.active || targetValue.isKpi}
+                  onChange={(evt) => onChange({targetValue: {isKpi: {$set: evt.target.checked}}})}
+                  label={t('report.config.goal.setKpi')}
+                />
+                <p>{t('report.config.goal.kpiDescription')}</p>
+              </>
+            )}
         </fieldset>
       )}
     </div>
