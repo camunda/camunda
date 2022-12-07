@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect} from 'react';
 import {Collapse} from '../Collapse';
 import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {Li} from './styled';
@@ -13,35 +12,34 @@ import {getExpandAccordionTitle} from './utils/getExpandAccordionTitle';
 import {Skeleton} from '../Skeleton';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
-import {useLocation} from 'react-router-dom';
 import {Accordion} from './Accordion';
 import {AccordionItems} from './AccordionItems';
+import {EmptyState} from 'modules/components/EmptyState';
+import {ReactComponent as EmptyStateProcessInstancesByName} from 'modules/components/Icon/empty-state-process-instances-by-name.svg';
 
 const InstancesByProcess: React.FC = observer(() => {
-  const location = useLocation();
-
-  useEffect(() => {
-    processInstancesByNameStore.init();
-    return () => {
-      processInstancesByNameStore.reset();
-    };
-  }, []);
-
-  useEffect(() => {
-    processInstancesByNameStore.getProcessInstancesByName();
-  }, [location.key]);
-
-  const {processInstances, status} = processInstancesByNameStore.state;
+  const {
+    state: {processInstances, status},
+    hasNoInstances,
+  } = processInstancesByNameStore;
 
   if (['initial', 'first-fetch'].includes(status)) {
     return <Skeleton />;
   }
 
-  if (status === 'fetched' && processInstances.length === 0) {
+  if (hasNoInstances) {
     return (
-      <StatusMessage variant="default">
-        There are no Processes deployed
-      </StatusMessage>
+      <EmptyState
+        icon={
+          <EmptyStateProcessInstancesByName title="Start by deploying a process" />
+        }
+        heading="Start by deploying a process"
+        description="There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress."
+        link={{
+          label: 'Learn more about Operate',
+          href: 'https://docs.camunda.io/docs/components/operate/operate-introduction/',
+        }}
+      />
     );
   }
 

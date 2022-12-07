@@ -9,22 +9,33 @@ import styled, {css} from 'styled-components';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {styles} from '@carbon/elements';
 
-const Grid = styled.main`
-  ${({theme}) => {
-    const colors = theme.colors.dashboard;
+type GridProps = {
+  $numberOfColumns: 1 | 2;
+};
+
+const Grid = styled.main<GridProps>`
+  ${({theme, $numberOfColumns}) => {
     return css`
       width: 100%;
       height: 100%;
       padding: 20px 20px 10px;
-      background-color: ${colors.backgroundColor};
+      background-color: ${theme.colors.dashboard.backgroundColor};
       display: grid;
-      grid-template-columns: calc(50% - 4px) calc(50% - 4px);
+
       grid-template-rows: 176px 1fr;
       grid-gap: 8px;
-      & > ${Tile}:first-of-type {
-        grid-column-start: 1;
-        grid-column-end: 3;
-      }
+
+      ${$numberOfColumns === 2
+        ? css`
+            grid-template-columns: calc(50% - 4px) calc(50% - 4px);
+            & > ${Tile}:first-of-type {
+              grid-column-start: 1;
+              grid-column-end: 3;
+            }
+          `
+        : css`
+            grid-template-columns: 1fr;
+          `}
     `;
   }}
 `;

@@ -304,6 +304,9 @@ const theme = {
       emptyMessage: {
         color: SEMANTIC_COLORS.grey,
       },
+      emptyState: {
+        color: SEMANTIC_COLORS.grey,
+      },
       decisionsList: {
         backgroundColor: DARK_COLORS.ui02,
         header: {
@@ -1236,6 +1239,9 @@ const theme = {
         },
       },
       emptyMessage: {
+        color: LIGHT_COLORS.ui06,
+      },
+      emptyState: {
         color: LIGHT_COLORS.ui06,
       },
       decisionsList: {

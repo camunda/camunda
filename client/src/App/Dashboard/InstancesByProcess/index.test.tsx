@@ -13,6 +13,7 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {mockFetchProcessInstancesByName} from 'modules/mocks/api/incidents/fetchProcessInstancesByName';
+import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -39,6 +40,7 @@ describe('InstancesByProcess', () => {
 
   afterEach(() => {
     panelStatesStore.reset();
+    processInstancesByNameStore.reset();
   });
 
   it('should display skeleton when loading', async () => {
@@ -47,6 +49,7 @@ describe('InstancesByProcess', () => {
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(screen.getByTestId('skeleton')).toBeInTheDocument();
 
@@ -63,6 +66,7 @@ describe('InstancesByProcess', () => {
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(
       await screen.findByText('Data could not be fetched')
@@ -75,6 +79,7 @@ describe('InstancesByProcess', () => {
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(
       await screen.findByText('Data could not be fetched')
@@ -83,13 +88,19 @@ describe('InstancesByProcess', () => {
 
   it('should display information message when there are no processes', async () => {
     mockFetchProcessInstancesByName().withSuccess([]);
+    processInstancesByNameStore.getProcessInstancesByName();
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
 
     expect(
-      await screen.findByText('There are no Processes deployed')
+      await screen.findByText('Start by deploying a process')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'There are no processes deployed. Deploy and start a process from our Modeler, then come back here to track its progress.'
+      )
     ).toBeInTheDocument();
   });
 
@@ -99,6 +110,7 @@ describe('InstancesByProcess', () => {
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.getProcessInstancesByName();
 
     const withinIncident = within(
       await screen.findByTestId('incident-byProcess-0')
@@ -173,6 +185,7 @@ describe('InstancesByProcess', () => {
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.getProcessInstancesByName();
 
     const withinIncident = within(
       await screen.findByTestId('incident-byProcess-0')
@@ -209,6 +222,7 @@ describe('InstancesByProcess', () => {
     const {user} = render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.getProcessInstancesByName();
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(true);
 
@@ -232,11 +246,14 @@ describe('InstancesByProcess', () => {
 
   it('should update after next poll', async () => {
     jest.useFakeTimers();
+
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     render(<InstancesByProcess />, {
       wrapper: createWrapper(),
     });
+    processInstancesByNameStore.init();
+    processInstancesByNameStore.getProcessInstancesByName();
 
     const withinIncident = within(
       await screen.findByTestId('incident-byProcess-0')

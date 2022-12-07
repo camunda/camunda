@@ -16,6 +16,8 @@ import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
 import {Accordion} from './Accordion';
 import {AccordionItems} from './AccordionItems';
+import {ReactComponent as EmptyStateProcessIncidents} from 'modules/components/Icon/empty-state-process-incidents.svg';
+import {EmptyState} from 'modules/components/EmptyState';
 
 const IncidentsByError: React.FC = observer(() => {
   const location = useLocation();
@@ -39,9 +41,11 @@ const IncidentsByError: React.FC = observer(() => {
 
   if (status === 'fetched' && incidents.length === 0) {
     return (
-      <StatusMessage variant="success">
-        There are no Process Instances with Incidents
-      </StatusMessage>
+      <EmptyState
+        icon={<EmptyStateProcessIncidents title="Your processes are healthy" />}
+        heading="Your processes are healthy"
+        description="There are no incidents on any instances."
+      />
     );
   }
 

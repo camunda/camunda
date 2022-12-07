@@ -57,6 +57,11 @@ class ProcessInstancesByName extends NetworkReconnectionHandler {
     }
   });
 
+  get hasNoInstances() {
+    const {processInstances, status} = this.state;
+    return status === 'fetched' && processInstances.length === 0;
+  }
+
   startFetching = () => {
     if (this.state.status === 'initial') {
       this.state.status = 'first-fetch';

@@ -95,7 +95,10 @@ describe('IncidentsByError', () => {
     });
 
     expect(
-      await screen.findByText('There are no Process Instances with Incidents')
+      await screen.findByText('Your processes are healthy')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('There are no incidents on any instances.')
     ).toBeInTheDocument();
   });
 

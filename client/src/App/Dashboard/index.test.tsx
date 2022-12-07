@@ -54,4 +54,35 @@ describe('Dashboard', () => {
       screen.getByText('Process Incidents by Error Message')
     ).toBeInTheDocument();
   });
+
+  it('should render empty state (no instances)', async () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
+    mockFetchProcessInstancesByName().withSuccess([]);
+
+    render(<Dashboard />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Start by deploying a process')
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText('Process Incidents by Error Message')
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render empty state (no incidents)', async () => {
+    mockFetchProcessCoreStatistics().withSuccess(statistics);
+    mockFetchIncidentsByError().withSuccess([]);
+    mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
+
+    render(<Dashboard />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Your processes are healthy')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Process Instances by Name')).toBeInTheDocument();
+    expect(
+      screen.getByText('Process Incidents by Error Message')
+    ).toBeInTheDocument();
+  });
 });

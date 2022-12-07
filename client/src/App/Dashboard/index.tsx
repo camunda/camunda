@@ -11,16 +11,31 @@ import {MetricPanel} from './MetricPanel';
 import {InstancesByProcess} from './InstancesByProcess';
 import {IncidentsByError} from './IncidentsByError';
 import {PAGE_TITLE} from 'modules/constants';
+import {processInstancesByNameStore} from 'modules/stores/processInstancesByName';
 import {Grid, Tile, TileTitle, TileContent} from './styled';
+import {observer} from 'mobx-react';
+import {useLocation} from 'react-router-dom';
 
-function Dashboard() {
+const Dashboard = observer(() => {
+  const location = useLocation();
+  const {hasNoInstances} = processInstancesByNameStore;
+
   useEffect(() => {
     document.title = PAGE_TITLE.DASHBOARD;
+
+    processInstancesByNameStore.init();
+    return () => {
+      processInstancesByNameStore.reset();
+    };
   }, []);
+
+  useEffect(() => {
+    processInstancesByNameStore.getProcessInstancesByName();
+  }, [location.key]);
 
   return (
     <>
-      <Grid>
+      <Grid $numberOfColumns={hasNoInstances ? 1 : 2}>
         <VisuallyHiddenH1>Operate Dashboard</VisuallyHiddenH1>
         <Tile>
           <MetricPanel />
@@ -31,15 +46,18 @@ function Dashboard() {
             <InstancesByProcess />
           </TileContent>
         </Tile>
-        <Tile>
-          <TileTitle>Process Incidents by Error Message</TileTitle>
-          <TileContent>
-            <IncidentsByError />
-          </TileContent>
-        </Tile>
+
+        {!hasNoInstances && (
+          <Tile>
+            <TileTitle>Process Incidents by Error Message</TileTitle>
+            <TileContent>
+              <IncidentsByError />
+            </TileContent>
+          </Tile>
+        )}
       </Grid>
     </>
   );
-}
+});
 
 export {Dashboard};
