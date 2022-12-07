@@ -5,7 +5,7 @@
   <name>Operate Parent</name>
   <groupId>io.camunda</groupId>
   <artifactId>operate-parent</artifactId>
-  <version>8.2.0-SNAPSHOT</version>
+  <version>8.2.0-alpha2</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -28,8 +28,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>8.2.0-SNAPSHOT</version.zeebe>
-    <version.identity>8.2.0-alpha1</version.identity>
+    <version.zeebe>8.2.0-alpha2</version.zeebe>
+    <version.identity>8.2.0-alpha2</version.identity>
     <version.log4j>2.17.2</version.log4j>
     <version.elasticsearch>7.17.6</version.elasticsearch>
     <version.spring.boot>2.7.6</version.spring.boot>
