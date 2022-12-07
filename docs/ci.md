@@ -66,15 +66,17 @@ When you run the tests locally, they will use your local Docker environment. How
 
 Grossly simplified, TCC works by setting up an agent which will act as a Docker daemon, but proxy requests to remote VMs. It will then write a [Testcontainers configuration file](https://www.testcontainers.org/features/configuration/) that the Testcontainers library will automatically use when a test is executed.
 
-> Note that AtomicJar specifically mentions that TCC is not a Docker-as-a-Service product, and shouldn't be treated as such.
+> Note that AtomicJar, the company behind TCC, specifically mentions that their product is not a Docker-as-a-Service product, and shouldn't be treated as such.
 
-Make sure to join the private Slack channel Camunda has with AtomicJar around TCC. There you will find a private link to our dashboard which contains documentation around TCC, and can provide feedback, ask qeustions, and receive support.
+You will find documentation, account management, settings, secret tokens, etc., in the [Testcontainers Cloud dashboard](https://app.testcontainers.cloud/dashboard). If you haven't been invited yet and cannot see the dashboard, ask one of the Zeebe team members for an invite.
 
-> If you are not yet in the channel, anybody from the Zeebe team can invite you.
+Make sure to join the private Slack channel Camunda has with AtomicJar around TCC. There you will find a private invite link, and can provide feedback, ask questions, and receive support.
+
+> If you are not yet in the channel, anybody from the Zeebe team can invite you. Note that this is only for core team members.
 
 #### Usage
 
-To use TCC, we first need to define a few environment variables to your job.
+To use TCC with GitHub Actions, we first need to define a few environment variables to your job.
 
 ```yaml
 env:
@@ -91,7 +93,7 @@ Let's break this down a bit.
 
 You'll notice the image name starts with a URL, because we'll be using a local Docker registry. This is required because we want to use the image that we build as part of the pipeline, without pushing it to any public Docker registry. By using a local registry and exposing it to TCC, we can use "private" images.
 
-To do so, we'll use a [GitHub Actions service container](https://docs.github.com/en/actions/using-containerized-services/about-service-containers), and add the following to your job definition:
+To set up a local Docker registry, we'll use a [GitHub Actions service container](https://docs.github.com/en/actions/using-containerized-services/about-service-containers). Add the following to your job definition:
 
 ```yaml
 services:
