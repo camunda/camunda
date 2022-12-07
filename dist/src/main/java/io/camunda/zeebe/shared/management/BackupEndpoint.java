@@ -69,11 +69,8 @@ public final class BackupEndpoint {
                   "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
                       .formatted(backupId, backupId)),
           202);
-    } catch (final CompletionException e) {
-      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e);
     }
   }
 
@@ -86,11 +83,8 @@ public final class BackupEndpoint {
       }
       final BackupInfo backupInfo = getBackupInfoFromBackupStatus(status);
       return new WebEndpointResponse<>(backupInfo);
-    } catch (final CompletionException e) {
-      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e);
     }
   }
 
@@ -100,11 +94,8 @@ public final class BackupEndpoint {
       final var backups = api.listBackups().toCompletableFuture().join();
       final var response = backups.stream().map(this::getBackupInfoFromBackupStatus).toList();
       return new WebEndpointResponse<>(response);
-    } catch (final CompletionException e) {
-      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e);
     }
   }
 
@@ -113,11 +104,8 @@ public final class BackupEndpoint {
     try {
       api.deleteBackup(id).toCompletableFuture().join();
       return new WebEndpointResponse<>(WebEndpointResponse.STATUS_NO_CONTENT);
-    } catch (final CompletionException e) {
-      return mapErrorResponse(e.getCause());
     } catch (final Exception e) {
-      return new WebEndpointResponse<>(
-          new Error().message(e.getMessage()), WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+      return mapErrorResponse(e);
     }
   }
 
@@ -183,35 +171,40 @@ public final class BackupEndpoint {
     };
   }
 
-  private WebEndpointResponse<Error> mapErrorResponse(final Throwable error) {
+  private WebEndpointResponse<Error> mapErrorResponse(final Throwable exception) {
     final int errorCode;
     final String message;
-
-    if (error instanceof BackupAlreadyExistException) {
-      errorCode = 409;
-      message = error.getMessage();
-    } else if (error instanceof IncompleteTopologyException) {
-      errorCode = 502;
-      message = error.getMessage();
-    } else if (error instanceof TimeoutException || error instanceof ConnectTimeoutException) {
-      errorCode = 504;
-      message = "Request from gateway to broker timed out. " + error.getMessage();
-    } else if (error instanceof ConnectException) {
-      errorCode = 502;
-      message = "Failed to send request from gateway to broker." + error.getMessage();
-    } else if (error instanceof BrokerErrorException brokerError) {
-      final var rootError = brokerError.getError();
-      errorCode =
-          switch (rootError.getCode()) {
-            case PARTITION_LEADER_MISMATCH -> 502;
-            case RESOURCE_EXHAUSTED -> WebEndpointResponse.STATUS_SERVICE_UNAVAILABLE;
-            case UNSUPPORTED_MESSAGE -> WebEndpointResponse.STATUS_BAD_REQUEST;
-            default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
-          };
-      message = rootError.getMessage();
+    if (exception instanceof CompletionException) {
+      final var error = exception.getCause();
+      if (error instanceof BackupAlreadyExistException) {
+        errorCode = 409;
+        message = error.getMessage();
+      } else if (error instanceof IncompleteTopologyException) {
+        errorCode = 502;
+        message = error.getMessage();
+      } else if (error instanceof TimeoutException || error instanceof ConnectTimeoutException) {
+        errorCode = 504;
+        message = "Request from gateway to broker timed out. " + error.getMessage();
+      } else if (error instanceof ConnectException) {
+        errorCode = 502;
+        message = "Failed to send request from gateway to broker." + error.getMessage();
+      } else if (error instanceof BrokerErrorException brokerError) {
+        final var rootError = brokerError.getError();
+        errorCode =
+            switch (rootError.getCode()) {
+              case PARTITION_LEADER_MISMATCH -> 502;
+              case RESOURCE_EXHAUSTED -> WebEndpointResponse.STATUS_SERVICE_UNAVAILABLE;
+              case UNSUPPORTED_MESSAGE -> WebEndpointResponse.STATUS_BAD_REQUEST;
+              default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+            };
+        message = rootError.getMessage();
+      } else {
+        errorCode = WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+        message = error.getMessage();
+      }
     } else {
       errorCode = WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
-      message = error.getMessage();
+      message = exception.getMessage();
     }
 
     return new WebEndpointResponse<>(new Error().message(message), errorCode);
