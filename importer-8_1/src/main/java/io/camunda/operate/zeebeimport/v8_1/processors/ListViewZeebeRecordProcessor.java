@@ -207,6 +207,7 @@ public class ListViewZeebeRecordProcessor {
     piEntity.setProcessName(processCache.getProcessNameOrDefaultValue(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
 
     OffsetDateTime timestamp = DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp()));
+    final boolean isRootProcessInstance = recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
     if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
       importBatch.incrementFinishedWiCount();
       piEntity.setEndDate(timestamp);
@@ -215,8 +216,10 @@ public class ListViewZeebeRecordProcessor {
       } else {
         piEntity.setState(ProcessInstanceState.COMPLETED);
         String processInstanceKey = String.valueOf(piEntity.getProcessInstanceKey());
-        bulkRequest.add(metricWriter
-            .registerProcessInstanceCompleteEvent(processInstanceKey, timestamp));
+        if(isRootProcessInstance){
+          bulkRequest.add(metricWriter
+              .registerProcessInstanceCompleteEvent(processInstanceKey, timestamp));
+        }
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
       piEntity.setStartDate(timestamp);
@@ -225,7 +228,7 @@ public class ListViewZeebeRecordProcessor {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
     //call activity related fields
-    if (recordValue.getParentProcessInstanceKey() != EMPTY_PARENT_PROCESS_INSTANCE_ID) {
+    if (!isRootProcessInstance) {
       piEntity
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey());
       piEntity
