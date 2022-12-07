@@ -99,6 +99,7 @@ exporters:
         processInstanceCreation: false
         processInstanceModification: false
         processMessageSubscription: false
+        signalSubscription: false
         variable: false
         variableDocument: false
 ```
@@ -147,6 +148,7 @@ More specifically, each option configures the following:
   be exported; if false, ignored.
 * `processMessageSubscription` (`boolean`): if true, records related to process message
   subscriptions will be exported; if false, ignored.
+* `signalSubscription` (`boolean`): if true, records related to signal subscription will be exported; if false, ignored.
 * `timer` (`boolean`): if true, records related to timers will be exported; if false, ignored.
 * `variable` (`boolean`): if true, records related to variables will be exported; if false, ignored.
 * `variableDocument` (`boolean`): if true, records related to variable documents will be exported;
@@ -208,6 +210,7 @@ exporters:
         processInstanceCreation: true
         processInstanceModification: true
         processMessageSubscription: true
+        signalSubscription: true
         timer: true
         variable: true
         variableDocument: true
