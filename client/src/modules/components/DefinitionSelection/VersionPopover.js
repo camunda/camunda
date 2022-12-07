@@ -8,10 +8,10 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Popover, LabeledInput, Form, Badge} from 'components';
+import {t} from 'translation';
+import {Popover, LabeledInput, Form, Badge, LoadingIndicator} from 'components';
 
 import './VersionPopover.scss';
-import {t} from 'translation';
 
 export default function VersionPopover({
   versions,
@@ -20,6 +20,7 @@ export default function VersionPopover({
   onChange,
   disabled,
   tooltip,
+  loading,
 }) {
   const specific = usesSpecificVersions(selected);
 
@@ -39,6 +40,7 @@ export default function VersionPopover({
       title={title}
       disabled={disabled || !versions}
     >
+      {loading && <LoadingIndicator />}
       <Form compact>
         <Form.Group>
           <LabeledInput
@@ -46,12 +48,14 @@ export default function VersionPopover({
             type="radio"
             checked={selected[0] === 'all'}
             onChange={() => onChange(['all'])}
+            disabled={loading}
           />
           <LabeledInput
             label={t('common.definitionSelection.version.alwaysLatest')}
             type="radio"
             checked={selected[0] === 'latest'}
             onChange={() => onChange(['latest'])}
+            disabled={loading}
           />
           <LabeledInput
             label={t(
@@ -62,6 +66,7 @@ export default function VersionPopover({
             type="radio"
             checked={specific}
             onChange={() => onChange(selectedSpecificVersions)}
+            disabled={loading}
           />
           <Form.Group
             noSpacing
@@ -81,7 +86,7 @@ export default function VersionPopover({
                   }
                   type="checkbox"
                   checked={selectedSpecificVersions.includes(version)}
-                  disabled={!specific}
+                  disabled={!specific || loading}
                   onChange={({target}) => {
                     if (target.checked) {
                       onChange(selected.concat([version]).sort((a, b) => b - a));

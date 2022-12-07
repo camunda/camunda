@@ -154,7 +154,11 @@ export class DefinitionSelection extends React.Component {
       this.setState({selectedSpecificVersions: versions});
     }
 
-    this.setState({isLoadingTenants: true, selection: {...selection, versions}});
+    this.setState({
+      isLoadingVersions: true,
+      isLoadingTenants: true,
+      selection: {...selection, versions},
+    });
 
     const availableTenants = await debounceRequest(this.loadTenants, 0, definitionKey, versions);
 
@@ -175,19 +179,27 @@ export class DefinitionSelection extends React.Component {
       identifier: 'definition',
     };
 
-    this.setState({availableTenants, selection: newSelection, isLoadingTenants: false});
+    this.setState({
+      availableTenants,
+      selection: newSelection,
+      isLoadingTenants: false,
+      isLoadingVersions: false,
+    });
 
     this.onChange(newSelection);
   };
 
-  changeTenants = (tenantSelection) => {
+  changeTenants = async (tenantSelection) => {
+    this.setState({isLoadingTenants: true});
+
     const newSelection = {
       ...this.state.selection,
       tenantIds: tenantSelection,
     };
 
     this.setState({selection: newSelection});
-    this.onChange(newSelection);
+    await this.onChange(newSelection);
+    this.setState({isLoadingTenants: false});
   };
 
   onChange = (newSelection) =>
@@ -335,20 +347,21 @@ export class DefinitionSelection extends React.Component {
                 <Labeled label={t('common.definitionSelection.version.label')} />
                 <VersionPopover
                   tooltip={versionTooltip}
-                  disabled={isLoadingVersions || !this.hasDefinition()}
+                  disabled={!this.hasDefinition()}
                   versions={this.getAvailableVersions()}
                   selected={this.getSelectedVersions()}
                   selectedSpecificVersions={selectedSpecificVersions}
                   onChange={this.changeVersions}
+                  loading={isLoadingVersions}
                 />
               </div>
               <div className="tenant entry">
                 <Labeled label={t('common.tenant.label')} />
                 <TenantPopover
-                  disabled={isLoadingTenants}
                   tenants={this.getAvailableTenants()}
                   selected={this.getSelectedTenants()}
                   onChange={this.changeTenants}
+                  loading={isLoadingTenants}
                 />
               </div>
             </div>
