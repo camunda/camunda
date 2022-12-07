@@ -41,6 +41,9 @@ runs:
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}
+        # if we run on arm64 set equivalent architecture as input, else default to x64
+        # see https://docs.github.com/en/actions/learn-github-actions/contexts#runner-context
+        architecture: ${{ runner.arch == 'ARM64' && 'aarch64' || 'x64' }}
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
       uses: stCarolas/setup-maven@v4.4
       with:
