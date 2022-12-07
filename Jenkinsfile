@@ -8,7 +8,7 @@ def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-
 
 def mainBranchName = 'main'
 def isMainBranch = env.BRANCH_NAME == mainBranchName
-def latestStableBranchName = 'stable/1.0'
+def latestStableBranchName = 'stable/8.1'
 def isLatestStable = env.BRANCH_NAME == latestStableBranchName
 
 // for the main branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
@@ -414,13 +414,17 @@ pipeline {
                     }
                 }
 
-                String userReason = null
-                if (currentBuild.description ==~ /.*Flaky Tests.*/) {
-                    userReason = 'flaky-tests'
+                // we track each flaky test as a separate result so we can count how "flaky" a test is
+                if (flakyTestCases) {
+                    for (flakyTestCase in flakyTestCases) {
+                        org.camunda.helper.CIAnalytics.trackBuildStatus(this, 'flaky-tests', flakyTestCase)
+                    }
+                } else {
+                    org.camunda.helper.CIAnalytics.trackBuildStatus(this, currentBuild.result)
                 }
-                org.camunda.helper.CIAnalytics.trackBuildStatus(this, userReason)
             }
         }
+
         failure {
             script {
                 if (env.BRANCH_NAME != mainBranchName || agentDisconnected()) {
