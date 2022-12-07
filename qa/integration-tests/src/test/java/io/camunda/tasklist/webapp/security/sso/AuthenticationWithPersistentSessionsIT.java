@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
+import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.sso.model.ClusterInfo;
 import java.util.*;
@@ -83,6 +84,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   @Autowired private TasklistProperties tasklistProperties;
   @MockBean private AuthenticationController authenticationController;
 
+  @MockBean private AssigneeMigrator assigneeMigrator;
+
   @MockBean
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
@@ -139,6 +142,8 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
   @Before
   public void setUp() {
+    // mock AssigneeMigrator
+    doNothing().when(assigneeMigrator).migrateUsageMetrics(any());
     // mock building authorizeUrl
     final AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull()))

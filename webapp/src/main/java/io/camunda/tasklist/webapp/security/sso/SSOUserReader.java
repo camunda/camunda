@@ -14,7 +14,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.UserReader;
-import io.camunda.tasklist.webapp.security.es.RolePermissionService;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,8 +29,6 @@ public class SSOUserReader implements UserReader {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private RolePermissionService rolePermissionService;
-
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
     if (authentication instanceof TokenAuthentication) {
@@ -44,7 +41,8 @@ public class SSOUserReader implements UserReader {
       final String email = claims.get(tasklistProperties.getAuth0().getEmailKey()).asString();
       return Optional.of(
           new UserDTO()
-              .setUserId(email)
+              // For testing assignee migration locally use 'authentication.getName()'
+              .setUserId(/*authentication.getName()*/ email)
               .setDisplayName(name)
               .setApiUser(false)
               .setPermissions(tokenAuthentication.getPermissions())

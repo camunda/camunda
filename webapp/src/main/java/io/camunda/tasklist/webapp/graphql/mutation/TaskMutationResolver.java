@@ -26,6 +26,7 @@ import io.camunda.tasklist.webapp.es.contract.UsageMetricsContract;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -55,6 +56,8 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
   @Autowired private Metrics metrics;
 
   @Autowired private UsageMetricsContract metricsContract;
+
+  @Autowired private AssigneeMigrator assigneeMigrator;
 
   @PreAuthorize("hasPermission('write')")
   public TaskDTO completeTask(String taskId, List<VariableInputDTO> variables) {
@@ -134,6 +137,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
         COUNTER_NAME_COMPLETED_TASKS,
         1,
         getTaskMetricLabels(TaskDTO.createFrom(task, objectMapper)));
+    assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
     metricsContract.registerTaskCompleteEvent(task);
   }
 

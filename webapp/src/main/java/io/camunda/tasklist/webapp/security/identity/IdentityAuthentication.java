@@ -12,6 +12,7 @@ import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.tasklist.util.SpringContextHolder;
+import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +22,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 
-public class IdentityAuthentication extends AbstractAuthenticationToken {
+public class IdentityAuthentication extends AbstractAuthenticationToken
+    implements OldUsernameAware {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
 
@@ -103,6 +105,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     final AccessToken accessToken =
         getIdentity().authentication().verifyToken(this.tokens.getAccessToken());
     final UserDetails userDetails = accessToken.getUserDetails();
+    id = userDetails.getId();
     name = retrieveName(userDetails);
     permissions = accessToken.getPermissions();
     if (!getPermissions().contains(Permission.READ)) {
@@ -116,10 +119,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   }
 
   private String retrieveName(final UserDetails userDetails) {
-    // Fallback is UserDetails::name e.g 'Homer Simpson' otherwise UserDetails::id.
-    final String name = userDetails.getName().orElse(userDetails.getId());
-    // Get username like 'homer' otherwise name e.g. 'Homer Simpson' or id '234-ef-335...'
-    return userDetails.getUsername().orElse(name);
+    return userDetails.getUsername().orElse(userDetails.getId());
   }
 
   private void renewAccessToken() {
@@ -143,5 +143,10 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   public IdentityAuthentication setPermissions(final List<String> permissions) {
     this.permissions = permissions;
     return this;
+  }
+
+  @Override
+  public String getOldName() {
+    return getId();
   }
 }

@@ -17,7 +17,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public interface UserReader {
 
   String DEFAULT_ORGANIZATION = "null";
-  String EMPTY = "";
 
   String DEFAULT_USER = "No name";
 

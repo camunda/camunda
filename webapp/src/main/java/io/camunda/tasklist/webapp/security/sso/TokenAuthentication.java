@@ -16,6 +16,7 @@ import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.net.TokenRequest;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.webapp.security.OldUsernameAware;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistProfileService;
 import java.util.*;
@@ -31,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Profile(TasklistProfileService.SSO_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class TokenAuthentication extends AbstractAuthenticationToken {
+public class TokenAuthentication extends AbstractAuthenticationToken implements OldUsernameAware {
 
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
@@ -248,5 +249,10 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         idToken,
         refreshToken,
         salesPlanType);
+  }
+
+  @Override
+  public String getOldName() {
+    return getName();
   }
 }

@@ -36,7 +36,8 @@ public class IdentityUserReader implements UserReader {
       final IdentityAuthentication identityAuthentication = (IdentityAuthentication) authentication;
       return Optional.of(
           new UserDTO()
-              .setUserId(identityAuthentication.getName())
+              // For testing assignee migration locally use 'identityAuthentication.getId()'
+              .setUserId(/*identityAuthentication.getId()*/ identityAuthentication.getName())
               .setDisplayName(identityAuthentication.getName())
               .setPermissions(identityAuthentication.getPermissions()));
     } else if (authentication instanceof JwtAuthenticationToken) {

@@ -34,6 +34,8 @@ public class TasklistProperties {
   /** Indicates, whether CSRF prevention is enabled. */
   @Deprecated private boolean csrfPreventionEnabled = true;
 
+  private boolean fixUsernames = true;
+
   private String userId = "demo";
   private String displayName = "demo";
   private String password = "demo";
@@ -260,5 +262,13 @@ public class TasklistProperties {
   public TasklistProperties setVersion(String version) {
     this.version = version;
     return this;
+  }
+
+  public boolean isFixUsernames() {
+    return fixUsernames;
+  }
+
+  public void setFixUsernames(boolean fixUsernames) {
+    this.fixUsernames = fixUsernames;
   }
 }
