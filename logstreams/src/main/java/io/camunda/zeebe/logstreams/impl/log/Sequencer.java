@@ -78,6 +78,12 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntry);
       return -1;
     }
+
+    if (!isEntryValid(appendEntry)) {
+      LOG.warn("Reject write of invalid entry {}", appendEntry);
+      return 0;
+    }
+
     final boolean isEnqueued;
     final long currentPosition;
 
@@ -123,6 +129,10 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
 
     final var entries = new ArrayList<LogAppendEntry>(16);
     for (final var entry : appendEntries) {
+      if (!isEntryValid(entry)) {
+        LOG.warn("Reject write of invalid entry {}", entry);
+        return 0;
+      }
       entries.add(entry);
     }
     final var batchSize = entries.size();
@@ -188,6 +198,12 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
 
   public void registerConsumer(final ActorCondition consumer) {
     this.consumer = consumer;
+  }
+
+  private boolean isEntryValid(final LogAppendEntry entry) {
+    return entry.recordValue() != null
+        && entry.recordValue().getLength() > 0
+        && entry.recordMetadata() != null; // metadata is currently allowed to be empty;
   }
 
   public record SequencedBatch(

@@ -265,4 +265,14 @@ public final class LogStreamBatchWriterTest {
     // then
     assertThat(pos).isEqualTo(-1);
   }
+
+  @Test
+  public void shouldFailToWriteEventWithoutValue() {
+    // when
+    final long pos =
+        writer.tryWrite(new MutableLogAppendEntry().key(1), new MutableLogAppendEntry().key(2));
+
+    // then
+    assertThat(pos).isEqualTo(0);
+  }
 }
