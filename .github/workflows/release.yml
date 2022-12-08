@@ -223,6 +223,22 @@ jobs:
           gh release create --repo "camunda/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
             --title "${RELEASE_VERSION}" "${GH_OPTIONS[@]}" \
             "${RELEASE_VERSION}" "${ASSETS[@]}"
+      - name: Go Post-Release
+        if: ${{ inputs.pushReleaseArtifacts == 'true' }}
+        shell: bash
+        run: |
+          # Publish Go tag for the release
+          git tag "clients/go/v${RELEASE_VERSION}"
+          git push origin "clients/go/v${RELEASE_VERSION}"
+
+          # Prepare Go version for the next release
+          pushd "clients/go/internal/embedded" || exit $?
+
+          echo "${DEVELOPMENT_VERSION}" > data/VERSION
+          go-bindata -pkg embedded -o embedded.go -prefix data/ data/
+
+          git commit -am "build(project): prepare next development version (Go client)"
+          git push origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
