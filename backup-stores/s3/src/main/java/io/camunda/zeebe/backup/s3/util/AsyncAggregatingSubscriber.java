@@ -60,16 +60,14 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
           if (throwable == null) {
             LOG.trace("Completed: {}", result);
             results.add(result);
-            phaser.arrive();
-            if (!phaser.isTerminated()) {
+            if (phaser.arrive() >= 0) {
               subscription.request(1);
-            } else {
-              subscription.cancel();
             }
           } else {
             LOG.trace("Future failed.", throwable);
             resultsFuture.completeExceptionally(throwable);
             phaser.forceTermination();
+            subscription.cancel();
           }
           return null;
         });
@@ -95,9 +93,7 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
     return CompletableFuture.supplyAsync(phaser::arriveAndAwaitAdvance)
         .thenCompose(
             ignored -> {
-              if (!resultsFuture.isDone()) {
-                resultsFuture.complete(results);
-              }
+              resultsFuture.complete(results);
               return resultsFuture;
             });
   }
