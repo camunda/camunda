@@ -14,6 +14,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -604,5 +605,119 @@ public class ModifyProcessInstanceRejectionTest {
                     + " instructions with an ancestor scope key that does not exist, or is not in an"
                     + " active state: '%d'")
                 .formatted(PROCESS_ID, subProcessKey));
+  }
+
+  @Test
+  public void shouldRejectSelectedAncestorIsMultiInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "SubProcess",
+                    sub ->
+                        sub.multiInstance(
+                            m ->
+                                m.zeebeInputCollectionExpression("[1,2,3]")
+                                    .zeebeInputElement("index")
+                                    .parallel()))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType("A"))
+                .endEvent()
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("A")
+                .limit(3))
+        .describedAs("Wait until all service tasks have activated")
+        .hasSize(3);
+
+    // when
+    final long multiInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.MULTI_INSTANCE_BODY)
+            .getFirst()
+            .getKey();
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", multiInstanceKey)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that a multi-instance body may not be selected as ancestor")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to modify instance of process '%s' but it contains one or more activate \
+                instructions for elements that are unsupported: 'A'. The activate instruction \
+                would result in the activation of a new instance of a multi-instance marked \
+                element.""",
+                PROCESS_ID));
+  }
+
+  @Test
+  public void shouldRejectSelectedAncestorWouldActivateMultiInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "SubProcess",
+                    sub ->
+                        sub.multiInstance(
+                            m ->
+                                m.zeebeInputCollectionExpression("[1]").zeebeInputElement("index")))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType("A"))
+                .endEvent()
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", processInstanceKey)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that the activation of a multi-instance's descendant may not result in an activated multi-instance")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            String.format(
+                """
+                Expected to modify instance of process '%s' but it contains one or more activate \
+                instructions for elements that are unsupported: 'A'. The activate instruction \
+                would result in the activation of a new instance of a multi-instance marked \
+                element.""",
+                PROCESS_ID));
   }
 }
