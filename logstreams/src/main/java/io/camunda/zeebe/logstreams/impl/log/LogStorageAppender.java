@@ -182,7 +182,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
               appenderMetrics.startAppendLatencyTimer(),
               appenderMetrics.startCommitLatencyTimer());
       logStorage.append(sequencedBatch.firstPosition(), highestPosition, serialized, listener);
-      actor.run(this::writeBatch);
+      actor.submit(this::writeBatch);
     } else {
       appendBackpressureMetrics.deferred();
       LOG.trace(
