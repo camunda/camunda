@@ -12,8 +12,8 @@ on:
       nextDevelopmentVersion:
         description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
         required: true
-      pushReleaseArtifacts:
-        description: 'Whether to push release commits and artifacts to remote (Git tags, Maven artifacts)'
+      pushChanges:
+        description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release)'
         default: false
 
 jobs:
@@ -25,7 +25,7 @@ jobs:
       RELEASE_VERSION: ${{ inputs.releaseVersion }}
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
-      PUSH_CHANGES: ${{ inputs.pushReleaseArtifacts }}
+      PUSH_CHANGES: ${{ inputs.pushChanges }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -97,9 +97,6 @@ jobs:
           go-bindata -pkg embedded -o embedded.go -prefix data data/
 
           git commit -am "build(project): update go embedded version data"
-          if [ "$PUSH_CHANGES" = "true" ]; then
-            git push origin "${RELEASE_BRANCH}"
-          fi
       - name: Build Go Client
         uses: ./.github/actions/build-zeebe
         with:
@@ -121,7 +118,7 @@ jobs:
         id: maven-release
         shell: bash
         env:
-          SKIP_REPO_DEPLOY: ${{ inputs.pushReleaseArtifacts == 'false' }}
+          SKIP_REPO_DEPLOY: ${{ inputs.pushChanges == 'false' }}
         run : |
           # This var is used to include the previously built go artifacts into the final maven release build.
           # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
@@ -135,7 +132,7 @@ jobs:
             -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
             -DpushChanges=${PUSH_CHANGES} \
             -DremoteTagging=${PUSH_CHANGES} \
-            -DlocalCheckout=${{ inputs.pushReleaseArtifacts == 'false' }} \
+            -DlocalCheckout=${{ inputs.pushChanges == 'false' }} \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -Darguments='-T1C -P-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
@@ -218,18 +215,21 @@ jobs:
           fi
           shopt -u nocasematch # reset it
 
-          # Perform release: create draft, upload assets, etc.
-          # See https://cli.github.com/manual/gh_release_create for more
-          gh release create --repo "camunda/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
-            --title "${RELEASE_VERSION}" "${GH_OPTIONS[@]}" \
-            "${RELEASE_VERSION}" "${ASSETS[@]}"
+          if [ "$PUSH_CHANGES" = "true" ]; then
+            # Perform release: create draft, upload assets, etc.
+            # See https://cli.github.com/manual/gh_release_create for more
+            gh release create --repo "camunda/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
+              --title "${RELEASE_VERSION}" "${GH_OPTIONS[@]}" \
+              "${RELEASE_VERSION}" "${ASSETS[@]}"
+          fi
       - name: Go Post-Release
-        if: ${{ inputs.pushReleaseArtifacts == 'true' }}
         shell: bash
         run: |
           # Publish Go tag for the release
           git tag "clients/go/v${RELEASE_VERSION}"
-          git push origin "clients/go/v${RELEASE_VERSION}"
+          if [ "$PUSH_CHANGES" = "true" ]; then
+            git push origin "clients/go/v${RELEASE_VERSION}"
+          fi
 
           # Prepare Go version for the next release
           pushd "clients/go/internal/embedded" || exit $?
@@ -238,10 +238,11 @@ jobs:
           go-bindata -pkg embedded -o embedded.go -prefix data/ data/
 
           git commit -am "build(project): prepare next development version (Go client)"
-          git push origin "${RELEASE_BRANCH}"
+      - name: Push Changes to Release branch
+        if: ${{ inputs.pushChanges == 'true' }}
+        run: git push origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
         shell: bash
         run: rm -rf $HOME/.gnupg
-
