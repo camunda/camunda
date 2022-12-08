@@ -139,6 +139,7 @@ public final class ProcessEventProcessors {
                 subscriptionCommandSender,
                 zeebeState,
                 bpmnBehaviors.eventTriggerBehavior(),
+                bpmnBehaviors.stateBehavior(),
                 writers))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,

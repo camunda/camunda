@@ -41,6 +41,7 @@ public final class BpmnEventPublicationBehavior {
       final ZeebeState zeebeState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final Writers writers) {
     elementInstanceState = zeebeState.getElementInstanceState();
     eventHandle =
@@ -49,7 +50,8 @@ public final class BpmnEventPublicationBehavior {
             zeebeState.getEventScopeInstanceState(),
             writers,
             zeebeState.getProcessState(),
-            eventTriggerBehavior);
+            eventTriggerBehavior,
+            stateBehavior);
     catchEventAnalyzer = new CatchEventAnalyzer(zeebeState.getProcessState(), elementInstanceState);
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
