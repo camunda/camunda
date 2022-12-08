@@ -24,13 +24,14 @@ import org.slf4j.LoggerFactory;
  * futures are requested whenever a future completes. The maximum number of requested futures must
  * be provided in {@link AsyncAggregatingSubscriber#AsyncAggregatingSubscriber(long parallelism)}}
  *
- * <p>Futures that complete exceptionally are omitted from the result!
+ * <p>If a futures completes exceptionally, the result is completed exceptionally.
  */
 @SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFuture<T>> {
   private static final Logger LOG = LoggerFactory.getLogger(AsyncAggregatingSubscriber.class);
 
   final ConcurrentLinkedDeque<T> results = new ConcurrentLinkedDeque<>();
+  final CompletableFuture<Collection<T>> resultsFuture = new CompletableFuture<>();
 
   // Phaser used to await for all results. New parties are registered for every new future in
   // onNext().
@@ -59,18 +60,23 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
           if (throwable == null) {
             LOG.trace("Completed: {}", result);
             results.add(result);
+            if (phaser.arrive() >= 0) {
+              subscription.request(1);
+            }
           } else {
-            LOG.warn("Future failed, omitted from result", throwable);
+            LOG.trace("Future failed.", throwable);
+            resultsFuture.completeExceptionally(throwable);
+            phaser.forceTermination();
+            subscription.cancel();
           }
-          phaser.arrive();
-          subscription.request(1); // one future completed, request a new one
           return null;
         });
   }
 
   @Override
   public void onError(final Throwable t) {
-    LOG.warn("Subscription failed, result might be incomplete", t);
+    LOG.trace("Subscription failed.", t);
+    resultsFuture.completeExceptionally(t);
     phaser.forceTermination();
   }
 
@@ -85,10 +91,10 @@ public class AsyncAggregatingSubscriber<T> implements Subscriber<CompletableFutu
    */
   public CompletableFuture<Collection<T>> result() {
     return CompletableFuture.supplyAsync(phaser::arriveAndAwaitAdvance)
-        .thenApply(
+        .thenCompose(
             ignored -> {
-              LOG.trace("Result is available: {}", results);
-              return results;
+              resultsFuture.complete(results);
+              return resultsFuture;
             });
   }
 }

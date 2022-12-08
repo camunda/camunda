@@ -20,10 +20,7 @@ public interface BackupStore {
   /** Returns the status of the backup */
   CompletableFuture<BackupStatus> getStatus(BackupIdentifier id);
 
-  /**
-   * Uses the given wildcard to list all backups matching this wildcard. The result may be
-   * incomplete.
-   */
+  /** Uses the given wildcard to list all backups matching this wildcard. */
   CompletableFuture<Collection<BackupStatus>> list(BackupIdentifierWildcard wildcard);
 
   /**
