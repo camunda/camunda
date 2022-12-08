@@ -79,7 +79,7 @@ public class CCSaaSUserClient {
     try {
       log.info("Fetching Cloud users.");
       final HttpGet request = new HttpGet(String.format(
-        "%s/external/organizations/%s/members",
+        "%s/external/organizations/%s/members?filter=members",
         getCloudUsersConfiguration().getAccountsUrl(),
         getCloudAuthConfiguration().getOrganizationId()
       ));

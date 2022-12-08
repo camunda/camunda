@@ -96,8 +96,6 @@ public class CloudUsersService {
       .map(userClient::fetchAllCloudUsers)
       .orElseThrow(() -> new NotAuthorizedException(ERROR_MISSING_ACCESS_TOKEN))
       .stream()
-      // We remove the users without a user ID
-      .filter(user -> user.getUserId() != null)
       .collect(Collectors.toMap(CloudUserDto::getUserId, Function.identity()));
   }
 }
