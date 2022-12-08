@@ -20,6 +20,7 @@ const Container = styled.main`
   display: flex;
   height: 100%;
   padding-top: 50px;
+  box-sizing: border-box;
 `;
 
 const DetailsPanel = styled(Panel)`
