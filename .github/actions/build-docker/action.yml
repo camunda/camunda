@@ -16,6 +16,12 @@ inputs:
   distball:
     description: 'The path to the Zeebe distribution TAR ball'
     required: true
+  revision:
+    description: 'The revision of the source the content of this image is based on.'
+    required: false
+  additionalTag:
+    description: 'Additional tag to be created, besides the default version tag.'
+    required: false
   push:
     description: 'If true, will push the image'
     required: false
@@ -29,7 +35,7 @@ inputs:
 outputs:
   image:
     description: "Fully qualified image name available in your local Docker daemon"
-    value: ${{ steps.get-image.outputs.result }}
+    value: ${{ steps.get-images.outputs.versionedImage }}
   date:
     description: "The ISO 8601 date at which the image was created"
     value: ${{ steps.get-date.outputs.result }}
@@ -56,16 +62,21 @@ runs:
         install: true
     - name: Set semantic version from Maven project
       id: get-version
+      if: ${{ inputs.version == ''}}
       shell: bash
-      run: echo ::set-output name=result::$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)
+      run: echo "result=$(mvn -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
     - name: Set image build label from ISO 8601 DATE
       id: get-date
       shell: bash
       run: echo "::set-output name=result::$(date --iso-8601=seconds)"
-    - name: Set image name from params or project version
-      id: get-image
+    - name: Set image names from params and/or project version
+      id: get-images
       shell: bash
-      run: echo "::set-output name=result::${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}"
+      run: |
+        export VERSION_TAG_IMAGE=${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}
+        export OPTIONAL_TAG_IMAGE=${{ inputs.additionalTag != '' && format('{0}:{1}', inputs.repository, inputs.additionalTag) || '' }}
+        echo "versionedImage=${VERSION_TAG_IMAGE}" >> $GITHUB_OUTPUT
+        echo "result=${VERSION_TAG_IMAGE},${OPTIONAL_TAG_IMAGE}" >> $GITHUB_OUTPUT
     - name: Set DISTBALL path relative to the build context
       id: get-distball
       shell: bash
@@ -74,7 +85,7 @@ runs:
       uses: docker/build-push-action@v3
       with:
         context: .
-        tags: ${{ steps.get-image.outputs.result }}
+        tags: ${{ steps.get-images.outputs.result }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         no-cache: true
@@ -82,6 +93,6 @@ runs:
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
-          REVISION=${{ github.sha }}
-          VERSION=${{ steps.get-version.outputs.result }}
+          REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}
+          VERSION=${{ inputs.version != '' && inputs.version || steps.get-version.outputs.result }}
         target: app

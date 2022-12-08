@@ -12,19 +12,26 @@ on:
       nextDevelopmentVersion:
         description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
         required: true
+      isLatest:
+        description: 'Whether this is the latest release and the docker image should be tagged as camunda/zeebe:latest'
+        required: false
       pushChanges:
         description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release)'
         default: false
+
+env:
+  RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
+  RELEASE_VERSION: ${{ inputs.releaseVersion }}
 
 jobs:
   release:
     name: Maven & Go Release
     runs-on: n1-standard-16-netssd-preempt-quick
     timeout-minutes: 30
+    outputs:
+      releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
     env:
-      RELEASE_VERSION: ${{ inputs.releaseVersion }}
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
-      RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
       PUSH_CHANGES: ${{ inputs.pushChanges }}
     steps:
       - uses: actions/checkout@v3
@@ -140,9 +147,18 @@ jobs:
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
           pushd target/checkout
+          export BUILD_DIR=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
+          export ARTIFACT=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
           export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
           echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
           popd
+      - name: Upload Zeebe Release Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: camunda-zeebe.tar.gz
+          path: ${{ steps.maven-release.outputs.distball }}
+          retention-days: 5
       - name: Update Compat Version
         shell: bash
         run: |
@@ -246,3 +262,62 @@ jobs:
         if: always()
         shell: bash
         run: rm -rf $HOME/.gnupg
+  docker:
+    needs: release
+    name: Docker Image Release
+    runs-on: n1-standard-8-netssd-preempt
+    timeout-minutes: 15
+    env:
+      DOCKER_IMAGE: camunda/zeebe
+      TAG_LATEST: ${{ inputs.isLatest == 'true' }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Download Zeebe Release Archive
+        uses: actions/download-artifact@v3
+        with:
+          name: camunda-zeebe.tar.gz
+      - name: Build Docker Image
+        uses: ./.github/actions/build-docker
+        id: build-docker
+        with:
+          repository: ${{ env.DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          additionalTag: ${{ inputs.isLatest == 'true' && 'latest' || '' }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          push: false
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+      - name: Verify Docker image
+        env:
+          DATE: ${{ steps.build-docker.outputs.date }}
+          REVISION: ${{ needs.release.outputs.releaseTagRevision }}
+          VERSION: ${{ inputs.releaseVersion }}
+        run: |
+          ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:${RELEASE_VERSION}"
+          if [ "$TAG_LATEST" = "true" ]; then
+            ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:latest"
+          fi
+      - name: Push Docker Image Tag ${{ inputs.releaseVersion }}
+        if: ${{ inputs.pushChanges == 'true' }}
+        run: docker push ${{ env.DOCKER_IMAGE }}:${{ inputs.releaseVersion }}
+      - name: Push Docker Image Tag latest
+        if: ${{ inputs.isLatest == 'true' && inputs.pushChanges == 'true' }}
+        run: docker push ${{ env.DOCKER_IMAGE }}:latest
+
