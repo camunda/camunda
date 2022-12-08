@@ -174,7 +174,9 @@ public final class BackupRequestHandler implements BackupApi {
                             return new PartitionBackupStatus(
                                 status.partitionId(),
                                 status.status(),
-                                Optional.ofNullable(status.failureReason()),
+                                status.status() == BackupStatusCode.FAILED
+                                    ? Optional.ofNullable(status.failureReason())
+                                    : Optional.empty(),
                                 Optional.ofNullable(status.createdAt()),
                                 Optional.empty(),
                                 Optional.empty(),
