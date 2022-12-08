@@ -5327,11 +5327,12 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(zeebe_process_instance_execution_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) / sum(rate(zeebe_process_instance_execution_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m]))",
+              "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
-              "legendFormat": "avg",
+              "legendFormat": "quantile-50th",
+              "range": true,
               "refId": "A"
             },
             {
