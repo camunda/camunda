@@ -253,7 +253,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
         //when
         .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
         .waitUntil()
-        .processInstanceIsStarted()
         .decisionInstancesAreCreated(2)
         .processInstanceIsCompleted()
         .getProcessInstanceKey();

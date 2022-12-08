@@ -166,7 +166,7 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     // and when
     tester.completeTask("taskA")
         .and().waitUntil()
-        .flowNodeIsActive("subprocess");
+        .incidentIsActive();
 
     flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
     // then now subprocesses or multi instances should be there
@@ -177,7 +177,7 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     assertStatistic(flowNodeStatistics, "startEventSubprocess", 1, 0, 0, 0);
     assertStatistic(flowNodeStatistics, "innerSubprocess", 0, 1, 0, 0);
     assertStatistic(flowNodeStatistics, "startEventInnerSubprocess", 1, 0, 0, 0);
-    assertStatistic(flowNodeStatistics, "taskB", 0, 0, 0, 0);
+    assertStatistic(flowNodeStatistics, "taskB", 0, 0, 0, 1);
   }
 
   @Test // due to https://github.com/camunda/operate/issues/3362

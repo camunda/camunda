@@ -174,7 +174,11 @@ public class ElasticsearchChecks {
         if (flowNodes.size() == 0) {
           return false;
         } else {
-          return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE);
+          if (flowNodes.get(0).getState() == null) {
+            return false;
+          } else {
+            return flowNodes.get(0).getState().equals(FlowNodeState.ACTIVE);
+          }
         }
       } catch (NotFoundException ex) {
         return false;

@@ -211,7 +211,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
         throw new RuntimeException(e);
       }
     });
-    ThreadUtil.sleepFor(1000L);
+    ThreadUtil.sleepFor(2000L);
 
     //when
     elasticsearchTestRule.runPostImportActions();
