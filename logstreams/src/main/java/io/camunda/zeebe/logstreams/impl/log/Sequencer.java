@@ -188,7 +188,6 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
 
   public void registerConsumer(final ActorCondition consumer) {
     this.consumer = consumer;
-    consumer.signal();
   }
 
   public record SequencedBatch(

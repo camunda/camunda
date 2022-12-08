@@ -117,6 +117,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
   @Override
   protected void onActorStarting() {
     sequencer.registerConsumer(actor.onCondition("sequencer", this::tryWriteBatch));
+    actor.submit(this::tryWriteBatch);
   }
 
   @Override
