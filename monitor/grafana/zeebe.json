@@ -4312,7 +4312,7 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=~\"$cluster\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}[1m]))",
               "interval": "",
               "legendFormat": "{{pod}}",
               "refId": "A"
