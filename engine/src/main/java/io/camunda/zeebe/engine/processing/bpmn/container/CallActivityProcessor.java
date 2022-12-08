@@ -140,6 +140,7 @@ public final class CallActivityProcessor
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())
+        .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);

@@ -273,6 +273,7 @@ public final class MultiInstanceBodyProcessor
     eventSubscriptionBehavior
         .findEventTrigger(flowScopeContext)
         .filter(eventTrigger -> flowScopeInstance.isActive())
+        .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated =
