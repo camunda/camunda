@@ -77,7 +77,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
             zeebeState.getEventScopeInstanceState(),
             writers,
             processState,
-            bpmnBehaviors.eventTriggerBehavior());
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior());
   }
 
   @Override
