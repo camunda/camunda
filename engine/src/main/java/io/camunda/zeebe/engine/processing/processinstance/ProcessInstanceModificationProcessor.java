@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.Strings;
@@ -354,7 +355,7 @@ public final class ProcessInstanceModificationProcessor
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final List<String> elementsInsideMultiInstance =
         activateInstructions.stream()
-            .filter(this::isSelectedAncestorOfTypeMultiInstance)
+            .filter(isSelectedAncestorOfTypeMultiInstance())
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
             .distinct()
             .toList();
@@ -373,17 +374,20 @@ public final class ProcessInstanceModificationProcessor
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
-  private boolean isSelectedAncestorOfTypeMultiInstance(
-      final ProcessInstanceModificationActivateInstructionValue instruction) {
-    if (instruction.getAncestorScopeKey() < 0) {
-      return false;
-    }
-    final var selectedAncestor =
-        elementInstanceState.getInstance(instruction.getAncestorScopeKey());
-    if (selectedAncestor == null) {
-      return false;
-    }
-    return selectedAncestor.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY;
+  private Predicate<ProcessInstanceModificationActivateInstructionValue>
+      isSelectedAncestorOfTypeMultiInstance() {
+    return instruction -> {
+      if (instruction.getAncestorScopeKey() < 0) {
+        return false;
+      }
+      final var selectedAncestor =
+          elementInstanceState.getInstance(instruction.getAncestorScopeKey());
+      if (selectedAncestor == null) {
+        return false;
+      }
+      return selectedAncestor.getValue().getBpmnElementType()
+          == BpmnElementType.MULTI_INSTANCE_BODY;
+    };
   }
 
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
