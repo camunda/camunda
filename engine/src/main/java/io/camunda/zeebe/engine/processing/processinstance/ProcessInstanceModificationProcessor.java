@@ -62,7 +62,8 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND =
       "Expected to modify process instance but no process instance found with key '%d'";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_NOT_FOUND =
-      "Expected to modify instance of process '%s' but it contains one or more activate instructions with an element that could not be found: '%s'";
+      "Expected to modify instance of process '%s' but it contains one or more activate instructions"
+          + " with an element that could not be found: '%s'";
   private static final String ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED =
       "Expected to modify instance of process '%s' but it contains one or more activate instructions"
           + " for elements that are unsupported: '%s'. %s.";
@@ -315,6 +316,7 @@ public final class ProcessInstanceModificationProcessor
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     return validateElementsDoNotBelongToEventBasedGateway(process, activateInstructions)
+        .flatMap(valid -> validateWontActivateInnerMultiInstance(process, activateInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
         .flatMap(valid -> validateElementsHaveSupportedType(process, activateInstructions))
         .map(valid -> VALID);
@@ -345,6 +347,43 @@ public final class ProcessInstanceModificationProcessor
             String.join("', '", elementIdsConnectedToEventBasedGateway),
             "The activation of events belonging to an event-based gateway is not supported");
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateWontActivateInnerMultiInstance(
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
+    final List<String> elementsInsideMultiInstance =
+        activateInstructions.stream()
+            .filter(this::isSelectedAncestorOfTypeMultiInstance)
+            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
+            .distinct()
+            .toList();
+
+    if (elementsInsideMultiInstance.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", elementsInsideMultiInstance),
+            "The activate instruction would result in the activation of a new instance of a"
+                + " multi-instance marked element");
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private boolean isSelectedAncestorOfTypeMultiInstance(
+      final ProcessInstanceModificationActivateInstructionValue instruction) {
+    if (instruction.getAncestorScopeKey() < 0) {
+      return false;
+    }
+    final var selectedAncestor =
+        elementInstanceState.getInstance(instruction.getAncestorScopeKey());
+    if (selectedAncestor == null) {
+      return false;
+    }
+    return selectedAncestor.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY;
   }
 
   private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
