@@ -906,6 +906,7 @@ final class JsonSerializableToJsonTest {
                       .setDecisionRequirementsKey(2L)
                       .setDecisionRequirementsId("decision-requirements-id")
                       .setDecisionOutput(toMessagePack("'decision-output'"))
+                      .setVariables(VARIABLES_MSGPACK)
                       .setProcessDefinitionKey(3L)
                       .setBpmnProcessId("bpmn-process-id")
                       .setDecisionVersion(1)
@@ -952,6 +953,9 @@ final class JsonSerializableToJsonTest {
               "decisionRequirementsKey":2,
               "decisionRequirementsId":"decision-requirements-id",
               "decisionOutput":'"decision-output"',
+              "variables": {
+                "foo": "bar"
+              },
               "processDefinitionKey":3,
               "bpmnProcessId":"bpmn-process-id",
               "processInstanceKey":4,
@@ -1022,6 +1026,7 @@ final class JsonSerializableToJsonTest {
               "decisionRequirementsKey":2,
               "decisionRequirementsId":"decision-requirements-id",
               "decisionOutput":"null",
+              "variables":{},
               "processDefinitionKey":3,
               "bpmnProcessId":"bpmn-process-id",
               "processInstanceKey":4,

@@ -42,6 +42,9 @@
             "decisionOutput": {
               "enabled": false
             },
+            "variables": {
+              "enabled": false
+            },
             "bpmnProcessId": {
               "type": "keyword"
             },

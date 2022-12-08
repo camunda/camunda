@@ -704,6 +704,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append(value.getDecisionOutput())
         .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
+        .append(summarizeVariables(value.getVariables()))
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
