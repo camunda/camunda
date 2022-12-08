@@ -18,6 +18,7 @@ import io.camunda.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants;
 import io.camunda.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
+import io.camunda.zeebe.logstreams.impl.log.Sequencer.SequencedBatch;
 import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.Actor;
@@ -115,7 +116,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
 
   @Override
   protected void onActorStarting() {
-    sequencer.registerConsumer(actor.onCondition("sequencer", this::writeBatch));
+    sequencer.registerConsumer(actor.onCondition("sequencer", this::tryWriteBatch));
   }
 
   @Override
@@ -159,7 +160,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
     actor.run(() -> failureListeners.remove(failureListener));
   }
 
-  private void writeBatch() {
+  private void tryWriteBatch() {
     final var peek = sequencer.peek();
     if (peek == null) {
       // wait for signal from sequencer
@@ -169,20 +170,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
 
     final var highestPosition = peek.firstPosition() + peek.entries().size() - 1;
     if (appendEntryLimiter.tryAcquire(highestPosition)) {
-      final var sequencedBatch = sequencer.tryRead();
-      // Peeked something, so we should be able to read the same item because we are the only
-      // reader. If not, something has gone very wrong.
-      assert sequencedBatch == peek;
-
-      final var serialized = serializer.serializeBatch(sequencedBatch);
-      final var listener =
-          new Listener(
-              this,
-              highestPosition,
-              appenderMetrics.startAppendLatencyTimer(),
-              appenderMetrics.startCommitLatencyTimer());
-      logStorage.append(sequencedBatch.firstPosition(), highestPosition, serialized, listener);
-      actor.submit(this::writeBatch);
+      writeBatch(peek, highestPosition);
     } else {
       appendBackpressureMetrics.deferred();
       LOG.trace(
@@ -191,6 +179,23 @@ final class LogStorageAppender extends Actor implements HealthMonitorable {
           appendEntryLimiter.getLimit());
       // we will be called later again
     }
+  }
+
+  private void writeBatch(final SequencedBatch peek, final long highestPosition) {
+    final var sequencedBatch = sequencer.tryRead();
+    // Peeked something, so we should be able to read the same item because we are the only
+    // reader. If not, something has gone very wrong.
+    assert sequencedBatch == peek;
+
+    final var serialized = serializer.serializeBatch(sequencedBatch);
+    final var listener =
+        new Listener(
+            this,
+            highestPosition,
+            appenderMetrics.startAppendLatencyTimer(),
+            appenderMetrics.startCommitLatencyTimer());
+    logStorage.append(sequencedBatch.firstPosition(), highestPosition, serialized, listener);
+    actor.submit(this::tryWriteBatch);
   }
 
   private void onFailure(final Throwable error) {
