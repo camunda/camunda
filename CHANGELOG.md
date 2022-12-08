@@ -1,3 +1,71 @@
+# v8.2.0-alpha2
+## 🚀 New Features
+* Implement App switcher ([#2319](https://github.com/camunda/tasklist/issues/2319))
+* **backend**: add c8Links to User object ([#2309](https://github.com/camunda/tasklist/issues/2309))
+* **backend**: migrate assignee ([#2291](https://github.com/camunda/tasklist/issues/2291))
+* **backend**: add optional parameter `allowOverrideAssignment` ([#2247](https://github.com/camunda/tasklist/issues/2247))
+
+## 💊 Bugfixes
+* **deps**: update dependency @carbon/elements to v11.15.0 ([#2302](https://github.com/camunda/tasklist/issues/2302))
+* **deps**: update dependency @carbon/react to v1.18.0 ([#2303](https://github.com/camunda/tasklist/issues/2303))
+* Fix Mixpanel loading ([#2307](https://github.com/camunda/tasklist/issues/2307))
+* **deps**: update dependency mobx to v6.7.0 ([#2255](https://github.com/camunda/tasklist/issues/2255))
+* **deps**: update dependency @carbon/elements to v11.14.0 ([#2249](https://github.com/camunda/tasklist/issues/2249))
+* **deps**: update dependency react-textarea-autosize to v8.4.0 ([#2246](https://github.com/camunda/tasklist/issues/2246))
+* **deps**: update dependency @carbon/react to v1.17.0 ([#2250](https://github.com/camunda/tasklist/issues/2250))
+* **deps**: update dependency @carbon/elements to v11.13.0 ([#2215](https://github.com/camunda/tasklist/issues/2215))
+* **deps**: update dependency @carbon/react to v1.16.0 ([#2216](https://github.com/camunda/tasklist/issues/2216))
+* **deps**: update dependency sass to v1.56.0 ([#2229](https://github.com/camunda/tasklist/issues/2229))
+
+## 🧹 Chore
+* **deps**: update actions/add-to-project digest to 31901d2 ([#2327](https://github.com/camunda/tasklist/issues/2327))
+* Bump @camunda/camunda-composite-components
+* **project**: update Zeebe and Identity versions to 8.2.0-alpha2 ([#2324](https://github.com/camunda/tasklist/issues/2324))
+* **deps**: update actions/add-to-project digest to 06e54d7 ([#2320](https://github.com/camunda/tasklist/issues/2320))
+* **deps**: update all non-major dependencies ([#2283](https://github.com/camunda/tasklist/issues/2283))
+* **deps**: update dependency lint-staged to v13.1.0 ([#2304](https://github.com/camunda/tasklist/issues/2304))
+* Update Browserlist DB
+* **deps**: update actions/add-to-project digest to a4a63c3 ([#2297](https://github.com/camunda/tasklist/issues/2297))
+* **pom**: update Spring Boot 2.6.14 ([#2295](https://github.com/camunda/tasklist/issues/2295))
+* **preview-environments**: Use proper secret from tasklist namespace ([#2290](https://github.com/camunda/tasklist/issues/2290))
+* **deps**: update actions/add-to-project digest to 7540d63 ([#2293](https://github.com/camunda/tasklist/issues/2293))
+* **deps**: update actions/add-to-project digest to 1885da2 ([#2292](https://github.com/camunda/tasklist/issues/2292))
+* bump version.micrometer from 1.10.1 to 1.10.2 ([#2278](https://github.com/camunda/tasklist/issues/2278))
+* **preview-environments**: Update preview-environments to use proper cert. ([#2272](https://github.com/camunda/tasklist/issues/2272))
+* bump docker-java-core from 3.2.13 to 3.2.14 ([#2275](https://github.com/camunda/tasklist/issues/2275))
+* Remove unnecessary lockfile
+* **deps**: update actions/add-to-project digest to 29766ca ([#2277](https://github.com/camunda/tasklist/issues/2277))
+* **deps**: update dependency msw to v0.49.0 ([#2265](https://github.com/camunda/tasklist/issues/2265))
+* **deps**: update all non-major dependencies ([#2254](https://github.com/camunda/tasklist/issues/2254))
+* **deps**: update dependency prettier to v2.8.0 ([#2274](https://github.com/camunda/tasklist/issues/2274))
+* bump version.micrometer from 1.10.0 to 1.10.1 ([#2259](https://github.com/camunda/tasklist/issues/2259))
+* bump byte-buddy from 1.12.18 to 1.12.19 ([#2263](https://github.com/camunda/tasklist/issues/2263))
+* bump version.jackson from 2.14.0 to 2.14.1 ([#2271](https://github.com/camunda/tasklist/issues/2271))
+* **deps**: update actions/add-to-project digest to d3e23d3 ([#2273](https://github.com/camunda/tasklist/issues/2273))
+* **deps**: update actions/add-to-project digest to b6a7221 ([#2270](https://github.com/camunda/tasklist/issues/2270))
+* **deps**: update dependency typescript to v4.9.3 ([#2258](https://github.com/camunda/tasklist/issues/2258))
+* **preview-environments**: Create new preview-environments with proper prefix; allow destruction of preview-environments with both old and new naming schema. ([#2266](https://github.com/camunda/tasklist/issues/2266))
+* Update Browserlist DB
+* bump mockito-core from 4.8.1 to 4.9.0 ([#2257](https://github.com/camunda/tasklist/issues/2257))
+* bump elasticsearch from 1.17.5 to 1.17.6 ([#2261](https://github.com/camunda/tasklist/issues/2261))
+* **deps**: update all non-major dependencies ([#2251](https://github.com/camunda/tasklist/issues/2251))
+* **deps**: update dependency testcafe to v2.1.0 ([#2248](https://github.com/camunda/tasklist/issues/2248))
+* bump mvc-auth-commons from 1.9.2 to 1.9.3 ([#2212](https://github.com/camunda/tasklist/issues/2212))
+* bump maven-shade-plugin from 3.4.0 to 3.4.1 ([#2213](https://github.com/camunda/tasklist/issues/2213))
+* bump version.jackson from 2.13.4 to 2.14.0 ([#2239](https://github.com/camunda/tasklist/issues/2239))
+* bump version.micrometer from 1.9.5 to 1.10.0 ([#2240](https://github.com/camunda/tasklist/issues/2240))
+* bump netty-bom from 4.1.84.Final to 4.1.85.Final ([#2245](https://github.com/camunda/tasklist/issues/2245))
+* **deps**: update all non-major dependencies ([#2203](https://github.com/camunda/tasklist/issues/2203))
+* **deps**: update dependency msw to v0.48.0 ([#2241](https://github.com/camunda/tasklist/issues/2241))
+* **deps**: update hashicorp/vault-action digest to 8fa61e9 ([#2242](https://github.com/camunda/tasklist/issues/2242))
+* **deps**: update helm release camunda-platform to v8.1.1 ([#2244](https://github.com/camunda/tasklist/issues/2244))
+* **preview-env**: Track camunda helm chart version ([#2243](https://github.com/camunda/tasklist/issues/2243))
+* **backend**: test docker image to be run with arbitrary user ([#2186](https://github.com/camunda/tasklist/issues/2186))
+* **deps**: update actions/add-to-project digest to 960fbad ([#2228](https://github.com/camunda/tasklist/issues/2228))
+* bump mockito-core from 4.8.0 to 4.8.1 ([#2188](https://github.com/camunda/tasklist/issues/2188))
+* bump version.elasticsearch from 7.17.6 to 7.17.7 ([#2196](https://github.com/camunda/tasklist/issues/2196))
+* bump jib-maven-plugin from 3.3.0 to 3.3.1 ([#2211](https://github.com/camunda/tasklist/issues/2211))
+* Update Browserlist DB
 # v8.2.0-alpha1
 ## 💊 Bugfixes
 * **backend**: Use email, username as assignee ([#2158](https://github.com/camunda/tasklist/issues/2158))
