@@ -37,7 +37,6 @@ public final class SequencedBatchSerializer {
               batch.firstPosition() + i,
               getSourcePosition(batch, i, entry),
               ActorClock.currentTimeMillis());
-      // Align the next entry like the dispatcher did
       bufferOffset += DataFrameDescriptor.alignedLength(framedLength);
     }
 
