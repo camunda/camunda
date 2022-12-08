@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
-import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.lengthOffset;
-import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.messageLength;
-
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.Protocol;
@@ -97,7 +93,7 @@ public final class LoggedEventImpl implements LoggedEvent {
   public int getValueLength() {
     final short metadataLength = getMetadataLength();
 
-    return getMessageLength() - headerLength(metadataLength);
+    return getMessageLength() - LogEntryDescriptor.headerLength(metadataLength);
   }
 
   @Override
@@ -116,6 +112,7 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   private int getMessageLength() {
-    return messageLength(buffer.getInt(lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
+    return DataFrameDescriptor.messageLength(
+        buffer.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
   }
 }
