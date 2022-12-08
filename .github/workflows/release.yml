@@ -13,7 +13,7 @@ on:
         description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
         required: true
       pushReleaseArtifacts:
-        description: 'Whether to push release commits and artifacts to remote (Git tags, Maven artifacts, Github Release)'
+        description: 'Whether to push release commits and artifacts to remote (Git tags, Maven artifacts)'
         default: false
 
 jobs:
@@ -63,6 +63,16 @@ jobs:
           echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
             | base64 --decode \
             | gpg -q --import --no-tty --batch --yes
+      - name: Setup Github cli
+        # On non-Github hosted runners it may be missing
+        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+        run: |
+          type -p curl >/dev/null || sudo apt install curl -y
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
       - name: Setup Zeebe Build Tooling
         uses: ./.github/actions/setup-zeebe
       - name: Additional Go tooling setup
@@ -153,8 +163,69 @@ jobs:
           FILE=$(mvn -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git commit -am "build(project): update java compat versions"
+      - name: Github Release
+        shell: bash
+        # FIXME check if we can simplify it composing it with actions
+        # e.g. checksums https://github.com/marketplace/actions/generate-release-hashes
+        # https://github.com/actions/upload-release-asset
+        # https://github.com/actions/create-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          declare -a ASSETS=()
+          declare -a GH_OPTIONS=()
+
+          # This is the list of base artifacts that we expect to upload as part of the release; we'll also
+          # compute their sha1 sum and upload those as well, but no need to list that here. If there are new
+          # binaries to ship with a Zeebe release, add them here.
+          declare -a ARTIFACTS=( \
+            "dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz" \
+            "dist/target/camunda-zeebe-${RELEASE_VERSION}.zip" \
+            "clients/go/cmd/zbctl/dist/zbctl" \
+            "clients/go/cmd/zbctl/dist/zbctl.exe" \
+            "clients/go/cmd/zbctl/dist/zbctl.darwin" \
+          )
+
+          # Prepare assets
+          CHECKSUM_DIR=$(mktemp -d)
+          if [ ! -e "${CHECKSUM_DIR}" ]; then
+            >&2 echo "Failed to create temporary assets directory directory"
+            exit 1
+          fi
+          for artifact in "${ARTIFACTS[@]}"; do
+            filename=$(basename "${artifact}")
+            checksum="${CHECKSUM_DIR}/${filename}.sha1sum"
+
+            if [ ! -f "${artifact}" ]; then
+              echo "Expected to upload asset ${artifact} as part of the GitHub release, but no such file was found; are you sure the release went through correctly?"
+              exit 1
+            fi
+
+            sha1sum "${artifact}" > "${checksum}"
+            sha1sumResult=$?
+            if [ ! -f "${checksum}" ]; then
+              echo "Failed to created checksum of artifact ${artifact} at ${checksum}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+              exit 1
+            fi
+
+            ASSETS+=("${artifact}" "${checksum}")
+          done
+
+          # Mark as pre-release already if it's an alpha or rc
+          shopt -s nocasematch # set matching to case insensitive
+          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
+            GH_OPTIONS+=(--prerelease)
+          fi
+          shopt -u nocasematch # reset it
+
+          # Perform release: create draft, upload assets, etc.
+          # See https://cli.github.com/manual/gh_release_create for more
+          gh release create --repo "camunda/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
+            --title "${RELEASE_VERSION}" "${GH_OPTIONS[@]}" \
+            "${RELEASE_VERSION}" "${ASSETS[@]}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
         shell: bash
         run: rm -rf $HOME/.gnupg
+
