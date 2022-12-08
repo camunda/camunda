@@ -40,6 +40,7 @@ export function WhatsNewModal({open, onClose, mightFail}) {
   const closeModal = () => {
     if (!seen) {
       setChangeLogAsSeen();
+      setSeen(true);
     }
     onClose();
   };
