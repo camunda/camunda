@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeployme
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
+import io.camunda.zeebe.engine.processing.dmn.EvaluateDecisionProcessor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -105,6 +107,8 @@ public final class EngineProcessors {
             writers,
             timerChecker,
             sideEffectQueue);
+
+    addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, zeebeState);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -225,5 +229,19 @@ public final class EngineProcessors {
         zeebeState,
         subscriptionCommandSender,
         writers);
+  }
+
+  private static void addDecisionProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final DecisionBehavior decisionBehavior,
+      final Writers writers,
+      final MutableZeebeState zeebeState) {
+
+    final EvaluateDecisionProcessor evaluateDecisionProcessor =
+        new EvaluateDecisionProcessor(decisionBehavior, zeebeState.getKeyGenerator(), writers);
+    typedRecordProcessors.onCommand(
+        ValueType.DECISION_EVALUATION,
+        DecisionEvaluationIntent.EVALUATE,
+        evaluateDecisionProcessor);
   }
 }
