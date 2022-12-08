@@ -44,4 +44,12 @@ Documentation:
 * [ ] The documentation is updated (e.g. BPMN reference, configuration, examples, get-started guides, etc.)
 * [ ] If the PR changes how BPMN processes are validated (e.g. support new BPMN element) then the Camunda modeling team should be informed to adjust the BPMN linting.
 
+Other teams:
+* [ ] If the change impacts another team an issue has been created for this team, explaining what they need to do to support this change.
+  - [ ] [Operate](https://github.com/camunda/operate/issues)
+  - [ ] [Tasklist](https://github.com/camunda/tasklist/issues)
+  - [ ] [Web Modeler](https://github.com/camunda/web-modeler/issues)
+  - [ ] [Desktop Modeler](https://github.com/camunda/camunda-modeler/issues)
+  - [ ] [Optimize](https://github.com/camunda/camunda-optimize/issues)
+
 Please refer to our [review guidelines](https://github.com/camunda/zeebe/wiki/Pull-Requests-and-Code-Reviews#code-review-guidelines).

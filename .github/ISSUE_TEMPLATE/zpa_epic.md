@@ -36,7 +36,7 @@ Epic thus far. -->
 part of any other task. Think about things like QA tests and the randomized property tests -->
 
 ### Zeebe Process Test
-<!-- Tasks that require changed in Zeebe Process Test. Generally when you make changes in the
+<!-- Tasks that require changes in Zeebe Process Test. Generally when you make changes in the
 Gateway API, a change needs to be made in Zeebe Process Test as well. -->
 
 ### Documentation
@@ -47,8 +47,8 @@ Gateway API, a change needs to be made in Zeebe Process Test as well. -->
 
 
 ## Other Teams
-<!-- The Epic might have an impact on other teams withing Camunda. We should create an issue for
-them, explaining the changed they will have to make. -->
+<!-- The Epic might have an impact on other teams within Camunda. We should create an issue for
+them, explaining the changes they will have to make. -->
 
 - [ ] [Operate](https://github.com/camunda/operate/issues)
 - [ ] [Tasklist](https://github.com/camunda/tasklist/issues)
