@@ -135,12 +135,7 @@ public final class ProcessEventProcessors {
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
             new ProcessMessageSubscriptionCorrelateProcessor(
-                subscriptionState,
-                subscriptionCommandSender,
-                zeebeState,
-                bpmnBehaviors.eventTriggerBehavior(),
-                bpmnBehaviors.stateBehavior(),
-                writers))
+                subscriptionState, subscriptionCommandSender, zeebeState, bpmnBehaviors, writers))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
