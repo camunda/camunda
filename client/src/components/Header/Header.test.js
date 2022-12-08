@@ -105,3 +105,11 @@ it('should open the whatsNewDialog on option click', async () => {
 
   expect(node.find(WhatsNewModal).prop('open')).toBe(true);
 });
+
+it('should no display navbar and sidebar is noAction prop is specified', () => {
+  const node = shallow(<Header noActions />);
+
+  expect(node.find('C3Navigation').prop('navbar')).toEqual({elements: []});
+  expect(node.find('C3Navigation').prop('infoSideBar')).not.toBeDefined();
+  expect(node.find('C3Navigation').prop('userSideBar')).not.toBeDefined();
+});

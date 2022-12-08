@@ -22,7 +22,7 @@ import useUserMenu from './useUserMenu';
 
 import './Header.scss';
 
-export function Header({user, mightFail, docsLink}) {
+export function Header({user, mightFail, docsLink, noActions}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
@@ -44,10 +44,14 @@ export function Header({user, mightFail, docsLink}) {
   const props = {
     app: createAppProps(location),
     appBar: createAppBarProps(),
-    navbar: createNavBarProps(showEventBased, enterpriseMode),
-    infoSideBar: createInfoSideBarProps(setWhatsNewOpen, docsLink),
-    userSideBar,
+    navbar: {elements: []},
   };
+
+  if (!noActions) {
+    props.navbar = createNavBarProps(showEventBased, enterpriseMode);
+    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, docsLink);
+    props.userSideBar = userSideBar;
+  }
 
   return (
     <>
