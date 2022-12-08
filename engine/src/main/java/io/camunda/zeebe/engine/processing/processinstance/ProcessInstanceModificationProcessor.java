@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFound
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -50,6 +51,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -355,7 +357,9 @@ public final class ProcessInstanceModificationProcessor
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     final List<String> elementsInsideMultiInstance =
         activateInstructions.stream()
-            .filter(isSelectedAncestorOfTypeMultiInstance())
+            .filter(
+                isSelectedAncestorOfTypeMultiInstance()
+                    .or(isMultiInstanceBetweenAncestorAndElement(process)))
             .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
             .distinct()
             .toList();
@@ -387,6 +391,25 @@ public final class ProcessInstanceModificationProcessor
       }
       return selectedAncestor.getValue().getBpmnElementType()
           == BpmnElementType.MULTI_INSTANCE_BODY;
+    };
+  }
+
+  private Predicate<ProcessInstanceModificationActivateInstructionValue>
+      isMultiInstanceBetweenAncestorAndElement(final DeployedProcess process) {
+    return instruction -> {
+      if (instruction.getAncestorScopeKey() < 0) {
+        return false;
+      }
+      final var selectedAncestor =
+          elementInstanceState.getInstance(instruction.getAncestorScopeKey());
+      if (selectedAncestor == null) {
+        return false;
+      }
+      final var elementId = BufferUtil.wrapString(instruction.getElementId());
+      final var selectedAncestorId = selectedAncestor.getValue().getElementId();
+      return findMultiInstanceBodyFlowScope(process, elementId)
+          .map(multiInstanceBody -> isFlowScopeOfElement(multiInstanceBody, selectedAncestorId))
+          .orElse(false);
     };
   }
 
@@ -479,18 +502,26 @@ public final class ProcessInstanceModificationProcessor
 
   private boolean isInsideMultiInstanceBody(
       final DeployedProcess process, final DirectBuffer elementId) {
+    return findMultiInstanceBodyFlowScope(process, elementId).isPresent();
+  }
+
+  private Optional<ExecutableMultiInstanceBody> findMultiInstanceBodyFlowScope(
+      final DeployedProcess process, final DirectBuffer elementId) {
     final var element = process.getProcess().getElementById(elementId);
 
     if (element.getFlowScope() == null) {
-      return false;
+      return Optional.empty();
     }
 
     // We can't use element.getFlowScope() here as it return the element instead of the
     // multi-instance body (e.g. the subprocess)
     final var flowScope = process.getProcess().getElementById(element.getFlowScope().getId());
 
-    return flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY
-        || isInsideMultiInstanceBody(process, flowScope.getId());
+    if (flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+      return Optional.of((ExecutableMultiInstanceBody) flowScope);
+    }
+
+    return findMultiInstanceBodyFlowScope(process, flowScope.getId());
   }
 
   private Either<Rejection, ?> validateElementInstanceExists(
