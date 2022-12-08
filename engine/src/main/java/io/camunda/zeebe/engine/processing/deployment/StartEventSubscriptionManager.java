@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
@@ -22,32 +23,31 @@ import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionInte
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.function.Predicate;
 
-public class MessageStartEventSubscriptionManager {
+public class StartEventSubscriptionManager {
 
-  private final MessageStartEventSubscriptionRecord subscriptionRecord =
+  private final MessageStartEventSubscriptionRecord messageSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
 
   private final ProcessState processState;
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
   private final KeyGenerator keyGenerator;
 
-  public MessageStartEventSubscriptionManager(
-      final ProcessState processState,
-      final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
-      final KeyGenerator keyGenerator) {
-    this.processState = processState;
-    this.messageStartEventSubscriptionState = messageStartEventSubscriptionState;
+  public StartEventSubscriptionManager(
+      final ZeebeState zeebeState, final KeyGenerator keyGenerator) {
+    processState = zeebeState.getProcessState();
+    messageStartEventSubscriptionState = zeebeState.getMessageStartEventSubscriptionState();
     this.keyGenerator = keyGenerator;
   }
 
-  public void tryReOpenMessageStartEventSubscription(
+  public void tryReOpenStartEventSubscription(
       final DeploymentRecord deploymentRecord, final StateWriter stateWriter) {
 
     for (final ProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
       if (isLatestProcess(processRecord)) {
-        closeExistingMessageStartEventSubscriptions(processRecord, stateWriter);
-        openMessageStartEventSubscriptions(processRecord, stateWriter);
+        closeExistingStartEventSubscriptions(processRecord, stateWriter);
+        openStartEventSubscriptions(processRecord, stateWriter);
       }
     }
   }
@@ -59,9 +59,15 @@ public class MessageStartEventSubscriptionManager {
         == processRecord.getVersion();
   }
 
-  private void closeExistingMessageStartEventSubscriptions(
+  private void closeExistingStartEventSubscriptions(
       final ProcessMetadata processRecord, final StateWriter stateWriter) {
-    final DeployedProcess lastMsgProcess = findLastMessageStartProcess(processRecord);
+    closeMessageExistingStartEventSubscriptions(processRecord, stateWriter);
+  }
+
+  private void closeMessageExistingStartEventSubscriptions(
+      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+    final DeployedProcess lastMsgProcess =
+        findLastStartProcess(processRecord, ExecutableCatchEventElement::isMessage);
     if (lastMsgProcess == null) {
       return;
     }
@@ -75,52 +81,61 @@ public class MessageStartEventSubscriptionManager {
                 subscription.getRecord()));
   }
 
-  private DeployedProcess findLastMessageStartProcess(final ProcessMetadata processRecord) {
+  private DeployedProcess findLastStartProcess(
+      final ProcessMetadata processRecord, final Predicate<ExecutableCatchEventElement> predicate) {
     for (int version = processRecord.getVersion() - 1; version > 0; --version) {
-      final DeployedProcess lastMsgProcess =
+      final DeployedProcess lastStartProcess =
           processState.getProcessByProcessIdAndVersion(
               processRecord.getBpmnProcessIdBuffer(), version);
-      if (lastMsgProcess != null
-          && lastMsgProcess.getProcess().getStartEvents().stream()
-              .anyMatch(ExecutableCatchEventElement::isMessage)) {
-        return lastMsgProcess;
+      if (lastStartProcess != null
+          && lastStartProcess.getProcess().getStartEvents().stream().anyMatch(predicate)) {
+        return lastStartProcess;
       }
     }
 
     return null;
   }
 
-  private void openMessageStartEventSubscriptions(
+  private void openStartEventSubscriptions(
       final ProcessMetadata processRecord, final StateWriter stateWriter) {
     final long processDefinitionKey = processRecord.getKey();
     final DeployedProcess processDefinition = processState.getProcessByKey(processDefinitionKey);
     final ExecutableProcess process = processDefinition.getProcess();
     final List<ExecutableStartEvent> startEvents = process.getStartEvents();
 
-    // if startEvents contain message events
-    for (final ExecutableCatchEventElement startEvent : startEvents) {
+    for (final ExecutableStartEvent startEvent : startEvents) {
+      // if startEvent is message event
       if (startEvent.isMessage()) {
-        final ExecutableMessage message = startEvent.getMessage();
-
-        message
-            .getMessageName()
-            .map(BufferUtil::wrapString)
-            .ifPresent(
-                messageNameBuffer -> {
-                  subscriptionRecord.reset();
-                  subscriptionRecord
-                      .setMessageName(messageNameBuffer)
-                      .setProcessDefinitionKey(processDefinitionKey)
-                      .setBpmnProcessId(process.getId())
-                      .setStartEventId(startEvent.getId());
-
-                  final var subscriptionKey = keyGenerator.nextKey();
-                  stateWriter.appendFollowUpEvent(
-                      subscriptionKey,
-                      MessageStartEventSubscriptionIntent.CREATED,
-                      subscriptionRecord);
-                });
+        openMessageStartEventSubscriptions(
+            processDefinition, processDefinitionKey, startEvent, stateWriter);
       }
     }
+  }
+
+  private void openMessageStartEventSubscriptions(
+      final DeployedProcess processDefinition,
+      final long processDefinitionKey,
+      final ExecutableStartEvent startEvent,
+      final StateWriter stateWriter) {
+    final ExecutableMessage message = startEvent.getMessage();
+
+    message
+        .getMessageName()
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            messageNameBuffer -> {
+              messageSubscriptionRecord.reset();
+              messageSubscriptionRecord
+                  .setMessageName(messageNameBuffer)
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(processDefinition.getBpmnProcessId())
+                  .setStartEventId(startEvent.getId());
+
+              final var subscriptionKey = keyGenerator.nextKey();
+              stateWriter.appendFollowUpEvent(
+                  subscriptionKey,
+                  MessageStartEventSubscriptionIntent.CREATED,
+                  messageSubscriptionRecord);
+            });
   }
 }
