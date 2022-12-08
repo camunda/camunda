@@ -41,7 +41,8 @@ public final class JobEventProcessors {
             zeebeState.getEventScopeInstanceState(),
             writers,
             zeebeState.getProcessState(),
-            eventTriggerBehavior);
+            bpmnBehaviors.eventTriggerBehavior(),
+            bpmnBehaviors.stateBehavior());
 
     final var jobBackoffChecker = new JobBackoffChecker(jobState);
     typedRecordProcessors

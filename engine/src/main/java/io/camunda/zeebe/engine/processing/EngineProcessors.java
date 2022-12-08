@@ -239,6 +239,7 @@ public final class EngineProcessors {
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
         eventTriggerBehavior,
+        bpmnBehaviors.stateBehavior(),
         typedRecordProcessors,
         zeebeState,
         subscriptionCommandSender,
