@@ -13,7 +13,7 @@ import org.agrona.MutableDirectBuffer;
 
 /**
  * Remnants of the dispatcher data framing. A 12 byte header starting with the frame length. The
- * rest of the 12 bytes are unused. This is kept for backwards-compatability reasons because {@link
+ * rest of the 12 bytes are unused. This is kept for backwards-compatibility reasons because {@link
  * io.camunda.zeebe.logstreams.log.LoggedEvent} still expects this header.
  */
 public final class DataFrameDescriptor {
