@@ -570,7 +570,7 @@
 
       # Sets the maximum of appends which are send per follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDSPERFOLLOWER
-      # maxAppendsPerFollower = 2
+      # maxAppendsPerFollower = 8
 
       # Sets the maximum batch size, which is send per append request to a follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
