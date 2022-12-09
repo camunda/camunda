@@ -34,14 +34,28 @@ final class SequencerTest {
 
     // when
     sequencer.registerConsumer(consumer);
-    sequencer.tryWrite(new TestLogAppendEntry());
+    sequencer.tryWrite(new TestLogAppendEntry(1));
 
     // then
     Mockito.verify(consumer).signal();
   }
 
   @Test
-  void canPeekAfterWrite() {
+  void notifiesConsumerOnBatchWrite() {
+    // given
+    final var sequencer = new Sequencer(1, 0, 16);
+    final var consumer = Mockito.mock(ActorCondition.class);
+
+    // when
+    sequencer.registerConsumer(consumer);
+    sequencer.tryWrite(new TestLogAppendEntry(1), new TestLogAppendEntry(2));
+
+    // then
+    Mockito.verify(consumer).signal();
+  }
+
+  @Test
+  void canPeekAfterSingleWrite() {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
     final var entry = new TestLogAppendEntry();
@@ -55,7 +69,22 @@ final class SequencerTest {
   }
 
   @Test
-  void canReadAfterWrite() {
+  void canPeekAfterBatchWrite() {
+    // given
+    final var sequencer = new Sequencer(1, 1, 16);
+    final var entries =
+        List.of(new TestLogAppendEntry(1), new TestLogAppendEntry(2), new TestLogAppendEntry(3));
+
+    // when
+    sequencer.tryWrite(entries);
+
+    // then
+    final var peek = sequencer.peek();
+    Assertions.assertThat(peek.entries()).containsExactlyElementsOf(entries);
+  }
+
+  @Test
+  void canReadAfterSingleWrite() {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
     final var entry = new TestLogAppendEntry();
@@ -66,6 +95,21 @@ final class SequencerTest {
     // then
     final var read = sequencer.tryRead();
     Assertions.assertThat(read.entries()).containsExactly(entry);
+  }
+
+  @Test
+  void canReadAfterBatchWrite() {
+    // given
+    final var sequencer = new Sequencer(1, 1, 16);
+    final var entries =
+        List.of(new TestLogAppendEntry(1), new TestLogAppendEntry(2), new TestLogAppendEntry(3));
+
+    // when
+    sequencer.tryWrite(entries);
+
+    // then
+    final var read = sequencer.tryRead();
+    Assertions.assertThat(read.entries()).containsAnyElementsOf(entries);
   }
 
   @Test
@@ -85,6 +129,22 @@ final class SequencerTest {
   }
 
   @Test
+  void peeksFirstWrittenBatchEntry() {
+    // given
+    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
+    final var firstEntry = new TestLogAppendEntry(1);
+    final var secondEntry = new TestLogAppendEntry(2);
+
+    // when
+    Assertions.assertThat(sequencer.tryWrite(firstEntry, secondEntry)).isPositive();
+    Assertions.assertThat(sequencer.tryWrite(new TestLogAppendEntry(3))).isPositive();
+
+    // then
+    final var peek = sequencer.peek();
+    Assertions.assertThat(peek.entries()).containsExactly(firstEntry, secondEntry);
+  }
+
+  @Test
   void readReturnsSameAsPeek() {
     // given
     final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
@@ -94,6 +154,23 @@ final class SequencerTest {
     // when
     Assertions.assertThat(sequencer.tryWrite(firstEntry)).isPositive();
     Assertions.assertThat(sequencer.tryWrite(secondEntry)).isPositive();
+
+    // then
+    final var peek = sequencer.peek();
+    final var read = sequencer.tryRead();
+    Assertions.assertThat(peek).isEqualTo(read);
+  }
+
+  @Test
+  void readReturnsSameAsPeekAfterBatchWrite() {
+    // given
+    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
+    final var firstEntry = new TestLogAppendEntry(1);
+    final var secondEntry = new TestLogAppendEntry(2);
+
+    // when
+    Assertions.assertThat(sequencer.tryWrite(firstEntry, secondEntry)).isPositive();
+    Assertions.assertThat(sequencer.tryWrite(new TestLogAppendEntry(3))).isPositive();
 
     // then
     final var peek = sequencer.peek();
@@ -131,6 +208,20 @@ final class SequencerTest {
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
         .until(() -> sequencer.tryWrite(new TestLogAppendEntry()), (result) -> result <= 0);
+  }
+
+  @Test
+  void eventuallyRejectsBatchWritesWithoutReader() {
+    // given
+    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
+
+    // then
+    Awaitility.await("sequencer rejects writes")
+        .pollInSameThread()
+        .pollInterval(Duration.ZERO)
+        .until(
+            () -> sequencer.tryWrite(new TestLogAppendEntry(1), new TestLogAppendEntry(2)),
+            (result) -> result <= 0);
   }
 
   @Test
@@ -173,6 +264,25 @@ final class SequencerTest {
     // when
     sequencer.registerConsumer(consumer);
     final var result = sequencer.tryWrite(new TestLogAppendEntry());
+
+    // then
+    Assertions.assertThat(result).isNegative();
+    Mockito.verify(consumer).signal();
+  }
+
+  @Test
+  void notifiesReaderWhenRejectingBatchWriteDueToFullQueue() {
+    // given
+    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
+    Awaitility.await("sequencer rejects writes")
+        .pollInSameThread()
+        .pollInterval(Duration.ZERO)
+        .until(() -> sequencer.tryWrite(new TestLogAppendEntry()), (result) -> result <= 0);
+    final var consumer = Mockito.mock(ActorCondition.class);
+
+    // when
+    sequencer.registerConsumer(consumer);
+    final var result = sequencer.tryWrite(new TestLogAppendEntry(1), new TestLogAppendEntry(2));
 
     // then
     Assertions.assertThat(result).isNegative();
