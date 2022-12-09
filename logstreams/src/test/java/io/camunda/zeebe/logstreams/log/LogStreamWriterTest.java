@@ -32,15 +32,13 @@ public final class LogStreamWriterTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(logStreamRule).around(readerRule);
 
-  private final MutableLogAppendEntry appendEntry = new MutableLogAppendEntry();
-
   private LogStreamWriter writer;
 
   @Before
   public void setUp() {
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
-    appendEntry.reset();
+    new MutableLogAppendEntry().reset();
   }
 
   @After
@@ -63,7 +61,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldReturnPositionOfWrittenEvent() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE));
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -75,7 +73,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithValueBuffer() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE));
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -89,7 +87,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithValueBufferPartially() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE, 1, 2));
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE, 1, 2));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -103,7 +101,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithValueWriter() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE));
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -118,7 +116,8 @@ public final class LogStreamWriterTest {
   public void shouldWriteEventWithMetadataBuffer() {
     // when
     final long position =
-        tryWrite(appendEntry.recordMetadata(EVENT_METADATA).recordValue(EVENT_VALUE));
+        tryWrite(
+            new MutableLogAppendEntry().recordMetadata(EVENT_METADATA).recordValue(EVENT_VALUE));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -133,7 +132,10 @@ public final class LogStreamWriterTest {
   public void shouldWriteEventWithMetadataBufferPartially() {
     // when
     final long position =
-        tryWrite(appendEntry.recordMetadata(EVENT_METADATA, 1, 2).recordValue(EVENT_VALUE));
+        tryWrite(
+            new MutableLogAppendEntry()
+                .recordMetadata(EVENT_METADATA, 1, 2)
+                .recordValue(EVENT_VALUE));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -148,7 +150,8 @@ public final class LogStreamWriterTest {
   public void shouldWriteEventWithMetadataWriter() {
     // when
     final long position =
-        tryWrite(appendEntry.recordMetadata(EVENT_METADATA).recordValue(EVENT_VALUE));
+        tryWrite(
+            new MutableLogAppendEntry().recordMetadata(EVENT_METADATA).recordValue(EVENT_VALUE));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -162,7 +165,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithKey() {
     // when
-    final long position = tryWrite(appendEntry.key(123L).recordValue(EVENT_VALUE));
+    final long position = tryWrite(new MutableLogAppendEntry().key(123L).recordValue(EVENT_VALUE));
 
     // then
     assertThat(getWrittenEvent(position).getKey()).isEqualTo(123L);
@@ -171,12 +174,14 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventsWithDifferentWriters() {
     // given
-    final long firstPosition = tryWrite(appendEntry.key(123L).recordValue(EVENT_VALUE));
+    final long firstPosition =
+        tryWrite(new MutableLogAppendEntry().key(123L).recordValue(EVENT_VALUE));
 
     // when
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
-    final long secondPosition = tryWrite(appendEntry.reset().key(124L).recordValue(EVENT_VALUE));
+    final long secondPosition =
+        tryWrite(new MutableLogAppendEntry().reset().key(124L).recordValue(EVENT_VALUE));
 
     // then
     assertThat(secondPosition).isGreaterThan(firstPosition);
@@ -187,14 +192,17 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldCloseAllWritersAndWriteAgain() {
     // given
-    final long firstPosition = tryWrite(appendEntry.key(123L).recordValue(EVENT_VALUE));
+    final long firstPosition =
+        tryWrite(new MutableLogAppendEntry().key(123L).recordValue(EVENT_VALUE));
+    logStreamRule.getLogStream().awaitPositionWritten(firstPosition);
 
     // when
     writer = null;
 
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
-    final long secondPosition = tryWrite(appendEntry.reset().key(124L).recordValue(EVENT_VALUE));
+    final long secondPosition =
+        tryWrite(new MutableLogAppendEntry().reset().key(124L).recordValue(EVENT_VALUE));
 
     // then
     assertThat(secondPosition).isGreaterThan(firstPosition);
@@ -205,7 +213,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithSourceEvent() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE), 123L);
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE), 123L);
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -215,7 +223,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithoutSourceEvent() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE));
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -226,7 +234,10 @@ public final class LogStreamWriterTest {
   public void shouldWriteEventWithNullKey() {
     // when
     final long position =
-        tryWrite(appendEntry.key(LogEntryDescriptor.KEY_NULL_VALUE).recordValue(EVENT_VALUE));
+        tryWrite(
+            new MutableLogAppendEntry()
+                .key(LogEntryDescriptor.KEY_NULL_VALUE)
+                .recordValue(EVENT_VALUE));
 
     // then
     assertThat(getWrittenEvent(position).getKey()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
@@ -235,7 +246,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldWriteNullKeyByDefault() {
     // when
-    final long position = tryWrite(appendEntry.recordValue(EVENT_VALUE));
+    final long position = tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE));
 
     // then
     assertThat(getWrittenEvent(position).getKey()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
@@ -244,7 +255,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteEventWithoutValue() {
     // when
-    final long pos = tryWrite(appendEntry.reset());
+    final long pos = tryWrite(new MutableLogAppendEntry().reset());
 
     // then
     assertThat(pos).isEqualTo(0);
