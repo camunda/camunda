@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -57,8 +56,6 @@ public final class StreamProcessorTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
-
-  private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
@@ -125,15 +122,19 @@ public final class StreamProcessorTest {
   public void shouldCallRecordProcessorLifecycle() {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     streamPlatform.startStreamProcessor();
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final var inOrder = inOrder(defaultRecordProcessor);
@@ -155,8 +156,10 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final var inOrder = inOrder(defaultRecordProcessor);
@@ -180,8 +183,10 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final var inOrder = inOrder(defaultRecordProcessor);
@@ -203,8 +208,10 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.atLeast(2)).process(any(), any());
@@ -219,8 +226,10 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT).accepts(any());
@@ -235,9 +244,11 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0),
-        RecordToWrite.rejection().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0),
+        RecordToWrite.rejection().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(1)).process(any(), any());
@@ -249,13 +260,28 @@ public final class StreamProcessorTest {
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var firstResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
     firstResultBuilder.appendRecordReturnEither(
-        1, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+        1,
+        RecordType.EVENT,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
     firstResultBuilder.appendRecordReturnEither(
-        2, RecordType.COMMAND, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+        2,
+        RecordType.COMMAND,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
 
     final var secondResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
     secondResultBuilder.appendRecordReturnEither(
-        3, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+        3,
+        RecordType.EVENT,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
 
     when(defaultRecordProcessor.process(any(), any()))
         .thenReturn(firstResultBuilder.build())
@@ -265,7 +291,8 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -286,9 +313,19 @@ public final class StreamProcessorTest {
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
     resultBuilder.appendRecordReturnEither(
-        1, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+        1,
+        RecordType.EVENT,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
     resultBuilder.appendRecordReturnEither(
-        2, RecordType.COMMAND, COMPLETE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+        2,
+        RecordType.COMMAND,
+        COMPLETE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
 
     when(defaultRecordProcessor.process(any(), any()))
         .thenReturn(resultBuilder.build())
@@ -297,7 +334,8 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -328,7 +366,8 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(mockPostCommitTask, TIMEOUT).flush();
@@ -348,7 +387,8 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(mockPostCommitTask, TIMEOUT.atLeast(5)).flush();
@@ -371,8 +411,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -405,8 +445,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(testProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -443,8 +483,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(testProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -481,8 +521,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(testProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -525,8 +565,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(testProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -545,7 +585,7 @@ public final class StreamProcessorTest {
         RecordType.EVENT,
         3,
         ELEMENT_ACTIVATING,
-        RECORD,
+        Records.processInstance(1),
         ValueType.PROCESS_INSTANCE,
         RejectionType.NULL_VAL,
         "",
@@ -559,8 +599,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -586,7 +626,7 @@ public final class StreamProcessorTest {
         RecordType.EVENT,
         3,
         ELEMENT_ACTIVATING,
-        RECORD,
+        Records.processInstance(1),
         ValueType.PROCESS_INSTANCE,
         RejectionType.NULL_VAL,
         "",
@@ -598,7 +638,8 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).process(any(), any());
@@ -626,8 +667,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -642,14 +683,20 @@ public final class StreamProcessorTest {
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
     resultBuilder.appendRecordReturnEither(
-        1, RecordType.COMMAND_REJECTION, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
+        1,
+        RecordType.COMMAND_REJECTION,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
     when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
         .thenReturn(resultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 
     // when
-    streamPlatform.writeBatch(RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).process(any(), any());
@@ -681,8 +728,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
 
@@ -699,8 +746,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -719,8 +766,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -737,8 +784,8 @@ public final class StreamProcessorTest {
     verify(mockProcessorLifecycleAware, TIMEOUT).onRecovered(ArgumentMatchers.any());
     verify(mockProcessorLifecycleAware, TIMEOUT).onPaused();
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
     verify(defaultMockedRecordProcessor, never()).process(any(), any());
@@ -759,8 +806,8 @@ public final class StreamProcessorTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());

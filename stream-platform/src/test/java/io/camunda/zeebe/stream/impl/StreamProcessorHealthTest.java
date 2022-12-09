@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTI
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
@@ -22,8 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(StreamPlatformExtension.class)
 public class StreamProcessorHealthTest {
-
-  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
@@ -54,7 +51,7 @@ public class StreamProcessorHealthTest {
     // since processing fails we will write error event
     // we want to fail error even transaction
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     Awaitility.await("wait to become unhealthy")
@@ -78,7 +75,7 @@ public class StreamProcessorHealthTest {
               return EmptyProcessingResult.INSTANCE;
             });
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
     Awaitility.await("wait to become unhealthy")
         .until(() -> streamProcessor.getHealthReport().isUnhealthy());
 

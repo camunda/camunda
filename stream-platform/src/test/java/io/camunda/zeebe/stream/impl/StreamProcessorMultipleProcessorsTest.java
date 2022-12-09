@@ -16,8 +16,6 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
@@ -37,9 +35,6 @@ final class StreamProcessorMultipleProcessorsTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
-  private static final JobRecord JOB_RECORD = Records.job(1);
-
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
 
@@ -55,14 +50,16 @@ final class StreamProcessorMultipleProcessorsTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD).causedBy(0));
+        RecordToWrite.command()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     verify(processInstanceProcessor, TIMEOUT).process(matches(ValueType.PROCESS_INSTANCE), any());
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().job(JobIntent.COMPLETE, JOB_RECORD).causedBy(0));
+        RecordToWrite.command().job(JobIntent.COMPLETE, Records.job(1)).causedBy(0));
 
     // then
     verify(jobProcessor, TIMEOUT).process(matches(ValueType.JOB), any());
@@ -80,8 +77,10 @@ final class StreamProcessorMultipleProcessorsTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     streamPlatform
         .withRecordProcessors(List.of(processInstanceProcessor, jobProcessor))

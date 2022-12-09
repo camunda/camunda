@@ -10,7 +10,6 @@ package io.camunda.zeebe.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
@@ -20,8 +19,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(StreamPlatformExtension.class)
 final class StreamProcessorInconsistentPositionTest {
-
-  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
@@ -36,18 +33,18 @@ final class StreamProcessorInconsistentPositionTest {
             firstLogCtx.setupBatchWriter(
                 RecordToWrite.command()
                     .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
                 RecordToWrite.command()
                     .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
         final var secondBatchWriter =
             secondLogCtx.setupBatchWriter(
                 RecordToWrite.command()
                     .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
                 RecordToWrite.command()
                     .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
 
         // We write two record batches with different logstreams.
         // The logstreams are backed with the same logstorage, which means records are written to
