@@ -574,7 +574,7 @@
 
       # Sets the maximum batch size, which is send per append request to a follower.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_MAXAPPENDBATCHSIZE
-      # maxAppendBatchSize = 32KB;
+      # maxAppendBatchSize = 64KB;
 
       # This setting allows you to configure how partitions are distributed amongst the node of the
       # clusters. It currently supports to partitioning schemes: ROUND_ROBIN, and FIXED.

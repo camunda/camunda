@@ -34,7 +34,7 @@ public class RaftPartitionConfig {
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private int maxAppendsPerFollower = 8;
-  private int maxAppendBatchSize = 32 * 1024;
+  private int maxAppendBatchSize = 64 * 1024;
   private boolean priorityElectionEnabled = DEFAULT_PRIORITY_ELECTION;
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private int minStepDownFailureCount = DEFAULT_MIN_STEP_DOWN_FAILURE_COUNT;
