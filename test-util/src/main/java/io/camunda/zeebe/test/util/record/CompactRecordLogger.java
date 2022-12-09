@@ -724,7 +724,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(value.getSignalName())
         .append("\"")
-        .append(" starting <process ")
+        .append(" <process ")
         .append(formatId(value.getBpmnProcessId()))
         .toString();
   }

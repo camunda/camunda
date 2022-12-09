@@ -1105,7 +1105,15 @@ final class JsonSerializableToJsonTest {
                   .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setCatchEventInstanceKey(3L);
             },
-        "{'processDefinitionKey':22334,'signalName':'name','catchEventId':'startEvent','bpmnProcessId':'process','catchEventInstanceKey':3}"
+        """
+          {
+            "processDefinitionKey":22334,
+            "signalName": "name",
+            "catchEventId": "startEvent",
+            "bpmnProcessId": "process",
+            "catchEventInstanceKey":3
+          }
+          """
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1119,7 +1127,15 @@ final class JsonSerializableToJsonTest {
 
               return new SignalSubscriptionRecord().setProcessDefinitionKey(processDefinitionKey);
             },
-        "{'processDefinitionKey':22334,'signalName':'','catchEventId':'','bpmnProcessId':'','catchEventInstanceKey':-1}"
+        """
+          {
+              "processDefinitionKey":22334,
+              "signalName":"",
+              "catchEventId":"",
+              "bpmnProcessId":"",
+              "catchEventInstanceKey":-1
+          }
+          """
       },
     };
   }
