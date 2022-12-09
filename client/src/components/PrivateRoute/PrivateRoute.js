@@ -128,7 +128,7 @@ function Detachable({container, children}) {
 
 // keep track of whether we were logged in in the current session
 addHandler((response, payload) => {
-  if (response.status === 401) {
+  if (response.status === 401 && isPrivateResource(payload)) {
     return createOutstandingRequestPromise(payload);
   }
 
