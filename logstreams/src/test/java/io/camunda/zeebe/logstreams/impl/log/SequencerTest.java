@@ -5,13 +5,15 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import io.camunda.zeebe.logstreams.impl.log.Sequencer;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.locks.LockSupport;
+import java.util.stream.IntStream;
 import org.agrona.MutableDirectBuffer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -175,6 +177,140 @@ final class SequencerTest {
     // then
     Assertions.assertThat(result).isNegative();
     Mockito.verify(consumer).signal();
+  }
+
+  @Test
+  void keepsPositionsWithSingleWriter() throws InterruptedException {
+    // given
+    final var initialPosition = 1L;
+    final var entriesToWrite = 10_000L;
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
+    final var batch = List.of((LogAppendEntry) new TestLogAppendEntry(-1));
+    final var reader = newReaderThread(sequencer, initialPosition, entriesToWrite);
+    final var writer = newWriterThread(sequencer, initialPosition, entriesToWrite, batch, true);
+
+    // when
+    reader.start();
+    writer.start();
+
+    // then -- readers and writers don't throw
+    reader.join(10 * 1000);
+    writer.join(10 * 1000);
+  }
+
+  @Test
+  void keepsPositionsWithMultipleWriters() throws InterruptedException {
+    // given
+    final var writers = 3;
+
+    final var initialPosition = 1L;
+    final var entriesToWrite = 10_000L;
+    final var entriesToRead = writers * entriesToWrite;
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
+    final var reader = newReaderThread(sequencer, initialPosition, entriesToRead);
+    final var batch = List.<LogAppendEntry>of(new TestLogAppendEntry(-1));
+    final var writerThreads =
+        IntStream.range(0, writers)
+            .mapToObj(
+                i -> newWriterThread(sequencer, initialPosition, entriesToWrite, batch, false))
+            .toList();
+
+    // when
+    reader.start();
+    writerThreads.forEach(Thread::start);
+
+    // then -- readers and writers don't throw
+    reader.join(10 * 1000);
+    writerThreads.forEach(
+        thread -> {
+          try {
+            thread.join(10 * 1000);
+          } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  @Test
+  void keepsPositionsWithMultipleWritersWritingMultipleEntries() throws InterruptedException {
+    // given
+    final var writers = 3;
+
+    final var initialPosition = 1L;
+    final var batchesToWrite = 10_000L;
+    final var batchesToRead = writers * batchesToWrite;
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
+    final var reader = newReaderThread(sequencer, initialPosition, batchesToRead);
+    final var batch =
+        List.<LogAppendEntry>of(
+            new TestLogAppendEntry(-1),
+            new TestLogAppendEntry(-1),
+            new TestLogAppendEntry(-1),
+            new TestLogAppendEntry(-1));
+    final var writerThreads =
+        IntStream.range(0, writers)
+            .mapToObj(
+                i -> newWriterThread(sequencer, initialPosition, batchesToWrite, batch, false))
+            .toList();
+
+    // when
+    reader.start();
+    writerThreads.forEach(Thread::start);
+
+    // then -- readers and writers don't throw and eventually finish
+    reader.join(10 * 1000);
+    writerThreads.forEach(
+        thread -> {
+          try {
+            thread.join(10 * 1000);
+          } catch (final InterruptedException e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  private Thread newReaderThread(
+      final Sequencer sequencer, final long initialPosition, final long batchesToRead) {
+    return new Thread(
+        () -> {
+          var batchesRead = 0;
+          var lastReadPosition = initialPosition - 1;
+          while (batchesRead < batchesToRead) {
+            final var result = sequencer.tryRead();
+            if (result != null) {
+              Assertions.assertThat(result.firstPosition()).isEqualTo(lastReadPosition + 1);
+              lastReadPosition = result.firstPosition() + result.entries().size() - 1;
+              batchesRead += 1;
+            }
+          }
+        });
+  }
+
+  private Thread newWriterThread(
+      final Sequencer sequencer,
+      final long initialPosition,
+      final long batchesToWrite,
+      final List<LogAppendEntry> batchToWrite,
+      final boolean isOnlyWriter) {
+    return new Thread(
+        () -> {
+          var batchesWritten = 0;
+          var lastWrittenPosition = initialPosition - 1;
+          while (batchesWritten < batchesToWrite) {
+            final var result = sequencer.tryWrite(batchToWrite);
+            if (result > 0) {
+              if (isOnlyWriter) {
+                Assertions.assertThat(result).isEqualTo(lastWrittenPosition + batchToWrite.size());
+              } else {
+                Assertions.assertThat(result).isGreaterThan(lastWrittenPosition);
+              }
+              lastWrittenPosition = result;
+              batchesWritten += 1;
+            } else {
+              LockSupport.parkNanos(1_000_000);
+            }
+          }
+        });
   }
 
   private record TestLogAppendEntry(
