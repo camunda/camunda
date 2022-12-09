@@ -14,6 +14,7 @@ import {Table} from './visualizations';
 jest.mock('./service', () => {
   return {
     isEmpty: (str) => !str,
+    getFormatter: (view) => (v) => v,
     processResult: ({result}) => result,
   };
 });

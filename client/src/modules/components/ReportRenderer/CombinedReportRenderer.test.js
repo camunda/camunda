@@ -13,6 +13,12 @@ import {processResult} from 'services';
 import CombinedReportRendererWithErrorHandling from './CombinedReportRenderer';
 import {Chart, Table} from './visualizations';
 
+jest.mock('./service', () => {
+  return {
+    getFormatter: (view) => (v) => v,
+  };
+});
+
 const CombinedReportRenderer = CombinedReportRendererWithErrorHandling.WrappedComponent;
 
 jest.mock('services', () => {

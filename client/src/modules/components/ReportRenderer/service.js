@@ -11,27 +11,24 @@ export function isEmpty(str) {
   return !str || 0 === str.length;
 }
 
-export const formatValue = (value, measure, precision) => {
-  let formatter;
-
+export function getFormatter(measure) {
   if (typeof measure === 'object') {
-    formatter = formatters.frequency;
+    // can only happen for variable reports
+    return formatters.frequency;
   }
 
   switch (measure) {
     case 'frequency':
-      formatter = formatters.frequency;
-      break;
+      return formatters.frequency;
     case 'duration':
-      formatter = formatters.duration;
-      break;
+      return formatters.duration;
     case 'percentage':
-      formatter = formatters.percentage;
-      break;
+      return formatters.percentage;
     default:
-      formatter = (v) => v;
-      break;
+      return (v) => v;
   }
+}
 
-  return formatter(value, precision);
+export const formatValue = (value, measure, precision) => {
+  return getFormatter(measure)(value, precision);
 };
