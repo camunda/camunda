@@ -434,4 +434,39 @@ public class ModifyProcessInstanceRejectionTest {
                 To terminate this instance please modify the parent process instead.""",
                 callActivityProcessId));
   }
+
+  @Test
+  public void shouldRejectActivationWithNonExistingAncestor() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID).startEvent().userTask("A").endEvent().done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", 12345L)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that the ancestor with key 12345 is not found")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate"
+                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " active state: '12345'")
+                .formatted(PROCESS_ID));
+  }
 }
