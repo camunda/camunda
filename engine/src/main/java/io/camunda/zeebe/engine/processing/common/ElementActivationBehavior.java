@@ -193,6 +193,16 @@ public final class ElementActivationBehavior {
       createVariablesCallback.accept(nextSubprocess.getId(), activatedInstanceKey);
     } else {
       // no subprocess instance found, let's create a new one
+
+      if (nextSubprocess.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY
+          || (nextSubprocess.getFlowScope() != null
+              && nextSubprocess.getFlowScope().getElementType()
+                  == BpmnElementType.MULTI_INSTANCE_BODY)) {
+        // unsupported scenario, attempting to activate a multi-instance body or an inner instance
+        throw new UnsupportedMultiInstanceBodyActivationException(
+            BufferUtil.bufferAsString(nextSubprocess.getId()), bpmnProcessId);
+      }
+
       activatedInstanceKey =
           activateFlowScope(
               processInstanceRecord, flowScopeKey, nextSubprocess, createVariablesCallback);

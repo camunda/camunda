@@ -17,10 +17,10 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.ActivatedElementKeys;
 import io.camunda.zeebe.engine.processing.common.EventSubscriptionException;
 import io.camunda.zeebe.engine.processing.common.MultipleFlowScopeInstancesFoundException;
+import io.camunda.zeebe.engine.processing.common.UnsupportedMultiInstanceBodyActivationException;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
@@ -51,12 +51,9 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
 import org.agrona.Strings;
 
 public final class ProcessInstanceModificationProcessor
@@ -104,6 +101,12 @@ public final class ProcessInstanceModificationProcessor
       """
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       with an ancestor scope key that does not exist, or is not in an active state: '%s'""";
+
+  private static final String ERROR_MESSAGE_ATTEMPTED_TO_ACTIVATE_MULTI_INSTANCE =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      that would result in the activation of multi-instance element '%s', which is currently \
+      unsupported.""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -275,7 +278,16 @@ public final class ProcessInstanceModificationProcessor
       responseWriter.writeRejectionOnCommand(
           typedCommand, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
+
+    } else if (error instanceof UnsupportedMultiInstanceBodyActivationException exception) {
+      final var message =
+          ERROR_MESSAGE_ATTEMPTED_TO_ACTIVATE_MULTI_INSTANCE.formatted(
+              exception.getBpmnProcessId(), exception.getMultiInstanceId());
+      rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      return ProcessingError.EXPECTED_ERROR;
     }
+
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
@@ -319,8 +331,6 @@ public final class ProcessInstanceModificationProcessor
       final DeployedProcess process,
       final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
     return validateElementsDoNotBelongToEventBasedGateway(process, activateInstructions)
-        .flatMap(valid -> validateWontActivateInnerMultiInstance(process, activateInstructions))
-        .flatMap(valid -> validateElementsNotInsideMultiInstance(process, activateInstructions))
         .flatMap(valid -> validateElementsHaveSupportedType(process, activateInstructions))
         .map(valid -> VALID);
   }
@@ -349,91 +359,6 @@ public final class ProcessInstanceModificationProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", elementIdsConnectedToEventBasedGateway),
             "The activation of events belonging to an event-based gateway is not supported");
-    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
-  }
-
-  private Either<Rejection, ?> validateWontActivateInnerMultiInstance(
-      final DeployedProcess process,
-      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final List<String> elementsInsideMultiInstance =
-        activateInstructions.stream()
-            .filter(
-                isSelectedAncestorOfTypeMultiInstance()
-                    .or(isMultiInstanceBetweenAncestorAndElement(process)))
-            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
-            .distinct()
-            .toList();
-
-    if (elementsInsideMultiInstance.isEmpty()) {
-      return VALID;
-    }
-
-    final String reason =
-        String.format(
-            ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED,
-            BufferUtil.bufferAsString(process.getBpmnProcessId()),
-            String.join("', '", elementsInsideMultiInstance),
-            "The activate instruction would result in the activation of a new instance of a"
-                + " multi-instance marked element");
-    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
-  }
-
-  private Predicate<ProcessInstanceModificationActivateInstructionValue>
-      isSelectedAncestorOfTypeMultiInstance() {
-    return instruction -> {
-      if (instruction.getAncestorScopeKey() < 0) {
-        return false;
-      }
-      final var selectedAncestor =
-          elementInstanceState.getInstance(instruction.getAncestorScopeKey());
-      if (selectedAncestor == null) {
-        return false;
-      }
-      return selectedAncestor.getValue().getBpmnElementType()
-          == BpmnElementType.MULTI_INSTANCE_BODY;
-    };
-  }
-
-  private Predicate<ProcessInstanceModificationActivateInstructionValue>
-      isMultiInstanceBetweenAncestorAndElement(final DeployedProcess process) {
-    return instruction -> {
-      if (instruction.getAncestorScopeKey() < 0) {
-        return false;
-      }
-      final var selectedAncestor =
-          elementInstanceState.getInstance(instruction.getAncestorScopeKey());
-      if (selectedAncestor == null) {
-        return false;
-      }
-      final var elementId = BufferUtil.wrapString(instruction.getElementId());
-      final var selectedAncestorId = selectedAncestor.getValue().getElementId();
-      return findMultiInstanceBodyFlowScope(process, elementId)
-          .map(multiInstanceBody -> isFlowScopeOfElement(multiInstanceBody, selectedAncestorId))
-          .orElse(false);
-    };
-  }
-
-  private Either<Rejection, ?> validateElementsNotInsideMultiInstance(
-      final DeployedProcess process,
-      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions) {
-    final List<String> elementsInsideMultiInstance =
-        activateInstructions.stream()
-            .map(ProcessInstanceModificationActivateInstructionValue::getElementId)
-            .distinct()
-            .filter(
-                elementId -> isInsideMultiInstanceBody(process, BufferUtil.wrapString(elementId)))
-            .toList();
-
-    if (elementsInsideMultiInstance.isEmpty()) {
-      return VALID;
-    }
-
-    final String reason =
-        String.format(
-            ERROR_MESSAGE_ACTIVATE_ELEMENT_UNSUPPORTED,
-            BufferUtil.bufferAsString(process.getBpmnProcessId()),
-            String.join("', '", elementsInsideMultiInstance),
-            "The activation of elements inside a multi-instance subprocess is not supported");
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
@@ -498,30 +423,6 @@ public final class ProcessInstanceModificationProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", invalidAncestorKeys));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
-  }
-
-  private boolean isInsideMultiInstanceBody(
-      final DeployedProcess process, final DirectBuffer elementId) {
-    return findMultiInstanceBodyFlowScope(process, elementId).isPresent();
-  }
-
-  private Optional<ExecutableMultiInstanceBody> findMultiInstanceBodyFlowScope(
-      final DeployedProcess process, final DirectBuffer elementId) {
-    final var element = process.getProcess().getElementById(elementId);
-
-    if (element.getFlowScope() == null) {
-      return Optional.empty();
-    }
-
-    // We can't use element.getFlowScope() here as it return the element instead of the
-    // multi-instance body (e.g. the subprocess)
-    final var flowScope = process.getProcess().getElementById(element.getFlowScope().getId());
-
-    if (flowScope.getElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
-      return Optional.of((ExecutableMultiInstanceBody) flowScope);
-    }
-
-    return findMultiInstanceBodyFlowScope(process, flowScope.getId());
   }
 
   private Either<Rejection, ?> validateElementInstanceExists(

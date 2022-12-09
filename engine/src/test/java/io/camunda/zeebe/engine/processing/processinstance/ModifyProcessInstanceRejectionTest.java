@@ -663,9 +663,8 @@ public class ModifyProcessInstanceRejectionTest {
             String.format(
                 """
                 Expected to modify instance of process '%s' but it contains one or more activate \
-                instructions for elements that are unsupported: 'A'. The activate instruction \
-                would result in the activation of a new instance of a multi-instance marked \
-                element.""",
+                instructions that would result in the activation of multi-instance element \
+                'SubProcess', which is currently unsupported.""",
                 PROCESS_ID));
   }
 
@@ -715,9 +714,8 @@ public class ModifyProcessInstanceRejectionTest {
             String.format(
                 """
                 Expected to modify instance of process '%s' but it contains one or more activate \
-                instructions for elements that are unsupported: 'A'. The activate instruction \
-                would result in the activation of a new instance of a multi-instance marked \
-                element.""",
+                instructions that would result in the activation of multi-instance element \
+                'SubProcess', which is currently unsupported.""",
                 PROCESS_ID));
   }
 }
