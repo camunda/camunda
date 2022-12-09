@@ -52,12 +52,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
     this.metrics = new SequencerMetrics(partitionId);
   }
 
-  /**
-   * @param eventCount the potential event count we want to check
-   * @param batchSize the potential batch Size (in bytes) we want to check
-   * @return True if the serialized batch would fit within {@link Sequencer#maxFragmentSize}, false
-   *     otherwise.
-   */
+  /** {@inheritDoc} */
   @Override
   public boolean canWriteEvents(final int eventCount, final int batchSize) {
     final int framedMessageLength =
@@ -67,11 +62,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
     return framedMessageLength <= maxFragmentSize;
   }
 
-  /**
-   * @param appendEntry the entry to write
-   * @param sourcePosition a back-pointer to the record whose processing created this entry
-   * @return -1 if write was rejected, the position of the entry if write was successful.
-   */
+  /** {@inheritDoc} */
   @Override
   public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
     if (isClosed) {
@@ -112,13 +103,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
     }
   }
 
-  /**
-   * @param appendEntries a set of entries to append; these will be appended in the order in which
-   *     the collection is iterated.
-   * @param sourcePosition a back-pointer to the record whose processing created these entries
-   * @return -1 if write was rejected, 0 if batch was empty, the highest position of the batch if
-   *     write was successful.
-   */
+  /** {@inheritDoc} */
   @Override
   public long tryWrite(
       final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
@@ -167,9 +152,9 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   }
 
   /**
-   * Tries to read a {@link SequencedBatch} from the queue.
+   * Retrieves, but does not remove, the first item in the sequenced batch queue.
    *
-   * @return A {@link SequencedBatch} or null if none is available.
+   * @return A {@link SequencedBatch} or null if none is available
    */
   public SequencedBatch tryRead() {
     return queue.poll();
