@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * consumer. The sequencer does not copy or serialize entries, it only keeps a reference to them
  * until they are handed off to the consumer.
  */
-public final class Sequencer implements LogStreamBatchWriter, Closeable {
+final class Sequencer implements LogStreamBatchWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int partitionId;
   private final int maxFragmentSize;
@@ -44,7 +44,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
 
-  public Sequencer(final int partitionId, final long initialPosition, final int maxFragmentSize) {
+  Sequencer(final int partitionId, final long initialPosition, final int maxFragmentSize) {
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     this.position = initialPosition;
     this.partitionId = partitionId;
@@ -156,11 +156,11 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
    *
    * @return A {@link SequencedBatch} or null if none is available
    */
-  public SequencedBatch tryRead() {
+  SequencedBatch tryRead() {
     return queue.poll();
   }
 
-  public SequencedBatch peek() {
+  SequencedBatch peek() {
     return queue.peek();
   }
 
@@ -174,14 +174,7 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
     isClosed = true;
   }
 
-  /**
-   * @return true if the sequencer is closed for writing.
-   */
-  public boolean isClosed() {
-    return isClosed;
-  }
-
-  public void registerConsumer(final ActorCondition consumer) {
+  void registerConsumer(final ActorCondition consumer) {
     this.consumer = consumer;
   }
 
@@ -190,7 +183,4 @@ public final class Sequencer implements LogStreamBatchWriter, Closeable {
         && entry.recordValue().getLength() > 0
         && entry.recordMetadata() != null; // metadata is currently allowed to be empty;
   }
-
-  public record SequencedBatch(
-      long firstPosition, long sourcePosition, List<LogAppendEntry> entries) {}
 }

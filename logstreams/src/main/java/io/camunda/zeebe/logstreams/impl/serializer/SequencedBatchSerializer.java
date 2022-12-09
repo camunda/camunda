@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
-import io.camunda.zeebe.logstreams.impl.log.Sequencer.SequencedBatch;
+import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.clock.ActorClock;

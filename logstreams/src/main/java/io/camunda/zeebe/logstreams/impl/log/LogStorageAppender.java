@@ -18,7 +18,6 @@ import io.camunda.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
 import io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants;
 import io.camunda.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
-import io.camunda.zeebe.logstreams.impl.log.Sequencer.SequencedBatch;
 import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.Actor;

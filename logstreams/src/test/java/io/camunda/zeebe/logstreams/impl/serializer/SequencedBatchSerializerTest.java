@@ -12,7 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
-import io.camunda.zeebe.logstreams.impl.log.Sequencer.SequencedBatch;
+import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
 import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
