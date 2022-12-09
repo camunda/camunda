@@ -145,6 +145,11 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
       # snapshotPeriod: 15m
 
+      # Delays log compaction after taking a new snapshot. This is useful to allow slower followers to catch
+      # up without needing snapshot replication every time the leader takes a new snapshot.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGCOMPACTIONDELAY.
+      # logCompactionDelay: 1m
+
       # Configure whether to monitor disk usage to prevent out of disk space issues.
       # If set to false the broker might run out of disk space and end in a non recoverable state.
       # If set to true the disk space will be monitored and the broker will reject commands and pause replication

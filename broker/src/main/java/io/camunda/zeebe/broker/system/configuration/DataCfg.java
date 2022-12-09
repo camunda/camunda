@@ -33,6 +33,7 @@ public final class DataCfg implements ConfigurationEntry {
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
   private Duration snapshotPeriod = Duration.ofMinutes(5);
+  private Duration logCompactionDelay = Duration.ofMinutes(1);
 
   private int logIndexDensity = 100;
 
@@ -84,6 +85,14 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setSnapshotPeriod(final Duration snapshotPeriod) {
     this.snapshotPeriod = snapshotPeriod;
+  }
+
+  public Duration getLogCompactionDelay() {
+    return logCompactionDelay;
+  }
+
+  public void setLogCompactionDelay(final Duration logCompactionDelay) {
+    this.logCompactionDelay = logCompactionDelay;
   }
 
   public int getLogIndexDensity() {
