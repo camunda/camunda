@@ -608,6 +608,49 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
+  public void shouldRejectActivationOfMultiInstanceInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .subProcess(
+                    "subprocess", s -> s.embeddedSubProcess().startEvent().manualTask("B").done())
+                .multiInstance(m -> m.zeebeInputCollectionExpression("[1]"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect we cannot activate an instance of the multi-instance")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to modify instance of process 'process' but it contains one or more activate \
+            instructions that would result in the activation of multi-instance element \
+            'subprocess', which is currently unsupported.""");
+  }
+
+  @Test
   public void shouldRejectSelectedAncestorIsMultiInstance() {
     // given
     ENGINE
