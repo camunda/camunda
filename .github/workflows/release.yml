@@ -147,17 +147,24 @@ jobs:
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
           pushd target/checkout
-          export BUILD_DIR=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
-          export ARTIFACT=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
-          echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
           export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
           echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
           popd
-      - name: Upload Zeebe Release Archive
+      - name: Collect Release artifacts
+        id: release-artifacts
+        run: |
+          ARTIFACT_DIR=$(mktemp -d)
+          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
+          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl.exe "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl.darwin "${ARTIFACT_DIR}/"
+          echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
+      - name: Upload Zeebe Release Artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: camunda-zeebe.tar.gz
-          path: ${{ steps.maven-release.outputs.distball }}
+          name: release-artifacts
+          path: ${{ steps.release-artifacts.outputs.dir }}
           retention-days: 5
       - name: Update Compat Version
         shell: bash
@@ -176,68 +183,6 @@ jobs:
           FILE=$(mvn -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git commit -am "build(project): update java compat versions"
-      - name: Github Release
-        shell: bash
-        # FIXME check if we can simplify it composing it with actions
-        # e.g. checksums https://github.com/marketplace/actions/generate-release-hashes
-        # https://github.com/actions/upload-release-asset
-        # https://github.com/actions/create-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          declare -a ASSETS=()
-          declare -a GH_OPTIONS=()
-
-          # This is the list of base artifacts that we expect to upload as part of the release; we'll also
-          # compute their sha1 sum and upload those as well, but no need to list that here. If there are new
-          # binaries to ship with a Zeebe release, add them here.
-          declare -a ARTIFACTS=( \
-            "dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz" \
-            "dist/target/camunda-zeebe-${RELEASE_VERSION}.zip" \
-            "clients/go/cmd/zbctl/dist/zbctl" \
-            "clients/go/cmd/zbctl/dist/zbctl.exe" \
-            "clients/go/cmd/zbctl/dist/zbctl.darwin" \
-          )
-
-          # Prepare assets
-          CHECKSUM_DIR=$(mktemp -d)
-          if [ ! -e "${CHECKSUM_DIR}" ]; then
-            >&2 echo "Failed to create temporary assets directory directory"
-            exit 1
-          fi
-          for artifact in "${ARTIFACTS[@]}"; do
-            filename=$(basename "${artifact}")
-            checksum="${CHECKSUM_DIR}/${filename}.sha1sum"
-
-            if [ ! -f "${artifact}" ]; then
-              echo "Expected to upload asset ${artifact} as part of the GitHub release, but no such file was found; are you sure the release went through correctly?"
-              exit 1
-            fi
-
-            sha1sum "${artifact}" > "${checksum}"
-            sha1sumResult=$?
-            if [ ! -f "${checksum}" ]; then
-              echo "Failed to created checksum of artifact ${artifact} at ${checksum}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
-              exit 1
-            fi
-
-            ASSETS+=("${artifact}" "${checksum}")
-          done
-
-          # Mark as pre-release already if it's an alpha or rc
-          shopt -s nocasematch # set matching to case insensitive
-          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
-            GH_OPTIONS+=(--prerelease)
-          fi
-          shopt -u nocasematch # reset it
-
-          if [ "$PUSH_CHANGES" = "true" ]; then
-            # Perform release: create draft, upload assets, etc.
-            # See https://cli.github.com/manual/gh_release_create for more
-            gh release create --repo "camunda/zeebe" --draft --notes "Release ${RELEASE_VERSION}" \
-              --title "${RELEASE_VERSION}" "${GH_OPTIONS[@]}" \
-              "${RELEASE_VERSION}" "${ASSETS[@]}"
-          fi
       - name: Go Post-Release
         shell: bash
         run: |
@@ -262,6 +207,51 @@ jobs:
         if: always()
         shell: bash
         run: rm -rf $HOME/.gnupg
+  github:
+    needs: release
+    name: Github Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts
+      - name: Create Artifact Checksums
+        id: checksum
+        shell: bash
+        run: |
+          for filename in *; do
+            checksumFile="${filename}.sha1sum"
+            sha1sum "${filename}" > "${checksumFile}"
+            sha1sumResult=$?
+            if [ ! -f "${checksumFile}" ]; then
+              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+              exit 1
+            fi
+          done
+      - name: Determine if Pre-Release
+        id: pre-release
+        shell: bash
+        run: |
+          shopt -s nocasematch # set matching to case insensitive
+          PRE_RELEASE=false
+          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
+            PRE_RELEASE=true
+          fi
+          shopt -u nocasematch # reset it
+          echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
+      - uses: ncipollo/release-action@v1
+        if: ${{ inputs.pushChanges == 'true' }}
+        with:
+          name: ${{ inputs.releaseVersion }}
+          artifacts: "*"
+          artifactErrorsFailBuild: true
+          draft: true
+          body: Release ${{ inputs.releaseVersion }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps.pre-release.result }}
+          tag: ${{ inputs.releaseVersion }}
   docker:
     needs: release
     name: Docker Image Release
@@ -290,10 +280,10 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Download Zeebe Release Archive
+      - name: Download Zeebe Release Artifacts
         uses: actions/download-artifact@v3
         with:
-          name: camunda-zeebe.tar.gz
+          name: release-artifacts
       - name: Build Docker Image
         uses: ./.github/actions/build-docker
         id: build-docker
@@ -320,4 +310,3 @@ jobs:
       - name: Push Docker Image Tag latest
         if: ${{ inputs.isLatest == 'true' && inputs.pushChanges == 'true' }}
         run: docker push ${{ env.DOCKER_IMAGE }}:latest
-
