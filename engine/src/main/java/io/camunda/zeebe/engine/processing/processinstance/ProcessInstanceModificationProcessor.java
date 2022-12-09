@@ -262,14 +262,10 @@ public final class ProcessInstanceModificationProcessor
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof ExceededBatchRecordSizeException) {
-      rejectionWriter.appendRejection(
-          typedCommand,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
-      responseWriter.writeRejectionOnCommand(
-          typedCommand,
-          RejectionType.INVALID_ARGUMENT,
-          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey()));
+      final var message =
+          ERROR_COMMAND_TOO_LARGE.formatted(typedCommand.getValue().getProcessInstanceKey());
+      rejectionWriter.appendRejection(typedCommand, RejectionType.INVALID_ARGUMENT, message);
+      responseWriter.writeRejectionOnCommand(typedCommand, RejectionType.INVALID_ARGUMENT, message);
       return ProcessingError.EXPECTED_ERROR;
 
     } else if (error instanceof TerminatedChildProcessException exception) {
