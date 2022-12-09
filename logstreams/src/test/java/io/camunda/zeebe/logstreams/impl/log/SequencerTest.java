@@ -273,7 +273,7 @@ final class SequencerTest {
       final Sequencer sequencer, final long initialPosition, final long batchesToRead) {
     return new Thread(
         () -> {
-          var batchesRead = 0;
+          var batchesRead = 0L;
           var lastReadPosition = initialPosition - 1;
           while (batchesRead < batchesToRead) {
             final var result = sequencer.tryRead();
@@ -294,7 +294,7 @@ final class SequencerTest {
       final boolean isOnlyWriter) {
     return new Thread(
         () -> {
-          var batchesWritten = 0;
+          var batchesWritten = 0L;
           var lastWrittenPosition = initialPosition - 1;
           while (batchesWritten < batchesToWrite) {
             final var result = sequencer.tryWrite(batchToWrite);
