@@ -102,6 +102,19 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   @Override
+  public String toString() {
+    return "LoggedEvent [position="
+        + getPosition()
+        + ", key="
+        + getKey()
+        + ", timestamp="
+        + getTimestamp()
+        + ", sourceEventPosition="
+        + getSourceEventPosition()
+        + "]";
+  }
+
+  @Override
   public int getLength() {
     return getFragmentLength();
   }
