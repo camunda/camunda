@@ -25,6 +25,14 @@ public interface DecisionState {
   Optional<PersistedDecision> findLatestDecisionById(DirectBuffer decisionId);
 
   /**
+   * Query decisions by the given decision key and return the decision.
+   *
+   * @param decisionKey the key of the decision
+   * @return the decision, or {@link Optional#empty()} if no decision is deployed with the given key
+   */
+  Optional<PersistedDecision> findDecisionByKey(long decisionKey);
+
+  /**
    * Query decision requirements (DRGs) by the given decision requirements id and return the latest
    * version of the DRG.
    *

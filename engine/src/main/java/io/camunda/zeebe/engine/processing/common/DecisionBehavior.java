@@ -58,6 +58,12 @@ public class DecisionBehavior {
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
   }
 
+  public Either<Failure, PersistedDecision> findDecisionByKey(final long decisionKey) {
+    return Either.ofOptional(decisionState.findDecisionByKey(decisionKey))
+        .orElse(new Failure("no decision found for key '%s'".formatted(decisionKey)))
+        .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionKey));
+  }
+
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
     return findDrgByDecision(persistedDecision)
@@ -66,6 +72,10 @@ public class DecisionBehavior {
             failure ->
                 formatDecisionLookupFailure(
                     failure, BufferUtil.bufferAsString(persistedDecision.getDecisionId())));
+  }
+
+  public Failure formatDecisionLookupFailure(final Failure failure, final long decisionKey) {
+    return formatDecisionLookupFailure(failure, String.valueOf(decisionKey));
   }
 
   public Failure formatDecisionLookupFailure(final Failure failure, final String decisionId) {

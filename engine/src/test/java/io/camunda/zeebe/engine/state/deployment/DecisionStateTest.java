@@ -35,9 +35,19 @@ public final class DecisionStateTest {
 
   @DisplayName("should return empty if no decision is deployed")
   @Test
-  void shouldReturnEmptyIfNoDecisionIsDeployed() {
+  void shouldReturnEmptyIfNoDecisionIsDeployedForDeploymentId() {
     // when
     final var persistedDecision = decisionState.findLatestDecisionById(wrapString("decision-1"));
+
+    // then
+    assertThat(persistedDecision).isEmpty();
+  }
+
+  @DisplayName("should return empty if no decision is deployed")
+  @Test
+  void shouldReturnEmptyIfNoDecisionIsDeployedForDeploymentKey() {
+    // when
+    final var persistedDecision = decisionState.findDecisionByKey(1L);
 
     // then
     assertThat(persistedDecision).isEmpty();
@@ -119,6 +129,36 @@ public final class DecisionStateTest {
     assertThat(persistedDecision2).isNotEmpty();
     assertThat(bufferAsString(persistedDecision2.get().getDecisionId()))
         .isEqualTo(decisionRecord2.getDecisionId());
+  }
+
+  @DisplayName("should find deployed decision by KEY")
+  @Test
+  void shouldFindDeployedDecisionByKey() {
+    // given
+    final var decisionRecord1 =
+        sampleDecisionRecord().setDecisionId("decision-1").setDecisionKey(1L);
+    final var decisionRecord2 =
+        sampleDecisionRecord().setDecisionId("decision-2").setDecisionKey(2L);
+    final var drg = sampleDecisionRequirementsRecord();
+    decisionState.storeDecisionRequirements(drg);
+
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
+
+    // when
+    final var persistedDecision1 =
+        decisionState.findDecisionByKey(decisionRecord1.getDecisionKey());
+    final var persistedDecision2 =
+        decisionState.findDecisionByKey(decisionRecord2.getDecisionKey());
+
+    // then
+    assertThat(persistedDecision1).isNotEmpty();
+    assertThat(persistedDecision1.get().getDecisionKey())
+        .isEqualTo(decisionRecord1.getDecisionKey());
+
+    assertThat(persistedDecision2).isNotEmpty();
+    assertThat(persistedDecision2.get().getDecisionKey())
+        .isEqualTo(decisionRecord2.getDecisionKey());
   }
 
   @DisplayName("should return the latest version of the deployed decision by ID")
