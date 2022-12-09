@@ -469,4 +469,140 @@ public class ModifyProcessInstanceRejectionTest {
                     + " active state: '12345'")
                 .formatted(PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectActivationWhenAncestorScopeIsActivating() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("A").endEvent())
+                .zeebeInputExpression("doesNotExist", "variable")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sp")
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", subProcessKey)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that activating an element in an ACTIVATING ancestor is not allowed")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate"
+                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " active state: '%d'")
+                .formatted(PROCESS_ID, subProcessKey));
+  }
+
+  @Test
+  public void shouldRejectActivationWhenAncestorScopeIsCompleted() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("sp", sp -> sp.embeddedSubProcess().startEvent().task("A").endEvent())
+                .userTask("B")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sp")
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", subProcessKey)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that activating an element in a COMPLETING ancestor is not allowed")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate"
+                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " active state: '%d'")
+                .formatted(PROCESS_ID, subProcessKey));
+  }
+
+  @Test
+  public void shouldRejectActivationWhenAncestorScopeIsTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("A").endEvent())
+                .boundaryEvent(
+                    "be",
+                    be ->
+                        be.message(
+                            m ->
+                                m.name("msg").zeebeCorrelationKeyExpression("=\"correlationKey\"")))
+                .cancelActivity(true)
+                .userTask("B")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    ENGINE.message().withName("msg").withCorrelationKey("correlationKey").publish();
+    final var subProcessKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("sp")
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", subProcessKey)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that activating an element in a TERMINATING ancestor is not allowed")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate"
+                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " active state: '%d'")
+                .formatted(PROCESS_ID, subProcessKey));
+  }
 }
