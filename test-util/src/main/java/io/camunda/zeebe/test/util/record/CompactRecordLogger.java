@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -85,7 +86,8 @@ public class CompactRecordLogger {
           entry("_ELEMENT", ""),
           entry("EVENT", "EVNT"),
           entry("DECISION_REQUIREMENTS", "DRG"),
-          entry("EVALUATION", "EVAL"));
+          entry("EVALUATION", "EVAL"),
+          entry("SIGNAL_SUBSCRIPTION", "SIG_SUB"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -128,6 +130,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.DECISION_REQUIREMENTS, this::summarizeDecisionRequirements);
     valueLoggers.put(ValueType.DECISION, this::summarizeDecision);
     valueLoggers.put(ValueType.DECISION_EVALUATION, this::summarizeDecisionEvaluation);
+    valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -714,6 +717,17 @@ public class CompactRecordLogger {
     return String.format(" of <decision %s[%s]>", formatId(decisionId), formatKey(decisionKey));
   }
 
+  private String summarizeSignalSubscription(final Record<?> record) {
+    final var value = (SignalSubscriptionRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getSignalName())
+        .append("\"")
+        .append(" <process ")
+        .append(formatId(value.getBpmnProcessId()))
+        .toString();
+  }
   /**
    * Shortens and formats the key and stores it in the key substitutions, that is printed in the
    * list of decomposed keys for debugging at the end.

@@ -99,6 +99,8 @@ public class ElasticsearchExporterConfiguration {
         return index.deploymentDistribution;
       case ESCALATION:
         return index.escalation;
+      case SIGNAL_SUBSCRIPTION:
+        return index.signalSubscription;
       default:
         return false;
     }
@@ -154,6 +156,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean processEvent = false;
     public boolean deploymentDistribution = true;
     public boolean escalation = true;
+    public boolean signalSubscription = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -233,6 +236,8 @@ public class ElasticsearchExporterConfiguration {
           + deploymentDistribution
           + ", escalation="
           + escalation
+          + ", signalSubscription="
+          + signalSubscription
           + '}';
     }
   }

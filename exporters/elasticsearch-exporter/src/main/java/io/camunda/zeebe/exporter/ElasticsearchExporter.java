@@ -263,6 +263,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.escalation) {
         createValueIndexTemplate(ValueType.ESCALATION);
       }
+      if (index.signalSubscription) {
+        createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION);
+      }
     }
 
     indexTemplatesCreated = true;
