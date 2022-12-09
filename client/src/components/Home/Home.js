@@ -21,6 +21,7 @@ import {
   DashboardTemplateModal,
   EmptyState,
   Button,
+  LoadingIndicator,
 } from 'components';
 import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
 
@@ -106,13 +107,16 @@ export function Home({mightFail, user}) {
 
   const isEditor = user?.authorizations.includes('entity_editor');
 
+  const showEmptyStateComponent = !entities?.length && isEditor;
+
   return (
     <div className="Home">
       <div className="welcomeMessage">
         {t('home.welcome')}, {user?.name}
       </div>
       <div className="content">
-        {!isLoading && !entities?.length && isEditor ? (
+        {isLoading && <LoadingIndicator />}
+        {!isLoading && showEmptyStateComponent && (
           <EmptyState
             title={t('home.emptyState.title')}
             description={t('home.emptyState.description')}
@@ -131,7 +135,8 @@ export function Home({mightFail, user}) {
               </>
             }
           />
-        ) : (
+        )}
+        {!isLoading && !showEmptyStateComponent && (
           <EntityList
             name={t('home.title')}
             action={(bulkActive) =>
@@ -156,7 +161,6 @@ export function Home({mightFail, user}) {
               ]
             }
             empty={t('home.empty')}
-            isLoading={isLoading}
             sorting={sorting}
             onChange={loadList}
             columns={[
