@@ -722,7 +722,7 @@
         # The unit is number of records by which the follower may lag behind before the leader
         # prefers replicating snapshots instead of records.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_RAFT_PREFERSNAPSHOTREPLICATIONTHRESHOLD.
-        # preferSnapshotReplicationThreshold: 100
+        # preferSnapshotReplicationThreshold: 10000
 
         # Defines whether segment files are pre-allocated to their full size on creation or not. If
         # true, when a new segment is created on demand, disk space will be reserved for its full

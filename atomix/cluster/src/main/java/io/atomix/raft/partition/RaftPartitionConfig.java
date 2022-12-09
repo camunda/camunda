@@ -29,7 +29,7 @@ public class RaftPartitionConfig {
   private static final Duration DEFAULT_MAX_QUORUM_RESPONSE_TIMEOUT = Duration.ofSeconds(0);
   private static final RoundRobinPartitionDistributor DEFAULT_PARTITION_DISTRIBUTOR =
       new RoundRobinPartitionDistributor();
-  private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 100;
+  private static final int DEFAULT_SNAPSHOT_REPLICATION_THRESHOLD = 10_000;
 
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
