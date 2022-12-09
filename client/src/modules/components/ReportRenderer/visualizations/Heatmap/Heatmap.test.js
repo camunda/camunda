@@ -355,6 +355,41 @@ describe('multi-measure reports', () => {
     expect(tooltip).toIncludeText('Duration:2d 15s');
   });
 
+  it('should show tooltips in the short notation', () => {
+    const multiMeasureReportPersistedTooltips = update(report, {
+      data: {
+        view: {properties: {$set: ['frequency', 'duration']}},
+        configuration: {$merge: {alwaysShowAbsolute: true, alwaysShowRelative: true}},
+      },
+      result: {
+        measures: {
+          $push: [
+            {
+              property: 'duration',
+              data: [
+                {key: 'a', value: 1234},
+                {key: 'b', value: 5678},
+              ],
+              aggregationType: {
+                type: 'avg',
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const node = shallow(<Heatmap {...props} report={multiMeasureReportPersistedTooltips} />);
+
+    getTooltipText.mockReturnValueOnce('12');
+    getTooltipText.mockReturnValueOnce('2d 15s');
+
+    const tooltip = node.find('HeatmapOverlay').renderProp('formatter')('', 'b');
+
+    expect(tooltip).toIncludeText('Count:12');
+    expect(tooltip).toIncludeText('Avg:2d 15s');
+  });
+
   it('should allow switching between heat visualizations for multi-measure reports', () => {
     const node = shallow(<Heatmap {...props} report={multiMeasureReport} />);
 

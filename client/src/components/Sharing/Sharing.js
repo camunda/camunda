@@ -20,6 +20,7 @@ import {
   ReportDetails,
   InstanceCount,
   DiagramScrollLock,
+  PageTitle,
 } from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
@@ -129,6 +130,10 @@ export class Sharing extends React.Component {
     const SharingView = this.getSharingView();
     return (
       <div className={classnames('Sharing', {compact: isEmbedded, report: isReport})}>
+        <PageTitle
+          pageName={isReport ? t('report.label') : t('dashboard.label')}
+          resourceName={evaluationResult.name}
+        />
         {header !== 'hidden' && (
           <div className="header">
             <div className="title-container">

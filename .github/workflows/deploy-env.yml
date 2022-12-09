@@ -35,7 +35,7 @@ jobs:
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@132f1c693085392ea53f2fb202e43445c84f6e51
+      uses: hashicorp/vault-action@8fa61e909919a3f94952e9e07ace6b5a1114440b
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -53,26 +53,30 @@ jobs:
     - name: Determine Argocd arguments
       shell: bash
       run: |
-        echo "c7_arguments=--dest-namespace ${app_name} \
+        echo "c7_arguments=--dest-namespace optimize-${app_name} \
             --file .ci/deployments-resources/argo/c7-optimize-application.yml \
             --helm-set optimize.image.tag=${docker_tag} \
             --helm-set cambpm.image.tag=${cambpm_version} \
             --helm-set elasticsearch.image.tag=${es_version} \
-            --helm-set global.labels.app=${app_name} \
-            --name ${app_name} \
+            --helm-set global.labels.app=optimize-${app_name} \
+            --helm-set git.branch=${revision} \
+            --name optimize-${app_name} \
+            --revision ${revision} \
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
 
-        echo "c8_arguments=--dest-namespace ${app_name}-c8 \
+        echo "c8_arguments=--dest-namespace optimize-${app_name}-c8 \
             --file .ci/deployments-resources/argo/c8-optimize-application.yml \
-            --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-stage-c8.optimize.camunda.cloud/auth/realms/camunda-platform \
-            --helm-set global.identity.auth.optimize.redirectUrl=https://stage-c8.optimize.camunda.cloud \
+            --helm-set global.identity.auth.publicIssuerUrl=https://keycloak-${app_name}-c8.optimize.camunda.cloud/auth/realms/camunda-platform \
+            --helm-set global.identity.auth.optimize.redirectUrl=https://${app_name}-c8.optimize.camunda.cloud \
             --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
             --helm-set camunda-platform.identity.image.tag=${identity_version} \
             --helm-set camunda-platform.zeebe.image.tag=${zeebe_version} \
             --helm-set camunda-platform.zeebe-gateway.image.tag=${zeebe_version} \
-            --helm-set global.labels.app=c8-${app_name} \
-            --name c8-${app_name} \
+            --helm-set global.labels.app=c8-optimize-${app_name} \
+            --helm-set git.branch=${revision} \
+            --name c8-optimize-${app_name} \
+            --revision ${revision} \
             --project optimize-previews \
             --upsert" >> $GITHUB_ENV
       env:
@@ -82,7 +86,7 @@ jobs:
         identity_version: ${{ github.event.inputs.identity_version }}
         cambpm_version: ${{ github.event.inputs.cambpm_version }}
         docker_tag: ${{ github.sha }}
-        app_name: optimize-${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
+        app_name: ${{ github.event.inputs.app_name == 'master' && 'stage' || github.event.inputs.app_name }}
     #########################################################################
     # Create Optimize environment
     - name: Deploy c7 Optimize Environment
@@ -117,7 +121,7 @@ jobs:
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@132f1c693085392ea53f2fb202e43445c84f6e51
+      uses: hashicorp/vault-action@8fa61e909919a3f94952e9e07ace6b5a1114440b
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle

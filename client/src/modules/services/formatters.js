@@ -74,7 +74,7 @@ export function percentage(number) {
   return Number(Number(number).toFixed(2)) + '%';
 }
 
-export function duration(timeObject, precision) {
+export function duration(timeObject, precision, shortNotation) {
   // In case the precision from the report configuration is passed to the function but it is turned off, its value is set to null
   // In this case we want to set the default value of the precision to be 3
   if (precision === null) {
@@ -112,11 +112,10 @@ export function duration(timeObject, precision) {
           if (number === 0) {
             remainingPrecision++;
           } else {
-            timeSegments.push(
-              `${number}\u00A0${t(
-                `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
-              )}`
-            );
+            const longLabel = `\u00A0${t(
+              `common.unit.${currentUnit.label}.label${number !== 1 ? '-plural' : ''}`
+            )}`;
+            timeSegments.push(`${number}${shortNotation ? currentUnit.abbreviation : longLabel}`);
           }
           remainingTime -= number * currentUnit.value;
         }

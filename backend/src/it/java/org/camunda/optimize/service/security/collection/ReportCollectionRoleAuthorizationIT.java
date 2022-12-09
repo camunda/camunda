@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -26,7 +25,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -34,7 +32,6 @@ import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -571,67 +568,6 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
-  @Test
-  public void getRolesContainsScopeAuthorizationsWhenManagerCalls() {
-    // given
-    final String collectionId = createCollectionAndAddRolesWithKermitRoleType(RoleType.EDITOR);
-
-    // when
-    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRoles(collectionId);
-    Optional<CollectionRoleResponseDto> testGroup = roles.stream()
-      .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
-      .findFirst();
-    Optional<CollectionRoleResponseDto> missPiggy = roles.stream()
-      .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
-      .findFirst();
-    Optional<CollectionRoleResponseDto> kermit = roles.stream()
-      .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
-      .findFirst();
-
-    // then
-    assertThat(testGroup).isPresent();
-    assertThat(missPiggy).isPresent();
-    assertThat(kermit).isPresent();
-
-    // if manager gets all roles, hasFullScopeAuthorizations should be boolean
-    assertThat(testGroup.get().getHasFullScopeAuthorizations()).isFalse();
-    assertThat(missPiggy.get().getHasFullScopeAuthorizations()).isFalse();
-    assertThat(kermit.get().getHasFullScopeAuthorizations()).isTrue();
-  }
-
-  @ParameterizedTest(name = "Get authorizations as non manager role type {0}")
-  @MethodSource("nonManagerRoleTypes")
-  public void getRolesDoesNotContainScopeAuthorizationsWhenNonManagerCalls(RoleType kermitRoleType) {
-    // given
-    final String collectionId = createCollectionAndAddRolesWithKermitRoleType(kermitRoleType);
-
-    // when
-    List<CollectionRoleResponseDto> roles = collectionClient.getCollectionRolesAsUser(
-      collectionId,
-      USER_KERMIT,
-      USER_KERMIT
-    );
-    Optional<CollectionRoleResponseDto> testGroup = roles.stream()
-      .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
-      .findFirst();
-    Optional<CollectionRoleResponseDto> missPiggy = roles.stream()
-      .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
-      .findFirst();
-    Optional<CollectionRoleResponseDto> kermit = roles.stream()
-      .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
-      .findFirst();
-
-    // then
-    assertThat(testGroup).isPresent();
-    assertThat(missPiggy).isPresent();
-    assertThat(kermit).isPresent();
-
-    // if non manager get all roles, hasFullScopeAuthorizations should be null
-    assertThat(testGroup.get().getHasFullScopeAuthorizations()).isNull();
-    assertThat(missPiggy.get().getHasFullScopeAuthorizations()).isNull();
-    assertThat(kermit.get().getHasFullScopeAuthorizations()).isNull();
-  }
-
   private String createCollectionAndAddRolesWithKermitRoleType(RoleType kermitRoleType) {
     final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto collectionScope1 = new CollectionScopeEntryDto(DefinitionType.PROCESS, "key1");
@@ -859,6 +795,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     IdentityAndRole identityAndRole;
     ReportScenario reportScenario;
   }
+
   @Data
   @AllArgsConstructor
   protected static class ReportScenario {

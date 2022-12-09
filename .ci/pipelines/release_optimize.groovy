@@ -7,7 +7,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 // general properties for CI execution
-static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
+static String NODE_POOL() { return "agents-n1-standard-8-netssd-stable" }
 
 static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
@@ -17,8 +17,6 @@ static String DOCKER_REGISTRY(boolean pushChanges) {
   return (pushChanges && !isStagingJenkins()) ?
     'registry.camunda.cloud' : 'stage.registry.camunda.cloud'
 }
-
-static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 static String DOCKER_REGISTRY_IMAGE(boolean pushChanges) {
   return "${DOCKER_REGISTRY(pushChanges)}/optimize-ee/optimize"
@@ -171,6 +169,9 @@ spec:
         cpu: 4
         memory: 3Gi
   - name: optimize
+    securityContext:
+      runAsUser: 1000620000
+      runAsGroup: 0
     image: ${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${params.RELEASE_VERSION}
     imagePullPolicy: Always
     env:
@@ -398,7 +399,6 @@ pipeline {
         PUSH_CHANGES = "${params.PUSH_CHANGES}"
         DOCKER_LATEST = "${params.DOCKER_LATEST}"
         DOCKERHUB_REGISTRY_CREDENTIALS = credentials('camunda-dockerhub')
-        GCR_REGISTRY_CREDENTIALS = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
         MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
         // retrieve the git commit hash from the checked out tag of the release
@@ -408,10 +408,9 @@ pipeline {
       steps {
         container('docker') {
           sh("""#!/bin/bash -eux
-          echo '${GCR_REGISTRY_CREDENTIALS}' | docker login -u _json_key https://gcr.io --password-stdin
           echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize ${DOCKER_REGISTRY(params.PUSH_CHANGES)} --password-stdin
 
-          tags=('${PROJECT_DOCKER_IMAGE()}:${VERSION}' '${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}')
+          tags=('${DOCKER_REGISTRY_IMAGE(params.PUSH_CHANGES)}:${VERSION}')
             
           docker_args=""
           if [ "${PUSH_CHANGES}" = true ]; then
@@ -433,7 +432,7 @@ pipeline {
           export VERSION=${VERSION}
           export DATE=${DATE}
           export REVISION=${REVISION}
-          export BASE_IMAGE=docker.io/library/alpine:3.16.2
+          export BASE_IMAGE=docker.io/library/alpine:3.17.0
           apk update
           apk add jq
 

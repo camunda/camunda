@@ -1,0 +1,51 @@
+.CollapsibleSection {
+  padding-top: 9px;
+  border-top: 1px solid var(--silver-darken-87);
+
+  &.collapsed {
+    > :not(.sectionTitle) {
+      display: none;
+    }
+  }
+
+  .sectionTitle {
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 11px;
+    padding-left: 0;
+    padding-bottom: 12px;
+    width: 100%;
+    color: var(--grey-darken-13);
+    background: transparent;
+    text-align: left;
+    border: none;
+    cursor: pointer;
+    position: relative;
+
+    .Icon {
+      color: var(--black);
+      margin-right: 5px;
+    }
+
+    .sectionToggle {
+      color: var(--grey-darken-23);
+      float: right;
+      width: 16px;
+      height: 16px;
+      margin-left: 10px;
+      transition: transform 0.1s;
+
+      .Icon {
+        margin: 0;
+      }
+
+      &:not(.open) {
+        transform: rotate(-90deg);
+      }
+    }
+  }
+
+  .ColumnSwitch {
+    margin-top: 10px;
+  }
+}

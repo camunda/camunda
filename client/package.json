@@ -5,9 +5,12 @@
   "homepage": ".",
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
+    "@camunda/camunda-composite-components": "^0.0.19",
+    "@carbon/react": "^1.16.0",
     "@ibm/plex": "^6.1.1",
-    "bpmn-js": "9.4.1",
-    "bpmn-js-disable-collapsed-subprocess": "^0.1.5",
+    "@ungap/structured-clone": "^1.0.1",
+    "bpmn-js": "10.3.0",
+    "bpmn-js-disable-collapsed-subprocess": "^0.1.7",
     "chart.js": "^3.9.1",
     "chartjs-plugin-datalabels": "^2.1.0",
     "classnames": "^2.3.2",
@@ -20,7 +23,6 @@
     "heatmap.js": "^2.0.5",
     "immutability-helper": "^3.1.1",
     "inferno": "~5.6.0",
-    "mixpanel-browser": "^2.45.0",
     "react": "17.0.2",
     "react-date-range": "^1.4.0",
     "react-dom": "17.0.2",
@@ -31,7 +33,7 @@
     "react-router": "^5.0.1",
     "react-router-dom": "^5.3.0",
     "react-table": "^7.8.0",
-    "table-js": "^7.2.0",
+    "table-js": "^8.0.0",
     "use-deep-compare-effect": "^1.8.1"
   },
   "scripts": {
@@ -42,9 +44,9 @@
     "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "screenshots": "testcafe chrome e2e/tests/*.js -s thumbnails=false,path=../../camunda-platform-docs/docs/components/optimize/userguide ",
     "e2e": "testcafe -c 3 chrome e2e/tests/*.js --disable-screenshots",
-    "e2e:local": "node scripts/e2e",
-    "e2e:ci-browserstack": "node scripts/e2e ci browserstack",
-    "e2e:ci-chromeheadless": "node scripts/e2e ci chromeheadless",
+    "e2e:local": "node scripts/e2e.mjs",
+    "e2e:ci-browserstack": "node scripts/e2e.mjs ci browserstack",
+    "e2e:ci-chromeheadless": "node scripts/e2e.mjs ci chromeheadless",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
@@ -73,18 +75,18 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "@wojtekmaj/enzyme-adapter-react-17": "^0.6.7",
+    "@wojtekmaj/enzyme-adapter-react-17": "^0.8.0",
     "ansi-html": "^0.0.9",
-    "chalk": "^4.1.2",
+    "chalk": "^5.1.2",
     "date-fns": "^2.29.3",
-    "dotenv": "^16.0.2",
+    "dotenv": "^16.0.3",
     "enzyme": "3.11.0",
     "eslint-plugin-camunda-licensed": "^0.4.6",
     "eslint-plugin-prettier": "^3.4.1",
     "eslint-plugin-testcafe": "^0.2.1",
     "glob": "^8.0.3",
     "http-proxy-middleware": "^2.0.6",
-    "husky": "^8.0.1",
+    "husky": "^8.0.2",
     "jest-enzyme": "^7.1.2",
     "jest-junit": "^14.0.1",
     "license-checker": "^25.0.1",
@@ -94,13 +96,13 @@
     "old-bpmn-js": "npm:bpmn-js@8.10",
     "opn": "^6.0.0",
     "prettier": "2.7.1",
-    "react-scripts": "4.0.3",
-    "sass": "^1.55.0",
+    "react-scripts": "5.0.0",
+    "sass": "^1.56.1",
     "shelljs": "^0.8.5",
-    "testcafe": "^2.0.1",
+    "testcafe": "^2.1.0",
     "testcafe-browser-provider-browserstack": "^1.14.0",
     "tree-kill": "^1.2.2",
-    "ws": "^8.10.0",
+    "ws": "^8.11.0",
     "xml2js": "^0.4.23"
   },
   "resolutions": {
@@ -109,7 +111,13 @@
     "**/kind-of": "^6.0.3"
   },
   "jest": {
-    "resetMocks": false
+    "resetMocks": false,
+    "transformIgnorePatterns": [
+      "/node_modules/(?!@camunda/camunda-composite-components)"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|scss)$": "<rootDir>/src/__mocks__/styleMock.js"
+    }
   },
   "browserslist": [
     ">0.2%",

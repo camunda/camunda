@@ -189,6 +189,8 @@ zeebe:
   partitionCount: ${CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT:1}
   # The max page size for importing Zeebe data
   maxImportPageSize: ${CAMUNDA_OPTIMIZE_ZEEBE_MAX_IMPORT_PAGE_SIZE:10000}
+  # Determines whether Optimize should convert and store object variables from Zeebe
+  includeObjectVariableValue: ${CAMUNDA_OPTIMIZE_ZEEBE_INCLUDE_OBJECT_VARIABLE:true}
 
 import:
   data:
@@ -268,7 +270,7 @@ import:
         # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
         # Please refer to the technical guide on how to configure the heap size.
         maxEntryLimit: 100000
-  # Controls whether customer onboarding data should be loaded to optimize
+  # Controls whether customer onboarding data should be loaded to optimize (only for C8)
   customer-onboarding: false
   # Some data can no longer be imported to a given document if its number of nested documents has reached the configured
   # limit. Enable this setting to skip this data during import if the nested document limit has been reached.

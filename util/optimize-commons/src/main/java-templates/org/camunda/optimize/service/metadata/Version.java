@@ -18,11 +18,10 @@ public final class Version {
   public static final String VERSION_MINOR = getMinorVersionFrom(VERSION);
 
   public static String stripToPlainVersion(final String rawVersion) {
-    final String version = Arrays.stream(rawVersion.split("[^0-9]"))
+    return Arrays.stream(rawVersion.split("[^0-9]"))
       .limit(3)
       .filter(part -> part.chars().allMatch(Character::isDigit))
       .collect(Collectors.joining("."));
-    return version + getPreviewNumberFrom(rawVersion).map(previewNumber -> "-preview-" + previewNumber).orElse("");
   }
 
   public static final String getMajorVersionFrom(final String plainVersion) {
@@ -35,13 +34,6 @@ public final class Version {
 
   public static final String getPatchVersionFrom(final String plainVersion) {
     return String.valueOf(asSemver(plainVersion).getPatch());
-  }
-
-  public static Optional<String> getPreviewNumberFrom(final String version) {
-    final Optional<String> previewSuffix = Arrays.stream(asSemver(version).getSuffixTokens())
-      .filter(value -> value.contains("preview"))
-      .findFirst();
-    return previewSuffix.map(value -> value.split("-")[1]);
   }
 
   public static String getMajorAndMinor(final String currentVersion) {

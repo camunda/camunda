@@ -29,7 +29,7 @@ export default class Tooltip extends React.Component {
   componentDidUpdate(prevProps) {
     const {viewer, alwaysShow} = this.props;
 
-    if (prevProps.alwaysShow && !alwaysShow) {
+    if (prevProps.alwaysShow) {
       this.removeAllOverlays(viewer);
     }
 

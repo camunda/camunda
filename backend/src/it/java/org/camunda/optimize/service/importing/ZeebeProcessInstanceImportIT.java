@@ -63,7 +63,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     final ProcessInstanceEvent deployedInstance = deployAndStartInstanceForProcess(createStartEndProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(6);
     importAllZeebeEntitiesFromScratch();
 
     // then

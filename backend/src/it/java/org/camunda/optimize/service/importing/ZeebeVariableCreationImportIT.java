@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.zeebe.variable.ZeebeVariableRecordDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -65,6 +66,11 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
            "likes", List.of("optimize", "garlic"),
            "skills", Map.of("read", true, "write", false)
     );
+
+  @BeforeEach
+  public void setup() {
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setIncludeObjectVariableValue(true);
+  }
 
   @Test
   public void zeebeVariableImport_processStartedWithVariables() {
@@ -304,6 +310,43 @@ public class ZeebeVariableCreationImportIT extends AbstractZeebeIT {
         Tuple.tuple("objectVar.likes", STRING.getId(), List.of("optimize", "garlic")),
         // additional _listSize variable for lists
         Tuple.tuple("objectVar.likes._listSize", LONG.getId(), Collections.singletonList("2"))
+      );
+  }
+
+  @SneakyThrows
+  @Test
+  public void zeebeVariableImport_importObjectVariablesWhenObjectVariablesAreExcludedInConfiguration() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setIncludeObjectVariableValue(false);
+    final Map<String, Object> variables = Map.of(
+      "objectVar", PERSON_VARIABLES,
+      "boolVar", true
+    );
+
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final long processInstanceKey = zeebeExtension.startProcessInstanceWithVariables(
+      deployedProcess.getBpmnProcessId(),
+      variables
+    );
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(1);
+
+    // when
+    importAllZeebeEntitiesFromScratch();
+    final ProcessInstanceDto instance = getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
+    assertThat(instance.getVariables())
+      .extracting(
+        SimpleProcessVariableDto::getName,
+        SimpleProcessVariableDto::getType,
+        SimpleProcessVariableDto::getValue
+      ).containsExactlyInAnyOrder(
+        Tuple.tuple(
+          "boolVar",
+          BOOLEAN.getId(),
+          Collections.singletonList("true")
+        )
       );
   }
 

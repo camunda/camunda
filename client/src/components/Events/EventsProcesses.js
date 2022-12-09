@@ -9,7 +9,7 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
 
-import {EntityList, BulkDeleter, Deleter, Dropdown} from 'components';
+import {EntityList, BulkDeleter, Deleter, Dropdown, PageTitle} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
@@ -127,6 +127,7 @@ export class EventsProcesses extends React.Component {
 
     return (
       <div className="EventsProcesses">
+        <PageTitle pageName={t('navigation.events')} />
         <EntityList
           name={t('navigation.events')}
           empty={t('events.empty')}

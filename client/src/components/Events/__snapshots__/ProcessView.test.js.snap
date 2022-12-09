@@ -4,6 +4,10 @@ exports[`should match snapshot 1`] = `
 <div
   className="ProcessView"
 >
+  <PageTitle
+    pageName="Process"
+    resourceName="Process Name"
+  />
   <div
     className="header"
   >

@@ -11,7 +11,7 @@ import classnames from 'classnames';
 
 import {t} from 'translation';
 import {showError} from 'notifications';
-import {BPMNDiagram, HeatmapOverlay, Button} from 'components';
+import {BPMNDiagram, HeatmapOverlay, Button, PageTitle} from 'components';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 import {withErrorHandling, withUser} from 'HOC';
 
@@ -167,6 +167,7 @@ export class OutlierAnalysis extends React.Component {
 
     return (
       <div className="OutlierAnalysis">
+        <PageTitle pageName={t('analysis.outlier.label')} />
         <OutlierControlPanel {...config} onChange={this.updateConfig} xml={xml} />
         <div className={classnames('OutlierAnalysis__diagram', {empty})}>
           {xml && (

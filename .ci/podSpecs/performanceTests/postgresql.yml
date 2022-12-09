@@ -19,9 +19,9 @@ spec:
         app: postgresql
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: agents-n1-standard-32-physsd-stable
+        cloud.google.com/gke-nodepool: n1-standard-8-netssd-stable
       tolerations:
-        - key: "agents-n1-standard-32-physsd-stable"
+        - key: "n1-standard-8-netssd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       volumes:
@@ -53,13 +53,11 @@ spec:
         command: ["cat"]
         tty: true
         resources:
-          # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
-          # this is 30 - (cpu of postgres container)
           limits:
-            cpu: 22
+            cpu: 3
             memory: 1Gi
           requests:
-            cpu: 22
+            cpu: 3
             memory: 1Gi
         volumeMounts:
         - name: ssd-storage
@@ -99,8 +97,8 @@ spec:
             - exec pg_isready -U "postgres" --host $POD_IP
         resources:
           limits:
-            cpu: 8
+            cpu: 4
             memory: 10Gi
           requests:
-            cpu: 8
+            cpu: 4
             memory: 10Gi

@@ -7,7 +7,7 @@
 
 import React, {useState, useEffect} from 'react';
 
-import {Form, Labeled, Button, MessageBox} from 'components';
+import {Form, Labeled, Button, MessageBox, PageTitle} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 
@@ -27,6 +27,7 @@ export function License({mightFail, error, resetError}) {
 
   return (
     <>
+      <PageTitle pageName={t('license.label')} />
       <Header noActions />
       <main className="License">
         {(licenseInfo || error) && (

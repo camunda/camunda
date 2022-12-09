@@ -5,17 +5,20 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import org.elasticsearch.snapshots.SnapshotState;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @NoArgsConstructor
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Data
-public class BackupResponseDto {
-  @NonNull
-  private List<String> scheduledSnapshots;
+public class SnapshotInfoDto {
+  private String snapshotName;
+  private SnapshotState state;
+  private OffsetDateTime startTime;
+  private List<String> failures;
 }

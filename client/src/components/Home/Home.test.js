@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {ReportTemplateModal} from 'components';
@@ -44,6 +44,8 @@ beforeEach(() => {
 it('should load entities', () => {
   shallow(<Home {...props} />);
 
+  runAllEffects();
+
   expect(loadEntities).toHaveBeenCalled();
 });
 
@@ -56,6 +58,8 @@ it('should display the user name', () => {
 it('should show a ReportTemplateModal', () => {
   const node = shallow(<Home {...props} />);
 
+  runAllEffects();
+
   node.find('EntityList').prop('action')().props.createProcessReport();
 
   expect(node.find(ReportTemplateModal)).toExist();
@@ -64,13 +68,23 @@ it('should show a ReportTemplateModal', () => {
 it('should load collection entities with sort parameters', () => {
   const node = shallow(<Home {...props} />);
 
+  runAllEffects();
+
   node.find('EntityList').prop('onChange')('lastModifier', 'desc');
 
   expect(loadEntities).toHaveBeenCalledWith('lastModifier', 'desc');
 });
 
 it('should set the loading state of the entity list', async () => {
-  const node = shallow(<Home {...props} mightFail={async (data, cb) => cb(await data)} />);
+  const node = shallow(
+    <Home
+      {...props}
+      user={{name: 'John Doe', authorizations: []}}
+      mightFail={async (data, cb) => cb(await data)}
+    />
+  );
+
+  runAllEffects();
 
   expect(node.find('EntityList').prop('isLoading')).toBe(true);
   await flushPromises();
@@ -83,8 +97,27 @@ it('should set the loading state of the entity list', async () => {
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
 });
 
+it('should show empty state component', async () => {
+  loadEntities.mockReturnValueOnce([]);
+  const node = shallow(<Home {...props} mightFail={async (data, cb) => cb(await data)} />);
+
+  runAllEffects();
+
+  await flushPromises();
+
+  const emptyState = node.find('EmptyState');
+
+  expect(emptyState.prop('title')).toBe('Start by creating a Dashboard');
+  expect(emptyState.prop('description')).toBe(
+    'Click Create New Dashboard to get insights into business processes'
+  );
+  expect(emptyState.prop('icon')).toBe('dashboard-optimize');
+});
+
 it('should include an option to export reports for superusers', () => {
   const node = shallow(<Home {...props} />);
+
+  runAllEffects();
 
   expect(
     node
@@ -116,6 +149,8 @@ it('should hide edit options for read only users', () => {
   ]);
   const node = shallow(<Home {...props} />);
 
+  runAllEffects();
+
   expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
 });
 
@@ -132,17 +167,23 @@ it('should hide edit options for collection editors', () => {
   ]);
   const node = shallow(<Home {...props} />);
 
+  runAllEffects();
+
   expect(node.find('EntityList').prop('data')[0].actions.length).toBe(0);
 });
 
 it('should hide bulk actions for read only users', () => {
   const node = shallow(<Home {...props} user={{name: 'John Doe', authorizations: []}} />);
 
+  runAllEffects();
+
   expect(node.find('EntityList').prop('bulkActions')).toBe(false);
 });
 
 it('should hide entity creation button for read only users', () => {
   const node = shallow(<Home {...props} />);
+
+  runAllEffects();
 
   const actionButton = node.find('EntityList').renderProp('action')();
   expect(actionButton.find(CreateNewButton)).toExist();

@@ -7,7 +7,7 @@
 
 import React, {useState, useRef} from 'react';
 
-import {MessageBox, Button, Input, Labeled} from 'components';
+import {MessageBox, Button, Input, Labeled, PageTitle} from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
@@ -52,6 +52,7 @@ export function Login({onLogin, mightFail}) {
 
   return (
     <form className="Login">
+      <PageTitle pageName={t('login.label')} />
       <Logo />
       <h1>{t('login.appName')}</h1>
       {error ? <MessageBox type="error">{error}</MessageBox> : ''}

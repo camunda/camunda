@@ -13,7 +13,7 @@ import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled, newReport} from 'config';
 
-import {ErrorPage, LoadingIndicator} from 'components';
+import {ErrorPage, LoadingIndicator, PageTitle} from 'components';
 
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -318,6 +318,7 @@ export class Dashboard extends React.Component {
 
     return (
       <div className="Dashboard">
+        <PageTitle pageName={t('dashboard.label')} resourceName={name} isNew={this.isNew()} />
         {viewMode === 'edit' ? (
           <DashboardEdit
             {...commonProps}

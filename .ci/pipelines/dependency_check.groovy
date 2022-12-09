@@ -4,7 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-8-netssd-preempt" }
 
 static String mavenElasticsearchAgent() {
   return """
@@ -75,7 +75,7 @@ private void sendEmail(String FRONTEND_DIFF, String BACKEND_DIFF) {
           "${FRONTEND_DIFF}" +
           "${BACKEND_DIFF}" +
           "Please check if there are any unusual licenses for the new dependencies. If you are not sure if you are" +
-          " allowed to use libraries with the given dependencies please notify/ask Roman Smirnov or Ulrike Liss.<br><br>" +
+          " allowed to use libraries with the given dependencies please notify/ask the Legal team.<br><br>" +
           "Best<br>" +
           "Your Optimize Dependency Check Bot"
 

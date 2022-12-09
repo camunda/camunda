@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class RestConstants {
   public static final String PROMETHEUS_ENDPOINT = "/prometheus";
 
-  public static final String BACKUP_ENDPOINT = "/backup";
+  public static final String BACKUP_ENDPOINT = "/backups";
 
   public static final String X_OPTIMIZE_CLIENT_TIMEZONE = "X-Optimize-Client-Timezone";
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";

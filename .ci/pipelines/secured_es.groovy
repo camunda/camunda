@@ -4,7 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-16-netssd-preempt" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
@@ -19,9 +19,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+    cloud.google.com/gke-nodepool: agents-n1-standard-16-netssd-preempt
   tolerations:
-    - key: "agents-n1-standard-32-netssd-preempt"
+    - key: "agents-n1-standard-16-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
@@ -75,10 +75,10 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 6
+        cpu: 4
         memory: 4Gi
       requests:
-        cpu: 6
+        cpu: 4
         memory: 4Gi
     """
 }

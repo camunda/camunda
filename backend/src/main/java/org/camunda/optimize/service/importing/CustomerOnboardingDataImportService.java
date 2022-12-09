@@ -165,7 +165,7 @@ public class CustomerOnboardingDataImportService {
       runningProcessInstances);
     if (!runningProcessInstanceImports.isEmpty()) {
       ElasticsearchWriterUtil.executeImportRequestsAsBulk(
-        "Completed process instances",
+        "Running process instances",
         runningProcessInstanceImports,
         configurationService.getSkipDataAfterNestedDocLimitReached()
       );

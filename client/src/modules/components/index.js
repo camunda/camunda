@@ -61,3 +61,5 @@ export {AlertsDropdown} from './AlertsDropdown';
 export {DurationChart} from './DurationChart';
 export {SearchInput} from './SearchInput';
 export {ReportTemplateModal, DashboardTemplateModal} from './TemplateModal';
+export {EmptyState} from './EmptyState';
+export {PageTitle} from './PageTitle';

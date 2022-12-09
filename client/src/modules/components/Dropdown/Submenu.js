@@ -129,7 +129,7 @@ export default class Submenu extends React.Component {
       this.footerRef = document.body.querySelector('.Footer');
     }
     if (!this.headerRef || !document.body.contains(this.headerRef)) {
-      this.headerRef = document.body.querySelector('.Header');
+      this.headerRef = document.body.querySelector('.cds--header');
     }
   }
 

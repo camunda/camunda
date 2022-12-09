@@ -8,6 +8,9 @@
 import {Selector} from 'testcafe';
 
 export const createNewMenu = Selector('.CreateNewButton');
+export const createNewDashboardButton = Selector('.Button').withText('Create New Dashboard');
+export const emptyStateComponent = Selector('.EmptyState');
+export const blankDashboardButton = Selector('.Button').withText('Blank Dashboard');
 export const newReportOption = Selector('.CreateNewButton .Submenu');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
@@ -31,7 +34,7 @@ export const addButton = Selector('.AddButton');
 export const reportLabel = reportItem.find('.name .type');
 export const contextMenu = (entity) => entity.find('.Dropdown');
 export const dashboardReportLink = Selector('.OptimizeReport .EntityName a');
-export const breadcrumb = (text) => Selector('.HeaderNav a').withText(text);
+export const breadcrumb = (text) => Selector('.cds--header__menu-bar a').withText(text);
 export const dashboardView = Selector('.DashboardView');
 export const modalNameInput = Selector('.Modal input[type="text"]');
 export const confirmButton = Selector('.confirm.Button');

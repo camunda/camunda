@@ -152,7 +152,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
   public void zeebeVariableImport_variableNameOnSeveralScopesOnlyProcessLevelGetsUpdated() {
     // given
     final long processInstanceKey = deployProcessAndStartProcessInstanceWithVariables(Map.of("var1", "someValue"));
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
     waitUntilMinimumVariableDocumentsWithCreatedIntentExportedCount(1);
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =

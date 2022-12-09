@@ -1,5 +1,3 @@
-### JIRA Ticket number:
-
 ## PR Checklist
 
 - [ ] If this is a patch fix, this PR targets the maintenance branch. If for a release, this PR targets the release branch. Otherwise, the PR targets the master branch 

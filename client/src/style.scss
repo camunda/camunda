@@ -1,3 +1,5 @@
+@use '@carbon/react';
+
 @import 'shared-styles/shared-styles.scss';
 @import '~@ibm/plex/css/ibm-plex.css';
 @import '~react-grid-layout/css/styles.css';
@@ -12,6 +14,7 @@
   --z-modal-popup: 700;
   --z-modal: 600;
   --z-popup: 500; //popovers, dropdowns, ...
+  --z-header: 400;
   --z-above: 1;
   --z-below: -1;
 }

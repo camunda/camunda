@@ -25,6 +25,7 @@ public class BpmnModels {
   public static final String USER_TASK_3 = "userTask3";
   public static final String USER_TASK_4 = "userTask4";
   public static final String SERVICE_TASK = "serviceTask";
+  public static final String FLONODE_NAME = "flowNodeName";
 
   public static final String DEFAULT_PROCESS_ID = "aProcess";
   public static final String VERSION_TAG = "aVersionTag";
@@ -50,6 +51,7 @@ public class BpmnModels {
   public static final String MULTI_INSTANCE_END = "miEnd";
   public static final String PARALLEL_GATEWAY = "parallelGateway";
   public static final String CALL_ACTIVITY = "callActivity";
+  public static final String SCRIPT_TASK = "scriptTask";
 
   public static BpmnModelInstance getSimpleBpmnDiagram() {
     return getSimpleBpmnDiagram(DEFAULT_PROCESS_ID, START_EVENT, END_EVENT);
@@ -87,6 +89,37 @@ public class BpmnModels {
       .startEvent(startEventName)
       .userTask(userTaskName)
       .endEvent(endEventName)
+      .done();
+  }
+
+  public static BpmnModelInstance getSimpleStartEventOnlyDiagram() {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(FLONODE_NAME)
+      .done();
+  }
+
+  public static BpmnModelInstance getSingleUserTaskDiagramWithFlowNodeNames() {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .name(START_EVENT)
+      .userTask(USER_TASK_1)
+      .name(FLONODE_NAME)
+      .endEvent(END_EVENT)
+      .name(END_EVENT)
+      .done();
+  }
+
+  public static BpmnModelInstance getSingleUserTaskDiagramWithAllFlowNodesHavingSameNames() {
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .startEvent(START_EVENT)
+      .name(FLONODE_NAME)
+      .userTask(USER_TASK_1)
+      .name(FLONODE_NAME)
+      .endEvent(END_EVENT)
+      .name(FLONODE_NAME)
       .done();
   }
 
@@ -351,7 +384,7 @@ public class BpmnModels {
         .camundaExpression("${true}")
         .camundaInputParameter("anotherRound", "${anotherRound}")
         .camundaOutputParameter("anotherRound", "${!anotherRound}")
-      .scriptTask("scriptTask")
+      .scriptTask(SCRIPT_TASK)
         .scriptFormat("groovy")
         .scriptText("sleep(10)")
       .connectTo(START_LOOP)

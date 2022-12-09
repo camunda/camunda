@@ -63,7 +63,6 @@ public class ProcessKpiRetrievalIT extends AbstractIT {
       createExpectedKpiResponse(reportId1, "1"),
       createExpectedKpiResponse(reportId2, "2")
     );
-
   }
 
   @Test

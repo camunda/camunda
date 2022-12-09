@@ -41,7 +41,7 @@ export const reportDiagram = reportRenderer.find('.djs-container > svg');
 export const reportNumber = reportRenderer.find('.Number .data');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');
-export const configurationButton = Selector('.Configuration .Popover');
+export const configurationButton = Selector('.Configuration .Popover .buttonWrapper button');
 export const resetButton = Selector('.resetButton');
 export const goalSwitch = Selector('.Configuration .Popover fieldset')
   .withText('Set Target')
@@ -68,6 +68,7 @@ export const processPartButton = Selector('.ReportControlPanel .Button').withTex
   'Process Instance Part'
 );
 export const modalFlowNode = (id) => Selector(`.Modal [data-element-id="${id}"]`);
+export const selectSectionWithLabel = (label) => Selector('section .sectionTitle').withText(label);
 export const selectSwitchLabel = (label) => Selector('.Switch .label').withText(label);
 export const tableGroup = (idx) => Selector('.Table thead tr.groupRow th').nth(idx);
 export const tableHeader = (idx) => Selector('.Table thead tr:last-child th').nth(idx);

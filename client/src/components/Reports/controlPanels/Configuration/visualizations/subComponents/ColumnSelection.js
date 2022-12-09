@@ -5,14 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 
-import {Switch, LabeledInput} from 'components';
+import {LabeledInput} from 'components';
 import {t} from 'translation';
 import {getReportResult} from 'services';
 import {getVariableLabel} from 'variables';
 
 import AllColumnsButtons from './AllColumnsButtons';
+import CollapsibleSection from './CollapsibleSection';
+import ColumnSwitch from './ColumnSwitch';
 
 import './ColumnSelection.scss';
 
@@ -20,28 +22,31 @@ const labels = {
   inputVariables: 'input',
   outputVariables: 'output',
   variables: 'variable',
+  flowNodeDurations: 'flowNodeDuration',
 };
 
 export default function ColumnSelection({report, onChange}) {
   const {data} = report;
-  const columns = getReportResult(report)?.data[0];
+  const [isSectionOpen, setIsSectionOpen] = useState(
+    Object.keys(labels).reduce((prev, key) => ({...prev, [key]: true}), {})
+  );
 
-  if (!columns) {
+  const reportColumns = getReportResult(report)?.data[0];
+
+  if (!reportColumns) {
     return null;
   }
+
+  const toggleSectionOpen = (sectionKey) =>
+    setIsSectionOpen((prev) => ({...prev, [sectionKey]: !prev[sectionKey]}));
 
   const {
     tableColumns: {excludedColumns, includedColumns, includeNewVariables},
   } = data.configuration;
 
-  const allColumns = Object.keys(columns).reduce((prev, curr) => {
-    const value = columns[curr];
-    if (typeof value !== 'object' || value === null) {
-      return [...prev, curr];
-    } else {
-      return [...prev, ...Object.keys(value).map((key) => `${labels[curr]}:${key}`)];
-    }
-  }, []);
+  const groupedColumns = groupColumns(reportColumns);
+
+  const columnNames = getColumnNames(reportColumns);
 
   return (
     <fieldset className="ColumnSelection">
@@ -49,12 +54,12 @@ export default function ColumnSelection({report, onChange}) {
       <AllColumnsButtons
         enableAll={() =>
           onChange({
-            tableColumns: {excludedColumns: {$set: []}, includedColumns: {$set: allColumns}},
+            tableColumns: {excludedColumns: {$set: []}, includedColumns: {$set: columnNames}},
           })
         }
         disableAll={() =>
           onChange({
-            tableColumns: {excludedColumns: {$set: allColumns}, includedColumns: {$set: []}},
+            tableColumns: {excludedColumns: {$set: columnNames}, includedColumns: {$set: []}},
           })
         }
       />
@@ -67,58 +72,99 @@ export default function ColumnSelection({report, onChange}) {
           onChange({tableColumns: {includeNewVariables: {$set: checked}}})
         }
       />
-      {allColumns.map((column) => {
-        let prefix, name;
+      {groupedColumns.map(({key, value}) => {
+        const isSection = typeof value === 'object' && value !== null;
 
-        if (column.includes(':')) {
-          [prefix, name] = column.split(':');
-          let type = 'variable';
-          if (prefix === 'input') {
-            name = columns.inputVariables[name].name;
-            type = 'inputVariable';
-          } else if (prefix === 'output') {
-            name = columns.outputVariables[name].name;
-            type = 'outputVariable';
-          } else {
-            name = getVariableLabel(name);
-          }
-          prefix = t(`common.filter.types.${type}`) + ': ';
-        } else {
-          prefix = '';
-          name = t('report.table.rawData.' + column);
+        if (isSection && Object.keys(value).length === 0) {
+          return null;
         }
 
+        if (isSection) {
+          let sectionType = 'variable';
+          switch (key) {
+            case 'inputVariables':
+              sectionType = 'inputVariable';
+              break;
+            case 'outputVariables':
+              sectionType = 'outputVariable';
+              break;
+            case 'flowNodeDurations':
+              sectionType = 'flowNodeDuration';
+              break;
+            default:
+              break;
+          }
+
+          const sectionTitle = `${t(`common.filter.types.${sectionType}-plural`)}:`;
+          const sectionKey = labels[key] || key;
+
+          return (
+            <CollapsibleSection
+              key={key}
+              sectionKey={key}
+              isSectionOpen={isSectionOpen[key]}
+              sectionTitle={sectionTitle}
+              toggleSectionOpen={() => toggleSectionOpen(key)}
+            >
+              {Object.keys(value).map((key) => {
+                const label = value[key].name || getVariableLabel(key) || key;
+                const switchId = `${sectionKey}:${key}`;
+
+                return (
+                  <ColumnSwitch
+                    key={switchId}
+                    switchId={switchId}
+                    excludedColumns={excludedColumns}
+                    includedColumns={includedColumns}
+                    label={label}
+                    onChange={onChange}
+                  />
+                );
+              })}
+            </CollapsibleSection>
+          );
+        }
+
+        const label = t('report.table.rawData.' + key);
+
         return (
-          <Switch
-            key={column}
-            className="columnSelectionSwitch"
-            checked={!excludedColumns.includes(column)}
-            onChange={({target: {checked}}) => {
-              if (checked) {
-                onChange({
-                  tableColumns: {
-                    excludedColumns: {$set: excludedColumns.filter((entry) => column !== entry)},
-                    includedColumns: {$push: [column]},
-                  },
-                });
-              } else {
-                onChange({
-                  tableColumns: {
-                    excludedColumns: {$push: [column]},
-                    includedColumns: {$set: includedColumns.filter((entry) => column !== entry)},
-                  },
-                });
-              }
-            }}
-            label={
-              <>
-                <b>{prefix}</b>
-                {name}
-              </>
-            }
+          <ColumnSwitch
+            key={key}
+            switchId={key}
+            excludedColumns={excludedColumns}
+            includedColumns={includedColumns}
+            label={label}
+            onChange={onChange}
           />
         );
       })}
     </fieldset>
   );
+}
+
+function getColumnNames(columns) {
+  return Object.keys(columns).reduce((prev, curr) => {
+    const value = columns[curr];
+    if (typeof value !== 'object' || value === null) {
+      return [...prev, curr];
+    } else {
+      return [...prev, ...Object.keys(value).map((key) => `${labels[curr]}:${key}`)];
+    }
+  }, []);
+}
+
+function groupColumns(columns) {
+  const sectionKeys = Object.keys(labels);
+
+  const palinColumns = Object.keys(columns).reduce((prev, columnKey) => {
+    const isSection = sectionKeys.includes(columnKey);
+    return !isSection ? [...prev, {key: columnKey, value: columns[columnKey]}] : prev;
+  }, []);
+
+  const sectionColumns = sectionKeys.reduce((prev, sectionKey) => {
+    const isSection = columns[sectionKey];
+    return isSection ? [...prev, {key: sectionKey, value: columns[sectionKey]}] : prev;
+  }, []);
+
+  return [...palinColumns, ...sectionColumns];
 }

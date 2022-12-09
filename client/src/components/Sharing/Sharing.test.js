@@ -266,5 +266,5 @@ it('should hide the whole header if specified', () => {
     evaluationResult: {name: 'My report name', id: 'aReportId'},
   });
 
-  expect(node.find('.header')).not.toExist();
+  expect(node.find('.cds--header')).not.toExist();
 });

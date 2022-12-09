@@ -515,6 +515,25 @@ test('bar chart and line chart configuration', async (t) => {
   await t.maximizeWindow();
 });
 
+test('horizontal bar chart', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Lead Qualification');
+  await u.selectView(t, 'User Task', 'Duration');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.resizeWindow(1600, 800);
+
+  await t.click(e.configurationButton);
+
+  await t.takeScreenshot('process-analysis/report-analysis/img/horizontalBar.png', {
+    fullPage: true,
+  });
+
+  await t.click(e.selectSwitchLabel('Horizontal bars'));
+
+  await t.maximizeWindow();
+});
+
 test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectReportDefinition(t, 'Lead Qualification');

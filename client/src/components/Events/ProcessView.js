@@ -18,6 +18,7 @@ import {
   EntityName,
   LastModifiedInfo,
   DocsLink,
+  PageTitle,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -100,6 +101,7 @@ export default withErrorHandling(
 
       return (
         <div className="ProcessView">
+          <PageTitle pageName={t('common.process.label')} resourceName={name} />
           <div className="header">
             <div className="head">
               <EntityName details={<LastModifiedInfo entity={this.state.data} />}>

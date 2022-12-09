@@ -77,7 +77,7 @@ export function getCombinedTableProps(
     instanceCount: [],
   };
 
-  const combinedProps = reports.reduce((prevReport, {id}) => {
+  const combinedProps = reports.reduce((prevReport, {id}, idx) => {
     const report = reportResult[id];
     const {data, result, name} = report;
 
@@ -122,7 +122,7 @@ export function getCombinedTableProps(
     const reportsNames = [...prevReport.reportsNames, name];
 
     // 2d array of all ids
-    const reportsIds = [...prevReport.reportsIds, id];
+    const reportsIds = [...prevReport.reportsIds, id || `${idx}`];
 
     // 2d array of all results
     const reportsResult = [
@@ -264,4 +264,13 @@ export async function loadObjectValues(
 
 export function formatLabelsForTableBody(body) {
   return body.map((row) => row.map((cell) => formatLabel(cell, true)));
+}
+
+export function rearrangeColumns(oldIdx, newIdx, tableProps, updateReport) {
+  const list = tableProps.head.map((el) => el.id || el);
+  // add the column at the specified position
+  list.splice(newIdx + 1, 0, list[oldIdx]);
+  // remove the original column
+  list.splice(oldIdx + (oldIdx > newIdx), 1);
+  updateReport({configuration: {tableColumns: {columnOrder: {$set: list}}}});
 }

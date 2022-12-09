@@ -76,34 +76,6 @@ public class MinMaxStatsService {
     );
   }
 
-  private MinMaxStatDto getMinMaxDateRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
-                                                         final QueryBuilder query,
-                                                         final String[] indexNames,
-                                                         final String firstField,
-                                                         final String secondField,
-                                                         final String pathForNestedStatsAgg,
-                                                         final QueryBuilder filterQueryToWrapStatsWith) {
-    return context.getCombinedRangeMinMaxStats()
-      .orElseGet(
-        () -> getCrossFieldMinMaxStats(
-          query, indexNames, firstField, secondField, OPTIMIZE_DATE_FORMAT,
-          pathForNestedStatsAgg, filterQueryToWrapStatsWith
-        )
-      );
-  }
-
-  public MinMaxStatDto getMinMaxNumberRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
-                                                          final QueryBuilder query,
-                                                          final String[] indexNames,
-                                                          final String field,
-                                                          final String pathForNestedStatsAgg,
-                                                          final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    return context.getCombinedRangeMinMaxStats()
-      .orElseGet(
-        () -> getSingleFieldMinMaxStats(query, indexNames, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith)
-      );
-  }
-
   public MinMaxStatDto getMinMaxNumberRangeForScriptedField(final ExecutionContext<? extends SingleReportDataDto> context,
                                                             final QueryBuilder query,
                                                             final String[] indexNames,
@@ -212,6 +184,22 @@ public class MinMaxStatsService {
     return getCrossFieldMinMaxStats(
       query, indexNames, field, field, format, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
+  }
+
+  private MinMaxStatDto getMinMaxDateRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                         final QueryBuilder query,
+                                                         final String[] indexNames,
+                                                         final String firstField,
+                                                         final String secondField,
+                                                         final String pathForNestedStatsAgg,
+                                                         final QueryBuilder filterQueryToWrapStatsWith) {
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(
+        () -> getCrossFieldMinMaxStats(
+          query, indexNames, firstField, secondField, OPTIMIZE_DATE_FORMAT,
+          pathForNestedStatsAgg, filterQueryToWrapStatsWith
+        )
+      );
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,

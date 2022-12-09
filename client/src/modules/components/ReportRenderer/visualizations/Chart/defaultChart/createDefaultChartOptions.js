@@ -15,6 +15,7 @@ import {
   formatTooltipTitle,
   getTooltipLabelColor,
   canBeInterpolated,
+  hasReportPersistedTooltips,
 } from '../service';
 import {getColorFor, determineBarColor} from '../colorsUtils';
 
@@ -25,7 +26,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     data: {visualization, view, groupBy, configuration, definitions},
     result,
   } = report;
-  const {alwaysShowAbsolute, alwaysShowRelative, precision, xml} = configuration;
+  const {precision, xml} = configuration;
 
   const decisionDefinitionKey = definitions?.[0].key;
 
@@ -39,9 +40,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
           .flat()
       )
     : 0;
-  const isPersistedTooltips = isDuration
-    ? alwaysShowAbsolute
-    : alwaysShowAbsolute || alwaysShowRelative;
+  const isPersistedTooltips = hasReportPersistedTooltips(report);
 
   const groupedByDurationMaxValue =
     groupBy?.type === 'duration' && Math.max(...result.data.map(({label}) => +label));
@@ -149,6 +148,7 @@ export function createBarOptions({
   const hasMultipleAxes = ['frequency', 'duration'].every((prop) =>
     measures.some(({property}) => property === prop)
   );
+  const hasCountMeasure = measures.some(({property}) => property === 'frequency');
   const topPadding = isPersistedTooltips && !horizontalBar;
 
   const measuresAxis = {
@@ -171,6 +171,7 @@ export function createBarOptions({
           : {}),
         beginAtZero: true,
         color: getColorFor('label', isDark),
+        precision: hasCountMeasure ? 0 : undefined,
       },
       suggestedMax: targetLine,
       id: 'axis-0',

@@ -15,6 +15,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionResponseDto;
@@ -378,6 +379,27 @@ public class DefinitionService implements ConfigurationReloadable {
       .flatMap(Collection::stream)
       // can't use Collectors.toMap as value can be null, see https://bugs.openjdk.java.net/browse/JDK-8148463
       .collect(HashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
+  }
+
+  public Map<String, String> fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(final List<ProcessInstanceDto> processInstanceDtos) {
+    return extractFlowNodeIdAndNames(
+      processInstanceDtos.stream()
+        .map(processInstanceDto -> Pair.of(
+          processInstanceDto.getProcessDefinitionKey(),
+          processInstanceDto.getProcessDefinitionVersion()
+        ))
+        .distinct()
+        .map(processDefinition -> getDefinition(
+          DefinitionType.PROCESS,
+          processDefinition.getLeft(),
+          List.of(processDefinition.getRight()),
+          Collections.emptyList()
+        ))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(ProcessDefinitionOptimizeDto.class::cast)
+        .collect(Collectors.toList())
+    );
   }
 
   private Map<String, DefinitionOptimizeResponseDto> fetchLatestProcessDefinition(final String definitionKey) {

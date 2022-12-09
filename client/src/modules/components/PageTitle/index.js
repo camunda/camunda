@@ -5,6 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-import HelpMenu from './HelpMenu';
-
-export default HelpMenu;
+export {default as PageTitle} from './PageTitle';

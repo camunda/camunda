@@ -56,7 +56,7 @@ public class ObjectVariableService {
     objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
   }
 
-  public List<ProcessVariableDto> convertObjectVariablesForImport(final List<ProcessVariableUpdateDto> variables) {
+  public List<ProcessVariableDto> convertToProcessVariableDtos(final List<ProcessVariableUpdateDto> variables) {
     List<ProcessVariableDto> resultList = new ArrayList<>();
     for (ProcessVariableUpdateDto variableUpdateDto : variables) {
       if (isNonNullNativeJsonVariable(variableUpdateDto) || isNonNullObjectVariable(variableUpdateDto)) {
@@ -75,6 +75,17 @@ public class ObjectVariableService {
       }
     }
     return resultList;
+  }
+
+  public List<ProcessVariableDto> convertToProcessVariableDtosSkippingObjectVariables(final List<ProcessVariableUpdateDto> variables) {
+    return variables.stream()
+      .filter(variable -> (!isNonNullNativeJsonVariable(variable) && !isNonNullObjectVariable(variable)))
+      .map(variable -> createSkeletonVariableDto(variable)
+        .setId(variable.getId())
+        .setName(variable.getName())
+        .setType(variable.getType())
+        .setValue(Collections.singletonList(variable.getValue())))
+      .collect(toList());
   }
 
   private void formatJsonObjectVariableAndAddToResult(final ProcessVariableUpdateDto variableUpdate,
@@ -129,7 +140,7 @@ public class ObjectVariableService {
   private List<ProcessVariableDto> mapToFlattenedVariable(final String name, final Object value,
                                                           final ProcessVariableUpdateDto origin) {
     if (value == null || String.valueOf(value).isEmpty()) {
-      log.info("Variable attribute '{}' of '{}' is null or empty and won't be imported", name, origin.getName());
+      log.debug("Variable attribute '{}' of '{}' is null or empty and won't be imported", name, origin.getName());
       return Collections.emptyList();
     }
 
@@ -149,9 +160,9 @@ public class ObjectVariableService {
     } else if (value instanceof Number) {
       parseNumberVariable(Collections.singletonList(value), newVariable);
     } else {
-      log.warn(
-        "Variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",
-        name, origin.getName(), value.getClass().getSimpleName(), value
+      log.debug(
+        "Variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
+        name, origin.getName(), value.getClass().getSimpleName()
       );
       return Collections.emptyList();
     }
@@ -178,9 +189,9 @@ public class ObjectVariableService {
     } else if (firstItem instanceof Number) {
       parseNumberVariable(originList, newListVar);
     } else {
-      log.warn(
-        "List variable attribute '{}' of '{}' with type {} and value '{}' is not supported and won't be imported.",
-        name, origin.getName(), firstItem.getClass().getSimpleName(), value
+      log.debug(
+        "List variable attribute '{}' of '{}' with type {} is not supported and won't be imported.",
+        name, origin.getName(), firstItem.getClass().getSimpleName()
       );
     }
     resultList.add(newListVar);

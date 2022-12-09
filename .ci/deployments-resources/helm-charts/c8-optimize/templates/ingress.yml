@@ -23,6 +23,13 @@ spec:
             name: optimize
             port:
               number: 80
+      - path: /mail
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: mailhog
+            port:
+              number: 8025
   - host: keycloak-{{ include "ingress.domain" $ }}
     http:
       paths:

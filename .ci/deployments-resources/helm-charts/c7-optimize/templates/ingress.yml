@@ -36,6 +36,13 @@ spec:
             name: optimize
             port:
               number: 8080
+      - path: /mail
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: optimize
+            port:
+              number: 8025
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress

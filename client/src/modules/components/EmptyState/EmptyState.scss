@@ -1,0 +1,49 @@
+.EmptyState {
+  margin-top: 3rem;
+  padding: 2.5rem;
+  display: flex;
+  justify-content: center;
+
+  .icon {
+    margin-top: 0.5rem;
+    margin-right: 2.5rem;
+    width: 100px;
+    height: 100px;
+
+    svg {
+      width: inherit;
+      height: inherit;
+      max-width: initial;
+      max-height: initial;
+    }
+  }
+
+  .content {
+    display: flex;
+    flex-direction: column;
+    color: var(--grey-lighten-56);
+
+    .title {
+      font-weight: 500;
+      font-size: 1.125rem;
+      margin-bottom: 0.5rem;
+      color: var(--grey-base-40);
+      line-height: 1.75rem;
+    }
+
+    .description {
+      font-weight: 400;
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+      color: var(--grey-darken-33);
+      line-height: 1.25rem;
+      letter-spacing: 0.01rem;
+    }
+
+    .actions {
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 1.25rem;
+    }
+  }
+}

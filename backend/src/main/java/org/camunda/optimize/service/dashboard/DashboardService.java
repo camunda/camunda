@@ -149,13 +149,13 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
-  public Optional<IdResponseDto> createNewDashboardWithPresetId(final String userId,
-                                                                final DashboardDefinitionRestDto dashboardDefinitionDto,
-                                                                final String presetId) {
+  public void createNewDashboardWithPresetId(final String userId,
+                                             final DashboardDefinitionRestDto dashboardDefinitionDto,
+                                             final String presetId) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
     validateDashboardFilters(userId, dashboardDefinitionDto);
     try {
-      return Optional.of(dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto, presetId));
+      dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto, presetId);
     } catch (OptimizeRuntimeException e) {
       // This can happen if the collection has been created in parallel, let's check if it already exists
       if (Optional.ofNullable(getDashboardDefinition(presetId, userId)).isEmpty()) {
@@ -163,9 +163,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         // problem, log it and rethrow exception
         log.error("Unexpected error when trying to create dashboard with ID " + presetId, e);
         throw e;
-      } else {
-        // If it exists already, there's nothing we need to do, return null to avoid the re-creation of reports
-        return Optional.empty();
       }
     }
   }

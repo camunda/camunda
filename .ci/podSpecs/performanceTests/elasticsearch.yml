@@ -19,9 +19,9 @@ spec:
         app: elasticsearch
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: agents-n1-standard-32-physsd-stable
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-physsd-stable
       tolerations:
-        - key: "agents-n1-standard-32-physsd-stable"
+        - key: "agents-n1-standard-8-physsd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       volumes:
@@ -63,13 +63,11 @@ spec:
           command: ["cat"]
           tty: true
           resources:
-            # Note: high cpu request here to ensure this pod is deployed on a dedicated node, with an exclusive ssd
-            # this is 30 - (cpu of elasticsearch container)
             requests:
-              cpu: 14
+              cpu: 3
               memory: 1Gi
             limits:
-              cpu: 14
+              cpu: 3
               memory: 1Gi
           volumeMounts:
             - name: ssd-storage
@@ -108,11 +106,11 @@ spec:
               value: "false"
           resources:
             requests:
-              cpu: 16
-              memory: 16Gi
+              cpu: 4
+              memory: 8Gi
             limits:
-              cpu: 16
-              memory: 16Gi
+              cpu: 4
+              memory: 8Gi
           ports:
             - containerPort: 9200
               name: http

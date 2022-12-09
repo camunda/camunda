@@ -7,6 +7,7 @@ package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVReader;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -92,19 +93,17 @@ public class ExportLimitsIT extends AbstractIT {
     reader.close();
   }
 
-
   @Test
   public void exportWithBiggerThanDefaultElasticsearchPageLimit() throws Exception {
     // given
     final int highExportCsvLimit = ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT + 1;
-
-    final String processDefinitionKey = "FAKE";
-    final String reportId = createAndStoreRawReportDefinition(processDefinitionKey, ALL_VERSIONS);
+    final  ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleProcessDefinition();
+    importAllEngineEntitiesFromScratch();
+    final String reportId = createAndStoreRawReportDefinition(processDefinitionEngineDto.getKey(), ALL_VERSIONS);
 
     // instance count is higher than limit to ensure limit is enforced
     final int instanceCount = 2 * highExportCsvLimit;
-    addProcessInstancesToElasticsearch(instanceCount, processDefinitionKey);
-
+    addProcessInstancesToElasticsearch(instanceCount, processDefinitionEngineDto.getKey());
     // the CSV export limit is higher than the max response limit
     embeddedOptimizeExtension.getConfigurationService().getCsvConfiguration().setExportCsvLimit(highExportCsvLimit);
 
@@ -184,4 +183,7 @@ public class ExportLimitsIT extends AbstractIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(getSimpleBpmnDiagram(), new HashMap<>());
   }
 
+  private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram());
+  }
 }

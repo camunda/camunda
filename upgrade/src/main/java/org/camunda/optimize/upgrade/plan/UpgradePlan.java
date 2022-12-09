@@ -27,9 +27,6 @@ public class UpgradePlan {
   @Getter
   @Setter
   private Semver fromVersion;
-  @Getter
-  @Setter
-  private boolean isSilentUpgrade;
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
     this.upgradeSteps.add(upgradeStep);

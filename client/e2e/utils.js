@@ -137,7 +137,7 @@ export async function gotoOverview(t) {
 export async function createNewDashboard(t) {
   await t.click('.CreateNewButton');
   await t.click(Selector('.DropdownOption').withText('Dashboard'));
-  await t.click(Selector('.Button').withText('Blank Dashboard'));
+  await t.click(Homepage.blankDashboardButton);
   await t.click(Homepage.modalConfirmbutton);
 }
 
@@ -148,4 +148,12 @@ export async function addReportToDashboard(t, name) {
     .click(Selector('.ReportModal .DropdownOption').withText(name))
     .click(Selector('.ReportModal button').withText('Add Report'))
     .click('.DashboardRenderer');
+}
+
+export async function bulkDeleteAllItems(t) {
+  await t.click(Homepage.homepageLink);
+  await t.click(Homepage.selectAllCheckbox);
+  await t.click(Homepage.bulkMenu);
+  await t.click(Homepage.del(Homepage.bulkMenu));
+  await t.click(Homepage.modalConfirmbutton);
 }

@@ -7,7 +7,14 @@
 
 import {cleanEntities} from '../setup';
 import config from '../config';
-import {login, save, addReportToDashboard, createNewReport, createNewDashboard} from '../utils';
+import {
+  login,
+  save,
+  addReportToDashboard,
+  createNewReport,
+  createNewDashboard,
+  bulkDeleteAllItems,
+} from '../utils';
 
 import * as e from './Homepage.elements.js';
 import * as Report from './ProcessReport.elements.js';
@@ -207,11 +214,7 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.reportItem.textContent).contains('Invoice Evaluation Count – Copy');
 
   // bulk deleting home entities
-  await t.click(e.homepageLink);
-  await t.click(e.selectAllCheckbox);
-  await t.click(e.bulkMenu);
-  await t.click(e.del(e.bulkMenu));
-  await t.click(e.modalConfirmbutton);
+  await bulkDeleteAllItems(t);
   await t.expect(e.listItem.exists).notOk();
 });
 
@@ -233,4 +236,22 @@ test('multi definition selection', async (t) => {
     .click(e.option(secondDefinition));
 
   await t.click(e.confirmButton);
+});
+
+test('create new dashboard from an empty state component', async (t) => {
+  await t.expect(e.emptyStateComponent.visible).ok();
+
+  await t.click(e.createNewDashboardButton);
+  await t.click(e.blankDashboardButton);
+
+  await t.click(e.modalConfirmbutton);
+
+  await save(t);
+
+  await t.click(e.homepageLink);
+  await t.expect(e.emptyStateComponent.exists).notOk();
+
+  await bulkDeleteAllItems(t);
+
+  await t.expect(e.emptyStateComponent.visible).ok();
 });

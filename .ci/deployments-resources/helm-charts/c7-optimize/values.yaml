@@ -21,7 +21,7 @@ ingress:
 # Tags is usually overridden to a specific tag produced by CI
 optimize:
   image:
-    repository: gcr.io/ci-30-162810/camunda-optimize
+    repository: registry.camunda.cloud/team-optimize/optimize
     tag: latest
   resources:
     limits:
@@ -42,6 +42,11 @@ cambpm:
     requests:
       cpu: 2
       memory: 2Gi
+
+mailhog:
+  image:
+    repository: mailhog/mailhog
+    tag: v1.0.1
 
 elasticsearch:
   image:

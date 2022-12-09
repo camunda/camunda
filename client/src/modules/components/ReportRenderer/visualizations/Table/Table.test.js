@@ -9,20 +9,17 @@ import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
 import {loadVariables} from 'services';
+import {LoadingIndicator} from 'components';
 
 import WrappedTable from './Table';
-import processRawData from './processRawData';
-import processDefaultData from './processDefaultData';
-import {getWebappEndpoints} from 'config';
-import ObjectVariableModal from './ObjectVariableModal';
+import RawDataTable from './RawDataTable';
+import DefaultTable from './DefaultTable';
 
 jest.mock('./processRawData', () => jest.fn().mockReturnValue({}));
 
 jest.mock('./processDefaultData', () =>
   jest.fn().mockReturnValue({head: ['col1', 'col2', {id: 'col3'}]})
 );
-
-jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
 
 jest.mock('services', () => {
   return {
@@ -70,9 +67,30 @@ const props = {
   report,
 };
 
-it('should get the camunda endpoints for raw data', () => {
-  getWebappEndpoints.mockClear();
-  shallow(
+it('should show default report', () => {
+  const node = shallow(<Table {...props} />);
+
+  expect(node.find(DefaultTable)).toBeDefined();
+});
+
+it('should show raw data report', () => {
+  const node = shallow(
+    <Table
+      {...props}
+      report={{
+        ...report,
+        data: {...report.data, view: {properties: ['rawData']}},
+        result: {data: [1, 2, 3], pagination: {limit: 20}},
+      }}
+    />
+  );
+
+  expect(node.find(RawDataTable)).toBeDefined();
+});
+
+it('should show loading indicator when loading process variables', () => {
+  loadVariables.mockReturnValueOnce([]);
+  const node = shallow(
     <Table
       {...props}
       report={{
@@ -84,79 +102,7 @@ it('should get the camunda endpoints for raw data', () => {
   );
   runAllEffects();
 
-  expect(getWebappEndpoints).toHaveBeenCalled();
-});
-
-it('should not get the camunda endpoints for non-raw-data tables', () => {
-  getWebappEndpoints.mockClear();
-  shallow(<Table {...props} report={{...report, result: {data: []}}} />);
-
-  expect(getWebappEndpoints).not.toHaveBeenCalled();
-});
-
-it('should process raw data', async () => {
-  await shallow(
-    <Table
-      {...props}
-      report={{
-        ...report,
-        data: {...report.data, view: {properties: ['rawData']}},
-        result: {data: [1, 2, 3], pagination: {limit: 20}},
-      }}
-      formatter={(v) => v}
-    />
-  );
-  runAllEffects();
-
-  expect(processRawData).toHaveBeenCalled();
-});
-
-it('should display object variable modal when invoked from processRawData function', async () => {
-  const node = await shallow(
-    <Table
-      {...props}
-      report={{
-        ...report,
-        data: {...report.data, view: {properties: ['rawData']}},
-        result: {data: [1, 2, 3], pagination: {limit: 20}},
-      }}
-      formatter={(v) => v}
-    />
-  );
-  runAllEffects();
-
-  processRawData.mock.calls[0][0].onVariableView('varName', 'instanceId', testDefinition.key);
-
-  expect(node.find(ObjectVariableModal).prop('variable')).toEqual({
-    name: 'varName',
-    processInstanceId: 'instanceId',
-    processDefinitionKey: testDefinition.key,
-    versions: testDefinition.versions,
-    tenantIds: testDefinition.tenantIds,
-  });
-
-  node.find(ObjectVariableModal).simulate('close');
-  expect(node.find(ObjectVariableModal)).not.toExist();
-});
-
-it('should close object variable modal', async () => {
-  const node = await shallow(
-    <Table
-      {...props}
-      report={{
-        ...report,
-        data: {...report.data, view: {properties: ['rawData']}},
-        result: {data: [1, 2, 3], pagination: {limit: 20}},
-      }}
-      formatter={(v) => v}
-    />
-  );
-  runAllEffects();
-
-  processRawData.mock.calls[0][0].onVariableView('varName', 'instanceId', testDefinition.key);
-
-  node.find(ObjectVariableModal).simulate('close');
-  expect(node.find(ObjectVariableModal)).not.toExist();
+  expect(node.find(LoadingIndicator)).toBeDefined();
 });
 
 it('should load report when updating sorting', () => {
@@ -170,7 +116,7 @@ it('should load report when updating sorting', () => {
     />
   );
 
-  node.find('Table').prop('updateSorting')('columnId', 'desc');
+  node.find(DefaultTable).prop('updateSorting')('columnId', 'desc');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][1].data.configuration.sorting).toEqual({
@@ -179,62 +125,10 @@ it('should load report when updating sorting', () => {
   });
 });
 
-it('should reload report with correct pagination parameters', () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <Table
-      {...props}
-      loadReport={spy}
-      report={{
-        ...report,
-        data: {...report.data, view: {properties: ['rawData']}},
-        result: {data: [1, 2, 3], pagination: {limit: 20}},
-      }}
-    />
-  );
-  runAllEffects();
-
-  node.find('Table').prop('fetchData')({pageIndex: 2, pageSize: 50});
-  expect(spy).toHaveBeenCalledWith({limit: 50, offset: 100});
-});
-
-it('should show an error when loading more than the first 10.000 instances', async () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <Table
-      {...props}
-      loadReport={spy}
-      report={{
-        ...report,
-        data: {...report.data, view: {properties: ['rawData']}},
-        result: {data: [1, 2, 3], pagination: {limit: 1000}},
-      }}
-    />
-  );
-  runAllEffects();
-
-  await node.find('Table').prop('fetchData')({pageIndex: 11, pageSize: 1000});
-  expect(node.find('Table').prop('error')).toBeDefined();
-  expect(spy).not.toHaveBeenCalled();
-});
-
-it('should update configuration when arranging columns', () => {
-  const spy = jest.fn();
-  const node = shallow(<Table {...props} updateReport={spy} />);
-
-  runAllEffects();
-
-  node.find('ColumnRearrangement').prop('onChange')(0, 2);
-
-  expect(spy).toHaveBeenCalledWith({
-    configuration: {tableColumns: {columnOrder: {$set: ['col2', 'col3', 'col1']}}},
-  });
-});
-
-it('should pass loaded process variables to raw data handler', async () => {
+it('should pass loaded process variables to raw data handler', () => {
   const variables = [{name: 'foo', type: 'String', label: 'fooLabel'}];
   loadVariables.mockReturnValueOnce(variables);
-  await shallow(
+  const node = shallow(
     <Table
       {...props}
       report={{
@@ -246,13 +140,13 @@ it('should pass loaded process variables to raw data handler', async () => {
   );
   runAllEffects();
 
-  expect(processRawData.mock.calls[0][0].processVariables).toEqual(variables);
+  expect(node.find(RawDataTable).prop('processVariables')).toEqual(variables);
 });
 
-it('should pass loaded process variables to group by variable handler', async () => {
+it('should pass loaded process variables to group by variable handler', () => {
   const variables = [{name: 'foo', type: 'String', label: 'fooLabel'}];
   loadVariables.mockReturnValueOnce(variables);
-  await shallow(
+  const node = shallow(
     <Table
       {...props}
       report={{
@@ -265,26 +159,23 @@ it('should pass loaded process variables to group by variable handler', async ()
 
   runAllEffects();
 
-  expect(processDefaultData.mock.calls[0][1]).toEqual(variables);
+  expect(node.find(DefaultTable).prop('processVariables')).toEqual(variables);
 });
 
-it('should not pass updateSorting to the table component on dashboard or shared mode', () => {
+it('should not pass updateSorting to the table component for report grouped by process', () => {
   const spy = jest.fn();
-  const node = shallow(
-    <Table
-      {...props}
-      report={{...report, result: {data: []}}}
-      loadReport={spy}
-      updateReport={() => {}}
-    />
-  );
+  const node = shallow(<Table {...props} loadReport={spy} updateReport={() => {}} />);
 
-  node.find('Table').prop('updateSorting')();
+  node.find(DefaultTable).prop('updateSorting')();
   expect(spy).toHaveBeenCalled();
 
-  node.setProps({context: 'dashboard'});
-  expect(node.find('Table').prop('updateSorting')).toBe(false);
+  node.setProps({
+    report: {
+      ...report,
+      data: {...report.data, distributedBy: {type: 'process'}},
+      result: {data: []},
+    },
+  });
 
-  node.setProps({context: 'shared'});
-  expect(node.find('Table').prop('updateSorting')).toBe(false);
+  expect(node.find(DefaultTable).prop('updateSorting')).toBe(false);
 });

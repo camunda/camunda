@@ -40,13 +40,13 @@ public class BackupRequestValidationTest {
       Arguments.of(null, "must not be blank"),
       Arguments.of("", "must not be blank"),
       Arguments.of("ALLCAPS", "BackupId must be less than 3996 characters and must not contain any uppercase letters or any " +
-        "of [ , \", *, \\, <, |, ,, >, /, ?]."),
+        "of [ , \", *, \\, <, |, ,, >, /, ?, _]."),
       Arguments.of("&*((%$££", "BackupId must be less than 3996 characters and must not contain any uppercase letters or any " +
-        "of [ , \", *, \\, <, |, ,, >, /, ?]."),
+        "of [ , \", *, \\, <, |, ,, >, /, ?, _]."),
       Arguments.of(
         StringUtils.repeat('a', 4000),
         "BackupId must be less than 3996 characters and must not contain any uppercase letters or any " +
-          "of [ , \", *, \\, <, |, ,, >, /, ?]."
+          "of [ , \", *, \\, <, |, ,, >, /, ?, _]."
       )
     );
   }

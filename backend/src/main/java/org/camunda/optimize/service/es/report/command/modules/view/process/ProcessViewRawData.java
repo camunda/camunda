@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.reader.ProcessVariableReader;
@@ -58,11 +59,14 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.core.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -76,11 +80,13 @@ public class ProcessViewRawData extends ProcessViewPart {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
-
+  private final DefinitionService definitionService;
   private final ProcessVariableReader processVariableReader;
-  private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
   private static final String CURRENT_TIME = "currentTime";
   private static final String PARAMS_CURRENT_TIME = "params." + CURRENT_TIME;
+  private static final String DATE_FORMAT = "dateFormat";
+  private static final String FLOWNODE_IDS_TO_DURATIONS = "flowNodeIdsToDurations";
+  private static final String NUMBER_OF_USERTASKS = "numberOfUserTasks";
 
   @Override
   public ViewProperty getViewProperty(final ExecutionContext<ProcessReportDataDto> context) {
@@ -130,11 +136,45 @@ public class ProcessViewRawData extends ProcessViewPart {
           .from(pag.getOffset());
       });
     }
+    String getFlowNodeDurationsScript =
+        "def flowNodeInstanceIdToDuration = new HashMap();" +
+        "def dateFormatter = new SimpleDateFormat(params.dateFormat);" +
+          "for (flowNodeInstance in params._source.flowNodeInstances) {" +
+            "if (flowNodeInstance.totalDurationInMs != null) {" +
+              "if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {" +
+                "def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);" +
+                "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs + currentDuration)" +
+              "} else {" +
+                "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, flowNodeInstance.totalDurationInMs)" +
+                "}" +
+            "} else {" +
+              "if (flowNodeInstance.startDate != null) {" +
+                "def duration = params.currentTime - dateFormatter.parse(flowNodeInstance.startDate).getTime();" +
+                "if (flowNodeInstanceIdToDuration.containsKey(flowNodeInstance.flowNodeId)) {" +
+                  "def currentDuration = flowNodeInstanceIdToDuration.get(flowNodeInstance.flowNodeId);" +
+                  "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration + currentDuration)" +
+                "} else {" +
+                  "flowNodeInstanceIdToDuration.put(flowNodeInstance.flowNodeId, duration)" +
+                "}" +
+              "}" +
+            "}" +
+          "}" +
+        "return flowNodeInstanceIdToDuration;";
+
     Map<String, Object> params = new HashMap<>();
     params.put(CURRENT_TIME, LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli());
+    params.put(DATE_FORMAT, OPTIMIZE_DATE_FORMAT);
     searchRequest.source().scriptField(
       CURRENT_TIME,
       createDefaultScriptWithSpecificDtoParams(PARAMS_CURRENT_TIME, params, objectMapper)
+    );
+    searchRequest.source().scriptField(
+      NUMBER_OF_USERTASKS,
+      createDefaultScript("Optional.ofNullable(params._source.flowNodeInstances).map(list -> list.stream().filter(item -> item.flowNodeType.equals('userTask')).count()).orElse(0L)")
+    );
+    searchRequest.source().scriptField(
+      FLOWNODE_IDS_TO_DURATIONS,
+      createDefaultScriptWithSpecificDtoParams(getFlowNodeDurationsScript, params, objectMapper)
     );
     addSorting(sortByField, sortOrder, searchRequest.source(), params);
   }
@@ -148,12 +188,19 @@ public class ProcessViewRawData extends ProcessViewPart {
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
+    Map<String, Map<String, Long>> processInstanceIdsToFlowNodeIdsAndDurations = new HashMap<>();
+    Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
     Function<SearchHit, ProcessInstanceDto> mappingFunction = hit -> {
       try {
         final ProcessInstanceDto processInstance = objectMapper.readValue(
           hit.getSourceAsString(),
           ProcessInstanceDto.class
         );
+        processInstanceIdsToFlowNodeIdsAndDurations.put(
+          processInstance.getProcessInstanceId(),
+          hit.getFields().get(FLOWNODE_IDS_TO_DURATIONS).getValue()
+        );
+        instanceIdsToUserTaskCount.put(processInstance.getProcessInstanceId(), Long.valueOf(hit.getFields().get(NUMBER_OF_USERTASKS).getValue().toString()));
         if (processInstance.getDuration() == null && processInstance.getStartDate() != null) {
           final Optional<ReportSortingDto> sorting = context.getReportConfiguration().getSorting();
           if (sorting.isPresent() && sorting.get().getBy().isPresent()
@@ -192,10 +239,16 @@ public class ProcessViewRawData extends ProcessViewPart {
       );
     }
 
+    RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
+    Map<String, String> flowNodeIdsToFlowNodeNames = definitionService.fetchDefinitionFlowNodeNamesAndIdsForProcessInstances(
+      rawDataProcessInstanceDtos);
     final List<RawDataProcessInstanceDto> rawData = rawDataSingleReportResultDtoMapper.mapFrom(
       rawDataProcessInstanceDtos,
       objectMapper,
-      context.getAllVariablesNames()
+      context.getAllVariablesNames(),
+      instanceIdsToUserTaskCount,
+      processInstanceIdsToFlowNodeIdsAndDurations,
+      flowNodeIdsToFlowNodeNames
     );
 
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawData);

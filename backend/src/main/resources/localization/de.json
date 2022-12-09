@@ -1,5 +1,7 @@
 {
+  "companyName": "Camunda",
   "appName": "Optimize",
+  "appFullName": "Camunda Optimize",
   "navigation": {
     "homepage": "Home",
     "analysis": "Analyse",
@@ -11,9 +13,12 @@
     "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
     "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten",
     "userGuide": "Benutzerhandbuch",
-    "help": "Hilfe"
+    "help": "Hilfe",
+    "profile": "Profil",
+    "appSwitcher": "App Switcher"
   },
   "login": {
+    "label": "Einloggen",
     "appName": "Optimize",
     "username": "Nutzername",
     "password": "Passwort",
@@ -31,6 +36,7 @@
     "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
   },
   "license": {
+    "label": "Lizenz",
     "licensedFor": "Lizenziert für",
     "validUntil": "Gültig bis",
     "redirectMessage": "Sie werden in Kürze zur Anmeldeseite weitergeleitet. <a href=\"./\">Klicken Sie hier, um sofort zur Anmeldeseite zu gelangen</a> ",
@@ -137,7 +143,6 @@
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
       "existing-identity": "Ein Benutzer oder eine Gruppe mit dieser ID existiert schon",
       "inCollection": "in dieser Sammlung",
-      "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein.",
       "deleteWarning": "'{name}' {type} wird von der Sammlung entfernt."
     },
     "sources": {
@@ -162,7 +167,11 @@
     "empty": "Es wurde noch nichts erstellt",
     "contactEditor": "Bitte wenden Sie sich an einen Optimize editor, um neue Artikel zu erstellen",
     "contactManager": "Bitte wenden Sie sich an den Sammelmanager, um neue Artikel zu erstellen",
-    "welcome": "Willkommen"
+    "welcome": "Willkommen",
+    "emptyState": {
+      "title": "Beginnen Sie mit der Erstellung eines Dashboards",
+      "description": "Klicken Sie auf Neues Dashboard Erstellen, um Einblicke in Geschäftsprozesse zu erhalten"
+    }
   },
   "processes": {
     "label": "Prozess",
@@ -521,7 +530,10 @@
         "inputVariable": "EingabeVar",
         "outputVariable": "AusgabeVar",
         "objectVariable": "Objektvariable",
-        "numberOfOpenIncidents": "Anzahl der offener Zwischenfälle"
+        "numberOfOpenIncidents": "Anzahl der offener Zwischenfälle",
+        "numberOfIncidents": "Anzahl der Zwischenfälle",
+        "numberOfUserTasks": "Anzahl der ausgeführten Benutzeraufgaben",
+        "flowNodeDuration": "Dur"
       },
       "pageError": "Nur die ersten 10.000 Instanzen können angezeigt werden"
     },
@@ -925,6 +937,7 @@
     "viewMore": "Mehr sehen",
     "viewLess": "Weniger sehen",
     "configure": "Konfigurieren",
+    "new": "Neuer",
     "process": {
       "label": "Prozess",
       "label-plural": "Prozesse"
@@ -1116,7 +1129,11 @@
         "flowNodeSelection": "Prozessknotenauswahl",
         "flowNodeDate": "Prozessknoten-Datum",
         "flowNodeStartDate": "Prozessknoten Startdatum",
-        "flowNodeEndDate": "Prozessknoten Enddatum"
+        "flowNodeEndDate": "Prozessknoten Enddatum",
+        "variable-plural": "Variablen",
+        "inputVariable-plural": "Eingangsvariablen",
+        "outputVariable-plural": "Ausgabevariablen",
+        "flowNodeDuration-plural": "Prozessknoten Dauer"
       },
       "list": {
         "appliedTo": "Angewendet auf",
@@ -1425,6 +1442,7 @@
     "notAuthorizedError": "Sie konnten nicht authentifiziert werden, bitte überprüfen Sie Ihren Benutzernamen und Passwort.",
     "notFoundError": "Der Server konnte die angeforderte Seite oder Datei nicht finden.",
     "badRequestError": "Der Server konnte Ihre Anfrage nicht verarbeiten.",
+    "elasticsearchConnectionError": "Der Server konnte keine Verbindung zu Elasticsearch herstellen.",
     "nonTenantScopeCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist in der Datenquelle definiert, jedoch ist mindestens ein Mandant des Berichts nicht in der Datenquelle vorhanden.",
     "nonDefinitionScopeCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden. Die Definition des Berichts ist nicht in der Datenquelle der Sammlung vorhanden.",
     "invalidLicenseError": "Die gegebene Lizenz ist ungültig.",

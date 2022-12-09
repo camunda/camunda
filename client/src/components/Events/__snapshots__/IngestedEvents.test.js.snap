@@ -4,6 +4,9 @@ exports[`should match snapshot 1`] = `
 <div
   className="IngestedEvents"
 >
+  <PageTitle
+    pageName="Ingested External Events"
+  />
   <h1
     className="title"
   >

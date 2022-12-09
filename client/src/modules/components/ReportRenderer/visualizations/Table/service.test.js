@@ -11,6 +11,7 @@ import {
   getBodyRows,
   getCombinedTableProps,
   isVisibleColumn,
+  rearrangeColumns,
 } from './service';
 
 jest.mock('request', () => ({
@@ -211,6 +212,76 @@ it('should return correct combined table report data properties', () => {
   });
 });
 
+it('should default empty header id to non empty value', () => {
+  const report = {
+    name: 'report A',
+    combined: false,
+    data: {
+      view: {
+        properties: ['frequency'],
+      },
+      groupBy: {
+        type: 'startDate',
+        value: {
+          unit: 'automatic',
+        },
+      },
+      distributedBy: {
+        type: 'variable',
+        value: {
+          name: 'testVar',
+          type: 'String',
+        },
+      },
+      visualization: 'table',
+      configuration: {sorting: null},
+    },
+    result: {
+      instanceCount: 100,
+      measures: [
+        {
+          property: 'frequency',
+          data: [
+            {
+              key: '2022-10-25T16:09:12.243+0200',
+              value: 1,
+              label: '2022-10-25T16:09:12.243+0200',
+            },
+            {
+              key: '2022-10-25T16:09:12.003+0200',
+              value: 0,
+              label: '2022-10-25T16:09:12.003+0200',
+            },
+          ],
+          type: 'map',
+        },
+      ],
+    },
+  };
+
+  const combinedReport = {
+    combined: true,
+    data: {
+      configuration: {sorting: null},
+      reports: [{id: ''}, {id: 'missing'}],
+    },
+    result: {
+      '': report,
+      missing: report,
+    },
+  };
+
+  const tableProps = getCombinedTableProps(
+    combinedReport.result,
+    combinedReport.data.reports,
+    true,
+    true
+  );
+
+  expect(`${tableProps.reportsIds[0]}`).toEqual('0');
+  expect(tableProps.reportsIds[1]).toEqual('missing');
+});
+
 describe('sortColumns', () => {
   const head = [
     'processInstanceId',
@@ -306,4 +377,13 @@ it('should check if column is enabled based on excluded values', () => {
   });
 
   expect(isVisible).toBe(false);
+});
+
+it('should rearrange columns properly', () => {
+  const spy = jest.fn();
+  const tableProps = {head: ['a', 'b', 'c']};
+  rearrangeColumns(0, 2, tableProps, spy);
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {tableColumns: {columnOrder: {$set: ['b', 'c', 'a']}}},
+  });
 });

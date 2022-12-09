@@ -9,7 +9,7 @@ import React from 'react';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
-import {ErrorPage, LoadingIndicator} from 'components';
+import {ErrorPage, LoadingIndicator, PageTitle} from 'components';
 import {evaluateReport} from 'services';
 import {newReport} from 'config';
 
@@ -109,6 +109,7 @@ export class Report extends React.Component {
 
     return (
       <div className="Report-container">
+        <PageTitle pageName={t('report.label')} resourceName={report?.name} isNew={this.isNew()} />
         {viewMode === 'edit' ? (
           <ReportEdit
             error={serverError}

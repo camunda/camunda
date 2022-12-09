@@ -5,7 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import {formatTooltip, formatTooltipTitle, getTooltipLabelColor} from './service';
+import {
+  formatTooltip,
+  formatTooltipTitle,
+  getLabel,
+  getTooltipLabelColor,
+  hasReportPersistedTooltips,
+} from './service';
 
 describe('formatTooltip', () => {
   it('should include the relative value in tooltips', () => {
@@ -108,5 +114,71 @@ describe('formatTooltipTitle', () => {
 
   it('should handle null values well', () => {
     expect(formatTooltipTitle(null, null)).toBe('');
+  });
+});
+
+describe('getLabel', () => {
+  it('should return property label', () => {
+    expect(getLabel({property: 'frequency'})).toBe('Count');
+    expect(getLabel({property: 'duration'})).toBe('Duration');
+  });
+
+  it('should return label with aggregation type', () => {
+    expect(getLabel({property: 'frequency', aggregationType: {type: 'sum'}})).toBe('Count - Sum');
+    expect(
+      getLabel({property: 'frequency', aggregationType: {type: 'percentile', value: 100}})
+    ).toBe('Count - P100');
+  });
+
+  it('should return label with user task duration', () => {
+    expect(getLabel({property: 'duration', userTaskDurationTime: 'idle'})).toBe('Idle Duration');
+  });
+});
+
+describe('hasReportPersistedTooltips', () => {
+  it('should return false when none of alwaysShow is true', () => {
+    const report = {
+      data: {
+        configuration: {alwaysShowAbsolute: false, alwaysShowRelative: false},
+      },
+    };
+    expect(hasReportPersistedTooltips(report)).toBe(false);
+  });
+
+  it('should return true when showing absolute values and report is duration', () => {
+    expect(
+      hasReportPersistedTooltips({
+        data: {
+          view: {properties: ['duration']},
+          configuration: {alwaysShowAbsolute: false, alwaysShowRelative: true},
+        },
+      })
+    ).toBe(false);
+    expect(
+      hasReportPersistedTooltips({
+        data: {
+          view: {properties: ['duration']},
+          configuration: {alwaysShowAbsolute: true, alwaysShowRelative: false},
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('should return true when no duration report has either of alwaysShow properties set to true', () => {
+    expect(
+      hasReportPersistedTooltips({
+        data: {
+          configuration: {alwaysShowAbsolute: true, alwaysShowRelative: false},
+        },
+      })
+    ).toBe(true);
+
+    expect(
+      hasReportPersistedTooltips({
+        data: {
+          configuration: {alwaysShowAbsolute: false, alwaysShowRelative: true},
+        },
+      })
+    ).toBe(true);
   });
 });

@@ -12,6 +12,7 @@ import {
   formatTooltipTitle,
   getTooltipLabelColor,
   canBeInterpolated,
+  hasReportPersistedTooltips,
 } from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
 import {getColorFor} from '../colorsUtils';
@@ -22,7 +23,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     data: {visualization, configuration},
     result,
   } = report;
-  const {alwaysShowAbsolute, alwaysShowRelative, precision} = configuration;
+  const {precision} = configuration;
 
   const {view, groupBy} = Object.values(result.data)[0].data;
 
@@ -30,9 +31,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
   const isNumber = visualization === 'number';
   const isDuration = isDurationReport(Object.values(result.data)[0]);
   const maxDuration = isDuration ? findMaxDurationAcrossReports(result) : 0;
-  const isPersistedTooltips = isDuration
-    ? alwaysShowAbsolute
-    : alwaysShowAbsolute || alwaysShowRelative;
+  const isPersistedTooltips = hasReportPersistedTooltips(report);
 
   const groupedByDurationMaxValue =
     groupBy?.type === 'duration' && findMaxDurationAcrossReports(result, 'label');

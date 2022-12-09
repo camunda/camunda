@@ -3,14 +3,14 @@
 # on `jq` as an external dependency.
 #
 # Example usage:
-#   $ ./verify.sh camunda/optimize:3.9.0 gcr.io/ci-30-162810/camunda-optimize:latest
+#   $ ./verify.sh camunda/optimize:3.9.0 registry.camunda.cloud/team-optimize/optimize:latest
 #
 # Globals:
 #   VERSION - required; the semantic version, e.g. 3.9.0 or 3.9.0-alpha1
 #   REVISION - required; the sha1 of the commit used to build the artifact
 #   DATE - required; the ISO 8601 date at which the image was built
 #   ARCHITECTURE - required; the architecture (e.g. amd64, arm64) for which the image was built
-#   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3.16.2)
+#   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3.17.0)
 # Arguments:
 #   1 - Docker image names to be checked (no limit on number of images, each is checked separately)
 # Outputs:
@@ -47,7 +47,7 @@ if [ -z "${ARCHITECTURE}" ]; then
 fi
 
 if [ -z "${BASE_IMAGE}" ]; then
-  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.16.2"
+  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.17.0"
   exit 1
 fi
 
@@ -61,8 +61,7 @@ echo "Checking for architecture ${ARCHITECTURE}"
 digestForArchitecture=$(echo "${baseImageInfo}" | jq '.manifests[] | select(.platform.architecture == "'"${ARCHITECTURE}"'") |
 .digest' )
 
-# Removing 'sha256:' prefix and also leading and trailing quotes
-digestForArchitecture=${digestForArchitecture//"sha256:"/}
+# Removing leading and trailing quotes
 digestForArchitecture="${digestForArchitecture%\"}"
 digestForArchitecture="${digestForArchitecture#\"}"
 echo "Expected base image digest from ${BASE_IMAGE} for ${ARCHITECTURE} is: ${digestForArchitecture}"

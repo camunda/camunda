@@ -1,5 +1,7 @@
 {
+  "companyName": "Camunda",
   "appName": "Optimize",
+  "appFullName": "Camunda Optimize",
   "navigation": {
     "homepage": "Home",
     "analysis": "Analysis",
@@ -11,9 +13,12 @@
     "logoutSuccess": "You logged out successfully.",
     "configLoadingError": "An error occurred while loading the UI configurations",
     "userGuide": "User Guide",
-    "help": "Help"
+    "help": "Help",
+    "profile": "Profile",
+    "appSwitcher": "App Switcher"
   },
   "login": {
+    "label": "Log in",
     "appName": "Optimize",
     "username": "Username",
     "password": "Password",
@@ -31,6 +36,7 @@
     "timezone": "Date and Time displayed in local timezone:"
   },
   "license": {
+    "label": "License",
     "licensedFor": "Licensed for",
     "validUntil": "Valid until",
     "redirectMessage": "You will be redirected to login page shortly. <a href=\"./\">Click here to go to login page immediately</a>",
@@ -137,7 +143,6 @@
       "manager-description": "Full rights editing Collection and Users",
       "existing-identity": "A user or a group with this id already exists",
       "inCollection": "in this collection",
-      "missingAuthorizationsWarning": "Some data may be hidden from users due to missing authorizations.",
       "deleteWarning": "The '{name}' {type} will be removed from the Collection."
     },
     "sources": {
@@ -162,7 +167,11 @@
     "empty": "There are no items created yet",
     "contactEditor": "Please contact an Optimize editor to create new items",
     "contactManager": "Please contact the collection manager to create new items",
-    "welcome": "Welcome"
+    "welcome": "Welcome",
+    "emptyState": {
+      "title": "Start by creating a Dashboard",
+      "description": "Click Create New Dashboard to get insights into business processes"
+    }
   },
   "processes": {
     "label": "process",
@@ -521,7 +530,10 @@
         "inputVariable": "InputVar",
         "outputVariable": "OutputVar",
         "objectVariable": "Object Variable",
-        "numberOfOpenIncidents": "Open Incidents Count"
+        "numberOfOpenIncidents": "Open Incidents Count",
+        "numberOfIncidents": "Incidents Count",
+        "numberOfUserTasks": "Executed User Tasks Count",
+        "flowNodeDuration": "Dur"
       },
       "pageError": "Only the first 10,000 instances can be displayed"
     },
@@ -925,6 +937,7 @@
     "viewMore": "View More",
     "viewLess": "View Less",
     "configure": "Configure",
+    "new": "New",
     "process": {
       "label": "Process",
       "label-plural": "Processes"
@@ -1116,7 +1129,11 @@
         "flowNodeSelection": "Flow Node Selection",
         "flowNodeDate": "Flow Node Date",
         "flowNodeStartDate": "Flow Node Start Date",
-        "flowNodeEndDate": "Flow Node End Date"
+        "flowNodeEndDate": "Flow Node End Date",
+        "variable-plural": "Variables",
+        "inputVariable-plural": "Input Variables",
+        "outputVariable-plural": "Output Variables",
+        "flowNodeDuration-plural": "Flow Nodes Duration"
       },
       "list": {
         "appliedTo": "Applied to",
@@ -1425,6 +1442,7 @@
     "notAuthorizedError": "Could not authenticate you, please check your credentials.",
     "notFoundError": "The server could not find the requested resource.",
     "badRequestError": "The server was unable to process the request.",
+    "elasticsearchConnectionError": "The server has encountered Elasticsearch connection issues.",
     "nonTenantScopeCompliantConflict": "Could not apply action due to conflicts with the collection data source. The definition for the report is available in the data source yet at least one tenant defined in the report is not available in the data source.",
     "nonDefinitionScopeCompliantConflict": "Could not apply action due to conflicts with the collection data source. The report definition is not defined in the data source.",
     "invalidLicenseError": "Invalid license provided.",

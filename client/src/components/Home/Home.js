@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {Redirect} from 'react-router-dom';
 import {parseISO} from 'date-fns';
 
@@ -19,6 +19,8 @@ import {
   BulkDeleter,
   ReportTemplateModal,
   DashboardTemplateModal,
+  EmptyState,
+  Button,
 } from 'components';
 import {formatters, createEntity, updateEntity, checkDeleteConflict} from 'services';
 
@@ -31,104 +33,115 @@ import {formatLink, formatType, formatSubEntities} from './formatters';
 
 import './Home.scss';
 
-export class Home extends React.Component {
-  state = {
-    entities: null,
-    deleting: null,
-    copying: null,
-    redirect: null,
-    creatingCollection: false,
-    creatingProcessReport: false,
-    creatingDashboard: false,
-    editingCollection: null,
-    sorting: null,
-    isLoading: true,
+export function Home({mightFail, user}) {
+  const [entities, setEntities] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [copying, setCopying] = useState(null);
+  const [redirect, setRedirect] = useState(null);
+  const [creatingCollection, setCreatingCollection] = useState(false);
+  const [creatingProcessReport, setCreatingProcessReport] = useState(false);
+  const [creatingDashboard, setCreatingDashboard] = useState(false);
+  const [editingCollection, setEditingCollection] = useState(null);
+  const [sorting, setSorting] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fileInput = useRef();
+
+  const loadList = useCallback(
+    (sortBy, sortOrder) => {
+      setIsLoading(true);
+      setSorting({key: sortBy, order: sortOrder});
+      mightFail(
+        loadEntities(sortBy, sortOrder),
+        (entities) => {
+          setEntities(entities);
+          setIsLoading(false);
+        },
+        (error) => {
+          showError(error);
+          setEntities([]);
+          setIsLoading(false);
+        }
+      );
+    },
+    [mightFail]
+  );
+
+  useEffect(() => {
+    loadList();
+  }, [loadList]);
+
+  const startCreatingCollection = () => setCreatingCollection(true);
+  const stopCreatingCollection = () => setCreatingCollection(false);
+
+  const startEditingCollection = (editingCollection) => {
+    setEditingCollection(editingCollection);
+  };
+  const stopEditingCollection = () => {
+    setEditingCollection(null);
   };
 
-  fileInput = React.createRef();
-
-  componentDidMount() {
-    this.loadList();
-  }
-
-  loadList = (sortBy, sortOrder) => {
-    this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
-    this.props.mightFail(
-      loadEntities(sortBy, sortOrder),
-      (entities) => this.setState({entities, isLoading: false}),
-      (error) => {
-        showError(error);
-        this.setState({entities: [], isLoading: false});
-      }
-    );
-  };
-
-  startCreatingCollection = () => this.setState({creatingCollection: true});
-  stopCreatingCollection = () => this.setState({creatingCollection: false});
-
-  startEditingCollection = (editingCollection) => {
-    this.setState({editingCollection});
-  };
-  stopEditingCollection = () => {
-    this.setState({editingCollection: null});
-  };
-
-  edit = (entity) => {
+  const edit = (entity) => {
     const {entityType, id} = entity;
     if (entityType === 'collection') {
-      this.startEditingCollection(entity);
+      startEditingCollection(entity);
     } else {
-      this.setState({redirect: formatLink(id, entityType) + 'edit'});
+      setRedirect(formatLink(id, entityType) + 'edit');
     }
   };
 
-  createUploadedEntity = () => {
+  const createUploadedEntity = () => {
     const reader = new FileReader();
 
     reader.addEventListener('load', () => {
-      this.props.mightFail(importEntity(reader.result), this.loadList, showError);
-      this.fileInput.current.value = null;
+      mightFail(importEntity(reader.result), loadList, showError);
+      fileInput.current.value = null;
     });
-    reader.readAsText(this.fileInput.current.files[0]);
+    reader.readAsText(fileInput.current.files[0]);
   };
 
-  render() {
-    const {
-      entities,
-      deleting,
-      copying,
-      creatingCollection,
-      creatingProcessReport,
-      creatingDashboard,
-      editingCollection,
-      redirect,
-      sorting,
-      isLoading,
-    } = this.state;
+  if (redirect) {
+    return <Redirect to={redirect} />;
+  }
 
-    const {user} = this.props;
-    const isEditor = user?.authorizations.includes('entity_editor');
+  const isEditor = user?.authorizations.includes('entity_editor');
 
-    if (redirect) {
-      return <Redirect to={redirect} />;
-    }
-
-    return (
-      <div className="Home">
-        <div className="welcomeMessage">
-          {t('home.welcome')}, {user?.name}
-        </div>
-        <div className="content">
+  return (
+    <div className="Home">
+      <div className="welcomeMessage">
+        {t('home.welcome')}, {user?.name}
+      </div>
+      <div className="content">
+        {!isLoading && !entities?.length && isEditor ? (
+          <EmptyState
+            title={t('home.emptyState.title')}
+            description={t('home.emptyState.description')}
+            icon="dashboard-optimize"
+            actions={
+              <>
+                <Button main primary onClick={() => setCreatingDashboard(true)}>
+                  {t('dashboard.createNew')}
+                </Button>
+                <CreateNewButton
+                  createCollection={startCreatingCollection}
+                  createProcessReport={() => setCreatingProcessReport(true)}
+                  createDashboard={() => setCreatingDashboard(true)}
+                  importEntity={() => fileInput.current.click()}
+                />
+              </>
+            }
+          />
+        ) : (
           <EntityList
             name={t('home.title')}
             action={(bulkActive) =>
               isEditor && (
                 <CreateNewButton
                   primary={!bulkActive}
-                  createCollection={this.startCreatingCollection}
-                  createProcessReport={() => this.setState({creatingProcessReport: true})}
-                  createDashboard={() => this.setState({creatingDashboard: true})}
-                  importEntity={() => this.fileInput.current.click()}
+                  createCollection={startCreatingCollection}
+                  createProcessReport={() => setCreatingProcessReport(true)}
+                  createDashboard={() => setCreatingDashboard(true)}
+                  importEntity={() => fileInput.current.click()}
                 />
               )
             }
@@ -142,20 +155,10 @@ export class Home extends React.Component {
                 />,
               ]
             }
-            empty={
-              <>
-                {t('home.empty')}
-                {!isEditor && (
-                  <>
-                    <br />
-                    {t('home.contactEditor')}
-                  </>
-                )}
-              </>
-            }
+            empty={t('home.empty')}
             isLoading={isLoading}
             sorting={sorting}
-            onChange={this.loadList}
+            onChange={loadList}
             columns={[
               {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
               {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
@@ -187,17 +190,17 @@ export class Home extends React.Component {
                     {
                       icon: 'edit',
                       text: t('common.edit'),
-                      action: () => this.edit(entity),
+                      action: () => edit(entity),
                     },
                     {
                       icon: 'copy-document',
                       text: t('common.copy'),
-                      action: () => this.setState({copying: entity}),
+                      action: () => setCopying(entity),
                     },
                     {
                       icon: 'delete',
                       text: t('common.delete'),
-                      action: () => this.setState({deleting: entity}),
+                      action: () => setDeleting(entity),
                     }
                   );
                 }
@@ -231,69 +234,67 @@ export class Home extends React.Component {
               })
             }
           />
-        </div>
-        <Deleter
-          entity={deleting}
-          type={deleting && deleting.entityType}
-          onDelete={this.loadList}
-          checkConflicts={async () => {
-            const {entityType, id} = deleting;
-            if (entityType === 'report') {
-              return checkDeleteConflict(id, entityType);
-            }
-            return {conflictedItems: []};
-          }}
-          onClose={() => this.setState({deleting: null})}
-        />
-        <Copier
-          entity={copying}
-          onCopy={(name, redirect) => {
-            this.setState({copying: null});
-            if (!redirect) {
-              this.loadList();
-            }
-          }}
-          onCancel={() => this.setState({copying: null})}
-        />
-        {creatingCollection && (
-          <CollectionModal
-            title={t('common.collection.modal.title.new')}
-            initialName={t('common.collection.modal.defaultName')}
-            confirmText={t('common.collection.modal.createBtn')}
-            onClose={this.stopCreatingCollection}
-            onConfirm={(name) => createEntity('collection', {name})}
-            showSourcesModal
-          />
         )}
-        {editingCollection && (
-          <CollectionModal
-            title={t('common.collection.modal.title.edit')}
-            initialName={editingCollection.name}
-            confirmText={t('common.collection.modal.editBtn')}
-            onClose={this.stopEditingCollection}
-            onConfirm={async (name) => {
-              await updateEntity('collection', editingCollection.id, {name});
-              this.stopEditingCollection();
-              this.loadList();
-            }}
-          />
-        )}
-        {creatingProcessReport && (
-          <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
-        )}
-        {creatingDashboard && (
-          <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
-        )}
-        <input
-          className="hiddenFilterInput"
-          onChange={this.createUploadedEntity}
-          type="file"
-          accept=".json"
-          ref={this.fileInput}
-        />
       </div>
-    );
-  }
+      <Deleter
+        entity={deleting}
+        type={deleting && deleting.entityType}
+        onDelete={loadList}
+        checkConflicts={async () => {
+          const {entityType, id} = deleting;
+          if (entityType === 'report') {
+            return checkDeleteConflict(id, entityType);
+          }
+          return {conflictedItems: []};
+        }}
+        onClose={() => setDeleting(null)}
+      />
+      <Copier
+        entity={copying}
+        onCopy={(name, redirect) => {
+          setCopying(null);
+          if (!redirect) {
+            loadList();
+          }
+        }}
+        onCancel={() => setCopying(null)}
+      />
+      {creatingCollection && (
+        <CollectionModal
+          title={t('common.collection.modal.title.new')}
+          initialName={t('common.collection.modal.defaultName')}
+          confirmText={t('common.collection.modal.createBtn')}
+          onClose={stopCreatingCollection}
+          onConfirm={(name) => createEntity('collection', {name})}
+          showSourcesModal
+        />
+      )}
+      {editingCollection && (
+        <CollectionModal
+          title={t('common.collection.modal.title.edit')}
+          initialName={editingCollection.name}
+          confirmText={t('common.collection.modal.editBtn')}
+          onClose={stopEditingCollection}
+          onConfirm={async (name) => {
+            await updateEntity('collection', editingCollection.id, {name});
+            stopEditingCollection();
+            loadList();
+          }}
+        />
+      )}
+      {creatingProcessReport && (
+        <ReportTemplateModal onClose={() => setCreatingProcessReport(false)} />
+      )}
+      {creatingDashboard && <DashboardTemplateModal onClose={() => setCreatingDashboard(false)} />}
+      <input
+        className="hiddenFilterInput"
+        onChange={createUploadedEntity}
+        type="file"
+        accept=".json"
+        ref={fileInput}
+      />
+    </div>
+  );
 }
 
 export default withErrorHandling(withUser(Home));

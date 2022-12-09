@@ -9,25 +9,28 @@ import io.micrometer.core.instrument.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.BackupState;
-import org.camunda.optimize.dto.optimize.rest.BackupResponseDto;
-import org.camunda.optimize.dto.optimize.rest.BackupStateResponseDto;
+import org.camunda.optimize.dto.optimize.rest.BackupInfoDto;
+import org.camunda.optimize.dto.optimize.rest.SnapshotInfoDto;
 import org.camunda.optimize.service.es.reader.BackupReader;
 import org.camunda.optimize.service.es.reader.BackupWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.snapshots.Snapshot;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 
 @RequiredArgsConstructor
 @Component
@@ -38,44 +41,65 @@ public class BackupService {
   private final ConfigurationService configurationService;
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
 
-  public synchronized BackupResponseDto triggerBackup(final String backupId) {
+  public synchronized void triggerBackup(final String backupId) {
     validateRepositoryExists();
     backupReader.validateNoDuplicateBackupId(backupId);
 
     log.info("Triggering backup with ID {}", backupId);
-    final List<String> scheduledSnapshotNames = backupWriter.triggerSnapshotCreation(backupId);
-
-    return new BackupResponseDto(scheduledSnapshotNames);
+    backupWriter.triggerSnapshotCreation(backupId);
   }
 
-  public BackupStateResponseDto getBackupState(final String backupId) {
+  public List<BackupInfoDto> getAllBackupInfo() {
     validateRepositoryExists();
-    final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState = backupReader.getAllOptimizeSnapshots(backupId)
-      .stream()
-      .collect(groupingBy(SnapshotInfo::state));
-    final long snapshotCount = snapshotInfosPerState.values().stream().mapToInt(List::size).sum();
-    if (snapshotCount > EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {
-      final String reason = String.format(
-        "Unable to determine backup state because unexpected number of snapshots exist for backupID [%s]. Expected [%s] " +
-          "snapshots but found [%s]. Found snapshots: [%s].",
-        backupId,
-        EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP,
-        snapshotCount,
-        snapshotInfosPerState.values()
-          .stream()
-          .flatMap(snapshotInfos -> snapshotInfos.stream().map(SnapshotInfo::snapshot).map(Snapshot::toString))
-          .collect(joining(", "))
-      );
-      log.error(reason);
-      throw new OptimizeRuntimeException(reason);
-    }
+    return backupReader.getAllOptimizeSnapshotsByBackupId().entrySet().stream()
+      .map(entry -> getSingleBackupInfo(entry.getKey(), entry.getValue().stream().collect(groupingBy(SnapshotInfo::state))))
+      .collect(toList());
+  }
 
+  public BackupInfoDto getSingleBackupInfo(final String backupId) {
+    validateRepositoryExists();
+    return getSingleBackupInfo(backupId, backupReader.getAllOptimizeSnapshots(backupId)
+      .stream()
+      .collect(groupingBy(SnapshotInfo::state)));
+  }
+
+  private BackupInfoDto getSingleBackupInfo(final String backupId,
+                                            final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
     if (snapshotInfosPerState.isEmpty()) {
       final String reason = String.format("No Optimize backup with ID [%s] could be found.", backupId);
       log.error(reason);
       throw new NotFoundException(reason);
     }
-    return new BackupStateResponseDto(determineBackupState(snapshotInfosPerState));
+    return getBackupInfoDto(backupId, snapshotInfosPerState);
+  }
+
+  private BackupInfoDto getBackupInfoDto(final String backupId,
+                                         final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
+    final BackupState backupState = determineBackupState(snapshotInfosPerState);
+    String failureReason = null;
+    if (BackupState.FAILED == backupState) {
+      failureReason = String.format(
+        "The following snapshots failed: [%s]",
+        snapshotInfosPerState.getOrDefault(SnapshotState.FAILED, Collections.emptyList()).stream()
+          .map(snapshotInfo -> snapshotInfo.snapshot().getSnapshotId().getName())
+          .collect(joining(", "))
+      );
+    }
+    return new BackupInfoDto(
+      backupId,
+      failureReason,
+      backupState,
+      snapshotInfosPerState.values()
+        .stream()
+        .flatMap(List::stream)
+        .map(snapshotInfo -> new SnapshotInfoDto(
+          snapshotInfo.snapshot().getSnapshotId().getName(),
+          snapshotInfo.state(),
+          OffsetDateTime.ofInstant(Instant.ofEpochMilli(snapshotInfo.startTime()), ZoneId.systemDefault()),
+          snapshotInfo.shardFailures().stream().map(SnapshotShardFailure::toString).collect(toList())
+        ))
+        .collect(toList())
+    );
   }
 
   public void deleteBackup(final String backupId) {
@@ -94,8 +118,12 @@ public class BackupService {
       return BackupState.INCOMPATIBLE;
     } else if (snapshotInfosPerState.get(SnapshotState.IN_PROGRESS) != null) {
       return BackupState.IN_PROGRESS;
-    } else {
+    } else if (snapshotInfosPerState.getOrDefault(SnapshotState.SUCCESS, Collections.emptyList())
+      .size() < EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP) {
       return BackupState.INCOMPLETE;
+    } else {
+      // this can for example occur if users create additional manual snapshots matching our naming scheme
+      return BackupState.FAILED;
     }
   }
 

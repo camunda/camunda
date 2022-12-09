@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.service.es.report.result.RawDataCommandResult;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -66,9 +67,9 @@ public class CSVUtilsTest {
 		variables.put("\"1\"",  "test");
 		final List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtoWithVariables(variables);
 		final String expectedString =
-			"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"numberOfOpenIncidents\",\"businessKey\",\"startDate\"," +
+			"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"numberOfIncidents\",\"numberOfOpenIncidents\",\"numberOfUserTasks\",\"businessKey\",\"startDate\"," +
 				"\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"variable:\"\"1\"\"\"\r\n" +
-				"\"test_key\",\"test_id\",,\"0\",\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
+				"\"test_key\",\"test_id\",,\"0\",\"0\",\"0\",\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
 				".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n";
 
 		// when
@@ -80,7 +81,7 @@ public class CSVUtilsTest {
 
 	@ParameterizedTest
 	@MethodSource("getExpectedStringAndCsvDelimiter")
-	public void testRawProcessResultMapping_csvWorksWithSeveralDelimters(String expectedString, char delimiter) {
+	public void testRawProcessResultMapping_csvWorksWithSeveralDelimiters(String expectedString, char delimiter) {
 		// given
 		final Map<String, Object> variables = new HashMap<>();
 		variables.put("\"1\"", "test");
@@ -99,7 +100,7 @@ public class CSVUtilsTest {
 		List<RawDataProcessInstanceDto> toMap = RawDataHelper.getRawDataProcessInstanceDtos();
 
 		List<String> excludedColumns =
-      Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[0].getName());
+			Lists.newArrayList(RawDataProcessInstanceDto.class.getDeclaredFields()[0].getName());
 
 		final SingleProcessReportDefinitionRequestDto reportDefinition = new SingleProcessReportDefinitionRequestDto();
 		reportDefinition.getData().getConfiguration().getTableColumns().getExcludedColumns().addAll(excludedColumns);
@@ -475,37 +476,37 @@ public class CSVUtilsTest {
 	private static Stream<Arguments> getExpectedStringAndCsvDelimiter() {
 		return Stream.of(
 			Arguments.of(
-				"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"numberOfOpenIncidents\",\"businessKey\",\"startDate\"," +
+				"\"processDefinitionKey\",\"processDefinitionId\",\"processInstanceId\",\"numberOfIncidents\",\"numberOfOpenIncidents\",\"numberOfUserTasks\",\"businessKey\",\"startDate\"," +
 					"\"endDate\",\"duration\",\"engineName\",\"tenantId\",\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\",\"test_id\",,\"0\",\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
+					"\"test_key\",\"test_id\",,\"0\",\"0\",\"0\",\"aBusinessKey\",\"2018-02-23T14:31:08.048+01:00\",\"2018-02-23T14:31:08" +
 					".048+01:00\",\"0\",\"engine\",\"tenant\",\"test\"\r\n",
 				','
 			),
 			Arguments.of(
-				"\"processDefinitionKey\";\"processDefinitionId\";\"processInstanceId\";\"numberOfOpenIncidents\";\"businessKey\";\"startDate\";" +
+				"\"processDefinitionKey\";\"processDefinitionId\";\"processInstanceId\";\"numberOfIncidents\";\"numberOfOpenIncidents\";\"numberOfUserTasks\";\"businessKey\";\"startDate\";" +
 					"\"endDate\";\"duration\";\"engineName\";\"tenantId\";\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\";\"test_id\";;\"0\";\"aBusinessKey\";\"2018-02-23T14:31:08.048+01:00\";\"2018-02-23T14:31:08" +
+					"\"test_key\";\"test_id\";;\"0\";\"0\";\"0\";\"aBusinessKey\";\"2018-02-23T14:31:08.048+01:00\";\"2018-02-23T14:31:08" +
 					".048+01:00\";\"0\";\"engine\";\"tenant\";\"test\"\r\n",
 				';'
 			),
 			Arguments.of(
-				"\"processDefinitionKey\"	\"processDefinitionId\"	\"processInstanceId\"	\"numberOfOpenIncidents\"	\"businessKey\"	\"startDate\"	" +
+				"\"processDefinitionKey\"	\"processDefinitionId\"	\"processInstanceId\"	\"numberOfIncidents\"	\"numberOfOpenIncidents\"	\"numberOfUserTasks\"	\"businessKey\"	\"startDate\"	" +
 					"\"endDate\"	\"duration\"	\"engineName\"	\"tenantId\"	\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\"	\"test_id\"		\"0\"	\"aBusinessKey\"	\"2018-02-23T14:31:08.048+01:00\"	\"2018-02-23T14:31:08" +
+					"\"test_key\"	\"test_id\"		\"0\"	\"0\"	\"0\"	\"aBusinessKey\"	\"2018-02-23T14:31:08.048+01:00\"	\"2018-02-23T14:31:08" +
 					".048+01:00\"	\"0\"	\"engine\"	\"tenant\"	\"test\"\r\n",
 				'\t'
 			),
 			Arguments.of(
-				"\"processDefinitionKey\"|\"processDefinitionId\"|\"processInstanceId\"|\"numberOfOpenIncidents\"|\"businessKey\"|\"startDate\"|" +
+				"\"processDefinitionKey\"|\"processDefinitionId\"|\"processInstanceId\"|\"numberOfIncidents\"|\"numberOfOpenIncidents\"|\"numberOfUserTasks\"|\"businessKey\"|\"startDate\"|" +
 					"\"endDate\"|\"duration\"|\"engineName\"|\"tenantId\"|\"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\"|\"test_id\"||\"0\"|\"aBusinessKey\"|\"2018-02-23T14:31:08.048+01:00\"|\"2018-02-23T14:31:08" +
+					"\"test_key\"|\"test_id\"||\"0\"|\"0\"|\"0\"|\"aBusinessKey\"|\"2018-02-23T14:31:08.048+01:00\"|\"2018-02-23T14:31:08" +
 					".048+01:00\"|\"0\"|\"engine\"|\"tenant\"|\"test\"\r\n",
 				'|'
 			),
 			Arguments.of(
-				"\"processDefinitionKey\" \"processDefinitionId\" \"processInstanceId\" \"numberOfOpenIncidents\" \"businessKey\" \"startDate\" " +
+				"\"processDefinitionKey\" \"processDefinitionId\" \"processInstanceId\" \"numberOfIncidents\" \"numberOfOpenIncidents\" \"numberOfUserTasks\" \"businessKey\" \"startDate\" " +
 					"\"endDate\" \"duration\" \"engineName\" \"tenantId\" \"variable:\"\"1\"\"\"\r\n" +
-					"\"test_key\" \"test_id\"  \"0\" \"aBusinessKey\" \"2018-02-23T14:31:08.048+01:00\" \"2018-02-23T14:31:08" +
+					"\"test_key\" \"test_id\"  \"0\" \"0\" \"0\" \"aBusinessKey\" \"2018-02-23T14:31:08.048+01:00\" \"2018-02-23T14:31:08" +
 					".048+01:00\" \"0\" \"engine\" \"tenant\" \"test\"\r\n",
 				' '
 			)

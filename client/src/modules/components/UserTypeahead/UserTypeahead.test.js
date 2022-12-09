@@ -76,3 +76,21 @@ it('should load non imported user before adding it to the list', () => {
     },
   ]);
 });
+
+it('should handle users and collectionUsers null values', () => {
+  const node = shallow(
+    <UserTypeahead
+      users={null}
+      collectionUsers={[]}
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      onChange={jest.fn()}
+    />
+  );
+  expect(node.find('LoadingIndicator').exists()).toBe(true);
+
+  node.setProps({users: [], collectionUsers: null});
+  expect(node.find('LoadingIndicator').exists()).toBe(true);
+
+  node.setProps({users: [], collectionUsers: []});
+  expect(node.find('LoadingIndicator').exists()).toBe(false);
+});

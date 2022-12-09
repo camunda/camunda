@@ -4,7 +4,7 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // general properties for CI execution
-def static NODE_POOL() { "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { "agents-n1-standard-8-netssd-preempt" }
 def static GCLOUD_DOCKER_IMAGE() { "gcr.io/google.com/cloudsdktool/cloud-sdk:alpine" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { "postgres:${postgresVersion}" }
 static String kubectlAgent(postgresVersion='9.6-alpine') {

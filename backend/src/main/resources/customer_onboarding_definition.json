@@ -5,8 +5,8 @@
   "versionTag": null,
   "name": "Customer Onboarding",
   "dataSource": {
-    "name": "camunda-bpm",
-    "type": "engine"
+    "name": "zeebe-record",
+    "type": "zeebe"
   },
   "tenantId": null,
   "deleted": false,

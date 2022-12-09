@@ -1,0 +1,49 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailhog
+  labels: {{ include "commonLabels" $ | nindent 4 }}
+    mail: mailhog
+  annotations: {{ include "commonAnnotations" $ | nindent 4 }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 0
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ .Values.global.labels.app }}
+      mail: mailhog
+  template:
+    metadata:
+      labels: {{ include "commonLabels" $ | nindent 8 }}
+        mail: mailhog
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: mailhog
+          image: "{{ .Values.mailhog.image.repository }}:{{ .Values.mailhog.image.tag }}"
+          env:
+            - name: MH_UI_WEB_PATH
+              value: mail
+          ports:
+            - containerPort: 1025
+              name: mailhog-smtp
+            - containerPort: 8025
+              name: mailhog-http
+          readinessProbe:
+            exec:
+              command:
+                - /usr/bin/nc
+                - -v
+                - localhost
+                - "1025"
+            initialDelaySeconds: 30
+            periodSeconds: 30

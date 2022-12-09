@@ -61,9 +61,7 @@ public class DashboardWriter {
   public IdResponseDto createNewDashboard(@NonNull final String userId,
                                           @NonNull final DashboardDefinitionRestDto dashboardDefinitionDto,
                                           @NonNull final String id) {
-
     log.debug("Writing new dashboard to Elasticsearch");
-
     dashboardDefinitionDto.setOwner(userId);
     dashboardDefinitionDto.setName(
       Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));

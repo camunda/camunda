@@ -6,7 +6,6 @@
 package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.AbstractIT;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
@@ -23,7 +22,6 @@ import static org.camunda.optimize.service.util.configuration.EnvironmentPropert
   }
 )
 @DirtiesContext
-@Disabled
 public class SpringBootCompressionIT extends AbstractIT {
 
   @Test

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.FlowNodeTotalDurationDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 
 import java.time.OffsetDateTime;
@@ -22,7 +23,11 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   protected String processDefinitionKey;
   protected String processDefinitionId;
   protected String processInstanceId;
+  protected long numberOfIncidents;
   protected long numberOfOpenIncidents;
+  @FieldNameConstants.Exclude
+  protected Map<String, FlowNodeTotalDurationDataDto> flowNodeDurations;
+  protected long numberOfUserTasks;
   protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;

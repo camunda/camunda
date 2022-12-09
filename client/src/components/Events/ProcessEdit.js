@@ -9,7 +9,7 @@ import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'fast-deep-equal';
 
-import {EntityNameForm, BPMNDiagram, LoadingIndicator} from 'components';
+import {EntityNameForm, BPMNDiagram, LoadingIndicator, PageTitle} from 'components';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -230,6 +230,7 @@ export class ProcessEdit extends React.Component {
 
     return (
       <div className="ProcessEdit">
+        <PageTitle pageName={t('common.process.label')} resourceName={name} isNew={this.isNew()} />
         <div className="header">
           <EntityNameForm
             name={name}

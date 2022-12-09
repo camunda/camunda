@@ -4,9 +4,11 @@ pipelineJob('query-performance-tests') {
   description 'Test Optimize Query Performance against a static dataset.'
 
   // By default, this job is disabled in non-prod envs.
-  if (ENVIRONMENT != "prod") {
-    disabled()
-  }
+  // if (ENVIRONMENT != "prod") {
+    //disabled()
+  //}
+  // This will be reenabled with OPT-6164
+  disabled()
 
   definition {
     cps {

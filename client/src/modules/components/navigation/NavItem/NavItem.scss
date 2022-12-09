@@ -1,17 +1,14 @@
 .NavItem {
   padding: 0 20px;
-  border-left: 1px solid var(--silver-darken-87);
-  height: 24px;
+  height: 1.5rem;
+  margin-top: 11.5px;
   display: flex;
   align-items: center;
+  margin-right: 0;
+  border-right: 1px solid var(--silver-darken-87);
 
   &.active {
     min-width: 0;
-  }
-
-  &:last-child {
-    margin-right: 0;
-    border-right: 1px solid var(--silver-darken-87);
   }
 
   .breadcrumb {
@@ -26,6 +23,11 @@
 
   a {
     color: var(--grey-lighten-56);
+    line-height: normal;
+
+    &:hover {
+      text-decoration: none;
+    }
   }
 
   .active {

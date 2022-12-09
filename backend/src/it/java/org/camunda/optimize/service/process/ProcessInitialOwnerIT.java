@@ -9,6 +9,7 @@ import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.processoverview.InitialProcessOwnerDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestRequestDto;
+import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
@@ -18,14 +19,18 @@ import org.camunda.optimize.service.onboardinglistener.OnboardingSchedulerServic
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_OVERVIEW_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessInitialOwnerIT extends AbstractIT {
@@ -49,6 +54,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -75,6 +81,7 @@ public class ProcessInitialOwnerIT extends AbstractIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(OnboardingSchedulerService.class);
     // Process the pending data
     onboardingSchedulerService.checkIfNewOnboardingDataIsPresent();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(responseInitialOwner.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
@@ -305,6 +312,19 @@ public class ProcessInitialOwnerIT extends AbstractIT {
                      : new ProcessOwnerResponseDto(expectedOwnerId, embeddedOptimizeExtension.getIdentityService()
           .getIdentityNameById(expectedOwnerId)
           .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find default user in cache")))));
+    // we also assert that the last results are initialised as empty rather to avoid potential null checks on overview load
+    final List<Map<String, String>> lastKpiResultsForDef = elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        PROCESS_OVERVIEW_INDEX_NAME,
+        ProcessOverviewDto.class
+      ).stream()
+      .filter(overview -> overview.getProcessDefinitionKey().contains(defKey))
+      .map(ProcessOverviewDto::getLastKpiEvaluationResults)
+      .collect(Collectors.toList());
+    if (!lastKpiResultsForDef.isEmpty()) {
+      assertThat(lastKpiResultsForDef)
+        .singleElement()
+        .isEqualTo(Collections.emptyMap());
+    }
   }
 
   private List<ProcessOverviewResponseDto> getProcessOverview(final ProcessOverviewSorter processOverviewSorter) {

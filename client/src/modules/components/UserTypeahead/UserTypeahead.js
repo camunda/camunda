@@ -11,12 +11,13 @@ import update from 'immutability-helper';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 import {showError} from 'notifications';
+import {LoadingIndicator} from 'components';
 
 import MultiUserInput from './MultiUserInput';
 import {getUser} from './service';
 
 export function UserTypeahead({
-  users,
+  users = [],
   collectionUsers = [],
   onChange,
   mightFail,
@@ -25,6 +26,10 @@ export function UserTypeahead({
   excludeGroups = false,
   persistMenu,
 }) {
+  if (!users || !collectionUsers) {
+    return <LoadingIndicator />;
+  }
+
   const getSelectedUser = (user, cb) => {
     const {id, name} = user;
     if (!name) {

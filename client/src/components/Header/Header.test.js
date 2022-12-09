@@ -12,6 +12,7 @@ import {getOptimizeProfile, isEnterpriseMode} from 'config';
 
 import {isEventBasedProcessEnabled} from './service';
 import {Header} from './Header';
+import WhatsNewModal from './WhatsNewModal';
 
 jest.mock('config', () => ({
   getHeader: jest.fn().mockReturnValue({
@@ -27,20 +28,23 @@ jest.mock('./service', () => ({
   isEventBasedProcessEnabled: jest.fn().mockReturnValue(true),
 }));
 
+jest.mock('react-router', () => ({
+  ...jest.requireActual('react-router'),
+  useLocation: jest.fn().mockImplementation(() => {
+    return {pathname: '/testroute'};
+  }),
+}));
+
+function getNavItem(node, key) {
+  const navItems = node.find('C3Navigation').prop('navbar').elements;
+  return navItems.find((item) => item.key === key);
+}
+
 const props = {
   mightFail: async (data, cb) => cb(await data),
   location: {pathname: '/'},
   history: {push: jest.fn()},
 };
-
-it('matches the snapshot', async () => {
-  const node = shallow(<Header {...props} />);
-
-  await runLastEffect();
-  await node.update();
-
-  expect(node).toMatchSnapshot();
-});
 
 it('should check if the event based process feature is enabled', async () => {
   isEventBasedProcessEnabled.mockClear();
@@ -58,7 +62,7 @@ it('should show and hide the event based process nav item depending on authoriza
   await runLastEffect();
   await enabled.update();
 
-  expect(enabled.find('[linksTo="/events/processes/"]')).toExist();
+  expect(getNavItem(enabled, 'events')).toBeDefined();
 
   isEventBasedProcessEnabled.mockReturnValueOnce(false);
   const disabled = shallow(<Header {...props} />);
@@ -66,7 +70,7 @@ it('should show and hide the event based process nav item depending on authoriza
   await runLastEffect();
   await disabled.update();
 
-  expect(disabled.find('[linksTo="/events/processes/"]')).not.toExist();
+  expect(getNavItem(disabled, 'events')).not.toBeDefined();
 });
 
 it('should hide event based process nav item in cloud environment', async () => {
@@ -77,15 +81,35 @@ it('should hide event based process nav item in cloud environment', async () => 
   await runLastEffect();
   await node.update();
 
-  expect(node.find('[linksTo="/events/processes/"]')).not.toExist();
+  expect(getNavItem(node, 'events')).not.toBeDefined();
 });
 
-it('should show non production warning if enterpriseMode is not set', async () => {
+it('should show license warning if enterpriseMode is not set', async () => {
   isEnterpriseMode.mockReturnValueOnce(false);
   const node = shallow(<Header {...props} />);
 
   await runLastEffect();
   await node.update();
 
-  expect(node.find('.licenseWarning')).toExist();
+  const tags = node.find('C3Navigation').prop('navbar').tags;
+  expect(tags.find((tag) => tag.key === 'licenseWarning')).toBeDefined();
+});
+
+it('should open the whatsNewDialog on option click', async () => {
+  const node = shallow(<Header {...props} />);
+
+  expect(node.find(WhatsNewModal).prop('open')).toBe(false);
+
+  const sideBarEleemnts = node.find('C3Navigation').prop('infoSideBar').elements;
+  sideBarEleemnts.find((el) => el.key === 'whatsNew').onClick();
+
+  expect(node.find(WhatsNewModal).prop('open')).toBe(true);
+});
+
+it('should no display navbar and sidebar is noAction prop is specified', () => {
+  const node = shallow(<Header noActions />);
+
+  expect(node.find('C3Navigation').prop('navbar')).toEqual({elements: []});
+  expect(node.find('C3Navigation').prop('infoSideBar')).not.toBeDefined();
+  expect(node.find('C3Navigation').prop('userSideBar')).not.toBeDefined();
 });

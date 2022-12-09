@@ -10,25 +10,30 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeSnapshotRepositoryNotFoundException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.util.SnapshotUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.snapshots.SnapshotInfo;
+import org.elasticsearch.transport.TransportException;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static org.camunda.optimize.service.util.SnapshotUtil.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static org.camunda.optimize.service.util.SnapshotUtil.SNAPSHOT_MISSING_EXCEPTION_TYPE;
-import static org.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
+import static org.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnapshotNamesForBackupId;
 
 @RequiredArgsConstructor
 @Component
@@ -65,10 +70,13 @@ public class BackupReader {
           log.error(reason, e);
           throw new OptimizeRuntimeException(reason, e);
         }
-      } catch (IOException e) {
-        final String reason = String.format("Error while retrieving repository with name [%s].", repositoryName);
+      } catch (IOException | TransportException e) {
+        final String reason = String.format(
+          "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
+          repositoryName
+        );
         log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
+        throw new OptimizeElasticsearchConnectionException(reason, e);
       }
     }
   }
@@ -86,10 +94,17 @@ public class BackupReader {
     }
   }
 
+  public Map<String, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
+    return getAllOptimizeSnapshots("*").stream()
+      .collect(
+        groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().getSnapshotId().getName()))
+      );
+  }
+
   public List<SnapshotInfo> getAllOptimizeSnapshots(final String backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest = new GetSnapshotsRequest()
       .repository(getRepositoryName())
-      .snapshots(new String[]{getSnapshotPrefixWithBackupId(backupId) + "*"});
+      .snapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
     GetSnapshotsResponse response;
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);
@@ -104,10 +119,13 @@ public class BackupReader {
       );
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (IOException e) {
-      final String reason = String.format("Could not retrieve snapshots for backupID [%s].", backupId);
-      log.error(reason);
-      throw new OptimizeRuntimeException(reason, e);
+    } catch (IOException | TransportException e) {
+      final String reason = String.format(
+        "Encountered an error connecting to Elasticsearch while retrieving snapshots for backupID [%s].",
+        backupId
+      );
+      log.error(reason, e);
+      throw new OptimizeElasticsearchConnectionException(reason, e);
     }
     return response.getSnapshots();
   }

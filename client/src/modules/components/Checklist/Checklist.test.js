@@ -108,7 +108,7 @@ it('should select all items in view', () => {
 it('should hide header if specified', () => {
   const node = shallow(<Checklist {...props} headerHidden />);
 
-  expect(node.find('.header')).not.toExist();
+  expect(node.find('.cds--header')).not.toExist();
 });
 
 it('should prepend items to the checklist', () => {

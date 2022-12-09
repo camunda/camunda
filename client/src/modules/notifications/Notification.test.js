@@ -51,8 +51,8 @@ it('should remove the Notification after the specified delay', () => {
   const spy = jest.fn();
   shallow(<Notification config={{text: 'Sample', duration: 1234}} remove={spy} />);
 
-  jest.runTimersToTime(1230);
+  jest.advanceTimersByTime(1230);
   expect(spy).not.toHaveBeenCalled();
-  jest.runTimersToTime(1235);
+  jest.advanceTimersByTime(1235);
   expect(spy).toHaveBeenCalled();
 });

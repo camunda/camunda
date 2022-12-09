@@ -46,7 +46,6 @@ exports[`should match snapshot 1`] = `
           ],
           "name": "kermit",
           "type": "User",
-          "warning": "Some data may be hidden from users due to missing authorizations.",
         },
         Object {
           "actions": Array [
@@ -71,7 +70,6 @@ exports[`should match snapshot 1`] = `
           ],
           "name": "sales",
           "type": "User Group",
-          "warning": false,
         },
       ]
     }
@@ -90,7 +88,6 @@ exports[`should match snapshot 1`] = `
     existingUsers={
       Array [
         Object {
-          "hasFullScopeAuthorizations": false,
           "id": "USER:kermit",
           "identity": Object {
             "id": "kermit",

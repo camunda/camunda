@@ -8,7 +8,17 @@
 import React, {useCallback, useEffect, useState, useMemo} from 'react';
 import debounce from 'debounce';
 
-import {Deleter, DocsLink, Dropdown, Icon, Input, SearchInput, Table, Tooltip} from 'components';
+import {
+  Deleter,
+  DocsLink,
+  Dropdown,
+  Icon,
+  Input,
+  PageTitle,
+  SearchInput,
+  Table,
+  Tooltip,
+} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -109,6 +119,7 @@ export function IngestedEvents({mightFail}) {
 
   return (
     <div className="IngestedEvents">
+      <PageTitle pageName={t('events.ingested.label')} />
       <h1 className="title">{t('events.ingested.eventSources')}</h1>
       <div className="header">
         <h4 className="tableTitle">{t('events.ingested.label')}</h4>

@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {getTooltipText} from 'services';
+import {getTooltipText, isDurationReport} from 'services';
 import {t} from 'translation';
 
 export function formatTooltip({
@@ -21,6 +21,8 @@ export function formatTooltip({
     return;
   }
 
+  const shortNotation = isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
+
   const tooltipText = getTooltipText(
     dataset.data[dataIndex],
     formatter,
@@ -28,7 +30,8 @@ export function formatTooltip({
     alwaysShowAbsolute,
     alwaysShowRelative,
     isDuration,
-    precision
+    precision,
+    shortNotation
   );
 
   if (!tooltipText) {
@@ -37,7 +40,7 @@ export function formatTooltip({
 
   const label = showLabel && dataset.label ? dataset.label + ': ' : '';
 
-  return label + tooltipText;
+  return shortNotation ? tooltipText : label + tooltipText;
 }
 
 export function formatTooltipTitle(title, availableWidth) {
@@ -132,4 +135,14 @@ export function getAxisIdx(measures, measureIdx) {
     return 0;
   }
   return measures[measureIdx].property === 'frequency' ? 0 : 1;
+}
+
+export function hasReportPersistedTooltips(report) {
+  const {
+    data: {
+      configuration: {alwaysShowAbsolute, alwaysShowRelative},
+    },
+  } = report;
+  const isDuration = isDurationReport(report);
+  return isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
 }
