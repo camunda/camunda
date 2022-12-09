@@ -17,6 +17,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler.ActorSchedulerBuilder;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.jupiter.api.AfterEach;
@@ -37,7 +38,7 @@ class LogDeletionServiceTest {
     snapshotStore = mock(PersistedSnapshotStore.class);
     compactor = mock(LogCompactor.class);
 
-    service = new LogDeletionService(1, 1, compactor, snapshotStore);
+    service = new LogDeletionService(1, 1, compactor, snapshotStore, Duration.ZERO);
     actorScheduler.submitActor(service).join();
   }
 

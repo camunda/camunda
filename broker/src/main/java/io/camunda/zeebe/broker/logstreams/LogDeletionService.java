@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,16 +21,19 @@ public final class LogDeletionService extends Actor implements PersistedSnapshot
   private final String actorName;
   private final PersistedSnapshotStore persistedSnapshotStore;
   private final int partitionId;
+  private final Duration logCompactionDelay;
 
   public LogDeletionService(
       final int nodeId,
       final int partitionId,
       final LogCompactor logCompactor,
-      final PersistedSnapshotStore persistedSnapshotStore) {
+      final PersistedSnapshotStore persistedSnapshotStore,
+      final Duration logCompactionDelay) {
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.logCompactor = logCompactor;
-    actorName = buildActorName(nodeId, "DeletionService", partitionId);
     this.partitionId = partitionId;
+    this.logCompactionDelay = logCompactionDelay;
+    actorName = buildActorName(nodeId, "DeletionService", partitionId);
   }
 
   @Override
@@ -56,20 +60,11 @@ public final class LogDeletionService extends Actor implements PersistedSnapshot
 
   @Override
   public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
-    actor.run(
-        () ->
-            persistedSnapshotStore
-                .getAvailableSnapshots()
-                .onComplete(
-                    (availableSnapshots, error) -> {
-                      if (error == null) {
-                        delegateDeletion(getCompactionBoundOfOldestSnapshot(availableSnapshots));
-                      } else {
-                        Loggers.DELETION_SERVICE.error(
-                            "Expected to compact logs, but could not get list of available snapshots.",
-                            error);
-                      }
-                    }));
+    if (logCompactionDelay.isZero() || logCompactionDelay.isNegative()) {
+      actor.run(this::runLogCompaction);
+    } else {
+      actor.run(() -> actor.runDelayed(logCompactionDelay, this::runLogCompaction));
+    }
   }
 
   private long getCompactionBoundOfOldestSnapshot(final Set<PersistedSnapshot> availableSnapshots) {
@@ -96,5 +91,20 @@ public final class LogDeletionService extends Actor implements PersistedSnapshot
     }
 
     return null;
+  }
+
+  private void runLogCompaction() {
+    persistedSnapshotStore
+        .getAvailableSnapshots()
+        .onComplete(
+            (availableSnapshots, error) -> {
+              if (error == null) {
+                delegateDeletion(getCompactionBoundOfOldestSnapshot(availableSnapshots));
+              } else {
+                Loggers.DELETION_SERVICE.error(
+                    "Expected to compact logs, but could not get list of available snapshots.",
+                    error);
+              }
+            });
   }
 }
