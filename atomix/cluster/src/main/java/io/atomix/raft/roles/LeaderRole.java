@@ -608,8 +608,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     raft.checkThread();
     appender
         .appendEntries(indexed.index())
-        .whenCompleteAsync(
+        .whenComplete(
             (commitIndex, commitError) -> {
+              raft.checkThread();
               if (!isRunning()) {
                 return;
               }
@@ -625,8 +626,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                 // replicating the entry will be retried on the next append request
                 log.error("Failed to replicate entry: {}", indexed, commitError);
               }
-            },
-            raft.getThreadContext());
+            });
   }
 
   public synchronized void onInitialEntriesCommitted(final Runnable runnable) {
