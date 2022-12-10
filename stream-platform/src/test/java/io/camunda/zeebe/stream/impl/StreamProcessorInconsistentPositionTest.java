@@ -29,29 +29,27 @@ final class StreamProcessorInconsistentPositionTest {
     final var listLogStorage = new ListLogStorage();
     try (final var firstLogCtx = streamPlatform.createLogContext(listLogStorage, 1)) {
       try (final var secondLogCtx = streamPlatform.createLogContext(listLogStorage, 2)) {
-        final var firstBatchWriter =
-            firstLogCtx.setupBatchWriter(
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
-        final var secondBatchWriter =
-            secondLogCtx.setupBatchWriter(
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+        final var firstBatchWriter = firstLogCtx.setupBatchWriter();
+        final var secondBatchWriter = secondLogCtx.setupBatchWriter();
 
         // We write two record batches with different logstreams.
         // The logstreams are backed with the same logstorage, which means records are written to
         // the same backend. Both logstream will open a dispatcher with start at position one.
 
-        streamPlatform.writeBatch(firstBatchWriter);
-        streamPlatform.writeBatch(secondBatchWriter);
+        firstBatchWriter.tryWrite(
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+        secondBatchWriter.tryWrite(
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
         // After writing we have at the logstorage: [1, 2, 1, 2], which should be detected
 
         // when
