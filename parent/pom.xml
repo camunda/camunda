@@ -210,12 +210,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>zeebe-dispatcher</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>zeebe-logstreams</artifactId>
         <version>${project.version}</version>
       </dependency>

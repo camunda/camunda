@@ -30,7 +30,6 @@
     <module>transport</module>
     <module>util</module>
     <module>test-util</module>
-    <module>dispatcher</module>
     <module>msgpack-core</module>
     <module>msgpack-value</module>
     <module>build-tools</module>
