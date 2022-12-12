@@ -99,7 +99,7 @@ public final class ProcessInstanceModificationProcessor
   private static final String ERROR_MESSAGE_ANCESTOR_NOT_FOUND =
       """
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
-      with an an ancestor scope key that does not exist, or is not in an active state: '%s'""";
+      with an ancestor scope key that does not exist, or is not in an active state: '%s'""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(

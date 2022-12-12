@@ -465,7 +465,7 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             ("Expected to modify instance of process '%s' but it contains one or more activate"
-                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " instructions with an ancestor scope key that does not exist, or is not in an"
                     + " active state: '12345'")
                 .formatted(PROCESS_ID));
   }
@@ -508,7 +508,7 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             ("Expected to modify instance of process '%s' but it contains one or more activate"
-                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " instructions with an ancestor scope key that does not exist, or is not in an"
                     + " active state: '%d'")
                 .formatted(PROCESS_ID, subProcessKey));
   }
@@ -550,7 +550,7 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             ("Expected to modify instance of process '%s' but it contains one or more activate"
-                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " instructions with an ancestor scope key that does not exist, or is not in an"
                     + " active state: '%d'")
                 .formatted(PROCESS_ID, subProcessKey));
   }
@@ -601,7 +601,7 @@ public class ModifyProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
             ("Expected to modify instance of process '%s' but it contains one or more activate"
-                    + " instructions with an an ancestor scope key that does not exist, or is not in an"
+                    + " instructions with an ancestor scope key that does not exist, or is not in an"
                     + " active state: '%d'")
                 .formatted(PROCESS_ID, subProcessKey));
   }
