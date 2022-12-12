@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 
 /**
  * Supports sending arbitrary commands to another partition. Sending may be unreliable and fail
@@ -20,7 +20,7 @@ public interface InterPartitionCommandSender {
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final BufferWriter command);
+      final UnifiedRecordValue command);
 
   /**
    * Uses the given record key when writing the command. Otherwise, behaves like {@link
@@ -35,5 +35,5 @@ public interface InterPartitionCommandSender {
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final BufferWriter command);
+      final UnifiedRecordValue command);
 }

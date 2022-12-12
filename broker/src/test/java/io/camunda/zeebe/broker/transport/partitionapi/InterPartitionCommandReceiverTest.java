@@ -22,13 +22,13 @@ import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -50,7 +50,7 @@ final class InterPartitionCommandReceiverTest {
             receiverPartitionId,
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new byte[100]);
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -75,7 +75,7 @@ final class InterPartitionCommandReceiverTest {
             receiverPartitionId,
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new byte[100]);
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -99,7 +99,12 @@ final class InterPartitionCommandReceiverTest {
     final var intent = MessageSubscriptionIntent.CORRELATE;
 
     final var sentMessage =
-        sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, new byte[100]);
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            valueType,
+            intent,
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -128,20 +133,16 @@ final class InterPartitionCommandReceiverTest {
     final var receiverBrokerId = 3;
     final var receiverPartitionId = 5;
 
-    final var commandBytes = new byte[100];
-
     // initialize to make debugging easier in case this test breaks.
-    for (int i = 0; i < commandBytes.length; i++) {
-      commandBytes[i] = (byte) i;
-    }
-
+    final var recordValue =
+        new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1);
     final var sentMessage =
         sendCommand(
             receiverBrokerId,
             receiverPartitionId,
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            commandBytes);
+            recordValue);
 
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -154,12 +155,7 @@ final class InterPartitionCommandReceiverTest {
     final var entryCaptor = ArgumentCaptor.forClass(LogAppendEntry.class);
     verify(logStreamWriter).tryWrite(entryCaptor.capture());
     final var valueWriter = entryCaptor.getValue().recordValue();
-    final var bytesWrittenToLogStream = new byte[valueWriter.getLength()];
-    final var valueBuffer = new UnsafeBuffer(bytesWrittenToLogStream);
-    valueWriter.write(valueBuffer, 0);
-    valueWriter.getLength();
-
-    assertThat(bytesWrittenToLogStream).isEqualTo(commandBytes);
+    assertThat(valueWriter).isEqualTo(recordValue);
   }
 
   @Test
@@ -177,7 +173,7 @@ final class InterPartitionCommandReceiverTest {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
             recordKey,
-            new byte[100]);
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -204,7 +200,7 @@ final class InterPartitionCommandReceiverTest {
             receiverPartitionId,
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new byte[100]);
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1));
 
     final var logStreamWriter =
         mock(LogStreamWriter.class, withSettings().defaultAnswer(Answers.RETURNS_SELF));
@@ -224,8 +220,8 @@ final class InterPartitionCommandReceiverTest {
       final Integer receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final byte[] command) {
-    return sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, null, command);
+      final UnifiedRecordValue recordValue) {
+    return sendCommand(receiverBrokerId, receiverPartitionId, valueType, intent, null, recordValue);
   }
 
   private byte[] sendCommand(
@@ -234,17 +230,14 @@ final class InterPartitionCommandReceiverTest {
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final byte[] command) {
+      final UnifiedRecordValue recordValue) {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);
 
     final var sender = new InterPartitionCommandSenderImpl(communicationService);
     sender.setCurrentLeader(receiverPartitionId, receiverBrokerId);
 
-    final var buffer = new UnsafeBuffer(command);
-    final var bufferWriter = new DirectBufferWriter();
-    bufferWriter.wrap(buffer);
-    sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, bufferWriter);
+    sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue);
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)

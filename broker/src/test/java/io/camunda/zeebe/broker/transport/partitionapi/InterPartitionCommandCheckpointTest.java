@@ -22,13 +22,12 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.util.buffer.DirectBufferWriter;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -185,9 +184,7 @@ final class InterPartitionCommandCheckpointTest {
   }
 
   private void sendAndReceive(final ValueType valueType, final Intent intent) {
-    final var bufferWriter = new DirectBufferWriter();
-    bufferWriter.wrap(new UnsafeBuffer(new byte[100]));
-    sender.sendCommand(1, valueType, intent, bufferWriter);
+    sender.sendCommand(1, valueType, intent, new JobRecord());
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService).unicast(eq(TOPIC_PREFIX + 1), messageCaptor.capture(), any());
