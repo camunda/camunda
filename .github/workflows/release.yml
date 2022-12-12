@@ -19,6 +19,10 @@ on:
         description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release)'
         default: false
 
+defaults:
+  run:
+    shell: bash
+
 env:
   RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
   RELEASE_VERSION: ${{ inputs.releaseVersion }}
@@ -54,12 +58,10 @@ jobs:
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
       - name: Git User Setup
-        shell: bash
         run: |
           git config --global user.email "github-actions[release]"
           git config --global user.name "github-actions[release]@users.noreply.github.com"
       - name: Install Maven Central GPG Key
-        shell: bash
         # setup-maven supports this as well but needs the key in the armor ascii format,
         # while we only have it plain bas64 encoded
         # see https://github.com/actions/setup-java/issues/100#issuecomment-742679976
@@ -83,7 +85,6 @@ jobs:
       - name: Setup Zeebe Build Tooling
         uses: ./.github/actions/setup-zeebe
       - name: Additional Go tooling setup
-        shell: bash
         run: |
           go install github.com/go-bindata/go-bindata/...@v3
           if ! command -v go-bindata > /dev/null 2>&1; then
@@ -97,7 +98,6 @@ jobs:
             exit 1
           fi
       - name: Set and commit Go Client version
-        shell: bash
         run: |
           pushd clients/go/internal/embedded
           echo "${RELEASE_VERSION}" > data/VERSION
@@ -123,7 +123,6 @@ jobs:
             }]
       - name: Maven Release
         id: maven-release
-        shell: bash
         env:
           SKIP_REPO_DEPLOY: ${{ inputs.pushChanges == 'false' }}
         run : |
@@ -167,7 +166,6 @@ jobs:
           path: ${{ steps.release-artifacts.outputs.dir }}
           retention-days: 5
       - name: Update Compat Version
-        shell: bash
         run: |
           if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
@@ -184,7 +182,6 @@ jobs:
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git commit -am "build(project): update java compat versions"
       - name: Go Post-Release
-        shell: bash
         run: |
           # Publish Go tag for the release
           git tag "clients/go/v${RELEASE_VERSION}"
@@ -205,7 +202,6 @@ jobs:
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
-        shell: bash
         run: rm -rf $HOME/.gnupg
   github:
     needs: release
@@ -219,7 +215,6 @@ jobs:
           name: release-artifacts
       - name: Create Artifact Checksums
         id: checksum
-        shell: bash
         run: |
           for filename in *; do
             checksumFile="${filename}.sha1sum"
@@ -232,7 +227,6 @@ jobs:
           done
       - name: Determine if Pre-Release
         id: pre-release
-        shell: bash
         run: |
           shopt -s nocasematch # set matching to case insensitive
           PRE_RELEASE=false
