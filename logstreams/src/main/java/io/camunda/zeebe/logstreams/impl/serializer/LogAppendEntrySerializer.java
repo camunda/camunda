@@ -49,8 +49,8 @@ final class LogAppendEntrySerializer {
     final var key = entry.key();
     final var metadata = entry.recordMetadata();
     final var value = entry.recordValue();
-    final var metadataLength = metadata.getLength();
-    final var framedEntryLength = framedLength(entry);
+    Objects.requireNonNull(metadata, "must specify metadata");
+    Objects.requireNonNull(value, "must specify value");
 
     if (writeBufferOffset < 0) {
       throw new IllegalArgumentException(
@@ -79,6 +79,9 @@ final class LogAppendEntrySerializer {
           "Expected to serialize an entry with a positive timestamp, but the timestamp given was %d"
               .formatted(entryTimestamp));
     }
+
+    final var metadataLength = metadata.getLength();
+    final var framedEntryLength = framedLength(entry);
 
     // Write the dispatcher framing
     DataFrameDescriptor.setFramedLength(writeBuffer, writeBufferOffset, framedEntryLength);
