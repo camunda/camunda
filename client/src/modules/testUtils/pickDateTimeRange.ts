@@ -33,7 +33,9 @@ const pickDateTimeRange = async ({
   const year = document.querySelector<HTMLInputElement>('.cur-year')?.value;
   const month = new Date(`${monthName} 01, ${year}`).getMonth() + 1;
 
+  await user.click(screen.getByLabelText('From'));
   await user.click(screen.getByLabelText(`${monthName} ${fromDay}, ${year}`));
+  await user.click(screen.getByLabelText('To'));
   await user.click(screen.getByLabelText(`${monthName} ${toDay}, ${year}`));
 
   if (fromTime !== undefined) {
