@@ -46,19 +46,15 @@ final class LogAppendEntrySerializerTest {
   }
 
   @Test
-  void shouldSkipMetadataIfEmpty() {
+  void shouldFailWithEmptyMetadata() {
     // given
     final var serializer = new LogAppendEntrySerializer();
     final var event = new LoggedEventImpl();
     final var entry = new MutableLogAppendEntry().recordValue(wrapString("value"));
 
-    // when
-    serializer.serialize(writeBuffer, 0, entry, 2, 3, 4);
-
     // then
-    event.wrap(writeBuffer, 0);
-    assertThat(event.getMetadataLength()).isEqualTo((short) 0);
-    assertThat(readString(event::readValue)).isEqualTo("value");
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
+        .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
