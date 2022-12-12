@@ -19,6 +19,12 @@ on:
         description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release), defaults to true.'
         default: true
 
+concurrency:
+  # cannot use the inputs context here as on this level only the github context is accessible, see
+  # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+  group: ${{ github.event.inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
+  cancel-in-progress: true
+
 defaults:
   run:
     shell: bash
