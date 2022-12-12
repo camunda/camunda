@@ -522,12 +522,8 @@ public final class ExporterDirectorTest {
         .until(() -> exporters.get(1).getExportedRecords().size() >= 1);
 
     // then
-    assertThat(exporters.get(0).getController().readMetadata())
-        .isPresent()
-        .hasValue(exporterMetadata1);
-    assertThat(exporters.get(1).getController().readMetadata())
-        .isPresent()
-        .hasValue(exporterMetadata2);
+    assertThat(exporters.get(0).getController().readMetadata()).hasValue(exporterMetadata1);
+    assertThat(exporters.get(1).getController().readMetadata()).hasValue(exporterMetadata2);
   }
 
   @Test
