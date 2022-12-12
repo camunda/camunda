@@ -22,10 +22,12 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DecisionEvaluationTest {
+public class StandaloneDecisionEvaluationTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String DMN_RESOURCE = "/dmn/drg-force-user.dmn";
+  private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
+  private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DECISION_ID = "jedi_or_sith";
   private static final String EXPECTED_DECISION_OUTPUT = "\"Jedi\"";
   private static final String EXPECTED_FAILURE_MSG =
@@ -66,6 +68,35 @@ public class DecisionEvaluationTest {
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.FAILED);
     assertThat(record.getValue()).hasFailedDecisionId(DECISION_ID);
     assertThat(record.getValue()).hasEvaluationFailureMessage(EXPECTED_FAILURE_MSG);
+  }
+
+  @Test
+  public void shouldEvaluateLatestDecisionById() {
+    // given
+    ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deploymentEvent =
+        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    // when
+    final Record<DecisionEvaluationRecordValue> record =
+        ENGINE
+            .decision()
+            .ofDecisionId(DECISION_ID)
+            .withVariable("lightsaberColor", "blue")
+            .evaluate();
+
+    // then
+    final int deployedVersion = deploymentEvent
+        .getValue()
+        .getDecisionsMetadata()
+        .stream()
+        .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
+        .findFirst()
+        .get()
+        .getVersion();
+    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
+    assertThat(record.getValue()).hasDecisionOutput(EXPECTED_DECISION_OUTPUT);
+    assertThat(record.getValue()).hasDecisionVersion(deployedVersion);
   }
 
   @Test

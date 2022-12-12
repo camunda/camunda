@@ -88,7 +88,12 @@ public class DecisionBehavior {
       final String decisionId,
       final DirectBuffer variables) {
     final var evaluationContext = new VariablesContext(MsgPackConverter.convertToMap(variables));
-    return decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
+    final var evaluationResult =
+        decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
+
+    updateDecisionMetrics(evaluationResult);
+
+    return evaluationResult;
   }
 
   public Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> createDecisionEvaluationEvent(
@@ -138,7 +143,7 @@ public class DecisionBehavior {
     return new Tuple<>(decisionEvaluationIntent, decisionEvaluationEvent);
   }
 
-  public void updateDecisionMetrics(final DecisionEvaluationResult evaluationResult) {
+  private void updateDecisionMetrics(final DecisionEvaluationResult evaluationResult) {
     if (evaluationResult.isFailure()) {
       metrics.increaseFailedEvaluatedDmnElements(evaluationResult.getEvaluatedDecisions().size());
     } else {
