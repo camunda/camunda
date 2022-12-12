@@ -18,6 +18,8 @@ package io.camunda.zeebe.client.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.util.ClientTest;
+import java.time.ZoneOffset;
+import java.util.Date;
 import org.junit.Test;
 
 public class ZeebeObjectMapperTest extends ClientTest {
@@ -32,6 +34,18 @@ public class ZeebeObjectMapperTest extends ClientTest {
     final String actual = zeebeObjectMapper.toJson(testObject);
     // Then
     assertThat(actual).isEqualTo("{\"object\":{}}");
+  }
+
+  @Test
+  public void shouldParseOffsetDateTimeWithoutException() {
+    // Given
+    final ZeebeObjectMapper zeebeObjectMapper = new ZeebeObjectMapper();
+    final TestObject testObject = new TestObject();
+    testObject.setObject(new Date().toInstant().atOffset(ZoneOffset.UTC));
+    // When
+    final String actual = zeebeObjectMapper.toJson(testObject);
+    // Then object not null and parsed without exception
+    assertThat(actual).isNotEmpty();
   }
 
   public static final class TestObject {

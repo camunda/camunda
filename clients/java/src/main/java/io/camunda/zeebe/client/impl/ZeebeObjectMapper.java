@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.InternalClientException;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public final class ZeebeObjectMapper implements JsonMapper {
   private final ObjectMapper objectMapper;
 
   public ZeebeObjectMapper() {
-    this(new ObjectMapper());
+    this(new ObjectMapper().registerModule(new JavaTimeModule()));
   }
 
   public ZeebeObjectMapper(ObjectMapper objectMapper) {
