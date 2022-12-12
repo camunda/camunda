@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.dmn;
 
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -18,24 +18,22 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
-import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 
-public class EvaluateDecisionProcessor implements CommandProcessor<DecisionEvaluationRecord> {
+public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionEvaluationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
-      "Expected either a decisionId or a decisionKey greater than -1, but none or both provided";
+      "Expected either a decision id or a valid decision key, but none or both provided";
 
   private final DecisionBehavior decisionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
-  private boolean success;
 
   public EvaluateDecisionProcessor(
       final DecisionBehavior decisionBehavior,
@@ -50,15 +48,13 @@ public class EvaluateDecisionProcessor implements CommandProcessor<DecisionEvalu
   }
 
   @Override
-  public boolean onCommand(
-      final TypedRecord<DecisionEvaluationRecord> command,
-      final CommandControl<DecisionEvaluationRecord> commandControl) {
+  public void processRecord(final TypedRecord<DecisionEvaluationRecord> command) {
 
     final DecisionEvaluationRecord record = command.getValue();
     final Either<Failure, PersistedDecision> decisionOrFailure = getDecision(record);
 
     decisionOrFailure
-        .flatMap(persistedDecision -> decisionBehavior.findAndParseDrgByDecision(persistedDecision))
+        .flatMap(decisionBehavior::findAndParseDrgByDecision)
         .ifRightOrLeft(
             drg -> {
               final var decision = decisionOrFailure.get();
@@ -67,23 +63,27 @@ public class EvaluateDecisionProcessor implements CommandProcessor<DecisionEvalu
                   decisionBehavior.evaluateDecisionInDrg(
                       drg, BufferUtil.bufferAsString(decision.getDecisionId()), variables);
 
-              // update metrics and write events
               final Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord>
                   evaluationRecordTuple =
                       decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
-              decisionBehavior.updateDecisionMetrics(evaluationResult);
 
-              success = true;
-              commandControl.accept(
-                  evaluationRecordTuple.getLeft(), evaluationRecordTuple.getRight());
+              final var evaluationRecordKey = keyGenerator.nextKey();
+              stateWriter.appendFollowUpEvent(
+                  evaluationRecordKey,
+                  evaluationRecordTuple.getLeft(),
+                  evaluationRecordTuple.getRight());
+              responseWriter.writeEventOnCommand(
+                  evaluationRecordKey,
+                  evaluationRecordTuple.getLeft(),
+                  evaluationRecordTuple.getRight(),
+                  command);
             },
             failure -> {
-              success = false;
               final String reason = failure.getMessage();
-              commandControl.reject(RejectionType.INVALID_ARGUMENT, reason);
+              responseWriter.writeRejectionOnCommand(
+                  command, RejectionType.INVALID_ARGUMENT, reason);
+              rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
             });
-
-    return success;
   }
 
   private Either<Failure, PersistedDecision> getDecision(final DecisionEvaluationRecord record) {
@@ -92,7 +92,7 @@ public class EvaluateDecisionProcessor implements CommandProcessor<DecisionEvalu
     final long decisionKey = record.getDecisionKey();
 
     final var decisionIdProvided = !decisionId.isEmpty();
-    final var decisionKeyProvided = (decisionKey != -1L);
+    final var decisionKeyProvided = decisionKey != -1L;
 
     if (decisionIdProvided == decisionKeyProvided) {
       // XNOR if both ID and KEY are provided/missing
@@ -104,15 +104,6 @@ public class EvaluateDecisionProcessor implements CommandProcessor<DecisionEvalu
       // TODO: expand DecisionState API to find decisions by ID AND VERSION (#11230)
     } else {
       return decisionBehavior.findDecisionByKey(decisionKey);
-    }
-  }
-
-  private RejectionType determineRejectionType(final Failure failure) {
-    final ErrorType errorType = failure.getErrorType();
-    if (errorType == ErrorType.DECISION_EVALUATION_ERROR) {
-      return RejectionType.PROCESSING_ERROR;
-    } else {
-      return RejectionType.INVALID_ARGUMENT;
     }
   }
 }
