@@ -149,6 +149,7 @@ public class BackupServiceTest {
     exception = assertThrows(InvalidRequestException.class, () -> {
       backupService.takeBackup(new TakeBackupRequestDto().setBackupId("backupIdWith?"));
     });
+    assertTrue(exception.getMessage().contains(expectedMessage));
 
     exception = assertThrows(InvalidRequestException.class, () -> {
       backupService.takeBackup(new TakeBackupRequestDto().setBackupId("backupIdWith_"));
