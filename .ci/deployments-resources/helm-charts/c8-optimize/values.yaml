@@ -72,6 +72,20 @@ camunda-platform:
         primary:
           persistence:
             enabled: false
+          resources:
+            limits:
+              cpu: 1
+              memory: 400Mi
+            requests:
+              cpu: "100m"
+              memory: 100Mi
+      resources:
+        limits:
+          cpu: 1
+          memory: 500Mi
+        requests:
+          cpu: "500m"
+          memory: 100Mi
       auth:
         createAdminUser: true
         adminUser: admin
@@ -165,6 +179,13 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    initResources:
+      limits:
+        cpu: "25m"
+        memory: "128Mi"
+      requests:
+        cpu: "25m"
+        memory: "128Mi"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
