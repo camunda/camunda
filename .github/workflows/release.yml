@@ -106,10 +106,10 @@ jobs:
           go-bindata -pkg embedded -o embedded.go -prefix data data/
 
           git commit -am "build(project): update go embedded version data"
-      - name: Build Go Client
+      - name: Build Go Client & Zeebe
         uses: ./.github/actions/build-zeebe
         with:
-          java: false
+          maven-extra-args: -T1C
       - uses: s4u/maven-settings-action@v2.8.0
         with:
           servers: |
