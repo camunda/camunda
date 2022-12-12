@@ -27,10 +27,10 @@ import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -323,7 +323,7 @@ public final class TestStreams {
 
     protected final RecordMetadata metadata = new RecordMetadata();
     protected final LogStreamWriter writer;
-    protected UnpackedObject value;
+    protected UnifiedRecordValue value;
     protected long key = -1;
     private long sourceRecordPosition = -1;
 
@@ -372,7 +372,7 @@ public final class TestStreams {
       return this;
     }
 
-    public FluentLogWriter event(final UnpackedObject event) {
+    public FluentLogWriter event(final UnifiedRecordValue event) {
       final ValueType eventType = VALUE_TYPES.get(event.getClass());
       if (eventType == null) {
         throw new RuntimeException("No event type registered for getValue " + event.getClass());
