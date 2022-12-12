@@ -38,6 +38,8 @@ jobs:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
       PUSH_CHANGES: ${{ inputs.pushChanges }}
     steps:
+      - name: Output Inputs
+        run: echo "${{ toJSON(github.event.inputs) }}"
       - uses: actions/checkout@v3
         with:
           ref: ${{ env.RELEASE_BRANCH }}
