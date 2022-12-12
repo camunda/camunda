@@ -14,7 +14,7 @@ jobs:
     name: Add issue to project
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@f8f1995a9b495095115dc917bb5ada819382c4ca
+      - uses: actions/add-to-project@25580575b48384a3a473de527d26c5cace42b41b
         with:
           project-url: ${{ secrets.HTO_PROJECT_URL }}
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
