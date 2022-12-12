@@ -265,4 +265,56 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + brokerVersion
         + '}';
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final RecordMetadata that = (RecordMetadata) o;
+
+    if (requestId != that.requestId) {
+      return false;
+    }
+    if (intentValue != that.intentValue) {
+      return false;
+    }
+    if (requestStreamId != that.requestStreamId) {
+      return false;
+    }
+    if (protocolVersion != that.protocolVersion) {
+      return false;
+    }
+    if (valueType != that.valueType) {
+      return false;
+    }
+    if (recordType != that.recordType) {
+      return false;
+    }
+    if (rejectionType != that.rejectionType) {
+      return false;
+    }
+    if (!rejectionReason.equals(that.rejectionReason)) {
+      return false;
+    }
+    return brokerVersion.equals(that.brokerVersion);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = (int) (requestId ^ (requestId >>> 32));
+    result = 31 * result + valueType.hashCode();
+    result = 31 * result + recordType.hashCode();
+    result = 31 * result + (int) intentValue;
+    result = 31 * result + requestStreamId;
+    result = 31 * result + rejectionType.hashCode();
+    result = 31 * result + rejectionReason.hashCode();
+    result = 31 * result + protocolVersion;
+    result = 31 * result + brokerVersion.hashCode();
+    return result;
+  }
 }
