@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertThatEntry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,7 +20,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
+import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -70,11 +71,10 @@ final class LogStorageAppenderTest {
   @Test
   void shouldAppendSingleEvent() throws InterruptedException {
     // given
-    final var value = new Value(1);
     final var latch = new CountDownLatch(1);
-
+    final var entry = TestEntry.ofDefaults();
     // when
-    final var position = sequencer.tryWrite(new MutableLogAppendEntry().recordValue(value));
+    final var position = sequencer.tryWrite(entry);
     logStorage.setPositionListener(i -> latch.countDown());
     scheduler.submitActor(appender).join();
 
@@ -82,7 +82,7 @@ final class LogStorageAppenderTest {
     assertThat(latch.await(5, TimeUnit.SECONDS)).as("value was written within 5 seconds").isTrue();
     assertThat(reader.seek(position)).isTrue();
     assertThat(reader.hasNext()).isTrue();
-    assertThat(Value.of(reader.next())).isEqualTo(value);
+    assertThatEntry(entry).matchesLoggedEvent(reader.next());
   }
 
   @Test
@@ -90,9 +90,7 @@ final class LogStorageAppenderTest {
     // given
     final var values = List.of(new Value(1), new Value(2));
     final List<LogAppendEntry> entries =
-        values.stream()
-            .map(v -> new MutableLogAppendEntry().recordValue(v))
-            .collect(Collectors.toList());
+        values.stream().map(v -> TestEntry.ofDefaults()).collect(Collectors.toList());
     final var latch = new CountDownLatch(1);
 
     // when
@@ -114,9 +112,9 @@ final class LogStorageAppenderTest {
 
     // ensure events were written properly
     assertThat(reader.seek(lowestPosition)).isTrue();
-    for (final var value : values) {
+    for (final var entry : entries) {
       assertThat(reader.hasNext()).isTrue();
-      assertThat(Value.of(reader.next())).isEqualTo(value);
+      assertThatEntry(entry).matchesLoggedEvent(reader.next());
     }
   }
 

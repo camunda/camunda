@@ -8,12 +8,11 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
-import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
+import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -56,7 +55,7 @@ public final class LogStorageAppenderHealthTest {
         (pos, listener) -> listener.onWriteError(new RuntimeException("foo")));
 
     // when
-    sequencer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
+    sequencer.tryWrite(TestEntry.ofDefaults());
     schedulerRule.submitActor(appender).join();
 
     // then
@@ -70,7 +69,7 @@ public final class LogStorageAppenderHealthTest {
         (pos, listener) -> listener.onCommitError(pos, new RuntimeException("foo")));
 
     // when
-    sequencer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
+    sequencer.tryWrite(TestEntry.ofDefaults());
     schedulerRule.submitActor(appender).join();
 
     // then
@@ -88,7 +87,7 @@ public final class LogStorageAppenderHealthTest {
         });
 
     // when
-    sequencer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
+    sequencer.tryWrite(TestEntry.ofDefaults());
     schedulerRule.submitActor(appender).join();
 
     // then

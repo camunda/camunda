@@ -39,25 +39,6 @@ public final class LogStreamReaderRule extends ExternalResource {
     return logStreamReader;
   }
 
-  /**
-   * Reads the log from the beginning, and asserts the expected event count were written, that they
-   * are ordered by position, that their key is equal to their index relative to the {@code
-   * eventCount}, and that their value is equal to the given {@code event}.
-   */
-  public void assertEvents(final int eventCount, final DirectBuffer event) {
-    long lastPosition = -1;
-    LoggedEvent lastEvent;
-
-    logStreamReader.seekToFirstEvent();
-    for (int i = 1; i <= eventCount; i++) {
-      lastEvent = nextEvent();
-      assertThat(lastEvent.getPosition()).isGreaterThan(lastPosition);
-      assertThat(lastEvent.getKey()).isEqualTo(i);
-      assertThat(eventValue(lastEvent)).isEqualTo(event);
-      lastPosition = lastEvent.getPosition();
-    }
-  }
-
   public LoggedEvent nextEvent() {
     assertThat(logStreamReader.hasNext()).isTrue();
     return logStreamReader.next();
