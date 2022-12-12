@@ -1002,36 +1002,22 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty DecisionEvaluationRecord",
-        (Supplier<UnifiedRecordValue>)
-            () ->
-                new DecisionEvaluationRecord()
-                    .setDecisionKey(1L)
-                    .setDecisionId("decision-id")
-                    .setDecisionName("decision-name")
-                    .setDecisionVersion(1)
-                    .setDecisionRequirementsKey(2L)
-                    .setDecisionRequirementsId("decision-requirements-id")
-                    .setProcessDefinitionKey(3L)
-                    .setBpmnProcessId("bpmn-process-id")
-                    .setDecisionVersion(1)
-                    .setProcessInstanceKey(4L)
-                    .setElementInstanceKey(5L)
-                    .setElementId("element-id"),
+        (Supplier<UnifiedRecordValue>) () -> new DecisionEvaluationRecord(),
         """
           {
-              "decisionKey":1,
-              "decisionId":"decision-id",
-              "decisionName":"decision-name",
-              "decisionVersion":1,
-              "decisionRequirementsKey":2,
-              "decisionRequirementsId":"decision-requirements-id",
+              "decisionKey":-1,
+              "decisionId":"",
+              "decisionName":"",
+              "decisionVersion":-1,
+              "decisionRequirementsKey":-1,
+              "decisionRequirementsId":"",
               "decisionOutput":"null",
               "variables":{},
-              "processDefinitionKey":3,
-              "bpmnProcessId":"bpmn-process-id",
-              "processInstanceKey":4,
-              "elementInstanceKey":5,
-              "elementId":"element-id",
+              "processDefinitionKey":-1,
+              "bpmnProcessId":"",
+              "processInstanceKey":-1,
+              "elementInstanceKey":-1,
+              "elementId":"",
               "evaluatedDecisions":[],
               "evaluationFailureMessage":"",
               "failedDecisionId":""

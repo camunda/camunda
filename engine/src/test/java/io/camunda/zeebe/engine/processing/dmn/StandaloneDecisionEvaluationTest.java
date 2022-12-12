@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.engine.dmn;
+package io.camunda.zeebe.engine.processing.dmn;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -86,14 +86,12 @@ public class StandaloneDecisionEvaluationTest {
             .evaluate();
 
     // then
-    final int deployedVersion = deploymentEvent
-        .getValue()
-        .getDecisionsMetadata()
-        .stream()
-        .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
-        .findFirst()
-        .get()
-        .getVersion();
+    final int deployedVersion =
+        deploymentEvent.getValue().getDecisionsMetadata().stream()
+            .filter(decisionRecordValue -> decisionRecordValue.getDecisionId().equals(DECISION_ID))
+            .findFirst()
+            .get()
+            .getVersion();
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
     assertThat(record.getValue()).hasDecisionOutput(EXPECTED_DECISION_OUTPUT);
     assertThat(record.getValue()).hasDecisionVersion(deployedVersion);

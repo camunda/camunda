@@ -296,7 +296,7 @@ public final class EngineRule extends ExternalResource {
   }
 
   public DecisionEvaluationClient decision() {
-    return new DecisionEvaluationClient((environmentRule));
+    return new DecisionEvaluationClient(environmentRule);
   }
 
   public PublishMessageClient message() {

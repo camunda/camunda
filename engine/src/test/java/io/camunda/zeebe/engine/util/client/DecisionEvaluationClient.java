@@ -54,13 +54,6 @@ public class DecisionEvaluationClient {
     return this;
   }
 
-  public DecisionEvaluationClient ofDecisionIdAndVersion(
-      final String decisionId, final int version) {
-    ofDecisionId(decisionId);
-    decisionEvaluationRecord.setDecisionVersion(version);
-    return this;
-  }
-
   public DecisionEvaluationClient ofDecisionKey(final long decisionKey) {
     decisionEvaluationRecord.setDecisionKey(decisionKey);
     return this;
