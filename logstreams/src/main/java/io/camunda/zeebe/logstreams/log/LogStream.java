@@ -49,7 +49,7 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */
-  ActorFuture<LogStreamWriter> newLogStreamWriter();
+  ActorFuture<LogStreamBatchWriter> newLogStreamWriter();
 
   /**
    * @return a future, when successfully completed it returns a newly created log stream batch

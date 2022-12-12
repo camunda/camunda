@@ -15,12 +15,9 @@ import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -33,11 +30,6 @@ public final class LogStreamBatchWriterTest {
   private static final DirectBuffer EVENT_VALUE_2 = wrapString("bar");
   private static final DirectBuffer EVENT_METADATA_1 = wrapString("foobar");
   private static final DirectBuffer EVENT_METADATA_2 = wrapString("baz");
-
-  /** used by some test to write to the logstream in an actor thread. */
-  @Rule
-  public final ControlledActorSchedulerRule writerScheduler = new ControlledActorSchedulerRule();
-
   private final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(logStreamRule).around(readerRule);
@@ -237,27 +229,6 @@ public final class LogStreamBatchWriterTest {
   }
 
   @Test
-  public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException {
-    // given
-    final long timestamp = System.currentTimeMillis() + 10;
-    writerScheduler.getClock().setCurrentTime(timestamp);
-
-    // when
-    final ActorFuture<Long> position =
-        writerScheduler.call(
-            () ->
-                writer.tryWrite(
-                    new MutableLogAppendEntry().key(1).recordValue(EVENT_VALUE_1),
-                    new MutableLogAppendEntry().key(2).recordValue(EVENT_VALUE_2)));
-    writerScheduler.workUntilDone();
-
-    // then
-    assertThat(getWrittenEvents(position.get()))
-        .extracting(LoggedEvent::getTimestamp)
-        .containsExactly(timestamp, timestamp);
-  }
-
-  @Test
   public void shouldNotFailToWriteEventWithoutKey() {
     // when
     final long position =
@@ -293,5 +264,15 @@ public final class LogStreamBatchWriterTest {
 
     // then
     assertThat(pos).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldFailToWriteEventWithoutValue() {
+    // when
+    final long pos =
+        writer.tryWrite(new MutableLogAppendEntry().key(1), new MutableLogAppendEntry().key(2));
+
+    // then
+    assertThat(pos).isEqualTo(0);
   }
 }

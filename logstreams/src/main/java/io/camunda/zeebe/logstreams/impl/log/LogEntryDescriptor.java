@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.alignedLength;
+import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.lengthOffset;
+import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.messageOffset;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 

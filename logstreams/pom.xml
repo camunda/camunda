@@ -16,10 +16,6 @@
   <name>Zeebe Logstreams</name>
 
   <dependencies>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-dispatcher</artifactId>
-    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>

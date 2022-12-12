@@ -5,20 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.log;
+package io.camunda.zeebe.logstreams.impl.log;
 
-import org.agrona.DirectBuffer;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import java.util.List;
 
-public interface ReadableFragment {
-  int getStreamId();
-
-  int getType();
-
-  int getVersion();
-
-  int getMessageOffset();
-
-  int getMessageLength();
-
-  DirectBuffer getBuffer();
-}
+public record SequencedBatch(
+    long firstPosition, long sourcePosition, List<LogAppendEntry> entries) {}

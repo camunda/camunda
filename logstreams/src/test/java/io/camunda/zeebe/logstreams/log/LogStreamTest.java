@@ -10,7 +10,6 @@ package io.camunda.zeebe.logstreams.log;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertNotNull;
 
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
@@ -50,32 +49,6 @@ public final class LogStreamTest {
     assertThat(logStream.newLogStreamReader()).isNotNull();
     assertThat(logStream.newLogStreamBatchWriter()).isNotNull();
     assertThat(logStream.newLogStreamWriter()).isNotNull();
-  }
-
-  @Test
-  public void shouldCreateNewLogStreamRecordWriter() {
-    // given
-    final var logStreamRecordWriter = logStream.newLogStreamWriter();
-
-    // when
-    final var otherWriter = logStream.newLogStreamWriter();
-
-    // then
-    assertNotNull(logStreamRecordWriter);
-    assertThat(otherWriter).isNotNull().isNotEqualTo(logStreamRecordWriter);
-  }
-
-  @Test
-  public void shouldCreateNewLogStreamBatchWriter() {
-    // given
-    final var logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-
-    // when
-    final var otherWriter = logStream.newLogStreamBatchWriter();
-
-    // then
-    assertNotNull(logStreamBatchWriter);
-    assertThat(otherWriter).isNotNull().isNotEqualTo(logStreamBatchWriter);
   }
 
   @Test

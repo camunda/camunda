@@ -16,7 +16,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.util.RecordToWrite;
@@ -36,8 +35,6 @@ public final class StreamProcessorContinouslyReplayModeTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
-
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
 
@@ -45,15 +42,19 @@ public final class StreamProcessorContinouslyReplayModeTest {
   public void shouldReplayContinuously() {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -69,8 +70,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
   public void shouldReplayIfNoEventsAfterSnapshot() throws Exception {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
     streamPlatform.startStreamProcessor();
     streamPlatform.snapshot();
     streamPlatform.closeStreamProcessor();
@@ -83,13 +86,17 @@ public final class StreamProcessorContinouslyReplayModeTest {
     streamPlatform.startStreamProcessorInReplayOnlyMode();
 
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // new events to replay
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -106,8 +113,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -122,8 +131,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
     // given
     final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     await("should have replayed first events")
         .until(() -> streamProcessor.getLastProcessedPositionAsync().join(), (pos) -> pos > 0L);
@@ -131,8 +142,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
     // when
     streamPlatform.pauseProcessing();
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -150,8 +163,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
     final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.pauseProcessing();
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     streamPlatform.resumeProcessing();
@@ -171,16 +186,20 @@ public final class StreamProcessorContinouslyReplayModeTest {
     // given
     final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     await("should have replayed first events")
         .until(() -> streamProcessor.getLastProcessedPositionAsync().join(), (pos) -> pos > 0L);
 
     streamPlatform.pauseProcessing();
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     streamPlatform.resumeProcessing();
@@ -202,8 +221,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -231,8 +252,10 @@ public final class StreamProcessorContinouslyReplayModeTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     Awaitility.await("position has to be updated during replay")
         .untilAsserted(
@@ -253,14 +276,14 @@ public final class StreamProcessorContinouslyReplayModeTest {
 
     // on replay the positions and keys are restored
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .key(eventKeyBeforeSnapshot)
             .causedBy(0),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .key(eventKeyBeforeSnapshot)
             .causedBy(2));
     streamPlatform.startStreamProcessor();

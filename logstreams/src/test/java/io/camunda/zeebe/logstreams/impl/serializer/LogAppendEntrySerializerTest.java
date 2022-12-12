@@ -5,27 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.log;
+package io.camunda.zeebe.logstreams.impl.serializer;
 
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.camunda.zeebe.logstreams.impl.serializer.TestUtils.readString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
-import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.util.buffer.BufferReader;
-import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
 
 final class LogAppendEntrySerializerTest {
   private final MutableDirectBuffer writeBuffer = new ExpandableArrayBuffer();
-  private final int writeBufferOffset = DataFrameDescriptor.messageOffset(0);
 
   @Test
   void shouldSerializeEntry() {
@@ -38,10 +32,8 @@ final class LogAppendEntrySerializerTest {
             .recordMetadata(wrapString("metadata"))
             .recordValue(wrapString("value"));
 
-    // when - as we still use the LoggedEvent to "read" things, it expects to find the event at a
-    // specific offset
-    final var bytesWritten = serializer.serialize(writeBuffer, writeBufferOffset, entry, 2, 3, 4);
-    commitWrite(bytesWritten);
+    // when
+    serializer.serialize(writeBuffer, 0, entry, 2, 3, 4);
 
     // then
     event.wrap(writeBuffer, 0);
@@ -61,8 +53,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = new MutableLogAppendEntry().recordValue(wrapString("value"));
 
     // when
-    final var bytesWritten = serializer.serialize(writeBuffer, writeBufferOffset, entry, 2, 3, 4);
-    commitWrite(bytesWritten);
+    serializer.serialize(writeBuffer, 0, entry, 2, 3, 4);
 
     // then
     event.wrap(writeBuffer, 0);
@@ -77,7 +68,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = new MutableLogAppendEntry();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, writeBufferOffset, entry, 2, 3, 4))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -88,7 +79,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = new MutableLogAppendEntry().recordValue(wrapString("value"));
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, writeBufferOffset, entry, 2, 3, -1))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, -1))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -99,31 +90,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = new MutableLogAppendEntry().recordValue(wrapString("value"));
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, writeBufferOffset, entry, -1, 3, 4))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, -1, 3, 4))
         .isInstanceOf(IllegalArgumentException.class);
-  }
-
-  /**
-   * Simulates the dispatcher's commit method - this should also be removed once we are rid of the
-   * dispatcher
-   */
-  private void commitWrite(final int bytesWritten) {
-    writeBuffer.putInt(
-        DataFrameDescriptor.lengthOffset(0), framedLength(bytesWritten), Protocol.ENDIANNESS);
-  }
-
-  private String readString(final Consumer<BufferReader> reader) {
-    final var value = new StringReader();
-    reader.accept(value);
-    return value.value;
-  }
-
-  private static final class StringReader implements BufferReader {
-    private String value;
-
-    @Override
-    public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-      value = BufferUtil.bufferAsString(buffer, offset, length);
-    }
   }
 }

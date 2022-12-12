@@ -10,7 +10,6 @@ package io.camunda.zeebe.stream.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
@@ -21,8 +20,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(StreamPlatformExtension.class)
 final class StreamProcessorInconsistentPositionTest {
 
-  private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
-
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
 
@@ -32,29 +29,27 @@ final class StreamProcessorInconsistentPositionTest {
     final var listLogStorage = new ListLogStorage();
     try (final var firstLogCtx = streamPlatform.createLogContext(listLogStorage, 1)) {
       try (final var secondLogCtx = streamPlatform.createLogContext(listLogStorage, 2)) {
-        final var firstBatchWriter =
-            firstLogCtx.setupBatchWriter(
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
-        final var secondBatchWriter =
-            secondLogCtx.setupBatchWriter(
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD),
-                RecordToWrite.command()
-                    .processInstance(
-                        ProcessInstanceIntent.ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD));
+        final var firstBatchWriter = firstLogCtx.setupBatchWriter();
+        final var secondBatchWriter = secondLogCtx.setupBatchWriter();
 
         // We write two record batches with different logstreams.
         // The logstreams are backed with the same logstorage, which means records are written to
         // the same backend. Both logstream will open a dispatcher with start at position one.
 
-        streamPlatform.writeBatch(firstBatchWriter);
-        streamPlatform.writeBatch(secondBatchWriter);
+        firstBatchWriter.tryWrite(
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+        secondBatchWriter.tryWrite(
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
+            RecordToWrite.command()
+                .processInstance(
+                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
         // After writing we have at the logstorage: [1, 2, 1, 2], which should be detected
 
         // when

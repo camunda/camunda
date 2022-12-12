@@ -7,59 +7,25 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageLength;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
-import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.versionOffset;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
-
+import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
-import io.camunda.zeebe.logstreams.log.ReadableFragment;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /** Represents the implementation of the logged event. */
-public final class LoggedEventImpl implements ReadableFragment, LoggedEvent {
+public final class LoggedEventImpl implements LoggedEvent {
   private DirectBuffer buffer;
   private int fragmentOffset = -1;
   private int messageOffset = -1;
 
   public void wrap(final DirectBuffer buffer, final int offset) {
     fragmentOffset = offset;
-    messageOffset = messageOffset(fragmentOffset);
+    messageOffset = offset + DataFrameDescriptor.HEADER_LENGTH;
     this.buffer = buffer;
   }
 
-  @Override
-  public int getStreamId() {
-    return buffer.getInt(streamIdOffset(fragmentOffset), Protocol.ENDIANNESS);
-  }
-
-  @Override
-  public int getType() {
-    return buffer.getShort(typeOffset(fragmentOffset), Protocol.ENDIANNESS);
-  }
-
-  @Override
-  public int getVersion() {
-    return buffer.getShort(versionOffset(fragmentOffset), Protocol.ENDIANNESS);
-  }
-
-  @Override
-  public int getMessageOffset() {
-    return messageOffset;
-  }
-
-  @Override
-  public int getMessageLength() {
-    return messageLength(buffer.getInt(lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
-  }
-
-  @Override
   public DirectBuffer getBuffer() {
     return buffer;
   }
@@ -127,7 +93,7 @@ public final class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   public int getValueLength() {
     final short metadataLength = getMetadataLength();
 
-    return getMessageLength() - headerLength(metadataLength);
+    return getMessageLength() - LogEntryDescriptor.headerLength(metadataLength);
   }
 
   @Override
@@ -137,13 +103,7 @@ public final class LoggedEventImpl implements ReadableFragment, LoggedEvent {
 
   @Override
   public String toString() {
-    return "LoggedEvent [type="
-        + getType()
-        + ", version="
-        + getVersion()
-        + ", streamId="
-        + getStreamId()
-        + ", position="
+    return "LoggedEvent [position="
         + getPosition()
         + ", key="
         + getKey()
@@ -162,5 +122,10 @@ public final class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   @Override
   public void write(final MutableDirectBuffer destination, final int offset) {
     destination.putBytes(offset, buffer, fragmentOffset, getLength());
+  }
+
+  private int getMessageLength() {
+    return DataFrameDescriptor.messageLength(
+        buffer.getInt(DataFrameDescriptor.lengthOffset(fragmentOffset), Protocol.ENDIANNESS));
   }
 }

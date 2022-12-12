@@ -24,9 +24,7 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -45,7 +43,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -69,7 +66,6 @@ public final class StreamPlatform {
   private final StreamProcessorMode defaultStreamProcessorMode = StreamProcessorMode.PROCESSING;
   private List<RecordProcessor> recordProcessors;
   private final RecordProcessor defaultMockedRecordProcessor;
-  private final WriteActor writeActor = new WriteActor();
   private final ZeebeDbFactory zeebeDbFactory;
   private final StreamProcessorLifecycleAware mockProcessorLifecycleAware;
   private final StreamProcessorListener mockStreamProcessorListener;
@@ -95,7 +91,6 @@ public final class StreamPlatform {
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-    actorScheduler.submitActor(writeActor);
 
     defaultMockedRecordProcessor = mock(RecordProcessor.class);
     when(defaultMockedRecordProcessor.process(any(), any()))
@@ -318,12 +313,8 @@ public final class StreamPlatform {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    final var batchWriter = logContext.setupBatchWriter(recordsToWrite);
-    return writeBatch(batchWriter);
-  }
-
-  public long writeBatch(final LogStreamBatchWriter logStreamBatchWriter) {
-    return writeActor.submit(logStreamBatchWriter::tryWrite).join();
+    final var batchWriter = logContext.setupBatchWriter();
+    return batchWriter.tryWrite(recordsToWrite);
   }
 
   public void closeStreamProcessor() throws Exception {
@@ -332,22 +323,13 @@ public final class StreamPlatform {
 
   public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
 
-    public LogStreamBatchWriter setupBatchWriter(final RecordToWrite... recordToWrites) {
-      final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-      logStreamBatchWriter.tryWrite(recordToWrites);
-      return logStreamBatchWriter;
+    public LogStreamBatchWriter setupBatchWriter() {
+      return logStream.newLogStreamBatchWriter();
     }
 
     @Override
     public void close() {
       logStream.close();
-    }
-  }
-
-  /** Used to run writes within an actor thread. */
-  private static final class WriteActor extends Actor {
-    public ActorFuture<Long> submit(final Callable<Long> write) {
-      return actor.call(write);
     }
   }
 

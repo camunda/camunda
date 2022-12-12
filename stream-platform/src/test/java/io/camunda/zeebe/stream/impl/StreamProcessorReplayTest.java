@@ -15,7 +15,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.util.RecordToWrite;
@@ -34,8 +33,6 @@ final class StreamProcessorReplayTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 
-  private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
-
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
 
@@ -43,8 +40,10 @@ final class StreamProcessorReplayTest {
   void shouldReplayEvents() {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     streamPlatform.startStreamProcessor();
@@ -60,15 +59,19 @@ final class StreamProcessorReplayTest {
   void shouldProcessAfterReplay() {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     streamPlatform.startStreamProcessor();
 
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // then
     final RecordProcessor recordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -82,8 +85,10 @@ final class StreamProcessorReplayTest {
   void shouldSkipCommands() {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.event().processInstance(ELEMENT_ACTIVATING, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     streamPlatform.startStreamProcessor();
@@ -99,8 +104,10 @@ final class StreamProcessorReplayTest {
   void shouldSkipRejections() {
     // given
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
-        RecordToWrite.rejection().processInstance(ACTIVATE_ELEMENT, RECORD).causedBy(0));
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.rejection()
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1))
+            .causedBy(0));
 
     // when
     streamPlatform.startStreamProcessor();
@@ -119,9 +126,9 @@ final class StreamProcessorReplayTest {
 
     // on replay the positions and keys should be restored
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .key(eventKeyBeforeSnapshot)
             .causedBy(0));
 
@@ -159,9 +166,9 @@ final class StreamProcessorReplayTest {
 
     // on replay the positions and keys are restored
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .key(eventKeyBeforeSnapshot)
             .causedBy(0));
     // starting the stream processor awaits the opening/replay phase
@@ -206,9 +213,9 @@ final class StreamProcessorReplayTest {
 
     // on replay the positions and keys are restored
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .key(eventKeyBeforeSnapshot)
             .causedBy(0));
     // starting the stream processor awaits the opening/replay phase
@@ -220,10 +227,10 @@ final class StreamProcessorReplayTest {
 
     // when
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
             .key(eventKeyAfterSnapshot)
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .causedBy(0));
     final var streamProcessor = streamPlatform.startStreamProcessor();
 
@@ -257,15 +264,15 @@ final class StreamProcessorReplayTest {
     final var keyOfOtherPartition = Protocol.encodePartitionId(2, 21L);
 
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
             .key(keyOfThisPartition)
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .causedBy(0),
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, RECORD),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
         RecordToWrite.event()
             .key(keyOfOtherPartition)
-            .processInstance(ELEMENT_ACTIVATING, RECORD)
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
             .causedBy(2));
 
     // when

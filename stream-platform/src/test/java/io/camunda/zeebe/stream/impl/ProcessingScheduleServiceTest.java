@@ -19,7 +19,6 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -51,8 +50,6 @@ public class ProcessingScheduleServiceTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
-
-  private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
 
   private ControlledActorClock clock;
   private ActorScheduler actorScheduler;
@@ -205,7 +202,7 @@ public class ProcessingScheduleServiceTest {
     scheduleService.runDelayed(
         Duration.ZERO,
         (builder) -> {
-          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
           return builder.build();
         });
 
@@ -247,7 +244,7 @@ public class ProcessingScheduleServiceTest {
         Duration.ofMinutes(1),
         builder -> {
           Loggers.STREAM_PROCESSING.debug("Running second timer");
-          builder.appendCommandRecord(2, ACTIVATE_ELEMENT, RECORD);
+          builder.appendCommandRecord(2, ACTIVATE_ELEMENT, Records.processInstance(1));
           return builder.build();
         });
     scheduleService.runDelayed(
@@ -256,7 +253,7 @@ public class ProcessingScheduleServiceTest {
           Loggers.STREAM_PROCESSING.debug("Running first timer");
           // force trigger second task
           clock.addTime(Duration.ofMinutes(1));
-          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
+          builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
           return builder.build();
         });
 
