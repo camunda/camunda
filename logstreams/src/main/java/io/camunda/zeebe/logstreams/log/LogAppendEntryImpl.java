@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
-import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
 record LogAppendEntryImpl(
-    long key, int sourceIndex, BufferWriter recordMetadata, BufferWriter recordValue)
+    long key, int sourceIndex, RecordMetadata recordMetadata, UnifiedRecordValue recordValue)
     implements LogAppendEntry {}
