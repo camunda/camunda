@@ -96,6 +96,11 @@ public final class ProcessInstanceModificationProcessor
       the instance. The instance was created by a call activity in the parent process. \
       To terminate this instance please modify the parent process instead.""";
 
+  private static final String ERROR_MESSAGE_ANCESTOR_NOT_FOUND =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      with an ancestor scope key that does not exist, or is not in an active state: '%s'""";
+
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.UNSPECIFIED,
@@ -281,6 +286,7 @@ public final class ProcessInstanceModificationProcessor
         .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
+        .flatMap(valid -> validateAncestorExistsAndIsActive(process, value))
         .map(valid -> VALID);
   }
 
@@ -398,6 +404,33 @@ public final class ProcessInstanceModificationProcessor
             usedUnsupportedElementIds,
             "The activation of elements with type '%s' is not supported. Supported element types are: %s"
                 .formatted(usedUnsupportedElementTypes, SUPPORTED_ELEMENT_TYPES));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateAncestorExistsAndIsActive(
+      final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+    final Set<String> invalidAncestorKeys =
+        record.getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
+            .distinct()
+            .filter(ancestorKey -> ancestorKey > 0)
+            .filter(
+                ancestorKey -> {
+                  final var elementInstance = elementInstanceState.getInstance(ancestorKey);
+                  return elementInstance == null || !elementInstance.isActive();
+                })
+            .map(String::valueOf)
+            .collect(Collectors.toSet());
+
+    if (invalidAncestorKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ANCESTOR_NOT_FOUND,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", invalidAncestorKeys));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
