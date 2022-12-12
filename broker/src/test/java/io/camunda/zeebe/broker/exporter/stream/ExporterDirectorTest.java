@@ -350,12 +350,19 @@ public final class ExporterDirectorTest {
     // then
     doRepeatedly(() -> rule.getClock().addTime(Duration.ofSeconds(1)))
         .until((r) -> failCount.get() <= -2);
-    assertThat(exporters.get(0).getExportedRecords())
-        .extracting(Record::getPosition)
-        .containsExactly(eventPosition1, eventPosition2);
-    assertThat(exporters.get(1).getExportedRecords())
-        .extracting(Record::getPosition)
-        .containsExactly(eventPosition1, eventPosition2);
+
+    Awaitility.await("Exporter %s has exported all records".formatted(EXPORTER_ID_1))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(0).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(eventPosition1, eventPosition2));
+    Awaitility.await("Exporter %s has exported all records".formatted(EXPORTER_ID_2))
+        .untilAsserted(
+            () ->
+                assertThat(exporters.get(1).getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(eventPosition1, eventPosition2));
   }
 
   @Test
@@ -515,12 +522,8 @@ public final class ExporterDirectorTest {
         .until(() -> exporters.get(1).getExportedRecords().size() >= 1);
 
     // then
-    assertThat(exporters.get(0).getController().readMetadata())
-        .isPresent()
-        .hasValue(exporterMetadata1);
-    assertThat(exporters.get(1).getController().readMetadata())
-        .isPresent()
-        .hasValue(exporterMetadata2);
+    assertThat(exporters.get(0).getController().readMetadata()).hasValue(exporterMetadata1);
+    assertThat(exporters.get(1).getController().readMetadata()).hasValue(exporterMetadata2);
   }
 
   @Test
