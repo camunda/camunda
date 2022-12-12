@@ -16,8 +16,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.util.TestStreams;
-import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -124,16 +124,16 @@ public final class ExporterRule implements TestRule {
     return new ExportersState(capturedZeebeDb, capturedZeebeDb.createContext());
   }
 
-  public long writeEvent(final Intent intent, final UnpackedObject value) {
+  public long writeEvent(final Intent intent, final UnifiedRecordValue value) {
     return writeRecord(RecordType.EVENT, intent, value);
   }
 
-  public long writeCommand(final Intent intent, final UnpackedObject value) {
+  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
     return writeRecord(RecordType.COMMAND, intent, value);
   }
 
   public long writeRecord(
-      final RecordType recordType, final Intent intent, final UnpackedObject value) {
+      final RecordType recordType, final Intent intent, final UnifiedRecordValue value) {
     return streams
         .newRecord(STREAM_NAME)
         .recordType(recordType)
