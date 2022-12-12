@@ -15,9 +15,9 @@ on:
       isLatest:
         description: 'Whether this is the latest release and the docker image should be tagged as camunda/zeebe:latest'
         required: false
-      pushChanges:
-        description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release)'
-        default: false
+      dryRun:
+        description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release), defaults to true.'
+        default: true
 
 defaults:
   run:
@@ -36,7 +36,7 @@ jobs:
       releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
     env:
       DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
-      PUSH_CHANGES: ${{ inputs.pushChanges }}
+      PUSH_CHANGES: ${{ inputs.dryRun == 'false' }}
     steps:
       - name: Output Inputs
         run: echo "${{ toJSON(github.event.inputs) }}"
@@ -126,7 +126,7 @@ jobs:
       - name: Maven Release
         id: maven-release
         env:
-          SKIP_REPO_DEPLOY: ${{ inputs.pushChanges == 'false' }}
+          SKIP_REPO_DEPLOY: ${{ inputs.dryRun == 'true' }}
         run : |
           # This var is used to include the previously built go artifacts into the final maven release build.
           # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
@@ -140,7 +140,7 @@ jobs:
             -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
             -DpushChanges=${PUSH_CHANGES} \
             -DremoteTagging=${PUSH_CHANGES} \
-            -DlocalCheckout=${{ inputs.pushChanges == 'false' }} \
+            -DlocalCheckout=${{ inputs.dryRun == 'true' }} \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -Darguments='-T1C -P-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
@@ -199,7 +199,7 @@ jobs:
 
           git commit -am "build(project): prepare next development version (Go client)"
       - name: Push Changes to Release branch
-        if: ${{ inputs.pushChanges == 'true' }}
+        if: ${{ inputs.dryRun == 'false' }}
         run: git push origin "${RELEASE_BRANCH}"
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
@@ -237,8 +237,9 @@ jobs:
           fi
           shopt -u nocasematch # reset it
           echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
-      - uses: ncipollo/release-action@v1
-        if: ${{ inputs.pushChanges == 'true' }}
+      - name: Create Github release
+        uses: ncipollo/release-action@v1
+        if: ${{ inputs.dryRun == 'false' }}
         with:
           name: ${{ inputs.releaseVersion }}
           artifacts: "*"
@@ -301,10 +302,10 @@ jobs:
             ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:latest"
           fi
       - name: Push Docker Image Tag ${{ inputs.releaseVersion }}
-        if: ${{ inputs.pushChanges == 'true' }}
+        if: ${{ inputs.dryRun == 'false' }}
         run: docker push ${{ env.DOCKER_IMAGE }}:${{ inputs.releaseVersion }}
       - name: Push Docker Image Tag latest
-        if: ${{ inputs.isLatest == 'true' && inputs.pushChanges == 'true' }}
+        if: ${{ inputs.isLatest == 'true' && inputs.dryRun == 'false' }}
         run: docker push ${{ env.DOCKER_IMAGE }}:latest
   notify-if-failed:
     name: Send slack notification on failure
