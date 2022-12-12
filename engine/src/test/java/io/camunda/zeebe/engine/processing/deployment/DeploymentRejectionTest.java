@@ -229,24 +229,9 @@ public class DeploymentRejectionTest {
         .hasIntent(DeploymentIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
 
-    /*
-     The detail rejection reason is an i18n SAXException, so here use the matches instead.
-
-     In Chinese
-     "Expected to deploy new resources, but encountered the following errors:
-     '/processes/saxexception-error-8026.bpmn': SAXException Error: URI=null Line=33:
-     cvc-complex-type.3.2.2: 元素 'bpmndi:BPMNPlane' 中不允许出现属性 'stroke'。"
-
-     In English
-     "Expected to deploy new resources, but encountered the following errors:
-     '/processes/saxexception-error-8026.bpmn': SAXException Error: URI=null Line=33:
-     cvc-complex-type.3.2.2: Attribute 'stroke' is not allowed to appear in element
-     'bpmndi:BPMNPlane'.
-    */
-
     assertThat(deploymentRejection.getRejectionReason())
         .describedAs("rejection should contain enough detail rejection reason")
-        .contains("SAXException Error")
+        .contains("saxexception-error-8026.bpmn")
         .contains("cvc-complex-type.3.2.2")
         .contains("stroke")
         .contains("bpmndi:BPMNPlane");
