@@ -1,6 +1,6 @@
 #!/bin/sh
 [ -n "$CI" ] && exit 0
-yarn --cwd client lint-staged && yarn --cwd client coverage
+yarn --cwd client lint-staged
 # backend hooks
 mvn -q license:check -Dlicense.header=license/license-header
 if [ $? -eq 1 ]; then
