@@ -2372,6 +2372,14 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
+"@bpmn-io/diagram-js-ui@^0.2.0":
+  version "0.2.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.1.tgz#b1c26d58b382bc9548f5c2e487c0d4b244f1cdd3"
+  integrity sha512-8opVJ0MTc2T6T0/8mVSmnBvdIyYjygSahLZ394A9YprjuCoqnfhxQ4TKZ/M/oN2ynvGt6N2mQv6SOGnRhqUovA==
+  dependencies:
+    htm "^3.1.1"
+    preact "^10.11.2"
+
 "@bpmn-io/dmn-migrate@^0.4.3":
   version "0.4.3"
   resolved "https://registry.yarnpkg.com/@bpmn-io/dmn-migrate/-/dmn-migrate-0.4.3.tgz#a4d81cc46022ad40987764daf0f57f70059e174e"
@@ -5070,14 +5078,14 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@10.3.0:
-  version "10.3.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-10.3.0.tgz#631f8f35f6fce4e78b6025ec325a8eb7ccf9aad8"
-  integrity sha512-6tO5SHt5YyxgX9lRAAwYNmtSum4ZAekP6S0kdDlmh2ztDRAjUZaq7n1Q1ORzTddpngviRZyf5ssP1ZqjE6CgUQ==
+bpmn-js@11.1.0:
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-11.1.0.tgz#3e0aee7fbd08c7e4a3b4e2e6eb578d9e6f3a20a3"
+  integrity sha512-E4jepvYHxEwCVBppi6DYidwvCa0yu94Ho22js5H5a/AKuC4xBf2uoTSzCrEgQP0vwRD3nDMuvsO2B/vLDeEc0w==
   dependencies:
     bpmn-moddle "^8.0.0"
     css.escape "^1.5.1"
-    diagram-js "^10.0.0"
+    diagram-js "^11.4.1"
     diagram-js-direct-editing "^2.0.0"
     ids "^1.0.0"
     inherits-browser "^0.1.0"
@@ -5573,6 +5581,11 @@ clsx@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.1.1.tgz#98b3134f9abbdf23b2663491ace13c5c03a73188"
   integrity sha512-6/bPho624p3S2pMyvP5kKBPXnI3ufHLObBFCfgx+LkeR5lg2XYy2hqZqUf45ypD8COn2bhgGJSUE+l5dhNBieA==
+
+clsx@^1.2.1:
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/clsx/-/clsx-1.2.1.tgz#0ddc4a20a549b59c93a4116bb26f5294ca17dc12"
+  integrity sha512-EcR6r5a8bj6pu3ycsa/E/cKVGuTgZJZdsyUYHOksG/UHIiKfjxzRxYJpyVBwYaQeOvghal9fcc4PidlgzugAQg==
 
 co@^4.6.0:
   version "4.6.0"
@@ -6484,11 +6497,13 @@ diagram-js-direct-editing@^2.0.0:
     min-dash "^4.0.0"
     min-dom "^4.0.2"
 
-diagram-js@^10.0.0:
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-10.0.0.tgz#0209283c819eda86f9bdddca9266cc5fd910a650"
-  integrity sha512-VtZof5MLwVpHjTznfS7B1rQxYtpJ1Gyzse7Aan22QgMhD8FDpm0nXcIblkB//05vFJUljJfp9etNujJtmU1yvA==
+diagram-js@^11.4.1:
+  version "11.4.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-11.4.1.tgz#e93b0859ee9f5c836f799abf221e9c564aaa9337"
+  integrity sha512-JYVNwoGZY1Zi/2LoXpPUBLu9dGgEzWNqK4yH6nnGNDfqrtfALK3RaMXFMVrKdmX5XV/DmSMf4qFpu/U/8s7VDw==
   dependencies:
+    "@bpmn-io/diagram-js-ui" "^0.2.0"
+    clsx "^1.2.1"
     css.escape "^1.5.1"
     didi "^9.0.0"
     hammerjs "^2.0.1"
@@ -8639,6 +8654,11 @@ hpack.js@^2.1.6:
     obuf "^1.0.0"
     readable-stream "^2.0.1"
     wbuf "^1.1.0"
+
+htm@^3.1.1:
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/htm/-/htm-3.1.1.tgz#49266582be0dc66ed2235d5ea892307cc0c24b78"
+  integrity sha512-983Vyg8NwUE7JkZ6NmOqpCZ+sh1bKv2iYTlUkzlWmA5JD2acKoxd4KVxbMmxX/85mtfdnDmTFoNKcg5DGAvxNQ==
 
 html-element-map@^1.2.0:
   version "1.2.0"
@@ -13146,6 +13166,11 @@ postcss@^8.3.5, postcss@^8.4.18, postcss@^8.4.4:
     nanoid "^3.3.4"
     picocolors "^1.0.0"
     source-map-js "^1.0.2"
+
+preact@^10.11.2:
+  version "10.11.3"
+  resolved "https://registry.yarnpkg.com/preact/-/preact-10.11.3.tgz#8a7e4ba19d3992c488b0785afcc0f8aa13c78d19"
+  integrity sha512-eY93IVpod/zG3uMF22Unl8h9KkrcKIRs2EGar8hwLZZDU1lkjph303V9HZBwufh2s736U6VXuhD109LYqPoffg==
 
 prelude-ls@^1.2.1:
   version "1.2.1"
