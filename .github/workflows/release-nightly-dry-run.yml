@@ -1,0 +1,16 @@
+name: Nightly Release Dry Run
+on:
+  workflow_dispatch: { }
+  schedule:
+    # Runs at 01:00 every week day; see this link for more: https://crontab.guru/#0_1_*_*_1-5
+    - cron: '0 1 * * 1-5'
+
+jobs:
+  dry-run-release-main:
+    name: Dry Run - Release from `main`
+    uses: ./.github/workflows/release.yml
+    with:
+      releaseBranch: main
+      releaseVersion: 0.0.5
+      nextDevelopmentVersion: 0.0.6-SNAPSHOT
+      dryRun: true
