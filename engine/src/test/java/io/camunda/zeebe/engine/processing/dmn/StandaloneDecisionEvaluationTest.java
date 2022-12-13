@@ -133,7 +133,7 @@ public class StandaloneDecisionEvaluationTest {
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo(
-            "Expected either a decisionId or a decisionKey greater than -1, but none or both provided");
+            "Expected either a decision id or a valid decision key, but none or both provided");
   }
 
   @Test
@@ -147,7 +147,7 @@ public class StandaloneDecisionEvaluationTest {
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
         .isEqualTo(
-            "Expected either a decisionId or a decisionKey greater than -1, but none or both provided");
+            "Expected either a decision id or a valid decision key, but none or both provided");
   }
 
   @Test
