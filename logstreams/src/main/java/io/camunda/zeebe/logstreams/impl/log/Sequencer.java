@@ -181,6 +181,7 @@ final class Sequencer implements LogStreamBatchWriter, Closeable {
   private boolean isEntryValid(final LogAppendEntry entry) {
     return entry.recordValue() != null
         && entry.recordValue().getLength() > 0
-        && entry.recordMetadata() != null; // metadata is currently allowed to be empty;
+        && entry.recordMetadata() != null
+        && entry.recordMetadata().getLength() > 0;
   }
 }

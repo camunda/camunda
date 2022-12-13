@@ -15,13 +15,14 @@ import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
-import io.camunda.zeebe.util.buffer.BufferWriter;
-import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.camunda.zeebe.stream.impl.TypedEventRegistry;
+import io.camunda.zeebe.util.ReflectUtil;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -110,7 +111,10 @@ final class InterPartitionCommandReceiverImpl {
   }
 
   private record DecodedMessage(
-      long checkpointId, Optional<Long> recordKey, RecordMetadata metadata, BufferWriter command) {}
+      long checkpointId,
+      Optional<Long> recordKey,
+      RecordMetadata metadata,
+      UnifiedRecordValue command) {}
 
   private static final class Decoder {
     private final InterPartitionMessageDecoder messageDecoder = new InterPartitionMessageDecoder();
@@ -119,7 +123,6 @@ final class InterPartitionCommandReceiverImpl {
     DecodedMessage decodeMessage(final byte[] message) {
       final var messageBuffer = new UnsafeBuffer();
       final var recordMetadata = new RecordMetadata();
-      final var commandBuffer = new DirectBufferWriter();
 
       messageBuffer.wrap(message);
       messageDecoder.wrapAndApplyHeader(messageBuffer, 0, headerDecoder);
@@ -142,9 +145,16 @@ final class InterPartitionCommandReceiverImpl {
       final var commandOffset =
           messageDecoder.limit() + InterPartitionMessageDecoder.commandHeaderLength();
       final var commandLength = messageDecoder.commandLength();
-      commandBuffer.wrap(messageBuffer, commandOffset, commandLength);
 
-      return new DecodedMessage(checkpointId, recordKey, recordMetadata, commandBuffer);
+      final var valueClass = TypedEventRegistry.EVENT_REGISTRY.get(valueType);
+      if (valueClass == null) {
+        throw new IllegalArgumentException(
+            "No value type mapped to %s, can't decode message".formatted(valueType));
+      }
+      final var value = ReflectUtil.newInstance(valueClass);
+
+      value.wrap(messageBuffer, commandOffset, commandLength);
+      return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
     }
   }
 }

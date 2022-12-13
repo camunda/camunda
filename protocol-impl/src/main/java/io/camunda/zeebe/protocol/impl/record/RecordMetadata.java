@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -264,5 +265,39 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + ", brokerVersion="
         + brokerVersion
         + '}';
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RecordMetadata that = (RecordMetadata) o;
+    return requestId == that.requestId
+        && intentValue == that.intentValue
+        && requestStreamId == that.requestStreamId
+        && protocolVersion == that.protocolVersion
+        && valueType == that.valueType
+        && recordType == that.recordType
+        && rejectionType == that.rejectionType
+        && rejectionReason.equals(that.rejectionReason)
+        && brokerVersion.equals(that.brokerVersion);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        requestId,
+        valueType,
+        recordType,
+        intentValue,
+        requestStreamId,
+        rejectionType,
+        rejectionReason,
+        protocolVersion,
+        brokerVersion);
   }
 }

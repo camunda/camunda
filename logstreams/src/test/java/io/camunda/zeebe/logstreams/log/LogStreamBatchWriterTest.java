@@ -7,14 +7,16 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertThatEntry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
-import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
+import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,10 +28,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public final class LogStreamBatchWriterTest {
-  private static final DirectBuffer EVENT_VALUE_1 = wrapString("foo");
-  private static final DirectBuffer EVENT_VALUE_2 = wrapString("bar");
-  private static final DirectBuffer EVENT_METADATA_1 = wrapString("foobar");
-  private static final DirectBuffer EVENT_METADATA_2 = wrapString("baz");
   private final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(logStreamRule).around(readerRule);
@@ -86,23 +84,23 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldReturnPositionOfSingleEvent() {
     // when
-    final long position = writer.tryWrite(new MutableLogAppendEntry().recordValue(EVENT_VALUE_1));
+    final var entry = TestEntry.ofDefaults();
+    final long position = writer.tryWrite(entry);
 
     // then
     assertThat(position).isGreaterThan(0);
 
-    final List<LoggedEvent> events = getWrittenEvents(position);
+    final var events = getWrittenEvents(position);
     assertThat(events).hasSize(1);
-    assertThat(events.get(0).getPosition()).isEqualTo(position);
+    final var loggedEntry = events.get(0);
+    assertThatEntry(entry).matchesLoggedEvent(loggedEntry);
+    assertThat(loggedEntry.getPosition()).isEqualTo(position);
   }
 
   @Test
   public void shouldReturnPositionOfLastEvent() {
     // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry().key(1).recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry().key(2).recordValue(EVENT_VALUE_2));
+    final long position = writer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2));
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -115,80 +113,40 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldWriteEventWithValueBuffer() {
     // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry().key(1).recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry().key(2).recordValue(EVENT_VALUE_2));
+    final var entries = List.of(TestEntry.ofKey(1), TestEntry.ofKey(2));
+    final long position = writer.tryWrite(entries);
 
     // then
     final List<LoggedEvent> events = getWrittenEvents(position);
-    assertThat(getValueBuffer(events.get(0))).isEqualTo(EVENT_VALUE_1);
-    assertThat(getValueBuffer(events.get(1))).isEqualTo(EVENT_VALUE_2);
-  }
-
-  @Test
-  public void shouldWriteEventWithValueBufferPartially() {
-    // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry().key(1).recordValue(EVENT_VALUE_1, 1, 2),
-            new MutableLogAppendEntry().key(2).recordValue(EVENT_VALUE_2, 1, 2));
-
-    // then
-    final List<LoggedEvent> events = getWrittenEvents(position);
-    assertThat(getValueBuffer(events.get(0))).isEqualTo(new UnsafeBuffer(EVENT_VALUE_1, 1, 2));
-    assertThat(getValueBuffer(events.get(1))).isEqualTo(new UnsafeBuffer(EVENT_VALUE_2, 1, 2));
+    assertThatEntry(entries.get(0)).matchesLoggedEvent(events.get(0));
+    assertThatEntry(entries.get(1)).matchesLoggedEvent(events.get(1));
   }
 
   @Test
   public void shouldWriteEventWithMetadataBuffer() {
     // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry()
-                .key(1)
-                .recordMetadata(EVENT_METADATA_1)
-                .recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry()
-                .key(2)
-                .recordMetadata(EVENT_METADATA_2)
-                .recordValue(EVENT_VALUE_2));
+    final var entries =
+        List.of(
+            TestEntry.builder()
+                .withKey(1)
+                .withRecordMetadata(new RecordMetadata().valueType(ValueType.JOB))
+                .build(),
+            TestEntry.builder()
+                .withKey(1)
+                .withRecordMetadata(new RecordMetadata().valueType(ValueType.PROCESS))
+                .build());
+    final long position = writer.tryWrite(entries);
 
     // then
     final List<LoggedEvent> events = getWrittenEvents(position);
-    assertThat(getMetadataBuffer(events.get(0))).isEqualTo(EVENT_METADATA_1);
-    assertThat(getMetadataBuffer(events.get(1))).isEqualTo(EVENT_METADATA_2);
-  }
-
-  @Test
-  public void shouldWriteEventWithMetadataBufferPartially() {
-    // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry()
-                .key(1)
-                .recordMetadata(EVENT_METADATA_1, 1, 2)
-                .recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry()
-                .key(2)
-                .recordMetadata(EVENT_METADATA_2, 1, 2)
-                .recordValue(EVENT_VALUE_2));
-
-    // then
-    final List<LoggedEvent> events = getWrittenEvents(position);
-    assertThat(getMetadataBuffer(events.get(0)))
-        .isEqualTo(new UnsafeBuffer(EVENT_METADATA_1, 1, 2));
-    assertThat(getMetadataBuffer(events.get(1)))
-        .isEqualTo(new UnsafeBuffer(EVENT_METADATA_2, 1, 2));
+    assertThatEntry(entries.get(0)).matchesLoggedEvent(events.get(0));
+    assertThatEntry(entries.get(1)).matchesLoggedEvent(events.get(1));
   }
 
   @Test
   public void shouldWriteEventWithKey() {
     // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry().key(123L).recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry().key(456L).recordValue(EVENT_VALUE_2));
+    final long position = writer.tryWrite(TestEntry.ofKey(123L), TestEntry.ofKey(456L));
 
     // then
     assertThat(getWrittenEvents(position))
@@ -200,11 +158,7 @@ public final class LogStreamBatchWriterTest {
   public void shouldWriteEventWithSourceEvent() {
     // when
     final long position =
-        writer.tryWrite(
-            List.of(
-                new MutableLogAppendEntry().key(1).recordValue(EVENT_VALUE_1),
-                new MutableLogAppendEntry().key(2).recordValue(EVENT_VALUE_2)),
-            123L);
+        writer.tryWrite(List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults()), 123L);
 
     // then
     final List<LoggedEvent> events = getWrittenEvents(position);
@@ -216,10 +170,7 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldWriteEventWithoutSourceEvent() {
     // when
-    final long position =
-        writer.tryWrite(
-            new MutableLogAppendEntry().key(1).recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry().key(2).recordValue(EVENT_VALUE_2));
+    final long position = writer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2));
 
     // then
     final List<LoggedEvent> events = getWrittenEvents(position);
@@ -233,12 +184,8 @@ public final class LogStreamBatchWriterTest {
     // when
     final long position =
         writer.tryWrite(
-            new MutableLogAppendEntry()
-                .key(LogEntryDescriptor.KEY_NULL_VALUE)
-                .recordValue(EVENT_VALUE_1),
-            new MutableLogAppendEntry()
-                .key(LogEntryDescriptor.KEY_NULL_VALUE)
-                .recordValue(EVENT_VALUE_2));
+            TestEntry.ofKey(LogEntryDescriptor.KEY_NULL_VALUE),
+            TestEntry.ofKey(LogEntryDescriptor.KEY_NULL_VALUE));
 
     // then
     assertThat(getWrittenEvents(position)).extracting(LoggedEvent::getKey).contains(-1L);
@@ -259,8 +206,7 @@ public final class LogStreamBatchWriterTest {
     logStreamRule.getLogStream().close();
 
     // when
-    final long pos =
-        writer.tryWrite(new MutableLogAppendEntry().key(1L).recordValue(EVENT_VALUE_1));
+    final long pos = writer.tryWrite(TestEntry.ofDefaults());
 
     // then
     assertThat(pos).isEqualTo(-1);
@@ -270,7 +216,7 @@ public final class LogStreamBatchWriterTest {
   public void shouldFailToWriteEventWithoutValue() {
     // when
     final long pos =
-        writer.tryWrite(new MutableLogAppendEntry().key(1), new MutableLogAppendEntry().key(2));
+        writer.tryWrite(TestEntry.builder().withRecordValue(null).build(), TestEntry.ofDefaults());
 
     // then
     assertThat(pos).isEqualTo(0);

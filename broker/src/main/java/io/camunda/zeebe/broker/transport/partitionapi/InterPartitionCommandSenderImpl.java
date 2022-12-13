@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageEncoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
@@ -41,7 +42,7 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final BufferWriter command) {
+      final UnifiedRecordValue command) {
     sendCommand(receiverPartitionId, valueType, intent, null, command);
   }
 
@@ -51,7 +52,7 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final BufferWriter command) {
+      final UnifiedRecordValue command) {
     if (!partitionLeaders.containsKey(receiverPartitionId)) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",

@@ -17,7 +17,6 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffse
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
 
@@ -50,8 +49,8 @@ final class LogAppendEntrySerializer {
     final var key = entry.key();
     final var metadata = entry.recordMetadata();
     final var value = entry.recordValue();
-    final var metadataLength = metadata.getLength();
-    final var framedEntryLength = framedLength(entry);
+    Objects.requireNonNull(metadata, "must specify metadata");
+    Objects.requireNonNull(value, "must specify value");
 
     if (writeBufferOffset < 0) {
       throw new IllegalArgumentException(
@@ -62,6 +61,11 @@ final class LogAppendEntrySerializer {
     if (value.getLength() == 0) {
       throw new IllegalArgumentException(
           "Expected to serialize an entry with a value, but the entry's value reports a length of 0");
+    }
+
+    if (metadata.getLength() == 0) {
+      throw new IllegalArgumentException(
+          "Expected to serialize an entry with metadata, but the entry's metadata reports a length of 0");
     }
 
     if (position < 0) {
@@ -76,6 +80,9 @@ final class LogAppendEntrySerializer {
               .formatted(entryTimestamp));
     }
 
+    final var metadataLength = metadata.getLength();
+    final var framedEntryLength = framedLength(entry);
+
     // Write the dispatcher framing
     DataFrameDescriptor.setFramedLength(writeBuffer, writeBufferOffset, framedEntryLength);
     final var entryOffset = writeBufferOffset + DataFrameDescriptor.HEADER_LENGTH;
@@ -85,7 +92,8 @@ final class LogAppendEntrySerializer {
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
     setTimestamp(writeBuffer, entryOffset, entryTimestamp);
-    writeMetadata(writeBuffer, entryOffset, metadata, metadataLength);
+    setMetadataLength(writeBuffer, entryOffset, (short) metadataLength);
+    metadata.write(writeBuffer, metadataOffset(entryOffset));
     value.write(writeBuffer, valueOffset(entryOffset, metadataLength));
 
     return framedEntryLength;
@@ -95,16 +103,5 @@ final class LogAppendEntrySerializer {
     return DataFrameDescriptor.framedLength(
         LogEntryDescriptor.headerLength(entry.recordMetadata().getLength())
             + entry.recordValue().getLength());
-  }
-
-  private void writeMetadata(
-      final MutableDirectBuffer writeBuffer,
-      final int writeBufferOffset,
-      final BufferWriter metadata,
-      final int metadataLength) {
-    setMetadataLength(writeBuffer, writeBufferOffset, (short) metadataLength);
-    if (metadataLength > 0) {
-      metadata.write(writeBuffer, metadataOffset(writeBufferOffset));
-    }
   }
 }

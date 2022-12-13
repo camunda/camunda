@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTes
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
@@ -188,20 +188,20 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public long writeCommandOnPartition(
-      final int partition, final Intent intent, final UnpackedObject value) {
+      final int partition, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, intent, value);
   }
 
   public long writeCommandOnPartition(
-      final int partition, final long key, final Intent intent, final UnpackedObject value) {
+      final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommandOnPartition(partition, key, intent, value);
   }
 
-  public long writeCommand(final long key, final Intent intent, final UnpackedObject value) {
+  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(key, intent, value);
   }
 
-  public long writeCommand(final Intent intent, final UnpackedObject value) {
+  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(intent, value);
   }
 
@@ -209,7 +209,7 @@ public final class StreamProcessorRule implements TestRule {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnpackedObject value) {
+      final UnifiedRecordValue value) {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
   }
 

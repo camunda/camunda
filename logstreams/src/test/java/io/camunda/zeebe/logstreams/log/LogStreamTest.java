@@ -7,13 +7,12 @@
  */
 package io.camunda.zeebe.logstreams.log;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
-import io.camunda.zeebe.logstreams.util.MutableLogAppendEntry;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestEntry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
@@ -67,11 +66,10 @@ public final class LogStreamTest {
   public void shouldIncreasePositionOnRestart() {
     // given
     final var writer = logStream.newSyncLogStreamWriter();
-    writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
-    writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
-    writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
-    final long positionBeforeClose =
-        writer.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
+    writer.tryWrite(TestEntry.ofDefaults());
+    writer.tryWrite(TestEntry.ofDefaults());
+    writer.tryWrite(TestEntry.ofDefaults());
+    final long positionBeforeClose = writer.tryWrite(TestEntry.ofDefaults());
     Awaitility.await("until everything is written")
         .until(logStream::getLastWrittenPosition, position -> position >= positionBeforeClose);
 
@@ -79,8 +77,7 @@ public final class LogStreamTest {
     logStream.close();
     logStreamRule.createLogStream();
     final var newWriter = logStreamRule.getLogStream().newLogStreamWriter();
-    final long positionAfterReOpen =
-        newWriter.tryWrite(new MutableLogAppendEntry().recordValue(wrapString("value")));
+    final long positionAfterReOpen = newWriter.tryWrite(TestEntry.ofDefaults());
 
     // then
     assertThat(positionAfterReOpen).isGreaterThan(positionBeforeClose);
@@ -93,9 +90,7 @@ public final class LogStreamTest {
     logStream.getAsyncLogStream().registerRecordAvailableListener(latch::countDown);
 
     // when
-    logStreamRule
-        .getLogStreamBatchWriter()
-        .tryWrite(new MutableLogAppendEntry().recordValue(wrapString("event")));
+    logStreamRule.getLogStreamBatchWriter().tryWrite(TestEntry.ofDefaults());
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
@@ -112,9 +107,7 @@ public final class LogStreamTest {
     logStream.getAsyncLogStream().registerRecordAvailableListener(secondListener::countDown);
 
     // when
-    logStreamRule
-        .getLogStreamBatchWriter()
-        .tryWrite(new MutableLogAppendEntry().recordValue(wrapString("event")));
+    logStreamRule.getLogStreamBatchWriter().tryWrite(TestEntry.ofDefaults());
 
     // then
     assertThat(firstListener.await(2, TimeUnit.SECONDS)).isTrue();

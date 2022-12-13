@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
-import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
@@ -136,7 +136,7 @@ public class StreamProcessingComposite {
   }
 
   public long writeCommandOnPartition(
-      final int partition, final Intent intent, final UnpackedObject value) {
+      final int partition, final Intent intent, final UnifiedRecordValue value) {
     final var writer =
         streams
             .newRecord(getLogName(partition))
@@ -147,7 +147,7 @@ public class StreamProcessingComposite {
   }
 
   public long writeCommandOnPartition(
-      final int partition, final long key, final Intent intent, final UnpackedObject value) {
+      final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
     final var writer =
         streams
             .newRecord(getLogName(partition))
@@ -158,7 +158,7 @@ public class StreamProcessingComposite {
     return writeActor.submit(writer::write).join();
   }
 
-  public long writeCommand(final long key, final Intent intent, final UnpackedObject value) {
+  public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
@@ -169,7 +169,7 @@ public class StreamProcessingComposite {
     return writeActor.submit(writer::write).join();
   }
 
-  public long writeCommand(final Intent intent, final UnpackedObject value) {
+  public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))
@@ -183,7 +183,7 @@ public class StreamProcessingComposite {
       final int requestStreamId,
       final long requestId,
       final Intent intent,
-      final UnpackedObject value) {
+      final UnifiedRecordValue value) {
     final var writer =
         streams
             .newRecord(getLogName(partitionId))

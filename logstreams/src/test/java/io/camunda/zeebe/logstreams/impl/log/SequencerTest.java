@@ -8,13 +8,12 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.ActorCondition;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.IntStream;
-import org.agrona.MutableDirectBuffer;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ final class SequencerTest {
 
     // when
     sequencer.registerConsumer(consumer);
-    sequencer.tryWrite(new TestLogAppendEntry(1));
+    sequencer.tryWrite(TestEntry.ofDefaults());
 
     // then
     Mockito.verify(consumer).signal();
@@ -48,7 +47,7 @@ final class SequencerTest {
 
     // when
     sequencer.registerConsumer(consumer);
-    sequencer.tryWrite(new TestLogAppendEntry(1), new TestLogAppendEntry(2));
+    sequencer.tryWrite(TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
     // then
     Mockito.verify(consumer).signal();
@@ -58,7 +57,7 @@ final class SequencerTest {
   void canPeekAfterSingleWrite() {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
-    final var entry = new TestLogAppendEntry();
+    final var entry = TestEntry.ofDefaults();
 
     // when
     sequencer.tryWrite(entry);
@@ -73,7 +72,7 @@ final class SequencerTest {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
     final var entries =
-        List.of(new TestLogAppendEntry(1), new TestLogAppendEntry(2), new TestLogAppendEntry(3));
+        List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
     // when
     sequencer.tryWrite(entries);
@@ -87,7 +86,7 @@ final class SequencerTest {
   void canReadAfterSingleWrite() {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
-    final var entry = new TestLogAppendEntry();
+    final var entry = TestEntry.ofDefaults();
 
     // when
     sequencer.tryWrite(entry);
@@ -102,7 +101,7 @@ final class SequencerTest {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
     final var entries =
-        List.of(new TestLogAppendEntry(1), new TestLogAppendEntry(2), new TestLogAppendEntry(3));
+        List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
     // when
     sequencer.tryWrite(entries);
@@ -116,8 +115,8 @@ final class SequencerTest {
   void peeksFirstWrittenEntry() {
     // given
     final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = new TestLogAppendEntry(1);
-    final var secondEntry = new TestLogAppendEntry(2);
+    final var firstEntry = TestEntry.ofKey(1);
+    final var secondEntry = TestEntry.ofKey(2);
 
     // when
     Assertions.assertThat(sequencer.tryWrite(firstEntry)).isPositive();
@@ -132,12 +131,12 @@ final class SequencerTest {
   void peeksFirstWrittenBatchEntry() {
     // given
     final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = new TestLogAppendEntry(1);
-    final var secondEntry = new TestLogAppendEntry(2);
+    final var firstEntry = TestEntry.ofKey(1);
+    final var secondEntry = TestEntry.ofKey(2);
 
     // when
     Assertions.assertThat(sequencer.tryWrite(firstEntry, secondEntry)).isPositive();
-    Assertions.assertThat(sequencer.tryWrite(new TestLogAppendEntry(3))).isPositive();
+    Assertions.assertThat(sequencer.tryWrite(TestEntry.ofKey(3))).isPositive();
 
     // then
     final var peek = sequencer.peek();
@@ -148,8 +147,8 @@ final class SequencerTest {
   void readReturnsSameAsPeek() {
     // given
     final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = new TestLogAppendEntry(1);
-    final var secondEntry = new TestLogAppendEntry(2);
+    final var firstEntry = TestEntry.ofKey(1);
+    final var secondEntry = TestEntry.ofKey(2);
 
     // when
     Assertions.assertThat(sequencer.tryWrite(firstEntry)).isPositive();
@@ -165,12 +164,12 @@ final class SequencerTest {
   void readReturnsSameAsPeekAfterBatchWrite() {
     // given
     final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = new TestLogAppendEntry(1);
-    final var secondEntry = new TestLogAppendEntry(2);
+    final var firstEntry = TestEntry.ofKey(1);
+    final var secondEntry = TestEntry.ofKey(2);
 
     // when
     Assertions.assertThat(sequencer.tryWrite(firstEntry, secondEntry)).isPositive();
-    Assertions.assertThat(sequencer.tryWrite(new TestLogAppendEntry(3))).isPositive();
+    Assertions.assertThat(sequencer.tryWrite(TestEntry.ofKey(3))).isPositive();
 
     // then
     final var peek = sequencer.peek();
@@ -207,7 +206,7 @@ final class SequencerTest {
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(new TestLogAppendEntry()), (result) -> result <= 0);
+        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
   }
 
   @Test
@@ -220,7 +219,7 @@ final class SequencerTest {
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
         .until(
-            () -> sequencer.tryWrite(new TestLogAppendEntry(1), new TestLogAppendEntry(2)),
+            () -> sequencer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2)),
             (result) -> result <= 0);
   }
 
@@ -231,7 +230,7 @@ final class SequencerTest {
     final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
 
     // when
-    final var result = sequencer.tryWrite(new TestLogAppendEntry());
+    final var result = sequencer.tryWrite(TestEntry.ofDefaults());
 
     // then
     Assertions.assertThat(result).isPositive().isEqualTo(initialPosition);
@@ -243,7 +242,7 @@ final class SequencerTest {
     final var initialPosition = 1;
     final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
     final var entries =
-        List.of(new TestLogAppendEntry(), new TestLogAppendEntry(), new TestLogAppendEntry());
+        List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
     final var result = sequencer.tryWrite(entries);
 
@@ -258,12 +257,12 @@ final class SequencerTest {
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(new TestLogAppendEntry()), (result) -> result <= 0);
+        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
     sequencer.registerConsumer(consumer);
-    final var result = sequencer.tryWrite(new TestLogAppendEntry());
+    final var result = sequencer.tryWrite(TestEntry.ofDefaults());
 
     // then
     Assertions.assertThat(result).isNegative();
@@ -277,12 +276,12 @@ final class SequencerTest {
     Awaitility.await("sequencer rejects writes")
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(new TestLogAppendEntry()), (result) -> result <= 0);
+        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
     final var consumer = Mockito.mock(ActorCondition.class);
 
     // when
     sequencer.registerConsumer(consumer);
-    final var result = sequencer.tryWrite(new TestLogAppendEntry(1), new TestLogAppendEntry(2));
+    final var result = sequencer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2));
 
     // then
     Assertions.assertThat(result).isNegative();
@@ -295,7 +294,7 @@ final class SequencerTest {
     final var initialPosition = 1L;
     final var entriesToWrite = 10_000L;
     final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
-    final var batch = List.of((LogAppendEntry) new TestLogAppendEntry(-1));
+    final var batch = List.of(TestEntry.ofKey(1));
     final var reader = newReaderThread(sequencer, initialPosition, entriesToWrite);
     final var writer = newWriterThread(sequencer, initialPosition, entriesToWrite, batch, true);
 
@@ -318,7 +317,7 @@ final class SequencerTest {
     final var entriesToRead = writers * entriesToWrite;
     final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
     final var reader = newReaderThread(sequencer, initialPosition, entriesToRead);
-    final var batch = List.<LogAppendEntry>of(new TestLogAppendEntry(-1));
+    final var batch = List.of(TestEntry.ofKey(1));
     final var writerThreads =
         IntStream.range(0, writers)
             .mapToObj(
@@ -352,11 +351,7 @@ final class SequencerTest {
     final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
     final var reader = newReaderThread(sequencer, initialPosition, batchesToRead);
     final var batch =
-        List.<LogAppendEntry>of(
-            new TestLogAppendEntry(-1),
-            new TestLogAppendEntry(-1),
-            new TestLogAppendEntry(-1),
-            new TestLogAppendEntry(-1));
+        List.of(TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1));
     final var writerThreads =
         IntStream.range(0, writers)
             .mapToObj(
@@ -421,30 +416,5 @@ final class SequencerTest {
             }
           }
         });
-  }
-
-  private record TestLogAppendEntry(
-      long key, int sourceIndex, BufferWriter recordValue, BufferWriter recordMetadata)
-      implements LogAppendEntry {
-
-    TestLogAppendEntry(final int key) {
-      this(key, -1, new Payload("value"), new Payload("metadata"));
-    }
-
-    TestLogAppendEntry() {
-      this(1, -1, new Payload("value"), new Payload("metadata"));
-    }
-
-    private record Payload(String value) implements BufferWriter {
-      @Override
-      public int getLength() {
-        return value.length();
-      }
-
-      @Override
-      public void write(final MutableDirectBuffer buffer, final int offset) {
-        buffer.putStringAscii(offset, value);
-      }
-    }
   }
 }

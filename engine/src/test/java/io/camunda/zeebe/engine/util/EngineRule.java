@@ -63,7 +63,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -502,7 +501,7 @@ public final class EngineRule extends ExternalResource {
         final int receiverPartitionId,
         final ValueType valueType,
         final Intent intent,
-        final BufferWriter command) {
+        final UnifiedRecordValue command) {
       sendCommand(receiverPartitionId, valueType, intent, null, command);
     }
 
@@ -512,7 +511,7 @@ public final class EngineRule extends ExternalResource {
         final ValueType valueType,
         final Intent intent,
         final Long recordKey,
-        final BufferWriter command) {
+        final UnifiedRecordValue command) {
       final var metadata =
           new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
       final var writer = writers.get(receiverPartitionId);
