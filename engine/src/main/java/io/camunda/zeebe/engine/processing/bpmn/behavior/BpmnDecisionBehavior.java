@@ -94,8 +94,6 @@ public final class BpmnDecisionBehavior {
                   decisionBehavior.createDecisionEvaluationEvent(decision, evaluationResult);
               writeDecisionEvaluationEvent(eventTuple, context);
 
-              decisionBehavior.updateDecisionMetrics(evaluationResult);
-
               if (evaluationResult.isFailure()) {
                 return Either.left(
                     new Failure(

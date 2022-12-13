@@ -17,13 +17,14 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
 import org.immutables.value.Value;
 
 /** Represents the evaluation of a DMN decision. */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionEvaluationRecordValue.Builder.class)
-public interface DecisionEvaluationRecordValue extends RecordValue {
+public interface DecisionEvaluationRecordValue extends RecordValue, RecordValueWithVariables {
 
   /**
    * @return the key of the evaluated decision

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -24,29 +25,31 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class DecisionEvaluationRecord extends UnifiedRecordValue
     implements DecisionEvaluationRecordValue {
 
-  private static final DirectBuffer NIL_DECISION_OUTPUT = BufferUtil.wrapArray(MsgPackHelper.NIL);
+  private static final DirectBuffer NIL_VALUE = BufferUtil.wrapArray(MsgPackHelper.NIL);
 
-  private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
-  private final StringProperty decisionIdProp = new StringProperty("decisionId");
-  private final StringProperty decisionNameProp = new StringProperty("decisionName");
-  private final IntegerProperty decisionVersionProp = new IntegerProperty("decisionVersion");
+  private final LongProperty decisionKeyProp = new LongProperty("decisionKey", -1L);
+  private final StringProperty decisionIdProp = new StringProperty("decisionId", "");
+  private final StringProperty decisionNameProp = new StringProperty("decisionName", "");
+  private final IntegerProperty decisionVersionProp = new IntegerProperty("decisionVersion", -1);
   private final StringProperty decisionRequirementsIdProp =
-      new StringProperty("decisionRequirementsId");
+      new StringProperty("decisionRequirementsId", "");
   private final LongProperty decisionRequirementsKeyProp =
-      new LongProperty("decisionRequirementsKey");
-  private final BinaryProperty decisionOutputProp =
-      new BinaryProperty("decisionOutput", NIL_DECISION_OUTPUT);
+      new LongProperty("decisionRequirementsKey", -1L);
+  private final BinaryProperty decisionOutputProp = new BinaryProperty("decisionOutput", NIL_VALUE);
+  private final DocumentProperty variablesProp = new DocumentProperty("variables");
 
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
-  private final LongProperty processDefinitionKeyProp = new LongProperty("processDefinitionKey");
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
-  private final StringProperty elementIdProp = new StringProperty("elementId");
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty("processDefinitionKey", -1L);
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
   private final ArrayProperty<EvaluatedDecisionRecord> evaluatedDecisionsProp =
       new ArrayProperty<>("evaluatedDecisions", new EvaluatedDecisionRecord());
@@ -63,6 +66,7 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
         .declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsKeyProp)
         .declareProperty(decisionOutputProp)
+        .declareProperty(variablesProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
@@ -254,6 +258,16 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public DecisionEvaluationRecord setVariables(final DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
+  }
+
   @JsonIgnore
   public DirectBuffer getEvaluationFailureMessageBuffer() {
     return evaluationFailureMessageProp.getValue();
@@ -277,6 +291,11 @@ public final class DecisionEvaluationRecord extends UnifiedRecordValue
   @JsonIgnore
   public DirectBuffer getDecisionRequirementsIdBuffer() {
     return decisionRequirementsIdProp.getValue();
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 
   @JsonIgnore

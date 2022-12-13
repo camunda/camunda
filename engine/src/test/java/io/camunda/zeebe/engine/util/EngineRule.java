@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -291,6 +292,10 @@ public final class EngineRule extends ExternalResource {
 
   public ProcessInstanceClient processInstance() {
     return new ProcessInstanceClient(environmentRule);
+  }
+
+  public DecisionEvaluationClient decision() {
+    return new DecisionEvaluationClient(environmentRule);
   }
 
   public PublishMessageClient message() {

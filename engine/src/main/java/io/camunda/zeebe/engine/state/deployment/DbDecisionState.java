@@ -103,6 +103,12 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
+  public Optional<PersistedDecision> findDecisionByKey(final long decisionKey) {
+    dbDecisionKey.wrapLong(decisionKey);
+    return Optional.ofNullable(decisionsByKey.get(dbDecisionKey)).map(PersistedDecision::copy);
+  }
+
+  @Override
   public Optional<PersistedDecisionRequirements> findLatestDecisionRequirementsById(
       final DirectBuffer decisionRequirementsId) {
     dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
@@ -135,11 +141,6 @@ public final class DbDecisionState implements MutableDecisionState {
         }));
 
     return decisions;
-  }
-
-  private Optional<PersistedDecision> findDecisionByKey(final long decisionKey) {
-    dbDecisionKey.wrapLong(decisionKey);
-    return Optional.ofNullable(decisionsByKey.get(dbDecisionKey)).map(PersistedDecision::copy);
   }
 
   @Override

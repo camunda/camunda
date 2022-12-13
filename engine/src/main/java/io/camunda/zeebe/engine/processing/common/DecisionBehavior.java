@@ -58,6 +58,12 @@ public class DecisionBehavior {
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
   }
 
+  public Either<Failure, PersistedDecision> findDecisionByKey(final long decisionKey) {
+    return Either.ofOptional(decisionState.findDecisionByKey(decisionKey))
+        .orElse(new Failure("no decision found for key '%s'".formatted(decisionKey)))
+        .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionKey));
+  }
+
   public Either<Failure, ParsedDecisionRequirementsGraph> findAndParseDrgByDecision(
       final PersistedDecision persistedDecision) {
     return findDrgByDecision(persistedDecision)
@@ -66,6 +72,10 @@ public class DecisionBehavior {
             failure ->
                 formatDecisionLookupFailure(
                     failure, BufferUtil.bufferAsString(persistedDecision.getDecisionId())));
+  }
+
+  public Failure formatDecisionLookupFailure(final Failure failure, final long decisionKey) {
+    return formatDecisionLookupFailure(failure, String.valueOf(decisionKey));
   }
 
   public Failure formatDecisionLookupFailure(final Failure failure, final String decisionId) {
@@ -78,7 +88,12 @@ public class DecisionBehavior {
       final String decisionId,
       final DirectBuffer variables) {
     final var evaluationContext = new VariablesContext(MsgPackConverter.convertToMap(variables));
-    return decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
+    final var evaluationResult =
+        decisionEngine.evaluateDecisionById(drg, decisionId, evaluationContext);
+
+    updateDecisionMetrics(evaluationResult);
+
+    return evaluationResult;
   }
 
   public Tuple<DecisionEvaluationIntent, DecisionEvaluationRecord> createDecisionEvaluationEvent(
@@ -128,7 +143,7 @@ public class DecisionBehavior {
     return new Tuple<>(decisionEvaluationIntent, decisionEvaluationEvent);
   }
 
-  public void updateDecisionMetrics(final DecisionEvaluationResult evaluationResult) {
+  private void updateDecisionMetrics(final DecisionEvaluationResult evaluationResult) {
     if (evaluationResult.isFailure()) {
       metrics.increaseFailedEvaluatedDmnElements(evaluationResult.getEvaluatedDecisions().size());
     } else {

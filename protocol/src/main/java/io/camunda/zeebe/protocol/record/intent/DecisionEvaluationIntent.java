@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum DecisionEvaluationIntent implements Intent {
   EVALUATED(0),
-  FAILED(1);
+  FAILED(1),
+  EVALUATE(2);
 
   private final short value;
 
@@ -35,6 +36,8 @@ public enum DecisionEvaluationIntent implements Intent {
         return EVALUATED;
       case 1:
         return FAILED;
+      case 2:
+        return EVALUATE;
       default:
         return UNKNOWN;
     }
