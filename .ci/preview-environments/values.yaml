@@ -131,6 +131,13 @@ camunda-platform:
       requests:
         cpu: 0.5
         memory: 512Mi
+    initResources:
+     limits:
+       cpu: "25m"
+       memory: "128Mi"
+     requests:
+       cpu: "25m"
+       memory: "128Mi"
     nodeSelector:
       cloud.google.com/gke-nodepool: previews
     tolerations:
