@@ -656,20 +656,25 @@ class Variables extends NetworkReconnectionHandler {
       return 'error';
     }
 
-    if (flowNodeSelectionStore.state.selection?.isPlaceholder) {
-      return 'no-variables';
-    }
-
     if (this.hasNoContent) {
       return 'no-content';
+    }
+
+    if (flowNodeMetaDataStore.hasMultipleInstances) {
+      return 'multi-instances';
+    }
+
+    if (
+      flowNodeSelectionStore.state.selection?.isPlaceholder ||
+      flowNodeSelectionStore.newTokenCountForSelectedNode === 1
+    ) {
+      return 'no-variables';
     }
 
     if (['initial', 'first-fetch'].includes(status)) {
       return this.areVariablesLoadedOnce ? 'spinner' : 'skeleton';
     }
-    if (flowNodeMetaDataStore.hasMultipleInstances) {
-      return 'multi-instances';
-    }
+
     if (modificationsStore.isModificationModeEnabled && this.scopeId === null) {
       return 'no-variables';
     }

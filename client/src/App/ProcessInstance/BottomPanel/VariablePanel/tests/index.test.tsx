@@ -639,7 +639,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
-    render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
@@ -686,6 +686,16 @@ describe('VariablePanel', () => {
     expect(
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
+
+    // go to input mappings and back, see the correct state
+    await user.dblClick(screen.getByRole('button', {name: 'Input Mappings'}));
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Variables'}));
+    expect(
+      await screen.findByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
     // second 'add token' modification is created
 
@@ -757,7 +767,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: Wrapper});
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -814,6 +824,19 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByRole('button', {name: /add variable/i})
     ).not.toBeInTheDocument();
+
+    // go to input mappings and back, see the correct state
+
+    await user.dblClick(screen.getByRole('button', {name: 'Input Mappings'}));
+    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', {name: 'Variables'}));
+    expect(
+      await screen.findByText(
+        'To view the Variables, select a single Flow Node Instance in the Instance History.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
     // select only one of the scopes
     flowNodeSelectionStore.selectFlowNode({
