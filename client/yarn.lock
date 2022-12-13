@@ -1287,17 +1287,17 @@
     inherits "^2.0.4"
     tiny-svg "^3.0.0"
 
-"@camunda-cloud/common-ui-react@0.0.18-rc10":
-  version "0.0.18-rc10"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.18-rc10.tgz#0f2c797d38fb871b5422d2b58c4fa148fe637d91"
-  integrity sha512-cj/Ltu8mIpBIvqdgr4YHVAcRs3yjRJG2VFUZbAbUNzGGiBy5Lt+kTQo+kXqZrZaMllpOIRwsw6sHclwNiI+05A==
+"@camunda-cloud/common-ui-react@0.0.18-rc11":
+  version "0.0.18-rc11"
+  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui-react/-/common-ui-react-0.0.18-rc11.tgz#67f42d4827a5584d544097b001d5747c7aa7fc71"
+  integrity sha512-u8G0yWNSkvU+kg0ZDyJ94CpwKnkC9Zk4fbIsYvOVQ0VS91vnNIQxNk+yBqQJGOfpG5/PUCXPMaLbEjOaNpszvg==
   dependencies:
-    "@camunda-cloud/common-ui" "0.0.18-rc10"
+    "@camunda-cloud/common-ui" "0.0.18-rc11"
 
-"@camunda-cloud/common-ui@0.0.18-rc10":
-  version "0.0.18-rc10"
-  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.18-rc10.tgz#8abbc4661452bceaef5e7351b0dbfab556a85db7"
-  integrity sha512-J7J2+ldvDv2EGylDTAY7be2MX1tQFFBVQIdI1RjmV9Mk9YmmNx2cc+57uxYwkRF4PIiIKAN4ciISSdzMU+tbFg==
+"@camunda-cloud/common-ui@0.0.18-rc11":
+  version "0.0.18-rc11"
+  resolved "https://registry.yarnpkg.com/@camunda-cloud/common-ui/-/common-ui-0.0.18-rc11.tgz#3c279db3fe00416f3af460118016b1cbb97e55f7"
+  integrity sha512-2Ievw3TZ4QJxhiPkkUItpyx9qb/Ci2vZWMt3p0vxMeoVPQOGHf0j3gApWeh8LmgyZfxSjVi+YAZFRyj/3qWMtw==
 
 "@camunda/camunda-composite-components@0.0.20":
   version "0.0.20"

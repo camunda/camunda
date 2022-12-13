@@ -4,8 +4,8 @@
   "private": true,
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "0.3.0",
-    "@camunda-cloud/common-ui": "0.0.18-rc10",
-    "@camunda-cloud/common-ui-react": "0.0.18-rc10",
+    "@camunda-cloud/common-ui": "0.0.18-rc11",
+    "@camunda-cloud/common-ui-react": "0.0.18-rc11",
     "@camunda/camunda-composite-components": "0.0.20",
     "@carbon/elements": "11.9.0",
     "@carbon/react": "1.8.0",
