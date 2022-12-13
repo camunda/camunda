@@ -69,9 +69,9 @@ test('Apply Filters', async (t) => {
     )
     .eql(callActivityProcessInstance.processInstanceKey);
 
-  const endDate = await within(screen.queryByTestId('data-list')).queryByTestId(
-    'end-time'
-  ).innerText;
+  // const endDate = await within(screen.queryByTestId('data-list')).queryByTestId(
+  //   'end-time'
+  // ).innerText;
 
   const rowCount = within(screen.queryByTestId('data-list')).getAllByRole(
     'row'
@@ -89,18 +89,19 @@ test('Apply Filters', async (t) => {
 
   let currentRowCount = await rowCount;
 
-  await displayOptionalFilter('End Date');
-  await ProcessesPage.typeText(ProcessesPage.Filters.endDate.field, endDate, {
-    paste: true,
-  });
-  await t.expect(rowCount).lt(currentRowCount);
+  // TODO: Will be reworked in https://github.com/camunda/operate/issues/3792
+  // await displayOptionalFilter('End Date');
+  // await ProcessesPage.typeText(ProcessesPage.Filters.endDate.field, endDate, {
+  //   paste: true,
+  // });
+  // await t.expect(rowCount).lt(currentRowCount);
 
-  currentRowCount = await rowCount;
+  // currentRowCount = await rowCount;
 
-  await t.click(ProcessesPage.resetFiltersButton);
-  await t.expect(rowCount).gt(currentRowCount);
+  // await t.click(ProcessesPage.resetFiltersButton);
+  // await t.expect(rowCount).gt(currentRowCount);
 
-  currentRowCount = await rowCount;
+  // currentRowCount = await rowCount;
 
   await displayOptionalFilter('Error Message');
 
@@ -114,20 +115,21 @@ test('Apply Filters', async (t) => {
 
   await t.expect(rowCount).lt(currentRowCount);
 
-  await displayOptionalFilter('Start Date');
-  await ProcessesPage.typeText(
-    ProcessesPage.Filters.startDate.field,
-    '2022-01-01',
-    {
-      paste: true,
-    }
-  );
-  await t
-    .expect(
-      screen.queryByText('There are no Instances matching this filter set')
-        .exists
-    )
-    .ok();
+  // TODO: Will be reworked in https://github.com/camunda/operate/issues/3792
+  // await displayOptionalFilter('Start Date');
+  // await ProcessesPage.typeText(
+  //   ProcessesPage.Filters.startDate.field,
+  //   '2022-01-01',
+  //   {
+  //     paste: true,
+  //   }
+  // );
+  // await t
+  //   .expect(
+  //     screen.queryByText('There are no Instances matching this filter set')
+  //       .exists
+  //   )
+  //   .ok();
 
   await t.click(screen.queryByRole('button', {name: /reset filters/i}));
   await t

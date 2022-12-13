@@ -7,30 +7,15 @@
 
 import {render, screen} from 'modules/testing-library';
 import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
-
-const getWrapper = (initialValues?: {[key: string]: string}) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    return (
-      <ThemeProvider>
-        <Form onSubmit={() => {}} initialValues={initialValues}>
-          {() => children}
-        </Form>
-        <div>Outside element</div>
-      </ThemeProvider>
-    );
-  };
-
-  return Wrapper;
-};
+import {getWrapper} from './mocks';
 
 describe('Date Range', () => {
   it('should render readonly input field', async () => {
     render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -46,6 +31,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -66,6 +52,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -85,6 +72,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -102,6 +90,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -131,6 +120,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -175,6 +165,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,
@@ -202,6 +193,7 @@ describe('Date Range', () => {
     const {user} = render(
       <DateRangeField
         label="Start Date Range"
+        filterName="startDateRange"
         fromDateTimeKey="startDateAfter"
         toDateTimeKey="startDateBefore"
       />,

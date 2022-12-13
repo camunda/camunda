@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
+import {useEffect, useState} from 'react';
 import {Form} from 'react-final-form';
 import {DatePicker} from '@carbon/react';
-import {useState} from 'react';
 import {logger} from 'modules/logger';
 import {Button} from 'modules/components/Button';
 import {formatDate} from '../formatDate';
@@ -20,9 +20,16 @@ import {
   Footer,
   Popover,
 } from './styled';
+import {tracking} from 'modules/tracking';
+
+const defaultTime = {
+  from: '00:00:00',
+  to: '23:59:59',
+};
 
 type Props = {
   referenceElement: HTMLElement;
+  filterName: string;
   onCancel: () => void;
   onOutsideClick?: (event: MouseEvent) => void;
   onApply: ({
@@ -42,6 +49,7 @@ type Props = {
 
 const DateRangePopover: React.FC<Props> = ({
   referenceElement,
+  filterName,
   onCancel,
   onApply,
   onOutsideClick,
@@ -60,6 +68,25 @@ const DateRangePopover: React.FC<Props> = ({
     }
     onOutsideClick?.(event);
   };
+
+  const [dateSelectionMethods, setDateSelectionMethods] = useState<{
+    datePicker: boolean;
+    dateInput: boolean;
+    quickFilter: boolean;
+  }>({datePicker: false, dateInput: false, quickFilter: false});
+
+  useEffect(() => {
+    const flatpickrDays = calendarRef?.querySelector('.flatpickr-days');
+    const handlePick = () => {
+      setDateSelectionMethods((prevState) => ({
+        ...prevState,
+        datePicker: true,
+      }));
+    };
+
+    flatpickrDays?.addEventListener('click', handlePick);
+    return () => flatpickrDays?.removeEventListener('click', handlePick);
+  }, [calendarRef]);
 
   const handleApply = ({
     fromDate,
@@ -82,6 +109,15 @@ const DateRangePopover: React.FC<Props> = ({
         onApply({
           fromDateTime: new Date(`${fromDate} ${fromTime}`),
           toDateTime: new Date(`${toDate} ${toTime}`),
+        });
+        tracking.track({
+          eventName: 'date-range-applied',
+          methods: {
+            ...dateSelectionMethods,
+            timeInput:
+              fromTime !== defaultTime.from || toTime !== defaultTime.to,
+          },
+          filterName,
         });
       } catch (e) {
         logger.error(e);
@@ -109,13 +145,13 @@ const DateRangePopover: React.FC<Props> = ({
                     if (fromDateTime !== undefined) {
                       form.change('fromDate', formatDate(fromDateTime));
                       if (form.getFieldState('fromTime')?.value === '') {
-                        form.change('fromTime', '00:00:00');
+                        form.change('fromTime', defaultTime.from);
                       }
                     }
                     if (toDateTime !== undefined) {
                       form.change('toDate', formatDate(toDateTime));
                       if (form.getFieldState('toTime')?.value === '') {
-                        form.change('toTime', '23:59:59');
+                        form.change('toTime', defaultTime.to);
                       }
                     }
                   }}
@@ -135,18 +171,46 @@ const DateRangePopover: React.FC<Props> = ({
                     type="from"
                     labelText="From"
                     autoFocus
+                    onChange={() =>
+                      setDateSelectionMethods((prevState) => ({
+                        ...prevState,
+                        dateInput: true,
+                      }))
+                    }
                   />
                   <DateInput
                     id="date-picker-input-id-finish"
                     type="to"
                     labelText="To"
+                    onChange={() =>
+                      setDateSelectionMethods((prevState) => ({
+                        ...prevState,
+                        dateInput: true,
+                      }))
+                    }
                   />
                 </DatePicker>
               </DatePickerContainer>
 
               <TimeInputContainer>
-                <TimeInput type="from" />
-                <TimeInput type="to" />
+                <TimeInput
+                  type="from"
+                  onChange={() =>
+                    setDateSelectionMethods((prevState) => ({
+                      ...prevState,
+                      timeInput: true,
+                    }))
+                  }
+                />
+                <TimeInput
+                  type="to"
+                  onChange={() =>
+                    setDateSelectionMethods((prevState) => ({
+                      ...prevState,
+                      timeInput: true,
+                    }))
+                  }
+                />
               </TimeInputContainer>
             </Body>
             <Footer>

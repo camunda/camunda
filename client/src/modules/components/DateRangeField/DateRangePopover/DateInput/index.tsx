@@ -13,11 +13,12 @@ type Props = {
   type: 'from' | 'to';
   id: string;
   labelText: string;
+  onChange?: () => void;
   autoFocus?: boolean;
 };
 
 const DateInput = forwardRef<DatePickerInput, Props>(
-  ({type, ...props}, ref) => {
+  ({type, onChange, ...props}, ref) => {
     return (
       <Field name={`${type}Date`}>
         {({
@@ -29,7 +30,10 @@ const DateInput = forwardRef<DatePickerInput, Props>(
             <DatePickerInput
               {...props}
               size="sm"
-              onChange={(event) => input.onChange(event.target.value)}
+              onChange={(event) => {
+                input.onChange(event.target.value);
+                onChange?.();
+              }}
               ref={ref}
               placeholder="YYYY-MM-DD"
               pattern={'\\d{4}-\\d{1,2}-\\d{1,2}'}

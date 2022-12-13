@@ -211,6 +211,24 @@ type Events =
   | {
       eventName: 'dashboard-link-clicked';
       link: 'modeler' | 'operate-docs';
+    }
+  | {
+      eventName: 'date-range-popover-opened';
+      filterName: string;
+    }
+  | {
+      eventName: 'date-range-applied';
+      filterName: string;
+      methods: {
+        datePicker: boolean;
+        dateInput: boolean;
+        timeInput: boolean;
+        quickFilter: boolean;
+      };
+    }
+  | {
+      eventName: 'optional-filter-selected';
+      filterName: string;
     };
 
 const STAGE_ENV = getStage(window.location.host);

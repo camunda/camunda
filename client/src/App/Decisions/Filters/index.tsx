@@ -47,6 +47,7 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {DateRangeField} from 'modules/components/DateRangeField';
+import {tracking} from 'modules/tracking';
 
 type OptionalFilter =
   | 'decisionInstanceIds'
@@ -213,6 +214,10 @@ const Filters: React.FC = observer(() => {
                               new Set([...visibleFilters, ...[filter]])
                             )
                           );
+                          tracking.track({
+                            eventName: 'optional-filter-selected',
+                            filterName: filter,
+                          });
                         },
                       })),
                     },
@@ -240,6 +245,7 @@ const Filters: React.FC = observer(() => {
                     />
                     {filter === 'evaluationDateRange' ? (
                       <DateRangeField
+                        filterName={filter}
                         label={OPTIONAL_FILTER_FIELDS[filter].label}
                         fromDateTimeKey="evaluationDateAfter"
                         toDateTimeKey="evaluationDateBefore"

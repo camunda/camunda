@@ -7,11 +7,13 @@
 
 import {useRef, useState} from 'react';
 import {Field, useField, useForm} from 'react-final-form';
+import {tracking} from 'modules/tracking';
 import {DateRangePopover} from './DateRangePopover';
 import {formatDate, formatISODate, formatTime} from './formatDate';
 import {TextField} from './styled';
 
 type Props = {
+  filterName: string;
   label: string;
   fromDateTimeKey: string;
   toDateTimeKey: string;
@@ -27,6 +29,7 @@ const formatInputValue = (fromDateTime?: Date, toDateTime?: Date) => {
 };
 
 const DateRangeField: React.FC<Props> = ({
+  filterName,
   label,
   fromDateTimeKey,
   toDateTimeKey,
@@ -72,6 +75,10 @@ const DateRangeField: React.FC<Props> = ({
           onCmClick={() => {
             if (!isDateRangePopoverVisible) {
               setIsDateRangePopoverVisible(true);
+              tracking.track({
+                eventName: 'date-range-popover-opened',
+                filterName,
+              });
             }
           }}
         />
@@ -88,6 +95,7 @@ const DateRangeField: React.FC<Props> = ({
       {isDateRangePopoverVisible && textFieldRef.current !== null && (
         <DateRangePopover
           referenceElement={textFieldRef.current}
+          filterName={filterName}
           onCancel={handleCancel}
           onApply={({fromDateTime, toDateTime}) => {
             setIsDateRangePopoverVisible(false);

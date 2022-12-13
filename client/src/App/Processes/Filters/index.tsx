@@ -53,6 +53,7 @@ import {FieldValidator} from 'final-form';
 import {Variable} from './VariableField';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
+import {tracking} from 'modules/tracking';
 
 type OptionalFilter =
   | 'variable'
@@ -270,6 +271,10 @@ const Filters: React.FC = observer(() => {
                               new Set([...visibleFilters, ...[filter]])
                             )
                           );
+                          tracking.track({
+                            eventName: 'optional-filter-selected',
+                            filterName: filter,
+                          });
                         },
                       })),
                     },
@@ -307,6 +312,7 @@ const Filters: React.FC = observer(() => {
                         case 'startDateRange':
                           return (
                             <DateRangeField
+                              filterName={filter}
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
                               fromDateTimeKey="startDateAfter"
                               toDateTimeKey="startDateBefore"
@@ -315,6 +321,7 @@ const Filters: React.FC = observer(() => {
                         case 'endDateRange':
                           return (
                             <DateRangeField
+                              filterName={filter}
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
                               fromDateTimeKey="endDateAfter"
                               toDateTimeKey="endDateBefore"
