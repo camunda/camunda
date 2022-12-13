@@ -21,6 +21,7 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -274,47 +275,29 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
     final RecordMetadata that = (RecordMetadata) o;
-
-    if (requestId != that.requestId) {
-      return false;
-    }
-    if (intentValue != that.intentValue) {
-      return false;
-    }
-    if (requestStreamId != that.requestStreamId) {
-      return false;
-    }
-    if (protocolVersion != that.protocolVersion) {
-      return false;
-    }
-    if (valueType != that.valueType) {
-      return false;
-    }
-    if (recordType != that.recordType) {
-      return false;
-    }
-    if (rejectionType != that.rejectionType) {
-      return false;
-    }
-    if (!rejectionReason.equals(that.rejectionReason)) {
-      return false;
-    }
-    return brokerVersion.equals(that.brokerVersion);
+    return requestId == that.requestId
+        && intentValue == that.intentValue
+        && requestStreamId == that.requestStreamId
+        && protocolVersion == that.protocolVersion
+        && valueType == that.valueType
+        && recordType == that.recordType
+        && rejectionType == that.rejectionType
+        && rejectionReason.equals(that.rejectionReason)
+        && brokerVersion.equals(that.brokerVersion);
   }
 
   @Override
   public int hashCode() {
-    int result = (int) (requestId ^ (requestId >>> 32));
-    result = 31 * result + valueType.hashCode();
-    result = 31 * result + recordType.hashCode();
-    result = 31 * result + (int) intentValue;
-    result = 31 * result + requestStreamId;
-    result = 31 * result + rejectionType.hashCode();
-    result = 31 * result + rejectionReason.hashCode();
-    result = 31 * result + protocolVersion;
-    result = 31 * result + brokerVersion.hashCode();
-    return result;
+    return Objects.hash(
+        requestId,
+        valueType,
+        recordType,
+        intentValue,
+        requestStreamId,
+        rejectionType,
+        rejectionReason,
+        protocolVersion,
+        brokerVersion);
   }
 }
