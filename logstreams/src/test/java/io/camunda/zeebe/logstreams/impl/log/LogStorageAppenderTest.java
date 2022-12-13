@@ -17,20 +17,17 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestEntry;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
-import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,9 +85,8 @@ final class LogStorageAppenderTest {
   @Test
   void shouldAppendMultipleEvents() throws InterruptedException {
     // given
-    final var values = List.of(new Value(1), new Value(2));
     final List<LogAppendEntry> entries =
-        values.stream().map(v -> TestEntry.ofDefaults()).collect(Collectors.toList());
+        IntStream.range(0, 2).mapToObj(i -> TestEntry.ofDefaults()).collect(Collectors.toList());
     final var latch = new CountDownLatch(1);
 
     // when
@@ -115,22 +111,6 @@ final class LogStorageAppenderTest {
     for (final var entry : entries) {
       assertThat(reader.hasNext()).isTrue();
       assertThatEntry(entry).matchesLoggedEvent(reader.next());
-    }
-  }
-
-  private record Value(int value) implements BufferWriter {
-    private static Value of(final LoggedEvent event) {
-      return new Value(event.getValueBuffer().getInt(event.getValueOffset(), Protocol.ENDIANNESS));
-    }
-
-    @Override
-    public int getLength() {
-      return Integer.BYTES;
-    }
-
-    @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
-      buffer.putInt(offset, value, Protocol.ENDIANNESS);
     }
   }
 }

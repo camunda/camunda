@@ -205,16 +205,7 @@ public final class LogStreamReaderTest {
     writer.tryWrite(entries);
 
     // then
-    long lastPosition = -1;
-    readerRule.getLogStreamReader().seekToFirstEvent();
-    for (int i = 0; i < entries.size(); i++) {
-      final var loggedEvent = readerRule.nextEvent();
-      assertThat(loggedEvent.getPosition()).isGreaterThan(lastPosition);
-      assertThat(loggedEvent.getKey()).isEqualTo(i);
-      assertThatEntry(entries.get(i)).matchesLoggedEvent(loggedEvent);
-      lastPosition = loggedEvent.getPosition();
-    }
-    assertThat(reader.hasNext()).isFalse();
+    assertReaderHasEntries(entries);
   }
 
   @Test
@@ -240,30 +231,16 @@ public final class LogStreamReaderTest {
     writer.tryWrite(entries);
 
     // when
+    assertReaderHasEntries(entries);
+    assertReaderHasEntries(entries);
+    assertReaderHasEntries(entries);
+
+    assertThat(reader.hasNext()).isFalse();
+  }
+
+  private void assertReaderHasEntries(final List<LogAppendEntry> entries) {
     var lastPosition = -1L;
     reader.seekToFirstEvent();
-    for (int i = 0; i < entries.size(); i++) {
-      final var loggedEvent = readerRule.nextEvent();
-      assertThat(loggedEvent.getPosition()).isGreaterThan(lastPosition);
-      assertThat(loggedEvent.getKey()).isEqualTo(i);
-      assertThatEntry(entries.get(i)).matchesLoggedEvent(loggedEvent);
-      lastPosition = loggedEvent.getPosition();
-    }
-    assertThat(reader.hasNext()).isFalse();
-
-    reader.seekToFirstEvent();
-    lastPosition = -1L;
-    for (int i = 0; i < entries.size(); i++) {
-      final var loggedEvent = readerRule.nextEvent();
-      assertThat(loggedEvent.getPosition()).isGreaterThan(lastPosition);
-      assertThat(loggedEvent.getKey()).isEqualTo(i);
-      assertThatEntry(entries.get(i)).matchesLoggedEvent(loggedEvent);
-      lastPosition = loggedEvent.getPosition();
-    }
-    assertThat(reader.hasNext()).isFalse();
-
-    reader.seekToFirstEvent();
-    lastPosition = -1L;
     for (int i = 0; i < entries.size(); i++) {
       final var loggedEvent = readerRule.nextEvent();
       assertThat(loggedEvent.getPosition()).isGreaterThan(lastPosition);
