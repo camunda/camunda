@@ -8,6 +8,7 @@
 package io.camunda.zeebe.streamprocessor;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -16,6 +17,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +39,8 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
@@ -48,7 +52,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class ProcessingScheduleServiceTest {
+class ProcessingScheduleServiceTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -62,7 +66,7 @@ public class ProcessingScheduleServiceTest {
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
-  public void before() {
+  void before() {
     clock = new ControlledActorClock();
     final var builder =
         ActorScheduler.newActorScheduler()
@@ -85,7 +89,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @AfterEach
-  public void clean() {
+  void clean() {
     try {
       actorScheduler.close();
     } catch (final Exception e) {
@@ -96,7 +100,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTask() {
+  void shouldExecuteScheduledTask() {
     // given
     final var mockedTask = spy(new DummyTask());
 
@@ -108,7 +112,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTaskInRightOrder() {
+  void shouldExecuteScheduledTaskInRightOrder() {
     // given
     final var mockedTask = spy(new DummyTask());
     final var mockedTask2 = spy(new DummyTask());
@@ -125,7 +129,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
+  void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
     // given
     lifecycleSupplier.currentPhase = Phase.INITIAL;
     final var mockedTask = spy(new DummyTask());
@@ -138,7 +142,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotExecuteScheduledTaskIfAborted() {
+  void shouldNotExecuteScheduledTaskIfAborted() {
     // given
     lifecycleSupplier.isAborted = true;
     final var mockedTask = spy(new DummyTask());
@@ -151,7 +155,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTaskInProcessing() {
+  void shouldExecuteScheduledTaskInProcessing() {
     // given
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var mockedTask = spy(new DummyTask());
@@ -166,7 +170,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
+  void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
     // given
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var notOpenScheduleService =
@@ -182,7 +186,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldFailActorIfWriterCantBeRetrieved() {
+  void shouldFailActorIfWriterCantBeRetrieved() {
     // given
     writerAsyncSupplier.writerFutureRef.set(
         CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
@@ -199,7 +203,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldWriteRecordAfterTaskWasExecuted() {
+  void shouldWriteRecordAfterTaskWasExecuted() {
     // given
     final var batchWriter = writerAsyncSupplier.get().join();
     when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
@@ -221,12 +225,13 @@ public class ProcessingScheduleServiceTest {
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
-  public void shouldPreserveOrderingOfWritesEvenWithRetries() {
+  void shouldPreserveOrderingOfWritesEvenWithRetries() throws InterruptedException {
     // given
     final var batchWriter = writerAsyncSupplier.get().join();
     when(batchWriter.canWriteAdditionalEvent(anyInt(), anyInt())).thenReturn(true);
     final var logEntryBuilder = mock(LogEntryBuilder.class, Mockito.RETURNS_DEEP_STUBS);
     when(batchWriter.event()).thenReturn(logEntryBuilder);
+    final CountDownLatch timersExecuted = new CountDownLatch(2);
 
     // when - in order to make sure we would interleave tasks without the fix for #10240, we need to
     // make sure we retry at least twice, such that the second task can be executed in between both
@@ -247,6 +252,7 @@ public class ProcessingScheduleServiceTest {
               }
 
               Loggers.PROCESS_PROCESSOR_LOGGER.debug("End tryWrite loop");
+              timersExecuted.countDown();
               return 0L;
             });
 
@@ -268,19 +274,22 @@ public class ProcessingScheduleServiceTest {
         });
 
     // then
+    assertThat(timersExecuted.await(10, TimeUnit.SECONDS))
+        .describedAs("Both timers have completed execution")
+        .isTrue();
     final var inOrder = inOrder(batchWriter, logEntryBuilder);
 
-    inOrder.verify(batchWriter, TIMEOUT).event();
-    inOrder.verify(logEntryBuilder, TIMEOUT).key(1);
-    inOrder.verify(batchWriter, TIMEOUT.times(5000)).tryWrite();
-    inOrder.verify(batchWriter, TIMEOUT).event();
-    inOrder.verify(logEntryBuilder, TIMEOUT).key(2);
-    inOrder.verify(batchWriter, TIMEOUT).tryWrite();
+    inOrder.verify(batchWriter).event();
+    inOrder.verify(logEntryBuilder).key(1);
+    inOrder.verify(batchWriter, times(5000)).tryWrite();
+    inOrder.verify(batchWriter).event();
+    inOrder.verify(logEntryBuilder).key(2);
+    inOrder.verify(batchWriter).tryWrite();
     inOrder.verifyNoMoreInteractions();
   }
 
   @Test
-  public void shouldScheduleOnFixedRate() {
+  void shouldScheduleOnFixedRate() {
     // given
     final var mockedTask = spy(new DummyTask());
 
@@ -292,7 +301,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotRunScheduledTasksAfterClosed() {
+  void shouldNotRunScheduledTasksAfterClosed() {
     // given
     final var mockedTask = spy(new DummyTask());
     scheduleService.runDelayed(Duration.ofMillis(200), mockedTask);
