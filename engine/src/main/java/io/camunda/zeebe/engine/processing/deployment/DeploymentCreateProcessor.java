@@ -57,7 +57,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final KeyGenerator keyGenerator;
   private final ExpressionProcessor expressionProcessor;
   private final StateWriter stateWriter;
-  private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
+  private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -79,9 +79,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     deploymentTransformer =
         new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
-    messageStartEventSubscriptionManager =
-        new MessageStartEventSubscriptionManager(
-            processState, zeebeState.getMessageStartEventSubscriptionState(), keyGenerator);
+    startEventSubscriptionManager = new StartEventSubscriptionManager(zeebeState, keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
             writers, partitionsCount, deploymentDistributionCommandSender);
@@ -113,8 +111,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
       deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key, sideEffects);
-      messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-          deploymentEvent, stateWriter);
+      // manage the top-level start event subscriptions except for timers
+      startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
 
     } else {
       responseWriter.writeRejectionOnCommand(

@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.processing.deployment.MessageStartEventSubscriptionManager;
+import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -20,21 +19,18 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final MessageStartEventSubscriptionManager messageStartEventSubscriptionManager;
+  private final StartEventSubscriptionManager startEventSubscriptionManager;
 
   private final StateWriter stateWriter;
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
   public DeploymentDistributeProcessor(
-      final ProcessState processState,
-      final MessageStartEventSubscriptionState messageStartEventSubscriptionState,
+      final ZeebeState zeebeState,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final Writers writers,
       final KeyGenerator keyGenerator) {
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
-    messageStartEventSubscriptionManager =
-        new MessageStartEventSubscriptionManager(
-            processState, messageStartEventSubscriptionState, keyGenerator);
+    startEventSubscriptionManager = new StartEventSubscriptionManager(zeebeState, keyGenerator);
     stateWriter = writers.state();
   }
 
@@ -46,7 +42,6 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
     stateWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentEvent);
     deploymentDistributionCommandSender.completeOnPartition(deploymentKey);
 
-    messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-        deploymentEvent, stateWriter);
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
   }
 }
