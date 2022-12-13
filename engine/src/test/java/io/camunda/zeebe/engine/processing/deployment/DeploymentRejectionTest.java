@@ -21,9 +21,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,14 +49,13 @@ public class DeploymentRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
+  public void shouldRejectDeploymentIfNotValidDesignTimeAspect() {
     // given
-    final Path path = Paths.get(getClass().getResource("/processes/invalid_process.bpmn").toURI());
-    final byte[] resource = Files.readAllBytes(path);
+    final String resource = "/processes/invalid_process.bpmn";
 
     // when
     final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE.deployment().withXmlResource(resource).expectRejection().deploy();
+        ENGINE.deployment().withXmlClasspathResource(resource).expectRejection().deploy();
 
     // then
     Assertions.assertThat(rejectedDeployment)
@@ -72,15 +68,13 @@ public class DeploymentRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfNotValidRuntimeAspect() throws Exception {
+  public void shouldRejectDeploymentIfNotValidRuntimeAspect() {
     // given
-    final Path path =
-        Paths.get(getClass().getResource("/processes/invalid_process_condition.bpmn").toURI());
-    final byte[] resource = Files.readAllBytes(path);
+    final String resource = "/processes/invalid_process_condition.bpmn";
 
     // when
     final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE.deployment().withXmlResource(resource).expectRejection().deploy();
+        ENGINE.deployment().withXmlClasspathResource(resource).expectRejection().deploy();
 
     // then
     Assertions.assertThat(rejectedDeployment)
@@ -94,18 +88,16 @@ public class DeploymentRejectionTest {
   }
 
   @Test
-  public void shouldRejectDeploymentIfOneResourceIsNotValid() throws Exception {
+  public void shouldRejectDeploymentIfOneResourceIsNotValid() {
     // given
-    final Path path1 = Paths.get(getClass().getResource("/processes/invalid_process.bpmn").toURI());
-    final Path path2 = Paths.get(getClass().getResource("/processes/collaboration.bpmn").toURI());
-    final byte[] resource1 = Files.readAllBytes(path1);
-    final byte[] resource2 = Files.readAllBytes(path2);
+    final String resource1 = "/processes/invalid_process.bpmn";
+    final String resource2 = "/processes/collaboration.bpmn";
 
     final Record<DeploymentRecordValue> rejectedDeployment =
         ENGINE
             .deployment()
-            .withXmlResource(resource1)
-            .withXmlResource(resource2)
+            .withXmlClasspathResource(resource1)
+            .withXmlClasspathResource(resource2)
             .expectRejection()
             .deploy();
 
@@ -197,12 +189,11 @@ public class DeploymentRejectionTest {
     Assertions.assertThat(deploymentRejection)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "Expected to deploy new resources, but encountered the following errors:\n"
-                + "'p1.bpmn': - Element: start-event-1\n"
-                + "    - ERROR: Invalid timer cycle expression ("
-                + "failed to evaluate expression "
-                + "'INVALID_CYCLE_EXPRESSION': no variable found for name "
-                + "'INVALID_CYCLE_EXPRESSION')\n");
+            """
+                Expected to deploy new resources, but encountered the following errors:
+                'p1.bpmn': - Element: start-event-1
+                    - ERROR: Invalid timer cycle expression (failed to evaluate expression 'INVALID_CYCLE_EXPRESSION': no variable found for name 'INVALID_CYCLE_EXPRESSION')
+                """);
   }
 
   @Test
@@ -219,5 +210,30 @@ public class DeploymentRejectionTest {
     Assertions.assertThat(deploymentRejection)
         .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
         .hasRejectionReason("");
+  }
+
+  // https://github.com/camunda/zeebe/issues/8026
+  @Test
+  public void shouldRejectDeploymentOfSAXException() {
+    // given
+    final String resource = "/processes/saxexception-error-8026.bpmn";
+
+    // when
+    final Record<DeploymentRecordValue> deploymentRejection =
+        ENGINE.deployment().withXmlClasspathResource(resource).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deploymentRejection)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentRejection.getRejectionReason())
+        .describedAs("rejection should contain enough detail rejection reason")
+        .contains("saxexception-error-8026.bpmn")
+        .contains("cvc-complex-type.3.2.2")
+        .contains("stroke")
+        .contains("bpmndi:BPMNPlane");
   }
 }

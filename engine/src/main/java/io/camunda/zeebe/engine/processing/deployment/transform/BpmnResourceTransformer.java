@@ -29,9 +29,9 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
+import org.camunda.bpm.model.xml.ModelParseException;
 
 public final class BpmnResourceTransformer implements DeploymentResourceTransformer {
 
@@ -61,31 +61,43 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
   public Either<Failure, Void> transformResource(
       final DeploymentResource resource, final DeploymentRecord deployment) {
 
-    final BpmnModelInstance definition = readProcessDefinition(resource);
-    final String validationError = validator.validate(definition);
+    return readProcessDefinition(resource)
+        .flatMap(
+            definition -> {
+              final String validationError = validator.validate(definition);
 
-    if (validationError == null) {
-      // transform the model to avoid unexpected failures that are not covered by the validator
-      bpmnTransformer.transformDefinitions(definition);
+              if (validationError == null) {
+                // transform the model to avoid unexpected failures that are not covered by the
+                // validator
+                bpmnTransformer.transformDefinitions(definition);
 
-      return checkForDuplicateBpmnId(definition, resource, deployment)
-          .map(
-              ok -> {
-                transformProcessResource(deployment, resource, definition);
-                return null;
-              });
+                return checkForDuplicateBpmnId(definition, resource, deployment)
+                    .map(
+                        ok -> {
+                          transformProcessResource(deployment, resource, definition);
+                          return null;
+                        });
 
-    } else {
-      final var failureMessage =
-          String.format("'%s': %s", resource.getResourceName(), validationError);
-      return Either.left(new Failure(failureMessage));
-    }
+              } else {
+                final var failureMessage =
+                    String.format("'%s': %s", resource.getResourceName(), validationError);
+                return Either.left(new Failure(failureMessage));
+              }
+            });
   }
 
-  private BpmnModelInstance readProcessDefinition(final DeploymentResource deploymentResource) {
-    final DirectBuffer resource = deploymentResource.getResourceBuffer();
-    final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
-    return Bpmn.readModelFromStream(resourceStream);
+  private Either<Failure, BpmnModelInstance> readProcessDefinition(
+      final DeploymentResource deploymentResource) {
+    try {
+      final DirectBuffer resource = deploymentResource.getResourceBuffer();
+      final DirectBufferInputStream resourceStream = new DirectBufferInputStream(resource);
+      return Either.right(Bpmn.readModelFromStream(resourceStream));
+    } catch (final ModelParseException e) {
+      final var failureMessage =
+          String.format(
+              "'%s': %s", deploymentResource.getResourceName(), e.getCause().getMessage());
+      return Either.left(new Failure(failureMessage));
+    }
   }
 
   private Either<Failure, ?> checkForDuplicateBpmnId(
@@ -96,7 +108,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
     final var bpmnProcessIds =
         process.getDefinitions().getChildElementsByType(Process.class).stream()
             .map(BaseElement::getId)
-            .collect(Collectors.toList());
+            .toList();
 
     return record.getProcessesMetadata().stream()
         .filter(metadata -> bpmnProcessIds.contains(metadata.getBpmnProcessId()))
