@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +19,7 @@ public final class AppendVegasLimiterTest {
   @Test
   public void shouldUseDefaultValues() {
     // given - when
-    final AppenderVegasCfg vegasCfg = new AppenderVegasCfg();
+    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
 
     // then
     assertThat(vegasCfg.getAlphaLimit()).isEqualTo(0.7);
@@ -32,7 +32,7 @@ public final class AppendVegasLimiterTest {
   public void shouldUseDefaultValuesForNoExistingValues() {
     // given
     final Environment environment = new Environment();
-    final AppenderVegasCfg vegasCfg = new AppenderVegasCfg();
+    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
 
     // when
     vegasCfg.applyEnvironment(environment);
@@ -59,7 +59,7 @@ public final class AppendVegasLimiterTest {
             "0.5");
     final Environment environment = new Environment(cfgMap);
 
-    final AppenderVegasCfg vegasCfg = new AppenderVegasCfg();
+    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
 
     // when
     vegasCfg.applyEnvironment(environment);
@@ -74,7 +74,7 @@ public final class AppendVegasLimiterTest {
   @Test
   public void shouldBuild() {
     // given
-    final AppenderVegasCfg vegasCfg = new AppenderVegasCfg();
+    final BackpressureCfgVegas vegasCfg = new BackpressureCfgVegas();
 
     // when
     final AbstractLimit abstractLimit = vegasCfg.get();

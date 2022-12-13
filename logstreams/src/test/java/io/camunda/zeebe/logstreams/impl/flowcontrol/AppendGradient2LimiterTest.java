@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -19,7 +19,7 @@ public final class AppendGradient2LimiterTest {
   @Test
   public void shouldUseDefaultValues() {
     // given - when
-    final AppenderGradient2Cfg gradient2Cfg = new AppenderGradient2Cfg();
+    final BackpressureCfgGradient2 gradient2Cfg = new BackpressureCfgGradient2();
 
     // then
     assertThat(gradient2Cfg.getInitialLimit()).isEqualTo(1024);
@@ -34,7 +34,7 @@ public final class AppendGradient2LimiterTest {
   public void shouldUseDefaultValuesForNoExistingValues() {
     // given
     final Environment environment = new Environment();
-    final AppenderGradient2Cfg gradient2Cfg = new AppenderGradient2Cfg();
+    final BackpressureCfgGradient2 gradient2Cfg = new BackpressureCfgGradient2();
 
     // when
     gradient2Cfg.applyEnvironment(environment);
@@ -66,7 +66,7 @@ public final class AppendGradient2LimiterTest {
             BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MIN_LIMIT,
             "1");
     final Environment environment = new Environment(cfgMap);
-    final AppenderGradient2Cfg gradient2Cfg = new AppenderGradient2Cfg();
+    final BackpressureCfgGradient2 gradient2Cfg = new BackpressureCfgGradient2();
 
     // when
     gradient2Cfg.applyEnvironment(environment);
@@ -83,7 +83,7 @@ public final class AppendGradient2LimiterTest {
   @Test
   public void shouldBuild() {
     // given
-    final AppenderGradient2Cfg gradient2Cfg = new AppenderGradient2Cfg();
+    final BackpressureCfgGradient2 gradient2Cfg = new BackpressureCfgGradient2();
 
     // when
     final AbstractLimit abstractLimit = gradient2Cfg.get();

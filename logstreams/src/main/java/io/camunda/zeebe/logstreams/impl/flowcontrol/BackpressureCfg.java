@@ -5,25 +5,13 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-public final class NoopAppendLimiter implements AppendLimiter {
+import com.netflix.concurrency.limits.limit.AbstractLimit;
+import io.camunda.zeebe.util.Environment;
+import java.util.function.Supplier;
 
-  @Override
-  public boolean tryAcquire(final Long position) {
-    return true;
-  }
+interface BackpressureCfg extends Supplier<AbstractLimit> {
 
-  @Override
-  public void onCommit(final long position) {}
-
-  @Override
-  public int getInflight() {
-    return 0;
-  }
-
-  @Override
-  public int getLimit() {
-    return 0;
-  }
+  void applyEnvironment(Environment environment);
 }
