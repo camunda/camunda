@@ -113,9 +113,19 @@ public class BackupManager {
       }
       @Override
       public void onFailure(Exception e) {
-        logger.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
+        if (isSnapshotMissingException(e)) {
+          // no snapshot with given backupID exists, this is fine, log warning
+          logger.warn("No snapshot found for snapshot deletion: " + e.getMessage());
+        } else {
+          logger.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
+        }
       }
     };
+  }
+
+  private boolean isSnapshotMissingException(Exception e) {
+    return e instanceof ElasticsearchStatusException && ((ElasticsearchStatusException) e).getDetailedMessage()
+        .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
   public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
@@ -202,8 +212,7 @@ public class BackupManager {
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      if (e instanceof ElasticsearchStatusException
-          && ((ElasticsearchStatusException) e).getDetailedMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+      if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         return;
       }
@@ -365,8 +374,7 @@ public class BackupManager {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
       return response.getSnapshots();
     } catch (Exception e) {
-      if (e instanceof ElasticsearchStatusException
-          && ((ElasticsearchStatusException) e).getDetailedMessage().contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+      if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         throw new NotFoundException(String.format("No backup with id [%s] found.", backupId), e);
       }
