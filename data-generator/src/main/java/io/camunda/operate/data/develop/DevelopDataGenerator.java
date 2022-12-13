@@ -371,6 +371,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "develop/terminateEndEvent.bpmn");
 
+    ZeebeTestUtil.deployProcess(client, "develop/undefined-task.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/dataStore.bpmn");
   }
 
   @Override
@@ -379,7 +382,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     if (version == 1) {
       createBigProcess(40, 1000);
     }
-    final int instancesCount = random.nextInt(30) + 30;
+    final int instancesCount = random.nextInt(20) + 20;
     for (int i = 0; i < instancesCount; i++) {
 
       if (version == 1) {
@@ -402,6 +405,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
             .startProcessInstance(client, "errorProcess", "{\"errorCode\": \"unknown\"}"));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "error-end-process", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "terminateEndEvent", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "dataStoreProcess", null));
       }
 
       if (version == 2) {

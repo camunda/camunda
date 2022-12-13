@@ -98,15 +98,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     progressProcessInstances();
 
-    deployAndStartUndefinedTaskInstance();
-
     return true;
 
-  }
-
-  private void deployAndStartUndefinedTaskInstance() {
-    ZeebeTestUtil.deployProcess(client, "develop/undefined-task.bpmn");
-    ZeebeTestUtil.startProcessInstance(client, "undefined-task-process", null);
   }
 
   private void createInputOutputMappingInstances() {
@@ -672,7 +665,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected void startProcessInstances(int version) {
-    final int instancesCount = random.nextInt(50) + 10;
+    final int instancesCount = random.nextInt(20) + 20;
     for (int i = 0; i < instancesCount; i++) {
       processInstanceKeys.add(startDMNInvoice());
       if (version < 2) {
@@ -687,6 +680,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         processInstanceKeys.add(startFlightRegistrationProcess());
         processInstanceKeys.add(startMultiInstanceProcess());
       }
+    }
+    if (version == 1) {
+      ZeebeTestUtil.startProcessInstance(client, "undefined-task-process", null);
     }
   }
 
