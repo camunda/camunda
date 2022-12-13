@@ -15,12 +15,10 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
 @Component
 @RestControllerEndpoint(id = "backup")
@@ -28,7 +26,7 @@ public class BackupService extends InternalAPIErrorController {
 
   @Autowired private BackupManager backupManager;
 
-  private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?]).){0,3996}$");
+  private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
@@ -41,13 +39,24 @@ public class BackupService extends InternalAPIErrorController {
     return backupManager.getBackupState(backupId);
   }
 
+  @DeleteMapping("/{backupId}")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteBackup(@PathVariable String backupId) {
+    validateBackupId(backupId);
+    backupManager.deleteBackup(backupId);
+  }
+
   private void validateRequest(TakeBackupRequestDto request) {
     if (request.getBackupId() == null) {
       throw new InvalidRequestException("BackupId must be provided");
     }
-    if (!pattern.matcher(request.getBackupId()).matches()) {
+    validateBackupId(request.getBackupId());
+  }
+
+  private void validateBackupId(String backupId) {
+    if (!pattern.matcher(backupId).matches()) {
       throw new InvalidRequestException(
-          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?].");
+          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _].");
     }
   }
 }

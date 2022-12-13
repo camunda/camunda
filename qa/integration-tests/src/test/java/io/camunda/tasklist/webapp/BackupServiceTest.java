@@ -85,7 +85,7 @@ public class BackupServiceTest {
   @Test
   public void shouldFailCreateBackupOnWrongBackupId() {
     final String expectedMessage =
-        "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?].";
+        "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _].";
 
     Exception exception =
         assertThrows(
@@ -174,6 +174,14 @@ public class BackupServiceTest {
               backupService.takeBackup(new TakeBackupRequestDto().setBackupId("backupIdWith?"));
             });
     assertTrue(exception.getMessage().contains(expectedMessage));
+
+    exception =
+        assertThrows(
+            InvalidRequestException.class,
+            () -> {
+              backupService.takeBackup(new TakeBackupRequestDto().setBackupId("backupIdWith_"));
+            });
+    assertTrue(exception.getMessage().contains(expectedMessage));
   }
 
   @Test
@@ -181,7 +189,7 @@ public class BackupServiceTest {
     when(tasklistProperties.getBackup()).thenReturn(new BackupProperties());
     final Exception exception =
         assertThrows(
-            TasklistRuntimeException.class,
+            InvalidRequestException.class,
             () -> {
               backupManager.takeBackup(new TakeBackupRequestDto().setBackupId("backupid"));
             });
@@ -416,6 +424,45 @@ public class BackupServiceTest {
 
     final GetBackupStateResponseDto backupState = backupManager.getBackupState(backupId);
     assertThat(backupState.getState()).isEqualTo(IN_PROGRESS);
+  }
+
+  @Test
+  public void shouldFailDeleteBackupOnAbsentRepositoryName() {
+    when(tasklistProperties.getBackup()).thenReturn(new BackupProperties());
+    final Exception exception =
+        assertThrows(
+            InvalidRequestException.class,
+            () -> {
+              backupManager.deleteBackup("backupid");
+            });
+    final String expectedMessage =
+        "Cannot trigger backup because no Elasticsearch snapshot repository name found in Tasklist configuration.";
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+  }
+
+  @Test
+  public void shouldFailDeleteBackupOnNonExistingRepository() throws IOException {
+    final String repoName = "repoName";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
+    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
+    when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    final Exception exception =
+        assertThrows(
+            TasklistRuntimeException.class,
+            () -> {
+              backupManager.deleteBackup("backupid");
+            });
+
+    final String expectedMessage =
+        String.format(
+            "Cannot trigger backup because no repository with name [%s] could be found.", repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+    verify(esClient, times(1)).snapshot();
   }
 
   @NotNull

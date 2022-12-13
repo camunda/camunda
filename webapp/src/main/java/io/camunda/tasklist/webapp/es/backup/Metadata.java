@@ -10,8 +10,8 @@ import java.util.Objects;
 
 public class Metadata {
 
-  private static final String SNAPSHOT_NAME_PATTERN = "{prefix}_{version}_part_{index}_of_{count}";
-  private static final String SNAPSHOT_NAME_PREFIX = "camunda_tasklist_{backupId}";
+  private static final String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
+  private static final String SNAPSHOT_NAME_PREFIX = "camunda_tasklist_{backupId}_";
 
   private String version;
   private Integer partNo;

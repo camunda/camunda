@@ -34,9 +34,11 @@ import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRe
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesResponse;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotResponse;
+import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.action.support.IndicesOptions;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.snapshots.SnapshotInfo;
@@ -78,7 +80,50 @@ public class BackupManager {
 
   private String[][] indexPatternsOrdered;
 
-  private String currentOperateVersion;
+  public void deleteBackup(String backupId) {
+    validateRepositoryExists();
+    final String repositoryName = getRepositoryName();
+    final int count = getIndexPatternsOrdered().length;
+    final String version = getCurrentTasklistVersion();
+    for (int index = 0; index < count; index++) {
+      final String snapshotName =
+          new Metadata()
+              .setVersion(version)
+              .setPartCount(count)
+              .setPartNo(index + 1)
+              .buildSnapshotName(backupId);
+      final DeleteSnapshotRequest request = new DeleteSnapshotRequest(repositoryName);
+      request.snapshots(snapshotName);
+      esClient.snapshot().deleteAsync(request, RequestOptions.DEFAULT, getDeleteListener());
+    }
+  }
+
+  public ActionListener<AcknowledgedResponse> getDeleteListener() {
+    return new ActionListener<>() {
+      @Override
+      public void onResponse(AcknowledgedResponse response) {
+        LOGGER.debug(
+            "Delete snapshot was acknowledged by Elasticsearch node: " + response.isAcknowledged());
+      }
+
+      @Override
+      public void onFailure(Exception e) {
+        if (isSnapshotMissingException(e)) {
+          // no snapshot with given backupID exists, this is fine, log warning
+          LOGGER.warn("No snapshot found for snapshot deletion: " + e.getMessage());
+        } else {
+          LOGGER.error("Exception occurred while deleting the snapshot: " + e.getMessage(), e);
+        }
+      }
+    };
+  }
+
+  private boolean isSnapshotMissingException(Exception e) {
+    return e instanceof ElasticsearchStatusException
+        && ((ElasticsearchStatusException) e)
+            .getDetailedMessage()
+            .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
+  }
 
   public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
     validateRepositoryExists();
@@ -141,7 +186,7 @@ public class BackupManager {
     if (repositoryName == null || repositoryName.isBlank()) {
       final String reason =
           "Cannot trigger backup because no Elasticsearch snapshot repository name found in Tasklist configuration.";
-      throw new TasklistRuntimeException(reason);
+      throw new InvalidRequestException(reason);
     }
     final GetRepositoriesRequest getRepositoriesRequest =
         new GetRepositoriesRequest().repositories(new String[] {repositoryName});
@@ -180,10 +225,7 @@ public class BackupManager {
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      if (e instanceof ElasticsearchStatusException
-          && ((ElasticsearchStatusException) e)
-              .getDetailedMessage()
-              .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+      if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         return;
       }
@@ -345,10 +387,7 @@ public class BackupManager {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
       return response.getSnapshots();
     } catch (Exception e) {
-      if (e instanceof ElasticsearchStatusException
-          && ((ElasticsearchStatusException) e)
-              .getDetailedMessage()
-              .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE)) {
+      if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
         throw new NotFoundException(String.format("No backup with id [%s] found.", backupId), e);
       }
