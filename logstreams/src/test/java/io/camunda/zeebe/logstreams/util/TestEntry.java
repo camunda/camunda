@@ -12,9 +12,8 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.util.ReflectUtil;
+import java.util.Objects;
 import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.Assertions;
 
 public record TestEntry(
     long key, int sourceIndex, UnifiedRecordValue recordValue, RecordMetadata recordMetadata)
@@ -35,29 +34,42 @@ public record TestEntry(
   public static final class TestEntryAssert
       extends AbstractObjectAssert<TestEntryAssert, LogAppendEntry> {
 
-    private TestEntryAssert(final LogAppendEntry testEntry, final Class<?> selfType) {
-      super(testEntry, selfType);
+    private TestEntryAssert(final LogAppendEntry testEntry) {
+      super(testEntry, TestEntryAssert.class);
     }
 
     public static TestEntryAssert assertThatEntry(final LogAppendEntry entry) {
-      return new TestEntryAssert(entry, TestEntryAssert.class);
+      return new TestEntryAssert(entry);
     }
 
     public TestEntryAssert matchesLoggedEvent(final LoggedEvent loggedEvent) {
-      if (actual.key() != -1) {
-        Assertions.assertThat(actual.key()).isEqualTo(loggedEvent.getKey());
+      if (actual.key() != -1 && actual.key() != loggedEvent.getKey()) {
+        throw failureWithActualExpected(
+            actual.key(),
+            loggedEvent.getKey(),
+            "Key <%s> was set on LogAppendEntry but LoggedEvent has key <%s>",
+            actual.key(),
+            loggedEvent.getKey());
       }
-      final var loggedValue = ReflectUtil.newInstance(actual.recordValue().getClass());
-      loggedValue.wrap(
-          loggedEvent.getValueBuffer(), loggedEvent.getValueOffset(), loggedEvent.getValueLength());
-      final var loggedMetadata = new RecordMetadata();
-      loggedMetadata.wrap(
-          loggedEvent.getMetadata(),
-          loggedEvent.getMetadataOffset(),
-          loggedEvent.getMetadataLength());
 
-      Assertions.assertThat(actual.recordValue()).isEqualTo(loggedValue);
-      Assertions.assertThat(actual.recordMetadata()).isEqualTo(loggedMetadata);
+      final var loggedMetadata = new RecordMetadata();
+      final var loggedValue = new UnifiedRecordValue();
+      loggedEvent.readValue(loggedValue);
+      loggedEvent.readMetadata(loggedMetadata);
+
+      if (!Objects.equals(actual.recordValue(), loggedValue)) {
+        throw failureWithActualExpected(
+            actual.recordValue(),
+            loggedValue,
+            "LoggedEvent has a different value than LogAppendEntry");
+      }
+
+      if (!Objects.equals(actual.recordMetadata(), loggedMetadata)) {
+        throw failureWithActualExpected(
+            actual.recordMetadata(),
+            loggedMetadata,
+            "LoggedEvent has different metadata than LogAppendEntry");
+      }
       return this;
     }
   }
@@ -65,7 +77,7 @@ public record TestEntry(
   public static class TestLogAppendEntryBuilder {
     private long key = -1L;
     private int sourceIndex = -1;
-    private UnifiedRecordValue recordValue = new TestRecordValue();
+    private UnifiedRecordValue recordValue = new UnifiedRecordValue();
     private RecordMetadata recordMetadata = new RecordMetadata().intent(Intent.UNKNOWN);
 
     public TestLogAppendEntryBuilder withKey(final long key) {
@@ -92,6 +104,4 @@ public record TestEntry(
       return new TestEntry(key, sourceIndex, recordValue, recordMetadata);
     }
   }
-
-  public static final class TestRecordValue extends UnifiedRecordValue {}
 }
