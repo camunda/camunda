@@ -111,7 +111,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
       deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key, sideEffects);
-      // manage the message, signal, conditional top-level start events subscription
+      // manage the top-level start event subscriptions except for timers
       startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
 
     } else {

@@ -82,13 +82,15 @@ public class StartEventSubscriptionManager {
   }
 
   private DeployedProcess findLastStartProcess(
-      final ProcessMetadata processRecord, final Predicate<ExecutableCatchEventElement> predicate) {
+      final ProcessMetadata processRecord,
+      final Predicate<ExecutableCatchEventElement> hasStartEventMatching) {
     for (int version = processRecord.getVersion() - 1; version > 0; --version) {
       final DeployedProcess lastStartProcess =
           processState.getProcessByProcessIdAndVersion(
               processRecord.getBpmnProcessIdBuffer(), version);
       if (lastStartProcess != null
-          && lastStartProcess.getProcess().getStartEvents().stream().anyMatch(predicate)) {
+          && lastStartProcess.getProcess().getStartEvents().stream()
+              .anyMatch(hasStartEventMatching)) {
         return lastStartProcess;
       }
     }
@@ -104,15 +106,14 @@ public class StartEventSubscriptionManager {
     final List<ExecutableStartEvent> startEvents = process.getStartEvents();
 
     for (final ExecutableStartEvent startEvent : startEvents) {
-      // if startEvent is message event
       if (startEvent.isMessage()) {
-        openMessageStartEventSubscriptions(
+        openMessageStartEventSubscription(
             processDefinition, processDefinitionKey, startEvent, stateWriter);
       }
     }
   }
 
-  private void openMessageStartEventSubscriptions(
+  private void openMessageStartEventSubscription(
       final DeployedProcess processDefinition,
       final long processDefinitionKey,
       final ExecutableStartEvent startEvent,
