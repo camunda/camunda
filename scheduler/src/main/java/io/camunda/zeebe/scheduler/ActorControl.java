@@ -10,9 +10,6 @@ package io.camunda.zeebe.scheduler;
 import static io.camunda.zeebe.scheduler.ActorThread.ensureCalledFromActorThread;
 
 import io.camunda.zeebe.scheduler.ActorTask.ActorLifecyclePhase;
-import io.camunda.zeebe.scheduler.channel.ChannelConsumerCondition;
-import io.camunda.zeebe.scheduler.channel.ChannelSubscription;
-import io.camunda.zeebe.scheduler.channel.ConsumableChannel;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.AllCompletedFutureConsumer;
 import io.camunda.zeebe.scheduler.future.FutureContinuationRunnable;
@@ -42,28 +39,6 @@ public class ActorControl implements ConcurrencyControl {
     final ActorThread actorThread = ensureCalledFromActorThread("ActorControl#current");
 
     return new ActorControl(actorThread.currentTask);
-  }
-
-  /**
-   * Consumers are called while the actor is in the following actor lifecycle phases: {@link
-   * ActorLifecyclePhase#STARTED}
-   *
-   * @param channel
-   * @param consumer
-   */
-  public ChannelSubscription consume(final ConsumableChannel channel, final Runnable consumer) {
-    ensureCalledFromWithinActor("consume(...)");
-
-    final ActorJob job = new ActorJob();
-    job.setRunnable(consumer);
-    job.onJobAddedToTask(task);
-
-    final ChannelConsumerCondition subscription = new ChannelConsumerCondition(job, channel);
-    job.setSubscription(subscription);
-
-    channel.registerConsumer(subscription);
-
-    return subscription;
   }
 
   /**
