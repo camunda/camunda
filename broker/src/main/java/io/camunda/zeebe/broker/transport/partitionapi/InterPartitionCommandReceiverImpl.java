@@ -144,11 +144,15 @@ final class InterPartitionCommandReceiverImpl {
       // are a valid command
       final var commandOffset =
           messageDecoder.limit() + InterPartitionMessageDecoder.commandHeaderLength();
-
       final var commandLength = messageDecoder.commandLength();
-      final var value =
-          ReflectUtil.newInstance(
-              TypedEventRegistry.EVENT_REGISTRY.get(recordMetadata.getValueType()));
+
+      final var valueClass = TypedEventRegistry.EVENT_REGISTRY.get(valueType);
+      if (valueClass == null) {
+        throw new IllegalArgumentException(
+            "No value type mapped to %s, can't decode message".formatted(valueType));
+      }
+      final var value = ReflectUtil.newInstance(valueClass);
+
       value.wrap(messageBuffer, commandOffset, commandLength);
       return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
     }
