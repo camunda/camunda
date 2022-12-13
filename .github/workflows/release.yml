@@ -1,0 +1,355 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      releaseBranch:
+        description: 'The branch to perform the release on, defaults to `release-$releaseVersion`'
+        type: string
+        required: false
+        default: ''
+      releaseVersion:
+        description: 'The version to be build and released. If no releaseBranch specified, expecting `release-$releaseVersion` to already exist.'
+        type: string
+        required: true
+      nextDevelopmentVersion:
+        description: 'Next development version, e.g. 8.X.X-SNAPSHOT.'
+        type: string
+        required: true
+      isLatest:
+        description: 'Whether this is the latest release and the docker image should be tagged as camunda/zeebe:latest'
+        type: boolean
+        required: false
+        default: false
+      dryRun:
+        description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release), defaults to true.'
+        type: boolean
+        default: true
+
+concurrency:
+  # cannot use the inputs context here as on this level only the github context is accessible, see
+  # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+  group: ${{ github.event.inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  RELEASE_BRANCH: ${{ inputs.releaseBranch != '' && inputs.releaseBranch || format('release-{0}', inputs.releaseVersion) }}
+  RELEASE_VERSION: ${{ inputs.releaseVersion }}
+
+jobs:
+  release:
+    name: Maven & Go Release
+    runs-on: n1-standard-16-netssd-preempt-quick
+    timeout-minutes: 30
+    outputs:
+      releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
+    env:
+      DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
+      PUSH_CHANGES: ${{ inputs.dryRun == false }}
+    steps:
+      - name: Output Inputs
+        run: echo "${{ toJSON(github.event.inputs) }}"
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_USR;
+            secret/data/github.com/organizations/camunda MAVEN_CENTRAL_DEPLOYMENT_PSW;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+            secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
+      - name: Git User Setup
+        run: |
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
+      - name: Install Maven Central GPG Key
+        # setup-maven supports this as well but needs the key in the armor ascii format,
+        # while we only have it plain bas64 encoded
+        # see https://github.com/actions/setup-java/issues/100#issuecomment-742679976
+        run: |
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_SEC }}" \
+            | base64 --decode \
+            | gpg -q --allow-secret-key-import --import --no-tty --batch --yes
+          echo -n "${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PUB }}" \
+            | base64 --decode \
+            | gpg -q --import --no-tty --batch --yes
+      - name: Setup Github cli
+        # On non-Github hosted runners it may be missing
+        # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+        run: |
+          type -p curl >/dev/null || sudo apt install curl -y
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+      - name: Setup Zeebe Build Tooling
+        uses: ./.github/actions/setup-zeebe
+      - name: Additional Go tooling setup
+        run: |
+          go install github.com/go-bindata/go-bindata/...@v3
+          if ! command -v go-bindata > /dev/null 2>&1; then
+            echo "Failed to install go-bindata, go-bindata is not available on the path"
+            exit 1
+          fi
+
+          go install github.com/smola/gocompat/...@v0.3.0
+          if ! command -v gocompat > /dev/null 2>&1; then
+            echo "Failed to install gocompat, gocompat is not available on the path"
+            exit 1
+          fi
+      - name: Set and commit Go Client version
+        run: |
+          pushd clients/go/internal/embedded
+          echo "${RELEASE_VERSION}" > data/VERSION
+          go-bindata -pkg embedded -o embedded.go -prefix data data/
+
+          git commit -am "build(project): update go embedded version data"
+      - name: Build Go Client & Zeebe
+        uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -T1C
+      - uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: |
+            [{
+                "id": "camunda-nexus",
+                "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+                "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+            },
+            {
+                "id": "central",
+                "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
+                "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            }]
+      - name: Maven Release
+        id: maven-release
+        env:
+          SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
+        run : |
+          # This var is used to include the previously built go artifacts into the final maven release build.
+          # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          export ZBCTL_ROOT_DIR=${PWD}
+          mvn release:prepare release:perform -B \
+            -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
+            -Dresume=false \
+            -Dtag=${RELEASE_VERSION} \
+            -DreleaseVersion=${RELEASE_VERSION} \
+            -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
+            -DpushChanges=${PUSH_CHANGES} \
+            -DremoteTagging=${PUSH_CHANGES} \
+            -DlocalCheckout=${{ inputs.dryRun }} \
+            -DcompletionGoals="spotless:apply" \
+            -P-autoFormat \
+            -Darguments='-T1C -P-autoFormat -DskipChecks=true -DskipTests=true -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dzbctl.force -Dzbctl.rootDir=${ZBCTL_ROOT_DIR} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+
+          # switch to the directory to which maven checks out the release tag
+          # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
+          pushd target/checkout
+          export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
+          echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
+          popd
+      - name: Collect Release artifacts
+        id: release-artifacts
+        run: |
+          ARTIFACT_DIR=$(mktemp -d)
+          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
+          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl.exe "${ARTIFACT_DIR}/"
+          cp clients/go/cmd/zbctl/dist/zbctl.darwin "${ARTIFACT_DIR}/"
+          echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
+      - name: Upload Zeebe Release Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-artifacts
+          path: ${{ steps.release-artifacts.outputs.dir }}
+          retention-days: 5
+      - name: Update Compat Version
+        run: |
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Skipping updating the compat version as ${RELEASE_VERSION} is not a stable version"
+            exit 0
+          fi
+
+          pushd clients/go
+          gocompat save ./...
+          git commit -am "build(project): update go versions"
+          popd
+
+          mvn -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
+          FILE=$(mvn -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
+          rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
+          git commit -am "build(project): update java compat versions"
+      - name: Go Post-Release
+        run: |
+          # Publish Go tag for the release
+          git tag "clients/go/v${RELEASE_VERSION}"
+          if [ "$PUSH_CHANGES" = "true" ]; then
+            git push origin "clients/go/v${RELEASE_VERSION}"
+          fi
+
+          # Prepare Go version for the next release
+          pushd "clients/go/internal/embedded" || exit $?
+
+          echo "${DEVELOPMENT_VERSION}" > data/VERSION
+          go-bindata -pkg embedded -o embedded.go -prefix data/ data/
+
+          git commit -am "build(project): prepare next development version (Go client)"
+      - name: Push Changes to Release branch
+        if: ${{ inputs.dryRun == false }}
+        run: git push origin "${RELEASE_BRANCH}"
+      - name: Cleanup Maven Central GPG Key
+        # make sure we always remove the imported signing key to avoid it leaking on runners
+        if: always()
+        run: rm -rf $HOME/.gnupg
+  github:
+    needs: release
+    name: Github Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts
+      - name: Create Artifact Checksums
+        id: checksum
+        run: |
+          for filename in *; do
+            checksumFile="${filename}.sha1sum"
+            sha1sum "${filename}" > "${checksumFile}"
+            sha1sumResult=$?
+            if [ ! -f "${checksumFile}" ]; then
+              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+              exit 1
+            fi
+          done
+      - name: Determine if Pre-Release
+        id: pre-release
+        run: |
+          shopt -s nocasematch # set matching to case insensitive
+          PRE_RELEASE=false
+          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
+            PRE_RELEASE=true
+          fi
+          shopt -u nocasematch # reset it
+          echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
+      - name: Create Github release
+        uses: ncipollo/release-action@v1
+        if: ${{ inputs.dryRun == false }}
+        with:
+          name: ${{ inputs.releaseVersion }}
+          artifacts: "*"
+          artifactErrorsFailBuild: true
+          draft: true
+          body: Release ${{ inputs.releaseVersion }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ steps.pre-release.result }}
+          tag: ${{ inputs.releaseVersion }}
+  docker:
+    needs: release
+    name: Docker Image Release
+    runs-on: n1-standard-8-netssd-preempt
+    timeout-minutes: 15
+    env:
+      DOCKER_IMAGE: camunda/zeebe
+      TAG_LATEST: ${{ inputs.isLatest }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ env.RELEASE_BRANCH }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR;
+            secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW;
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
+          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Download Zeebe Release Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: release-artifacts
+      - name: Build Docker Image
+        uses: ./.github/actions/build-docker
+        id: build-docker
+        with:
+          repository: ${{ env.DOCKER_IMAGE }}
+          version: ${{ inputs.releaseVersion }}
+          additionalTag: ${{ inputs.isLatest && 'latest' || '' }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          push: false
+          distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+      - name: Verify Docker image
+        env:
+          DATE: ${{ steps.build-docker.outputs.date }}
+          REVISION: ${{ needs.release.outputs.releaseTagRevision }}
+          VERSION: ${{ inputs.releaseVersion }}
+        run: |
+          ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:${RELEASE_VERSION}"
+          if [ "$TAG_LATEST" = "true" ]; then
+            ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:latest"
+          fi
+      - name: Push Docker Image Tag ${{ inputs.releaseVersion }}
+        if: ${{ inputs.dryRun == false }}
+        run: docker push ${{ env.DOCKER_IMAGE }}:${{ inputs.releaseVersion }}
+      - name: Push Docker Image Tag latest
+        if: ${{ inputs.isLatest && inputs.dryRun == false }}
+        run: docker push ${{ env.DOCKER_IMAGE }}:latest
+  notify-if-failed:
+    name: Send slack notification on failure
+    runs-on: ubuntu-latest
+    needs: [ release, github, docker ]
+    if: failure() && github.repository == 'camunda/zeebe'
+    steps:
+      - id: slack-notify
+        name: Send slack notification
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": ":alarm: Release job build for ${{ inputs.releaseVersion }} failed! :alarm:\n",
+             	"blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: Release job build for ${{ inputs.releaseVersion }} failed! :alarm:\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check the related workflow execution: https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
