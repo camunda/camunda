@@ -160,10 +160,6 @@ final class Sequencer implements LogStreamBatchWriter, Closeable {
     return queue.poll();
   }
 
-  SequencedBatch peek() {
-    return queue.peek();
-  }
-
   /**
    * Closes the sequencer. After closing, writes are rejected but reads are still allowed to drain
    * the queue. Closing the sequencer is not atomic so some writes may occur shortly after closing.

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 /**
  * This class should be later be located in the broker configs - due to the primitive usage
@@ -14,7 +14,7 @@ package io.camunda.zeebe.logstreams.impl.backpressure;
  *
  * <p>The constants should then be copied to EnvironmentConstants class.
  */
-public final class BackpressureConstants {
+final class BackpressureConstants {
 
   // BACK PRESSURE ON LOG APPENDER
   public static final String ENV_BP_APPENDER = "ZEEBE_BP_APPENDER";

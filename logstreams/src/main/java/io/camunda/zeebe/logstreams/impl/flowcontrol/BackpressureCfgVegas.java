@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_BETA_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_INIT_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_ALPHA_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_BETA_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_INIT_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_VEGAS_MAX_CONCURRENCY;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.VegasLimit;
@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.Environment;
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-public final class AppenderVegasCfg implements AlgorithmCfg {
+final class BackpressureCfgVegas implements BackpressureCfg {
 
   private int initialLimit = 1024;
   private int maxConcurrency = 1024 * 32;
@@ -56,7 +56,7 @@ public final class AppenderVegasCfg implements AlgorithmCfg {
     return initialLimit;
   }
 
-  public AppenderVegasCfg setInitialLimit(final int initialLimit) {
+  public BackpressureCfgVegas setInitialLimit(final int initialLimit) {
     this.initialLimit = initialLimit;
     return this;
   }
@@ -65,7 +65,7 @@ public final class AppenderVegasCfg implements AlgorithmCfg {
     return maxConcurrency;
   }
 
-  public AppenderVegasCfg setMaxConcurrency(final int maxConcurrency) {
+  public BackpressureCfgVegas setMaxConcurrency(final int maxConcurrency) {
     this.maxConcurrency = maxConcurrency;
     return this;
   }
@@ -74,7 +74,7 @@ public final class AppenderVegasCfg implements AlgorithmCfg {
     return alphaLimit;
   }
 
-  public AppenderVegasCfg setAlphaLimit(final double alphaLimit) {
+  public BackpressureCfgVegas setAlphaLimit(final double alphaLimit) {
     this.alphaLimit = alphaLimit;
     return this;
   }
@@ -83,7 +83,7 @@ public final class AppenderVegasCfg implements AlgorithmCfg {
     return betaLimit;
   }
 
-  public AppenderVegasCfg setBetaLimit(final double betaLimit) {
+  public BackpressureCfgVegas setBetaLimit(final double betaLimit) {
     this.betaLimit = betaLimit;
     return this;
   }
@@ -103,7 +103,7 @@ public final class AppenderVegasCfg implements AlgorithmCfg {
 
   @Override
   public String toString() {
-    return "AppenderVegasCfg{"
+    return "BackpressureCfgVegas{"
         + "initialLimit="
         + initialLimit
         + ", maxConcurrency="

@@ -54,35 +54,6 @@ final class SequencerTest {
   }
 
   @Test
-  void canPeekAfterSingleWrite() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16);
-    final var entry = TestEntry.ofDefaults();
-
-    // when
-    sequencer.tryWrite(entry);
-
-    // then
-    final var peek = sequencer.peek();
-    Assertions.assertThat(peek.entries()).containsExactly(entry);
-  }
-
-  @Test
-  void canPeekAfterBatchWrite() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16);
-    final var entries =
-        List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
-
-    // when
-    sequencer.tryWrite(entries);
-
-    // then
-    final var peek = sequencer.peek();
-    Assertions.assertThat(peek.entries()).containsExactlyElementsOf(entries);
-  }
-
-  @Test
   void canReadAfterSingleWrite() {
     // given
     final var sequencer = new Sequencer(1, 1, 16);
@@ -109,82 +80,6 @@ final class SequencerTest {
     // then
     final var read = sequencer.tryRead();
     Assertions.assertThat(read.entries()).containsAnyElementsOf(entries);
-  }
-
-  @Test
-  void peeksFirstWrittenEntry() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = TestEntry.ofKey(1);
-    final var secondEntry = TestEntry.ofKey(2);
-
-    // when
-    Assertions.assertThat(sequencer.tryWrite(firstEntry)).isPositive();
-    Assertions.assertThat(sequencer.tryWrite(secondEntry)).isPositive();
-
-    // then
-    final var peek = sequencer.peek();
-    Assertions.assertThat(peek.entries()).containsExactly(firstEntry);
-  }
-
-  @Test
-  void peeksFirstWrittenBatchEntry() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = TestEntry.ofKey(1);
-    final var secondEntry = TestEntry.ofKey(2);
-
-    // when
-    Assertions.assertThat(sequencer.tryWrite(firstEntry, secondEntry)).isPositive();
-    Assertions.assertThat(sequencer.tryWrite(TestEntry.ofKey(3))).isPositive();
-
-    // then
-    final var peek = sequencer.peek();
-    Assertions.assertThat(peek.entries()).containsExactly(firstEntry, secondEntry);
-  }
-
-  @Test
-  void readReturnsSameAsPeek() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = TestEntry.ofKey(1);
-    final var secondEntry = TestEntry.ofKey(2);
-
-    // when
-    Assertions.assertThat(sequencer.tryWrite(firstEntry)).isPositive();
-    Assertions.assertThat(sequencer.tryWrite(secondEntry)).isPositive();
-
-    // then
-    final var peek = sequencer.peek();
-    final var read = sequencer.tryRead();
-    Assertions.assertThat(peek).isEqualTo(read);
-  }
-
-  @Test
-  void readReturnsSameAsPeekAfterBatchWrite() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    final var firstEntry = TestEntry.ofKey(1);
-    final var secondEntry = TestEntry.ofKey(2);
-
-    // when
-    Assertions.assertThat(sequencer.tryWrite(firstEntry, secondEntry)).isPositive();
-    Assertions.assertThat(sequencer.tryWrite(TestEntry.ofKey(3))).isPositive();
-
-    // then
-    final var peek = sequencer.peek();
-    final var read = sequencer.tryRead();
-    Assertions.assertThat(peek).isEqualTo(read);
-  }
-
-  @Test
-  void cannotPeekEmpty() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-
-    // then
-    final var peek = sequencer.peek();
-    Assertions.assertThat(peek).isNull();
   }
 
   @Test

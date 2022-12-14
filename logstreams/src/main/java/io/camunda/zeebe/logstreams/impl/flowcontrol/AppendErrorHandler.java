@@ -5,13 +5,10 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import com.netflix.concurrency.limits.limit.AbstractLimit;
-import io.camunda.zeebe.util.Environment;
-import java.util.function.Supplier;
+public interface AppendErrorHandler {
+  void onCommitError(Throwable error);
 
-public interface AlgorithmCfg extends Supplier<AbstractLimit> {
-
-  void applyEnvironment(Environment environment);
+  void onWriteError(Throwable error);
 }

@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.logstreams.impl.backpressure;
+package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_INIT_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_LONG_WINDOW;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MAX_CONCURRENCY;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MIN_LIMIT;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_QUEUE_SIZE;
-import static io.camunda.zeebe.logstreams.impl.backpressure.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_RTT_TOLERANCE;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_INIT_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_LONG_WINDOW;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MAX_CONCURRENCY;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_MIN_LIMIT;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_QUEUE_SIZE;
+import static io.camunda.zeebe.logstreams.impl.flowcontrol.BackpressureConstants.ENV_BP_APPENDER_GRADIENT2_RTT_TOLERANCE;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.Gradient2Limit;
@@ -23,7 +23,7 @@ import io.camunda.zeebe.util.Environment;
  * currently we are not able to access the BrokerCfg, this is the reason why the configuration is
  * only based on environment variables.
  */
-public final class AppenderGradient2Cfg implements AlgorithmCfg {
+final class BackpressureCfgGradient2 implements BackpressureCfg {
 
   private int initialLimit = 1024;
   private int maxConcurrency = 1024 * 32;
@@ -48,7 +48,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
     return initialLimit;
   }
 
-  public AppenderGradient2Cfg setInitialLimit(final int initialLimit) {
+  public BackpressureCfgGradient2 setInitialLimit(final int initialLimit) {
     this.initialLimit = initialLimit;
     return this;
   }
@@ -57,7 +57,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
     return maxConcurrency;
   }
 
-  public AppenderGradient2Cfg setMaxConcurrency(final int maxConcurrency) {
+  public BackpressureCfgGradient2 setMaxConcurrency(final int maxConcurrency) {
     this.maxConcurrency = maxConcurrency;
     return this;
   }
@@ -66,7 +66,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
     return queueSize;
   }
 
-  public AppenderGradient2Cfg setQueueSize(final int queueSize) {
+  public BackpressureCfgGradient2 setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
     return this;
   }
@@ -75,7 +75,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
     return minLimit;
   }
 
-  public AppenderGradient2Cfg setMinLimit(final int minLimit) {
+  public BackpressureCfgGradient2 setMinLimit(final int minLimit) {
     this.minLimit = minLimit;
     return this;
   }
@@ -84,7 +84,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
     return longWindow;
   }
 
-  public AppenderGradient2Cfg setLongWindow(final int longWindow) {
+  public BackpressureCfgGradient2 setLongWindow(final int longWindow) {
     this.longWindow = longWindow;
     return this;
   }
@@ -93,7 +93,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
     return rttTolerance;
   }
 
-  public AppenderGradient2Cfg setRttTolerance(final double rttTolerance) {
+  public BackpressureCfgGradient2 setRttTolerance(final double rttTolerance) {
     this.rttTolerance = rttTolerance;
     return this;
   }
@@ -112,7 +112,7 @@ public final class AppenderGradient2Cfg implements AlgorithmCfg {
 
   @Override
   public String toString() {
-    return "AppenderGradient2Cfg{"
+    return "BackpressureCfgGradient2{"
         + "initialLimit="
         + initialLimit
         + ", maxConcurrency="
