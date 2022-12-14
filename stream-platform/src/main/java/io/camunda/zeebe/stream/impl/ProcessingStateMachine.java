@@ -10,8 +10,8 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -140,7 +140,7 @@ public final class ProcessingStateMachine {
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
   private RecordProcessor currentProcessor;
-  private final LogStreamBatchWriter logStreamBatchWriter;
+  private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
 
   public ProcessingStateMachine(
@@ -152,7 +152,7 @@ public final class ProcessingStateMachine {
     actor = context.getActor();
     recordValues = context.getRecordValues();
     logStreamReader = context.getLogStreamReader();
-    logStreamBatchWriter = context.getLogStreamBatchWriter();
+    logStreamWriter = context.getLogStreamWriter();
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
@@ -246,7 +246,7 @@ public final class ProcessingStateMachine {
 
       final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
-          new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteEvents);
+          new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
 
       metrics.processingLatency(command.getTimestamp(), processingStartTime);
 
@@ -324,7 +324,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteEvents);
+              new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
 
           currentProcessingResult =
               currentProcessor.onProcessingError(
@@ -339,8 +339,8 @@ public final class ProcessingStateMachine {
         writeRetryStrategy.runWithRetry(
             () -> {
               final long position =
-                  logStreamBatchWriter.tryWrite(
-                      currentProcessingResult.getRecordBatch(), sourceRecordPosition);
+                  logStreamWriter.tryWrite(
+                      currentProcessingResult.getRecordBatch().entries(), sourceRecordPosition);
               if (position > 0) {
                 writtenPosition = position;
               }

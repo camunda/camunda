@@ -17,13 +17,10 @@ import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 public class StreamProcessingComposite {
 
@@ -33,17 +30,12 @@ public class StreamProcessingComposite {
   private final int partitionId;
   private final ZeebeDbFactory<?> zeebeDbFactory;
   private MutableZeebeState zeebeState;
-  private final WriteActor writeActor = new WriteActor();
 
   public StreamProcessingComposite(
-      final TestStreams streams,
-      final int partitionId,
-      final ZeebeDbFactory<?> zeebeDbFactory,
-      final ActorScheduler actorScheduler) {
+      final TestStreams streams, final int partitionId, final ZeebeDbFactory<?> zeebeDbFactory) {
     this.streams = streams;
     this.partitionId = partitionId;
     this.zeebeDbFactory = zeebeDbFactory;
-    actorScheduler.submitActor(writeActor);
   }
 
   public SynchronousLogStream getLogStream(final int partitionId) {
@@ -131,52 +123,49 @@ public class StreamProcessingComposite {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    final var batchWriter = streams.setupBatchWriter(getLogName(partitionId), recordsToWrite);
-    return writeActor.submit(batchWriter::tryWrite).join();
+    return streams
+        .newLogStreamWriter(getLogName(partitionId))
+        .tryWrite(Arrays.asList(recordsToWrite));
   }
 
   public long writeCommandOnPartition(
       final int partition, final Intent intent, final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partition))
-            .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
+    return streams
+        .newRecord(getLogName(partition))
+        .recordType(RecordType.COMMAND)
+        .intent(intent)
+        .event(value)
+        .write();
   }
 
   public long writeCommandOnPartition(
       final int partition, final long key, final Intent intent, final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partition))
-            .key(key)
-            .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
+    return streams
+        .newRecord(getLogName(partition))
+        .key(key)
+        .recordType(RecordType.COMMAND)
+        .intent(intent)
+        .event(value)
+        .write();
   }
 
   public long writeCommand(final long key, final Intent intent, final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND)
-            .key(key)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
+    return streams
+        .newRecord(getLogName(partitionId))
+        .recordType(RecordType.COMMAND)
+        .key(key)
+        .intent(intent)
+        .event(value)
+        .write();
   }
 
   public long writeCommand(final Intent intent, final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
+    return streams
+        .newRecord(getLogName(partitionId))
+        .recordType(RecordType.COMMAND)
+        .intent(intent)
+        .event(value)
+        .write();
   }
 
   public long writeCommand(
@@ -184,26 +173,18 @@ public class StreamProcessingComposite {
       final long requestId,
       final Intent intent,
       final UnifiedRecordValue value) {
-    final var writer =
-        streams
-            .newRecord(getLogName(partitionId))
-            .recordType(RecordType.COMMAND)
-            .requestId(requestId)
-            .requestStreamId(requestStreamId)
-            .intent(intent)
-            .event(value);
-    return writeActor.submit(writer::write).join();
+    return streams
+        .newRecord(getLogName(partitionId))
+        .recordType(RecordType.COMMAND)
+        .requestId(requestId)
+        .requestStreamId(requestStreamId)
+        .intent(intent)
+        .event(value)
+        .write();
   }
 
   public static String getLogName(final int partitionId) {
     return STREAM_NAME + partitionId;
-  }
-
-  /** Used to run writes within an actor thread. */
-  private static final class WriteActor extends Actor {
-    public ActorFuture<Long> submit(final Callable<Long> write) {
-      return actor.call(write);
-    }
   }
 
   @FunctionalInterface

@@ -9,8 +9,8 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
@@ -48,7 +48,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private ProcessingScheduleService processingScheduleService;
   private MutableLastProcessedPositionState lastProcessedPositionState;
 
-  private LogStreamBatchWriter logStreamBatchWriter;
+  private LogStreamWriter logStreamWriter;
   private CommandResponseWriter commandResponseWriter;
   private InterPartitionCommandSender partitionCommandSender;
 
@@ -169,12 +169,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return streamProcessorMode;
   }
 
-  public void logStreamBatchWriter(final LogStreamBatchWriter batchWriter) {
-    logStreamBatchWriter = batchWriter;
+  public void logStreamWriter(final LogStreamWriter writer) {
+    logStreamWriter = writer;
   }
 
-  public LogStreamBatchWriter getLogStreamBatchWriter() {
-    return logStreamBatchWriter;
+  public LogStreamWriter getLogStreamWriter() {
+    return logStreamWriter;
   }
 
   public CommandResponseWriter getCommandResponseWriter() {

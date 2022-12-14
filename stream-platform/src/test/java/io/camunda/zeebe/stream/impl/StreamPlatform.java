@@ -18,8 +18,8 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.SyncLogStream;
@@ -40,6 +40,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -313,8 +314,7 @@ public final class StreamPlatform {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    final var batchWriter = logContext.setupBatchWriter();
-    return batchWriter.tryWrite(recordsToWrite);
+    return logContext.setupWriter().tryWrite(Arrays.asList(recordsToWrite));
   }
 
   public void closeStreamProcessor() throws Exception {
@@ -323,8 +323,8 @@ public final class StreamPlatform {
 
   public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
 
-    public LogStreamBatchWriter setupBatchWriter() {
-      return logStream.newLogStreamBatchWriter();
+    public LogStreamWriter setupWriter() {
+      return logStream.newLogStreamWriter();
     }
 
     @Override

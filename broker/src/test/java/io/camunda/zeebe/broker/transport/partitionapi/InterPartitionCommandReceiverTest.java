@@ -34,6 +34,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class InterPartitionCommandReceiverTest {
@@ -60,7 +61,7 @@ final class InterPartitionCommandReceiverTest {
     receiver.handleMessage(new MemberId("0"), sentMessage);
 
     // then - sent message can be written to log stream
-    verify(logStreamWriter).tryWrite(any());
+    verify(logStreamWriter).tryWrite(Mockito.<LogAppendEntry>any());
   }
 
   @Test

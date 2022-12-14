@@ -19,7 +19,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -330,14 +330,13 @@ class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class WriterAsyncSupplier
-      implements Supplier<ActorFuture<LogStreamBatchWriter>> {
+  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamWriter>> {
     private final TestWriter writer = new TestWriter();
-    AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
+    AtomicReference<ActorFuture<LogStreamWriter>> writerFutureRef =
         new AtomicReference<>(CompletableActorFuture.completed(writer));
 
     @Override
-    public ActorFuture<LogStreamBatchWriter> get() {
+    public ActorFuture<LogStreamWriter> get() {
       return writerFutureRef.get();
     }
   }
@@ -365,7 +364,7 @@ class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class TestWriter implements LogStreamBatchWriter {
+  private static final class TestWriter implements LogStreamWriter {
     private final List<LogAppendEntry> entries = new CopyOnWriteArrayList<>();
     private final AtomicReference<BooleanSupplier> acceptWrites = new AtomicReference<>(() -> true);
 
@@ -375,13 +374,12 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public long tryWrite(
-        final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+    public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
         return -1;
       }
 
-      appendEntries.forEach(entries::add);
+      entries.addAll(appendEntries);
       return entries.size();
     }
   }

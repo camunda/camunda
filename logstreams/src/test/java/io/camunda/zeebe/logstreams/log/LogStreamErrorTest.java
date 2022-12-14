@@ -66,16 +66,4 @@ public class LogStreamErrorTest {
     // then
     assertThat(writerFuture.isCompletedExceptionally()).isTrue();
   }
-
-  @Test
-  public void shouldCompleteFutureWhenCreateBatchWriterFailed() {
-    // given
-    final var writerFuture = logStream.getAsyncLogStream().newLogStreamBatchWriter();
-
-    // when
-    Awaitility.await().until(writerFuture::isDone);
-
-    // then
-    assertThat(writerFuture.isCompletedExceptionally()).isTrue();
-  }
 }

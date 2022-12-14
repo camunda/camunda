@@ -14,8 +14,8 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
 
 /**
  * Represents a stream of events. New events are append to the end of the log. With {@link
- * LogStream#newLogStreamWriter()} or {@link LogStream#newLogStreamBatchWriter()} new writers can be
- * created, which can be used to append new events to the log.
+ * LogStream#newLogStreamWriter()} new writers can be created, which can be used to append new
+ * events to the log.
  *
  * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
@@ -49,13 +49,7 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */
-  ActorFuture<LogStreamBatchWriter> newLogStreamWriter();
-
-  /**
-   * @return a future, when successfully completed it returns a newly created log stream batch
-   *     writer
-   */
-  ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
+  ActorFuture<LogStreamWriter> newLogStreamWriter();
 
   /**
    * Registers a listener that will be notified when new records are available to read from the

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -29,8 +29,8 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
   private final BooleanSupplier abortCondition;
-  private final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier;
-  private LogStreamBatchWriter logStreamBatchWriter;
+  private final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier;
+  private LogStreamWriter logStreamWriter;
   private ActorControl actorControl;
   private AbortableRetryStrategy writeRetryStrategy;
   private CompletableActorFuture<Void> openFuture;
@@ -38,7 +38,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   public ProcessingScheduleServiceImpl(
       final Supplier<Phase> streamProcessorPhaseSupplier,
       final BooleanSupplier abortCondition,
-      final Supplier<ActorFuture<LogStreamBatchWriter>> writerAsyncSupplier) {
+      final Supplier<ActorFuture<LogStreamWriter>> writerAsyncSupplier) {
     this.streamProcessorPhaseSupplier = streamProcessorPhaseSupplier;
     this.abortCondition = abortCondition;
     this.writerAsyncSupplier = writerAsyncSupplier;
@@ -88,7 +88,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
         writerFuture,
         (writer, failure) -> {
           if (failure == null) {
-            logStreamBatchWriter = writer;
+            logStreamWriter = writer;
             actorControl = control;
             openFuture.complete(null);
           } else {
@@ -101,7 +101,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
   @Override
   public void close() {
     actorControl = null;
-    logStreamBatchWriter = null;
+    logStreamWriter = null;
     writeRetryStrategy = null;
     openFuture = null;
   }
@@ -130,7 +130,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
         actorControl.submit(toRunnable(task));
         return;
       }
-      final var builder = new BufferedTaskResultBuilder(logStreamBatchWriter::canWriteEvents);
+      final var builder = new BufferedTaskResultBuilder(logStreamWriter::canWriteEvents);
       final var result = task.execute(builder);
       final var recordBatch = result.getRecordBatch();
 
@@ -142,7 +142,7 @@ public class ProcessingScheduleServiceImpl implements ProcessingScheduleService,
           writeRetryStrategy.runWithRetry(
               () -> {
                 LOG.trace("Write scheduled TaskResult to dispatcher!");
-                return logStreamBatchWriter.tryWrite(recordBatch) >= 0;
+                return logStreamWriter.tryWrite(recordBatch.entries()) >= 0;
               },
               abortCondition);
 

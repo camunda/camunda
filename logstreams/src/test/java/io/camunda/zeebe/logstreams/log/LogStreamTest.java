@@ -46,7 +46,6 @@ public final class LogStreamTest {
     assertThat(logStream.getLogName()).isEqualTo("0");
 
     assertThat(logStream.newLogStreamReader()).isNotNull();
-    assertThat(logStream.newLogStreamBatchWriter()).isNotNull();
     assertThat(logStream.newLogStreamWriter()).isNotNull();
   }
 
@@ -59,7 +58,6 @@ public final class LogStreamTest {
 
     // then
     assertThatThrownBy(() -> logStream.newLogStreamWriter()).hasMessage("Actor is closed");
-    assertThatThrownBy(() -> logStream.newLogStreamBatchWriter()).hasMessage("Actor is closed");
   }
 
   @Test
@@ -90,7 +88,7 @@ public final class LogStreamTest {
     logStream.getAsyncLogStream().registerRecordAvailableListener(latch::countDown);
 
     // when
-    logStreamRule.getLogStreamBatchWriter().tryWrite(TestEntry.ofDefaults());
+    logStreamRule.getLogStreamWriter().tryWrite(TestEntry.ofDefaults());
 
     // then
     assertThat(latch.await(2, TimeUnit.SECONDS)).isTrue();
@@ -107,7 +105,7 @@ public final class LogStreamTest {
     logStream.getAsyncLogStream().registerRecordAvailableListener(secondListener::countDown);
 
     // when
-    logStreamRule.getLogStreamBatchWriter().tryWrite(TestEntry.ofDefaults());
+    logStreamRule.getLogStreamWriter().tryWrite(TestEntry.ofDefaults());
 
     // then
     assertThat(firstListener.await(2, TimeUnit.SECONDS)).isTrue();

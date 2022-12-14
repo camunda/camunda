@@ -11,10 +11,9 @@ import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FR
 
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -32,7 +31,7 @@ import org.slf4j.LoggerFactory;
  * consumer. The sequencer does not copy or serialize entries, it only keeps a reference to them
  * until they are handed off to the consumer.
  */
-final class Sequencer implements LogStreamBatchWriter, Closeable {
+final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int partitionId;
   private final int maxFragmentSize;
@@ -64,63 +63,19 @@ final class Sequencer implements LogStreamBatchWriter, Closeable {
 
   /** {@inheritDoc} */
   @Override
-  public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
-    if (isClosed) {
-      LOG.warn("Rejecting write of {}, sequencer is closed", appendEntry);
-      return -1;
-    }
-
-    if (!isEntryValid(appendEntry)) {
-      LOG.warn("Reject write of invalid entry {}", appendEntry);
-      return 0;
-    }
-
-    final boolean isEnqueued;
-    final long currentPosition;
-
-    lock.lock();
-    try {
-      currentPosition = position;
-      isEnqueued =
-          queue.offer(new SequencedBatch(currentPosition, sourcePosition, List.of(appendEntry)));
-      if (isEnqueued) {
-        position = currentPosition + 1;
-      }
-    } finally {
-      lock.unlock();
-    }
-
-    if (consumer != null) {
-      consumer.signal();
-    }
-    metrics.observeBatchSize(1);
-    metrics.setQueueSize(queue.size());
-    if (isEnqueued) {
-      return currentPosition;
-    } else {
-      LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntry);
-      return -1;
-    }
-  }
-
-  /** {@inheritDoc} */
-  @Override
-  public long tryWrite(
-      final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+  public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
     if (isClosed) {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
       return -1;
     }
 
-    final var entries = new ArrayList<LogAppendEntry>(16);
     for (final var entry : appendEntries) {
       if (!isEntryValid(entry)) {
         LOG.warn("Reject write of invalid entry {}", entry);
         return 0;
       }
-      entries.add(entry);
     }
-    final var batchSize = entries.size();
+    final var batchSize = appendEntries.size();
     if (batchSize == 0) {
       return 0;
     }
@@ -130,7 +85,7 @@ final class Sequencer implements LogStreamBatchWriter, Closeable {
     lock.lock();
     try {
       currentPosition = position;
-      isEnqueued = queue.offer(new SequencedBatch(currentPosition, sourcePosition, entries));
+      isEnqueued = queue.offer(new SequencedBatch(currentPosition, sourcePosition, appendEntries));
       if (isEnqueued) {
         position = currentPosition + batchSize;
       }
@@ -146,7 +101,7 @@ final class Sequencer implements LogStreamBatchWriter, Closeable {
       metrics.observeBatchSize(batchSize);
       return currentPosition + batchSize - 1;
     } else {
-      LOG.trace("Rejecting write of {}, sequencer queue is full", entries);
+      LOG.trace("Rejecting write of {}, sequencer queue is full", appendEntries);
       return -1;
     }
   }

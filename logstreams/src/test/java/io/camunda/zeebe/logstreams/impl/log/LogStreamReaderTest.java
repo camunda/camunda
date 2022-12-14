@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
@@ -40,12 +40,12 @@ public final class LogStreamReaderTest {
   @Rule public final RuleChain ruleChain = RuleChain.outerRule(logStreamRule).around(readerRule);
 
   private LogStreamReader reader;
-  private LogStreamBatchWriter writer;
+  private LogStreamWriter writer;
 
   @Before
   public void setUp() {
     reader = readerRule.getLogStreamReader();
-    writer = logStreamRule.getLogStreamBatchWriter();
+    writer = logStreamRule.getLogStream().newSyncLogStreamWriter();
   }
 
   @Test

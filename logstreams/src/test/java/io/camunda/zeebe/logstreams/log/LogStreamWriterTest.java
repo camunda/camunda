@@ -11,10 +11,15 @@ import static io.camunda.zeebe.logstreams.util.TestEntry.TestEntryAssert.assertT
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
+import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
+import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
@@ -41,16 +46,13 @@ public final class LogStreamWriterTest {
     writer = null;
   }
 
-  private LoggedEvent getWrittenEvent(final long position) {
-    assertThat(position).isGreaterThan(0);
-    logStreamRule.getLogStream().awaitPositionWritten(position);
-    final LoggedEvent event = readerRule.readEventAtPosition(position);
+  @Test
+  public void shouldNotFailToWriteBatchWithoutEvents() {
+    // when
+    final long pos = writer.tryWrite(List.of());
 
-    assertThat(event)
-        .withFailMessage("No written event found at position: <%s>", position)
-        .isNotNull();
-
-    return event;
+    // then
+    assertThat(pos).isEqualTo(0);
   }
 
   @Test
@@ -63,6 +65,19 @@ public final class LogStreamWriterTest {
 
     final LoggedEvent event = getWrittenEvent(position);
     assertThat(event.getPosition()).isEqualTo(position);
+  }
+
+  @Test
+  public void shouldReturnPositionOfLastEvent() {
+    // when
+    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
+
+    // then
+    assertThat(position).isGreaterThan(0);
+
+    final List<LoggedEvent> events = getWrittenEvents(position);
+    assertThat(events).hasSize(2);
+    assertThat(events.get(1).getPosition()).isEqualTo(position);
   }
 
   @Test
@@ -187,6 +202,45 @@ public final class LogStreamWriterTest {
 
     // then
     assertThat(pos).isEqualTo(0);
+  }
+
+  private LoggedEvent getWrittenEvent(final long position) {
+    assertThat(position).isGreaterThan(0);
+    logStreamRule.getLogStream().awaitPositionWritten(position);
+    final LoggedEvent event = readerRule.readEventAtPosition(position);
+
+    assertThat(event)
+        .withFailMessage("No written event found at position: <%s>", position)
+        .isNotNull();
+
+    return event;
+  }
+
+  private List<LoggedEvent> getWrittenEvents(final long position) {
+    final List<LoggedEvent> events = new ArrayList<>();
+
+    assertThat(position).isGreaterThan(0);
+
+    logStreamRule.getLogStream().awaitPositionWritten(position);
+    long eventPosition = -1L;
+
+    while (eventPosition < position) {
+      final LoggedEventImpl event = (LoggedEventImpl) readerRule.nextEvent();
+
+      final LoggedEventImpl eventCopy = new LoggedEventImpl();
+      final DirectBuffer bufferCopy = BufferUtil.cloneBuffer(event.getBuffer());
+
+      eventCopy.wrap(bufferCopy, event.getFragmentOffset());
+      events.add(eventCopy);
+
+      eventPosition = event.getPosition();
+    }
+
+    assertThat(eventPosition)
+        .withFailMessage("No written event found at position: {}", position)
+        .isEqualTo(position);
+
+    return events;
   }
 
   // TODO: unclear if this is still necessary, and presumably we have more control with the
