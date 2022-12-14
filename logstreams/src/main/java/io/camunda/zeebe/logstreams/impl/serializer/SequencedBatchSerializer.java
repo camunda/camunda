@@ -13,43 +13,50 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /** Accepts sequenced records, and serializes them with legacy dispatcher framing and alignment. */
 public final class SequencedBatchSerializer {
-  final LogAppendEntrySerializer entrySerializer = new LogAppendEntrySerializer();
 
-  public ByteBuffer serializeBatch(final SequencedBatch batch) {
+  public static ByteBuffer serializeBatch(final SequencedBatch batch) {
     Objects.requireNonNull(batch, "must provide a batch to serialize");
 
     final var size = calculateBatchSize(batch);
     final var buffer = ByteBuffer.allocate(size).order(Protocol.ENDIANNESS);
     final var mutableBuffer = new UnsafeBuffer(buffer);
 
-    int bufferOffset = 0;
-    for (int i = 0; i < batch.entries().size(); i++) {
-      final var entry = batch.entries().get(i);
-      final var framedLength =
-          entrySerializer.serialize(
-              mutableBuffer,
-              bufferOffset,
-              entry,
-              batch.firstPosition() + i,
-              getSourcePosition(batch, i, entry),
-              ActorClock.currentTimeMillis());
-      bufferOffset += DataFrameDescriptor.alignedLength(framedLength);
-    }
+    serializeBatch(mutableBuffer, 0, batch);
 
     return buffer;
   }
 
-  private int calculateBatchSize(final SequencedBatch batch) {
+  public static void serializeBatch(
+      final MutableDirectBuffer buffer, final int offset, final SequencedBatch batch) {
+    int currentOffset = offset;
+    for (int i = 0; i < batch.entries().size(); i++) {
+      final var entry = batch.entries().get(i);
+      final var framedLength =
+          LogAppendEntrySerializer.serialize(
+              buffer,
+              currentOffset,
+              entry,
+              batch.firstPosition() + i,
+              getSourcePosition(batch, i, entry),
+              ActorClock.currentTimeMillis());
+      currentOffset += DataFrameDescriptor.alignedLength(framedLength);
+    }
+  }
+
+  public static int calculateBatchSize(final SequencedBatch batch) {
     return batch.entries().stream()
-        .mapToInt(entry -> DataFrameDescriptor.alignedLength(entrySerializer.framedLength(entry)))
+        .mapToInt(
+            entry ->
+                DataFrameDescriptor.alignedLength(LogAppendEntrySerializer.framedLength(entry)))
         .sum();
   }
 
-  private long getSourcePosition(
+  private static long getSourcePosition(
       final SequencedBatch batch, final int i, final LogAppendEntry entry) {
     final long sourcePosition;
     if (entry.sourceIndex() >= 0 && entry.sourceIndex() < i) {

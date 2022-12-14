@@ -36,7 +36,7 @@ final class LogAppendEntrySerializer {
    * @return the length of the serialized entry, with dispatcher framing but not aligned
    * @throws IllegalArgumentException if the entry's value is empty, i.e. has a length of 0
    */
-  int serialize(
+  static int serialize(
       final MutableDirectBuffer writeBuffer,
       final int writeBufferOffset,
       final LogAppendEntry entry,
@@ -99,7 +99,7 @@ final class LogAppendEntrySerializer {
     return framedEntryLength;
   }
 
-  int framedLength(final LogAppendEntry entry) {
+  static int framedLength(final LogAppendEntry entry) {
     return DataFrameDescriptor.framedLength(
         LogEntryDescriptor.headerLength(entry.recordMetadata().getLength())
             + entry.recordValue().getLength());

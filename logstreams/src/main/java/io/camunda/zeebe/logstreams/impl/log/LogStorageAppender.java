@@ -30,7 +30,6 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   private final String name;
   private final AppenderFlowControl flowControl;
   private final Sequencer sequencer;
-  private final SequencedBatchSerializer serializer = new SequencedBatchSerializer();
   private final LogStorage logStorage;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final ActorFuture<Void> closeFuture;
@@ -127,7 +126,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     final var lowestPosition = sequencedBatch.firstPosition();
     final var highestPosition =
         sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
-    final var serialized = serializer.serializeBatch(sequencedBatch);
+    final var serialized = SequencedBatchSerializer.serializeBatch(sequencedBatch);
     append.start(highestPosition);
     logStorage.append(lowestPosition, highestPosition, serialized, append);
     actor.submit(this::tryWriteBatch);
