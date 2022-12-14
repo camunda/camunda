@@ -50,7 +50,9 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -402,19 +404,30 @@ public final class ProcessInstanceModificationProcessor
 
   private Either<Rejection, ?> validateAncestorKeys(
       final DeployedProcess process, final ProcessInstanceModificationRecord record) {
-    return validateAncestorExistsAndIsActive(process, record)
-        .flatMap(valid -> validateAncestorBelongsToProcessInstance(process, record))
+    final Map<Long, Optional<ElementInstance>> ancestorInstances =
+        record.getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
+            .filter(ancestorKey -> ancestorKey > 0)
+            .distinct()
+            .collect(
+                Collectors.toMap(
+                    ancestorKey -> ancestorKey,
+                    ancestorKey ->
+                        Optional.ofNullable(elementInstanceState.getInstance(ancestorKey))));
+
+    return validateAncestorExistsAndIsActive(process, record, ancestorInstances)
+        .flatMap(
+            valid -> validateAncestorBelongsToProcessInstance(process, record, ancestorInstances))
         .map(valid -> VALID);
   }
 
   private Either<Rejection, ?> validateAncestorBelongsToProcessInstance(
-      final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+      final DeployedProcess process,
+      final ProcessInstanceModificationRecord record,
+      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
     final Set<String> rejectedAncestorKeys =
-        record.getActivateInstructions().stream()
-            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
-            .distinct()
-            .filter(ancestorKey -> ancestorKey > 0)
-            .map(elementInstanceState::getInstance)
+        ancestorInstances.values().stream()
+            .flatMap(Optional::stream)
             .filter(
                 ancestorInstance ->
                     ancestorInstance.getValue().getProcessInstanceKey()
@@ -435,7 +448,9 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private Either<Rejection, ?> validateAncestorExistsAndIsActive(
-      final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+      final DeployedProcess process,
+      final ProcessInstanceModificationRecord record,
+      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
     final Set<String> invalidAncestorKeys =
         record.getActivateInstructions().stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
@@ -443,8 +458,9 @@ public final class ProcessInstanceModificationProcessor
             .filter(ancestorKey -> ancestorKey > 0)
             .filter(
                 ancestorKey -> {
-                  final var elementInstance = elementInstanceState.getInstance(ancestorKey);
-                  return elementInstance == null || !elementInstance.isActive();
+                  final var elementInstanceOptional = ancestorInstances.get(ancestorKey);
+                  return elementInstanceOptional.isEmpty()
+                      || !elementInstanceOptional.get().isActive();
                 })
             .map(String::valueOf)
             .collect(Collectors.toSet());
