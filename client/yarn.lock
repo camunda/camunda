@@ -15319,10 +15319,10 @@ table-js@^7.3.0:
     min-dom "^3.2.1"
     selection-ranges "^3.0.3"
 
-table-js@^8.0.0:
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-8.0.0.tgz#8778f9685c06e7bca48cb2b153d8a39d85e8b3b9"
-  integrity sha512-3z1p4LkkfGmP/PxCY/vn6onIEaXSxOd28amkUhcf7GaofeP2o2kjNRn5jXFM64ho5YVjZuS9TrQOlD3y/YK85w==
+table-js@^8.0.1:
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/table-js/-/table-js-8.0.1.tgz#d0e6268eb33f7fd5c851f14888bb26d6f95b35ac"
+  integrity sha512-9Ehv2F8+PzOk+3RT6a2zaiTg60B5F9RdNSngk2egwUCJ1rsEmhtr+QOef8qk323iXqa6OiaJR7HjWV071a8VHg==
   dependencies:
     didi "^9.0.0"
     ids "^1.0.0"
