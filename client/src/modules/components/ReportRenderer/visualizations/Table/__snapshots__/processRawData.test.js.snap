@@ -126,6 +126,7 @@ Object {
         </span>
         dur1name
       </React.Fragment>,
+      "sortable": false,
       "title": "dur1name",
       "type": "flowNodeDurations",
     },
@@ -280,6 +281,7 @@ Object {
         </span>
         dur1Name
       </React.Fragment>,
+      "sortable": false,
       "title": "dur1Name",
       "type": "flowNodeDurations",
     },
@@ -294,6 +296,7 @@ Object {
         </span>
         dur2
       </React.Fragment>,
+      "sortable": false,
       "title": "dur2",
       "type": "flowNodeDurations",
     },

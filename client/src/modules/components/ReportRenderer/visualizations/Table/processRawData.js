@@ -172,6 +172,7 @@ export default function processRawData({
           id: 'flowNodeDuration:' + key,
           label: getLabelWithType(label, 'flowNodeDuration'),
           title: label,
+          sortable: false,
         };
       })
     );
