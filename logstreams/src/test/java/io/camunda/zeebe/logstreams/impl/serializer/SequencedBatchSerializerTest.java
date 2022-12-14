@@ -21,7 +21,6 @@ final class SequencedBatchSerializerTest {
   @Test
   void serializedBatchIsReadableAsLoggedEvents() {
     // given
-    final var serializer = new SequencedBatchSerializer();
     final var entries = List.of(TestEntry.ofKey(1), TestEntry.ofKey(2));
     final var batch = new SequencedBatch(1, -1, entries);
 

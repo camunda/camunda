@@ -7,8 +7,22 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
+import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.List;
+import org.agrona.MutableDirectBuffer;
 
-public record SequencedBatch(
-    long firstPosition, long sourcePosition, List<LogAppendEntry> entries) {}
+public record SequencedBatch(long firstPosition, long sourcePosition, List<LogAppendEntry> entries)
+    implements BufferWriter {
+
+  @Override
+  public int getLength() {
+    return SequencedBatchSerializer.calculateBatchSize(this);
+  }
+
+  @Override
+  public void write(final MutableDirectBuffer buffer, final int offset) {
+    SequencedBatchSerializer.serializeBatch(buffer, offset, this);
+  }
+}
