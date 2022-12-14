@@ -386,12 +386,12 @@ public class ProcessingScheduleServiceTest {
 
     @Override
     public long tryWrite(
-        final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+        final List<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
         return -1;
       }
 
-      appendEntries.forEach(entries::add);
+      entries.addAll(appendEntries);
       return entries.size();
     }
   }

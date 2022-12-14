@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.LongSupplier;
 import org.awaitility.Awaitility;
 
@@ -113,7 +114,7 @@ public class SyncLogStream implements SynchronousLogStream {
 
     @Override
     public long tryWrite(
-        final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+        final List<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
       return syncTryWrite(() -> delegate.tryWrite(appendEntries, sourcePosition));
     }
   }
