@@ -1,0 +1,51 @@
+# Backport merged pull request
+#
+# Some changes need to be copied to older versions.
+# We use the backport Github Action to automate this process.
+# You can activate this workflow to backport your changes.
+#
+# Usage:
+# 1. Label the pull request with a backport label (e.g. the label `backport maintenance/8.1` indicates
+#    that we want to backport this pull request to the `maintenance/8.1` branch).
+#   - if the pull request is not yet merged, it will be automatically backported as soon as the pull
+#     request is merged.
+#   - if the pull request is already merged, create a comment on the pull request that contains
+#     `/backport` to trigger this workflow.
+# 2. The Github Actions bot comments on the pull request once it finishes:
+#   - When successful, a new backport pull request was automatically created.
+#   - If it failed, you'll need to cherry-pick the commits manually.
+name: Backport merged pull request
+on:
+  pull_request:
+    types: [closed]
+  issue_comment:
+    types: [created]
+jobs:
+  backport:
+    name: Backport pull request
+    runs-on: ubuntu-latest
+    # Only run when pull request is merged
+    # or when a comment containing `/backport` is created by someone other than the
+    # https://github.com/backport-action bot user (user id: 97796249). Note that if you use your
+    # own PAT as `github_token`, that you should replace this id with yours.
+    if: >
+      (
+        github.event_name == 'pull_request' &&
+        github.event.pull_request.merged
+      ) || (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        github.event.comment.user.id != 97796249 &&
+        contains(github.event.comment.body, '/backport')
+      )
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # Token for git actions, e.g. git push
+          token: ${{ secrets.BACKPORT_ACTION_PAT }}
+      - name: Create backport pull requests
+        uses: zeebe-io/backport-action@v1-rc1
+        with:
+          # Optional
+          # Token to authenticate requests to GitHub
+          github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
