@@ -421,32 +421,6 @@ public final class ProcessInstanceModificationProcessor
         .map(valid -> VALID);
   }
 
-  private Either<Rejection, ?> validateAncestorBelongsToProcessInstance(
-      final DeployedProcess process,
-      final ProcessInstanceModificationRecord record,
-      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
-    final Set<String> rejectedAncestorKeys =
-        ancestorInstances.values().stream()
-            .flatMap(Optional::stream)
-            .filter(
-                ancestorInstance ->
-                    ancestorInstance.getValue().getProcessInstanceKey()
-                        != record.getProcessInstanceKey())
-            .map(ancestorInstance -> String.valueOf(ancestorInstance.getKey()))
-            .collect(Collectors.toSet());
-
-    if (rejectedAncestorKeys.isEmpty()) {
-      return VALID;
-    }
-
-    final String reason =
-        String.format(
-            ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE,
-            BufferUtil.bufferAsString(process.getBpmnProcessId()),
-            String.join("', '", rejectedAncestorKeys));
-    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
-  }
-
   private Either<Rejection, ?> validateAncestorExistsAndIsActive(
       final DeployedProcess process,
       final ProcessInstanceModificationRecord record,
@@ -474,6 +448,32 @@ public final class ProcessInstanceModificationProcessor
             ERROR_MESSAGE_ANCESTOR_NOT_FOUND,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", invalidAncestorKeys));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateAncestorBelongsToProcessInstance(
+      final DeployedProcess process,
+      final ProcessInstanceModificationRecord record,
+      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
+    final Set<String> rejectedAncestorKeys =
+        ancestorInstances.values().stream()
+            .flatMap(Optional::stream)
+            .filter(
+                ancestorInstance ->
+                    ancestorInstance.getValue().getProcessInstanceKey()
+                        != record.getProcessInstanceKey())
+            .map(ancestorInstance -> String.valueOf(ancestorInstance.getKey()))
+            .collect(Collectors.toSet());
+
+    if (rejectedAncestorKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", rejectedAncestorKeys));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
