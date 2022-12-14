@@ -32,10 +32,9 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.time.Duration;
@@ -45,39 +44,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-import org.agrona.LangUtil;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
-import org.mockito.verification.VerificationWithTimeout;
 
 class ProcessingScheduleServiceTest {
 
-  private static final long TIMEOUT_MILLIS = 2_000L;
-  private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
-
   private static final ProcessInstanceRecord RECORD = Records.processInstance(1);
 
-  private ControlledActorClock clock;
-  private ActorScheduler actorScheduler;
+  @RegisterExtension
+  ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
+
   private LifecycleSupplier lifecycleSupplier;
   private WriterAsyncSupplier writerAsyncSupplier;
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
   void before() {
-    clock = new ControlledActorClock();
-    final var builder =
-        ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(
-                Math.max(1, Runtime.getRuntime().availableProcessors() - 2))
-            .setIoBoundActorThreadCount(2)
-            .setActorClock(clock);
-
-    actorScheduler = builder.build();
-    actorScheduler.start();
-
     lifecycleSupplier = new LifecycleSupplier();
     writerAsyncSupplier = new WriterAsyncSupplier();
     final var processingScheduleService =
@@ -86,17 +70,7 @@ class ProcessingScheduleServiceTest {
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
-  }
-
-  @AfterEach
-  void clean() {
-    try {
-      actorScheduler.close();
-    } catch (final Exception e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    actorScheduler = null;
+    actorScheduler.workUntilDone();
   }
 
   @Test
@@ -106,9 +80,10 @@ class ProcessingScheduleServiceTest {
 
     // when
     scheduleService.runDelayed(Duration.ZERO, mockedTask);
+    actorScheduler.workUntilDone();
 
     // then
-    verify(mockedTask, TIMEOUT).execute(any());
+    verify(mockedTask).execute(any());
   }
 
   @Test
@@ -120,11 +95,12 @@ class ProcessingScheduleServiceTest {
     // when
     scheduleService.runDelayed(Duration.ZERO, mockedTask);
     scheduleService.runDelayed(Duration.ZERO, mockedTask2);
+    actorScheduler.workUntilDone();
 
     // then
     final var inOrder = inOrder(mockedTask, mockedTask2);
-    inOrder.verify(mockedTask, TIMEOUT).execute(any());
-    inOrder.verify(mockedTask2, TIMEOUT).execute(any());
+    inOrder.verify(mockedTask).execute(any());
+    inOrder.verify(mockedTask2).execute(any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -136,6 +112,8 @@ class ProcessingScheduleServiceTest {
 
     // when
     scheduleService.runDelayed(Duration.ZERO, mockedTask);
+    // The task will be resubmitted infinitely. So workUntilDone will never return.
+    actorScheduler.resume();
 
     // then
     verify(mockedTask, never()).execute(any());
@@ -149,6 +127,7 @@ class ProcessingScheduleServiceTest {
 
     // when
     scheduleService.runDelayed(Duration.ZERO, mockedTask);
+    actorScheduler.workUntilDone();
 
     // then
     verify(mockedTask, never()).execute(any());
@@ -162,11 +141,13 @@ class ProcessingScheduleServiceTest {
 
     // when
     scheduleService.runDelayed(Duration.ZERO, mockedTask);
+    // The task will be resubmitted infinitely. So workUntilDone will never return.
+    actorScheduler.resume();
     verify(mockedTask, never()).execute(any());
     lifecycleSupplier.currentPhase = Phase.PROCESSING;
 
     // then
-    verify(mockedTask, TIMEOUT).execute(any());
+    verify(mockedTask, timeout(2_000)).execute(any());
   }
 
   @Test
@@ -180,6 +161,7 @@ class ProcessingScheduleServiceTest {
 
     // when
     notOpenScheduleService.runDelayed(Duration.ZERO, mockedTask);
+    actorScheduler.workUntilDone();
 
     // then
     verify(mockedTask, never()).execute(any());
@@ -197,6 +179,7 @@ class ProcessingScheduleServiceTest {
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
+    actorScheduler.workUntilDone();
 
     // then
     assertThatThrownBy(actorFuture::join).hasMessageContaining("expected");
@@ -217,11 +200,12 @@ class ProcessingScheduleServiceTest {
           builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
           return builder.build();
         });
+    actorScheduler.workUntilDone();
 
     // then
-    verify(batchWriter, TIMEOUT).event();
-    verify(logEntryBuilder, TIMEOUT).key(1);
-    verify(batchWriter, TIMEOUT).tryWrite();
+    verify(batchWriter).event();
+    verify(logEntryBuilder).key(1);
+    verify(batchWriter).tryWrite();
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
@@ -268,10 +252,11 @@ class ProcessingScheduleServiceTest {
         builder -> {
           Loggers.PROCESS_PROCESSOR_LOGGER.debug("Running first timer");
           // force trigger second task
-          clock.addTime(Duration.ofMinutes(1));
+          actorScheduler.updateClock(Duration.ofMinutes(1));
           builder.appendCommandRecord(1, ACTIVATE_ELEMENT, RECORD);
           return builder.build();
         });
+    actorScheduler.workUntilDone();
 
     // then
     assertThat(timersExecuted.await(10, TimeUnit.SECONDS))
@@ -294,10 +279,15 @@ class ProcessingScheduleServiceTest {
     final var mockedTask = spy(new DummyTask());
 
     // when
-    scheduleService.runAtFixedRate(Duration.ofMillis(10), mockedTask);
+    scheduleService.runAtFixedRate(Duration.ofSeconds(1), mockedTask);
+    actorScheduler.workUntilDone();
+    for (int i = 0; i < 5; i++) {
+      actorScheduler.updateClock(Duration.ofSeconds(1));
+      actorScheduler.workUntilDone();
+    }
 
     // then
-    verify(mockedTask, TIMEOUT.atLeast(5)).execute(any());
+    verify(mockedTask, times(5)).execute(any());
   }
 
   @Test
@@ -307,7 +297,9 @@ class ProcessingScheduleServiceTest {
     scheduleService.runDelayed(Duration.ofMillis(200), mockedTask);
 
     // when
-    scheduleService.close();
+    final var closed = scheduleService.closeAsync();
+    actorScheduler.workUntilDone();
+    closed.join();
 
     // then
     verify(mockedTask, never()).execute(any());
