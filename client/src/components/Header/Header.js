@@ -90,27 +90,28 @@ function createAppBarProps() {
 function createNavBarProps(showEventBased, enterpriseMode) {
   const elements = [
     {
-      key: 'home',
-      label: t('navigation.homepage'),
+      key: 'dashboards',
+      label: t('navigation.dashboards'),
       routeProps: {
         element: NavItem,
-        name: t('navigation.homepage'),
-        linksTo: '/',
-        active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
-        breadcrumbsEntities: ['collection', 'dashboard', 'report'],
-      },
-    },
-    {
-      key: 'processes',
-      label: t('navigation.processes'),
-      routeProps: {
-        element: NavItem,
-        name: t('navigation.processes'),
+        name: t('navigation.dashboards'),
         linksTo: '/processes',
         active: ['/processes/', '/processes/*'],
         breadcrumbsEntities: ['report'],
       },
     },
+    {
+      key: 'collections',
+      label: t('navigation.collections'),
+      routeProps: {
+        element: NavItem,
+        name: t('navigation.collections'),
+        linksTo: '/',
+        active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
+        breadcrumbsEntities: ['collection', 'dashboard', 'report'],
+      },
+    },
+
     {
       key: 'analysis',
       label: t('navigation.analysis'),

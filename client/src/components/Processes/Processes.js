@@ -81,9 +81,9 @@ export function Processes({mightFail, user}) {
 
   return (
     <div className="Processes">
-      <PageTitle pageName={t('processes.processOverview')} />
+      <PageTitle pageName={t('processes.defaultDashboardAndKPI')} />
       <h1 className="processOverview">
-        {t('processes.processOverview')}
+        {t('processes.adoptionDashboard')}
         {processes && (
           <div className="info">
             <span>
@@ -104,7 +104,7 @@ export function Processes({mightFail, user}) {
         />
       )}
       <EntityList
-        name={t('processes.list')}
+        name={t('processes.defaultDashboardAndKPI')}
         displaySearchInfo={
           processes &&
           ((query, count) => (

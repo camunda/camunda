@@ -14,7 +14,7 @@ export const blankDashboardButton = Selector('.Button').withText('Blank Dashboar
 export const newReportOption = Selector('.CreateNewButton .Submenu');
 export const option = (text) => Selector('.DropdownOption').withText(text);
 export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
-export const homepageLink = Selector('.NavItem a').withText('Home');
+export const homepageLink = Selector('.NavItem a').withText('Collections');
 export const reportItem = Selector('.ListItem').filter(
   (node) => node.querySelector('.name .type').textContent.indexOf('Report') !== -1
 );

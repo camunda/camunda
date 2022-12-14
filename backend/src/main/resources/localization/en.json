@@ -3,9 +3,7 @@
   "appName": "Optimize",
   "appFullName": "Camunda Optimize",
   "navigation": {
-    "homepage": "Home",
     "analysis": "Analysis",
-    "processes": "Processes",
     "events": "Event Based Processes",
     "telemetry": "Telemetry Settings",
     "logout": "Logout",
@@ -15,7 +13,9 @@
     "userGuide": "User Guide",
     "help": "Help",
     "profile": "Profile",
-    "appSwitcher": "App Switcher"
+    "appSwitcher": "App Switcher",
+    "dashboards": "Dashboards",
+    "collections": "Collections"
   },
   "login": {
     "label": "Log in",
@@ -176,7 +176,8 @@
   "processes": {
     "label": "process",
     "label-plural": "processes",
-    "list": "Processes List",
+    "adoptionDashboard": "Adoption Dashboard",
+    "defaultDashboardAndKPI": "Process Default Dashboards and KPIs",
     "empty": "There are no processes imported yet",
     "owner": "Owner",
     "processOwner": "Process Owner",
@@ -189,7 +190,6 @@
     "goalRemoved": "Goals removed from '{processName}' process",
     "ownerInfo": "The process owner is responsible for business metrics for the process. You can use the process owner to sort and filter processes.",
     "ownerRemoveWarning": "The '{owner}' Owner will be removed from the process",
-    "processOverview": "Processes Overview",
     "configureProcess": "Configure Process",
     "createDefaultDashboard": "Create New Default Dashboard",
     "createDashboardMessage": "There is no dashboard for this process yet. Would you like Optimize to automatically create a dashboard based on a process template for you?",

@@ -131,7 +131,7 @@ export async function cancel(t) {
 }
 
 export async function gotoOverview(t) {
-  await t.click(Selector('a').withText('Home'));
+  await t.click(Selector('a').withText('Collections'));
 }
 
 export async function createNewDashboard(t) {

@@ -25,7 +25,7 @@ export default withErrorHandling(
         (entities) =>
           this.setState({
             availableCollections: [
-              {id: null, entityType: 'collection', name: t('navigation.homepage')},
+              {id: null, entityType: 'collection', name: t('navigation.collections')},
               ...entities,
             ].filter(
               ({entityType, id}) =>
