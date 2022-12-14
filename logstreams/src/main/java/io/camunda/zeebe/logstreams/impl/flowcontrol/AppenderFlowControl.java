@@ -11,6 +11,7 @@ import com.netflix.concurrency.limits.Limiter;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.camunda.zeebe.util.Environment;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +33,19 @@ public final class AppenderFlowControl {
   /**
    * Tries to acquire a free in-flight spot, applying backpressure as needed.
    *
-   * @return An {@link InFlightAppend} if append was accepted, null otherwise.
+   * @return An Optional containing a {@link InFlightAppend} if append was accepted, an empty
+   *     Optional otherwise.
    */
-  public InFlightAppend tryAcquire() {
-    return limiter
-        .acquire(null)
-        .map(limiterListener -> new InFlightAppend(errorHandler, limiterListener, metrics))
-        .orElseGet(
-            () -> {
-              metrics.increaseDeferredAppends();
-              LOG.trace("Skipping append due to backpressure");
-              return null;
-            });
+  public Optional<InFlightAppend> tryAcquire() {
+    final var inFlightAppend =
+        limiter
+            .acquire(null)
+            .map(limiterListener -> new InFlightAppend(errorHandler, limiterListener, metrics));
+    if (inFlightAppend.isEmpty()) {
+      metrics.increaseDeferredAppends();
+      LOG.trace("Skipping append due to backpressure");
+    }
+    return inFlightAppend;
   }
 
   private Limiter<Void> configureLimiter() {
