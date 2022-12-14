@@ -19,9 +19,9 @@ spec:
         app: elasticsearch
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: agents-n1-standard-8-physsd-stable
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
       tolerations:
-        - key: "agents-n1-standard-8-physsd-stable"
+        - key: "agents-n1-standard-8-netssd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       volumes:

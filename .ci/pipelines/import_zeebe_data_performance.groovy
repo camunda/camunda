@@ -5,7 +5,7 @@
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 
-def static NODE_POOL() { return "agents-n1-standard-8-physsd-stable" }
+def static NODE_POOL() { return "agents-n1-standard-8-netssd-stable" }
 
 String gCloudAndMavenAgent() {
   """
