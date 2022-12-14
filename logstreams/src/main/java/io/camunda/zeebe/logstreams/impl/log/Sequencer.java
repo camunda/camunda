@@ -63,8 +63,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   /** {@inheritDoc} */
   @Override
-  public long tryWrite(
-      final List<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+  public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
     if (isClosed) {
       LOG.warn("Rejecting write of {}, sequencer is closed", appendEntries);
       return -1;
@@ -86,11 +85,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
     lock.lock();
     try {
       currentPosition = position;
-      //noinspection unchecked
-      isEnqueued =
-          queue.offer(
-              new SequencedBatch(
-                  currentPosition, sourcePosition, (List<LogAppendEntry>) appendEntries));
+      isEnqueued = queue.offer(new SequencedBatch(currentPosition, sourcePosition, appendEntries));
       if (isEnqueued) {
         position = currentPosition + batchSize;
       }

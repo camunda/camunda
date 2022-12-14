@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
+import java.util.Arrays;
 import java.util.Optional;
 
 public class StreamProcessingComposite {
@@ -122,7 +123,9 @@ public class StreamProcessingComposite {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    return streams.newLogStreamWriter(getLogName(partitionId)).tryWrite(recordsToWrite);
+    return streams
+        .newLogStreamWriter(getLogName(partitionId))
+        .tryWrite(Arrays.asList(recordsToWrite));
   }
 
   public long writeCommandOnPartition(

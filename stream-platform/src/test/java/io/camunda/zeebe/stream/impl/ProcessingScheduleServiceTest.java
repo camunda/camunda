@@ -385,8 +385,7 @@ public class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public long tryWrite(
-        final List<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+    public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
         return -1;
       }

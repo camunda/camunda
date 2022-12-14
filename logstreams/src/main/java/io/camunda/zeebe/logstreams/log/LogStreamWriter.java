@@ -8,11 +8,8 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Spliterator;
-import java.util.stream.StreamSupport;
 
 @FunctionalInterface
 public interface LogStreamWriter {
@@ -39,6 +36,7 @@ public interface LogStreamWriter {
   default long tryWrite(final LogAppendEntry appendEntry) {
     return tryWrite(appendEntry, LogEntryDescriptor.KEY_NULL_VALUE);
   }
+
   /** {@inheritDoc} */
   default long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
     return tryWrite(Collections.singletonList(appendEntry), sourcePosition);
@@ -52,42 +50,8 @@ public interface LogStreamWriter {
    * @return the last (i.e. highest) event position, a negative value if fails to write the events,
    *     or 0 if the batch is empty
    */
-  default long tryWrite(final LogAppendEntry... appendEntries) {
-    return tryWrite(Arrays.asList(appendEntries));
-  }
-
-  /**
-   * Attempts to write the events to the underlying stream. This method is atomic, either all events
-   * are written, or none are.
-   *
-   * @param appendEntries a set of entries to append; these will be appended in the order in which
-   *     the collection is iterated.
-   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
-   *     or 0 if the batch is empty
-   */
-  default long tryWrite(final Iterable<? extends LogAppendEntry> appendEntries) {
+  default long tryWrite(final List<LogAppendEntry> appendEntries) {
     return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
-  }
-
-  /**
-   * Attempts to write the events to the underlying stream. This method is atomic, either all events
-   * are written, or none are.
-   *
-   * @param appendEntries a set of entries to append; these will be appended in the order in which
-   *     the collection is iterated.
-   * @param sourcePosition a back-pointer to the record whose processing created these entries
-   * @return the last (i.e. highest) event position, a negative value if fails to write the events,
-   *     or 0 if the batch is empty
-   */
-  default long tryWrite(
-      final Iterable<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
-    return tryWrite(
-        StreamSupport.stream(
-                appendEntries::spliterator,
-                Spliterator.IMMUTABLE | Spliterator.NONNULL | Spliterator.ORDERED,
-                false)
-            .toList(),
-        sourcePosition);
   }
 
   /**
@@ -99,5 +63,5 @@ public interface LogStreamWriter {
    * @return the last (i.e. highest) event position, a negative value if fails to write the events,
    *     or 0 if the batch is empty
    */
-  long tryWrite(final List<? extends LogAppendEntry> appendEntries, final long sourcePosition);
+  long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition);
 }

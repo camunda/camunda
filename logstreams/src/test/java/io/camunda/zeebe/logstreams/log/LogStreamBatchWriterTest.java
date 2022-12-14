@@ -83,7 +83,7 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldReturnPositionOfLastEvent() {
     // when
-    final long position = writer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2));
+    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -129,7 +129,7 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldWriteEventWithKey() {
     // when
-    final long position = writer.tryWrite(TestEntry.ofKey(123L), TestEntry.ofKey(456L));
+    final long position = writer.tryWrite(List.of(TestEntry.ofKey(123L), TestEntry.ofKey(456L)));
 
     // then
     assertThat(getWrittenEvents(position))
@@ -153,7 +153,7 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldWriteEventWithoutSourceEvent() {
     // when
-    final long position = writer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2));
+    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
 
     // then
     final List<LoggedEvent> events = getWrittenEvents(position);
@@ -167,8 +167,9 @@ public final class LogStreamBatchWriterTest {
     // when
     final long position =
         writer.tryWrite(
-            TestEntry.ofKey(LogEntryDescriptor.KEY_NULL_VALUE),
-            TestEntry.ofKey(LogEntryDescriptor.KEY_NULL_VALUE));
+            List.of(
+                TestEntry.ofKey(LogEntryDescriptor.KEY_NULL_VALUE),
+                TestEntry.ofKey(LogEntryDescriptor.KEY_NULL_VALUE)));
 
     // then
     assertThat(getWrittenEvents(position)).extracting(LoggedEvent::getKey).contains(-1L);
@@ -177,7 +178,7 @@ public final class LogStreamBatchWriterTest {
   @Test
   public void shouldNotFailToWriteBatchWithoutEvents() {
     // when
-    final long pos = writer.tryWrite();
+    final long pos = writer.tryWrite(List.of());
 
     // then
     assertThat(pos).isEqualTo(0);
@@ -199,7 +200,8 @@ public final class LogStreamBatchWriterTest {
   public void shouldFailToWriteEventWithoutValue() {
     // when
     final long pos =
-        writer.tryWrite(TestEntry.builder().withRecordValue(null).build(), TestEntry.ofDefaults());
+        writer.tryWrite(
+            List.of(TestEntry.builder().withRecordValue(null).build(), TestEntry.ofDefaults()));
 
     // then
     assertThat(pos).isEqualTo(0);

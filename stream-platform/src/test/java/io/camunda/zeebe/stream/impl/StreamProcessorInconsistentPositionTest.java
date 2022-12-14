@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,19 +38,21 @@ final class StreamProcessorInconsistentPositionTest {
         // the same backend. Both logstream will open a dispatcher with start at position one.
 
         firstWriter.tryWrite(
-            RecordToWrite.command()
-                .processInstance(
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
-            RecordToWrite.command()
-                .processInstance(
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+            List.of(
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1))));
         secondWriter.tryWrite(
-            RecordToWrite.command()
-                .processInstance(
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
-            RecordToWrite.command()
-                .processInstance(
-                    ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
+            List.of(
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
+                RecordToWrite.command()
+                    .processInstance(
+                        ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1))));
         // After writing we have at the logstorage: [1, 2, 1, 2], which should be detected
 
         // when

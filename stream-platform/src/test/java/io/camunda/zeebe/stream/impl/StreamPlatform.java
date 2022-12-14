@@ -40,6 +40,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -313,7 +314,7 @@ public final class StreamPlatform {
   }
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
-    return logContext.setupWriter().tryWrite(recordsToWrite);
+    return logContext.setupWriter().tryWrite(Arrays.asList(recordsToWrite));
   }
 
   public void closeStreamProcessor() throws Exception {

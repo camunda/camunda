@@ -47,7 +47,7 @@ final class SequencerTest {
 
     // when
     sequencer.registerConsumer(consumer);
-    sequencer.tryWrite(TestEntry.ofDefaults(), TestEntry.ofDefaults());
+    sequencer.tryWrite(List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults()));
 
     // then
     Mockito.verify(consumer).signal();
@@ -114,7 +114,7 @@ final class SequencerTest {
         .pollInSameThread()
         .pollInterval(Duration.ZERO)
         .until(
-            () -> sequencer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2)),
+            () -> sequencer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2))),
             (result) -> result <= 0);
   }
 
@@ -176,7 +176,7 @@ final class SequencerTest {
 
     // when
     sequencer.registerConsumer(consumer);
-    final var result = sequencer.tryWrite(TestEntry.ofKey(1), TestEntry.ofKey(2));
+    final var result = sequencer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
 
     // then
     Assertions.assertThat(result).isNegative();

@@ -340,7 +340,7 @@ public final class ProcessingStateMachine {
             () -> {
               final long position =
                   logStreamWriter.tryWrite(
-                      currentProcessingResult.getRecordBatch(), sourceRecordPosition);
+                      currentProcessingResult.getRecordBatch().entries(), sourceRecordPosition);
               if (position > 0) {
                 writtenPosition = position;
               }

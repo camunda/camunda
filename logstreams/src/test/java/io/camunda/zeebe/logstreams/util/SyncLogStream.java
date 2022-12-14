@@ -113,8 +113,7 @@ public class SyncLogStream implements SynchronousLogStream {
     }
 
     @Override
-    public long tryWrite(
-        final List<? extends LogAppendEntry> appendEntries, final long sourcePosition) {
+    public long tryWrite(final List<LogAppendEntry> appendEntries, final long sourcePosition) {
       return syncTryWrite(() -> delegate.tryWrite(appendEntries, sourcePosition));
     }
   }
