@@ -108,6 +108,12 @@ public final class ProcessInstanceModificationProcessor
       that would result in the activation of multi-instance element '%s', which is currently \
       unsupported.""";
 
+  private static final String ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE =
+      """
+          Expected to modify instance of process '%s' but it contains one or more activate \
+          instructions with an ancestor scope key that does not belong to the modified process \
+          instance: '%s'""";
+
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.UNSPECIFIED,
@@ -396,7 +402,36 @@ public final class ProcessInstanceModificationProcessor
 
   private Either<Rejection, ?> validateAncestorKeys(
       final DeployedProcess process, final ProcessInstanceModificationRecord record) {
-    return validateAncestorExistsAndIsActive(process, record);
+    return validateAncestorExistsAndIsActive(process, record)
+        .flatMap(valid -> validateAncestorBelongsToProcessInstance(process, record))
+        .map(valid -> VALID);
+  }
+
+  private Either<Rejection, ?> validateAncestorBelongsToProcessInstance(
+      final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+    final Set<String> rejectedAncestorKeys =
+        record.getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
+            .distinct()
+            .filter(ancestorKey -> ancestorKey > 0)
+            .map(elementInstanceState::getInstance)
+            .filter(
+                ancestorInstance ->
+                    ancestorInstance.getValue().getProcessInstanceKey()
+                        != record.getProcessInstanceKey())
+            .map(ancestorInstance -> String.valueOf(ancestorInstance.getKey()))
+            .collect(Collectors.toSet());
+
+    if (rejectedAncestorKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", rejectedAncestorKeys));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   private Either<Rejection, ?> validateAncestorExistsAndIsActive(
