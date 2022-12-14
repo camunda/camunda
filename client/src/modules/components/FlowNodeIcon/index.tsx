@@ -67,6 +67,9 @@ import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon
 
 import {ReactComponent as FlowNodeEventTerminateEnd} from 'modules/components/Icon/flow-node-event-terminate-end.svg';
 
+import {ReactComponent as FlowNodeLinkEventIntermediateCatch} from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg';
+import {ReactComponent as FlowNodeLinkEventIntermediateThrow} from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg';
+
 const getSVGComponent = (
   businessObject: BusinessObject,
   isMultiInstanceBody: boolean
@@ -79,6 +82,7 @@ const getSVGComponent = (
         return FlowNodeTaskMulti;
     }
   }
+
   switch (getEventType(businessObject)) {
     case 'bpmn:ErrorEventDefinition':
       switch (businessObject.$type) {
@@ -130,6 +134,14 @@ const getSVGComponent = (
       }
     case 'bpmn:TerminateEventDefinition':
       return FlowNodeEventTerminateEnd;
+
+    case 'bpmn:LinkEventDefinition':
+      switch (businessObject.$type) {
+        case 'bpmn:IntermediateCatchEvent':
+          return FlowNodeLinkEventIntermediateCatch;
+        case 'bpmn:IntermediateThrowEvent':
+          return FlowNodeLinkEventIntermediateThrow;
+      }
   }
 
   switch (businessObject.$type) {

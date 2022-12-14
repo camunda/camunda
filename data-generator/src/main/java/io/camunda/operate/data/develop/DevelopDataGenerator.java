@@ -161,6 +161,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     //error process
     jobWorkers.add(progressErrorTask());
 
+    //link event process
+    jobWorkers.add(progressRetryTask());
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
@@ -342,6 +345,33 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         .open();
   }
 
+  private JobWorker progressRetryTask() {
+    return client.newWorker()
+        .jobType("retryTask")
+        .handler((jobClient, job) ->
+        {
+          final int scenarioCount = random.nextInt(4);
+          switch (scenarioCount) {
+          case 0:
+          case 1:
+            //retry
+            jobClient.newCompleteCommand(job.getKey()).variables("{\"retry\": true}").send().join();
+            break;
+          case 2:
+            //incident
+            jobClient.newFailCommand(job.getKey()).retries(0).send().join();
+            break;
+          default:
+            //complete task and process instance
+            jobClient.newCompleteCommand(job.getKey()).variables("{\"retry\": false}").send().join();
+            break;
+          }
+        })
+        .name("operate")
+        .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+        .open();
+  }
+
   @Override
   protected void deployVersion1() {
     super.deployVersion1();
@@ -374,6 +404,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(client, "develop/undefined-task.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "develop/dataStore.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/linkEvents.bpmn");
+
   }
 
   @Override
@@ -406,6 +439,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "error-end-process", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "terminateEndEvent", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "dataStoreProcess", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "linkEventProcess", null));
       }
 
       if (version == 2) {
