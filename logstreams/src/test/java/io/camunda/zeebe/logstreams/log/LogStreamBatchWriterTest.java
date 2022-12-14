@@ -21,7 +21,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,11 +30,11 @@ public final class LogStreamBatchWriterTest {
   private final LogStreamRule logStreamRule = LogStreamRule.startByDefault();
   private final LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(logStreamRule).around(readerRule);
-  private LogStreamBatchWriter writer;
+  private LogStreamWriter writer;
 
   @Before
   public void setUp() {
-    writer = logStreamRule.getLogStream().newLogStreamBatchWriter();
+    writer = logStreamRule.getLogStream().newLogStreamWriter();
   }
 
   private List<LoggedEvent> getWrittenEvents(final long position) {
@@ -63,22 +62,6 @@ public final class LogStreamBatchWriterTest {
         .isEqualTo(position);
 
     return events;
-  }
-
-  private DirectBuffer getValueBuffer(final LoggedEvent event) {
-    final DirectBuffer buffer = event.getValueBuffer();
-    final int offset = event.getValueOffset();
-    final int length = event.getValueLength();
-
-    return new UnsafeBuffer(buffer, offset, length);
-  }
-
-  private DirectBuffer getMetadataBuffer(final LoggedEvent event) {
-    final DirectBuffer buffer = event.getMetadata();
-    final int offset = event.getMetadataOffset();
-    final int length = event.getMetadataLength();
-
-    return new UnsafeBuffer(buffer, offset, length);
   }
 
   @Test

@@ -243,8 +243,7 @@ public final class StreamProcessorRule implements TestRule {
       }
 
       streamProcessingComposite =
-          new StreamProcessingComposite(
-              streams, startPartitionId, zeebeDbFactory, actorSchedulerRule.get());
+          new StreamProcessingComposite(streams, startPartitionId, zeebeDbFactory);
     }
 
     @Override

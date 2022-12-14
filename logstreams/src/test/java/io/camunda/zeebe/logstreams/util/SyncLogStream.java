@@ -9,7 +9,6 @@ package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
@@ -75,18 +74,8 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public LogStreamBatchWriter newLogStreamBatchWriter() {
-    return logStream.newLogStreamBatchWriter().join();
-  }
-
-  @Override
   public SynchronousLogStreamWriter newSyncLogStreamWriter() {
     return new Writer(newLogStreamWriter());
-  }
-
-  @Override
-  public SynchronousLogStreamBatchWriter newSyncLogStreamBatchWriter() {
-    return new BatchWriter(newLogStreamBatchWriter());
   }
 
   @Override
@@ -120,24 +109,6 @@ public class SyncLogStream implements SynchronousLogStream {
 
     private Writer(final LogStreamWriter delegate) {
       this.delegate = delegate;
-    }
-
-    @Override
-    public long tryWrite(final LogAppendEntry appendEntry, final long sourcePosition) {
-      return syncTryWrite(() -> delegate.tryWrite(appendEntry, sourcePosition));
-    }
-  }
-
-  private final class BatchWriter implements SynchronousLogStreamBatchWriter {
-    private final LogStreamBatchWriter delegate;
-
-    private BatchWriter(final LogStreamBatchWriter delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public boolean canWriteEvents(final int eventCount, final int batchSize) {
-      return delegate.canWriteEvents(eventCount, batchSize);
     }
 
     @Override

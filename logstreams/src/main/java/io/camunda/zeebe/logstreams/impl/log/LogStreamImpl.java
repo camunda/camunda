@@ -10,8 +10,8 @@ package io.camunda.zeebe.logstreams.impl.log;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorage.CommitListener;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
@@ -171,12 +171,7 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
-  public ActorFuture<LogStreamBatchWriter> newLogStreamWriter() {
-    return createNewLogStreamWriter();
-  }
-
-  @Override
-  public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
+  public ActorFuture<LogStreamWriter> newLogStreamWriter() {
     return createNewLogStreamWriter();
   }
 
@@ -190,13 +185,13 @@ public final class LogStreamImpl extends Actor
     actor.call(() -> recordAwaiters.remove(recordAwaiter));
   }
 
-  private ActorFuture<LogStreamBatchWriter> createNewLogStreamWriter() {
+  private ActorFuture<LogStreamWriter> createNewLogStreamWriter() {
     // this should be replaced after refactoring the actor control
     if (actor.isClosed()) {
       return CompletableActorFuture.completedExceptionally(new RuntimeException("Actor is closed"));
     }
 
-    final var writerFuture = new CompletableActorFuture<LogStreamBatchWriter>();
+    final var writerFuture = new CompletableActorFuture<LogStreamWriter>();
     actor.run(() -> createWriter(writerFuture));
     return writerFuture;
   }
@@ -216,7 +211,7 @@ public final class LogStreamImpl extends Actor
     return newReader;
   }
 
-  private void createWriter(final CompletableActorFuture<LogStreamBatchWriter> writerFuture) {
+  private void createWriter(final CompletableActorFuture<LogStreamWriter> writerFuture) {
 
     final var onOpenAppenderConsumer = onOpenAppender(writerFuture);
 
@@ -228,7 +223,7 @@ public final class LogStreamImpl extends Actor
   }
 
   private BiConsumer<LogStorageAppender, Throwable> onOpenAppender(
-      final CompletableActorFuture<LogStreamBatchWriter> writerFuture) {
+      final CompletableActorFuture<LogStreamWriter> writerFuture) {
     return (openedAppender, errorOnOpeningAppender) -> {
       if (errorOnOpeningAppender == null) {
         writerFuture.complete(sequencer);

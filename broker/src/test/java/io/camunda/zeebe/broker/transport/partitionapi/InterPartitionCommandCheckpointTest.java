@@ -58,7 +58,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldHandleMissingCheckpoints() {
     // given
-    when(logStreamWriter.tryWrite(any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
@@ -72,7 +72,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldCreateFirstCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
     sender.setCheckpointId(1);
 
     // when
@@ -89,7 +89,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldUpdateExistingCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 
@@ -106,7 +106,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotRecreateExistingCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
     receiver.setCheckpointId(5);
     sender.setCheckpointId(5);
 
@@ -122,7 +122,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotOverwriteNewerCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(any())).thenReturn(1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(1L);
     receiver.setCheckpointId(6);
     sender.setCheckpointId(5);
 
@@ -138,7 +138,7 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldNotWriteCommandIfCheckpointCreateFailed() {
     // given
-    when(logStreamWriter.tryWrite(any())).thenReturn(-1L, 1L);
+    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(-1L, 1L);
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 

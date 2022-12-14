@@ -11,7 +11,7 @@ import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FR
 
 import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorCondition;
 import java.io.Closeable;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * consumer. The sequencer does not copy or serialize entries, it only keeps a reference to them
  * until they are handed off to the consumer.
  */
-final class Sequencer implements LogStreamBatchWriter, Closeable {
+final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
   private final int partitionId;
   private final int maxFragmentSize;

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -341,14 +341,13 @@ public class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class WriterAsyncSupplier
-      implements Supplier<ActorFuture<LogStreamBatchWriter>> {
+  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamWriter>> {
     private final TestWriter writer = new TestWriter();
-    AtomicReference<ActorFuture<LogStreamBatchWriter>> writerFutureRef =
+    AtomicReference<ActorFuture<LogStreamWriter>> writerFutureRef =
         new AtomicReference<>(CompletableActorFuture.completed(writer));
 
     @Override
-    public ActorFuture<LogStreamBatchWriter> get() {
+    public ActorFuture<LogStreamWriter> get() {
       return writerFutureRef.get();
     }
   }
@@ -376,7 +375,7 @@ public class ProcessingScheduleServiceTest {
     }
   }
 
-  private static final class TestWriter implements LogStreamBatchWriter {
+  private static final class TestWriter implements LogStreamWriter {
     private final List<LogAppendEntry> entries = new CopyOnWriteArrayList<>();
     private final AtomicReference<BooleanSupplier> acceptWrites = new AtomicReference<>(() -> true);
 

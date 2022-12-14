@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.Engine;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -308,15 +307,6 @@ public final class TestStreams {
         .map(c -> c.streamProcessor)
         .orElseThrow(
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
-  }
-
-  public LogStreamBatchWriter setupBatchWriter(
-      final String logName, final RecordToWrite[] recordToWrites) {
-    final SynchronousLogStream logStream = getLogStream(logName);
-    final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
-    logStreamBatchWriter.tryWrite(recordToWrites);
-
-    return logStreamBatchWriter;
   }
 
   public static class FluentLogWriter {

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 
@@ -57,21 +56,10 @@ public interface SynchronousLogStream extends AutoCloseable {
   LogStreamWriter newLogStreamWriter();
 
   /**
-   * @return a new created log stream batch writer
-   */
-  LogStreamBatchWriter newLogStreamBatchWriter();
-
-  /**
    * Returns a wrapped {@link #newLogStreamWriter()} which ensures that every write returns only
    * when the entry has been added to the underlying storage.
    */
   SynchronousLogStreamWriter newSyncLogStreamWriter();
-
-  /**
-   * Returns a wrapped {@link #newLogStreamBatchWriter()} ()} which ensures that every write returns
-   * only when the entry has been added to the underlying storage.
-   */
-  SynchronousLogStreamBatchWriter newSyncLogStreamBatchWriter();
 
   /**
    * Force waiting until the given position has been persisted in the underlying storage.
@@ -85,10 +73,4 @@ public interface SynchronousLogStream extends AutoCloseable {
    * has been written to the underlying storage.
    */
   interface SynchronousLogStreamWriter extends LogStreamWriter {}
-
-  /**
-   * Marker interface for a {@link LogStreamBatchWriter} implementation which only returns when the
-   * entry has been written to the underlying storage.
-   */
-  interface SynchronousLogStreamBatchWriter extends LogStreamBatchWriter {}
 }

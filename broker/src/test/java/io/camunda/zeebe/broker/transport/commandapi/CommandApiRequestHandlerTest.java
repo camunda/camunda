@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
@@ -37,6 +38,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
@@ -163,7 +165,7 @@ public class CommandApiRequestHandlerTest {
     handleRequest(request);
 
     // then
-    verify(logWriter).tryWrite(any());
+    verify(logWriter).tryWrite(Mockito.<LogAppendEntry>any());
   }
 
   private CompletableFuture<Either<ErrorResponse, ExecuteCommandResponse>> handleRequest(

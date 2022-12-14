@@ -29,21 +29,21 @@ final class StreamProcessorInconsistentPositionTest {
     final var listLogStorage = new ListLogStorage();
     try (final var firstLogCtx = streamPlatform.createLogContext(listLogStorage, 1)) {
       try (final var secondLogCtx = streamPlatform.createLogContext(listLogStorage, 2)) {
-        final var firstBatchWriter = firstLogCtx.setupBatchWriter();
-        final var secondBatchWriter = secondLogCtx.setupBatchWriter();
+        final var firstWriter = firstLogCtx.setupWriter();
+        final var secondWriter = secondLogCtx.setupWriter();
 
         // We write two record batches with different logstreams.
         // The logstreams are backed with the same logstorage, which means records are written to
         // the same backend. Both logstream will open a dispatcher with start at position one.
 
-        firstBatchWriter.tryWrite(
+        firstWriter.tryWrite(
             RecordToWrite.command()
                 .processInstance(
                     ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),
             RecordToWrite.command()
                 .processInstance(
                     ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)));
-        secondBatchWriter.tryWrite(
+        secondWriter.tryWrite(
             RecordToWrite.command()
                 .processInstance(
                     ProcessInstanceIntent.ACTIVATE_ELEMENT, Records.processInstance(1)),

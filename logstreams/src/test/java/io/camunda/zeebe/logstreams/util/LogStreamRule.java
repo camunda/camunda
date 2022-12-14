@@ -8,9 +8,9 @@
 package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
@@ -25,7 +25,7 @@ public final class LogStreamRule extends ExternalResource {
   private final Consumer<LogStreamBuilder> streamBuilder;
   private SynchronousLogStream logStream;
   private LogStreamReader logStreamReader;
-  private LogStreamBatchWriter logStreamWriter;
+  private LogStreamWriter logStreamWriter;
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
   private ListLogStorage listLogStorage;
@@ -111,13 +111,13 @@ public final class LogStreamRule extends ExternalResource {
     return logStreamReader;
   }
 
-  public LogStreamBatchWriter getLogStreamBatchWriter() {
+  public LogStreamWriter getLogStreamWriter() {
     if (logStream == null) {
       throw new IllegalStateException("Log stream is not open!");
     }
 
     if (logStreamWriter == null) {
-      logStreamWriter = logStream.newSyncLogStreamBatchWriter();
+      logStreamWriter = logStream.newLogStreamWriter();
     }
 
     return logStreamWriter;
