@@ -298,7 +298,7 @@ public final class ProcessInstanceModificationProcessor
         .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
-        .flatMap(valid -> validateAncestorExistsAndIsActive(process, value))
+        .flatMap(valid -> validateAncestorKeys(process, value))
         .map(valid -> VALID);
   }
 
@@ -392,6 +392,11 @@ public final class ProcessInstanceModificationProcessor
             "The activation of elements with type '%s' is not supported. Supported element types are: %s"
                 .formatted(usedUnsupportedElementTypes, SUPPORTED_ELEMENT_TYPES));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateAncestorKeys(
+      final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+    return validateAncestorExistsAndIsActive(process, record);
   }
 
   private Either<Rejection, ?> validateAncestorExistsAndIsActive(
