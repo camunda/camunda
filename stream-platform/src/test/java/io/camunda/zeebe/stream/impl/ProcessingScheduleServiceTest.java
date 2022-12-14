@@ -46,7 +46,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class ProcessingScheduleServiceTest {
+class ProcessingScheduleServiceTest {
 
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
@@ -58,7 +58,7 @@ public class ProcessingScheduleServiceTest {
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
-  public void before() {
+  void before() {
     clock = new ControlledActorClock();
     final var builder =
         ActorScheduler.newActorScheduler()
@@ -81,7 +81,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @AfterEach
-  public void clean() {
+  void clean() {
     try {
       actorScheduler.close();
     } catch (final Exception e) {
@@ -92,7 +92,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTask() {
+  void shouldExecuteScheduledTask() {
     // given
     final var mockedTask = spy(new DummyTask());
 
@@ -104,7 +104,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTaskInRightOrder() {
+  void shouldExecuteScheduledTaskInRightOrder() {
     // given
     final var mockedTask = spy(new DummyTask());
     final var mockedTask2 = spy(new DummyTask());
@@ -121,7 +121,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
+  void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
     // given
     lifecycleSupplier.currentPhase = Phase.INITIAL;
     final var mockedTask = spy(new DummyTask());
@@ -134,7 +134,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotExecuteScheduledTaskIfAborted() {
+  void shouldNotExecuteScheduledTaskIfAborted() {
     // given
     lifecycleSupplier.isAborted = true;
     final var mockedTask = spy(new DummyTask());
@@ -147,7 +147,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldExecuteScheduledTaskInProcessing() {
+  void shouldExecuteScheduledTaskInProcessing() {
     // given
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var mockedTask = spy(new DummyTask());
@@ -162,7 +162,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
+  void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
     // given
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var notOpenScheduleService =
@@ -178,7 +178,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldFailActorIfWriterCantBeRetrieved() {
+  void shouldFailActorIfWriterCantBeRetrieved() {
     // given
     writerAsyncSupplier.writerFutureRef.set(
         CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
@@ -195,7 +195,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldWriteRecordAfterTaskWasExecuted() {
+  void shouldWriteRecordAfterTaskWasExecuted() {
     // given
 
     // when
@@ -217,7 +217,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
-  public void shouldPreserveOrderingOfWritesEvenWithRetries() {
+  void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given - in order to make sure we would interleave tasks without the fix for #10240, we need
     // to make sure we retry at least twice, such that the second task can be executed in between
     // both invocations. ensure both tasks have an expiry far away enough such that they expire on
@@ -271,7 +271,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldScheduleOnFixedRate() {
+  void shouldScheduleOnFixedRate() {
     // given
     final var mockedTask = spy(new DummyTask());
 
@@ -283,7 +283,7 @@ public class ProcessingScheduleServiceTest {
   }
 
   @Test
-  public void shouldNotRunScheduledTasksAfterClosed() {
+  void shouldNotRunScheduledTasksAfterClosed() {
     // given
     final var mockedTask = spy(new DummyTask());
     scheduleService.runDelayed(Duration.ofMillis(200), mockedTask);
