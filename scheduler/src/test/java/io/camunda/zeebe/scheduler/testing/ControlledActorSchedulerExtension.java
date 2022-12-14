@@ -18,6 +18,7 @@ import io.camunda.zeebe.scheduler.TaskScheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.extension.AfterEachCallback;
@@ -30,6 +31,7 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
 
   private ActorScheduler actorScheduler;
   private ControlledActorThread controlledActorTaskRunner;
+  private ControlledActorClock clock;
 
   public ControlledActorSchedulerExtension() {
     this(builder -> {});
@@ -47,7 +49,7 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
     final ControlledActorThreadFactory actorTaskRunnerFactory = new ControlledActorThreadFactory();
-    final ControlledActorClock clock = new ControlledActorClock();
+    clock = new ControlledActorClock();
     final ActorTimerQueue timerQueue = new ActorTimerQueue(clock, 1);
     final ActorSchedulerBuilder builder =
         ActorScheduler.newActorScheduler()
@@ -69,6 +71,14 @@ public class ControlledActorSchedulerExtension implements BeforeEachCallback, Af
 
   public void workUntilDone() {
     controlledActorTaskRunner.workUntilDone();
+  }
+
+  public void resume() {
+    controlledActorTaskRunner.resumeTasks();
+  }
+
+  public void updateClock(final Duration duration) {
+    clock.addTime(duration);
   }
 
   static final class ControlledActorThreadFactory implements ActorThreadFactory {
