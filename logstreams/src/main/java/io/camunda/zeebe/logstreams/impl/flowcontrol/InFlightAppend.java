@@ -13,10 +13,10 @@ import io.prometheus.client.Histogram;
 
 /**
  * Represents an in-flight append. Updates metrics and backpressure limits after being {@link
- * AppendInFlight#start(long) started} and handles callbacks from the log storage. Commit and write
+ * InFlightAppend#start(long) started} and handles callbacks from the log storage. Commit and write
  * errors are propagated to an {@link AppendErrorHandler}.
  */
-public final class AppendInFlight implements AppendListener {
+public final class InFlightAppend implements AppendListener {
 
   private final AppendErrorHandler errorHandler;
   private final Limiter.Listener limiter;
@@ -25,7 +25,7 @@ public final class AppendInFlight implements AppendListener {
   private Histogram.Timer commitTimer;
   private long position;
 
-  public AppendInFlight(
+  public InFlightAppend(
       final AppendErrorHandler errorHandler,
       final Limiter.Listener limiter,
       final AppenderMetrics metrics) {
@@ -70,7 +70,7 @@ public final class AppendInFlight implements AppendListener {
     limiter.onDropped();
   }
 
-  public AppendInFlight start(final long position) {
+  public InFlightAppend start(final long position) {
     this.position = position;
     writeTimer = metrics.startWriteTimer();
     commitTimer = metrics.startCommitTimer();

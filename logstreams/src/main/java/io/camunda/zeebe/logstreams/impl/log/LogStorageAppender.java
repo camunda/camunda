@@ -9,7 +9,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendInFlight;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightAppend;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
 import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
@@ -117,7 +117,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     writeBatch(inflightAppend);
   }
 
-  private void writeBatch(final AppendInFlight append) {
+  private void writeBatch(final InFlightAppend append) {
     final var sequencedBatch = sequencer.tryRead();
     if (sequencedBatch == null) {
       append.discard();

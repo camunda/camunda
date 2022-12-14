@@ -63,7 +63,7 @@ final class AppenderFlowControlTest {
     final var flow = new AppenderFlowControl(errorHandler, 1);
     // when
     boolean rejecting = false;
-    final var inFlight = new LinkedList<AppendInFlight>();
+    final var inFlight = new LinkedList<InFlightAppend>();
     do {
       final var result = flow.tryAcquire();
       if (result == null) {

@@ -32,12 +32,12 @@ public final class AppenderFlowControl {
   /**
    * Tries to acquire a free in-flight spot, applying backpressure as needed.
    *
-   * @return An {@link AppendInFlight} if append was accepted, null otherwise.
+   * @return An {@link InFlightAppend} if append was accepted, null otherwise.
    */
-  public AppendInFlight tryAcquire() {
+  public InFlightAppend tryAcquire() {
     return limiter
         .acquire(null)
-        .map(limiterListener -> new AppendInFlight(errorHandler, limiterListener, metrics))
+        .map(limiterListener -> new InFlightAppend(errorHandler, limiterListener, metrics))
         .orElseGet(
             () -> {
               metrics.increaseDeferredAppends();
