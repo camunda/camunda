@@ -48,7 +48,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
   @Value("${" + OperateProperties.PREFIX + ".cloud.organizationid"+"}")
   private String organization;
 
-  @Value("${" + OperateProperties.PREFIX + ".auth0.backendDomain}")
+  @Value("${" + OperateProperties.PREFIX + ".auth0.domain}")
   private String domain;
 
   @Value("${" + OperateProperties.PREFIX + ".auth0.clientId}")

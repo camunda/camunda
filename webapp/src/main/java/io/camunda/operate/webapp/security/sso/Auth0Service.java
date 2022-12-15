@@ -56,9 +56,6 @@ public class Auth0Service {
   @Value("${" + OperateProperties.PREFIX + ".auth0.domain}")
   private String domain;
 
-  @Value("${" + OperateProperties.PREFIX + ".auth0.backendDomain}")
-  private String backendDomain;
-
   @Value("${" + OperateProperties.PREFIX + ".auth0.clientId}")
   private String clientId;
 

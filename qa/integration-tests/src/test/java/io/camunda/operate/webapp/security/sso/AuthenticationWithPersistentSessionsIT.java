@@ -110,7 +110,6 @@ import org.springframework.web.client.RestTemplate;
         "camunda.operate.cloud.organizationid=3",
         "camunda.operate.cloud.clusterId=test-clusterId",
         "camunda.operate.auth0.domain=domain",
-        "camunda.operate.auth0.backendDomain=backendDomain",
         "camunda.operate.cloud.permissionaudience=audience",
         "camunda.operate.cloud.permissionurl=https://permissionurl",
         "camunda.operate.cloud.consoleUrl=https://consoleUrl",
@@ -166,7 +165,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     given(mockedAuthorizedUrl.withAudience(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.build()).willReturn(
-        "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo");
+        "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://domain/userinfo");
   }
 
   @Test
@@ -185,7 +184,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
@@ -216,7 +215,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
@@ -245,7 +244,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri, but there is an IdentityVerificationException.
     doThrow(IdentityVerificationException.class).when(authenticationController)
@@ -301,7 +300,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(orgExtractor

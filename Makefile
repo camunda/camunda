@@ -25,8 +25,7 @@ env-ldap-up:
 env-sso-up:
 	@docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=false \
-	&& CAMUNDA_OPERATE_AUTH0_BACKENDDOMAIN=camunda-dev.eu.auth0.com \
-       CAMUNDA_OPERATE_AUTH0_CLAIMNAME=https://camunda.com/orgs \
+	&& CAMUNDA_OPERATE_AUTH0_CLAIMNAME=https://camunda.com/orgs \
        CAMUNDA_OPERATE_AUTH0_CLIENTID=CLGSo9RQ1K290Fvy2ohDomndvLR3Qgl3 \
        CAMUNDA_OPERATE_AUTH0_DOMAIN=weblogin.cloud.ultrawombat.com \
        CAMUNDA_OPERATE_CLOUD_PERMISSIONAUDIENCE=cloud.ultrawombat.com \

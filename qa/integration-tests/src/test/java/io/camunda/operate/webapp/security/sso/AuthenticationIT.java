@@ -94,7 +94,6 @@ import org.springframework.web.client.RestTemplate;
         "camunda.operate.cloud.organizationId=3",
         "camunda.operate.cloud.clusterId=test-clusterId",
         "camunda.operate.auth0.domain=domain",
-        "camunda.operate.auth0.backendDomain=backendDomain",
         "camunda.operate.auth0.claimName=claimName",
         "camunda.operate.cloud.permissionaudience=audience",
         "camunda.operate.cloud.permissionurl=https://permissionurl",
@@ -148,7 +147,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     given(mockedAuthorizedUrl.withAudience(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.build()).willReturn(
-        "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo");
+        "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://domain/userinfo");
   }
 
   @Test
@@ -165,7 +164,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
@@ -199,7 +198,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
@@ -231,7 +230,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             operateProperties.getAuth0().getDomain(),
             SSO_CALLBACK_URI,
             operateProperties.getAuth0().getClientId(),
-            operateProperties.getAuth0().getBackendDomain());
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -263,7 +262,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             operateProperties.getAuth0().getDomain(),
             SSO_CALLBACK_URI,
             operateProperties.getAuth0().getClientId(),
-            operateProperties.getAuth0().getBackendDomain());
+            operateProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -297,7 +296,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
@@ -327,7 +326,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri, but there is an IdentityVerificationException.
     doThrow(IdentityVerificationException.class).when(authenticationController)
@@ -382,7 +381,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         operateProperties.getAuth0().getDomain(),
         SSO_CALLBACK_URI,
         operateProperties.getAuth0().getClientId(),
-        operateProperties.getAuth0().getBackendDomain()
+        operateProperties.getAuth0().getDomain()
     );
     // Step 3 Call back uri
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(orgExtractor
