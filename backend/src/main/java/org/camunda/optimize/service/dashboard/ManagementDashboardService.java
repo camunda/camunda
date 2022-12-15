@@ -64,12 +64,12 @@ public class ManagementDashboardService {
   @PostConstruct
   public void init() {
     // First we delete all existing management entities
-    log.debug("Deleting Management entities");
+    log.info("Deleting Management entities");
     reportWriter.deleteAllManagementReports();
     dashboardWriter.deleteManagementDashboard();
 
     // Then recreate the management reports and dashboard
-    log.debug("Creating Management Reports and Management Dashboard");
+    log.info("Creating Management Reports and Management Dashboard");
     createManagementDashboardForReports(
       List.of(
         createProcessInstanceByStartMonthReport(new PositionDto(0, 0), new DimensionDto(3, 4)),
