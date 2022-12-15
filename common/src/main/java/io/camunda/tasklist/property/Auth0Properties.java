@@ -17,12 +17,6 @@ public class Auth0Properties {
   private String domain;
 
   /**
-   * Defines the domain which provides information about the user<br>
-   * auth0.com call it <b>Domain</b>
-   */
-  private String backendDomain;
-
-  /**
    * This is the client id of auth0 application (see Settings page on auth0 dashboard) It's like an
    * user name for the application
    */
@@ -63,15 +57,6 @@ public class Auth0Properties {
 
   public Auth0Properties setDomain(final String domain) {
     this.domain = domain;
-    return this;
-  }
-
-  public String getBackendDomain() {
-    return backendDomain;
-  }
-
-  public Auth0Properties setBackendDomain(final String backendDomain) {
-    this.backendDomain = backendDomain;
     return this;
   }
 

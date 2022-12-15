@@ -45,7 +45,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken implements 
   @Value("${" + TasklistProperties.PREFIX + ".auth0.organization}")
   private String organization;
 
-  @Value("${" + TasklistProperties.PREFIX + ".auth0.backendDomain}")
+  @Value("${" + TasklistProperties.PREFIX + ".auth0.domain}")
   private String domain;
 
   @Value("${" + TasklistProperties.PREFIX + ".auth0.clientId}")

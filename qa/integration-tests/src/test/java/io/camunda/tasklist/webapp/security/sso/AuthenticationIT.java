@@ -65,7 +65,6 @@ import org.springframework.web.client.RestTemplate;
       "camunda.tasklist.auth0.organization=3",
       "camunda.tasklist.cloud.clusterId=test-clusterId",
       "camunda.tasklist.auth0.domain=domain",
-      "camunda.tasklist.auth0.backendDomain=backendDomain",
       "camunda.tasklist.auth0.claimName=claimName",
       "camunda.tasklist.cloud.permissionaudience=audience",
       "camunda.tasklist.cloud.permissionurl=https://permissionurl",
@@ -164,7 +163,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     given(mockedAuthorizedUrl.withScope(isNotNull())).willReturn(mockedAuthorizedUrl);
     given(mockedAuthorizedUrl.build())
         .willReturn(
-            "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://backendDomain/userinfo");
+            "https://domain/authorize?redirect_uri=http://localhost:58117/sso-callback&client_id=1&audience=https://domain/userinfo");
   }
 
   @Test
@@ -198,7 +197,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getBackendDomain());
+            tasklistProperties.getAuth0().getDomain());
     // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -228,7 +227,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getBackendDomain());
+            tasklistProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -260,7 +259,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getBackendDomain());
+            tasklistProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(
@@ -295,7 +294,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getBackendDomain());
+            tasklistProperties.getAuth0().getDomain());
     // Step 3 Call back uri, but there is an IdentityVerificationException.
     doThrow(IdentityVerificationException.class)
         .when(authenticationController)
@@ -342,7 +341,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getBackendDomain());
+            tasklistProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
@@ -420,7 +419,7 @@ public class AuthenticationIT implements AuthenticationTestable {
             tasklistProperties.getAuth0().getDomain(),
             SSO_CALLBACK,
             tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getBackendDomain());
+            tasklistProperties.getAuth0().getDomain());
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
     mockPermissionAllowed();
