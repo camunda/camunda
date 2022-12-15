@@ -87,6 +87,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
     cloudSaasMetaInfoService.flatMap(CloudSaasMetaInfoService::getSalesPlanType).ifPresent(onboarding::setSalesPlanType);
+    cloudSaasMetaInfoService.ifPresent(service -> uiConfigurationDto.setWebappsLinks(service.getWebappsLinks()));
 
     return uiConfigurationDto;
   }

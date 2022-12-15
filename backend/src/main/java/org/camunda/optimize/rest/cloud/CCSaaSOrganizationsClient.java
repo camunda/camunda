@@ -13,19 +13,12 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import org.camunda.optimize.service.util.configuration.users.CloudAccountsConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
@@ -33,28 +26,18 @@ import java.util.Optional;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CCSaaSOrganizationsClient {
-  private final ConfigurationService configurationService;
-  private final ObjectMapper objectMapper;
-  private final CloseableHttpClient httpClient;
+public class CCSaaSOrganizationsClient extends AbstractCCSaaSClient {
 
   public CCSaaSOrganizationsClient(final ConfigurationService configurationService,
                                    final ObjectMapper objectMapper) {
-    this.configurationService = configurationService;
-    this.objectMapper = objectMapper;
-    this.httpClient = HttpClients.createDefault();
-  }
-
-  @PreDestroy
-  public void destroy() throws IOException {
-    httpClient.close();
+    super(objectMapper, configurationService);
   }
 
   public Optional<String> getSalesPlanType(final String accessToken) {
     try {
       log.info("Fetching cloud organisation.");
       final HttpGet request = new HttpGet(String.format(
-        "%s/external/organizations/%s",
+        GET_ORGS_TEMPLATE,
         getCloudUsersConfiguration().getAccountsUrl(),
         getCloudAuthConfiguration().getOrganizationId()
       ));
@@ -73,19 +56,6 @@ public class CCSaaSOrganizationsClient {
     } catch (IOException e) {
       throw new OptimizeRuntimeException("There was a problem fetching the cloud organisation.", e);
     }
-  }
-
-  private CloseableHttpResponse performRequest(final HttpRequestBase request, final String accessToken) throws IOException {
-    request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-    return httpClient.execute(request);
-  }
-
-  private CloudAccountsConfiguration getCloudUsersConfiguration() {
-    return configurationService.getUsersConfiguration().getCloud();
-  }
-
-  private CloudAuthConfiguration getCloudAuthConfiguration() {
-    return configurationService.getAuthConfiguration().getCloudAuthConfiguration();
   }
 
   @Data

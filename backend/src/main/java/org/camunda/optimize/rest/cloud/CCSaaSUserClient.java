@@ -9,20 +9,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.camunda.optimize.dto.optimize.cloud.CloudUserDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
-import org.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import org.camunda.optimize.service.util.configuration.users.CloudAccountsConfiguration;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PreDestroy;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -33,29 +26,18 @@ import java.util.Optional;
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
-public class CCSaaSUserClient {
-
-  private final ConfigurationService configurationService;
-  private final ObjectMapper objectMapper;
-  private final CloseableHttpClient httpClient;
+public class CCSaaSUserClient extends AbstractCCSaaSClient {
 
   public CCSaaSUserClient(final ConfigurationService configurationService,
                           final ObjectMapper objectMapper) {
-    this.configurationService = configurationService;
-    this.objectMapper = objectMapper;
-    this.httpClient = HttpClients.createDefault();
-  }
-
-  @PreDestroy
-  public void destroy() throws IOException {
-    httpClient.close();
+    super(objectMapper, configurationService);
   }
 
   public Optional<CloudUserDto> getCloudUserById(final String userId, final String accessToken) {
     try {
       log.info("Fetching Cloud user by id.");
       final HttpGet request = new HttpGet(String.format(
-        "%s/external/organizations/%s/members/%s",
+        GET_USER_BY_ID_TEMPLATE,
         getCloudUsersConfiguration().getAccountsUrl(),
         getCloudAuthConfiguration().getOrganizationId(),
         URLEncoder.encode(userId, StandardCharsets.UTF_8)
@@ -79,7 +61,7 @@ public class CCSaaSUserClient {
     try {
       log.info("Fetching Cloud users.");
       final HttpGet request = new HttpGet(String.format(
-        "%s/external/organizations/%s/members?filter=members",
+        GET_USERS_TEMPLATE,
         getCloudUsersConfiguration().getAccountsUrl(),
         getCloudAuthConfiguration().getOrganizationId()
       ));
@@ -98,18 +80,4 @@ public class CCSaaSUserClient {
       throw new OptimizeRuntimeException("There was a problem fetching Cloud users.", e);
     }
   }
-
-  private CloseableHttpResponse performRequest(final HttpRequestBase request, final String accessToken) throws IOException {
-    request.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken);
-    return httpClient.execute(request);
-  }
-
-  private CloudAccountsConfiguration getCloudUsersConfiguration() {
-    return configurationService.getUsersConfiguration().getCloud();
-  }
-
-  private CloudAuthConfiguration getCloudAuthConfiguration() {
-    return configurationService.getAuthConfiguration().getCloudAuthConfiguration();
-  }
-
 }
