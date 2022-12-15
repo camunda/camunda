@@ -18,6 +18,10 @@ public class RequestMapperTest {
   private static final String INVALID_VARIABLES =
       "{ \"test\": \"value\", \"error\": \"errorrvalue }";
 
+  // BigInteger larger than 2^64-1
+  private static final String BIG_INTEGER =
+      "{\"mybigintistoolong\": 123456789012345678901234567890}";
+
   @Test
   public void shouldThrowHelpfulExceptionIfJsonIsInvalid() {
     // when + then
@@ -26,5 +30,13 @@ public class RequestMapperTest {
         .hasMessageContaining("Invalid JSON", INVALID_VARIABLES)
         .cause()
         .isInstanceOf(JsonParseException.class);
+  }
+
+  @Test
+  public void shouldThrowHelpfulExceptionIfJsonHasBigInteger() {
+    // when + then
+    assertThatThrownBy(() -> RequestMapper.ensureJsonSet(BIG_INTEGER))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("MessagePack cannot serialize BigInteger larger than 2^64-1");
   }
 }
