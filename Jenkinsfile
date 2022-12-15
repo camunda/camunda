@@ -93,13 +93,11 @@ pipeline {
         lock('operate-dockerimage-upload') {
           container('docker') {
             sh """
-              docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} .
-              docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
-              docker push ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
-
+              docker buildx create --use
+              docker buildx build . --platform linux/arm64,linux/amd64 -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} --push
+              
               if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                docker tag ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
-                docker push ${OPERATE_DOCKER_IMAGE()}:latest
+                docker buildx build . --platform linux/arm64,linux/amd64 -t ${OPERATE_DOCKER_IMAGE()}:latest --push
               fi
             """
           }
@@ -185,8 +183,8 @@ pipeline {
             lock('operate-dockerimage-snapshot-upload') {
               container('docker') {
                 sh """
-                  docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                  docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                  docker buildx create --use
+                  docker buildx build . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:${IMAGE_TAG} --push
                 """
               }
             }

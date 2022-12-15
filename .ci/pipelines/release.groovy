@@ -103,11 +103,14 @@ spec:
         cpu: 2
         memory: 4Gi
   - name: docker
-    image: docker:18.06-dind
+    image: docker:20.10.21-dind
     args: ["--storage-driver=overlay2"]
     securityContext:
       privileged: true
-    tty: true
+    env:
+      # This disabled automatic TLS setup as this is not exposed to the network anyway
+      - name: DOCKER_TLS_CERTDIR
+        value: ""    tty: true
     resources:
       limits:
         cpu: 1
@@ -199,12 +202,11 @@ pipeline {
           container('docker') {
             sh """
               docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
-              docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-              docker push ${IMAGE_NAME}:${IMAGE_TAG}
+              docker buildx create --use
+              docker buildx . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:${IMAGE_TAG}  --push
 
               if ${IS_LATEST}; then
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-                docker push ${IMAGE_NAME}:latest
+                docker buildx . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:latest --push
               fi
             """
           }
