@@ -252,13 +252,6 @@ public class ModelUtil {
             .map(escalation -> Optional.ofNullable(escalation.getEscalationCode()))
             .collect(groupingBy(escalationCode -> escalationCode, counting()));
 
-    if (definitionWithoutEscalationCount >= 1 && !escalationCodeOccurrences.isEmpty()) {
-      errorCollector.accept(
-          "The same scope can not contain an escalation catch event without escalation code "
-              + "and another one with escalation code. An escalation catch event without "
-              + "escalation code catches all escalations.");
-    }
-
     escalationCodeOccurrences.forEach(
         (escalationCode, occurrences) -> {
           if (occurrences > 1) {
