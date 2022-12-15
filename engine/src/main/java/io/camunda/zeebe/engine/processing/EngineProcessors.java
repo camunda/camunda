@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
+import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
@@ -89,9 +91,15 @@ public final class EngineProcessors {
         new EventTriggerBehavior(
             zeebeState.getKeyGenerator(), catchEventBehavior, writers, zeebeState);
 
+    final VariableBehavior variableBehavior =
+        new VariableBehavior(
+            zeebeState.getVariableState(), writers.state(), zeebeState.getKeyGenerator());
+
+    final BpmnStateBehavior stateBehavior = new BpmnStateBehavior(zeebeState, variableBehavior);
+
     final var eventPublicationBehavior =
         new BpmnEventPublicationBehavior(
-            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, writers);
+            zeebeState, zeebeState.getKeyGenerator(), eventTriggerBehavior, stateBehavior, writers);
 
     addDeploymentRelatedProcessorAndServices(
         catchEventBehavior,
@@ -107,6 +115,7 @@ public final class EngineProcessors {
         zeebeState.getKeyGenerator());
     addMessageProcessors(
         eventTriggerBehavior,
+        stateBehavior,
         subscriptionCommandSender,
         zeebeState,
         typedRecordProcessors,
@@ -122,6 +131,7 @@ public final class EngineProcessors {
             subscriptionCommandSender,
             catchEventBehavior,
             eventTriggerBehavior,
+            stateBehavior,
             writers,
             timerChecker,
             jobMetrics);
@@ -133,7 +143,8 @@ public final class EngineProcessors {
         eventPublicationBehavior,
         writers,
         jobMetrics,
-        eventTriggerBehavior);
+        eventTriggerBehavior,
+        stateBehavior);
 
     addIncidentProcessors(
         zeebeState,
@@ -152,6 +163,7 @@ public final class EngineProcessors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final Writers writers,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics) {
@@ -163,6 +175,7 @@ public final class EngineProcessors {
         catchEventBehavior,
         timerChecker,
         eventTriggerBehavior,
+        stateBehavior,
         writers,
         jobMetrics);
   }
@@ -233,12 +246,14 @@ public final class EngineProcessors {
 
   private static void addMessageProcessors(
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
         eventTriggerBehavior,
+        stateBehavior,
         typedRecordProcessors,
         zeebeState,
         subscriptionCommandSender,

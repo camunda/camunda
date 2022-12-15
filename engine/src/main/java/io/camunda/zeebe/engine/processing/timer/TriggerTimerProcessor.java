@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.timer;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
@@ -63,6 +64,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final MutableZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final ExpressionProcessor expressionProcessor,
       final Writers writers) {
     this.catchEventBehavior = catchEventBehavior;
@@ -81,7 +83,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
             zeebeState.getEventScopeInstanceState(),
             writers,
             processState,
-            eventTriggerBehavior);
+            eventTriggerBehavior,
+            stateBehavior);
   }
 
   @Override

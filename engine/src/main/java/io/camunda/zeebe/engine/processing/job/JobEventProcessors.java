@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
@@ -30,7 +31,8 @@ public final class JobEventProcessors {
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final EventTriggerBehavior eventTriggerBehavior) {
+      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior) {
 
     final var jobState = zeebeState.getJobState();
     final var keyGenerator = zeebeState.getKeyGenerator();
@@ -41,7 +43,8 @@ public final class JobEventProcessors {
             zeebeState.getEventScopeInstanceState(),
             writers,
             zeebeState.getProcessState(),
-            eventTriggerBehavior);
+            eventTriggerBehavior,
+            stateBehavior);
 
     final var jobBackoffChecker = new JobBackoffChecker(jobState);
     typedRecordProcessors

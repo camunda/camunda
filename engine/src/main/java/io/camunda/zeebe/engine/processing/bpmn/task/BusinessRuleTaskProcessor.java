@@ -119,6 +119,7 @@ public final class BusinessRuleTaskProcessor
       eventSubscriptionBehavior
           .findEventTrigger(context)
           .filter(eventTrigger -> flowScopeInstance.isActive())
+          .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
           .ifPresentOrElse(
               eventTrigger -> {
                 final var terminated = stateTransitionBehavior.transitionToTerminated(context);

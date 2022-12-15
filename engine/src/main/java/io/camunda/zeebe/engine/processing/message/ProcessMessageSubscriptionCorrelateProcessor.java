@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -59,6 +60,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableZeebeState zeebeState,
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
@@ -73,7 +75,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             zeebeState.getEventScopeInstanceState(),
             writers,
             processState,
-            eventTriggerBehavior);
+            eventTriggerBehavior,
+            stateBehavior);
   }
 
   @Override
