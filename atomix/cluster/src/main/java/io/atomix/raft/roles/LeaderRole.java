@@ -46,12 +46,14 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.log.entry.UnserializedApplicationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -539,18 +541,29 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final ByteBuffer data,
       final AppendListener appendListener) {
     raft.getThreadContext()
-        .execute(() -> safeAppendEntry(lowestPosition, highestPosition, data, appendListener));
+        .execute(
+            () ->
+                safeAppendEntry(
+                    new SerializedApplicationEntry(lowestPosition, highestPosition, data),
+                    appendListener));
   }
 
-  private void safeAppendEntry(
+  @Override
+  public void appendEntry(
       final long lowestPosition,
       final long highestPosition,
-      final ByteBuffer data,
+      final BufferWriter data,
       final AppendListener appendListener) {
-    raft.checkThread();
+    raft.getThreadContext()
+        .execute(
+            () ->
+                safeAppendEntry(
+                    new UnserializedApplicationEntry(lowestPosition, highestPosition, data),
+                    appendListener));
+  }
 
-    final ApplicationEntry entry =
-        new SerializedApplicationEntry(lowestPosition, highestPosition, data);
+  private void safeAppendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
+    raft.checkThread();
 
     if (!isRunning()) {
       appendListener.onWriteError(

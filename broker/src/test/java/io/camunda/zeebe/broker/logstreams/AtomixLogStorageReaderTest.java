@@ -15,6 +15,7 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.nio.ByteBuffer;
 import org.agrona.CloseHelper;
@@ -177,6 +178,15 @@ final class AtomixLogStorageReaderTest {
       appendListener.onWrite(indexedEntry);
       log.setCommitIndex(indexedEntry.index());
       appendListener.onCommit(indexedEntry);
+    }
+
+    @Override
+    public void appendEntry(
+        final long lowestPosition,
+        final long highestPosition,
+        final BufferWriter data,
+        final AppendListener appendListener) {
+      throw new UnsupportedOperationException();
     }
   }
 }

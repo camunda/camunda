@@ -16,6 +16,7 @@
 package io.atomix.raft.zeebe;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 
 /**
@@ -23,9 +24,7 @@ import java.nio.ByteBuffer;
  * automatically replicated and eventually committed, and the ability for callers to be notified of
  * various events, e.g. {@link AppendListener#onCommit(IndexedRaftLogEntry)}.
  */
-@FunctionalInterface
 public interface ZeebeLogAppender {
-
   /**
    * Appends an entry to the local Raft log and schedules replication to each follower.
    *
@@ -35,6 +34,16 @@ public interface ZeebeLogAppender {
    */
   void appendEntry(
       long lowestPosition, long highestPosition, ByteBuffer data, AppendListener appendListener);
+
+  /**
+   * Appends an entry to the local Raft log and schedules replication to each follower.
+   *
+   * @param lowestPosition lowest record position in the data buffer
+   * @param highestPosition highest record position in the data buffer
+   * @param data data to store in the entry
+   */
+  void appendEntry(
+      long lowestPosition, long highestPosition, BufferWriter data, AppendListener appendListener);
 
   /**
    * An append listener can observe and be notified of different events related to the append

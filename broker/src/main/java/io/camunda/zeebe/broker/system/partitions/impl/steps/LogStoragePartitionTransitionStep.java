@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransi
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 
 public final class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
@@ -141,6 +142,18 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
         final long lowestPosition,
         final long highestPosition,
         final ByteBuffer data,
+        final AppendListener appendListener) {
+      throw new UnsupportedOperationException(
+          String.format(
+              "Expect to append entry (positions %d - %d), but was in Follower role. Followers must not append entries to the log storage",
+              lowestPosition, highestPosition));
+    }
+
+    @Override
+    public void appendEntry(
+        final long lowestPosition,
+        final long highestPosition,
+        final BufferWriter data,
         final AppendListener appendListener) {
       throw new UnsupportedOperationException(
           String.format(
