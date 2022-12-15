@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
@@ -43,26 +44,36 @@ public final class EventHandle {
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
   private final EventTriggerBehavior eventTriggerBehavior;
+  private final BpmnStateBehavior stateBehavior;
 
   public EventHandle(
       final KeyGenerator keyGenerator,
       final EventScopeInstanceState eventScopeInstanceState,
       final Writers writers,
       final ProcessState processState,
-      final EventTriggerBehavior eventTriggerBehavior) {
+      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.processState = processState;
     commandWriter = writers.command();
     stateWriter = writers.state();
     this.eventTriggerBehavior = eventTriggerBehavior;
+    this.stateBehavior = stateBehavior;
   }
 
   public boolean canTriggerElement(
       final ElementInstance eventScopeInstance, final DirectBuffer elementId) {
-    return eventScopeInstance != null
-        && eventScopeInstance.isActive()
-        && eventScopeInstanceState.canTriggerEvent(eventScopeInstance.getKey(), elementId);
+    if (eventScopeInstance == null) {
+      return false;
+    }
+
+    final ElementInstance flowScopeInstance =
+        stateBehavior.getElementInstance(eventScopeInstance.getParentKey());
+
+    return eventScopeInstance.isActive()
+        && eventScopeInstanceState.canTriggerEvent(eventScopeInstance.getKey(), elementId)
+        && (flowScopeInstance == null || !flowScopeInstance.isInterrupted());
   }
 
   /**

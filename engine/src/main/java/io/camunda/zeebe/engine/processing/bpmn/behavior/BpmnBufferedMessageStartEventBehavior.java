@@ -34,6 +34,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
       final ZeebeState zeebeState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final Writers writers) {
     messageState = zeebeState.getMessageState();
     processState = zeebeState.getProcessState();
@@ -45,7 +46,8 @@ public final class BpmnBufferedMessageStartEventBehavior {
             zeebeState.getEventScopeInstanceState(),
             writers,
             processState,
-            eventTriggerBehavior);
+            eventTriggerBehavior,
+            stateBehavior);
   }
 
   public Optional<DirectBuffer> findCorrelationKey(final BpmnElementContext context) {

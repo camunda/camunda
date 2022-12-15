@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
@@ -60,7 +61,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessState processState,
-      final EventTriggerBehavior eventTriggerBehavior) {
+      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
@@ -71,7 +73,12 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     rejectionWriter = writers.rejection();
     eventHandle =
         new EventHandle(
-            keyGenerator, eventScopeInstanceState, writers, processState, eventTriggerBehavior);
+            keyGenerator,
+            eventScopeInstanceState,
+            writers,
+            processState,
+            eventTriggerBehavior,
+            stateBehavior);
   }
 
   @Override

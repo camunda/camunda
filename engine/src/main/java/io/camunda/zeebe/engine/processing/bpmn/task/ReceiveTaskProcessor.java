@@ -75,6 +75,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())
+        .filter(eventTrigger -> !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated = stateTransitionBehavior.transitionToTerminated(context);
