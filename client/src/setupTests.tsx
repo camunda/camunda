@@ -16,6 +16,8 @@ import {Select as MockSelect} from 'modules/mocks/common-ui/Select';
 import {Dropdown as MockDropdown} from 'modules/mocks/common-ui/Dropdown';
 import MockSplitter from 'modules/mocks/Splitter';
 
+global.ResizeObserver = require('resize-observer-polyfill');
+
 jest.mock('@devbookhq/splitter', () => {
   return {
     __esModule: true,

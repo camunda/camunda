@@ -21,6 +21,7 @@ import {
   Popover,
 } from './styled';
 import {tracking} from 'modules/tracking';
+import {hide, shift} from '@floating-ui/react-dom';
 
 const defaultTime = {
   from: '00:00:00',
@@ -132,6 +133,8 @@ const DateRangePopover: React.FC<Props> = ({
       placement="right-start"
       onOutsideClick={handleOutsideClick}
       variant="arrow"
+      middlewareOptions={[shift(), hide()]}
+      autoUpdatePosition
     >
       <Form onSubmit={handleApply} initialValues={defaultValues}>
         {({handleSubmit, form}) => (

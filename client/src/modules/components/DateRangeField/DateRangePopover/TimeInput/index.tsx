@@ -32,6 +32,7 @@ const TimeInput: React.FC<Props> = ({type}) => {
             data-testid={`${type}Time`}
             light
             maxLength={8}
+            autoComplete="off"
           />
         );
       }}

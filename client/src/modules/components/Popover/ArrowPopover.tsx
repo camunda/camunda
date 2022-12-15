@@ -12,8 +12,11 @@ import {
   flip,
   arrow,
   Placement,
+  autoUpdate,
+  Middleware,
 } from '@floating-ui/react-dom';
-import {useLayoutEffect, useRef} from 'react';
+
+import {useEffect, useLayoutEffect, useRef} from 'react';
 import {Container, Arrow, getArrowPosition} from './styled';
 import {isNil} from 'lodash';
 import {createPortal} from 'react-dom';
@@ -40,6 +43,8 @@ type Props = {
   offsetOptions?: Parameters<typeof offset>;
   className?: string;
   onOutsideClick?: (event: MouseEvent) => void;
+  middlewareOptions?: Middleware[];
+  autoUpdatePosition?: boolean;
 };
 
 const ArrowPopover: React.FC<Props> = ({
@@ -50,6 +55,8 @@ const ArrowPopover: React.FC<Props> = ({
   offsetOptions = [],
   className,
   onOutsideClick,
+  middlewareOptions = [],
+  autoUpdatePosition = false,
 }) => {
   const arrowElementRef = useRef<HTMLDivElement | null>(null);
   const {
@@ -67,8 +74,18 @@ const ArrowPopover: React.FC<Props> = ({
       offset(...offsetOptions),
       flip(...flipOptions),
       arrow({element: arrowElementRef}),
+      ...middlewareOptions,
     ],
+    whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,
   });
+
+  useEffect(() => {
+    if (middlewareData.hide && popoverElementRef?.current !== null) {
+      Object.assign(popoverElementRef.current.style, {
+        display: middlewareData.hide.referenceHidden ? 'none' : 'block',
+      });
+    }
+  }, [popoverElementRef, middlewareData]);
 
   useLayoutEffect(() => {
     const handleClick = (event: MouseEvent) => {
