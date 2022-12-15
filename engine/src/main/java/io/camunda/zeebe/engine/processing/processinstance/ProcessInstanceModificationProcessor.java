@@ -50,7 +50,9 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -107,6 +109,12 @@ public final class ProcessInstanceModificationProcessor
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       that would result in the activation of multi-instance element '%s', which is currently \
       unsupported.""";
+
+  private static final String ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate \
+      instructions with an ancestor scope key that does not belong to the modified process \
+      instance: '%s'""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -298,7 +306,7 @@ public final class ProcessInstanceModificationProcessor
         .flatMap(valid -> validateElementInstanceExists(process, terminateInstructions))
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
-        .flatMap(valid -> validateAncestorExistsAndIsActive(process, value))
+        .flatMap(valid -> validateAncestorKeys(process, value))
         .map(valid -> VALID);
   }
 
@@ -394,8 +402,29 @@ public final class ProcessInstanceModificationProcessor
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
-  private Either<Rejection, ?> validateAncestorExistsAndIsActive(
+  private Either<Rejection, ?> validateAncestorKeys(
       final DeployedProcess process, final ProcessInstanceModificationRecord record) {
+    final Map<Long, Optional<ElementInstance>> ancestorInstances =
+        record.getActivateInstructions().stream()
+            .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
+            .filter(ancestorKey -> ancestorKey > 0)
+            .distinct()
+            .collect(
+                Collectors.toMap(
+                    ancestorKey -> ancestorKey,
+                    ancestorKey ->
+                        Optional.ofNullable(elementInstanceState.getInstance(ancestorKey))));
+
+    return validateAncestorExistsAndIsActive(process, record, ancestorInstances)
+        .flatMap(
+            valid -> validateAncestorBelongsToProcessInstance(process, record, ancestorInstances))
+        .map(valid -> VALID);
+  }
+
+  private Either<Rejection, ?> validateAncestorExistsAndIsActive(
+      final DeployedProcess process,
+      final ProcessInstanceModificationRecord record,
+      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
     final Set<String> invalidAncestorKeys =
         record.getActivateInstructions().stream()
             .map(ProcessInstanceModificationActivateInstructionValue::getAncestorScopeKey)
@@ -403,8 +432,9 @@ public final class ProcessInstanceModificationProcessor
             .filter(ancestorKey -> ancestorKey > 0)
             .filter(
                 ancestorKey -> {
-                  final var elementInstance = elementInstanceState.getInstance(ancestorKey);
-                  return elementInstance == null || !elementInstance.isActive();
+                  final var elementInstanceOptional = ancestorInstances.get(ancestorKey);
+                  return elementInstanceOptional.isEmpty()
+                      || !elementInstanceOptional.get().isActive();
                 })
             .map(String::valueOf)
             .collect(Collectors.toSet());
@@ -418,6 +448,32 @@ public final class ProcessInstanceModificationProcessor
             ERROR_MESSAGE_ANCESTOR_NOT_FOUND,
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", invalidAncestorKeys));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateAncestorBelongsToProcessInstance(
+      final DeployedProcess process,
+      final ProcessInstanceModificationRecord record,
+      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
+    final Set<String> rejectedAncestorKeys =
+        ancestorInstances.values().stream()
+            .flatMap(Optional::stream)
+            .filter(
+                ancestorInstance ->
+                    ancestorInstance.getValue().getProcessInstanceKey()
+                        != record.getProcessInstanceKey())
+            .map(ancestorInstance -> String.valueOf(ancestorInstance.getKey()))
+            .collect(Collectors.toSet());
+
+    if (rejectedAncestorKeys.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join("', '", rejectedAncestorKeys));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 

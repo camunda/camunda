@@ -761,4 +761,54 @@ public class ModifyProcessInstanceRejectionTest {
                 'SubProcess', which is currently unsupported.""",
                 PROCESS_ID));
   }
+
+  @Test
+  public void shouldRejectActivationWhenAncestorBelongsToDifferentProcessInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "sp", sp -> sp.embeddedSubProcess().startEvent().userTask("A").endEvent())
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKeyOne = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKeyOne)
+        .withElementId("A")
+        .await();
+    final var processInstanceKeyTwo = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessKeyTwo =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKeyTwo)
+            .withElementId("A")
+            .getFirst()
+            .getKey();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKeyOne)
+            .modification()
+            .activateElement("A", subProcessKeyTwo)
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that activating an element with ancestor key of a different process"
+                + " instance is not allowed")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("""
+              Expected to modify instance of process '%s' but it contains one or more \
+              activate instructions with an ancestor scope key that does not belong to the \
+              modified process instance: '%d'""")
+                .formatted(PROCESS_ID, subProcessKeyTwo));
+  }
 }
