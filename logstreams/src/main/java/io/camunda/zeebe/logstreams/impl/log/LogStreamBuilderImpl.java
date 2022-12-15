@@ -66,8 +66,7 @@ public final class LogStreamBuilderImpl implements LogStreamBuilder {
     validate();
 
     final var logStreamService =
-        new LogStreamImpl(
-            actorSchedulingService, logName, partitionId, nodeId, maxFragmentSize, logStorage);
+        new LogStreamImpl(logName, partitionId, nodeId, maxFragmentSize, logStorage);
 
     final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
     actorSchedulingService

@@ -8,9 +8,13 @@
 package io.camunda.zeebe.logstreams.impl.log;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.storage.LogStorage;
+import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
-import io.camunda.zeebe.scheduler.ActorCondition;
-import java.time.Duration;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.lang.Thread.State;
+import java.nio.ByteBuffer;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.IntStream;
@@ -19,58 +23,34 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.Mockito;
 
 @SuppressWarnings("resource")
 @Execution(ExecutionMode.CONCURRENT)
 final class SequencerTest {
 
   @Test
-  void notifiesConsumerOnWrite() {
-    // given
-    final var sequencer = new Sequencer(1, 0, 16);
-    final var consumer = Mockito.mock(ActorCondition.class);
-
-    // when
-    sequencer.registerConsumer(consumer);
-    sequencer.tryWrite(TestEntry.ofDefaults());
-
-    // then
-    Mockito.verify(consumer).signal();
-  }
-
-  @Test
-  void notifiesConsumerOnBatchWrite() {
-    // given
-    final var sequencer = new Sequencer(1, 0, 16);
-    final var consumer = Mockito.mock(ActorCondition.class);
-
-    // when
-    sequencer.registerConsumer(consumer);
-    sequencer.tryWrite(List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults()));
-
-    // then
-    Mockito.verify(consumer).signal();
-  }
-
-  @Test
   void canReadAfterSingleWrite() {
     // given
-    final var sequencer = new Sequencer(1, 1, 16);
+    final var logStorage = new TestLogStorage();
+    final var sequencer = new Sequencer(1, 1, 16, logStorage);
     final var entry = TestEntry.ofDefaults();
 
     // when
     sequencer.tryWrite(entry);
 
     // then
-    final var read = sequencer.tryRead();
-    Assertions.assertThat(read.entries()).containsExactly(entry);
+    Assertions.assertThat(logStorage.batches())
+        .singleElement()
+        .extracting(SequencedBatch::entries)
+        .asList()
+        .containsExactly(entry);
   }
 
   @Test
   void canReadAfterBatchWrite() {
     // given
-    final var sequencer = new Sequencer(1, 1, 16);
+    final var logStorage = new TestLogStorage();
+    final var sequencer = new Sequencer(1, 1, 16, logStorage);
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
@@ -78,64 +58,35 @@ final class SequencerTest {
     sequencer.tryWrite(entries);
 
     // then
-    final var read = sequencer.tryRead();
-    Assertions.assertThat(read.entries()).containsAnyElementsOf(entries);
-  }
-
-  @Test
-  void cannotReadEmpty() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-
-    // then
-    final var read = sequencer.tryRead();
-    Assertions.assertThat(read).isNull();
-  }
-
-  @Test
-  void eventuallyRejectsWritesWithoutReader() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-
-    // then
-    Awaitility.await("sequencer rejects writes")
-        .pollInSameThread()
-        .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
-  }
-
-  @Test
-  void eventuallyRejectsBatchWritesWithoutReader() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-
-    // then
-    Awaitility.await("sequencer rejects writes")
-        .pollInSameThread()
-        .pollInterval(Duration.ZERO)
-        .until(
-            () -> sequencer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2))),
-            (result) -> result <= 0);
+    Assertions.assertThat(logStorage.batches())
+        .singleElement()
+        .extracting(SequencedBatch::entries)
+        .asList()
+        .containsExactlyElementsOf(entries);
   }
 
   @Test
   void writingSingleEntryIncreasesPositions() {
     // given
+    final var logStorage = new TestLogStorage();
     final var initialPosition = 1;
-    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024, logStorage);
 
     // when
-    final var result = sequencer.tryWrite(TestEntry.ofDefaults());
+    final var firstWrite = sequencer.tryWrite(TestEntry.ofDefaults());
+    final var secondWrite = sequencer.tryWrite(TestEntry.ofDefaults());
 
     // then
-    Assertions.assertThat(result).isPositive().isEqualTo(initialPosition);
+    Assertions.assertThat(firstWrite).isPositive().isEqualTo(initialPosition);
+    Assertions.assertThat(secondWrite).isPositive().isEqualTo(firstWrite + 1);
   }
 
   @Test
   void writingMultipleEntriesIncreasesPositions() {
     // given
+    final var logStorage = new TestLogStorage();
     final var initialPosition = 1;
-    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024, logStorage);
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
@@ -146,72 +97,39 @@ final class SequencerTest {
   }
 
   @Test
-  void notifiesReaderWhenRejectingWriteDueToFullQueue() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    Awaitility.await("sequencer rejects writes")
-        .pollInSameThread()
-        .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
-    final var consumer = Mockito.mock(ActorCondition.class);
-
-    // when
-    sequencer.registerConsumer(consumer);
-    final var result = sequencer.tryWrite(TestEntry.ofDefaults());
-
-    // then
-    Assertions.assertThat(result).isNegative();
-    Mockito.verify(consumer).signal();
-  }
-
-  @Test
-  void notifiesReaderWhenRejectingBatchWriteDueToFullQueue() {
-    // given
-    final var sequencer = new Sequencer(1, 1, 16 * 1024 * 1024);
-    Awaitility.await("sequencer rejects writes")
-        .pollInSameThread()
-        .pollInterval(Duration.ZERO)
-        .until(() -> sequencer.tryWrite(TestEntry.ofDefaults()), (result) -> result <= 0);
-    final var consumer = Mockito.mock(ActorCondition.class);
-
-    // when
-    sequencer.registerConsumer(consumer);
-    final var result = sequencer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)));
-
-    // then
-    Assertions.assertThat(result).isNegative();
-    Mockito.verify(consumer).signal();
-  }
-
-  @Test
   void keepsPositionsWithSingleWriter() throws InterruptedException {
     // given
+    final var logStorage = new TestLogStorage();
     final var initialPosition = 1L;
     final var entriesToWrite = 10_000L;
-    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024, logStorage);
     final var batch = List.of(TestEntry.ofKey(1));
-    final var reader = newReaderThread(sequencer, initialPosition, entriesToWrite);
     final var writer = newWriterThread(sequencer, initialPosition, entriesToWrite, batch, true);
 
     // when
-    reader.start();
     writer.start();
+    Awaitility.await("writer thread finishes writing all entries")
+        .until(writer::getState, state -> state == State.TERMINATED);
 
     // then -- readers and writers don't throw
-    reader.join(10 * 1000);
-    writer.join(10 * 1000);
+    Assertions.assertThat(logStorage.batches).hasSize((int) entriesToWrite);
+    var position = initialPosition;
+    for (final var readBatch : logStorage.batches) {
+      Assertions.assertThat(readBatch.firstPosition()).isEqualTo(position);
+      position += readBatch.entries().size();
+    }
   }
 
   @Test
   void keepsPositionsWithMultipleWriters() throws InterruptedException {
     // given
+    final var logStorage = new TestLogStorage();
     final var writers = 3;
 
     final var initialPosition = 1L;
     final var entriesToWrite = 10_000L;
     final var entriesToRead = writers * entriesToWrite;
-    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
-    final var reader = newReaderThread(sequencer, initialPosition, entriesToRead);
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024, logStorage);
     final var batch = List.of(TestEntry.ofKey(1));
     final var writerThreads =
         IntStream.range(0, writers)
@@ -220,11 +138,7 @@ final class SequencerTest {
             .toList();
 
     // when
-    reader.start();
     writerThreads.forEach(Thread::start);
-
-    // then -- readers and writers don't throw
-    reader.join(10 * 1000);
     writerThreads.forEach(
         thread -> {
           try {
@@ -233,18 +147,26 @@ final class SequencerTest {
             throw new RuntimeException(e);
           }
         });
+
+    // then
+    Assertions.assertThat(logStorage.batches).hasSize((int) entriesToRead);
+    var position = initialPosition;
+    for (final var readBatch : logStorage.batches) {
+      Assertions.assertThat(readBatch.firstPosition()).isEqualTo(position);
+      position += readBatch.entries().size();
+    }
   }
 
   @Test
   void keepsPositionsWithMultipleWritersWritingMultipleEntries() throws InterruptedException {
     // given
+    final var logStorage = new TestLogStorage();
     final var writers = 3;
 
     final var initialPosition = 1L;
     final var batchesToWrite = 10_000L;
     final var batchesToRead = writers * batchesToWrite;
-    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024);
-    final var reader = newReaderThread(sequencer, initialPosition, batchesToRead);
+    final var sequencer = new Sequencer(1, initialPosition, 16 * 1024 * 1024, logStorage);
     final var batch =
         List.of(TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1), TestEntry.ofKey(1));
     final var writerThreads =
@@ -254,11 +176,7 @@ final class SequencerTest {
             .toList();
 
     // when
-    reader.start();
     writerThreads.forEach(Thread::start);
-
-    // then -- readers and writers don't throw and eventually finish
-    reader.join(10 * 1000);
     writerThreads.forEach(
         thread -> {
           try {
@@ -267,23 +185,14 @@ final class SequencerTest {
             throw new RuntimeException(e);
           }
         });
-  }
 
-  private Thread newReaderThread(
-      final Sequencer sequencer, final long initialPosition, final long batchesToRead) {
-    return new Thread(
-        () -> {
-          var batchesRead = 0L;
-          var lastReadPosition = initialPosition - 1;
-          while (batchesRead < batchesToRead) {
-            final var result = sequencer.tryRead();
-            if (result != null) {
-              Assertions.assertThat(result.firstPosition()).isEqualTo(lastReadPosition + 1);
-              lastReadPosition = result.firstPosition() + result.entries().size() - 1;
-              batchesRead += 1;
-            }
-          }
-        });
+    // then
+    Assertions.assertThat(logStorage.batches).hasSize((int) batchesToRead);
+    var position = initialPosition;
+    for (final var readBatch : logStorage.batches) {
+      Assertions.assertThat(readBatch.firstPosition()).isEqualTo(position);
+      position += readBatch.entries().size();
+    }
   }
 
   private Thread newWriterThread(
@@ -311,5 +220,48 @@ final class SequencerTest {
             }
           }
         });
+  }
+
+  private static final class TestLogStorage implements LogStorage {
+    final List<SequencedBatch> batches = new LinkedList<>();
+
+    public List<SequencedBatch> batches() {
+      return batches;
+    }
+
+    @Override
+    public LogStorageReader newReader() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void append(
+        final long lowestPosition,
+        final long highestPosition,
+        final BufferWriter bufferWriter,
+        final AppendListener listener) {
+      batches.add((SequencedBatch) bufferWriter);
+      listener.onCommit(1);
+      listener.onWrite(1);
+    }
+
+    @Override
+    public void append(
+        final long lowestPosition,
+        final long highestPosition,
+        final ByteBuffer blockBuffer,
+        final AppendListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void addCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void removeCommitListener(final CommitListener listener) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

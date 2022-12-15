@@ -21,6 +21,10 @@ public record HealthIssue(String message, Throwable throwable, HealthReport caus
     return new HealthIssue(null, throwable, null);
   }
 
+  public static HealthIssue of(final Throwable throwable, final String message) {
+    return new HealthIssue(message, throwable, null);
+  }
+
   public static HealthIssue of(final HealthReport cause) {
     return new HealthIssue(null, null, cause);
   }
