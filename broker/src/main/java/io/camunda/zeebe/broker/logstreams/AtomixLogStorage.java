@@ -11,7 +11,6 @@ import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -52,16 +51,6 @@ public class AtomixLogStorage implements LogStorage, RaftCommitListener {
       final AppendListener listener) {
     final var adapter = new AtomixAppendListenerAdapter(lowestPosition, highestPosition, listener);
     logAppender.appendEntry(lowestPosition, highestPosition, bufferWriter, adapter);
-  }
-
-  @Override
-  public void append(
-      final long lowestPosition,
-      final long highestPosition,
-      final ByteBuffer buffer,
-      final AppendListener listener) {
-    final var adapter = new AtomixAppendListenerAdapter(lowestPosition, highestPosition, listener);
-    logAppender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
   }
 
   @Override

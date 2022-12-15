@@ -17,7 +17,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.health.HealthStatus;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.junit.After;
@@ -112,15 +111,6 @@ public final class LogStorageAppenderHealthTest {
     @Override
     public LogStorageReader newReader() {
       return null;
-    }
-
-    @Override
-    public void append(
-        final long lowestPosition,
-        final long highestPosition,
-        final ByteBuffer blockBuffer,
-        final AppendListener listener) {
-      actor.run(() -> onAppend.accept(highestPosition, listener));
     }
 
     @Override

@@ -8,7 +8,9 @@
 package io.camunda.zeebe.logstreams.storage;
 
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.ByteBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Storage abstraction for the log stream API. The storage is expected to store the given blocks of
@@ -64,8 +66,17 @@ public interface LogStorage {
    * @param highestPosition the highest record position of all records in the block buffer
    * @param blockBuffer the buffer containing a block of log entries to be written into storage
    */
-  void append(
-      long lowestPosition, long highestPosition, ByteBuffer blockBuffer, AppendListener listener);
+  default void append(
+      final long lowestPosition,
+      final long highestPosition,
+      final ByteBuffer blockBuffer,
+      final AppendListener listener) {
+    append(
+        lowestPosition,
+        highestPosition,
+        new DirectBufferWriter().wrap(new UnsafeBuffer(blockBuffer)),
+        listener);
+  }
 
   /**
    * Register a commit listener

@@ -89,17 +89,7 @@ public class ListLogStorage implements LogStorage {
     commitListeners.remove(listener);
   }
 
-  private static final class Entry {
-    private final ByteBuffer data;
-
-    public Entry(final ByteBuffer data) {
-      this.data = data;
-    }
-
-    public ByteBuffer getData() {
-      return data;
-    }
-  }
+  private record Entry(ByteBuffer data) {}
 
   private class ListLogStorageReader implements LogStorageReader {
     int currentIndex;
