@@ -94,6 +94,21 @@ public final class CompleteJobTest {
   }
 
   @Test
+  public void shouldRejectIfVariableIsBigIntTooLong() {
+    // when
+    assertThatThrownBy(
+            () ->
+                CLIENT_RULE
+                    .getClient()
+                    .newCompleteCommand(jobKey)
+                    .variables("{\"mybigintistoolong\":123456789012345678901234567890}")
+                    .send()
+                    .join())
+        .isInstanceOf(ClientStatusException.class)
+        .hasMessageContaining("MessagePack cannot serialize BigInteger larger than 2^64-1");
+  }
+
+  @Test
   public void shouldRejectIfJobIsAlreadyCompleted() {
     // given
     CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();

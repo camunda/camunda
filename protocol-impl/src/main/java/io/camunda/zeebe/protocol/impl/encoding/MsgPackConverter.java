@@ -77,7 +77,11 @@ public final class MsgPackConverter {
 
       return outputStream.toByteArray();
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to convert JSON to MessagePack", e);
+      if (e instanceof IllegalArgumentException) {
+        throw new IllegalArgumentException("Failed to convert JSON to MessagePack", e);
+      } else {
+        throw new RuntimeException("Failed to convert JSON to MessagePack", e);
+      }
     }
   }
 
