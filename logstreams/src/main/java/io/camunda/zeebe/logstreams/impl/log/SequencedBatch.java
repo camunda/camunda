@@ -13,7 +13,8 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.List;
 import org.agrona.MutableDirectBuffer;
 
-public record SequencedBatch(long firstPosition, long sourcePosition, List<LogAppendEntry> entries)
+public record SequencedBatch(
+    long timestamp, long firstPosition, long sourcePosition, List<LogAppendEntry> entries)
     implements BufferWriter {
 
   @Override

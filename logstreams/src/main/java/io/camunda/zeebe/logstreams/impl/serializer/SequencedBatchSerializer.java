@@ -10,7 +10,6 @@ package io.camunda.zeebe.logstreams.impl.serializer;
 import io.camunda.zeebe.logstreams.impl.log.SequencedBatch;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.MutableDirectBuffer;
@@ -43,7 +42,7 @@ public final class SequencedBatchSerializer {
               entry,
               batch.firstPosition() + i,
               getSourcePosition(batch, i, entry),
-              ActorClock.currentTimeMillis());
+              batch.timestamp());
       currentOffset += DataFrameDescriptor.alignedLength(framedLength);
     }
   }

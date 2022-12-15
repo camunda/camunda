@@ -22,10 +22,10 @@ final class SequencedBatchSerializerTest {
   void serializedBatchIsReadableAsLoggedEvents() {
     // given
     final var entries = List.of(TestEntry.ofKey(1), TestEntry.ofKey(2));
-    final var batch = new SequencedBatch(1, -1, entries);
+    final var batch = new SequencedBatch(0, 1, -1, entries);
 
     // when
-    final var serialized = serializer.serializeBatch(batch);
+    final var serialized = SequencedBatchSerializer.serializeBatch(batch);
 
     // then
     final var firstEvent = new LoggedEventImpl();
