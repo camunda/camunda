@@ -45,12 +45,15 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.log.entry.UnserializedApplicationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -305,7 +308,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /** Commits the given configuration. */
-  protected CompletableFuture<Long> configure(final Collection<RaftMember> members) {
+  private CompletableFuture<Long> configure(final Collection<RaftMember> members) {
     raft.checkThread();
 
     final long term = raft.getTerm();
@@ -532,23 +535,40 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   @Override
+  public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
+    raft.getThreadContext().execute(() -> safeAppendEntry(entry, appendListener));
+  }
+
+  @Override
   public void appendEntry(
       final long lowestPosition,
       final long highestPosition,
       final ByteBuffer data,
       final AppendListener appendListener) {
     raft.getThreadContext()
-        .execute(() -> safeAppendEntry(lowestPosition, highestPosition, data, appendListener));
+        .execute(
+            () ->
+                safeAppendEntry(
+                    new SerializedApplicationEntry(lowestPosition, highestPosition, data),
+                    appendListener));
   }
 
-  private void safeAppendEntry(
+  @Override
+  public void appendEntry(
       final long lowestPosition,
       final long highestPosition,
-      final ByteBuffer data,
+      final BufferWriter data,
       final AppendListener appendListener) {
-    raft.checkThread();
+    raft.getThreadContext()
+        .execute(
+            () ->
+                safeAppendEntry(
+                    new UnserializedApplicationEntry(lowestPosition, highestPosition, data),
+                    appendListener));
+  }
 
-    final ApplicationEntry entry = new ApplicationEntry(lowestPosition, highestPosition, data);
+  private void safeAppendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
+    raft.checkThread();
 
     if (!isRunning()) {
       appendListener.onWriteError(

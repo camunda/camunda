@@ -25,6 +25,7 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import java.time.Instant;
 import java.util.Set;
 import org.agrona.ExpandableArrayBuffer;
@@ -41,7 +42,8 @@ public class RaftEntrySBESerializerTest {
   public void shouldCalculateActualApplicationEntrySize() {
     // given
     final byte[] data = "Test".getBytes();
-    final ApplicationEntry applicationEntry = new ApplicationEntry(1, 2, new UnsafeBuffer(data));
+    final SerializedApplicationEntry applicationEntry =
+        new SerializedApplicationEntry(1, 2, new UnsafeBuffer(data));
 
     // when
     final int writtenBytes = serializer.writeApplicationEntry(5, applicationEntry, buffer, 0);
@@ -55,8 +57,8 @@ public class RaftEntrySBESerializerTest {
   public void shouldWriteApplicationEntry() {
     // given
     final byte[] data = "Test".getBytes();
-    final ApplicationEntry applicationEntryWritten =
-        new ApplicationEntry(1, 2, new UnsafeBuffer(data));
+    final SerializedApplicationEntry applicationEntryWritten =
+        new SerializedApplicationEntry(1, 2, new UnsafeBuffer(data));
     final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, applicationEntryWritten);
 
     // when
@@ -77,8 +79,8 @@ public class RaftEntrySBESerializerTest {
     // given
     final int offset = 10;
     final byte[] data = "Test".getBytes();
-    final ApplicationEntry applicationEntryWritten =
-        new ApplicationEntry(1, 2, new UnsafeBuffer(data));
+    final SerializedApplicationEntry applicationEntryWritten =
+        new SerializedApplicationEntry(1, 2, new UnsafeBuffer(data));
     final RaftLogEntry raftLogEntryExpected = new RaftLogEntry(5, applicationEntryWritten);
 
     // when

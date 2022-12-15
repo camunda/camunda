@@ -16,7 +16,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -71,7 +71,7 @@ public final class AsyncSnapshottingTest {
             l ->
                 Optional.of(
                     new TestIndexedRaftLogEntry(
-                        l + 100, 1, new ApplicationEntry(1, 10, new UnsafeBuffer()))),
+                        l + 100, 1, new SerializedApplicationEntry(1, 10, new UnsafeBuffer()))),
             db -> Long.MAX_VALUE,
             new TestConcurrencyControl());
 

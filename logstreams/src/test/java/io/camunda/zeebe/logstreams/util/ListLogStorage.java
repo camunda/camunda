@@ -9,6 +9,7 @@ package io.camunda.zeebe.logstreams.util;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.List;
@@ -68,6 +69,17 @@ public class ListLogStorage implements LogStorage {
   }
 
   @Override
+  public void append(
+      final long lowestPosition,
+      final long highestPosition,
+      final BufferWriter bufferWriter,
+      final AppendListener listener) {
+    final var buffer = ByteBuffer.allocate(bufferWriter.getLength());
+    bufferWriter.write(new UnsafeBuffer(buffer), 0);
+    append(lowestPosition, highestPosition, buffer, listener);
+  }
+
+  @Override
   public void addCommitListener(final CommitListener listener) {
     commitListeners.add(listener);
   }
@@ -77,17 +89,7 @@ public class ListLogStorage implements LogStorage {
     commitListeners.remove(listener);
   }
 
-  private static final class Entry {
-    private final ByteBuffer data;
-
-    public Entry(final ByteBuffer data) {
-      this.data = data;
-    }
-
-    public ByteBuffer getData() {
-      return data;
-    }
-  }
+  private record Entry(ByteBuffer data) {}
 
   private class ListLogStorageReader implements LogStorageReader {
     int currentIndex;

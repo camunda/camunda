@@ -9,7 +9,7 @@ package io.camunda.zeebe.broker.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -23,8 +23,8 @@ final class ZeebeEntryValidatorTest {
   @Test
   void shouldRejectEntryWithGapInPosition() {
     // given
-    final var lastEntry = new ApplicationEntry(1, 1, new UnsafeBuffer());
-    final var entry = new ApplicationEntry(3, 3, new UnsafeBuffer());
+    final var lastEntry = new SerializedApplicationEntry(1, 1, new UnsafeBuffer());
+    final var entry = new SerializedApplicationEntry(3, 3, new UnsafeBuffer());
 
     // when
     final ValidationResult result = validator.validateEntry(lastEntry, entry);
@@ -36,8 +36,8 @@ final class ZeebeEntryValidatorTest {
   @Test
   void shouldAcceptEntryWithoutGapInPosition() {
     // given
-    final var lastEntry = new ApplicationEntry(1, 2, new UnsafeBuffer());
-    final var entry = new ApplicationEntry(3, 3, new UnsafeBuffer());
+    final var lastEntry = new SerializedApplicationEntry(1, 2, new UnsafeBuffer());
+    final var entry = new SerializedApplicationEntry(3, 3, new UnsafeBuffer());
 
     // when
     final ValidationResult result = validator.validateEntry(lastEntry, entry);
@@ -49,7 +49,7 @@ final class ZeebeEntryValidatorTest {
   @Test
   void shouldAcceptEntryWhenNoLastKnownEntry() {
     // given
-    final var entry = new ApplicationEntry(3, 3, new UnsafeBuffer());
+    final var entry = new SerializedApplicationEntry(3, 3, new UnsafeBuffer());
 
     // when
     final ValidationResult result = validator.validateEntry(null, entry);

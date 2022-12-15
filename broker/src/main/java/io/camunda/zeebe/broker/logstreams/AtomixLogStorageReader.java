@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.logstreams;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
 import org.agrona.DirectBuffer;
@@ -91,7 +92,9 @@ public final class AtomixLogStorageReader implements LogStorageReader {
     while (reader.hasNext()) {
       final IndexedRaftLogEntry entry = reader.next();
       if (entry.isApplicationEntry()) {
-        final ApplicationEntry nextEntry = entry.getApplicationEntry();
+        // application entries read from the log should always be `SerializedApplicationEntry`
+        final SerializedApplicationEntry nextEntry =
+            (SerializedApplicationEntry) entry.getApplicationEntry();
 
         nextBlockBuffer.wrap(nextEntry.data());
         return true;

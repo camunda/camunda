@@ -13,6 +13,7 @@ import io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.ActorCondition;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.Closeable;
 import java.util.List;
 import java.util.Queue;
@@ -85,7 +86,10 @@ final class Sequencer implements LogStreamWriter, Closeable {
     lock.lock();
     try {
       currentPosition = position;
-      isEnqueued = queue.offer(new SequencedBatch(currentPosition, sourcePosition, appendEntries));
+      isEnqueued =
+          queue.offer(
+              new SequencedBatch(
+                  ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries));
       if (isEnqueued) {
         position = currentPosition + batchSize;
       }

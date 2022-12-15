@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -32,7 +31,7 @@ final class AtomixLogStorageReaderTest {
   private AtomixLogStorageReader reader;
 
   @BeforeEach
-  void beforeEach(final @TempDir File tempDir) {
+  void beforeEach(@TempDir final File tempDir) {
     log = RaftLog.builder().withDirectory(tempDir).build();
     final Appender appender = new Appender();
     logStorage = new AtomixLogStorage(log::openUncommittedReader, appender);
@@ -166,17 +165,11 @@ final class AtomixLogStorageReaderTest {
   private final class Appender implements ZeebeLogAppender {
 
     @Override
-    public void appendEntry(
-        final long lowestPosition,
-        final long highestPosition,
-        final ByteBuffer data,
-        final AppendListener appendListener) {
-      final ApplicationEntry entry = new ApplicationEntry(lowestPosition, highestPosition, data);
-      final IndexedRaftLogEntry indexedEntry = log.append(new RaftLogEntry(1, entry));
-
-      appendListener.onWrite(indexedEntry);
-      log.setCommitIndex(indexedEntry.index());
-      appendListener.onCommit(indexedEntry);
+    public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
+      final var indexed = log.append(new RaftLogEntry(1, entry));
+      appendListener.onWrite(indexed);
+      log.setCommitIndex(indexed.index());
+      appendListener.onCommit(indexed);
     }
   }
 }

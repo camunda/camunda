@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.camunda.zeebe.test.util.TestUtil;
@@ -56,7 +57,7 @@ public class SingleRaftEntryValidationTest {
     raftRule.appendEntry();
 
     // then
-    assertThat(getEntryTypeCount(ApplicationEntry.class)).isOne();
+    assertThat(getEntryTypeCount(SerializedApplicationEntry.class)).isOne();
   }
 
   private int getEntryTypeCount(final Class type) {

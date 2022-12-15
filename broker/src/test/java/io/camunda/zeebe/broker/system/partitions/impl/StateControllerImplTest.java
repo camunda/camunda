@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
@@ -52,7 +52,8 @@ public final class StateControllerImplTest {
   private final AtomixRecordEntrySupplier indexedRaftLogEntry =
       l ->
           Optional.of(
-              new TestIndexedRaftLogEntry(l, 1, new ApplicationEntry(1, 10, new UnsafeBuffer())));
+              new TestIndexedRaftLogEntry(
+                  l, 1, new SerializedApplicationEntry(1, 10, new UnsafeBuffer())));
   private final AtomixRecordEntrySupplier emptyEntrySupplier = l -> Optional.empty();
   private final AtomicReference<AtomixRecordEntrySupplier> atomixRecordEntrySupplier =
       new AtomicReference<>(indexedRaftLogEntry);

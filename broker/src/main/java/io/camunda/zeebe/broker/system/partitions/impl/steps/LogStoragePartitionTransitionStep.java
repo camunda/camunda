@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.Either.right;
 
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
@@ -20,7 +21,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransi
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
-import java.nio.ByteBuffer;
 
 public final class LogStoragePartitionTransitionStep implements PartitionTransitionStep {
   private static final String WRONG_TERM_ERROR_MSG =
@@ -136,16 +136,13 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
   }
 
   private static class LogAppenderForReadOnlyStorage implements ZeebeLogAppender {
+
     @Override
-    public void appendEntry(
-        final long lowestPosition,
-        final long highestPosition,
-        final ByteBuffer data,
-        final AppendListener appendListener) {
+    public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
       throw new UnsupportedOperationException(
           String.format(
               "Expect to append entry (positions %d - %d), but was in Follower role. Followers must not append entries to the log storage",
-              lowestPosition, highestPosition));
+              entry.lowestPosition(), entry.highestPosition()));
     }
   }
 }

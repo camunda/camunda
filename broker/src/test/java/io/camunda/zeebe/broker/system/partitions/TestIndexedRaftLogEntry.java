@@ -11,6 +11,7 @@ import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 
 public class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
 
@@ -41,7 +42,7 @@ public class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
 
   @Override
   public boolean isApplicationEntry() {
-    return entry instanceof ApplicationEntry;
+    return entry instanceof SerializedApplicationEntry;
   }
 
   @Override
