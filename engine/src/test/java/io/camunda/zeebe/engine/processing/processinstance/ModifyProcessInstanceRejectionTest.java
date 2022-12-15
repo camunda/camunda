@@ -805,9 +805,10 @@ public class ModifyProcessInstanceRejectionTest {
                 + " instance is not allowed")
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            ("Expected to modify instance of process '%s' but it contains one or more activate"
-                    + " instructions with an ancestor scope key that does not belong to the "
-                    + "modified process instance: '%d'")
+            ("""
+              Expected to modify instance of process '%s' but it contains one or more \
+              activate instructions with an ancestor scope key that does not belong to the \
+              modified process instance: '%d'""")
                 .formatted(PROCESS_ID, subProcessKeyTwo));
   }
 }

@@ -112,9 +112,9 @@ public final class ProcessInstanceModificationProcessor
 
   private static final String ERROR_MESSAGE_ANCESTOR_WRONG_PROCESS_INSTANCE =
       """
-          Expected to modify instance of process '%s' but it contains one or more activate \
-          instructions with an ancestor scope key that does not belong to the modified process \
-          instance: '%s'""";
+      Expected to modify instance of process '%s' but it contains one or more activate \
+      instructions with an ancestor scope key that does not belong to the modified process \
+      instance: '%s'""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
