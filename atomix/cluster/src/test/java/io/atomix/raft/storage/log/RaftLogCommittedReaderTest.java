@@ -17,8 +17,8 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -141,8 +141,8 @@ class RaftLogCommittedReaderTest {
 
   private void appendEntries(final int count) {
     for (int i = 0; i < count; i++) {
-      final ApplicationEntry applicationEntry = new ApplicationEntry(i + 1, i + 1, data);
-      final RaftLogEntry entry = new RaftLogEntry(1, applicationEntry);
+      final var applicationEntry = new SerializedApplicationEntry(i + 1, i + 1, data);
+      final var entry = new RaftLogEntry(1, applicationEntry);
       raftlog.append(entry);
     }
   }

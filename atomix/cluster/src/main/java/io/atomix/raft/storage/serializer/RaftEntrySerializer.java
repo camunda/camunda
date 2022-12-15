@@ -15,10 +15,10 @@
  */
 package io.atomix.raft.storage.serializer;
 
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -33,7 +33,7 @@ public interface RaftEntrySerializer {
    * @param entry to determine the length in bytes for
    * @return the length in bytes when the entry gets serialized
    */
-  int getApplicationEntrySerializedLength(ApplicationEntry entry);
+  int getApplicationEntrySerializedLength(SerializedApplicationEntry entry);
 
   /**
    * Determines the length in bytes of a serialized initial entry.
@@ -60,7 +60,7 @@ public interface RaftEntrySerializer {
    * @return the number of bytes written
    */
   int writeApplicationEntry(
-      long term, ApplicationEntry entry, MutableDirectBuffer buffer, int offset);
+      long term, SerializedApplicationEntry entry, MutableDirectBuffer buffer, int offset);
 
   /**
    * Writes the term and entry into given buffer at the given offset

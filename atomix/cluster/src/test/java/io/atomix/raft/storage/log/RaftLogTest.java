@@ -28,6 +28,7 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.Journal;
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -114,7 +115,8 @@ class RaftLogTest {
     assertThat(entryRead.isApplicationEntry()).isTrue();
     assertThat(entryRead.getApplicationEntry().lowestPosition()).isEqualTo(1);
     assertThat(entryRead.getApplicationEntry().highestPosition()).isEqualTo(2);
-    assertThat(entryRead.getApplicationEntry().data()).isEqualTo(new UnsafeBuffer(data));
+    assertThat(((SerializedApplicationEntry) entryRead.getApplicationEntry()).data())
+        .isEqualTo(new UnsafeBuffer(data));
     assertThat(appended).isEqualTo(entryRead);
   }
 
@@ -246,7 +248,7 @@ class RaftLogTest {
 
   private ApplicationEntry createApplicationEntry(final long lowestPosition) {
     // -1 on highest position as the lowestPosition is inclusive
-    return new ApplicationEntry(
+    return new SerializedApplicationEntry(
         lowestPosition, lowestPosition + DEFAULT_APPLICATION_ENTRY_LENGTH - 1, data);
   }
 }

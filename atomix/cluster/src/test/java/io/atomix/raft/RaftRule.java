@@ -36,6 +36,7 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -670,9 +671,9 @@ public final class RaftRule extends ExternalResource {
     private static CopiedRaftLogEntry of(final IndexedRaftLogEntry entry) {
       final RaftEntry copiedEntry;
 
-      if (entry.entry() instanceof ApplicationEntry app) {
+      if (entry.entry() instanceof SerializedApplicationEntry app) {
         copiedEntry =
-            new ApplicationEntry(
+            new SerializedApplicationEntry(
                 app.lowestPosition(), app.highestPosition(), BufferUtil.cloneBuffer(app.data()));
       } else {
         copiedEntry = entry.entry();

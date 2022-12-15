@@ -27,6 +27,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.RaftMemberDecoder;
 import io.camunda.zeebe.journal.file.RecordDataEncoder;
 import java.time.Instant;
@@ -46,7 +47,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   final ConfigurationEntryDecoder configurationEntryDecoder = new ConfigurationEntryDecoder();
 
   @Override
-  public int getApplicationEntrySerializedLength(final ApplicationEntry entry) {
+  public int getApplicationEntrySerializedLength(final SerializedApplicationEntry entry) {
     // raft frame length
     return headerEncoder.encodedLength()
         + raftLogEntryEncoder.sbeBlockLength()
@@ -83,7 +84,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
   @Override
   public int writeApplicationEntry(
       final long term,
-      final ApplicationEntry entry,
+      final SerializedApplicationEntry entry,
       final MutableDirectBuffer buffer,
       final int offset) {
 
@@ -214,7 +215,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
     final DirectBuffer data = new UnsafeBuffer();
     applicationEntryDecoder.wrapApplicationData(data);
 
-    return new ApplicationEntry(
+    return new SerializedApplicationEntry(
         applicationEntryDecoder.lowestAsqn(), applicationEntryDecoder.highestAsqn(), data);
   }
 

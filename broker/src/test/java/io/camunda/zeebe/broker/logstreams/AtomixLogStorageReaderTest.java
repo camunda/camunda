@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
-import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import java.io.File;
@@ -32,7 +32,7 @@ final class AtomixLogStorageReaderTest {
   private AtomixLogStorageReader reader;
 
   @BeforeEach
-  void beforeEach(final @TempDir File tempDir) {
+  void beforeEach(@TempDir final File tempDir) {
     log = RaftLog.builder().withDirectory(tempDir).build();
     final Appender appender = new Appender();
     logStorage = new AtomixLogStorage(log::openUncommittedReader, appender);
@@ -171,7 +171,7 @@ final class AtomixLogStorageReaderTest {
         final long highestPosition,
         final ByteBuffer data,
         final AppendListener appendListener) {
-      final ApplicationEntry entry = new ApplicationEntry(lowestPosition, highestPosition, data);
+      final var entry = new SerializedApplicationEntry(lowestPosition, highestPosition, data);
       final IndexedRaftLogEntry indexedEntry = log.append(new RaftLogEntry(1, entry));
 
       appendListener.onWrite(indexedEntry);

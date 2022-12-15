@@ -45,6 +45,7 @@ import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -305,7 +306,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /** Commits the given configuration. */
-  protected CompletableFuture<Long> configure(final Collection<RaftMember> members) {
+  private CompletableFuture<Long> configure(final Collection<RaftMember> members) {
     raft.checkThread();
 
     final long term = raft.getTerm();
@@ -548,7 +549,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       final AppendListener appendListener) {
     raft.checkThread();
 
-    final ApplicationEntry entry = new ApplicationEntry(lowestPosition, highestPosition, data);
+    final ApplicationEntry entry =
+        new SerializedApplicationEntry(lowestPosition, highestPosition, data);
 
     if (!isRunning()) {
       appendListener.onWriteError(
