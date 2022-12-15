@@ -224,6 +224,16 @@
         <configuration>
           <from>
             <image>eclipse-temurin:17-jre-focal</image>
+            <platforms>
+              <platform>
+                <architecture>amd64</architecture>
+                <os>linux</os>
+              </platform>
+              <platform>
+                <architecture>arm64</architecture>
+                <os>linux</os>
+              </platform>
+            </platforms>
           </from>
           <to>
             <image>docker.io/camunda/tasklist</image>
@@ -236,6 +246,7 @@
             </auth>
           </to>
           <container>
+            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
             <jvmFlags>
               <jvmFlag>-XX:+ExitOnOutOfMemoryError</jvmFlag>
             </jvmFlags>

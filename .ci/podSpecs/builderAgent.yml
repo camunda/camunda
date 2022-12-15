@@ -69,10 +69,14 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: docker
-      image: docker:18.06-dind
+      image: docker:20.10.16-dind
       args: ["--storage-driver=overlay2"]
       securityContext:
         privileged: true
+      env:
+        # This disabled automatic TLS setup as this is not exposed to the network anyway
+        - name: DOCKER_TLS_CERTDIR
+          value: ""
       tty: true
       resources:
         limits:
