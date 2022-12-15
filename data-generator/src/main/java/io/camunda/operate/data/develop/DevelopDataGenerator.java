@@ -163,6 +163,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     //link event process
     jobWorkers.add(progressRetryTask());
+    //escalation events process
+    jobWorkers.add(progressPlaceOrderTask());
 
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
@@ -266,6 +268,19 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
           jobClient.newFailCommand(job.getKey()).retries(0).send().join();
           break;
         }
+      })
+      .name("operate")
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+      .open();
+  }
+
+  private JobWorker progressPlaceOrderTask() {
+    return client.newWorker()
+      .jobType("placeOrder")
+      .handler((jobClient, job) ->
+      {
+        final int shipping = random.nextInt(5) - 1;
+        jobClient.newCompleteCommand(job.getKey()).variables("{\"shipping\":" + shipping + "}").send().join();
       })
       .name("operate")
       .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
@@ -407,6 +422,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployProcess(client, "develop/linkEvents.bpmn");
 
+    ZeebeTestUtil.deployProcess(client, "develop/escalationEvents_v_1.bpmn");
   }
 
   @Override
@@ -415,7 +431,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     if (version == 1) {
       createBigProcess(40, 1000);
     }
-    final int instancesCount = random.nextInt(20) + 20;
+    final int instancesCount = random.nextInt(15) + 15;
     for (int i = 0; i < instancesCount; i++) {
 
       if (version == 1) {
@@ -440,6 +456,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "terminateEndEvent", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "dataStoreProcess", null));
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "linkEventProcess", null));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
       }
 
       if (version == 2) {
@@ -448,6 +465,7 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         //call activity process
         //these instances must be fine
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "escalationEvents", null));
       }
       if (version < 2) {
         processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(client, "prWithSubprocess", null));
@@ -507,6 +525,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployProcess(client, "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
 
     ZeebeTestUtil.deployProcess(client, "develop/calledProcess.bpmn");
+
+    ZeebeTestUtil.deployProcess(client, "develop/escalationEvents_v_2.bpmn");
 
   }
 

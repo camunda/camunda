@@ -10,6 +10,7 @@ import {getBoundaryEventType} from 'modules/bpmn-js/utils/getBoundaryEventType';
 import {getEventType} from 'modules/bpmn-js/utils/getEventType';
 import {getMultiInstanceType} from 'modules/bpmn-js/utils/getMultiInstanceType';
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
+import {isInterruptingEvent} from 'modules/bpmn-js/utils/isInterruptingEvent';
 import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {SVGIcon} from './styled';
 
@@ -66,6 +67,12 @@ import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/f
 import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
 
 import {ReactComponent as FlowNodeEventTerminateEnd} from 'modules/components/Icon/flow-node-event-terminate-end.svg';
+import {ReactComponent as FlowNodeEscalationEndEvent} from 'modules/components/Icon/flow-node-escalation-end-event.svg';
+import {ReactComponent as FlowNodeEscalationBoundaryEvent} from 'modules/components/Icon/flow-node-escalation-boundary-event.svg';
+import {ReactComponent as FlowNodeEscalationBoundaryNonInterruptingEvent} from 'modules/components/Icon/flow-node-escalation-boundary-non-interrupting-event.svg';
+import {ReactComponent as FlowNodeEscalationIntermediateThrowEvent} from 'modules/components/Icon/flow-node-escalation-intermediate-throw-event.svg';
+import {ReactComponent as FlowNodeEscalationNonInterruptingStartEvent} from 'modules/components/Icon/flow-node-escalation-non-interrupting-start-event.svg';
+import {ReactComponent as FlowNodeEscalationStartEvent} from 'modules/components/Icon/flow-node-escalation-start-event.svg';
 
 import {ReactComponent as FlowNodeLinkEventIntermediateCatch} from 'modules/components/Icon/flow-node-link-event-intermediate-catch.svg';
 import {ReactComponent as FlowNodeLinkEventIntermediateThrow} from 'modules/components/Icon/flow-node-link-event-intermediate-throw.svg';
@@ -137,10 +144,36 @@ const getSVGComponent = (
 
     case 'bpmn:LinkEventDefinition':
       switch (businessObject.$type) {
+        default:
         case 'bpmn:IntermediateCatchEvent':
           return FlowNodeLinkEventIntermediateCatch;
         case 'bpmn:IntermediateThrowEvent':
           return FlowNodeLinkEventIntermediateThrow;
+      }
+
+    case 'bpmn:EscalationEventDefinition':
+      switch (businessObject.$type) {
+        default:
+        case 'bpmn:EndEvent':
+          return FlowNodeEscalationEndEvent;
+        case 'bpmn:StartEvent':
+          switch (isInterruptingEvent(businessObject)) {
+            default:
+            case true:
+              return FlowNodeEscalationStartEvent;
+            case false:
+              return FlowNodeEscalationNonInterruptingStartEvent;
+          }
+        case 'bpmn:IntermediateThrowEvent':
+          return FlowNodeEscalationIntermediateThrowEvent;
+        case 'bpmn:BoundaryEvent':
+          switch (getBoundaryEventType(businessObject)) {
+            default:
+            case 'interrupting':
+              return FlowNodeEscalationBoundaryEvent;
+            case 'non-interrupting':
+              return FlowNodeEscalationBoundaryNonInterruptingEvent;
+          }
       }
   }
 

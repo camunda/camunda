@@ -662,7 +662,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   protected void startProcessInstances(int version) {
-    final int instancesCount = random.nextInt(20) + 20;
+    final int instancesCount = random.nextInt(15) + 15;
     for (int i = 0; i < instancesCount; i++) {
       processInstanceKeys.add(startDMNInvoice());
       if (version < 2) {
