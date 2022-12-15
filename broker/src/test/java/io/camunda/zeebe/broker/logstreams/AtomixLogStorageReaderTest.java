@@ -9,13 +9,11 @@ package io.camunda.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
-import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.nio.ByteBuffer;
 import org.agrona.CloseHelper;
@@ -167,26 +165,11 @@ final class AtomixLogStorageReaderTest {
   private final class Appender implements ZeebeLogAppender {
 
     @Override
-    public void appendEntry(
-        final long lowestPosition,
-        final long highestPosition,
-        final ByteBuffer data,
-        final AppendListener appendListener) {
-      final var entry = new SerializedApplicationEntry(lowestPosition, highestPosition, data);
-      final IndexedRaftLogEntry indexedEntry = log.append(new RaftLogEntry(1, entry));
-
-      appendListener.onWrite(indexedEntry);
-      log.setCommitIndex(indexedEntry.index());
-      appendListener.onCommit(indexedEntry);
-    }
-
-    @Override
-    public void appendEntry(
-        final long lowestPosition,
-        final long highestPosition,
-        final BufferWriter data,
-        final AppendListener appendListener) {
-      throw new UnsupportedOperationException();
+    public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
+      final var indexed = log.append(new RaftLogEntry(1, entry));
+      appendListener.onWrite(indexed);
+      log.setCommitIndex(indexed.index());
+      appendListener.onCommit(indexed);
     }
   }
 }

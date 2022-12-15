@@ -16,6 +16,9 @@
 package io.atomix.raft.zeebe;
 
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.entry.ApplicationEntry;
+import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.log.entry.UnserializedApplicationEntry;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 
@@ -24,7 +27,10 @@ import java.nio.ByteBuffer;
  * automatically replicated and eventually committed, and the ability for callers to be notified of
  * various events, e.g. {@link AppendListener#onCommit(IndexedRaftLogEntry)}.
  */
+@FunctionalInterface
 public interface ZeebeLogAppender {
+  /** Appends an entry to the local Raft log and schedules replication to each follower. */
+  void appendEntry(ApplicationEntry entry, AppendListener appendListener);
   /**
    * Appends an entry to the local Raft log and schedules replication to each follower.
    *
@@ -32,8 +38,14 @@ public interface ZeebeLogAppender {
    * @param highestPosition highest record position in the data buffer
    * @param data data to store in the entry
    */
-  void appendEntry(
-      long lowestPosition, long highestPosition, ByteBuffer data, AppendListener appendListener);
+  default void appendEntry(
+      final long lowestPosition,
+      final long highestPosition,
+      final ByteBuffer data,
+      final AppendListener appendListener) {
+    appendEntry(
+        new SerializedApplicationEntry(lowestPosition, highestPosition, data), appendListener);
+  }
 
   /**
    * Appends an entry to the local Raft log and schedules replication to each follower.
@@ -42,8 +54,14 @@ public interface ZeebeLogAppender {
    * @param highestPosition highest record position in the data buffer
    * @param data data to store in the entry
    */
-  void appendEntry(
-      long lowestPosition, long highestPosition, BufferWriter data, AppendListener appendListener);
+  default void appendEntry(
+      final long lowestPosition,
+      final long highestPosition,
+      final BufferWriter data,
+      final AppendListener appendListener) {
+    appendEntry(
+        new UnserializedApplicationEntry(lowestPosition, highestPosition, data), appendListener);
+  }
 
   /**
    * An append listener can observe and be notified of different events related to the append

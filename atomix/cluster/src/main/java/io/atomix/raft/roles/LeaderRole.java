@@ -535,6 +535,11 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   @Override
+  public void appendEntry(final ApplicationEntry entry, final AppendListener appendListener) {
+    raft.getThreadContext().execute(() -> safeAppendEntry(entry, appendListener));
+  }
+
+  @Override
   public void appendEntry(
       final long lowestPosition,
       final long highestPosition,
