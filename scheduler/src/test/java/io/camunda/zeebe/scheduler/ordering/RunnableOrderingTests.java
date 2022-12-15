@@ -10,7 +10,6 @@ package io.camunda.zeebe.scheduler.ordering;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 
-import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import java.time.Duration;
@@ -168,48 +167,6 @@ public final class RunnableOrderingTests {
     assertThat(actor.actions).containsSubsequence(newArrayList(THREE, TWO));
     assertThat(actor.actions).containsSubsequence(newArrayList(ONE, FOUR));
     assertThat(actor.actions).containsSubsequence(newArrayList(THREE, FOUR));
-  }
-
-  @Test
-  public void conditionTest() {
-    // given
-    final CompletableActorFuture<ActorCondition> conditionFuture = new CompletableActorFuture<>();
-    final ActionRecordingActor actor =
-        new ActionRecordingActor() {
-          @Override
-          protected void onActorStarted() {
-            actor.run(
-                () -> {
-                  final ActorCondition condition =
-                      actor.onCondition(
-                          "cond",
-                          () -> {
-                            actions.add(THREE);
-                            actor.run(
-                                runnable(
-                                    FOUR)); // this is done before the condition is fired for the
-                            // second time
-                          });
-                  conditionFuture.complete(condition);
-                  actions.add(ONE);
-                });
-            actor.run(runnable(TWO));
-          }
-        };
-
-    // when
-    schedulerRule.submitActor(actor);
-    schedulerRule.workUntilDone();
-
-    final ActorCondition condition = conditionFuture.join();
-    condition.signal();
-    condition.signal(); // condition is exactly once
-    schedulerRule.workUntilDone();
-
-    // then
-    assertThat(actor.actions).containsSequence(newArrayList(THREE, FOUR, THREE, FOUR));
-    assertThat(actor.actions).containsSubsequence(newArrayList(ONE, THREE));
-    assertThat(actor.actions).containsSubsequence(newArrayList(TWO, THREE));
   }
 
   @Test

@@ -42,27 +42,6 @@ public class ActorControl implements ConcurrencyControl {
   }
 
   /**
-   * Conditional actions are called while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param conditionName
-   * @param conditionAction
-   * @return
-   */
-  public ActorCondition onCondition(final String conditionName, final Runnable conditionAction) {
-    ensureCalledFromWithinActor("onCondition(...)");
-
-    final ActorJob job = new ActorJob();
-    job.setRunnable(conditionAction);
-    job.onJobAddedToTask(task);
-
-    final ActorConditionImpl condition = new ActorConditionImpl(conditionName, job);
-    job.setSubscription(condition);
-
-    return condition;
-  }
-
-  /**
    * Callables actions are called while the actor is in the following actor lifecycle phases: {@link
    * ActorLifecyclePhase#STARTED}
    *
