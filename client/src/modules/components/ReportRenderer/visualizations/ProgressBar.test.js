@@ -39,7 +39,7 @@ it('should show the overlay with the goal value when the goal value is exceeded'
 
   const node = shallow(<ProgressBar {...props} />);
 
-  expect(node.find('.goalOverlay')).toIncludeText('Target > formatted');
+  expect(node.find('.goalLabel')).toIncludeText('Target > formatted');
 });
 
 it('should show an invalid configuration message if min or max props are invalid', () => {
