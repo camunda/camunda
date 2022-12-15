@@ -42,9 +42,8 @@ public class BlockSequenceBuilder extends AbstractBlockBuilder {
           new CallActivityBlockBuilder.Factory(),
           new UserTaskBlockBuilder.Factory(),
           new ManualTaskBlockBuilder.Factory(),
-          new IntermediateThrowEventBlockBuilder.Factory());
-  // https://github.com/camunda/zeebe/issues/11121#issuecomment-1330859020
-  //          new EscalationEventBlockBuilder.Factory()); temporarily disabled due to flakiness
+          new IntermediateThrowEventBlockBuilder.Factory(),
+          new EscalationEventBlockBuilder.Factory());
 
   private final List<BlockBuilder> blockBuilders = new ArrayList<>();
 
