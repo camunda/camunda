@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
+import io.camunda.zeebe.model.bpmn.instance.EndEvent;
 import io.camunda.zeebe.model.bpmn.instance.Error;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -36,21 +36,24 @@ public class ErrorEventDefinitionValidator implements ModelElementValidator<Erro
       final ErrorEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
 
+    final ModelElementInstance parentElement = element.getParentElement();
     final Error error = element.getError();
-    if (error == null) {
-      validationResultCollector.addError(0, "Must reference an error");
-
-    } else {
-      final String errorCode = error.getErrorCode();
-      if (errorCode == null || errorCode.isEmpty()) {
-        validationResultCollector.addError(0, "ErrorCode must be present and not empty");
-        return;
+    if (parentElement instanceof EndEvent) {
+      if (error == null) {
+        validationResultCollector.addError(0, "Must reference an error");
+      } else {
+        final String errorCode = error.getErrorCode();
+        if (errorCode == null || errorCode.isEmpty()) {
+          validationResultCollector.addError(0, "ErrorCode must be present and not empty");
+        }
       }
-
-      final ModelElementInstance parentElement = element.getParentElement();
-      if (errorCode.startsWith(ZEEBE_EXPRESSION_PREFIX) && parentElement instanceof CatchEvent) {
-        validationResultCollector.addError(
-            0, "The errorCode of the error catch event is not allowed to be an expression");
+    } else {
+      if (error != null) {
+        final String errorCode = error.getErrorCode();
+        if (errorCode != null && errorCode.startsWith(ZEEBE_EXPRESSION_PREFIX)) {
+          validationResultCollector.addError(
+              0, "The errorCode of the error catch event is not allowed to be an expression");
+        }
       }
     }
   }

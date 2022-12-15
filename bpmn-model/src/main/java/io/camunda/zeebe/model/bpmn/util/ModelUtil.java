@@ -109,20 +109,6 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
-  public static List<String> getDuplicateMessageNames(
-      final Stream<MessageEventDefinition> eventDefinitions) {
-
-    final Stream<Message> messages =
-        eventDefinitions
-            .map(MessageEventDefinition::getMessage)
-            .filter(m -> m.getName() != null && !m.getName().isEmpty());
-
-    return messages.collect(groupingBy(Message::getName, counting())).entrySet().stream()
-        .filter(e -> e.getValue() > 1)
-        .map(Entry::getKey)
-        .collect(Collectors.toList());
-  }
-
   public static void verifyNoDuplicatedBoundaryEvents(
       final Activity activity, final Consumer<String> errorCollector) {
 
@@ -130,6 +116,7 @@ public class ModelUtil {
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
+    verifyNoDuplicatedErrorHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicateSignalStartEvents(
@@ -203,6 +190,7 @@ public class ModelUtil {
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
     verifyNoDuplicatedEscalationHandler(definitions, errorCollector);
+    verifyNoDuplicatedErrorHandler(definitions, errorCollector);
   }
 
   public static void verifyNoDuplicatedEventDefinition(
@@ -219,15 +207,6 @@ public class ModelUtil {
     getDuplicatedEntries(messageNames)
         .map(ModelUtil::duplicatedMessageNames)
         .forEach(errorCollector);
-
-    final Stream<String> errorCodes =
-        getEventDefinition(definitions, ErrorEventDefinition.class)
-            .filter(def -> def.getError() != null)
-            .map(ErrorEventDefinition::getError)
-            .filter(error -> error.getErrorCode() != null && !error.getErrorCode().isEmpty())
-            .map(Error::getErrorCode);
-
-    getDuplicatedEntries(errorCodes).map(ModelUtil::duplicatedErrorCodes).forEach(errorCollector);
 
     final Stream<String> signalNames =
         getEventDefinition(definitions, SignalEventDefinition.class)
@@ -296,6 +275,48 @@ public class ModelUtil {
         });
   }
 
+  private static void verifyNoDuplicatedErrorHandler(
+      final List<EventDefinition> definitions, final Consumer<String> errorCollector) {
+    final List<Error> errors =
+        getEventDefinition(definitions, ErrorEventDefinition.class)
+            .map(ErrorEventDefinition::getError)
+            .collect(Collectors.toList());
+
+    if (errors.isEmpty()) {
+      return;
+    }
+
+    final long definitionWithoutErrorCount = errors.stream().filter(Objects::isNull).count();
+
+    if (definitionWithoutErrorCount > 1) {
+      errorCollector.accept(
+          "The same scope can not contain more than one error catch event without"
+              + " error code. An error catch event without error code catches"
+              + " all errors.");
+    }
+
+    final Map<Optional<String>, Long> errorCodeOccurrences =
+        errors.stream()
+            .filter(Objects::nonNull)
+            .map(error -> Optional.ofNullable(error.getErrorCode()))
+            .collect(groupingBy(errorCode -> errorCode, counting()));
+
+    errorCodeOccurrences.forEach(
+        (errorCode, occurrences) -> {
+          if (occurrences > 1) {
+            errorCollector.accept(
+                errorCode.isPresent()
+                    ? String.format(
+                        "Multiple error catch events with the same error code '%s' are "
+                            + "not supported on the same scope.",
+                        errorCode.get())
+                    : "The same scope can not contain more than one error catch event without"
+                        + " error code. An error catch event without error code catches"
+                        + " all errors.");
+          }
+        });
+  }
+
   public static <T extends EventDefinition> Stream<T> getEventDefinition(
       final Collection<? extends EventDefinition> collection, final Class<T> type) {
     return collection.stream().filter(type::isInstance).map(type::cast);
@@ -310,12 +331,6 @@ public class ModelUtil {
   private static String duplicatedMessageNames(final String messageName) {
     return String.format(
         "Multiple message event definitions with the same name '%s' are not allowed.", messageName);
-  }
-
-  private static String duplicatedErrorCodes(final String errorCode) {
-    return String.format(
-        "Multiple error event definitions with the same errorCode '%s' are not allowed.",
-        errorCode);
   }
 
   private static String duplicatedSignalNames(final String signalName) {
