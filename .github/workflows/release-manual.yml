@@ -21,7 +21,7 @@ on:
         required: false
         default: false
       dryRun:
-        description: 'Whether to push release commits and artifacts to remote (Git commits & tags, Maven artifacts, Github Release), defaults to true.'
+        description: 'Whether to perform a dry release where no changes or artifacts are pushed, defaults to true.'
         type: boolean
         default: true
 
