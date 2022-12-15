@@ -7,9 +7,13 @@
  */
 package io.atomix.raft.storage.log.entry;
 
+import io.camunda.zeebe.util.buffer.BufferWriter;
+
 public interface ApplicationEntry extends RaftEntry {
 
   long lowestPosition();
 
   long highestPosition();
+
+  BufferWriter dataWriter();
 }
