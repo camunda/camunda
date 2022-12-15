@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.storage;
 
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteBuffer;
 
 /**
@@ -28,6 +29,26 @@ public interface LogStorage {
    * @return a new stateful storage reader
    */
   LogStorageReader newReader();
+
+  /**
+   * Writes a block containing one or multiple log entries in the storage and returns the address at
+   * which the block has been written.
+   *
+   * <p>Storage implementations must guarantee eventually atomicity. When this method completes,
+   * either all the bytes must be written or none at all.
+   *
+   * <p>The caller of this method must guarantee that the provided block contains unfragmented log
+   * entries.
+   *
+   * @param lowestPosition the lowest record position of all records in the block buffer
+   * @param highestPosition the highest record position of all records in the block buffer
+   * @param bufferWriter the buffer containing a block of log entries to be written into storage
+   */
+  void append(
+      long lowestPosition,
+      long highestPosition,
+      BufferWriter bufferWriter,
+      AppendListener listener);
 
   /**
    * Writes a block containing one or multiple log entries in the storage and returns the address at

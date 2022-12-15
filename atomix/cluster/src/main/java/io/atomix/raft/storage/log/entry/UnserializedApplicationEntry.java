@@ -11,6 +11,10 @@ import io.atomix.raft.storage.serializer.RaftEntrySerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer.SerializedBufferWriterAdapter;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
+/**
+ * An {@link ApplicationEntry} with unserialized application data. Used for writing new entries to
+ * the log.
+ */
 public record UnserializedApplicationEntry(
     long lowestPosition, long highestPosition, BufferWriter writer) implements ApplicationEntry {
 
