@@ -16,17 +16,13 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
  * the log.
  */
 public record UnserializedApplicationEntry(
-    long lowestPosition, long highestPosition, BufferWriter writer) implements ApplicationEntry {
+    long lowestPosition, long highestPosition, BufferWriter dataWriter)
+    implements ApplicationEntry {
 
   @Override
   public BufferWriter toSerializable(final long term, final RaftEntrySerializer serializer) {
     return new SerializedBufferWriterAdapter(
         () -> serializer.getApplicationEntrySerializedLength(this),
         (buffer, offset) -> serializer.writeApplicationEntry(term, this, buffer, offset));
-  }
-
-  @Override
-  public BufferWriter dataWriter() {
-    return writer;
   }
 }
