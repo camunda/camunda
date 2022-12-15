@@ -186,7 +186,11 @@ public class DbMigrationState implements MutableMigrationState {
             // trigger with the passed parameters without doing any checks beforehand. This is
             // sufficient for this migration.
             eventScopeInstanceState.triggerStartEvent(
-                flowScopeKey, eventKey, elementIdBuffer, value.get());
+                flowScopeKey,
+                eventKey,
+                elementIdBuffer,
+                value.get(),
+                elementInstance.getValue().getProcessInstanceKey());
             while (eventScopeInstanceState.pollEventTrigger(key.getValue()) != null) {
               // We don't need to do anything because we want to delete the event trigger, which is
               // what the pollEventTrigger does
@@ -196,7 +200,7 @@ public class DbMigrationState implements MutableMigrationState {
             // trigger with the passed parameters without doing any checks beforehand. This is
             // sufficient for this migration.
             eventScopeInstanceState.triggerStartEvent(
-                key.getValue(), eventKey, elementIdBuffer, value.get());
+                key.getValue(), eventKey, elementIdBuffer, value.get(), -1L);
           }
 
           temporaryVariableColumnFamily.deleteExisting(key);
