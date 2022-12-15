@@ -1273,6 +1273,77 @@ public class ModifyProcessInstanceTest {
                 -1L));
   }
 
+  @Test
+  public void shouldUseAncestorSelectionInsideMultiInstances() throws InterruptedException {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "SubProcess",
+                    sub ->
+                        sub.multiInstance(
+                            m ->
+                                m.zeebeInputCollectionExpression("[1,2,3]")
+                                    .zeebeInputElement("index")
+                                    .parallel()))
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("A", t -> t.zeebeJobType("A"))
+                .serviceTask("B", t -> t.zeebeJobType("B"))
+                .endEvent()
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var aTasks =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("A")
+            .limit(3)
+            .toList();
+    assertThat(aTasks).hasSize(3);
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .terminateElement(aTasks.get(0).getKey())
+        .activateElement("B", aTasks.get(0).getValue().getFlowScopeKey())
+        .terminateElement(aTasks.get(2).getKey())
+        .activateElement("B", aTasks.get(2).getValue().getFlowScopeKey())
+        .modify();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(aTasks.get(0).getKey())
+                .exists())
+        .describedAs("Expect first A Task to be terminated")
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(aTasks.get(2).getKey())
+                .exists())
+        .describedAs("Expect third A Task to be terminated")
+        .isTrue();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementId("B")
+                .limit(2))
+        .describedAs("Expect 2 B Tasks to be activated")
+        .hasSize(2)
+        .extracting(Record::getValue)
+        .extracting(ProcessInstanceRecordValue::getFlowScopeKey)
+        .describedAs("Expect each B Task to be activated inside specific flow scopes")
+        .containsExactlyInAnyOrder(
+            aTasks.get(0).getValue().getFlowScopeKey(), aTasks.get(2).getValue().getFlowScopeKey());
+  }
+
   private static void verifyThatElementIsCompleted(
       final long processInstanceKey, final String elementId) {
 
