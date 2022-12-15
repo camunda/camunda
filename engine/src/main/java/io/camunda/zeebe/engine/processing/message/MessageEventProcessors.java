@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -24,7 +25,8 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 public final class MessageEventProcessors {
 
   public static void addMessageProcessors(
-      final BpmnBehaviors bpmnBehaviors,
+      final EventTriggerBehavior eventTriggerBehavior,
+      final BpmnStateBehavior stateBehavior,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -53,8 +55,8 @@ public final class MessageEventProcessors {
                 keyGenerator,
                 writers,
                 processState,
-                bpmnBehaviors.eventTriggerBehavior(),
-                bpmnBehaviors.stateBehavior()))
+                eventTriggerBehavior,
+                stateBehavior))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(

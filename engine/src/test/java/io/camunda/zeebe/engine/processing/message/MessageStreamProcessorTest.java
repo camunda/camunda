@@ -20,7 +20,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -63,7 +64,8 @@ public final class MessageStreamProcessorTest {
         (typedRecordProcessors, processingContext) -> {
           final var zeebeState = processingContext.getZeebeState();
           MessageEventProcessors.addMessageProcessors(
-              mock(BpmnBehaviors.class),
+              mock(EventTriggerBehavior.class),
+              mock(BpmnStateBehavior.class),
               typedRecordProcessors,
               zeebeState,
               mockSubscriptionCommandSender,
