@@ -590,6 +590,7 @@ pipeline {
                   # This step is needed to fetch repo branches so SonarQube can diff them.
                   # It's used to scan and report only differences instead whole branch.
                   # TODO: Remove git config manipulation when project switched to SSH checkout.
+                  git config --global --add safe.directory "\$PWD"
                   git config url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
                   .ci/scripts/sonarqube-mvn.sh
                 '''
