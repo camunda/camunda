@@ -82,11 +82,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.agrona</groupId>
-      <artifactId>agrona</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>me.dinowernli</groupId>
       <artifactId>java-grpc-prometheus</artifactId>
       <exclusions>

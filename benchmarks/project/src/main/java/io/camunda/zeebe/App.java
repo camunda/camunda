@@ -58,7 +58,7 @@ abstract class App implements Runnable {
     }
   }
 
-  protected static void stopMonitoringServer() {
+  private static void stopMonitoringServer() {
     if (monitoringServer != null) {
       monitoringServer.stop();
       monitoringServer = null;

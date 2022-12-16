@@ -14,6 +14,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.Subscription;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.protocol.impl.encoding.PushedJobRequest;
@@ -25,12 +26,14 @@ import io.prometheus.client.Histogram;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -66,6 +69,7 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
   private final ClusterEventService eventService;
   private final ClusterMembershipService membershipService;
   private final Set<MemberId> gateways = new HashSet<>();
+  private final Collection<Subscription> subscriptions = new ArrayList<>();
 
   public JobPusher(final ClusterServices clusterServices) {
     communicationService = clusterServices.getCommunicationService();
@@ -75,10 +79,21 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
 
   @Override
   protected void onActorStarted() {
-    eventService.subscribe("job-stream-register", (Consumer<String>) this::addGateway, actor::run);
-    eventService.subscribe(
-        "job-stream-unregister", (Consumer<String>) this::removeGateway, actor::run);
+    subscriptions.add(
+        eventService
+            .subscribe("job-stream-register", (Consumer<String>) this::addGateway, actor::run)
+            .join());
+    subscriptions.add(
+        eventService
+            .subscribe("job-stream-unregister", (Consumer<String>) this::removeGateway, actor::run)
+            .join());
     membershipService.addListener(this);
+  }
+
+  @Override
+  protected void onActorClosing() {
+    subscriptions.forEach(s -> CloseHelper.quietClose(s::close));
+    membershipService.removeListener(this);
   }
 
   @Override
