@@ -117,7 +117,12 @@ public class IncidentPostImportAction implements PostImportAction {
     Map<String, String> incidentIndices = new ConcurrentHashMap<>();
     Map<String, String> listViewFlowNodeIndices = new ConcurrentHashMap<>();
     List<IncidentEntity> incidents = getPendingIncidents(incidentIndices, listViewFlowNodeIndices);
-    if (logger.isDebugEnabled() && !incidents.isEmpty()) {
+
+    if (incidents.isEmpty()) {
+      return incidents;
+    }
+
+    if (logger.isDebugEnabled()) {
       logger.debug("Processing pending incidents: " + incidents);
     }
     try {
@@ -175,7 +180,7 @@ public class IncidentPostImportAction implements PostImportAction {
         ElasticsearchUtil.processBulkRequest(esClient, bulkPendingIncidentUpdate);
         ThreadUtil.sleepFor(3000L);
       }
-      if (logger.isDebugEnabled() && !incidents.isEmpty()) {
+      if (logger.isDebugEnabled()) {
         logger.debug("Finished processing");
       }
     } catch (IOException | PersistenceException e) {
