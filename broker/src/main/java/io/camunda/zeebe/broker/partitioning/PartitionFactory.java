@@ -8,13 +8,13 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
+import io.camunda.zeebe.broker.engine.jobstream.JobStreamingActivator;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.jobstream.JobPusher;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -120,10 +120,10 @@ final class PartitionFactory {
       final RaftPartitionGroup partitionGroup,
       final List<PartitionListener> partitionListeners,
       final TopologyManager topologyManager,
+      final JobPusher jobPusher,
       final FeatureFlags featureFlags) {
     final var partitions = new ArrayList<ZeebePartition>();
     final var communicationService = clusterServices.getCommunicationService();
-    final var eventService = clusterServices.getEventService();
     final var membershipService = clusterServices.getMembershipService();
 
     final MemberId nodeId = membershipService.getLocalMember().id();
@@ -133,7 +133,7 @@ final class PartitionFactory {
             .map(RaftPartition.class::cast)
             .toList();
 
-    final var typedRecordProcessorsFactory = createFactory(localBroker, eventService, featureFlags);
+    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags, jobPusher);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -201,9 +201,7 @@ final class PartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker,
-      final ClusterEventService eventService,
-      final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker, final FeatureFlags featureFlags, final JobPusher jobPusher) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
@@ -214,15 +212,14 @@ final class PartitionFactory {
           new DeploymentDistributionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
 
-      final LongPollingJobNotification jobsAvailableNotification =
-          new LongPollingJobNotification(eventService);
+      final JobStreamingActivator jobActivator = new JobStreamingActivator(jobPusher);
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
           localBroker.getPartitionsCount(),
           subscriptionCommandSender,
           deploymentDistributionCommandSender,
-          jobsAvailableNotification::onJobsAvailable,
+          jobActivator,
           featureFlags);
     };
   }

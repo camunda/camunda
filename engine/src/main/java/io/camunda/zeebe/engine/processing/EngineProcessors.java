@@ -38,9 +38,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.stream.api.ExternalJobActivator;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
-import java.util.function.Consumer;
 
 public final class EngineProcessors {
 
@@ -51,7 +51,7 @@ public final class EngineProcessors {
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final Consumer<String> onJobsAvailableCallback,
+      final ExternalJobActivator externalJobActivator,
       final FeatureFlags featureFlags) {
 
     final MutableZeebeState zeebeState = typedRecordProcessorContext.getZeebeState();
@@ -113,7 +113,7 @@ public final class EngineProcessors {
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
         zeebeState,
-        onJobsAvailableCallback,
+        externalJobActivator,
         bpmnBehaviors,
         writers,
         jobMetrics);

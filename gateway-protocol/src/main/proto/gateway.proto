@@ -457,6 +457,10 @@ message ModifyProcessInstanceResponse {
 
 }
 
+message StreamJobRequest {
+
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -471,6 +475,8 @@ service Gateway {
    */
   rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
   }
+
+  rpc StreamJobs (StreamJobRequest) returns (stream ActivatedJob) {}
 
   /*
     Cancels a running process instance

@@ -124,6 +124,13 @@
     <data name="bpmnProcessId" id="1" type="varDataEncoding"/>
   </sbe:message>
 
+  <!-- message sent to gateways when a job is pushed -->
+  <sbe:message name="PushedJob" id="32">
+    <!-- REQUIRED the job key -->
+    <field name="key" id="1" type="uint64" presence="required"/>
+    <!-- REQUIRED a serialized JobRecord -->
+    <data name="job" id="2" type="varDataEncoding"/>
+  </sbe:message>
 
   <!-- L2 Common Messages 200 - 399 -->
 

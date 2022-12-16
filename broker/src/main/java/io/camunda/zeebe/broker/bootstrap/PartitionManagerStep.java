@@ -35,7 +35,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getPartitionListeners(),
             brokerStartupContext.getCommandApiService(),
             brokerStartupContext.getExporterRepository(),
-            brokerStartupContext.getGatewayBrokerTransport());
+            brokerStartupContext.getGatewayBrokerTransport(),
+            brokerStartupContext.getJobPusher());
 
     CompletableFuture.supplyAsync(partitionManager::start)
         .thenCompose(Function.identity())

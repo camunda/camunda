@@ -7,12 +7,11 @@
  */
 package io.camunda.zeebe.broker.system;
 
-import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.messaging.ClusterEventService;
-import io.atomix.cluster.messaging.MessagingService;
+import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClientImpl;
+import io.camunda.zeebe.gateway.jobstream.JobStreamServer;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
@@ -23,17 +22,18 @@ public final class EmbeddedGatewayService implements AutoCloseable {
   public EmbeddedGatewayService(
       final BrokerCfg configuration,
       final ActorSchedulingService actorScheduler,
-      final MessagingService messagingService,
-      final ClusterMembershipService membershipService,
-      final ClusterEventService eventService) {
+      final ClusterServices clusterServices) {
     brokerClient =
         new BrokerClientImpl(
             configuration.getGateway().getCluster().getRequestTimeout(),
-            messagingService,
-            membershipService,
-            eventService,
+            clusterServices.getMessagingService(),
+            clusterServices.getMembershipService(),
+            clusterServices.getEventService(),
             actorScheduler);
-    gateway = new Gateway(configuration.getGateway(), brokerClient, actorScheduler);
+    final var jobStreamServer = new JobStreamServer(clusterServices.getCommunicationService());
+
+    gateway =
+        new Gateway(configuration.getGateway(), brokerClient, actorScheduler, jobStreamServer);
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.camunda.zeebe.gateway.jobstream.JobStreamServer;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -94,7 +95,8 @@ public class StandaloneGateway
       LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
     }
 
-    gateway = new Gateway(configuration, brokerClient, actorScheduler);
+    final var jobStreamServer = new JobStreamServer(atomixCluster.getCommunicationService());
+    gateway = new Gateway(configuration, brokerClient, actorScheduler, jobStreamServer);
 
     springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);
     springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);

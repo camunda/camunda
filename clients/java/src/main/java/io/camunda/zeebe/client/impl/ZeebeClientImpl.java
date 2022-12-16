@@ -32,6 +32,7 @@ import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
@@ -48,6 +49,7 @@ import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
+import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -129,7 +131,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
 
     configureConnectionSecurity(config, channelBuilder);
-    channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
+    channelBuilder
+        .keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS)
+        .keepAliveTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
+        .keepAliveWithoutCalls(true);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
 
     return channelBuilder.build();
@@ -332,6 +337,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
     return new ActivateJobsCommandImpl(
+        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+  }
+
+  @Override
+  public StreamJobsCommandStep1 newStreamJobsCommand() {
+    return new StreamJobsCommandImpl(
         asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 

@@ -15,6 +15,7 @@ import io.atomix.utils.concurrent.Futures;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.jobstream.JobPusher;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyPartitionListener;
@@ -60,6 +61,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final CommandApiService commandApiService;
   private final ExporterRepository exporterRepository;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private final JobPusher jobPusher;
 
   public PartitionManagerImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -71,7 +73,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final List<PartitionListener> partitionListeners,
       final CommandApiService commandApiService,
       final ExporterRepository exporterRepository,
-      final AtomixServerTransport gatewayBrokerTransport) {
+      final AtomixServerTransport gatewayBrokerTransport,
+      final JobPusher jobPusher) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
@@ -85,6 +88,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.commandApiService = commandApiService;
     this.exporterRepository = exporterRepository;
+    this.jobPusher = jobPusher;
 
     partitionGroup =
         new RaftPartitionGroupFactory().buildRaftPartitionGroup(brokerCfg, snapshotStoreFactory);
@@ -151,6 +155,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       partitionGroup,
                       partitionListeners,
                       topologyManager,
+                      jobPusher,
                       brokerCfg.getExperimental().getFeatures().toFeatureFlags()));
 
               final var futures =

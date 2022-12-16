@@ -16,16 +16,16 @@ import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.stream.api.ExternalJobActivator;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import java.util.function.Consumer;
 
 public final class JobEventProcessors {
 
   public static void addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableZeebeState zeebeState,
-      final Consumer<String> onJobsAvailableCallback,
+      final ExternalJobActivator externalJobActivator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobMetrics jobMetrics) {
@@ -41,6 +41,9 @@ public final class JobEventProcessors {
             zeebeState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
+    final CollectingExternalJobActivator collectingJobActivator =
+        new CollectingExternalJobActivator(
+            externalJobActivator, new JobCollector(zeebeState.getVariableState()));
 
     final var jobBackoffChecker = new JobBackoffChecker(jobState);
     typedRecordProcessors
@@ -79,7 +82,7 @@ public final class JobEventProcessors {
             new StreamProcessorLifecycleAware() {
               @Override
               public void onRecovered(final ReadonlyStreamProcessorContext context) {
-                jobState.setJobsAvailableCallback(onJobsAvailableCallback);
+                jobState.setExternalJobActivator(collectingJobActivator);
               }
             });
   }

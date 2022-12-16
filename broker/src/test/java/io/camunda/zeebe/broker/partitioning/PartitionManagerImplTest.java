@@ -16,6 +16,7 @@ import io.atomix.cluster.Member;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.jobstream.JobPusher;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -27,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
@@ -38,6 +40,9 @@ public final class PartitionManagerImplTest {
   @Mock private ClusterServices mockClusterServices;
   @Mock private ClusterMembershipService mockMembershipService;
   @Mock private Member mockMember;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private JobPusher mockJobPusher;
 
   @Before
   public void setUp() {
@@ -64,7 +69,8 @@ public final class PartitionManagerImplTest {
             new ArrayList<>(),
             null,
             mock(ExporterRepository.class),
-            null);
+            null,
+            mockJobPusher);
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -89,7 +95,8 @@ public final class PartitionManagerImplTest {
             new ArrayList<>(),
             null,
             mock(ExporterRepository.class),
-            null);
+            null,
+            mockJobPusher);
     // then
     final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();

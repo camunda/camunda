@@ -32,9 +32,7 @@ class EmbeddedGatewayServiceStep extends AbstractBrokerStartupStep {
         new EmbeddedGatewayService(
             brokerStartupContext.getBrokerConfiguration(),
             brokerStartupContext.getActorSchedulingService(),
-            clusterServices.getMessagingService(),
-            clusterServices.getMembershipService(),
-            clusterServices.getEventService());
+            clusterServices);
 
     final var embeddedGatewayServiceFuture = embeddedGatewayService.start();
     concurrencyControl.runOnCompletion(

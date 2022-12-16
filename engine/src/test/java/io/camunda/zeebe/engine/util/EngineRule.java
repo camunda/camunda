@@ -49,6 +49,7 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.ExternalJobActivator;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -95,7 +96,7 @@ public final class EngineRule extends ExternalResource {
       new RecordingExporterTestWatcher();
   private final int partitionCount;
 
-  private Consumer<String> jobsAvailableCallback = type -> {};
+  private ExternalJobActivator externalJobActivator = type -> Optional.empty();
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
 
@@ -152,8 +153,8 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
 
-  public EngineRule withJobsAvailableCallback(final Consumer<String> callback) {
-    jobsAvailableCallback = callback;
+  public EngineRule withJobsAvailableCallback(final ExternalJobActivator callback) {
+    externalJobActivator = callback;
     return this;
   }
 
@@ -195,7 +196,7 @@ public final class EngineRule extends ExternalResource {
                           new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                           new DeploymentDistributionCommandSender(
                               partitionId, interPartitionCommandSender),
-                          jobsAvailableCallback,
+                          externalJobActivator,
                           featureFlags)
                       .withListener(
                           new ProcessingExporterTransistor(

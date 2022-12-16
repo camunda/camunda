@@ -834,6 +834,9 @@
           },
           {
             "name": "ModifyProcessInstanceResponse"
+          },
+          {
+            "name": "StreamJobRequest"
           }
         ],
         "services": [
@@ -844,6 +847,12 @@
                 "name": "ActivateJobs",
                 "in_type": "ActivateJobsRequest",
                 "out_type": "ActivateJobsResponse",
+                "out_streamed": true
+              },
+              {
+                "name": "StreamJobs",
+                "in_type": "StreamJobRequest",
+                "out_type": "ActivatedJob",
                 "out_streamed": true
               },
               {

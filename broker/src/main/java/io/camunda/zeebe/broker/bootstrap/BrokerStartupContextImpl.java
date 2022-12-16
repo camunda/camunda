@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
+import io.camunda.zeebe.broker.jobstream.JobPusher;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -51,6 +52,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private EmbeddedGatewayService embeddedGatewayService;
   private PartitionManagerImpl partitionManager;
   private BrokerAdminServiceImpl brokerAdminService;
+  private JobPusher jobPusher;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -209,5 +211,15 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public void setBrokerAdminService(final BrokerAdminServiceImpl brokerAdminService) {
     this.brokerAdminService = brokerAdminService;
+  }
+
+  @Override
+  public JobPusher getJobPusher() {
+    return jobPusher;
+  }
+
+  @Override
+  public void setJobPusher(final JobPusher jobPusher) {
+    this.jobPusher = jobPusher;
   }
 }

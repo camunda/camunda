@@ -62,6 +62,7 @@ public final class BrokerStartupProcess {
       result.add(new EmbeddedGatewayServiceStep());
     }
 
+    result.add(new JobStreamServiceStep());
     result.add(new PartitionManagerStep());
 
     result.add(new AdminApiServiceStep());

@@ -8,9 +8,11 @@
 package io.camunda.zeebe.gateway;
 
 import io.camunda.zeebe.gateway.grpc.ErrorMappingStreamObserver;
+import io.camunda.zeebe.gateway.jobstream.JobStreamServer;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentReques
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
@@ -43,9 +46,16 @@ import io.grpc.stub.StreamObserver;
 
 public class GatewayGrpcService extends GatewayImplBase {
   private final EndpointManager endpointManager;
+  private final JobStreamServer jobStreamServer;
 
   public GatewayGrpcService(final EndpointManager endpointManager) {
+    this(endpointManager, null);
+  }
+
+  public GatewayGrpcService(
+      final EndpointManager endpointManager, final JobStreamServer jobStreamServer) {
     this.endpointManager = endpointManager;
+    this.jobStreamServer = jobStreamServer;
   }
 
   @Override
@@ -54,6 +64,19 @@ public class GatewayGrpcService extends GatewayImplBase {
       final StreamObserver<ActivateJobsResponse> responseObserver) {
     endpointManager.activateJobs(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void streamJobs(
+      final StreamJobRequest request, final StreamObserver<ActivatedJob> responseObserver) {
+    final var observer = ErrorMappingStreamObserver.ofStreamObserver(responseObserver);
+    if (jobStreamServer == null) {
+      observer.onError(new UnsupportedOperationException("No job stream server configured"));
+      return;
+    }
+
+    Loggers.JOB_STREAM.debug("Registering new stream observer for job pushing");
+    jobStreamServer.setObserver(observer);
   }
 
   @Override

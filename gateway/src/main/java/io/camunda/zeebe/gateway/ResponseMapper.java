@@ -171,27 +171,29 @@ public final class ResponseMapper {
     while (jobKeys.hasNext() && jobs.hasNext()) {
       final LongValue jobKey = jobKeys.next();
       final JobRecord job = jobs.next();
-      final ActivatedJob activatedJob =
-          ActivatedJob.newBuilder()
-              .setKey(jobKey.getValue())
-              .setType(bufferAsString(job.getTypeBuffer()))
-              .setBpmnProcessId(job.getBpmnProcessId())
-              .setElementId(job.getElementId())
-              .setProcessInstanceKey(job.getProcessInstanceKey())
-              .setProcessDefinitionVersion(job.getProcessDefinitionVersion())
-              .setProcessDefinitionKey(job.getProcessDefinitionKey())
-              .setElementInstanceKey(job.getElementInstanceKey())
-              .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
-              .setWorker(bufferAsString(job.getWorkerBuffer()))
-              .setRetries(job.getRetries())
-              .setDeadline(job.getDeadline())
-              .setVariables(bufferAsJson(job.getVariablesBuffer()))
-              .build();
-
+      final ActivatedJob activatedJob = toActivatedJobResponse(jobKey.getValue(), job);
       responseBuilder.addJobs(activatedJob);
     }
 
     return responseBuilder.build();
+  }
+
+  public static ActivatedJob toActivatedJobResponse(final long jobKey, final JobRecord job) {
+    return ActivatedJob.newBuilder()
+        .setKey(jobKey)
+        .setType(bufferAsString(job.getTypeBuffer()))
+        .setBpmnProcessId(job.getBpmnProcessId())
+        .setElementId(job.getElementId())
+        .setProcessInstanceKey(job.getProcessInstanceKey())
+        .setProcessDefinitionVersion(job.getProcessDefinitionVersion())
+        .setProcessDefinitionKey(job.getProcessDefinitionKey())
+        .setElementInstanceKey(job.getElementInstanceKey())
+        .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
+        .setWorker(bufferAsString(job.getWorkerBuffer()))
+        .setRetries(job.getRetries())
+        .setDeadline(job.getDeadline())
+        .setVariables(bufferAsJson(job.getVariablesBuffer()))
+        .build();
   }
 
   public static ResolveIncidentResponse toResolveIncidentResponse(

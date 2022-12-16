@@ -21,14 +21,25 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.stream.api.ExternalJobActivator;
+import io.camunda.zeebe.stream.api.ExternalJobActivator.Handler;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
+/**
+ * TODO: current downside with the approach of activating from the state is that the record stored
+ * is not the record written. I think this is minimal as activation is a best of effort, but it
+ * reduces observability for sure.
+ *
+ * <p>Also, how are we going to calculate/estimate activated jobs without any records for them? We
+ * may need to bring back the job ACTIVATED record for observability purposes.
+ */
 public final class DbJobState implements JobState, MutableJobState {
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
@@ -67,7 +78,7 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private final JobMetrics metrics;
 
-  private Consumer<String> onJobsAvailableCallback;
+  private ExternalJobActivator externalJobActivator;
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -124,13 +135,16 @@ public final class DbJobState implements JobState, MutableJobState {
 
     makeJobNotActivatable(type);
 
-    deadlineKey.wrapLong(deadline);
-    deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
+    addJobDeadline(deadline);
   }
 
   @Override
   public void recurAfterBackoff(final long key, final JobRecord record) {
-    updateJob(key, record, State.ACTIVATABLE);
+    getExternalActivator(record)
+        .ifPresentOrElse(
+            handler -> activateJobExternally(key, record, handler),
+            () -> updateJob(key, record, State.ACTIVATABLE));
+
     jobKey.wrapLong(key);
     backoffKey.wrapLong(record.getRecurringTime());
     backoffColumnFamily.deleteExisting(backoffJobKey);
@@ -144,7 +158,10 @@ public final class DbJobState implements JobState, MutableJobState {
     validateParameters(type);
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
 
-    updateJob(key, record, State.ACTIVATABLE);
+    getExternalActivator(record)
+        .ifPresentOrElse(
+            handler -> activateJobExternally(key, record, handler),
+            () -> updateJob(key, record, State.ACTIVATABLE));
     removeJobDeadline(deadline);
   }
 
@@ -194,7 +211,10 @@ public final class DbJobState implements JobState, MutableJobState {
         backoffColumnFamily.insert(backoffJobKey, DbNil.INSTANCE);
         updateJob(key, updatedValue, State.FAILED);
       } else {
-        updateJob(key, updatedValue, State.ACTIVATABLE);
+        getExternalActivator(updatedValue)
+            .ifPresentOrElse(
+                handler -> activateJobExternally(key, updatedValue, handler),
+                () -> updateJob(key, updatedValue, State.ACTIVATABLE));
       }
     } else {
       updateJob(key, updatedValue, State.FAILED);
@@ -204,7 +224,10 @@ public final class DbJobState implements JobState, MutableJobState {
 
   @Override
   public void resolve(final long key, final JobRecord updatedValue) {
-    updateJob(key, updatedValue, State.ACTIVATABLE);
+    getExternalActivator(updatedValue)
+        .ifPresentOrElse(
+            handler -> activateJobExternally(key, updatedValue, handler),
+            () -> updateJob(key, updatedValue, State.ACTIVATABLE));
   }
 
   @Override
@@ -217,10 +240,37 @@ public final class DbJobState implements JobState, MutableJobState {
     return job;
   }
 
+  private void addJobDeadline(final long deadline) {
+    deadlineKey.wrapLong(deadline);
+    deadlinesColumnFamily.insert(deadlineJobKey, DbNil.INSTANCE);
+  }
+
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     createJobRecord(key, record);
     initializeJobState();
-    makeJobActivatable(type, key);
+
+    // TODO: optimize state usage
+    getExternalActivator(record)
+        .ifPresentOrElse(
+            handler -> activateJobExternally(key, record, handler),
+            () -> makeJobActivatable(type, key));
+  }
+
+  private void activateJobExternally(
+      final long key, final JobRecord record, final Handler handler) {
+    record.setWorker("push").setDeadline(ActorClock.currentTimeMillis() + 60_000);
+    activate(key, record);
+    handler.handle(key, record);
+  }
+
+  private Optional<Handler> getExternalActivator(final JobRecord record) {
+    if (externalJobActivator == null) {
+      return Optional.empty();
+    }
+
+    // TODO: required for tests, clone the buffer; may not be required for production use cases
+    final var type = BufferUtil.cloneBuffer(record.getTypeBuffer());
+    return externalJobActivator.activateJob(type);
   }
 
   private void updateJob(final long key, final JobRecord updatedValue, final State newState) {
@@ -308,8 +358,8 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
-    this.onJobsAvailableCallback = onJobsAvailableCallback;
+  public void setExternalJobActivator(final ExternalJobActivator externalJobActivator) {
+    this.externalJobActivator = externalJobActivator;
   }
 
   @Override
@@ -345,8 +395,9 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   private void notifyJobAvailable(final DirectBuffer jobType) {
-    if (onJobsAvailableCallback != null) {
-      onJobsAvailableCallback.accept(BufferUtil.bufferAsString(jobType));
+    if (externalJobActivator != null) {
+      // TODO: required now for tests - unclear if this is a real requirement, probably not
+      externalJobActivator.activateJob(BufferUtil.cloneBuffer(jobType));
     }
   }
 
@@ -385,7 +436,6 @@ public final class DbJobState implements JobState, MutableJobState {
     // without activating them first
     activatableColumnFamily.upsert(typeJobKey, DbNil.INSTANCE);
 
-    // always notify
     notifyJobAvailable(type);
   }
 

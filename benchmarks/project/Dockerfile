@@ -13,3 +13,8 @@ FROM azul/zulu-openjdk-alpine:17-jre-headless as worker
 USER nobody
 CMD java $JAVA_OPTIONS -jar app.jar
 COPY --from=builder /usr/src/app/target/worker.jar /app.jar
+
+FROM azul/zulu-openjdk-alpine:17-jre-headless as streamer
+USER nobody
+CMD java $JAVA_OPTIONS -jar app.jar
+COPY target/streamer.jar /app.jar

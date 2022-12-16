@@ -80,6 +80,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
+    wrap(record);
+    resetVariables();
+  }
+
+  public void wrap(final JobRecord record) {
     deadlineProp.setValue(record.getDeadline());
     workerProp.setValue(record.getWorkerBuffer());
     retriesProp.setValue(record.getRetries());
@@ -96,6 +101,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
+    variableProp.setValue(record.getVariablesBuffer());
   }
 
   public JobRecord resetVariables() {

@@ -48,4 +48,13 @@ public class ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse>
   public void onCompleted() {
     complete(response);
   }
+
+  @Override
+  public boolean cancel(final boolean mayInterruptIfRunning) {
+    if (mayInterruptIfRunning) {
+      onCompleted();
+    }
+
+    return super.cancel(mayInterruptIfRunning);
+  }
 }

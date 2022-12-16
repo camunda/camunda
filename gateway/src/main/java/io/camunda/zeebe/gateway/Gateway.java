@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
+import io.camunda.zeebe.gateway.jobstream.JobStreamServer;
 import io.camunda.zeebe.gateway.query.impl.QueryApiImpl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -43,6 +44,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
+import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
 public final class Gateway {
@@ -58,14 +60,24 @@ public final class Gateway {
 
   private Server server;
   private final BrokerClient brokerClient;
+  private final JobStreamServer jobStreamServer;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService) {
+    this(gatewayCfg, brokerClient, actorSchedulingService, null);
+  }
+
+  public Gateway(
+      final GatewayCfg gatewayCfg,
+      final BrokerClient brokerClient,
+      final ActorSchedulingService actorSchedulingService,
+      final JobStreamServer jobStreamServer) {
     this.gatewayCfg = gatewayCfg;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
+    this.jobStreamServer = jobStreamServer;
 
     healthManager = new GatewayHealthManagerImpl();
   }
@@ -86,6 +98,10 @@ public final class Gateway {
     final var resultFuture = new CompletableActorFuture<Gateway>();
 
     healthManager.setStatus(Status.STARTING);
+
+    if (jobStreamServer != null) {
+      actorSchedulingService.submitActor(jobStreamServer);
+    }
 
     createAndStartActivateJobsHandler(brokerClient)
         .whenComplete(
@@ -112,7 +128,8 @@ public final class Gateway {
   private Either<Exception, Server> createAndStartServer(
       final ActivateJobsHandler activateJobsHandler) {
     final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
-    final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
+    final GatewayGrpcService gatewayGrpcService =
+        new GatewayGrpcService(endpointManager, jobStreamServer);
 
     try {
       final var serverBuilder = serverBuilderFactory.apply(gatewayCfg);
@@ -241,6 +258,10 @@ public final class Gateway {
 
   public void stop() {
     healthManager.setStatus(Status.SHUTDOWN);
+
+    if (jobStreamServer != null) {
+      CloseHelper.quietClose(jobStreamServer);
+    }
 
     if (server != null && !server.isShutdown()) {
       server.shutdownNow();
