@@ -152,7 +152,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     removeNumberOfTakenSequenceFlows(key);
 
     if (parent > 0) {
-      final ElementInstance parentInstance = getInstance(parent);
+      elementInstanceKey.wrapLong(parent);
+      final var parentInstance = elementInstanceColumnFamily.get(elementInstanceKey);
       if (parentInstance == null) {
         final var errorMsg =
             "Expected to find parent instance for element instance with key %d, but none was found.";
