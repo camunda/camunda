@@ -183,7 +183,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
-    final var scopeInstance = getInstance(key);
+    elementInstanceKey.wrapLong(key);
+    final var scopeInstance = elementInstanceColumnFamily.get(elementInstanceKey);
     modifier.accept(scopeInstance);
     updateInstance(scopeInstance);
   }
