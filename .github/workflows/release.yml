@@ -269,7 +269,7 @@ jobs:
         ports:
           - 5000:5000
     env:
-      BUILD_DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+      ARCHITECTURES: "amd64,arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
       TAG_LATEST: ${{ inputs.isLatest }}
@@ -315,36 +315,25 @@ jobs:
           version: ${{ inputs.releaseVersion }}
           additionalTag: ${{ inputs.isLatest && 'latest' || '' }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
-          # pushes to local registry
+          # pushes to local registry for verification prior pushing to remote
           push: true
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          platforms: ${{ env.BUILD_DOCKER_PLATFORMS }}
+          architectures: ${{ env.ARCHITECTURES }}
       - name: Verify Docker image
-        env:
-          DATE: ${{ steps.build-docker.outputs.date }}
-          REVISION: ${{ needs.release.outputs.releaseTagRevision }}
-          VERSION: ${{ inputs.releaseVersion }}
-        # FIXME consider extraction to an action, also used in ci workflow
-        run: |
-          docker pull --platform linux/amd64 "${{ steps.build-docker.outputs.image }}"
-          ${PWD}/docker/test/verify.sh "${{ steps.build-docker.outputs.image }}" amd64
-          if [ "$TAG_LATEST" = "true" ]; then
-            docker pull --platform linux/amd64 "${LOCAL_DOCKER_IMAGE}:latest" amd64
-            ${PWD}/docker/test/verify.sh "${LOCAL_DOCKER_IMAGE}:latest"
-          fi
-
-          docker pull --platform linux/arm64 "${{ steps.build-docker.outputs.image }}"
-          ${PWD}/docker/test/verify.sh "${{ steps.build-docker.outputs.image }}" arm64
-          if [ "$TAG_LATEST" = "true" ]; then
-            docker pull --platform linux/arm64 "${LOCAL_DOCKER_IMAGE}:latest" arm64
-            ${PWD}/docker/test/verify.sh "${LOCAL_DOCKER_IMAGE}:latest"
-          fi
+        uses: ./.github/actions/verify-zeebe-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          verifyLatestTag: ${{ inputs.isLatest }}
+          architectures: ${{ env.ARCHITECTURES }}
       - name: Sync Docker Image to DockerHub
         id: push-docker
-        # FIXME enable condition
-#        if: ${{ inputs.dryRun == false }}
+        if: ${{ inputs.dryRun == false }}
         # see step `setup-regclient` on why regctl is used
         run: |
+          # disable usage of https for the local registry, it is only served via http
           regctl registry set --tls=disabled localhost:5000
 
           regctl image copy ${{ steps.build-docker.outputs.image }} ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }}
