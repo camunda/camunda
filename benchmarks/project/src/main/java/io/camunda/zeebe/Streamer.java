@@ -64,9 +64,7 @@ public class Streamer extends App {
     responseChecker.start();
 
     final var asyncJobCompleter = new DelayedCommandSender(delayedCommands, requestFutures);
-    if (workerCfg.isCompleteJobsAsync()) {
-      asyncJobCompleter.start();
-    }
+    asyncJobCompleter.start();
 
     Runtime.getRuntime()
         .addShutdownHook(

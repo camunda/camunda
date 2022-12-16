@@ -60,7 +60,6 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
   private static final Histogram PUSH_DURATION =
       Histogram.build()
           .namespace("job_stream")
-          .labelNames("gateway")
           .name("broker_push_duration")
           .help("Approximate duration of broker-to-gateway push")
           .register();
@@ -145,7 +144,7 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
     Collections.shuffle(sortedGateways);
 
     final var targetGateway = sortedGateways.get(0);
-    final var timer = PUSH_DURATION.labels(targetGateway.id()).startTimer();
+    final var timer = PUSH_DURATION.startTimer();
     final CompletableFuture<byte[]> response =
         communicationService.send(
             "job-stream-push",
