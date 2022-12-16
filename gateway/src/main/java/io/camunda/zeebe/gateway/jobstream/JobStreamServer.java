@@ -143,7 +143,7 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
 
     if (observers.isEmpty()) {
       DROPPED_JOBS.inc();
-      throw new UnsupportedOperationException(
+      Loggers.JOB_STREAM.error(
           "No registered observer/client; job [%s] will be lost".formatted(request));
     }
 
