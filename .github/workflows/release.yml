@@ -260,7 +260,17 @@ jobs:
     name: Docker Image Release
     runs-on: n1-standard-8-netssd-preempt
     timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     env:
+      BUILD_DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
       TAG_LATEST: ${{ inputs.isLatest }}
     steps:
@@ -283,6 +293,16 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
+      - name: Setup regclient
+        id: setup-regclient
+        # To sync the multi-arch image from the local to the remote registry regctl is used.
+        # This is due to the docker client always dereferencing multi-arch images.
+        # See https://stackoverflow.com/a/68576882
+        uses: supplypike/setup-bin@v1
+        with:
+          uri: https://github.com/regclient/regclient/releases/download/v0.4.5/regctl-linux-amd64
+          name: regctl
+          version: v0.4.5
       - name: Download Zeebe Release Artifacts
         uses: actions/download-artifact@v3
         with:
@@ -291,25 +311,43 @@ jobs:
         uses: ./.github/actions/build-docker
         id: build-docker
         with:
-          repository: ${{ env.DOCKER_IMAGE }}
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           version: ${{ inputs.releaseVersion }}
           additionalTag: ${{ inputs.isLatest && 'latest' || '' }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
-          push: false
+          # pushes to local registry
+          push: true
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.BUILD_DOCKER_PLATFORMS }}
       - name: Verify Docker image
         env:
           DATE: ${{ steps.build-docker.outputs.date }}
           REVISION: ${{ needs.release.outputs.releaseTagRevision }}
           VERSION: ${{ inputs.releaseVersion }}
+        # FIXME consider extraction to an action, also used in ci workflow
         run: |
-          ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:${RELEASE_VERSION}"
+          docker pull --platform linux/amd64 "${{ steps.build-docker.outputs.image }}"
+          ${PWD}/docker/test/verify.sh "${{ steps.build-docker.outputs.image }}" amd64
           if [ "$TAG_LATEST" = "true" ]; then
-            ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:latest"
+            docker pull --platform linux/amd64 "${LOCAL_DOCKER_IMAGE}:latest" amd64
+            ${PWD}/docker/test/verify.sh "${LOCAL_DOCKER_IMAGE}:latest"
           fi
-      - name: Push Docker Image Tag ${{ inputs.releaseVersion }}
-        if: ${{ inputs.dryRun == false }}
-        run: docker push ${{ env.DOCKER_IMAGE }}:${{ inputs.releaseVersion }}
-      - name: Push Docker Image Tag latest
-        if: ${{ inputs.isLatest && inputs.dryRun == false }}
-        run: docker push ${{ env.DOCKER_IMAGE }}:latest
+
+          docker pull --platform linux/arm64 "${{ steps.build-docker.outputs.image }}"
+          ${PWD}/docker/test/verify.sh "${{ steps.build-docker.outputs.image }}" arm64
+          if [ "$TAG_LATEST" = "true" ]; then
+            docker pull --platform linux/arm64 "${LOCAL_DOCKER_IMAGE}:latest" arm64
+            ${PWD}/docker/test/verify.sh "${LOCAL_DOCKER_IMAGE}:latest"
+          fi
+      - name: Sync Docker Image to DockerHub
+        id: push-docker
+        # FIXME enable condition
+#        if: ${{ inputs.dryRun == false }}
+        # see step `setup-regclient` on why regctl is used
+        run: |
+          regctl registry set --tls=disabled localhost:5000
+
+          regctl image copy ${{ steps.build-docker.outputs.image }} ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }}
+          if [ "$TAG_LATEST" = "true" ]; then
+            regctl image copy ${{ env.LOCAL_DOCKER_IMAGE }}:latest ${{ env.DOCKER_IMAGE }}:latest
+          fi
