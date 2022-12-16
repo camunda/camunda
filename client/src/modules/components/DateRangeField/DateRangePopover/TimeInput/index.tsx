@@ -11,9 +11,10 @@ import {TextInput} from '@carbon/react';
 type Props = {
   type: 'from' | 'to';
   onChange?: () => void;
+  labelText: string;
 };
 
-const TimeInput: React.FC<Props> = ({type}) => {
+const TimeInput: React.FC<Props> = ({type, labelText}) => {
   return (
     <Field name={`${type}Time`}>
       {({input, onChange}) => {
@@ -22,7 +23,7 @@ const TimeInput: React.FC<Props> = ({type}) => {
             pattern={'\\d{1,2}:\\d{1,2}:\\d{1,2}'}
             defaultValue={input.value}
             id="time-picker"
-            labelText=""
+            labelText={labelText}
             size="sm"
             onChange={(event) => {
               input.onChange(event.target.value);

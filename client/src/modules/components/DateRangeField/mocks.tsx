@@ -7,6 +7,17 @@
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
+import {DateRangeField} from '.';
+
+const MockDateRangeField: React.FC = () => (
+  <DateRangeField
+    popoverTitle="Filter instances by start date"
+    label="Start Date Range"
+    filterName="startDateRange"
+    fromDateTimeKey="startDateAfter"
+    toDateTimeKey="startDateBefore"
+  />
+);
 
 const getWrapper = (initialValues?: {[key: string]: string}) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -23,4 +34,4 @@ const getWrapper = (initialValues?: {[key: string]: string}) => {
   return Wrapper;
 };
 
-export {getWrapper};
+export {getWrapper, MockDateRangeField};

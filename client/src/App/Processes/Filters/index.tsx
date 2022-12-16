@@ -54,6 +54,7 @@ import {Variable} from './VariableField';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {tracking} from 'modules/tracking';
+import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 
 type OptionalFilter =
   | 'variable'
@@ -275,6 +276,13 @@ const Filters: React.FC = observer(() => {
                             eventName: 'optional-filter-selected',
                             filterName: filter,
                           });
+                          if (
+                            ['startDateRange', 'endDateRange'].includes(filter)
+                          ) {
+                            setTimeout(() =>
+                              dateRangePopoverStore.setVisiblePopover(filter)
+                            );
+                          }
                         },
                       })),
                     },
@@ -313,6 +321,7 @@ const Filters: React.FC = observer(() => {
                           return (
                             <DateRangeField
                               filterName={filter}
+                              popoverTitle="Filter instances by start date"
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
                               fromDateTimeKey="startDateAfter"
                               toDateTimeKey="startDateBefore"
@@ -322,6 +331,7 @@ const Filters: React.FC = observer(() => {
                           return (
                             <DateRangeField
                               filterName={filter}
+                              popoverTitle="Filter instances by end date"
                               label={OPTIONAL_FILTER_FIELDS[filter].label}
                               fromDateTimeKey="endDateAfter"
                               toDateTimeKey="endDateBefore"

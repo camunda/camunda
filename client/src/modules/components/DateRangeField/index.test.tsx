@@ -5,22 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
+import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 import {render, screen} from 'modules/testing-library';
 import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
-import {DateRangeField} from '.';
-import {getWrapper} from './mocks';
+import {getWrapper, MockDateRangeField} from './mocks';
 
 describe('Date Range', () => {
+  afterEach(() => {
+    dateRangePopoverStore.reset();
+  });
+
   it('should render readonly input field', async () => {
-    render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     expect(screen.getByLabelText('Start Date Range')).toHaveAttribute(
       'readonly'
@@ -28,15 +24,7 @@ describe('Date Range', () => {
   });
 
   it('should close popover on cancel click', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
 
@@ -49,15 +37,7 @@ describe('Date Range', () => {
   });
 
   it('should close popover on outside click', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
 
@@ -69,15 +49,7 @@ describe('Date Range', () => {
   });
 
   it('should not close popover on inside click', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
 
@@ -87,15 +59,7 @@ describe('Date Range', () => {
   });
 
   it('should pick from and to dates and times', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     await user.click(screen.getByLabelText('Start Date Range'));
 
@@ -117,15 +81,7 @@ describe('Date Range', () => {
   });
 
   it('should restore previous date on cancel', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     await user.click(screen.getByLabelText('Start Date Range'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue('Custom');
@@ -162,20 +118,12 @@ describe('Date Range', () => {
   });
 
   it('should set default values', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {
-        wrapper: getWrapper({
-          startDateAfter: '2021-02-03T12:34:56',
-          startDateBefore: '2021-02-06T01:02:03',
-        }),
-      }
-    );
+    const {user} = render(<MockDateRangeField />, {
+      wrapper: getWrapper({
+        startDateAfter: '2021-02-03T12:34:56',
+        startDateBefore: '2021-02-06T01:02:03',
+      }),
+    });
 
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
       '2021-02-03 12:34:56 - 2021-02-06 01:02:03'
@@ -183,29 +131,21 @@ describe('Date Range', () => {
 
     await user.click(screen.getByLabelText('Start Date Range'));
 
-    expect(screen.getByLabelText('From')).toHaveValue('2021-02-03');
+    expect(screen.getByLabelText('From date')).toHaveValue('2021-02-03');
     expect(screen.getByTestId('fromTime')).toHaveValue('12:34:56');
-    expect(screen.getByLabelText('To')).toHaveValue('2021-02-06');
+    expect(screen.getByLabelText('To date')).toHaveValue('2021-02-06');
     expect(screen.getByTestId('toTime')).toHaveValue('01:02:03');
   });
 
   it('should apply from and to dates', async () => {
-    const {user} = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    );
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
 
     await user.click(screen.getByLabelText('Start Date Range'));
-    await user.type(screen.getByLabelText('From'), '2022-01-01');
+    await user.type(screen.getByLabelText('From date'), '2022-01-01');
     await user.click(screen.getByTestId('fromTime'));
     await user.clear(screen.getByTestId('fromTime'));
     await user.type(screen.getByTestId('fromTime'), '12:30:00');
-    await user.type(screen.getByLabelText('To'), '2022-12-01');
+    await user.type(screen.getByLabelText('To date'), '2022-12-01');
     await user.click(screen.getByTestId('toTime'));
     await user.clear(screen.getByTestId('toTime'));
     await user.type(screen.getByTestId('toTime'), '17:15:00');

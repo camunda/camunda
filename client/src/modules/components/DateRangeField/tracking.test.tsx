@@ -7,8 +7,7 @@
 
 import {render, screen, UserEvent} from 'modules/testing-library';
 import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
-import {DateRangeField} from '.';
-import {getWrapper} from './mocks';
+import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
 describe('Date Range - tracking', () => {
@@ -17,15 +16,7 @@ describe('Date Range - tracking', () => {
 
   beforeEach(() => {
     trackSpy = jest.spyOn(tracking, 'track');
-    user = render(
-      <DateRangeField
-        label="Start Date Range"
-        filterName="startDateRange"
-        fromDateTimeKey="startDateAfter"
-        toDateTimeKey="startDateBefore"
-      />,
-      {wrapper: getWrapper()}
-    ).user;
+    user = render(<MockDateRangeField />, {wrapper: getWrapper()}).user;
   });
 
   afterEach(() => {
@@ -48,10 +39,10 @@ describe('Date Range - tracking', () => {
       toTime: '08:59:59',
     });
 
-    await user.clear(screen.getByLabelText('From'));
-    await user.type(screen.getByLabelText('From'), '2022-01-01');
-    await user.clear(screen.getByLabelText('To'));
-    await user.type(screen.getByLabelText('To'), '2022-12-01');
+    await user.clear(screen.getByLabelText('From date'));
+    await user.type(screen.getByLabelText('From date'), '2022-01-01');
+    await user.clear(screen.getByLabelText('To date'));
+    await user.type(screen.getByLabelText('To date'), '2022-12-01');
 
     await user.click(screen.getByText('Apply'));
 
@@ -102,10 +93,10 @@ describe('Date Range - tracking', () => {
       filterName: 'startDateRange',
     });
 
-    await user.type(screen.getByLabelText('From'), '2022-01-01');
+    await user.type(screen.getByLabelText('From date'), '2022-01-01');
     await user.clear(screen.getByTestId('fromTime'));
     await user.type(screen.getByTestId('fromTime'), '12:30:00');
-    await user.type(screen.getByLabelText('To'), '2022-12-01');
+    await user.type(screen.getByLabelText('To date'), '2022-12-01');
     await user.clear(screen.getByTestId('toTime'));
     await user.type(screen.getByTestId('toTime'), '17:15:00');
     await user.click(screen.getByText('Apply'));

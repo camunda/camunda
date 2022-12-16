@@ -48,6 +48,7 @@ import {FieldValidator} from 'final-form';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {tracking} from 'modules/tracking';
+import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 
 type OptionalFilter =
   | 'decisionInstanceIds'
@@ -218,6 +219,11 @@ const Filters: React.FC = observer(() => {
                             eventName: 'optional-filter-selected',
                             filterName: filter,
                           });
+                          if (filter === 'evaluationDateRange') {
+                            setTimeout(() => {
+                              dateRangePopoverStore.setVisiblePopover(filter);
+                            });
+                          }
                         },
                       })),
                     },
@@ -246,6 +252,7 @@ const Filters: React.FC = observer(() => {
                     {filter === 'evaluationDateRange' ? (
                       <DateRangeField
                         filterName={filter}
+                        popoverTitle="Filter decisions by evaluation date"
                         label={OPTIONAL_FILTER_FIELDS[filter].label}
                         fromDateTimeKey="evaluationDateAfter"
                         toDateTimeKey="evaluationDateBefore"

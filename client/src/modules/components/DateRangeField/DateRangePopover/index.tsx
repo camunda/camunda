@@ -19,6 +19,7 @@ import {
   TimeInputContainer,
   Footer,
   Popover,
+  Title,
 } from './styled';
 import {tracking} from 'modules/tracking';
 import {hide, shift} from '@floating-ui/react-dom';
@@ -29,6 +30,7 @@ const defaultTime = {
 };
 
 type Props = {
+  title: string;
   referenceElement: HTMLElement;
   filterName: string;
   onCancel: () => void;
@@ -49,6 +51,7 @@ type Props = {
 };
 
 const DateRangePopover: React.FC<Props> = ({
+  title,
   referenceElement,
   filterName,
   onCancel,
@@ -140,6 +143,7 @@ const DateRangePopover: React.FC<Props> = ({
         {({handleSubmit, form}) => (
           <form onSubmit={handleSubmit}>
             <Body>
+              <Title>{title}</Title>
               <DatePickerContainer>
                 <DatePicker
                   datePickerType="range"
@@ -172,8 +176,7 @@ const DateRangePopover: React.FC<Props> = ({
                   <DateInput
                     id="date-picker-input-id-start"
                     type="from"
-                    labelText="From"
-                    autoFocus
+                    labelText="From date"
                     onChange={() =>
                       setDateSelectionMethods((prevState) => ({
                         ...prevState,
@@ -184,7 +187,7 @@ const DateRangePopover: React.FC<Props> = ({
                   <DateInput
                     id="date-picker-input-id-finish"
                     type="to"
-                    labelText="To"
+                    labelText="To date"
                     onChange={() =>
                       setDateSelectionMethods((prevState) => ({
                         ...prevState,
@@ -198,6 +201,7 @@ const DateRangePopover: React.FC<Props> = ({
               <TimeInputContainer>
                 <TimeInput
                   type="from"
+                  labelText="From time"
                   onChange={() =>
                     setDateSelectionMethods((prevState) => ({
                       ...prevState,
@@ -207,6 +211,7 @@ const DateRangePopover: React.FC<Props> = ({
                 />
                 <TimeInput
                   type="to"
+                  labelText="To time"
                   onChange={() =>
                     setDateSelectionMethods((prevState) => ({
                       ...prevState,

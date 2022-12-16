@@ -5,12 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Popover as BasePopover} from 'modules/components/Popover';
 import {zDateRangePopover} from 'modules/constants/componentHierarchy';
 
 const Popover = styled(BasePopover)`
   z-index: ${zDateRangePopover};
+`;
+
+const Title = styled.div`
+  ${({theme}) => {
+    const {titleColor} = theme.colors.dateRangePopover;
+    return css`
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: ${titleColor};
+    `;
+  }}
 `;
 
 const Body = styled.div`
@@ -32,12 +44,18 @@ const Body = styled.div`
 `;
 
 const Footer = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px;
-  button:not(:first-child) {
-    margin-left: 16px;
-  }
+  ${({theme}) => {
+    const {borderColor} = theme.colors.dateRangePopover;
+    return css`
+      display: flex;
+      justify-content: flex-end;
+      padding: 16px;
+      button:not(:first-child) {
+        margin-left: 16px;
+      }
+      border-top: 1px solid ${borderColor};
+    `;
+  }}
 `;
 
 const DatePickerContainer = styled.div`
@@ -55,4 +73,4 @@ const TimeInputContainer = styled.div`
   margin-top: 16px;
 `;
 
-export {Popover, Footer, Body, DatePickerContainer, TimeInputContainer};
+export {Popover, Title, Footer, Body, DatePickerContainer, TimeInputContainer};

@@ -444,6 +444,10 @@ const theme = {
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.5),
         buttonColor: SEMANTIC_COLORS.white,
       },
+      dateRangePopover: {
+        titleColor: DARK_COLORS.ui04,
+        borderColor: LIGHT_COLORS.ui05,
+      },
       modules: {
         badge: {
           filters: {
@@ -1374,6 +1378,10 @@ const theme = {
         background: LIGHT_COLORS.ui04,
         boxShadow: rgba(SEMANTIC_COLORS.black, 0.3),
         buttonColor: DARK_COLORS.ui04,
+      },
+      dateRangePopover: {
+        titleColor: DARK_COLORS.ui04,
+        borderColor: LIGHT_COLORS.ui05,
       },
       modules: {
         badge: {
