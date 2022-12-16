@@ -138,31 +138,28 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public void removeInstance(final long key) {
-    final ElementInstance instance = getInstance(key);
+    elementInstanceKey.wrapLong(key);
+    final var instance = elementInstanceColumnFamily.get(elementInstanceKey);
+    if (instance == null) {
+      return;
+    }
+    final long parent = instance.getParentKey();
+    parentKey.inner().wrapLong(parent);
+    parentChildColumnFamily.deleteIfExists(parentChildKey);
+    elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
+    variableState.removeScope(key);
+    awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
+    removeNumberOfTakenSequenceFlows(key);
 
-    if (instance != null) {
-      elementInstanceKey.wrapLong(key);
-      parentKey.inner().wrapLong(instance.getParentKey());
-
-      parentChildColumnFamily.deleteIfExists(parentChildKey);
-      elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
-
-      variableState.removeScope(key);
-
-      awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
-      removeNumberOfTakenSequenceFlows(key);
-
-      final long parentKey = instance.getParentKey();
-      if (parentKey > 0) {
-        final ElementInstance parentInstance = getInstance(parentKey);
-        if (parentInstance == null) {
-          final var errorMsg =
-              "Expected to find parent instance for element instance with key %d, but none was found.";
-          throw new IllegalStateException(String.format(errorMsg, parentKey));
-        }
-        parentInstance.decrementChildCount();
-        updateInstance(parentInstance);
+    if (parent > 0) {
+      final ElementInstance parentInstance = getInstance(parent);
+      if (parentInstance == null) {
+        final var errorMsg =
+            "Expected to find parent instance for element instance with key %d, but none was found.";
+        throw new IllegalStateException(String.format(errorMsg, parent));
       }
+      parentInstance.decrementChildCount();
+      updateInstance(parentInstance);
     }
   }
 
