@@ -42,6 +42,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
+import io.grpc.Context;
 import io.grpc.stub.StreamObserver;
 
 public class GatewayGrpcService extends GatewayImplBase {
@@ -75,8 +76,9 @@ public class GatewayGrpcService extends GatewayImplBase {
       return;
     }
 
-    Loggers.JOB_STREAM.debug("Registering new stream observer for job pushing");
-    jobStreamServer.setObserver(observer);
+    Context.current()
+        .addListener(ctx -> jobStreamServer.asyncRemoveObserver(observer), Runnable::run);
+    jobStreamServer.asyncAddObserver(observer);
   }
 
   @Override

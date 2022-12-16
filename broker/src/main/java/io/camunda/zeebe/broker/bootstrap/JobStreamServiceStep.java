@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.jobstream.JobPusher;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.SchedulingHints;
@@ -21,15 +20,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var scheduler = brokerStartupContext.getActorSchedulingService();
-    final var config = brokerStartupContext.getBrokerConfiguration();
-    // allow compatibility with both embedded and a hardcoded gateway, gateway
-    final var gatewayMemberId =
-        config.getGateway().isEnable()
-            ? brokerStartupContext.getClusterServices().getMembershipService().getLocalMember().id()
-            : MemberId.from("gateway");
-    final var pusher =
-        new JobPusher(
-            brokerStartupContext.getClusterServices().getCommunicationService(), gatewayMemberId);
+    final var pusher = new JobPusher(brokerStartupContext.getClusterServices());
 
     final var startup = scheduler.submitActor(pusher, SchedulingHints.IO_BOUND);
     concurrencyControl.runOnCompletion(

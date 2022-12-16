@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,7 +55,10 @@ public final class GatewayClusterConfiguration {
     final var advertisedAddress =
         Address.from(cluster.getAdvertisedHost(), cluster.getAdvertisedPort());
 
-    return new MemberConfig().setId(cluster.getMemberId()).setAddress(advertisedAddress);
+    return new MemberConfig()
+        .setId(cluster.getMemberId())
+        .setAddress(advertisedAddress)
+        .setProperties(Map.of("isGateway", "true"));
   }
 
   private SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {

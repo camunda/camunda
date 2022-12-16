@@ -57,12 +57,12 @@ public final class BrokerStartupProcess {
     result.add(new ApiMessagingServiceStep());
     result.add(new GatewayBrokerTransportStep());
     result.add(new CommandApiServiceStep());
+    result.add(new JobStreamServiceStep());
 
     if (config.getGateway().isEnable()) {
       result.add(new EmbeddedGatewayServiceStep());
     }
 
-    result.add(new JobStreamServiceStep());
     result.add(new PartitionManagerStep());
 
     result.add(new AdminApiServiceStep());

@@ -95,7 +95,11 @@ public class StandaloneGateway
       LOG.info("Starting standalone gateway with configuration {}", configuration.toJson());
     }
 
-    final var jobStreamServer = new JobStreamServer(atomixCluster.getCommunicationService());
+    final var jobStreamServer =
+        new JobStreamServer(
+            atomixCluster.getCommunicationService(),
+            atomixCluster.getEventService(),
+            atomixCluster.getMembershipService());
     gateway = new Gateway(configuration, brokerClient, actorScheduler, jobStreamServer);
 
     springGatewayBridge.registerBrokerClientSupplier(gateway::getBrokerClient);

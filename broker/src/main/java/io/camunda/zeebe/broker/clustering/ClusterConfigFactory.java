@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 // TODO: move this to BrokerClusterConfiguration in the dist module
@@ -34,6 +35,10 @@ public final class ClusterConfigFactory {
 
     final var messaging = messagingConfig(cluster, network);
     final var member = memberConfig(network.getInternalApi(), cluster.getNodeId());
+
+    if (config.getGateway().isEnable()) {
+      member.setProperties(Map.of("isGateway", "true", "isBroker", "true"));
+    }
 
     return new ClusterConfig()
         .setClusterId(name)

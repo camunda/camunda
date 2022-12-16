@@ -19,6 +19,8 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
+import org.agrona.concurrent.ShutdownSignalBarrier;
+import org.slf4j.LoggerFactory;
 
 public class Streamer extends App {
   private static final Counter RECEIVED_JOBS =
@@ -41,6 +43,7 @@ public class Streamer extends App {
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
     final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
+    final ShutdownSignalBarrier shutdownBarrier = new ShutdownSignalBarrier();
 
     final ZeebeClient client = createZeebeClient();
     printTopology(client);
@@ -67,17 +70,15 @@ public class Streamer extends App {
       asyncJobCompleter.start();
     }
 
-    Runtime.getRuntime()
-        .addShutdownHook(
-            new Thread(
-                () -> {
-                  streamer.cancel(true);
-                  client.close();
-                  asyncJobCompleter.close();
-                  responseChecker.close();
-                }));
-
-    streamer.join();
+    LoggerFactory.getLogger(getClass()).warn("Waiting for shutdown signal...");
+    shutdownBarrier.await();
+    LoggerFactory.getLogger(getClass()).warn("Shutting down...");
+    streamer.cancel(true);
+    client.close();
+    asyncJobCompleter.close();
+    responseChecker.close();
+    stopMonitoringServer();
+    LoggerFactory.getLogger(getClass()).warn("Shutdown");
   }
 
   private ZeebeClient createZeebeClient() {
