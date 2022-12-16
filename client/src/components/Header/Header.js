@@ -10,7 +10,7 @@ import {Link, useLocation} from 'react-router-dom';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 
 import {Tooltip, NavItem} from 'components';
-import {getOptimizeProfile, isEnterpriseMode} from 'config';
+import {getOptimizeProfile, isEnterpriseMode, getWebappLinks} from 'config';
 import {withDocs, withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -25,6 +25,7 @@ import './Header.scss';
 export function Header({user, mightFail, docsLink, noActions}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
+  const [webappLinks, setwebappLinks] = useState(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
   const location = useLocation();
@@ -32,10 +33,16 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
   useEffect(() => {
     mightFail(
-      Promise.all([isEventBasedProcessEnabled(), getOptimizeProfile(), isEnterpriseMode()]),
-      ([enabled, optimizeProfile, isEnterpriseMode]) => {
+      Promise.all([
+        isEventBasedProcessEnabled(),
+        getOptimizeProfile(),
+        isEnterpriseMode(),
+        getWebappLinks(),
+      ]),
+      ([enabled, optimizeProfile, isEnterpriseMode, webappLinks]) => {
         setShowEventBased(enabled && optimizeProfile === 'platform');
         setEnterpiseMode(isEnterpriseMode);
+        setwebappLinks(webappLinks);
       },
       showError
     );
@@ -43,7 +50,7 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
   const props = {
     app: createAppProps(location),
-    appBar: createAppBarProps(),
+    appBar: createAppBarProps(webappLinks),
     navbar: {elements: []},
   };
 
@@ -78,13 +85,31 @@ function createAppProps(location) {
   };
 }
 
-function createAppBarProps() {
+function createAppBarProps(webappLinks) {
   return {
     type: 'app',
     ariaLabel: t('navigation.appSwitcher'),
     isOpen: false,
-    elements: [],
+    elements: createWebappLinks(webappLinks),
   };
+}
+
+function createWebappLinks(webappLinks) {
+  if (!webappLinks) {
+    return [];
+  }
+
+  return Object.entries(webappLinks).map(([key, href]) => ({
+    key,
+    label: t(`navigation.apps.${key}`),
+    ariaLabel: t(`navigation.apps.${key}`),
+    href,
+    target: '_blank',
+    active: key === 'optimize',
+    // For some reason tactive state is not passed to SideNavLink if there are no routeProps passed
+    // I made a fix for it, hopefully it will be added to next components version
+    routeProps: {},
+  }));
 }
 
 function createNavBarProps(showEventBased, enterpriseMode) {

@@ -22,6 +22,11 @@ jest.mock('config', () => ({
   }),
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
   isEnterpriseMode: jest.fn().mockReturnValue(true),
+  getWebappLinks: jest.fn().mockReturnValue({
+    zeebe: 'http://zeebe.com',
+    operate: 'http://operate.com',
+    optimize: 'http://optimize.com',
+  }),
 }));
 
 jest.mock('./service', () => ({
@@ -112,4 +117,41 @@ it('should no display navbar and sidebar is noAction prop is specified', () => {
   expect(node.find('C3Navigation').prop('navbar')).toEqual({elements: []});
   expect(node.find('C3Navigation').prop('infoSideBar')).not.toBeDefined();
   expect(node.find('C3Navigation').prop('userSideBar')).not.toBeDefined();
+});
+
+it('should render sidebar links', async () => {
+  const node = shallow(<Header {...props} />);
+
+  runLastEffect();
+  await flushPromises();
+
+  expect(node.find('C3Navigation').prop('appBar').elements).toEqual([
+    {
+      active: false,
+      href: 'http://zeebe.com',
+      key: 'zeebe',
+      label: 'Zeebe',
+      ariaLabel: 'Zeebe',
+      routeProps: {},
+      target: '_blank',
+    },
+    {
+      active: false,
+      href: 'http://operate.com',
+      key: 'operate',
+      label: 'Operate',
+      ariaLabel: 'Operate',
+      routeProps: {},
+      target: '_blank',
+    },
+    {
+      active: true,
+      href: 'http://optimize.com',
+      key: 'optimize',
+      label: 'Optimize',
+      ariaLabel: 'Optimize',
+      routeProps: {},
+      target: '_blank',
+    },
+  ]);
 });

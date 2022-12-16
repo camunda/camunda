@@ -15,7 +15,15 @@
     "profile": "Profile",
     "appSwitcher": "App Switcher",
     "dashboards": "Dashboards",
-    "collections": "Collections"
+    "collections": "Collections",
+    "apps": {
+      "zeebe": "Zeebe",
+      "operate": "Operate",
+      "console": "Console",
+      "tasklist": "Tasklist",
+      "optimize": "Optimize",
+      "modeler": "Modeler"
+    }
   },
   "login": {
     "label": "Log in",
