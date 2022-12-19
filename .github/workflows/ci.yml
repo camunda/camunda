@@ -19,7 +19,7 @@ defaults:
     shell: bash
 
 env:
-  BUILD_DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
   integration-tests:
@@ -408,6 +408,8 @@ jobs:
         image: registry:2
         ports:
           - 5000:5000
+    env:
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
     steps:
       - uses: actions/checkout@v3
       - uses: hadolint/hadolint-action@v3.0.0
@@ -429,21 +431,19 @@ jobs:
         id: build-docker
         with:
           # we use a local registry for pushing
-          repository: localhost:5000/camunda/zeebe
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           distball: ${{ steps.build-zeebe.outputs.distball }}
-          platforms: ${{ env.BUILD_DOCKER_PLATFORMS }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
-      - name: Verify Docker images
-        env:
-          DATE: ${{ steps.build-docker.outputs.date }}
-          REVISION: ${{ github.sha }}
-          VERSION: ${{ steps.build-docker.outputs.version }}
-        run: |
-          docker pull --platform linux/amd64 ${{ steps.build-docker.outputs.image }}
-          ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}' amd64
-          docker pull --platform linux/arm64 ${{ steps.build-docker.outputs.image }}
-          ${PWD}/docker/test/verify.sh '${{ steps.build-docker.outputs.image }}' arm64
+      - name: Verify Docker image
+        uses: ./.github/actions/verify-zeebe-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-docker.outputs.date }}
+          revision: ${{ github.sha }}
+          version: ${{ steps.build-docker.outputs.version }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -555,7 +555,7 @@ jobs:
         with:
           repository: camunda/zeebe
           version: SNAPSHOT
-          platforms: ${{ env.BUILD_DOCKER_PLATFORMS }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
   notify-if-failed:

@@ -260,9 +260,18 @@ jobs:
     name: Docker Image Release
     runs-on: n1-standard-8-netssd-preempt
     timeout-minutes: 15
+    services:
+      # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
+      # registry. As we want to verify the images first before pushing them to dockerhub though,
+      # a local registry is used and if verification passes images are pushed to the remote registry.
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     env:
+      PLATFORMS: "linux/amd64,linux/arm64"
+      LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
-      TAG_LATEST: ${{ inputs.isLatest }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -291,25 +300,27 @@ jobs:
         uses: ./.github/actions/build-docker
         id: build-docker
         with:
-          repository: ${{ env.DOCKER_IMAGE }}
+          repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           version: ${{ inputs.releaseVersion }}
-          additionalTag: ${{ inputs.isLatest && 'latest' || '' }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
-          push: false
+          # pushes to local registry for verification prior pushing to remote
+          push: true
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
+          platforms: ${{ env.PLATFORMS }}
       - name: Verify Docker image
-        env:
-          DATE: ${{ steps.build-docker.outputs.date }}
-          REVISION: ${{ needs.release.outputs.releaseTagRevision }}
-          VERSION: ${{ inputs.releaseVersion }}
-        run: |
-          ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:${RELEASE_VERSION}"
-          if [ "$TAG_LATEST" = "true" ]; then
-            ${PWD}/docker/test/verify.sh "${DOCKER_IMAGE}:latest"
-          fi
-      - name: Push Docker Image Tag ${{ inputs.releaseVersion }}
+        uses: ./.github/actions/verify-zeebe-docker
+        with:
+          imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
+          date: ${{ steps.build-docker.outputs.date }}
+          revision: ${{ needs.release.outputs.releaseTagRevision }}
+          version: ${{ inputs.releaseVersion }}
+          platforms: ${{ env.PLATFORMS }}
+      - name: Sync Docker Image to DockerHub
+        id: push-docker
         if: ${{ inputs.dryRun == false }}
-        run: docker push ${{ env.DOCKER_IMAGE }}:${{ inputs.releaseVersion }}
-      - name: Push Docker Image Tag latest
-        if: ${{ inputs.isLatest && inputs.dryRun == false }}
-        run: docker push ${{ env.DOCKER_IMAGE }}:latest
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        run: |
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-docker.outputs.image }}
