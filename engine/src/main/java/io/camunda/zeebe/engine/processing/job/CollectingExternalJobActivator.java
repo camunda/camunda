@@ -49,11 +49,14 @@ final class CollectingExternalJobActivator implements ExternalJobActivator {
 
     @Override
     public void handle(final long key, final JobRecord job) {
+      final var record = new JobRecord();
+      record.wrapWithoutVariables(job);
+
       try (final var timer = JOB_COLLECTING_LATENCY.startTimer()) {
-        jobCollector.collectJob(job);
+        jobCollector.collectJob(record);
       }
 
-      delegate.handle(key, job);
+      delegate.handle(key, record);
     }
   }
 }
