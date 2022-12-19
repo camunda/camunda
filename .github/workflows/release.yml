@@ -293,16 +293,6 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - name: Setup regclient
-        id: setup-regclient
-        # To sync the multi-arch image from the local to the remote registry regctl is used.
-        # This is due to the docker client always dereferencing multi-arch images.
-        # See https://stackoverflow.com/a/68576882
-        uses: supplypike/setup-bin@v1
-        with:
-          uri: https://github.com/regclient/regclient/releases/download/v0.4.5/regctl-linux-amd64
-          name: regctl
-          version: v0.4.5
       - name: Download Zeebe Release Artifacts
         uses: actions/download-artifact@v3
         with:
@@ -331,12 +321,9 @@ jobs:
       - name: Sync Docker Image to DockerHub
         id: push-docker
         if: ${{ inputs.dryRun == false }}
-        # see step `setup-regclient` on why regctl is used
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
         run: |
-          # disable usage of https for the local registry, it is only served via http
-          regctl registry set --tls=disabled localhost:5000
-
-          regctl image copy ${{ steps.build-docker.outputs.image }} ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }}
-          if [ "$TAG_LATEST" = "true" ]; then
-            regctl image copy ${{ env.LOCAL_DOCKER_IMAGE }}:latest ${{ env.DOCKER_IMAGE }}:latest
-          fi
+          docker buildx imagetools create \
+            --tag ${{ env.DOCKER_IMAGE }}:${{ env.RELEASE_VERSION }} \
+            ${{ inputs.isLatest && format('--tag {0}:latest', env.DOCKER_IMAGE) || '' }} \
+            ${{ steps.build-docker.outputs.image }}
