@@ -51,4 +51,8 @@ public final class BrokerClassRuleHelper extends TestWatcher {
   public String getMessageName() {
     return "message-" + currentTestMethod;
   }
+
+  public String getSignalName() {
+    return "signal-" + currentTestMethod;
+  }
 }

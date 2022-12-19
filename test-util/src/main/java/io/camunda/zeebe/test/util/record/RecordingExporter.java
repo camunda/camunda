@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -42,6 +43,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
@@ -308,6 +310,14 @@ public final class RecordingExporter implements Exporter {
   public static SignalSubscriptionRecordStream signalSubscriptionRecords(
       final SignalSubscriptionIntent intent) {
     return signalSubscriptionRecords().withIntent(intent);
+  }
+
+  public static SignalRecordStream signalRecords() {
+    return new SignalRecordStream(records(ValueType.SIGNAL, SignalRecordValue.class));
+  }
+
+  public static SignalRecordStream signalRecords(final SignalIntent intent) {
+    return signalRecords().withIntent(intent);
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {
