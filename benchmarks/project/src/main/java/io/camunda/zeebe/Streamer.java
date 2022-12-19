@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 public class Streamer extends App {
   private static final Counter RECEIVED_JOBS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("client_received_job")
           .help("Total count of received jobs for a specific run")
           .register();

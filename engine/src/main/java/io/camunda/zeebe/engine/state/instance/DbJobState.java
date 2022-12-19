@@ -26,6 +26,7 @@ import io.camunda.zeebe.stream.api.ExternalJobActivator;
 import io.camunda.zeebe.stream.api.ExternalJobActivator.Handler;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.prometheus.client.Histogram;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
@@ -41,6 +42,12 @@ import org.slf4j.Logger;
  * may need to bring back the job ACTIVATED record for observability purposes.
  */
 public final class DbJobState implements JobState, MutableJobState {
+  private static final Histogram EXTERNAL_ACTIVATOR_LATENCY =
+      Histogram.build()
+          .namespace("zeebe_job_stream")
+          .name("external_activate_latency")
+          .help("Time to externally activate a job")
+          .register();
 
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
 
@@ -246,21 +253,35 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
-    createJobRecord(key, record);
-    initializeJobState();
-
-    // TODO: optimize state usage
     getExternalActivator(record)
         .ifPresentOrElse(
-            handler -> activateJobExternally(key, record, handler),
-            () -> makeJobActivatable(type, key));
+            handler -> {
+              final var deadline = ActorClock.currentTimeMillis() + 600_000;
+              record.setWorker("push").setDeadline(deadline);
+              createJobRecord(key, record);
+
+              initializeJobState(State.ACTIVATED);
+              addJobDeadline(deadline);
+
+              try (final var timer = EXTERNAL_ACTIVATOR_LATENCY.startTimer()) {
+                handler.handle(key, record);
+              }
+            },
+            () -> {
+              createJobRecord(key, record);
+              initializeJobState();
+              makeJobActivatable(type, key);
+            });
   }
 
   private void activateJobExternally(
       final long key, final JobRecord record, final Handler handler) {
     record.setWorker("push").setDeadline(ActorClock.currentTimeMillis() + 60_000);
     activate(key, record);
-    handler.handle(key, record);
+
+    try (final var timer = EXTERNAL_ACTIVATOR_LATENCY.startTimer()) {
+      handler.handle(key, record);
+    }
   }
 
   private Optional<Handler> getExternalActivator(final JobRecord record) {
@@ -417,7 +438,11 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   private void initializeJobState() {
-    jobState.setState(State.ACTIVATABLE);
+    initializeJobState(State.ACTIVATABLE);
+  }
+
+  private void initializeJobState(final State state) {
+    jobState.setState(state);
     statesJobColumnFamily.insert(fkJob, jobState);
   }
 

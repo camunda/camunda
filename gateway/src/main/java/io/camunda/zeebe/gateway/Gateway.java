@@ -174,7 +174,8 @@ public final class Gateway {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
-        .permitKeepAliveWithoutCalls(false);
+        .permitKeepAliveWithoutCalls(false)
+        .maxConnectionAge(Long.MAX_VALUE, TimeUnit.SECONDS);
   }
 
   private void setSecurityConfig(final ServerBuilder<?> serverBuilder, final SecurityCfg security) {

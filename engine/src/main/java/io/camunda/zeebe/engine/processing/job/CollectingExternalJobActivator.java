@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.stream.api.ExternalJobActivator;
+import io.prometheus.client.Histogram;
 import java.util.Objects;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
@@ -18,6 +19,13 @@ import org.agrona.DirectBuffer;
  * variables before sending it out.
  */
 final class CollectingExternalJobActivator implements ExternalJobActivator {
+  private static final Histogram JOB_COLLECTING_LATENCY =
+      Histogram.build()
+          .namespace("zeebe_job_stream")
+          .name("collecting_latency")
+          .help("Time to collect the variables for the job")
+          .register();
+
   private final ExternalJobActivator delegate;
   private final JobCollector jobCollector;
 
@@ -41,7 +49,10 @@ final class CollectingExternalJobActivator implements ExternalJobActivator {
 
     @Override
     public void handle(final long key, final JobRecord job) {
-      jobCollector.collectJob(job);
+      try (final var timer = JOB_COLLECTING_LATENCY.startTimer()) {
+        jobCollector.collectJob(job);
+      }
+
       delegate.handle(key, job);
     }
   }

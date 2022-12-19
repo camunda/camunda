@@ -134,7 +134,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
     channelBuilder
         .keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS)
         .keepAliveTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
-        .keepAliveWithoutCalls(true);
+        .keepAliveWithoutCalls(true)
+        .initialFlowControlWindow(4 * 1024 * 1024);
     channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
 
     return channelBuilder.build();
@@ -181,7 +182,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
   public static GatewayStub buildGatewayStub(
       final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
-    final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
+    final GatewayStub gatewayStub =
+        GatewayGrpc.newStub(channel).withCompression("gzip").withCallCredentials(credentials);
     if (!config.getInterceptors().isEmpty()) {
       return gatewayStub.withInterceptors(
           config.getInterceptors().toArray(new ClientInterceptor[] {}));

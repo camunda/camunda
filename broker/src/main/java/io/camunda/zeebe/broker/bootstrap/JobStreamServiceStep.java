@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.jobstream.JobPusher;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
-import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
@@ -22,7 +21,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     final var scheduler = brokerStartupContext.getActorSchedulingService();
     final var pusher = new JobPusher(brokerStartupContext.getClusterServices());
 
-    final var startup = scheduler.submitActor(pusher, SchedulingHints.IO_BOUND);
+    final var startup = scheduler.submitActor(pusher);
     concurrencyControl.runOnCompletion(
         startup,
         (ok, error) -> {

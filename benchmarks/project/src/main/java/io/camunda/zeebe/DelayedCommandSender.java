@@ -16,11 +16,18 @@
 package io.camunda.zeebe;
 
 import io.camunda.zeebe.Worker.DelayedCommand;
+import io.prometheus.client.Gauge;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 
 public class DelayedCommandSender extends Thread {
+  private static final Gauge COMMAND_QUEUE_SIZE =
+      Gauge.build()
+          .namespace("zeebe_job_stream")
+          .name("client_command_queue_size")
+          .help("Total number of complete commands enqueued")
+          .register();
 
   private volatile boolean shuttingDown = false;
   private final BlockingDeque<DelayedCommand> commands;
@@ -29,7 +36,7 @@ public class DelayedCommandSender extends Thread {
   public DelayedCommandSender(
       final BlockingDeque<DelayedCommand> delayedCommands,
       final BlockingQueue<Future<?>> requestFutures) {
-    this.commands = delayedCommands;
+    commands = delayedCommands;
     this.requestFutures = requestFutures;
   }
 
@@ -43,7 +50,8 @@ public class DelayedCommandSender extends Thread {
         } else {
           requestFutures.add(delayedCommand.getCommand().send());
         }
-      } catch (InterruptedException e) {
+        COMMAND_QUEUE_SIZE.set(commands.size());
+      } catch (final InterruptedException e) {
         // ignore and retry
       }
     }

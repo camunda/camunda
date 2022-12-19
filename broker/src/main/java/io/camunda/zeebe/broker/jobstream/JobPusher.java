@@ -12,9 +12,13 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.atomix.cluster.messaging.Subscription;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.protocol.impl.encoding.PushedJobRequest;
@@ -27,12 +31,8 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -41,43 +41,60 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
   private static final Logger LOGGER = Loggers.JOB_STREAM;
   private static final Counter PUSHED_JOBS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("broker_pushed_job")
           .help("Total count of pushed jobs")
           .register();
   private static final Counter PUSHED_JOB_ERRORS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("broker_pushed_job_errors")
           .help("Total count of errors occurring when pushing a job")
           .register();
   private static final Gauge REGISTERED_GATEWAYS =
       Gauge.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("registered_gateway")
           .help("Total count of registered gateway endpoints")
           .register();
-  private static final Histogram PUSH_DURATION =
+  private static final Histogram PUSH_LATENCY =
       Histogram.build()
-          .namespace("job_stream")
-          .name("broker_push_duration")
+          .namespace("zeebe_job_stream")
+          .name("broker_push_latency")
           .help("Approximate duration of broker-to-gateway push")
           .register();
 
-  private final ClusterCommunicationService communicationService;
   private final ClusterEventService eventService;
   private final ClusterMembershipService membershipService;
-  private final Set<MemberId> gateways = new HashSet<>();
+  private final ManagedMessagingService messagingService;
+  private final List<MemberId> gateways = new ArrayList<>();
   private final Collection<Subscription> subscriptions = new ArrayList<>();
 
+  private int lastTargetGateway = 0;
+
   public JobPusher(final ClusterServices clusterServices) {
-    communicationService = clusterServices.getCommunicationService();
+    // create own communication service; to make things easier, we'll use the same membership and
+    // event services though
+
     eventService = clusterServices.getEventService();
     membershipService = clusterServices.getMembershipService();
+
+    final var address = Address.from(clusterServices.getMessagingService().address().host(), 26503);
+    final var messagingConfig =
+        new MessagingConfig()
+            .setPort(26503)
+            .setCompressionAlgorithm(CompressionAlgorithm.SNAPPY)
+            .setShutdownQuietPeriod(Duration.ZERO)
+            .setShutdownTimeout(Duration.ofSeconds(1));
+    messagingService = new NettyMessagingService("zeebe-cluster", address, messagingConfig);
   }
 
   @Override
   protected void onActorStarted() {
+    REGISTERED_GATEWAYS.set(0);
+
+    messagingService.start().join();
+
     subscriptions.add(
         eventService
             .subscribe("job-stream-register", (Consumer<String>) this::addGateway, actor::run)
@@ -93,6 +110,7 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
   protected void onActorClosing() {
     subscriptions.forEach(s -> CloseHelper.quietClose(s::close));
     membershipService.removeListener(this);
+    messagingService.stop().join();
   }
 
   @Override
@@ -127,10 +145,13 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
   }
 
   private void addGateway(final MemberId memberId) {
-    if (gateways.add(memberId)) {
-      LOGGER.debug("Registered new gateway {} for pushing", memberId);
-      REGISTERED_GATEWAYS.inc();
+    if (gateways.contains(memberId)) {
+      return;
     }
+
+    gateways.add(memberId);
+    LOGGER.debug("Registered new gateway {} for pushing", memberId);
+    REGISTERED_GATEWAYS.inc();
   }
 
   public void push(final long key, final JobRecord job) {
@@ -139,20 +160,21 @@ public final class JobPusher extends Actor implements ClusterMembershipEventList
   }
 
   private void sendJob(final PushedJobRequest request) {
-    // shuffle gateways for easy load balancing
-    final var sortedGateways = new ArrayList<>(gateways);
-    Collections.shuffle(sortedGateways);
+    // pseudo round-robin
+    final var index = lastTargetGateway % gateways.size();
+    final var targetGateway = gateways.get(index);
+    lastTargetGateway = index + 1;
 
-    final var targetGateway = sortedGateways.get(0);
-    final var timer = PUSH_DURATION.startTimer();
-    final CompletableFuture<byte[]> response =
-        communicationService.send(
+    final var timer = PUSH_LATENCY.startTimer();
+    final var targetMember = membershipService.getMember(targetGateway);
+    final var serializedRequest = serializeRequest(request);
+    final var response =
+        messagingService.sendAndReceive(
+            Address.from(targetMember.address().host(), 26504),
             "job-stream-push",
-            request,
-            this::serializeRequest,
-            Function.identity(),
-            targetGateway,
-            Duration.ofSeconds(5));
+            serializedRequest,
+            true,
+            Duration.ofSeconds(15));
     PUSHED_JOBS.inc();
 
     response.whenComplete(

@@ -11,8 +11,12 @@ import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.gateway.Loggers;
 import io.camunda.zeebe.gateway.ResponseMapper;
 import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
@@ -24,10 +28,9 @@ import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -35,66 +38,77 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
   private static final byte[] SUCCESS_RESPONSE = new byte[0];
   private static final Counter RECEIVED_JOBS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("gateway_received_job")
           .help("Total count of pushed jobs")
           .register();
   private static final Counter PUSHED_JOBS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("gateway_pushed_job")
           .help("Total count of pushed jobs")
           .register();
   private static final Counter PUSHED_JOB_ERRORS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("gateway_pushed_job_errors")
           .help("Total count of errors occurring when pushing a job")
           .register();
   private static final Counter DROPPED_JOBS =
       Counter.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("gateway_dropped_job")
           .help("Total count of jobs lost due to missing client")
           .register();
   private static final Gauge REGISTERED_CLIENTS =
       Gauge.build()
-          .namespace("job_stream")
+          .namespace("zeebe_job_stream")
           .name("registered_client")
           .help("Total count of registered client observers")
           .register();
-  private static final Histogram PUSH_DURATION =
+  private static final Histogram PUSH_LATENCY =
       Histogram.build()
-          .namespace("job_stream")
-          .name("gateway_push_duration")
+          .namespace("zeebe_job_stream")
+          .name("gateway_push_latency")
           .help("Approximate duration of gateway-to-client push")
           .register();
 
-  private final ClusterCommunicationService communicationService;
+  private final ManagedMessagingService messagingService;
+
   private final ClusterEventService eventService;
   private final ClusterMembershipService membershipService;
   private final List<ServerStreamObserver<ActivatedJob>> observers = new ArrayList<>();
 
+  private int lastTargetObserver = 0;
+
   public JobStreamServer(
-      final ClusterCommunicationService communicationService,
+      final Address address,
       final ClusterEventService eventService,
       final ClusterMembershipService membershipService) {
-    this.communicationService = communicationService;
     this.eventService = eventService;
     this.membershipService = membershipService;
+
+    final var messagingConfig =
+        new MessagingConfig()
+            .setPort(address.port()) // to allow for embedded gateway
+            .setCompressionAlgorithm(CompressionAlgorithm.SNAPPY)
+            .setShutdownQuietPeriod(Duration.ZERO)
+            .setShutdownTimeout(Duration.ofSeconds(1));
+    messagingService = new NettyMessagingService("zeebe-cluster", address, messagingConfig);
   }
 
   @Override
   protected void onActorStarted() {
     REGISTERED_CLIENTS.set(0);
-    communicationService.subscribe(
-        "job-stream-push", this::deserialize, this::handleRequest, Function.identity(), actor::run);
+    messagingService.start().join();
+
+    messagingService.registerHandler("job-stream-push", this::handleRequest, actor::run);
     membershipService.addListener(this);
   }
 
   @Override
   protected void onActorClosing() {
-    communicationService.unsubscribe("job-stream-push");
+    messagingService.stop().join();
     membershipService.removeListener(this);
     notifyBrokersToRemoveStreamReceiver();
 
@@ -138,7 +152,6 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
 
     observers.add(observer);
     REGISTERED_CLIENTS.set(observers.size());
-    Loggers.JOB_STREAM.info("Add stream observer for job pushing");
   }
 
   public void asyncRemoveObserver(final ServerStreamObserver<ActivatedJob> observer) {
@@ -148,14 +161,19 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
 
   private void removeObserver(final ServerStreamObserver<ActivatedJob> observer) {
     observers.remove(observer);
-    Loggers.JOB_STREAM.info("Removing stream observer for job pushing");
 
     if (observers.isEmpty()) {
       notifyBrokersToRemoveStreamReceiver();
     }
+
+    REGISTERED_CLIENTS.set(observers.size());
   }
 
-  private byte[] handleRequest(final PushedJobRequest request) {
+  private byte[] handleRequest(final Address replyTo, final byte[] bytes) {
+    return handlePushedJob(deserialize(bytes));
+  }
+
+  private byte[] handlePushedJob(final PushedJobRequest request) {
     RECEIVED_JOBS.inc();
 
     if (observers.isEmpty()) {
@@ -164,13 +182,14 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
           "No registered observer/client; job [%s] will be lost".formatted(request));
     }
 
-    final var sortedObservers = new ArrayList<>(observers);
-    Collections.shuffle(sortedObservers);
+    // pseudo round-robin
+    final var targetObserver = lastTargetObserver % observers.size();
+    lastTargetObserver = targetObserver + 1;
 
-    final var observer = sortedObservers.get(0);
+    final var observer = observers.get(targetObserver);
     // there isn't really a good way from here to verify when the push was received on the client
     // side, for this we would need distributed tracing
-    try (final var timer = PUSH_DURATION.startTimer()) {
+    try (final var timer = PUSH_LATENCY.startTimer()) {
       final var job = ResponseMapper.toActivatedJobResponse(request.key(), request.job());
       observer.onNext(job);
       PUSHED_JOBS.inc();
