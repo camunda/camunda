@@ -23,11 +23,11 @@ inputs:
     description: 'If true, will push the image'
     required: false
     default: 'false'
-  architectures:
+  platforms:
     # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
-    description: 'Comma separated-list of linux architectures to build the image for; defaults to amd64'
+    description: 'Comma separated-list of platforms to build the image for; defaults to linux/amd64'
     required: false
-    default: 'amd64'
+    default: 'linux/amd64'
 
 outputs:
   image:
@@ -74,19 +74,6 @@ runs:
       id: get-distball
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
-    - name: Set Platforms
-      id: get-platforms
-      shell: bash
-      env:
-        ARCHS_RAW: ${{ inputs.architectures }}
-      # prefix architectures with `linux/` as this is the format needed by the build-push-action
-      run: |
-        declare -a archs=(${ARCHS_RAW//,/ })
-        declare -a platforms=()
-        for arch in "${archs[@]}"; do
-          platforms+=("linux/$arch")
-        done
-        echo "result=$( IFS=','; echo "${platforms[*]}" )" >> $GITHUB_OUTPUT
     - name: Build Docker image
       uses: docker/build-push-action@v3
       with:
@@ -95,7 +82,7 @@ runs:
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         no-cache: true
-        platforms: ${{ steps.get-platforms.outputs.result }}
+        platforms: ${{ inputs.platforms }}
         build-args: |
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}

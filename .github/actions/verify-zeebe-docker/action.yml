@@ -16,11 +16,11 @@ inputs:
   revision:
     description: 'Revision from which the image to verify was built, used to verify the date label of the image.'
     required: true
-  architectures:
+  platforms:
     # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
-    description: 'Comma separated-list of linux architectures to verify (linux/${arch}), defaults to `amd64`.'
+    description: 'Comma separated-list of platforms to verify the image for; defaults to linux/amd64'
     required: false
-    default: 'amd64'
+    default: 'linux/amd64'
 
 runs:
   using: composite
@@ -32,11 +32,11 @@ runs:
         DATE: ${{ inputs.date }}
         REVISION: ${{ inputs.revision }}
         VERSION: ${{ inputs.version }}
-        ARCHS_RAW: ${{ inputs.architectures }}
+        PLATFORMS_RAW: ${{ inputs.platforms }}
       run: |
-        declare -a archs=(${ARCHS_RAW//,/ })
+        declare -a platforms=(${PLATFORMS_RAW//,/ })
 
-        for arch in "${archs[@]}"; do
-          docker pull --platform "linux/$arch" "${{ inputs.imageName }}:${VERSION}"
-          ${PWD}/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$arch"
+        for platform in "${platforms[@]}"; do
+          docker pull --platform "$platform" "${{ inputs.imageName }}:${VERSION}"
+          ${PWD}/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
         done

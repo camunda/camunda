@@ -269,7 +269,7 @@ jobs:
         ports:
           - 5000:5000
     env:
-      ARCHITECTURES: "amd64,arm64"
+      PLATFORMS: "linux/amd64,linux/arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
     steps:
@@ -306,7 +306,7 @@ jobs:
           # pushes to local registry for verification prior pushing to remote
           push: true
           distball: camunda-zeebe-${{ inputs.releaseVersion }}.tar.gz
-          architectures: ${{ env.ARCHITECTURES }}
+          platforms: ${{ env.PLATFORMS }}
       - name: Verify Docker image
         uses: ./.github/actions/verify-zeebe-docker
         with:
@@ -314,7 +314,7 @@ jobs:
           date: ${{ steps.build-docker.outputs.date }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           version: ${{ inputs.releaseVersion }}
-          architectures: ${{ env.ARCHITECTURES }}
+          platforms: ${{ env.PLATFORMS }}
       - name: Sync Docker Image to DockerHub
         id: push-docker
         if: ${{ inputs.dryRun == false }}

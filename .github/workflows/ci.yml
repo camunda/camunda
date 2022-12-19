@@ -19,7 +19,7 @@ defaults:
     shell: bash
 
 env:
-  DOCKER_ARCHITECTURES: "amd64,arm64"
+  DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
   integration-tests:
@@ -214,7 +214,7 @@ jobs:
         with:
           version: current-test
           distball: ${{ steps.build-zeebe.outputs.distball }}
-          architectures: ${{ matrix.arch }}
+          platforms: linux/${{ matrix.arch }}
           push: false
       - name: Run smoke test on ${{ matrix.arch }}
         env:
@@ -433,7 +433,7 @@ jobs:
           # we use a local registry for pushing
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           distball: ${{ steps.build-zeebe.outputs.distball }}
-          architectures: ${{ env.DOCKER_ARCHITECTURES }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
       - name: Verify Docker image
@@ -443,7 +443,7 @@ jobs:
           date: ${{ steps.build-docker.outputs.date }}
           revision: ${{ github.sha }}
           version: ${{ steps.build-docker.outputs.version }}
-          architectures: ${{ env.DOCKER_ARCHITECTURES }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
   test-summary:
     # Used by bors to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -555,7 +555,7 @@ jobs:
         with:
           repository: camunda/zeebe
           version: SNAPSHOT
-          architectures: ${{ env.DOCKER_ARCHITECTURES }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
   notify-if-failed:
