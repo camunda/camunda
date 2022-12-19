@@ -29,7 +29,7 @@
 
     <version.zeebe>8.2.0-alpha2</version.zeebe>
     <version.identity>8.2.0-alpha2</version.identity>
-    <version.elasticsearch>7.17.8</version.elasticsearch>
+    <version.elasticsearch>7.17.7</version.elasticsearch>
     <version.spring.boot>2.6.14</version.spring.boot>
     <version.spring.session.bom>2021.2.0</version.spring.session.bom>
     <log4j2.version>2.17.1</log4j2.version> <!-- Override from spring -->
@@ -136,12 +136,6 @@
       <dependency>
         <groupId>org.elasticsearch.client</groupId>
         <artifactId>elasticsearch-rest-client</artifactId>
-        <version>${version.elasticsearch}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch-x-content</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
       <!-- END -->
