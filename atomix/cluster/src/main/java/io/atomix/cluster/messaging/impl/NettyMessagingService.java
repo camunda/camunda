@@ -718,10 +718,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
     final ServerBootstrap b = new ServerBootstrap();
     b.option(ChannelOption.SO_REUSEADDR, true);
     b.option(ChannelOption.SO_BACKLOG, 128);
-    b.childOption(
-        ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024));
-    b.childOption(ChannelOption.SO_RCVBUF, 1024 * 1024);
-    b.childOption(ChannelOption.SO_SNDBUF, 1024 * 1024);
     b.childOption(ChannelOption.SO_KEEPALIVE, true);
     b.childOption(ChannelOption.TCP_NODELAY, true);
     b.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
