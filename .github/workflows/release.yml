@@ -272,7 +272,6 @@ jobs:
       ARCHITECTURES: "amd64,arm64"
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
       DOCKER_IMAGE: camunda/zeebe
-      TAG_LATEST: ${{ inputs.isLatest }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -303,7 +302,6 @@ jobs:
         with:
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
           version: ${{ inputs.releaseVersion }}
-          additionalTag: ${{ inputs.isLatest && 'latest' || '' }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           # pushes to local registry for verification prior pushing to remote
           push: true
@@ -316,7 +314,6 @@ jobs:
           date: ${{ steps.build-docker.outputs.date }}
           revision: ${{ needs.release.outputs.releaseTagRevision }}
           version: ${{ inputs.releaseVersion }}
-          verifyLatestTag: ${{ inputs.isLatest }}
           architectures: ${{ env.ARCHITECTURES }}
       - name: Sync Docker Image to DockerHub
         id: push-docker

@@ -16,10 +16,6 @@ inputs:
   revision:
     description: 'Revision from which the image to verify was built, used to verify the date label of the image.'
     required: true
-  verifyLatestTag:
-    description: 'Whether to also verify the image tagged as latest.'
-    required: false
-    default: 'false'
   architectures:
     # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
     description: 'Comma separated-list of linux architectures to verify (linux/${arch}), defaults to `amd64`.'
@@ -37,15 +33,10 @@ runs:
         REVISION: ${{ inputs.revision }}
         VERSION: ${{ inputs.version }}
         ARCHS_RAW: ${{ inputs.architectures }}
-        VERIFY_LATEST: ${{ inputs.verifyLatestTag }}
       run: |
         declare -a archs=(${ARCHS_RAW//,/ })
 
         for arch in "${archs[@]}"; do
           docker pull --platform "linux/$arch" "${{ inputs.imageName }}:${VERSION}"
           ${PWD}/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$arch"
-          if [ "$VERIFY_LATEST" = "true" ]; then
-            docker pull --platform "linux/$arch" "${{ inputs.imageName }}:latest"
-            ${PWD}/docker/test/verify.sh "${{ inputs.imageName }}:latest" "$arch"
-          fi
         done
