@@ -34,7 +34,7 @@
     <version.elasticsearch>7.17.8</version.elasticsearch>
     <version.spring.boot>2.7.6</version.spring.boot>
     <version.junit>4.13.2</version.junit>
-    <version.springdoc>1.6.13</version.springdoc>
+    <version.springdoc>1.6.14</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.10.2</version.micrometer>
     <version.mockito>4.10.0</version.mockito>
@@ -92,14 +92,14 @@
 
       <!-- START have to define this to override wrong version coming from spring-boot-dependencies BOM -->
       <dependency>
-        <groupId>org.elasticsearch</groupId>
-        <artifactId>elasticsearch</artifactId>
+        <groupId>org.elasticsearch.client</groupId>
+        <artifactId>elasticsearch-rest-client</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
 
       <dependency>
-        <groupId>org.elasticsearch.client</groupId>
-        <artifactId>elasticsearch-rest-client</artifactId>
+        <groupId>org.elasticsearch</groupId>
+        <artifactId>elasticsearch-x-content</artifactId>
         <version>${version.elasticsearch}</version>
       </dependency>
       <!-- END -->
