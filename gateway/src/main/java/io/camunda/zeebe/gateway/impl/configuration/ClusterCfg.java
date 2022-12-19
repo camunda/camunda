@@ -37,7 +37,7 @@ public final class ClusterCfg {
   private Integer advertisedPort = null;
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
-  private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
+  private CompressionAlgorithm messageCompression = CompressionAlgorithm.SNAPPY;
 
   public String getMemberId() {
     return memberId;

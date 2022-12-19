@@ -416,7 +416,7 @@
       # Note: When there is no latency enabling this may have a performance impact.
       # Note: When this flag is enables, you must also enable compression in standalone gateway configuration.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MESSAGECOMPRESSION
-      # messageCompression: NONE
+      # messageCompression: SNAPPY
 
     # threads:
       # Controls the number of non-blocking CPU threads to be used. WARNING: You

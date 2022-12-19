@@ -40,7 +40,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private MembershipCfg membership = new MembershipCfg();
   private RaftCfg raft = new RaftCfg();
-  private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
+  private CompressionAlgorithm messageCompression = CompressionAlgorithm.SNAPPY;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
