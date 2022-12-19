@@ -35,7 +35,14 @@ public final class CatchEventAnalyzer {
       Comparator.comparing(
               (ExecutableCatchEvent catchEvent) -> catchEvent.getError().getErrorCode().get())
           .reversed();
+  private static final Comparator<ExecutableCatchEvent> ESCALATION_CODE_COMPARATOR =
+      Comparator.comparing(
+              (ExecutableCatchEvent catchEvent) ->
+                  catchEvent.getEscalation().getEscalationCode().get())
+          .reversed();
+
   private final CatchEventTuple catchEventTuple = new CatchEventTuple();
+
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
 
@@ -201,15 +208,20 @@ public final class CatchEventAnalyzer {
     final var elementType = processInstanceRecord.getBpmnElementType();
 
     final var element = process.getElementById(elementId, elementType, ExecutableActivity.class);
-    final Optional<ExecutableCatchEvent> catchEvent =
+    final Optional<ExecutableCatchEvent> escalationCatchEvent =
         element.getEvents().stream()
             .filter(ExecutableCatchEvent::isEscalation)
+            // Because a catch event can not contain an expression, we ignore it if not set.
+            .filter(catchEvent -> catchEvent.getEscalation().getEscalationCode().isPresent())
+            // Order by escalationCode to prioritize code-specific escalation events within the same
+            // scope.
+            .sorted(ESCALATION_CODE_COMPARATOR)
             .filter(event -> matchesEscalationCode(event, escalationCode))
             .findFirst();
 
-    if (catchEvent.isPresent()) {
+    if (escalationCatchEvent.isPresent()) {
       catchEventTuple.instance = instance;
-      catchEventTuple.catchEvent = catchEvent.get();
+      catchEventTuple.catchEvent = escalationCatchEvent.get();
       return Optional.of(catchEventTuple);
     }
 
@@ -219,12 +231,7 @@ public final class CatchEventAnalyzer {
 
   public boolean matchesEscalationCode(
       final ExecutableCatchEvent catchEvent, final DirectBuffer escalationCode) {
-    final var eventEscalationCodeOptional = catchEvent.getEscalation().getEscalationCode();
-    // Because a catch event can not contain an expression, we ignore it if not set.
-    if (eventEscalationCodeOptional.isEmpty()) {
-      return false;
-    }
-    final var eventEscalationCode = eventEscalationCodeOptional.get();
+    final var eventEscalationCode = catchEvent.getEscalation().getEscalationCode().get();
     return eventEscalationCode.capacity() == 0 || eventEscalationCode.equals(escalationCode);
   }
 

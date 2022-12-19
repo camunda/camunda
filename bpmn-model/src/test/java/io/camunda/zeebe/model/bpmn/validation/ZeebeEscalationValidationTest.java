@@ -143,30 +143,6 @@ class ZeebeEscalationValidationTest {
   }
 
   @Test
-  @DisplayName(
-      "The same scope can not contains an escalation boundary event without escalation code and another one with escalation code.")
-  void verifyMultipleEscalationBoundaryEventsWithAndWithOutEscalationCode() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .callActivity("call", c -> c.zeebeProcessId("child"))
-            .boundaryEvent("catch-1", b -> b.escalation().endEvent())
-            .moveToActivity("call")
-            .boundaryEvent("catch-2", b -> b.escalation("escalation").endEvent())
-            .moveToNode("call")
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(
-            CallActivity.class,
-            "The same scope can not contain an escalation catch event without escalation code and another one with escalation code. An escalation catch event without escalation code catches all escalations."));
-  }
-
-  @Test
   @DisplayName("A sub-process with multiple escalation start event definitions are not allowed")
   void verifyMultipleEscalationEventSubprocessWithoutEscalationCode() {
     // given
@@ -194,36 +170,6 @@ class ZeebeEscalationValidationTest {
         expect(
             SubProcess.class,
             "The same scope can not contain more than one escalation catch event without escalation code. An escalation catch event without escalation code catches all escalations."));
-  }
-
-  @Test
-  @DisplayName("A sub-process with multiple escalation start event definitions are not allowed")
-  void verifyMultipleEscalationEventSubprocessWithAndWithoutEscalationCode() {
-    // given
-    final BpmnModelInstance process =
-        process(
-            sp -> {
-              sp.embeddedSubProcess()
-                  .eventSubProcess()
-                  .startEvent()
-                  .interrupting(false)
-                  .escalation()
-                  .endEvent();
-              sp.embeddedSubProcess()
-                  .eventSubProcess()
-                  .startEvent()
-                  .interrupting(false)
-                  .escalation("escalation")
-                  .endEvent();
-              sp.embeddedSubProcess().startEvent().endEvent();
-            });
-
-    // when/then
-    ProcessValidationUtil.assertThatProcessHasViolations(
-        process,
-        expect(
-            SubProcess.class,
-            "The same scope can not contain an escalation catch event without escalation code and another one with escalation code. An escalation catch event without escalation code catches all escalations."));
   }
 
   @Test

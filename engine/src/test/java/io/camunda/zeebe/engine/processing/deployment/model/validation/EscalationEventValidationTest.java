@@ -256,34 +256,6 @@ public final class EscalationEventValidationTest {
   }
 
   @Test
-  public void
-      shouldRejectDeploymentIfMultipleEscalationBoundaryEventsWithAndWithoutEscalationCode() {
-    // given
-    final BpmnModelInstance processDefinition =
-        Bpmn.createExecutableProcess()
-            .startEvent()
-            .callActivity("call", c -> c.zeebeProcessId("child"))
-            .boundaryEvent("catch-1", b -> b.escalation().endEvent())
-            .moveToActivity("call")
-            .boundaryEvent("catch-2", b -> b.escalation("escalationCode").endEvent())
-            .endEvent()
-            .done();
-
-    // when
-    final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
-
-    // then
-    Assertions.assertThat(rejectedDeployment)
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
-
-    assertThat(rejectedDeployment.getRejectionReason())
-        .contains(
-            "The same scope can not contain an escalation catch event without escalation code and another one with escalation code. An escalation catch event without escalation code catches all escalations.");
-  }
-
-  @Test
   public void shouldRejectDeploymentIfMissingEscalationRefOnEscalationEndEvent() {
     // given
     final BpmnModelInstance processDefinition =
@@ -418,41 +390,5 @@ public final class EscalationEventValidationTest {
     assertThat(rejectedDeployment.getRejectionReason())
         .contains(
             "Multiple escalation catch events with the same escalation code 'escalation' are not supported on the same scope.");
-  }
-
-  @Test
-  public void
-      shouldRejectDeploymentIfMultipleEscalationEventSubprocessWithAndWithoutEscalationCode() {
-    // given
-    final BpmnModelInstance processDefinition =
-        process(
-            sp -> {
-              sp.embeddedSubProcess()
-                  .eventSubProcess()
-                  .startEvent()
-                  .interrupting(false)
-                  .escalation()
-                  .endEvent();
-              sp.embeddedSubProcess()
-                  .eventSubProcess()
-                  .startEvent()
-                  .interrupting(false)
-                  .escalation("escalation")
-                  .endEvent();
-              sp.embeddedSubProcess().startEvent().endEvent();
-            });
-
-    // when
-    final Record<DeploymentRecordValue> rejectedDeployment =
-        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
-
-    // then
-    Assertions.assertThat(rejectedDeployment)
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
-
-    assertThat(rejectedDeployment.getRejectionReason())
-        .contains(
-            "The same scope can not contain an escalation catch event without escalation code and another one with escalation code. An escalation catch event without escalation code catches all escalations.");
   }
 }
