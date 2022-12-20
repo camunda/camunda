@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -115,6 +116,11 @@ public final class ProcessInstanceModificationProcessor
       Expected to modify instance of process '%s' but it contains one or more activate \
       instructions with an ancestor scope key that does not belong to the modified process \
       instance: '%s'""";
+
+  private static final String ERROR_MESSAGE_SELECTED_ANCESTOR_IS_NOT_ANCESTOR_OF_ELEMENT =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      with an ancestor scope key that is not an ancestor of the element to activate:%s""";
 
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
@@ -418,6 +424,7 @@ public final class ProcessInstanceModificationProcessor
     return validateAncestorExistsAndIsActive(process, record, ancestorInstances)
         .flatMap(
             valid -> validateAncestorBelongsToProcessInstance(process, record, ancestorInstances))
+        .flatMap(valid -> validateAncestorIsFlowScopeOfElement(process, record, ancestorInstances))
         .map(valid -> VALID);
   }
 
@@ -475,6 +482,62 @@ public final class ProcessInstanceModificationProcessor
             BufferUtil.bufferAsString(process.getBpmnProcessId()),
             String.join("', '", rejectedAncestorKeys));
     return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private Either<Rejection, ?> validateAncestorIsFlowScopeOfElement(
+      final DeployedProcess process,
+      final ProcessInstanceModificationRecord record,
+      final Map<Long, Optional<ElementInstance>> ancestorInstances) {
+    record InstructionDetails(long ancestorScopeKey, String ancestorId, String elementId) {}
+
+    final String invalidInstructionMessages =
+        record.getActivateInstructions().stream()
+            .map(
+                instruction -> {
+                  final var ancestorId =
+                      ancestorInstances
+                          .get(instruction.getAncestorScopeKey())
+                          .map(ElementInstance::getValue)
+                          .map(ProcessInstanceRecord::getElementId)
+                          .orElse(null);
+                  return new InstructionDetails(
+                      instruction.getAncestorScopeKey(), ancestorId, instruction.getElementId());
+                })
+            // skip missing ancestors (already checked in validateAncestorExistsAndIsActive)
+            .filter(details -> details.ancestorId != null)
+            .filter(details -> !isAncestorOfElement(process, details.ancestorId, details.elementId))
+            .map(
+                details ->
+                    "%n- instance '%s' of element '%s' is not an ancestor of element '%s'"
+                        .formatted(details.ancestorScopeKey, details.ancestorId, details.elementId))
+            .collect(Collectors.joining());
+
+    if (invalidInstructionMessages.isEmpty()) {
+      return VALID;
+    }
+
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_SELECTED_ANCESTOR_IS_NOT_ANCESTOR_OF_ELEMENT,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            invalidInstructionMessages);
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
+  }
+
+  private boolean isAncestorOfElement(
+      final DeployedProcess process, final String ancestorId, final String elementId) {
+    final var potentialDescendant = process.getProcess().getElementById(elementId);
+    if (potentialDescendant.getFlowScope() == null) {
+      return false;
+    }
+
+    final var potentialDescendantsFlowScopeId =
+        BufferUtil.bufferAsString(potentialDescendant.getFlowScope().getId());
+    if (Objects.equals(ancestorId, potentialDescendantsFlowScopeId)) {
+      return true;
+    }
+
+    return isAncestorOfElement(process, ancestorId, potentialDescendantsFlowScopeId);
   }
 
   private Either<Rejection, ?> validateElementInstanceExists(
