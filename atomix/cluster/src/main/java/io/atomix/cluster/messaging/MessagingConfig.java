@@ -24,7 +24,7 @@ import java.util.List;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
-  private final int connectionPoolSize = 8;
+  private final int connectionPoolSize = 24;
   private List<String> interfaces = new ArrayList<>();
   private Integer port;
   private Duration shutdownQuietPeriod = Duration.ofMillis(20);
