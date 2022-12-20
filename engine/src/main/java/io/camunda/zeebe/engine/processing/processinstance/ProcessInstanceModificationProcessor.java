@@ -492,6 +492,7 @@ public final class ProcessInstanceModificationProcessor
 
     final String invalidInstructionMessages =
         record.getActivateInstructions().stream()
+            .filter(instruction -> instruction.getAncestorScopeKey() > 0)
             .map(
                 instruction -> {
                   final var ancestorId =
