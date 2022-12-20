@@ -54,6 +54,9 @@ public interface MutableZeebeState extends ZeebeState {
   @Override
   MutableDecisionState getDecisionState();
 
+  @Override
+  MutableSignalSubscriptionState getSignalSubscriptionState();
+
   MutableMigrationState getMigrationState();
 
   MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState();
