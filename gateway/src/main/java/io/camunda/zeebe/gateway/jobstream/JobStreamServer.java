@@ -141,7 +141,6 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
   }
 
   public void asyncAddObserver(final ServerStreamObserver<ActivatedJob> observer) {
-    Loggers.JOB_STREAM.debug("Registering new stream observer for job pushing");
     actor.run(() -> addObserver(observer));
   }
 
@@ -150,17 +149,23 @@ public final class JobStreamServer extends Actor implements ClusterMembershipEve
       notifyBrokersAboutStreamReceiver();
     }
 
+    if (observers.contains(observer)) {
+      return;
+    }
+
+    Loggers.JOB_STREAM.debug("Registering new stream observer for job pushing");
     observers.add(observer);
     REGISTERED_CLIENTS.set(observers.size());
   }
 
   public void asyncRemoveObserver(final ServerStreamObserver<ActivatedJob> observer) {
-    Loggers.JOB_STREAM.debug("Remove stream observer for job pushing");
     actor.run(() -> removeObserver(observer));
   }
 
   private void removeObserver(final ServerStreamObserver<ActivatedJob> observer) {
-    observers.remove(observer);
+    if (observers.remove(observer)) {
+      Loggers.JOB_STREAM.debug("Remove stream observer for job pushing");
+    }
 
     if (observers.isEmpty()) {
       notifyBrokersToRemoveStreamReceiver();

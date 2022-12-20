@@ -43,6 +43,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.grpc.stub.StreamObserver;
+import org.agrona.collections.MutableBoolean;
 
 public class GatewayGrpcService extends GatewayImplBase {
   private final EndpointManager endpointManager;
@@ -75,9 +76,20 @@ public class GatewayGrpcService extends GatewayImplBase {
       return;
     }
 
+    final MutableBoolean isReady = new MutableBoolean(false);
+
     observer.setCompression("gzip");
     observer.setMessageCompression(true);
-    observer.setOnReadyHandler(() -> jobStreamServer.asyncAddObserver(observer));
+    observer.setOnReadyHandler(
+        () -> {
+          // only use for the very first ready
+          if (isReady.get()) {
+            return;
+          }
+
+          isReady.set(true);
+          jobStreamServer.asyncAddObserver(observer);
+        });
     observer.setOnCancelHandler(() -> jobStreamServer.asyncRemoveObserver(observer));
     observer.setOnCloseHandler(() -> jobStreamServer.asyncRemoveObserver(observer));
   }
