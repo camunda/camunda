@@ -352,7 +352,7 @@ public final class SignalEventValidationTest {
     final ProcessBuilder process = Bpmn.createExecutableProcess();
     process.startEvent().signal("s1").endEvent();
     process.startEvent().signal("s2").endEvent();
-    process.startEvent().signal(s -> s.nameExpression("signal_var")).endEvent();
+    process.startEvent().signal(s -> s.nameExpression("=\"signal_static_expression\"")).endEvent();
     return process.startEvent().signal("s3").endEvent().done();
   }
 
