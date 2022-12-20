@@ -50,6 +50,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
+  public boolean isSignal() {
+    return false;
+  }
+
+  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
@@ -66,6 +71,11 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
 
   @Override
   public ExecutableEscalation getEscalation() {
+    return null;
+  }
+
+  @Override
+  public ExecutableSignal getSignal() {
     return null;
   }
 
