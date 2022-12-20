@@ -10,16 +10,20 @@ package io.camunda.zeebe.engine.processing.deployment;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -29,15 +33,18 @@ public class StartEventSubscriptionManager {
 
   private final MessageStartEventSubscriptionRecord messageSubscriptionRecord =
       new MessageStartEventSubscriptionRecord();
+  private final SignalSubscriptionRecord signalSubscriptionRecord = new SignalSubscriptionRecord();
 
   private final ProcessState processState;
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
+  private final SignalSubscriptionState signalSubscriptionState;
   private final KeyGenerator keyGenerator;
 
   public StartEventSubscriptionManager(
       final ZeebeState zeebeState, final KeyGenerator keyGenerator) {
     processState = zeebeState.getProcessState();
     messageStartEventSubscriptionState = zeebeState.getMessageStartEventSubscriptionState();
+    signalSubscriptionState = zeebeState.getSignalSubscriptionState();
     this.keyGenerator = keyGenerator;
   }
 
@@ -62,6 +69,7 @@ public class StartEventSubscriptionManager {
   private void closeExistingStartEventSubscriptions(
       final ProcessMetadata processRecord, final StateWriter stateWriter) {
     closeMessageExistingStartEventSubscriptions(processRecord, stateWriter);
+    closeSignalExistingStartEventSubscriptions(processRecord, stateWriter);
   }
 
   private void closeMessageExistingStartEventSubscriptions(
@@ -79,6 +87,21 @@ public class StartEventSubscriptionManager {
                 subscription.getKey(),
                 MessageStartEventSubscriptionIntent.DELETED,
                 subscription.getRecord()));
+  }
+
+  private void closeSignalExistingStartEventSubscriptions(
+      final ProcessMetadata processRecord, final StateWriter stateWriter) {
+    final DeployedProcess lastSignalProcess =
+        findLastStartProcess(processRecord, ExecutableCatchEventElement::isSignal);
+    if (lastSignalProcess == null) {
+      return;
+    }
+
+    signalSubscriptionState.visitStartEventSubscriptionsByProcessDefinitionKey(
+        lastSignalProcess.getKey(),
+        subscription ->
+            stateWriter.appendFollowUpEvent(
+                subscription.getKey(), SignalSubscriptionIntent.DELETED, subscription.getRecord()));
   }
 
   private DeployedProcess findLastStartProcess(
@@ -104,10 +127,12 @@ public class StartEventSubscriptionManager {
     final DeployedProcess processDefinition = processState.getProcessByKey(processDefinitionKey);
     final ExecutableProcess process = processDefinition.getProcess();
     final List<ExecutableStartEvent> startEvents = process.getStartEvents();
-
     for (final ExecutableStartEvent startEvent : startEvents) {
       if (startEvent.isMessage()) {
         openMessageStartEventSubscription(
+            processDefinition, processDefinitionKey, startEvent, stateWriter);
+      } else if (startEvent.isSignal()) {
+        openSignalStartEventSubscription(
             processDefinition, processDefinitionKey, startEvent, stateWriter);
       }
     }
@@ -137,6 +162,31 @@ public class StartEventSubscriptionManager {
                   subscriptionKey,
                   MessageStartEventSubscriptionIntent.CREATED,
                   messageSubscriptionRecord);
+            });
+  }
+
+  private void openSignalStartEventSubscription(
+      final DeployedProcess processDefinition,
+      final long processDefinitionKey,
+      final ExecutableStartEvent startEvent,
+      final StateWriter stateWriter) {
+    final ExecutableSignal signal = startEvent.getSignal();
+
+    signal
+        .getSignalName()
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            signalNameBuffer -> {
+              signalSubscriptionRecord.reset();
+              signalSubscriptionRecord
+                  .setSignalName(signalNameBuffer)
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(processDefinition.getBpmnProcessId())
+                  .setCatchEventId(startEvent.getId());
+
+              final var subscriptionKey = keyGenerator.nextKey();
+              stateWriter.appendFollowUpEvent(
+                  subscriptionKey, SignalSubscriptionIntent.CREATED, signalSubscriptionRecord);
             });
   }
 }
