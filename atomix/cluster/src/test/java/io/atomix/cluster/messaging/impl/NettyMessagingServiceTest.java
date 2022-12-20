@@ -47,6 +47,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
@@ -580,6 +581,41 @@ public class NettyMessagingServiceTest {
         .havingRootCause()
         .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
         .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void shouldCreateNewChannelAfterTimeout() {
+    // given
+    final var subject = nextSubject();
+    final var expectedException = new TimeoutException();
+
+    final var otherAddress = Address.from(SocketUtil.getNextAddress().getPort());
+    final var config = new MessagingConfig();
+    final AtomicInteger channelsOpen = new AtomicInteger(0);
+    final var nettyWithOwnPool =
+        (ManagedMessagingService)
+            new NettyMessagingService("test", otherAddress, config, ProtocolVersion.V2, (channelFactory) ->
+                new ChannelPool((addr) -> {
+                  channelsOpen.incrementAndGet();
+                  return channelFactory.apply(addr);
+                }, config.getConnectionPoolSize())).start().join();
+
+    netty2.registerHandler(
+        subject,
+        (address, bytes) -> new CompletableFuture<>()); // never complete this future
+
+    // when
+    final CompletableFuture<byte[]> response =
+        nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(channelsOpen.get()).isEqualTo(2);
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(15))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(expectedException.getClass())
+        .withMessageContaining("timed out in");
   }
 
   @Test

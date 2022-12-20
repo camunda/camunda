@@ -130,9 +130,27 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = config;
+    this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
 
     openFutures = new CopyOnWriteArrayList<>();
-    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    initAddresses(config);
+  }
+
+  // duplicated for tests - to inject channel pool
+  NettyMessagingService(
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final ProtocolVersion protocolVersion,
+      final Function<Function<Address, CompletableFuture<Channel>>, ChannelPool>
+          channelPoolFactor) {
+    preamble = cluster.hashCode();
+    this.advertisedAddress = advertisedAddress;
+    this.protocolVersion = protocolVersion;
+    this.config = config;
+    this.channelPool = channelPoolFactor.apply(this::openChannel);
+
+    openFutures = new CopyOnWriteArrayList<>();
     initAddresses(config);
   }
 
