@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import java.util.HashMap;
@@ -73,6 +74,8 @@ public final class EventAppliers implements EventApplier {
     register(
         DecisionRequirementsIntent.CREATED,
         new DecisionRequirementsCreatedApplier(state.getDecisionState()));
+
+    registerSignalSubscriptionAppliers(state);
   }
 
   private void registerTimeEventAppliers(final MutableZeebeState state) {
@@ -246,6 +249,15 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessEventIntent.TRIGGERED,
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
+  }
+
+  private void registerSignalSubscriptionAppliers(final MutableZeebeState state) {
+    register(
+        SignalSubscriptionIntent.CREATED,
+        new SignalSubscriptionCreatedApplier(state.getSignalSubscriptionState()));
+    register(
+        SignalSubscriptionIntent.DELETED,
+        new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
