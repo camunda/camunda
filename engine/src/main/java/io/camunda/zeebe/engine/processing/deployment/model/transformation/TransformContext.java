@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEsc
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ public final class TransformContext {
   private final Map<DirectBuffer, ExecutableError> errors = new HashMap<>();
   private final Map<DirectBuffer, ExecutableEscalation> escalations = new HashMap<>();
   private final Map<DirectBuffer, ExecutableLink> links = new HashMap<>();
+  private final Map<DirectBuffer, ExecutableSignal> signals = new HashMap<>();
 
   private ExpressionLanguage expressionLanguage;
 
@@ -86,6 +88,14 @@ public final class TransformContext {
 
   public ExecutableLink getLink(final String name) {
     return links.get(wrapString(name));
+  }
+
+  public void addSignal(final ExecutableSignal signal) {
+    signals.put(signal.getId(), signal);
+  }
+
+  public ExecutableSignal getSignal(final String id) {
+    return signals.get(wrapString(id));
   }
 
   public ExpressionLanguage getExpressionLanguage() {
