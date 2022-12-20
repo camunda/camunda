@@ -321,7 +321,7 @@ final class LeaderAppender {
   }
 
   /** Handles a configure failure. */
-  protected void handleConfigureResponseFailure(
+  private void handleConfigureResponseFailure(
       final RaftMemberContext member, final ConfigureRequest request, final Throwable error) {
     // Log the failed attempt to contact the member.
     failAttempt(member, request, error);
@@ -329,7 +329,7 @@ final class LeaderAppender {
 
   /** Handles an OK configuration response. */
   @SuppressWarnings("unused")
-  protected void handleConfigureResponseOk(
+  private void handleConfigureResponseOk(
       final RaftMemberContext member,
       final ConfigureRequest request,
       final ConfigureResponse response) {
@@ -507,16 +507,11 @@ final class LeaderAppender {
       completeCommits(previousCommitIndex, index);
       return CompletableFuture.completedFuture(index);
     }
-
     // Only send entry-specific AppendRequests to active members of the cluster.
-    return appendFutures.computeIfAbsent(
-        index,
-        i -> {
-          for (final RaftMemberContext member : raft.getCluster().getActiveMemberStates()) {
-            appendEntries(member);
-          }
-          return new CompletableFuture<>();
-        });
+    for (final RaftMemberContext member : raft.getCluster().getActiveMemberStates()) {
+      raft.getThreadContext().execute(() -> appendEntries(member));
+    }
+    return appendFutures.computeIfAbsent(index, i -> new CompletableFuture<>());
   }
 
   /**
