@@ -16,7 +16,9 @@
 package io.camunda.zeebe;
 
 import io.camunda.zeebe.Worker.DelayedCommand;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
@@ -27,6 +29,13 @@ public class DelayedCommandSender extends Thread {
           .namespace("zeebe_job_stream")
           .name("client_command_queue_size")
           .help("Total number of complete commands enqueued")
+          .register();
+
+  private static final Histogram JOB_COMPLETE_LATENCY =
+      Histogram.build()
+          .namespace("zeebe_job_stream")
+          .name("client_job_complete_latency")
+          .help("Time it takes to send a complete job command and receive the response")
           .register();
 
   private volatile boolean shuttingDown = false;
@@ -48,7 +57,14 @@ public class DelayedCommandSender extends Thread {
         if (!delayedCommand.hasExpired()) {
           commands.addFirst(delayedCommand);
         } else {
-          requestFutures.add(delayedCommand.getCommand().send());
+          final ZeebeFuture<?> requestFuture = delayedCommand.getCommand().send();
+          final var timer = JOB_COMPLETE_LATENCY.startTimer();
+          requestFuture.whenComplete(
+              (ok, error) -> {
+                delayedCommand.markCompleted();
+                timer.close();
+              });
+          requestFutures.add(requestFuture);
         }
         COMMAND_QUEUE_SIZE.set(commands.size());
       } catch (final InterruptedException e) {

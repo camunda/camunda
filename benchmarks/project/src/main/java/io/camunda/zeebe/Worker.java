@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.worker.JobWorker;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
+import io.prometheus.client.Histogram.Timer;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
@@ -32,7 +33,7 @@ public class Worker extends App {
 
   private final AppCfg appCfg;
 
-  Worker(AppCfg appCfg) {
+  Worker(final AppCfg appCfg) {
     this.appCfg = appCfg;
   }
 
@@ -62,7 +63,7 @@ public class Worker extends App {
                   } else {
                     try {
                       Thread.sleep(completionDelay);
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                       e.printStackTrace();
                     }
                     requestFutures.add(command.send());
@@ -109,7 +110,7 @@ public class Worker extends App {
     return builder.build();
   }
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     createApp(Worker::new);
   }
 
@@ -117,10 +118,17 @@ public class Worker extends App {
 
     private final Instant expiration;
     private final FinalCommandStep<?> command;
+    private final Timer timer;
 
     public DelayedCommand(final Instant expiration, final FinalCommandStep<?> command) {
+      this(expiration, command, null);
+    }
+
+    public DelayedCommand(
+        final Instant expiration, final FinalCommandStep<?> command, final Timer timer) {
       this.expiration = expiration;
       this.command = command;
+      this.timer = timer;
     }
 
     public boolean hasExpired() {
@@ -129,6 +137,12 @@ public class Worker extends App {
 
     public FinalCommandStep<?> getCommand() {
       return command;
+    }
+
+    public void markCompleted() {
+      if (timer != null) {
+        timer.close();
+      }
     }
   }
 }

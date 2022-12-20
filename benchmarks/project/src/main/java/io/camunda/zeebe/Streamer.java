@@ -13,6 +13,7 @@ import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
@@ -27,6 +28,12 @@ public class Streamer extends App {
           .namespace("zeebe_job_stream")
           .name("client_received_job")
           .help("Total count of received jobs for a specific run")
+          .register();
+  private static final Histogram JOB_PROCESS_LATENCY =
+      Histogram.build()
+          .namespace("zeebe_job_stream")
+          .name("client_job_process_latency")
+          .help("Time it takes to to 'process' a job, including the delay and the completion time")
           .register();
 
   private final AppCfg appCfg;
@@ -53,10 +60,12 @@ public class Streamer extends App {
                   RECEIVED_JOBS.inc();
 
                   // it's important to complete async as otherwise the stream gets waaay behind
+                  final var timer = JOB_PROCESS_LATENCY.startTimer();
                   final var command =
                       jobClient.newCompleteCommand(job.getKey()).variables(variables);
                   delayedCommands.addLast(
-                      new DelayedCommand(Instant.now().plusMillis(completionDelay), command));
+                      new DelayedCommand(
+                          Instant.now().plusMillis(completionDelay), command, timer));
                 })
             .send();
 

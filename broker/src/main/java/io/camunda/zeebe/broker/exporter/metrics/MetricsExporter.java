@@ -29,7 +29,9 @@ import org.agrona.collections.Long2LongHashMap;
 
 public class MetricsExporter implements Exporter {
 
-  public static final Duration TIME_TO_LIVE = Duration.ofSeconds(10);
+  // increase window if you need to measure longer latencies than 10 seconds; see
+  // ExecutionLatencyMetrics for buckets
+  static final Duration TIME_TO_LIVE = Duration.ofMinutes(1);
   private final ExecutionLatencyMetrics executionLatencyMetrics;
   private final Long2LongHashMap jobKeyToCreationTimeMap;
   private final Long2LongHashMap processInstanceKeyToCreationTimeMap;
