@@ -51,7 +51,11 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public void close() {
-    logStream.closeAsync().join();
+    try {
+      logStream.close();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
@@ -66,12 +70,12 @@ public class SyncLogStream implements SynchronousLogStream {
 
   @Override
   public LogStreamReader newLogStreamReader() {
-    return logStream.newLogStreamReader().join();
+    return logStream.newLogStreamReader();
   }
 
   @Override
   public LogStreamWriter newLogStreamWriter() {
-    return logStream.newLogStreamWriter().join();
+    return logStream.newLogStreamWriter();
   }
 
   @Override

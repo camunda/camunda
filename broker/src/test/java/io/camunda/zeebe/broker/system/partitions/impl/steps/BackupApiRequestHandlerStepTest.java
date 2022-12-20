@@ -69,8 +69,7 @@ final class BackupApiRequestHandlerStepTest {
   @Test
   void shouldInstallBackupRequestHandler() {
     // given
-    when(logStream.newLogStreamWriter())
-        .thenReturn(TestActorFuture.completedFuture(logStreamWriter));
+    when(logStream.newLogStreamWriter()).thenReturn(logStreamWriter);
     when(actorSchedulingService.submitActor(any()))
         .thenReturn(TestActorFuture.completedFuture(null));
 

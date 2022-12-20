@@ -25,7 +25,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionT
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -50,16 +49,15 @@ class LogStreamPartitionTransitionStepTest {
     when(raftPartition.getServer()).thenReturn(raftServer);
     transitionContext.setRaftPartition(raftPartition);
 
-    doReturn(TestActorFuture.completedFuture(logStream)).when(logStreamBuilder).buildAsync();
-    when(logStream.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
-    when(logStreamFromPrevRole.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
+    doReturn(logStream).when(logStreamBuilder).build();
 
     step = new LogStreamPartitionTransitionStep(() -> logStreamBuilder);
   }
 
   @ParameterizedTest
   @ArgumentsSource(TransitionsThatShouldCloseService.class)
-  void shouldCloseExistingLogStream(final Role currentRole, final Role targetRole) {
+  void shouldCloseExistingLogStream(final Role currentRole, final Role targetRole)
+      throws Exception {
     // given
     initializeContext(currentRole);
 
@@ -68,7 +66,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isNull();
-    verify(logStreamFromPrevRole).closeAsync();
+    verify(logStreamFromPrevRole).close();
   }
 
   @ParameterizedTest
@@ -83,7 +81,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isNotNull().isNotEqualTo(existingLogStream);
-    verify(logStreamBuilder).buildAsync();
+    verify(logStreamBuilder).build();
   }
 
   @ParameterizedTest
@@ -98,14 +96,14 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isEqualTo(existingLogStream);
-    verify(logStreamBuilder, never()).buildAsync();
+    verify(logStreamBuilder, never()).build();
   }
 
   @ParameterizedTest
   @EnumSource(
       value = Role.class,
       names = {"FOLLOWER", "LEADER", "CANDIDATE"})
-  void shouldCloseWhenTransitioningToInactive(final Role currentRole) {
+  void shouldCloseWhenTransitioningToInactive(final Role currentRole) throws Exception {
     // given
     initializeContext(currentRole);
 
@@ -114,8 +112,8 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
-    verify(logStreamFromPrevRole).closeAsync();
-    verify(logStreamBuilder, never()).buildAsync();
+    verify(logStreamFromPrevRole).close();
+    verify(logStreamBuilder, never()).build();
   }
 
   private void initializeContext(final Role currentRole) {

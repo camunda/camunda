@@ -47,15 +47,12 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
 
   private ActorFuture<Void> installRequestHandler(final PartitionTransitionContext context) {
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
-    final var writerFuture = context.getLogStream().newLogStreamWriter();
-    writerFuture.onComplete(
-        (logStreamRecordWriter, error) -> {
-          if (error == null) {
-            createBackupApiRequestHandler(context, installed, logStreamRecordWriter);
-          } else {
-            installed.completeExceptionally(error);
-          }
-        });
+    try {
+      final var writer = context.getLogStream().newLogStreamWriter();
+      createBackupApiRequestHandler(context, installed, writer);
+    } catch (final Exception e) {
+      installed.completeExceptionally(e);
+    }
 
     return installed;
   }

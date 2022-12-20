@@ -65,7 +65,7 @@ public final class RestoreTest {
     // then
     final var leaderLogStream = clusteringRule.getLogStream(1);
 
-    final var reader = leaderLogStream.newLogStreamReader().join();
+    final var reader = leaderLogStream.newLogStreamReader();
     reader.seekToFirstEvent();
     assertThat(reader.hasNext()).isTrue();
 

@@ -149,8 +149,7 @@ public final class TestStreams {
             .withLogName(name)
             .withLogStorage(logStorage)
             .withPartitionId(partitionId)
-            .withActorSchedulingService(actorScheduler)
-            .build();
+            .buildSyncStream();
 
     logStreamConsumer.accept(logStream);
 

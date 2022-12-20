@@ -165,23 +165,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
-      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
-      actor.runOnCompletionBlockingCurrentPhase(
-          newReaderFuture,
-          (reader, errorOnReceivingReader) -> {
-            if (errorOnReceivingReader == null) {
-              logStreamReader = reader;
-            } else {
-              // TODO https://github.com/zeebe-io/zeebe/issues/3499
-              // ideally we could fail the actor start future such that we are able to propagate the
-              // error
-              LOG.error(
-                  "Unexpected error on retrieving reader from log {}",
-                  logStream.getLogName(),
-                  errorOnReceivingReader);
-              actor.close();
-            }
-          });
+      try {
+        logStreamReader = logStream.newLogStreamReader();
+      } catch (final Exception e) {
+        LOG.error("Unexpected error on retrieving reader from log {}", logStream.getLogName(), e);
+        actor.close();
+      }
     }
   }
 

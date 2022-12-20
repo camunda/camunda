@@ -38,15 +38,13 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       context.getComponentHealthMonitor().removeComponent(logStream.getLogName());
-      final ActorFuture<Void> future = logStream.closeAsync();
-      future.onComplete(
-          (ok, error) -> {
-            if (error == null) {
-              context.setLogStream(null);
-            }
-          });
-
-      return future;
+      try {
+        logStream.close();
+        context.setLogStream(null);
+        return CompletableActorFuture.completed(null);
+      } catch (final Exception e) {
+        return CompletableActorFuture.completedExceptionally(e);
+      }
     } else {
       return CompletableActorFuture.completed(null);
     }
@@ -57,25 +55,17 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if ((context.getLogStream() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
-      final CompletableActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
-      final var logStorage = context.getLogStorage();
-      buildLogstream(context, logStorage)
-          .onComplete(
-              ((logStream, err) -> {
-                if (err == null) {
-                  context.setLogStream(logStream);
+      try {
+        final var logStorage = context.getLogStorage();
+        final var logStream = buildLogstream(context, logStorage);
 
-                  context
-                      .getComponentHealthMonitor()
-                      .registerComponent(logStream.getLogName(), logStream);
-                  openFuture.complete(null);
-                } else {
-                  openFuture.completeExceptionally(err);
-                }
-              }));
-
-      return openFuture;
+        context.setLogStream(logStream);
+        context.getComponentHealthMonitor().registerComponent(logStream.getLogName(), logStream);
+        return CompletableActorFuture.completed(null);
+      } catch (final Exception e) {
+        return CompletableActorFuture.completedExceptionally(e);
+      }
     } else {
       return CompletableActorFuture.completed(null);
     }
@@ -86,17 +76,15 @@ public final class LogStreamPartitionTransitionStep implements PartitionTransiti
     return "LogStream";
   }
 
-  private ActorFuture<LogStream> buildLogstream(
+  private LogStream buildLogstream(
       final PartitionTransitionContext context, final AtomixLogStorage atomixLogStorage) {
     return logStreamBuilderSupplier
         .get()
         .withLogStorage(atomixLogStorage)
         .withLogName("logstream-" + context.getRaftPartition().name())
-        .withNodeId(context.getNodeId())
         .withPartitionId(context.getPartitionId())
         .withMaxFragmentSize(context.getMaxFragmentSize())
-        .withActorSchedulingService(context.getActorSchedulingService())
-        .buildAsync();
+        .build();
   }
 
   private boolean shouldInstallOnTransition(final Role newRole, final Role currentRole) {

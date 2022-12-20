@@ -21,8 +21,6 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -49,16 +47,15 @@ class ProcessingScheduleServiceTest {
   ControlledActorSchedulerExtension actorScheduler = new ControlledActorSchedulerExtension();
 
   private LifecycleSupplier lifecycleSupplier;
-  private WriterAsyncSupplier writerAsyncSupplier;
+  private TestWriter testWriter;
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
   void before() {
     lifecycleSupplier = new LifecycleSupplier();
-    writerAsyncSupplier = new WriterAsyncSupplier();
+    testWriter = new TestWriter();
     final var processingScheduleService =
-        new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+        new ProcessingScheduleServiceImpl(lifecycleSupplier, lifecycleSupplier, () -> testWriter);
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -147,8 +144,7 @@ class ProcessingScheduleServiceTest {
     // given
     lifecycleSupplier.currentPhase = Phase.PAUSED;
     final var notOpenScheduleService =
-        new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier);
+        new ProcessingScheduleServiceImpl(lifecycleSupplier, lifecycleSupplier, () -> testWriter);
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -162,12 +158,14 @@ class ProcessingScheduleServiceTest {
   @Test
   void shouldFailActorIfWriterCantBeRetrieved() {
     // given
-    writerAsyncSupplier.writerFutureRef.set(
-        CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
     final var notOpenScheduleService =
         new TestScheduleServiceActorDecorator(
             new ProcessingScheduleServiceImpl(
-                lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier));
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> {
+                  throw new RuntimeException("expected");
+                }));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -192,7 +190,7 @@ class ProcessingScheduleServiceTest {
 
     // then
 
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Record is written to the log stream")
         .map(LogAppendEntry::key)
         .containsExactly(1L);
@@ -207,7 +205,7 @@ class ProcessingScheduleServiceTest {
     // non-deterministic
     // order
     final var counter = new AtomicInteger(0);
-    writerAsyncSupplier.writer.acceptWrites.set(
+    testWriter.acceptWrites.set(
         () -> {
           final var invocationCount = counter.incrementAndGet();
           // wait a sufficiently high enough invocation count to ensure the second timer is
@@ -242,7 +240,7 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Both timers have executed")
         .hasSize(2)
         .map(LogAppendEntry::key)
@@ -327,17 +325,6 @@ class ProcessingScheduleServiceTest {
               actor.fail(t);
             }
           });
-    }
-  }
-
-  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamWriter>> {
-    private final TestWriter writer = new TestWriter();
-    AtomicReference<ActorFuture<LogStreamWriter>> writerFutureRef =
-        new AtomicReference<>(CompletableActorFuture.completed(writer));
-
-    @Override
-    public ActorFuture<LogStreamWriter> get() {
-      return writerFutureRef.get();
     }
   }
 

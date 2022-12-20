@@ -32,8 +32,7 @@ final class LogStreamErrorTest {
     doThrow(readerException).when(logStorage).newReader();
 
     // then
-    Assertions.assertThatCode(
-            () -> new LogStreamImpl("test-log", 1, 1, 16 * 1024 * 1024, logStorage))
+    Assertions.assertThatCode(() -> new LogStreamImpl("test-log", 1, 16 * 1024 * 1024, logStorage))
         .isEqualTo(readerException);
   }
 }

@@ -57,7 +57,7 @@ public final class LogStreamTest {
     logStream.close();
 
     // then
-    assertThatThrownBy(() -> logStream.newLogStreamWriter()).hasMessage("Actor is closed");
+    assertThatThrownBy(() -> logStream.newLogStreamWriter()).hasMessage("LogStream is closed");
   }
 
   @Test

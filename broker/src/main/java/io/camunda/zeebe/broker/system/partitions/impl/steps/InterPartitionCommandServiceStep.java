@@ -87,27 +87,21 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
   private ActorFuture<Void> installReceiver(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getConcurrencyControl().createFuture();
-
-    context
-        .getLogStream()
-        .newLogStreamWriter()
-        .onComplete(
-            (writer, error) -> {
-              if (error != null) {
-                future.completeExceptionally(error);
-                return;
-              }
-              final var receiver =
-                  new InterPartitionCommandReceiverActor(
-                      context.getNodeId(),
-                      context.getPartitionId(),
-                      context.getClusterCommunicationService(),
-                      writer);
-              context.getActorSchedulingService().submitActor(receiver);
-              context.setPartitionCommandReceiver(receiver);
-              context.getCheckpointProcessor().addCheckpointListener(receiver);
-              future.complete(null);
-            });
+    try {
+      final var writer = context.getLogStream().newLogStreamWriter();
+      final var receiver =
+          new InterPartitionCommandReceiverActor(
+              context.getNodeId(),
+              context.getPartitionId(),
+              context.getClusterCommunicationService(),
+              writer);
+      context.getActorSchedulingService().submitActor(receiver);
+      context.setPartitionCommandReceiver(receiver);
+      context.getCheckpointProcessor().addCheckpointListener(receiver);
+      future.complete(null);
+    } catch (final Exception e) {
+      future.completeExceptionally(e);
+    }
     return future;
   }
 

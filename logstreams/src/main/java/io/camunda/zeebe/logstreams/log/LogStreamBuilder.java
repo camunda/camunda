@@ -8,19 +8,9 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {
-
-  /**
-   * The actor scheduler to use for the {@link LogStream} and its child actors
-   *
-   * @param actorSchedulingService the scheduler to use
-   * @return this builder
-   */
-  LogStreamBuilder withActorSchedulingService(ActorSchedulingService actorSchedulingService);
 
   /**
    * The maximum fragment size read from the shared write buffer; this should be aligned with the
@@ -48,14 +38,6 @@ public interface LogStreamBuilder {
   LogStreamBuilder withPartitionId(int partitionId);
 
   /**
-   * The node ID - to indicate on which node the log stream is running
-   *
-   * @param nodeId the node id
-   * @return this builder
-   */
-  LogStreamBuilder withNodeId(int nodeId);
-
-  /**
    * The log stream name - primarily used for contextualizing as well, e.g. loggers, actor name,
    * etc.
    *
@@ -69,5 +51,5 @@ public interface LogStreamBuilder {
    *
    * @return a future which on complete contains the log stream
    */
-  ActorFuture<LogStream> buildAsync();
+  LogStream build();
 }

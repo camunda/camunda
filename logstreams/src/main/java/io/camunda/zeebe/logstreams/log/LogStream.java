@@ -8,8 +8,6 @@
 package io.camunda.zeebe.logstreams.log;
 
 import io.camunda.zeebe.logstreams.impl.log.LogStreamBuilderImpl;
-import io.camunda.zeebe.scheduler.AsyncClosable;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 
 /**
@@ -19,7 +17,7 @@ import io.camunda.zeebe.util.health.HealthMonitorable;
  *
  * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
-public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorable {
+public interface LogStream extends AutoCloseable, HealthMonitorable {
 
   /**
    * @return a new default LogStream builder
@@ -43,13 +41,13 @@ public interface LogStream extends AsyncClosable, AutoCloseable, HealthMonitorab
   /**
    * @return a future, when successfully completed it returns a newly created log stream reader
    */
-  ActorFuture<LogStreamReader> newLogStreamReader();
+  LogStreamReader newLogStreamReader();
 
   /**
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
    */
-  ActorFuture<LogStreamWriter> newLogStreamWriter();
+  LogStreamWriter newLogStreamWriter();
 
   /**
    * Registers a listener that will be notified when new records are available to read from the
