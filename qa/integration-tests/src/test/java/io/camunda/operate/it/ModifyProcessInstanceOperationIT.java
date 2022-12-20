@@ -6,6 +6,8 @@
  */
 package io.camunda.operate.it;
 
+import io.camunda.operate.entities.FlowNodeInstanceEntity;
+import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
@@ -13,7 +15,6 @@ import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstance
 
 import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceHandler;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -41,7 +42,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .waitUntil().processIsDeployed();
   }
   @Test
-  public void shouldCancelToken() throws Exception {
+  public void shouldCancelTokenForFlowNodeId() throws Exception {
     // given
     tester
         .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
@@ -61,6 +62,33 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
     // then
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
   }
+
+  @Test
+  public void shouldCancelTokenForFlowNodeInstanceKey() throws Exception {
+    // given
+    final long flowNodeInstanceKey = tester
+        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+        .waitUntil().flowNodeIsActive("taskA")
+        .then()
+        .getFlowNodeInstanceKeyFor("taskA");
+
+    // when
+    final List<Modification> modifications =
+        List.of(new Modification()
+            .setModification(Modification.Type.CANCEL_TOKEN)
+            .setFromFlowNodeInstanceKey(""+flowNodeInstanceKey));
+
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsCompleted()
+        .then()
+        .waitUntil()
+        .flowNodeIsTerminated("taskA");
+    // then
+    final FlowNodeInstanceEntity flowNodeInstanceEntity = tester.getFlowNodeInstanceEntityFor(flowNodeInstanceKey);
+    assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.TERMINATED);
+  }
+
 
   @Test
   public void shouldAddToken() throws Exception {
@@ -115,7 +143,7 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
   }
 
   @Test
-  public void shouldMoveToken() throws Exception {
+  public void shouldMoveTokenFromFlowNodeId() throws Exception {
     // given
     tester
         .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
@@ -141,6 +169,37 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .flowNodeIsActive("taskB");
     // then
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
+    assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
+  }
+
+  @Test
+  public void shouldMoveTokenFromFlowNodeInstanceKey() throws Exception {
+    // given
+    final Long flowNodeInstanceKey = tester
+        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+        .waitUntil().processInstanceIsStarted()
+        .and()
+        .flowNodeIsActive("taskA")
+        .then().getFlowNodeInstanceKeyFor("taskA");
+
+    assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
+    // when
+    List<Modification> modifications = List.of(
+        new Modification()
+            .setModification(Modification.Type.MOVE_TOKEN)
+            .setFromFlowNodeInstanceKey(""+flowNodeInstanceKey).setToFlowNodeId("taskB")
+    );
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsCompleted()
+        .then()
+        .waitUntil()
+        .flowNodeIsTerminated("taskA")
+        .and()
+        .flowNodeIsActive("taskB");
+    // then
+    assertThat(tester.getFlowNodeInstanceEntityFor(flowNodeInstanceKey).getState()).isEqualTo(FlowNodeState.TERMINATED);
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
   }
 
@@ -499,14 +558,13 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
     var statistics = flowNodeInstanceReader
         .getFlowNodeStatisticsForProcessInstance(tester.getProcessInstanceKey());
     var eventSubProcessTaskStatistic = statistics.stream().filter(
-        s -> s.getActivityId().equals(eventSubprocessTaskFlowNodeId)).findFirst().get();
+        s -> s.getActivityId().equals(eventSubprocessTaskFlowNodeId)).findFirst().orElseThrow();
     var eventSubProcessStatistic = statistics.stream().filter(
-        s -> s.getActivityId().equals(subprocessFlowNodeId)).findFirst().get();
+        s -> s.getActivityId().equals(subprocessFlowNodeId)).findFirst().orElseThrow();
     assertThat(eventSubProcessTaskStatistic.getActive()).isEqualTo(5);
     assertThat(eventSubProcessStatistic.getActive()).isEqualTo(2);
   }
 
-  @Ignore("Due to https://github.com/camunda/zeebe/issues/10537")
   @Test
   public void shouldCancelMultiInstance() throws Exception {
     // Given

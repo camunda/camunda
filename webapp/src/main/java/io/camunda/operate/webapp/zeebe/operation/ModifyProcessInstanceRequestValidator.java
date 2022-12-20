@@ -13,6 +13,7 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 @Component
@@ -43,7 +44,7 @@ public class ModifyProcessInstanceRequestValidator {
         validateAddEditVariable(modification, processInstanceKey);
       }else {
         throw new InvalidRequestException(
-            String.format("Unknown Modification.Type given for process instance with key %s", processInstanceReader));
+            String.format("Unknown Modification.Type given for process instance with key %s.", processInstanceKey));
       }
     });
   }
@@ -55,14 +56,23 @@ public class ModifyProcessInstanceRequestValidator {
   }
 
   private void validateMoveToken(final Modification modification, final Long processInstanceKey) {
-    if(modification.getFromFlowNodeId()  == null || modification.getToFlowNodeId() == null){
-      throw new InvalidRequestException(String.format("MOVE_TOKEN needs fromFlowNodeId and toFlowNodeId for process instance with key %s", processInstanceKey));
-    }
+    validateAddToken(modification, processInstanceKey);
+    validateCancelToken(modification,processInstanceKey);
   }
 
   private void validateCancelToken(final Modification modification, final Long processInstanceKey) {
-    if(modification.getFromFlowNodeId() == null){
-      throw new InvalidRequestException(String.format("No fromFlowNodeId given for process instance with key %s", processInstanceKey));
+    if(!StringUtils.hasText(modification.getFromFlowNodeId()) && !StringUtils.hasText(modification.getFromFlowNodeInstanceKey())) {
+      throw new InvalidRequestException(String.format("Neither fromFlowNodeId nor fromFlowNodeInstanceKey is given for process instance with key %s", processInstanceKey));
+    }
+    if(StringUtils.hasText(modification.getFromFlowNodeId()) && StringUtils.hasText(modification.getFromFlowNodeInstanceKey())){
+      throw new InvalidRequestException(String.format("Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key %s should be given, not both.", processInstanceKey));
+    }
+    if(modification.getFromFlowNodeInstanceKey() != null) {
+      try{
+        Long.parseLong(modification.getFromFlowNodeInstanceKey());
+      } catch (NumberFormatException nfe){
+        throw new InvalidRequestException("fromFlowNodeInstanceKey should be a Long.");
+      }
     }
   }
 

@@ -702,6 +702,12 @@ public class OperateTester {
     }
   }
 
+  public FlowNodeInstanceEntity getFlowNodeInstanceEntityFor(final Long flowNodeInstanceKey){
+    return getAllFlowNodeInstances(processInstanceKey).stream()
+        .filter( i -> i.getKey() == flowNodeInstanceKey)
+        .findFirst().orElseThrow();
+  }
+
   public boolean hasIncidentWithErrorMessage(String errorMessage) {
     return !filter(getIncidents(),incident -> incident.getErrorMessage().equals(errorMessage)).isEmpty();
   }

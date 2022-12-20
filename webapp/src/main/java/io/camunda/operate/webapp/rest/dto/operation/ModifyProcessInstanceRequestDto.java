@@ -63,14 +63,11 @@ public class ModifyProcessInstanceRequestDto {
     }
 
     private Type modification;
-
     private String fromFlowNodeId;
+    private String fromFlowNodeInstanceKey;
     private String toFlowNodeId;
-
     private Long scopeKey;
-
     private Integer newTokensCount;
-
     private Map<String,Object> variables;
 
     public Type getModification() {
@@ -128,6 +125,15 @@ public class ModifyProcessInstanceRequestDto {
       return this;
     }
 
+    public String getFromFlowNodeInstanceKey(){
+      return fromFlowNodeInstanceKey;
+    }
+
+    public Modification setFromFlowNodeInstanceKey(final String fromFlowNodeInstanceKey) {
+      this.fromFlowNodeInstanceKey = fromFlowNodeInstanceKey;
+      return this;
+    }
+
     public Integer getNewTokensCount() {
       return newTokensCount;
     }
@@ -145,17 +151,19 @@ public class ModifyProcessInstanceRequestDto {
       Modification that = (Modification) o;
       return modification == that.modification && Objects.equals(fromFlowNodeId, that.fromFlowNodeId) && Objects.equals(
           toFlowNodeId, that.toFlowNodeId) && Objects.equals(scopeKey, that.scopeKey) && Objects.equals(newTokensCount,
-          that.newTokensCount) && Objects.equals(variables, that.variables);
+          that.newTokensCount) && Objects.equals(variables, that.variables)
+          && Objects.equals(fromFlowNodeInstanceKey, that.fromFlowNodeInstanceKey);
     }
 
     @Override public int hashCode() {
-      return Objects.hash(modification, fromFlowNodeId, toFlowNodeId, scopeKey, newTokensCount, variables);
+      return Objects.hash(modification, fromFlowNodeId, toFlowNodeId, scopeKey, newTokensCount, variables,
+          fromFlowNodeInstanceKey);
     }
 
     @Override public String toString() {
       return "Modification{" + "modification=" + modification + ", fromFlowNodeId='" + fromFlowNodeId + '\''
           + ", toFlowNodeId='" + toFlowNodeId + '\'' + ", scopeKey=" + scopeKey + ", newTokensCount=" + newTokensCount
-          + ", variables=" + variables + '}';
+          + ", variables=" + variables + ", fromFlowNodeInstanceKey=" + fromFlowNodeInstanceKey + "}";
     }
   }
 }

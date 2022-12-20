@@ -250,7 +250,28 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
         new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
             .setModification(Modification.Type.CANCEL_TOKEN))));
-    assertErrorMessageContains( mvcResult,"No fromFlowNodeId given for process instance with key 123");
+    assertErrorMessageContains( mvcResult,"Neither fromFlowNodeId nor fromFlowNodeInstanceKey is given for process instance with key 123");
+  }
+
+  @Test
+  public void testModifyFailsForWrongFlowNodeInstanceCancelParameter() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setFromFlowNodeInstanceKey("no long")
+            .setModification(Modification.Type.CANCEL_TOKEN))));
+    assertErrorMessageContains( mvcResult,"fromFlowNodeInstanceKey should be a Long.");
+  }
+
+  @Test
+  public void testModifyFailsForTooManyCancelParameters() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+                .setFromFlowNodeId("toFlowNodeId")
+                .setFromFlowNodeInstanceKey("1234")
+            .setModification(Modification.Type.CANCEL_TOKEN))));
+    assertErrorMessageContains( mvcResult,"Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key 123 should be given, not both.");
   }
 
   @Test
@@ -259,7 +280,27 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
         new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
             .setModification(Modification.Type.MOVE_TOKEN))));
-    assertErrorMessageContains( mvcResult,"MOVE_TOKEN needs fromFlowNodeId and toFlowNodeId for process instance with key 123");
+    assertErrorMessageContains( mvcResult,"No toFlowNodeId given for process instance with key 123");
+  }
+
+  @Test
+  public void testModifyFailsForTooManyMoveParameters() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification()
+            .setToFlowNodeId("toFlowNodeId")
+            .setFromFlowNodeInstanceKey("123")
+            .setFromFlowNodeId("fromFlowNodeId")
+            .setModification(Modification.Type.MOVE_TOKEN))));
+    assertErrorMessageContains( mvcResult,"Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key 123 should be given, not both.");
+  }
+
+  @Test
+  public void testModifyFailsForUnknownModification() throws Exception {
+    when(processInstanceReader.getProcessInstanceByKey(123L)).thenReturn(new ProcessInstanceForListViewEntity());
+    final MvcResult mvcResult = postRequestThatShouldFail(getInstanceByIdUrl("123") + "/modify",
+        new ModifyProcessInstanceRequestDto().setModifications(List.of(new Modification())));
+    assertErrorMessageContains( mvcResult,"Unknown Modification.Type given for process instance with key 123.");
   }
 
   @Test
