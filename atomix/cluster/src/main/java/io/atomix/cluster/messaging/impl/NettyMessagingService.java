@@ -28,6 +28,7 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.concurrent.OrderedFuture;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.util.StringUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -136,6 +137,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     initAddresses(config);
   }
 
+  @VisibleForTesting
   // duplicated for tests - to inject channel pool
   NettyMessagingService(
       final String cluster,
