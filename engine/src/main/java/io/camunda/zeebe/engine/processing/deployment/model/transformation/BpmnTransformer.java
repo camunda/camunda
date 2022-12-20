@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformer.ProcessTr
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ReceiveTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ScriptTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.SequenceFlowTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.SignalTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.StartEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.SubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.UserTaskTransformer;
@@ -72,6 +73,7 @@ public final class BpmnTransformer {
     step1Visitor.registerHandler(new EscalationTransformer());
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
+    step1Visitor.registerHandler(new SignalTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());
 
     step2Visitor = new TransformationVisitor();

@@ -39,10 +39,12 @@ import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
+import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
@@ -71,6 +73,7 @@ public class ZeebeDbState implements MutableZeebeState {
   private final MutableBlackListState blackListState;
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
+  private final MutableSignalSubscriptionState signalSubscriptionState;
 
   private final int partitionId;
 
@@ -100,6 +103,7 @@ public class ZeebeDbState implements MutableZeebeState {
     incidentState = new DbIncidentState(zeebeDb, transactionContext, partitionId);
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
+    signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
@@ -198,6 +202,11 @@ public class ZeebeDbState implements MutableZeebeState {
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public MutableSignalSubscriptionState getSignalSubscriptionState() {
+    return signalSubscriptionState;
   }
 
   @Override

@@ -13,6 +13,7 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
@@ -46,6 +47,8 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
       startEvent.setEventType(BpmnEventType.ERROR);
     } else if (startEvent.isEscalation()) {
       startEvent.setEventType(BpmnEventType.ESCALATION);
+    } else if (startEvent.isSignal()) {
+      startEvent.setEventType(BpmnEventType.SIGNAL);
     }
 
     if (element.getScope() instanceof FlowNode) {
@@ -61,6 +64,10 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
 
     if (startEvent.isMessage() && element.getScope() instanceof Process) {
       evaluateMessageNameExpression(startEvent, context);
+    }
+
+    if (startEvent.isSignal() && element.getScope() instanceof Process) {
+      evaluateSignalNameExpression(startEvent, context);
     }
   }
 
@@ -97,6 +104,42 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
             String.format(
                 "Expected FEEL expression or static value of '%s' of type STRING, but was: %s",
                 messageNameResult.getExpression(), messageNameResult.getType().name()));
+      }
+    }
+  }
+
+  /**
+   * Evaluates the signal name expression of the signal. For start events, there are no variables
+   * available, so only static expressions or expressions based on literals are valid
+   *
+   * @param startEvent the start event; must not be {@code null}
+   * @param context the transformation context; must not be {@code null}
+   * @throws IllegalStateException thrown if either the evaluation failed or the result of the
+   *     evaluation was not a String
+   */
+  private void evaluateSignalNameExpression(
+      final ExecutableStartEvent startEvent, final TransformContext context) {
+    final ExecutableSignal signal = startEvent.getSignal();
+
+    if (signal.getSignalName().isEmpty()) {
+      final ExpressionLanguage expressionLanguage = context.getExpressionLanguage();
+
+      final EvaluationResult signalNameResult =
+          expressionLanguage.evaluateExpression(signal.getSignalNameExpression(), variable -> null);
+
+      if (signalNameResult.isFailure()) {
+        throw new IllegalStateException(
+            String.format(
+                "Error while evaluating '%s': %s",
+                signal.getSignalNameExpression(), signalNameResult.getFailureMessage()));
+      } else if (signalNameResult.getType() == ResultType.STRING) {
+        final String signalName = signalNameResult.getString();
+        signal.setSignalName(signalName);
+      } else {
+        throw new IllegalStateException(
+            String.format(
+                "Expected FEEL expression or static value of '%s' of type STRING, but was: %s",
+                signalNameResult.getExpression(), signalNameResult.getType().name()));
       }
     }
   }

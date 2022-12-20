@@ -25,8 +25,10 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
 
   boolean isLink();
 
+  boolean isSignal();
+
   default boolean isNone() {
-    return !isTimer() && !isMessage() && !isError() && !isLink() && !isEscalation();
+    return !isTimer() && !isMessage() && !isError() && !isLink() && !isEscalation() && !isSignal();
   }
 
   ExecutableMessage getMessage();
@@ -40,4 +42,6 @@ public interface ExecutableCatchEvent extends ExecutableFlowElement {
   ExecutableError getError();
 
   ExecutableEscalation getEscalation();
+
+  ExecutableSignal getSignal();
 }

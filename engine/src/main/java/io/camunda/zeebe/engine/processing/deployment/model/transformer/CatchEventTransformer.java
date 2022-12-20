@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEsc
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLink;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMessage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
@@ -26,6 +27,8 @@ import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.LinkEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.Signal;
+import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
@@ -76,6 +79,9 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     } else if (eventDefinition instanceof EscalationEventDefinition) {
       transformEscalationEventDefinition(
           context, executableElement, (EscalationEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof SignalEventDefinition) {
+      transformSignalEventDefinition(
+          context, executableElement, (SignalEventDefinition) eventDefinition);
     }
   }
 
@@ -192,5 +198,16 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     }
     executableElement.setEscalation(executableEscalation);
     executableElement.setEventType(BpmnEventType.ESCALATION);
+  }
+
+  private void transformSignalEventDefinition(
+      final TransformContext context,
+      final ExecutableCatchEventElement executableElement,
+      final SignalEventDefinition signalEventDefinition) {
+
+    final Signal signal = signalEventDefinition.getSignal();
+    final ExecutableSignal executableSignal = context.getSignal(signal.getId());
+    executableElement.setSignal(executableSignal);
+    executableElement.setEventType(BpmnEventType.SIGNAL);
   }
 }

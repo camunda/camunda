@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -134,6 +135,12 @@ public final class BlacklistInstanceTest {
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.CORRELATED, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.DELETE, true},
       {ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionIntent.DELETED, true},
+
+      ////////////////////////////////////////
+      /////////////// SIGNAL SUB ////////////////
+      ////////////////////////////////////////
+      {ValueType.SIGNAL_SUBSCRIPTION, SignalSubscriptionIntent.CREATED, false},
+      {ValueType.SIGNAL_SUBSCRIPTION, SignalSubscriptionIntent.DELETED, false},
 
       ////////////////////////////////////////
       //////////////// TIMERS ////////////////
