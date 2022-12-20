@@ -8,6 +8,7 @@ on:
         description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.10.6376-SNAPSHOT for a branch called OPT-6376'
 env:
   IMAGE_NAME: optimize
+  DISTIBUTION_NAME: 3.10.0-SNAPSHOT
 permissions:
   contents: read  # for git clone
   id-token: write # for authenticating with GCP
@@ -77,7 +78,7 @@ jobs:
           push: true
           platforms: linux/amd64
           build-args: |
-            VERSION= ${{ github.event.inputs.image_tag }}
+            VERSION= ${{ env.DISTIBUTION_NAME }}
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}
