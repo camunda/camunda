@@ -24,10 +24,12 @@ import io.camunda.zeebe.config.WorkerCfg;
 import io.prometheus.client.Histogram.Timer;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Worker extends App {
 
@@ -44,7 +46,7 @@ public class Worker extends App {
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
-    final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
+    final DelayQueue<DelayedCommand> delayedCommands = new DelayQueue<>();
 
     final ZeebeClient client = createZeebeClient();
     printTopology(client);
@@ -58,7 +60,7 @@ public class Worker extends App {
                   final var command =
                       jobClient.newCompleteCommand(job.getKey()).variables(variables);
                   if (workerCfg.isCompleteJobsAsync()) {
-                    delayedCommands.addLast(
+                    delayedCommands.offer(
                         new DelayedCommand(Instant.now().plusMillis(completionDelay), command));
                   } else {
                     try {
@@ -114,9 +116,10 @@ public class Worker extends App {
     createApp(Worker::new);
   }
 
-  static final class DelayedCommand {
-
-    private final Instant expiration;
+  static final class DelayedCommand implements Delayed {
+    private static final AtomicLong SEQUENCER = new AtomicLong(0);
+    public final long sequence;
+    private final long expirationMs;
     private final FinalCommandStep<?> command;
     private final Timer timer;
 
@@ -126,13 +129,27 @@ public class Worker extends App {
 
     public DelayedCommand(
         final Instant expiration, final FinalCommandStep<?> command, final Timer timer) {
-      this.expiration = expiration;
+      expirationMs = expiration.toEpochMilli();
       this.command = command;
       this.timer = timer;
+      sequence = SEQUENCER.getAndIncrement();
     }
 
-    public boolean hasExpired() {
-      return Instant.now().isAfter(expiration);
+    @Override
+    public long getDelay(final TimeUnit unit) {
+      final var remaining = expirationMs - System.currentTimeMillis();
+      return unit.convert(remaining, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public int compareTo(final Delayed o) {
+      final var compareUnit = TimeUnit.MILLISECONDS;
+      final int timeComparison = Long.compare(getDelay(compareUnit), o.getDelay(compareUnit));
+      if (timeComparison == 0 && o instanceof DelayedCommand command) {
+        return Long.compare(sequence, command.sequence);
+      }
+
+      return timeComparison;
     }
 
     public FinalCommandStep<?> getCommand() {

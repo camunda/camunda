@@ -345,7 +345,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+        asyncStub, config, jsonMapper, executorService, credentialsProvider::shouldRetryRequest);
   }
 
   private JobClient newJobClient() {

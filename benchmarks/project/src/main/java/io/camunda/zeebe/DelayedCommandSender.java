@@ -17,10 +17,11 @@ package io.camunda.zeebe;
 
 import io.camunda.zeebe.Worker.DelayedCommand;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.impl.Loggers;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Future;
 
 public class DelayedCommandSender extends Thread {
@@ -39,11 +40,11 @@ public class DelayedCommandSender extends Thread {
           .register();
 
   private volatile boolean shuttingDown = false;
-  private final BlockingDeque<DelayedCommand> commands;
+  private final DelayQueue<DelayedCommand> commands;
   private final BlockingQueue<Future<?>> requestFutures;
 
   public DelayedCommandSender(
-      final BlockingDeque<DelayedCommand> delayedCommands,
+      final DelayQueue<DelayedCommand> delayedCommands,
       final BlockingQueue<Future<?>> requestFutures) {
     commands = delayedCommands;
     this.requestFutures = requestFutures;
@@ -53,20 +54,17 @@ public class DelayedCommandSender extends Thread {
   public void run() {
     while (!shuttingDown) {
       try {
-        final var delayedCommand = commands.takeFirst();
-        if (!delayedCommand.hasExpired()) {
-          commands.addFirst(delayedCommand);
-        } else {
-          final ZeebeFuture<?> requestFuture = delayedCommand.getCommand().send();
-          final var timer = JOB_COMPLETE_LATENCY.startTimer();
-          requestFuture.whenComplete(
-              (ok, error) -> {
-                delayedCommand.markCompleted();
-                timer.close();
-              });
-          requestFutures.add(requestFuture);
-        }
-        COMMAND_QUEUE_SIZE.set(commands.size());
+        final var delayedCommand = commands.take();
+        Loggers.JOB_WORKER_LOGGER.error("Sending command {}", delayedCommand.sequence);
+        final ZeebeFuture<?> requestFuture = delayedCommand.getCommand().send();
+        final var timer = JOB_COMPLETE_LATENCY.startTimer();
+        requestFuture.whenComplete(
+            (ok, error) -> {
+              delayedCommand.markCompleted();
+              timer.close();
+            });
+        requestFutures.add(requestFuture);
+        COMMAND_QUEUE_SIZE.dec();
       } catch (final InterruptedException e) {
         // ignore and retry
       }

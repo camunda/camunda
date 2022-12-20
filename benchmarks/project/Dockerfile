@@ -7,7 +7,7 @@ RUN mvn clean package -DskipTests -DskipChecks
 FROM azul/zulu-openjdk-alpine:17-jre-headless as starter
 USER nobody
 CMD java $JAVA_OPTIONS -jar app.jar
-COPY --from=builder /usr/src/app/target/starter.jar /app.jar
+COPY target/starter.jar /app.jar
 
 FROM azul/zulu-openjdk-alpine:17-jre-headless as worker
 USER nobody

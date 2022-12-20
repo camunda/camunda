@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1.StreamJobsComm
 import io.camunda.zeebe.client.api.response.StreamJobsResponse;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobHandler;
+import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.impl.response.StreamJobsResponseImpl;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamJobRequest;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
@@ -42,6 +44,7 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
   private final Predicate<Throwable> retryPredicate;
   private final StreamJobRequest request;
   private final JobClient jobClient;
+  private final ExecutorService executorService;
 
   private JobHandler jobHandler;
 
@@ -49,9 +52,11 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
       final GatewayStub asyncStub,
       final ZeebeClientConfiguration config,
       final JsonMapper jsonMapper,
+      final ExecutorService executorService,
       final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
+    this.executorService = executorService;
     this.retryPredicate = retryPredicate;
     request = StreamJobRequest.newBuilder().build();
     jobClient = new JobClientImpl(asyncStub, config, jsonMapper, retryPredicate);
@@ -68,7 +73,7 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
     final RetriableStreamingFutureImpl<StreamJobsResponse, GatewayOuterClass.ActivatedJob> future =
         new RetriableStreamingFutureImpl<>(
             new StreamJobsResponseImpl(),
-            this::forwardJob,
+            job -> executorService.execute(() -> forwardJob(job)),
             retryPredicate,
             streamObserver -> send(request, streamObserver));
 
@@ -78,6 +83,7 @@ public final class StreamJobsCommandImpl implements StreamJobsCommandStep1, Stre
 
   private void forwardJob(final ActivatedJob job) {
     try {
+      Loggers.JOB_WORKER_LOGGER.error("Received job {}", job.getKey());
       jobHandler.handle(jobClient, new ActivatedJobImpl(jsonMapper, job));
     } catch (final Exception e) {
       jobClient.newFailCommand(job.getKey()).retries(job.getRetries() - 1).send().join();

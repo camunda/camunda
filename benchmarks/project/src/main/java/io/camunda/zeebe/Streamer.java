@@ -10,16 +10,16 @@ package io.camunda.zeebe;
 import io.camunda.zeebe.Worker.DelayedCommand;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
 import org.slf4j.LoggerFactory;
 
 public class Streamer extends App {
@@ -48,7 +48,7 @@ public class Streamer extends App {
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
-    final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
+    final DelayQueue<DelayedCommand> delayedCommands = new DelayQueue<>();
 
     final ZeebeClient client = createZeebeClient();
     printTopology(client);
@@ -63,7 +63,8 @@ public class Streamer extends App {
                   final var timer = JOB_PROCESS_LATENCY.startTimer();
                   final var command =
                       jobClient.newCompleteCommand(job.getKey()).variables(variables);
-                  delayedCommands.addLast(
+                  Loggers.JOB_WORKER_LOGGER.error("Adding a delayed command");
+                  delayedCommands.offer(
                       new DelayedCommand(
                           Instant.now().plusMillis(completionDelay), command, timer));
                 })
