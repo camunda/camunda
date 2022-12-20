@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpre
 import io.camunda.zeebe.model.bpmn.instance.ConditionExpression;
 import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
@@ -144,6 +145,12 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(ZeebeScript.class)
             .hasValidExpression(
                 ZeebeScript::getExpression, expression -> expression.isNonStatic().isMandatory())
-            .build(expressionLanguage));
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(Signal.class)
+            .hasValidExpression(Signal::getName, ExpressionVerification::isOptional)
+            .build(expressionLanguage),
+        // Checks signal name expressions of start event signals
+        new ProcessSignalStartEventSignalNameValidator(expressionLanguage));
   }
 }
