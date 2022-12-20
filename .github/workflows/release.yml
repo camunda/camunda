@@ -257,7 +257,7 @@ jobs:
   docker:
     needs: release
     name: Docker Image Release
-    runs-on: n1-standard-8-netssd-preempt
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
       DOCKER_IMAGE: camunda/zeebe
