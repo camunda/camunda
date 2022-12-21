@@ -34,6 +34,8 @@ import io.atomix.cluster.impl.DefaultNodeDiscoveryService;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.ManagedClusterEventService;
 import io.atomix.cluster.messaging.MessagingService;
+import io.atomix.cluster.messaging.TestMessagingServiceFactory;
+import io.atomix.cluster.messaging.TestUnicastServiceFactory;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
