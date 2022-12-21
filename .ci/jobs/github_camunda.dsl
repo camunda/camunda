@@ -34,14 +34,6 @@ organizationFolder('camunda') {
         }
     }
 
-    buildStrategies {
-        // Don't auto build discovered branches for non prod envs.
-        if (ENVIRONMENT == 'prod') {
-            // Builds regular branches whenever a change is detected.
-            buildRegularBranches()
-        }
-    }
-
     orphanedItemStrategy {
         discardOldItems {
             numToKeep 10
@@ -57,9 +49,9 @@ organizationFolder('camunda') {
     properties {
         // Avoid automatically build jobs on non-prod envs by org indexing.
         // Note: The DSL name here is misleading. This config is for the branches that WILL be built automatically.
-        // So on prod env main will be built automatically but for non-prod no automatic builds.
+        // In the course of the GHA migration automatic builds on Jenkins were disabled
         noTriggerOrganizationFolderProperty {
-            branches (ENVIRONMENT == 'prod' ? 'main' : '')
+            branches ('')
         }
     }
 
