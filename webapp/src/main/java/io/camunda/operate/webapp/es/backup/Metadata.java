@@ -10,12 +10,23 @@ import java.util.Objects;
 
 public class Metadata {
 
+  public final static String SNAPSHOT_NAME_PREFIX = "camunda_operate_";
   private final static String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
-  private final static String SNAPSHOT_NAME_PREFIX = "camunda_operate_{backupId}_";
+  private final static String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
 
+  private String backupId;
   private String version;
   private Integer partNo;
   private Integer partCount;
+
+  public String getBackupId() {
+    return backupId;
+  }
+
+  public Metadata setBackupId(String backupId) {
+    this.backupId = backupId;
+    return this;
+  }
 
   public String getVersion() {
     return version;
@@ -44,7 +55,7 @@ public class Metadata {
     return this;
   }
 
-  public String buildSnapshotName(String backupId) {
+  public String buildSnapshotName() {
     return SNAPSHOT_NAME_PATTERN
         .replace("{prefix}", buildSnapshotNamePrefix(backupId))
         .replace("{version}", version)
@@ -53,7 +64,7 @@ public class Metadata {
   }
 
   public static String buildSnapshotNamePrefix(String backupId) {
-    return SNAPSHOT_NAME_PREFIX.replace("{backupId}", backupId);
+  return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", backupId);
   }
 
   @Override public boolean equals(Object o) {

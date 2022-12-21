@@ -20,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 @Component
@@ -52,6 +53,12 @@ public class BackupService {
   public GetBackupStateResponseDto getBackupState(@PathVariable String backupId) {
     validateRepositoryNameIsConfigured();
     return backupManager.getBackupState(backupId);
+  }
+
+  @GetMapping
+  public List<GetBackupStateResponseDto> getBackups() {
+    validateRepositoryNameIsConfigured();
+    return backupManager.getBackups();
   }
 
   @DeleteMapping("/{backupId}")
