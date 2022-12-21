@@ -61,12 +61,13 @@ public final class QueryApiIT {
     final var clientAddress = Address.from(SocketUtil.getNextAddress().getPort());
     final var messagingService =
         GrpcMessagingFactory.create(
-            new MessagingConfig()
-                .setInterfaces(List.of(clientAddress.host()))
-                .setPort(clientAddress.port()),
-            clientAddress,
-            broker.getBrokerCfg().getCluster().getClusterName(),
-            "client");
+                new MessagingConfig()
+                    .setInterfaces(List.of(clientAddress.host()))
+                    .setPort(clientAddress.port()),
+                clientAddress,
+                broker.getBrokerCfg().getCluster().getClusterName(),
+                "client")
+            .messagingService();
 
     clientTransport = new AtomixClientTransportAdapter(messagingService);
     actor.submitActor((AtomixClientTransportAdapter) clientTransport).join();
