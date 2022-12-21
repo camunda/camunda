@@ -146,7 +146,8 @@ final class NettyTransportFactory implements TransportFactory {
         .keepAliveWithoutCalls(true)
         .keepAliveTime(15, TimeUnit.SECONDS)
         .keepAliveTimeout(20, TimeUnit.SECONDS)
-        .defaultLoadBalancingPolicy("round_robin")
+        // cannot use load balancing with direct addresses... hmmm
+        //        .defaultLoadBalancingPolicy("round_robin")
         .maxInboundMessageSize(config.getMaxMessageSize())
         .withOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS);
     pickClientChannel(builder);
