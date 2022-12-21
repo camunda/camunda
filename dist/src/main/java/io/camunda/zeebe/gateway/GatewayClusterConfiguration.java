@@ -94,7 +94,8 @@ public final class GatewayClusterConfiguration {
       messaging
           .setTlsEnabled(true)
           .setCertificateChain(security.getCertificateChainPath())
-          .setPrivateKey(security.getPrivateKeyPath());
+          .setPrivateKey(security.getPrivateKeyPath())
+          .setOverrideAuthority(security.getOverrideAuthority());
     }
     return messaging;
   }

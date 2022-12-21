@@ -34,6 +34,7 @@ public class MessagingConfig implements Config {
   private boolean tlsEnabled = false;
   private File certificateChain;
   private File privateKey;
+  private String overrideAuthority;
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE_BYTES;
 
@@ -225,6 +226,21 @@ public class MessagingConfig implements Config {
     }
 
     this.privateKey = privateKey;
+    return this;
+  }
+
+  /**
+   * Returns the authority to validate certificates against. Only used for testing. That said, it
+   * raises an interesting problem. If we want SNI, but to allow authorities to be configured per
+   * node, then we'll have to figure out how to match nodes to authorities =/
+   */
+  public String getOverrideAuthority() {
+    return overrideAuthority;
+  }
+
+  /** Sets a new global authority for SNI with client connections. */
+  public MessagingConfig setOverrideAuthority(final String overrideAuthority) {
+    this.overrideAuthority = overrideAuthority;
     return this;
   }
 

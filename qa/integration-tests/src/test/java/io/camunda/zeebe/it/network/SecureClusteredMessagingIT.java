@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 final class SecureClusteredMessagingIT {
+
+  public static final String AUTHORITY = "localhost";
   private final SelfSignedCertificate certificate = newCertificate();
 
   @RegisterExtension
@@ -72,7 +74,7 @@ final class SecureClusteredMessagingIT {
 
   private SelfSignedCertificate newCertificate() {
     try {
-      return new SelfSignedCertificate();
+      return new SelfSignedCertificate(AUTHORITY);
     } catch (final CertificateException e) {
       throw new IllegalStateException("Failed to create self-signed certificate", e);
     }
@@ -82,11 +84,13 @@ final class SecureClusteredMessagingIT {
     config.getCluster().getSecurity().setEnabled(true);
     config.getCluster().getSecurity().setCertificateChainPath(certificate.certificate());
     config.getCluster().getSecurity().setPrivateKeyPath(certificate.privateKey());
+    config.getCluster().getSecurity().setOverrideAuthority(AUTHORITY);
   }
 
   private void configureBroker(final BrokerCfg config) {
     config.getNetwork().getSecurity().setEnabled(true);
     config.getNetwork().getSecurity().setCertificateChainPath(certificate.certificate());
     config.getNetwork().getSecurity().setPrivateKeyPath(certificate.privateKey());
+    config.getNetwork().getSecurity().setOverrideAuthority(AUTHORITY);
   }
 }

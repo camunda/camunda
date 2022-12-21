@@ -85,11 +85,13 @@ public final class ClusterConfigFactory {
             //       streaming snapshot file chunks instead
             .setMaxMessageSize(128 * 1024 * 1024L);
 
-    if (network.getSecurity().isEnabled()) {
+    final var security = network.getSecurity();
+    if (security.isEnabled()) {
       messaging
           .setTlsEnabled(true)
-          .setCertificateChain(network.getSecurity().getCertificateChainPath())
-          .setPrivateKey(network.getSecurity().getPrivateKeyPath());
+          .setCertificateChain(security.getCertificateChainPath())
+          .setPrivateKey(security.getPrivateKeyPath())
+          .setOverrideAuthority(security.getOverrideAuthority());
     }
     return messaging;
   }

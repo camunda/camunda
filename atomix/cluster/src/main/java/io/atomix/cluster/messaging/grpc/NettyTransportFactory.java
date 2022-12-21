@@ -17,8 +17,10 @@ package io.atomix.cluster.messaging.grpc;
 
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.util.VersionUtil;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.ServerBuilder;
+import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.ChannelOption;
@@ -36,6 +38,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLException;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,8 +163,21 @@ final class NettyTransportFactory implements TransportFactory {
         // cannot use load balancing with direct addresses... hmmm
         //        .defaultLoadBalancingPolicy("round_robin")
         .maxInboundMessageSize(config.getMaxMessageSize())
-        .withOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS);
+        .withOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
+        .overrideAuthority(config.getOverrideAuthority())
+        .userAgent("atomix/%s".formatted(VersionUtil.getVersion()));
+
     pickClientChannel(builder);
+
+    if (config.isTlsEnabled()) {
+      try {
+        final var sslContext =
+            GrpcSslContexts.forClient().trustManager(config.getCertificateChain()).build();
+        builder.useTransportSecurity().sslContext(sslContext);
+      } catch (final SSLException e) {
+        LangUtil.rethrowUnchecked(e);
+      }
+    }
 
     return builder;
   }

@@ -17,6 +17,7 @@ public final class SecurityCfg {
   private boolean enabled = DEFAULT_TLS_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
+  private String overrideAuthority;
 
   public boolean isEnabled() {
     return enabled;
@@ -42,6 +43,15 @@ public final class SecurityCfg {
 
   public SecurityCfg setPrivateKeyPath(final File privateKeyPath) {
     this.privateKeyPath = privateKeyPath;
+    return this;
+  }
+
+  public String getOverrideAuthority() {
+    return overrideAuthority;
+  }
+
+  public SecurityCfg setOverrideAuthority(final String overrideAuthority) {
+    this.overrideAuthority = overrideAuthority;
     return this;
   }
 

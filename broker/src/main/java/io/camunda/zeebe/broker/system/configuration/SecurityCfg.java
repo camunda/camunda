@@ -17,6 +17,7 @@ public final class SecurityCfg implements ConfigurationEntry {
   private boolean enabled = DEFAULT_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
+  private String overrideAuthority;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -54,6 +55,15 @@ public final class SecurityCfg implements ConfigurationEntry {
 
   public SecurityCfg setPrivateKeyPath(final File privateKeyPath) {
     this.privateKeyPath = privateKeyPath;
+    return this;
+  }
+
+  public String getOverrideAuthority() {
+    return overrideAuthority;
+  }
+
+  public SecurityCfg setOverrideAuthority(final String overrideAuthority) {
+    this.overrideAuthority = overrideAuthority;
     return this;
   }
 
