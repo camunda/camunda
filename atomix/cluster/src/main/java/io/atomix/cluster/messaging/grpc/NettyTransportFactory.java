@@ -164,7 +164,6 @@ final class NettyTransportFactory implements TransportFactory {
         //        .defaultLoadBalancingPolicy("round_robin")
         .maxInboundMessageSize(config.getMaxMessageSize())
         .withOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS)
-        .overrideAuthority(config.getOverrideAuthority())
         .userAgent("atomix/%s".formatted(VersionUtil.getVersion()));
 
     pickClientChannel(builder);
@@ -173,7 +172,10 @@ final class NettyTransportFactory implements TransportFactory {
       try {
         final var sslContext =
             GrpcSslContexts.forClient().trustManager(config.getCertificateChain()).build();
-        builder.useTransportSecurity().sslContext(sslContext);
+        builder
+            .overrideAuthority(config.getOverrideAuthority())
+            .useTransportSecurity()
+            .sslContext(sslContext);
       } catch (final SSLException e) {
         LangUtil.rethrowUnchecked(e);
       }
