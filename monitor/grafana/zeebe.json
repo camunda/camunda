@@ -131,8 +131,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "orange",
-                    "value": null
+                    "color": "orange"
                   }
                 ]
               }
@@ -286,8 +285,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -779,8 +777,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "#EAB839",
@@ -954,8 +951,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1031,8 +1027,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1198,8 +1193,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1529,8 +1523,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1747,8 +1740,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2041,8 +2033,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -7012,19 +7003,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the rate of different raft requests send from the leader to different followers",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 12
+            "y": 11
           },
           "hiddenSeries": false,
           "id": 278,
@@ -7046,7 +7031,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7113,7 +7098,16 @@
           },
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
             },
             "overrides": []
           },
@@ -7121,7 +7115,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 18
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7131,6 +7125,44 @@
             "show": false
           },
           "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.2.5",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7175,7 +7207,16 @@
           },
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
             },
             "overrides": []
           },
@@ -7183,7 +7224,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 18
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7193,6 +7234,44 @@
             "show": false
           },
           "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.2.5",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7232,19 +7311,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "description": "Shows the total count of send install requests from the leader to the followers",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 24
           },
           "hiddenSeries": false,
           "id": 283,
@@ -7266,7 +7339,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7329,7 +7402,6 @@
           "description": "Approximate Install RPC as measured by the follower.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -7340,7 +7412,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 32
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 79,
@@ -7361,7 +7433,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7423,7 +7495,6 @@
           "description": "Ongoing snapshot replications per partition, from the follower point-of-view.",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -7434,7 +7505,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 32
+            "y": 31
           },
           "hiddenSeries": false,
           "id": 114,
@@ -7454,7 +7525,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7518,7 +7589,16 @@
           },
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
             },
             "overrides": []
           },
@@ -7526,7 +7606,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 39
+            "y": 38
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7536,6 +7616,44 @@
             "show": false
           },
           "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.2.5",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7574,19 +7692,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 39
+            "y": 38
           },
           "hiddenSeries": false,
           "id": 300,
@@ -7606,7 +7718,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7630,11 +7742,26 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
+              "editorMode": "code",
               "expr": "histogram_quantile(0.50, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
               "hide": false,
               "interval": "",
-              "legendFormat": "Median",
+              "legendFormat": "p50",
+              "range": true,
               "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum(rate(atomix_segment_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "p99",
+              "range": true,
+              "refId": "B"
             }
           ],
           "thresholds": [],
@@ -7682,7 +7809,16 @@
           },
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
             },
             "overrides": []
           },
@@ -7690,7 +7826,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 46
+            "y": 45
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7700,6 +7836,44 @@
             "show": false
           },
           "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.2.5",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7739,19 +7913,13 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 46
+            "y": 45
           },
           "hiddenSeries": false,
           "id": 305,
@@ -7771,7 +7939,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7785,21 +7953,26 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(rate(atomix_append_entries_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) / sum(rate(atomix_append_entries_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m]))",
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.50, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
+              "hide": false,
               "interval": "",
-              "legendFormat": "Avg",
-              "refId": "A"
+              "legendFormat": "p50",
+              "range": true,
+              "refId": "C"
             },
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "histogram_quantile(0.50, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum(rate(atomix_append_entries_latency_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
               "hide": false,
               "interval": "",
-              "legendFormat": "Median",
-              "refId": "C"
+              "legendFormat": "p99",
+              "range": true,
+              "refId": "A"
             }
           ],
           "thresholds": [],
@@ -7847,7 +8020,16 @@
           },
           "fieldConfig": {
             "defaults": {
-              "custom": {}
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
             },
             "overrides": []
           },
@@ -7855,7 +8037,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 53
+            "y": 52
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7865,6 +8047,44 @@
             "show": true
           },
           "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.2.5",
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7906,7 +8126,6 @@
           },
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -7917,7 +8136,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 53
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 72,
@@ -7940,7 +8159,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8003,7 +8222,6 @@
           "description": "Shows when a role change has happened. \n1 = Follower\n2 = Candidate\n3 = Leader\n2 - ",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -8014,7 +8232,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 61
+            "y": 60
           },
           "hiddenSeries": false,
           "id": 95,
@@ -8041,7 +8259,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8112,7 +8330,6 @@
           "description": "",
           "fieldConfig": {
             "defaults": {
-              "custom": {},
               "links": []
             },
             "overrides": []
@@ -8123,7 +8340,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 61
+            "y": 60
           },
           "hiddenSeries": false,
           "id": 180,
@@ -8143,7 +8360,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "7.4.5",
+          "pluginVersion": "9.2.5",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8214,7 +8431,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 69
+            "y": 68
           },
           "id": 205,
           "maxPerRow": 6,
@@ -8288,7 +8505,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 74
+            "y": 73
           },
           "id": 209,
           "maxPerRow": 6,
@@ -8368,7 +8585,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 79
+            "y": 78
           },
           "id": 215,
           "options": {
@@ -8426,7 +8643,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 79
+            "y": 78
           },
           "id": 217,
           "options": {
@@ -10551,8 +10768,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "#EAB839",
@@ -10636,8 +10852,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -10703,8 +10918,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -11555,6 +11769,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }
