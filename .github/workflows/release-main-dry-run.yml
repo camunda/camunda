@@ -25,21 +25,24 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: ${{ matrix.latest }}
       dryRun: true
-  notify-if-failed:
-    name: Send slack notification on failure
+  notify:
+    name: Send slack notification
     runs-on: ubuntu-latest
     needs: [ dry-run-release ]
-    if: ${{ failure() }}
+    if: ${{ always() }}
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
     steps:
-      - id: slack-notify
-        name: Send slack notification
+      - id: slack-notify-failure
+        name: Send failure slack notification
         uses: slackapi/slack-github-action@v1.23.0
+        if: ${{ always() && needs.dry-run-release.result != 'success' }}
         with:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":alarm: *Release Dry Run* from `main` failed! :alarm:\n",
-             	"blocks": [
+              "blocks": [
                 {
                   "type": "section",
                   "text": {
@@ -56,6 +59,29 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      - id: slack-notify-success
+        name: Send success slack notification
+        uses: slackapi/slack-github-action@v1.23.0
+        if: ${{ always() && needs.dry-run-release.result == 'success' }}
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":tada: *Release Dry Run* from `main` succeeded! :tada:\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Nothing to check today. Good job! :clap:\n"
+                  }
+                }
+              ]
+            }
+

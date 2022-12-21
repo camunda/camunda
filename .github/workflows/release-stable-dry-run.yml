@@ -30,26 +30,29 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: false
       dryRun: true
-  notify-if-failed:
-    name: Send slack notification on failure
+  notify:
+    name: Send slack notification
     runs-on: ubuntu-latest
     needs: [ dry-run-release-80, dry-run-release-81 ]
-    if: ${{ failure() }}
+    if: ${{ always() }}
+    env:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
     steps:
-      - id: slack-notify
-        name: Send slack notification
+      - id: slack-notify-failure
+        name: Send failure slack notification
         uses: slackapi/slack-github-action@v1.23.0
+        if: ${{ always() && (needs.dry-run-release-80.result != 'success' || needs.dry-run-release-81.result != 'success') }}
         with:
           # For posting a rich message using Block Kit
           payload: |
             {
-              "text": ":alarm: *Release Dry Run* from stable branches failed! :alarm:\n",
-             	"blocks": [
+              "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":alarm: *Release Dry Run* from stable branches failed! :alarm:\n"
+                    "text": ":alarm: *Release Dry Run* from `stable/*` failed! :alarm:\n"
                   }
                 },
                 {
@@ -61,6 +64,28 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      - id: slack-notify-success
+        name: Send success slack notification
+        uses: slackapi/slack-github-action@v1.23.0
+        if: ${{ always() && needs.dry-run-release-80.result == 'success' && needs.dry-run-release-81.result == 'success' }}
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":tada: *Release Dry Run* from `stable/*` succeeded! :tada:\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Nothing to check today. Good job! :clap:\n"
+                  }
+                }
+              ]
+            }
