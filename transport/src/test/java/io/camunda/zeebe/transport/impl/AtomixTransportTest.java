@@ -114,13 +114,12 @@ public class AtomixTransportTest {
                     nodeAddressSupplier = () -> serverAddress;
                     messagingService =
                         GrpcMessagingFactory.create(
-                                new MessagingConfig()
-                                    .setPort(socketAddress.getPort())
-                                    .setInterfaces(List.of(socketAddress.getHostName())),
-                                Address.from(serverAddress),
-                                "cluster",
-                                "test")
-                            .messagingService();
+                            new MessagingConfig()
+                                .setPort(socketAddress.getPort())
+                                .setInterfaces(List.of(socketAddress.getHostName())),
+                            Address.from(serverAddress),
+                            "cluster",
+                            "test");
                     messagingService.start().join();
                   }
 

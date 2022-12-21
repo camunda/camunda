@@ -17,6 +17,7 @@ package io.atomix.cluster.messaging.grpc;
 
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.grpc.codec.CompressingInterceptor;
+import io.atomix.cluster.messaging.grpc.codec.SnappyCodec;
 import io.atomix.cluster.messaging.grpc.service.Service;
 import io.atomix.utils.Managed;
 import io.atomix.utils.net.Address;
@@ -123,7 +124,10 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
 
     switch (config.getCompressionAlgorithm()) {
       case GZIP -> builder.intercept(new CompressingInterceptor("gzip"));
-      case SNAPPY -> builder.intercept(new CompressingInterceptor("snappy"));
+      case SNAPPY -> {
+        CompressorRegistry.getDefaultInstance().register(new SnappyCodec());
+        builder.intercept(new CompressingInterceptor("snappy"));
+      }
       default -> {}
     }
 

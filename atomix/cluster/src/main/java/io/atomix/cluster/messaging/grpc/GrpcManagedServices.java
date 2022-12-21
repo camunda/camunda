@@ -15,5 +15,12 @@
  */
 package io.atomix.cluster.messaging.grpc;
 
+/**
+ * Exists solely because one class cannot implement both {@code Managed<MessagingService>} and
+ * {@code Managed<UnicastService>}, so we need a type which can reference both.
+ *
+ * <p>Considering there's no such thing as unicast with gRPC, we probably want to merge both
+ * services anyway.
+ */
 public record GrpcManagedServices(
     GrpcManagedMessagingService messagingService, GrpcManagedUnicastService unicastService) {}
