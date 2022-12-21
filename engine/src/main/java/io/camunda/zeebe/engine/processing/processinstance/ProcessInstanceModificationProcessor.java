@@ -91,7 +91,8 @@ public final class ProcessInstanceModificationProcessor
       """
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       for an element that has a flow scope with more than one active instance: '%s'. Can't decide \
-      in which instance of the flow scope the element should be activated.""";
+      in which instance of the flow scope the element should be activated. Please specify an \
+      ancestor element instance key for this activate instruction.""";
 
   private static final String ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED =
       """
