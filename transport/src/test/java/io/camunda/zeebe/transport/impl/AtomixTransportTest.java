@@ -250,7 +250,7 @@ public class AtomixTransportTest {
             nodeAddressSupplier, new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
 
     // then
-    assertThatThrownBy(requestFuture::join).hasCauseInstanceOf(TimeoutException.class);
+    assertThat(requestFuture).failsWithin(Duration.ofSeconds(1));
     assertThat(incomingRequestFuture).isNotCompleted();
   }
 

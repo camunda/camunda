@@ -23,8 +23,6 @@ import io.atomix.utils.Managed;
 import io.atomix.utils.net.Address;
 import io.grpc.CompressorRegistry;
 import io.grpc.Server;
-import io.grpc.protobuf.services.ChannelzService;
-import io.grpc.protobuf.services.ProtoReflectionService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -117,10 +115,10 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
         transportFactory
             .createServerBuilder(firstAddress)
             .compressorRegistry(CompressorRegistry.getDefaultInstance())
-            .addService(messagingService)
-            // debug services
-            .addService(ChannelzService.newInstance(100))
-            .addService(ProtoReflectionService.newInstance());
+            .addService(messagingService);
+    // debug services
+    //            .addService(ChannelzService.newInstance(100))
+    //            .addService(ProtoReflectionService.newInstance());
 
     if (config.isTlsEnabled()) {
       builder.useTransportSecurity(config.getCertificateChain(), config.getPrivateKey());
