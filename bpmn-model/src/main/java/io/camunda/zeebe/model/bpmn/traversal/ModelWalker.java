@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelInstanceImpl;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.Definitions;
+import io.camunda.zeebe.model.bpmn.instance.Process;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -63,6 +64,12 @@ public class ModelWalker {
 
     BpmnModelElementInstance currentElement;
     while ((currentElement = elementsToVisit.poll()) != null) {
+
+      // add a new check here for ignore non-executable processes
+      if (isNonExecutableProcess(currentElement)) {
+        return;
+      }
+
       visitor.visit(currentElement);
       final Collection<ModelElementInstance> children = getChildElements(currentElement);
       children.forEach(
@@ -84,5 +91,14 @@ public class ModelWalker {
       final BpmnModelElementInstance element) {
     return ModelUtil.getModelElementCollection(
         element.getDomElement().getChildElements(), modelInstance);
+  }
+
+  private boolean isNonExecutableProcess(final BpmnModelElementInstance element) {
+    if (element instanceof Process) {
+      final Process process = (Process) element;
+      return !process.isExecutable();
+    } else {
+      return false;
+    }
   }
 }

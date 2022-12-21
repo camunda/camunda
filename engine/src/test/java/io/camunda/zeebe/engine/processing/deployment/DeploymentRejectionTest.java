@@ -236,4 +236,24 @@ public class DeploymentRejectionTest {
         .contains("stroke")
         .contains("bpmndi:BPMNPlane");
   }
+
+  // https://github.com/camunda/zeebe/issues/9542
+  @Test
+  public void shouldRejectDeploymentIfNoExecutableProcess() {
+    // given
+    final String resource = "/processes/non-executable-process-single.bpmn";
+
+    // when
+    final Record<DeploymentRecordValue> deploymentRejection =
+        ENGINE.deployment().withXmlClasspathResource(resource).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deploymentRejection)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentRejection.getRejectionReason())
+        .contains("Must contain at least one executable process");
+  }
 }

@@ -39,6 +39,8 @@ import org.junit.Test;
 public final class CreateDeploymentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String NONE_EXECUTABLE_POOLS =
+      "/processes/non-executable-process-pools.bpmn";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -505,6 +507,31 @@ public final class CreateDeploymentTest {
 
     // then
     assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+  }
+
+  @Test
+  public void shouldCreateDeploymentResourceOfExecutablePools() {
+    // when
+    final var deployment =
+        ENGINE.deployment().withXmlClasspathResource(NONE_EXECUTABLE_POOLS).deploy();
+
+    // then
+    assertThat(deployment.getValue().getProcessesMetadata())
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
+        .describedAs("The ProcessesMetadata of DeploymentRecord only contains executable process.")
+        .containsExactly("Process_Executable")
+        .doesNotContain("Process_NonExecutable");
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(record -> record.getPosition() >= deployment.getPosition())
+                .processRecords()
+                .withIntent(ProcessIntent.CREATED))
+        .hasSize(1)
+        .extracting(p -> p.getValue().getBpmnProcessId())
+        .describedAs("The ProcessRecord only contains executable process.")
+        .containsExactly("Process_Executable")
+        .doesNotContain("Process_NonExecutable");
   }
 
   private ProcessMetadataValue findProcess(

@@ -62,6 +62,11 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
                     .contains(r.getIntent()));
   }
 
+  public ProcessRecordStream processRecords() {
+    return new ProcessRecordStream(
+        filter(r -> r.getValueType() == ValueType.PROCESS).map(Record.class::cast));
+  }
+
   public ProcessInstanceRecordStream processInstanceRecords() {
     return new ProcessInstanceRecordStream(
         filter(r -> r.getValueType() == ValueType.PROCESS_INSTANCE).map(Record.class::cast));
