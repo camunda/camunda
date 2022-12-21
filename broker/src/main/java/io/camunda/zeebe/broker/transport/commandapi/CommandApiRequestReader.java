@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ExecuteCommandRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
@@ -45,6 +46,7 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
     RECORDS_BY_TYPE.put(ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationRecord::new);
     RECORDS_BY_TYPE.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, ProcessInstanceModificationRecord::new);
+    RECORDS_BY_TYPE.put(ValueType.SIGNAL, SignalRecord::new);
   }
 
   private UnifiedRecordValue value;
