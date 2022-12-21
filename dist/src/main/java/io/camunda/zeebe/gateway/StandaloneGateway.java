@@ -18,6 +18,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -16,11 +16,14 @@
 package io.atomix.cluster.messaging.grpc;
 
 import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.grpc.codec.CompressingInterceptor;
 import io.atomix.cluster.messaging.grpc.service.Service;
 import io.atomix.utils.Managed;
 import io.atomix.utils.net.Address;
 import io.grpc.CompressorRegistry;
 import io.grpc.Server;
+import io.grpc.protobuf.services.ChannelzService;
+import io.grpc.protobuf.services.ProtoReflectionService;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -109,8 +112,26 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
         transportFactory
             .createServerBuilder(firstAddress)
             .compressorRegistry(CompressorRegistry.getDefaultInstance())
-            .addService(messagingService);
-    LOGGER.debug("Starting gRPC messaging server on {}", firstAddress);
+            .addService(messagingService)
+            // debug services
+            .addService(ChannelzService.newInstance(100))
+            .addService(ProtoReflectionService.newInstance());
+
+    if (config.isTlsEnabled()) {
+      builder.useTransportSecurity(config.getCertificateChain(), config.getPrivateKey());
+    }
+
+    switch (config.getCompressionAlgorithm()) {
+      case GZIP -> builder.intercept(new CompressingInterceptor("gzip"));
+      case SNAPPY -> builder.intercept(new CompressingInterceptor("snappy"));
+      default -> {}
+    }
+
+    LOGGER.debug(
+        "Starting gRPC messaging server on {} (TLS enabled: {}, compression: {})",
+        firstAddress,
+        config.isTlsEnabled(),
+        config.getCompressionAlgorithm());
     return builder.build();
   }
 }

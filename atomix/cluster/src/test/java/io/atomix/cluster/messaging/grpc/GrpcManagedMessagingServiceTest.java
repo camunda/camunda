@@ -50,10 +50,10 @@ import org.junit.jupiter.api.Test;
 final class GrpcManagedMessagingServiceTest {
   private final ClusterConfig aliceConfig = createClusterConfigFor("alice");
   private final GrpcManagedMessagingService alice =
-      GrpcMessagingFactory.create(aliceConfig).getMessagingService();
+      GrpcMessagingFactory.create(aliceConfig).messagingService();
   private final ClusterConfig bobConfig = createClusterConfigFor("bob");
   private final GrpcManagedMessagingService bob =
-      GrpcMessagingFactory.create(bobConfig).getMessagingService();
+      GrpcMessagingFactory.create(bobConfig).messagingService();
 
   @BeforeEach
   void beforeEach() {
@@ -314,7 +314,7 @@ final class GrpcManagedMessagingServiceTest {
     config.getNodeConfig().setHost("1.2.3.4").setPort(1);
 
     try (final GrpcManagedMessagingService managedService =
-        GrpcMessagingFactory.create(config).getMessagingService()) {
+        GrpcMessagingFactory.create(config).messagingService()) {
       final var messagingService = managedService.start().join();
       // then - should not fail by using advertisedAddress for binding
       assertThat(messagingService.bindingAddresses())

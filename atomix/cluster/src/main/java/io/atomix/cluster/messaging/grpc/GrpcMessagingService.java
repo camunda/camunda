@@ -86,7 +86,7 @@ final class GrpcMessagingService implements MessagingService, UnicastService, Cl
     final var client = clientRegistry.get(address);
     client
         .withDeadlineAfter(DEFAULT_TIMEOUT.toNanos(), TimeUnit.NANOSECONDS)
-        .send(request, new RequestObserver<>(address, request, result));
+        .send(request, new ClientRequestObserver<>(address, request, result));
 
     return result.thenApply(ok -> null);
   }
@@ -135,7 +135,7 @@ final class GrpcMessagingService implements MessagingService, UnicastService, Cl
     final var client = clientRegistry.get(address);
     client
         .withDeadlineAfter(timeout.toNanos(), TimeUnit.NANOSECONDS)
-        .sendAndReceive(request, new RequestObserver<>(address, request, result));
+        .sendAndReceive(request, new ClientRequestObserver<>(address, request, result));
 
     return result.thenApplyAsync(response -> response.getPayload().toByteArray(), executor);
   }
@@ -185,7 +185,7 @@ final class GrpcMessagingService implements MessagingService, UnicastService, Cl
     final CompletableFuture<EmptyResponse> result = new CompletableFuture<>();
     final var request = createRequest(subject, message);
     final var client = clientRegistry.get(address);
-    client.unicast(request, new RequestObserver<>(address, request, result));
+    client.unicast(request, new ClientRequestObserver<>(address, request, result));
   }
 
   @Override

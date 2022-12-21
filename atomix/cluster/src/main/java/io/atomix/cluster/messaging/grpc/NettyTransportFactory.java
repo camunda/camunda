@@ -108,6 +108,12 @@ final class NettyTransportFactory implements TransportFactory {
             .bossEventLoopGroup(eventLoopGroup)
             .workerEventLoopGroup(eventLoopGroup)
             .maxInboundMessageSize(config.getMaxMessageSize())
+            // allow long living connections
+            .maxConnectionAge(Long.MAX_VALUE, TimeUnit.MINUTES)
+            .keepAliveTime(10, TimeUnit.SECONDS)
+            .keepAliveTimeout(20, TimeUnit.SECONDS)
+            .permitKeepAliveTime(10, TimeUnit.SECONDS)
+            .permitKeepAliveWithoutCalls(true)
             .executor(grpcExecutor);
 
     if (!inetAddress.isAnyLocalAddress() && !inetAddress.isLoopbackAddress()) {
@@ -137,7 +143,10 @@ final class NettyTransportFactory implements TransportFactory {
         .usePlaintext()
         .eventLoopGroup(eventLoopGroup)
         .executor(grpcExecutor)
-        .withOption(ChannelOption.TCP_NODELAY, true)
+        .keepAliveWithoutCalls(true)
+        .keepAliveTime(15, TimeUnit.SECONDS)
+        .keepAliveTimeout(20, TimeUnit.SECONDS)
+        .defaultLoadBalancingPolicy("round_robin")
         .maxInboundMessageSize(config.getMaxMessageSize())
         .withOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECT_TIMEOUT_MILLIS);
     pickClientChannel(builder);

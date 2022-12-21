@@ -47,7 +47,7 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
                 Address.from(commandApiCfg.getAdvertisedHost(), commandApiCfg.getAdvertisedPort()),
                 brokerCfg.getCluster().getClusterName(),
                 "commandApi")
-            .getMessagingService();
+            .messagingService();
 
     messagingService
         .start()

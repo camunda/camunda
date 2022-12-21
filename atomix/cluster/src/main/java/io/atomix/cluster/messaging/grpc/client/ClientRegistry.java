@@ -20,17 +20,15 @@ import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.messaging.grpc.TransportFactory;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.messaging.protocol.MessagingGrpc;
 import io.camunda.zeebe.messaging.protocol.MessagingGrpc.MessagingStub;
 import io.camunda.zeebe.util.CloseableSilently;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.agrona.CloseHelper;
 
 public final class ClientRegistry implements ClusterMembershipEventListener, CloseableSilently {
-  private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
-
   private final ConcurrentMap<Address, Client> clients = new ConcurrentHashMap<>();
   private final TransportFactory transportFactory;
 
@@ -38,9 +36,10 @@ public final class ClientRegistry implements ClusterMembershipEventListener, Clo
     this.transportFactory = transportFactory;
   }
 
+  @SuppressWarnings("resource")
   public MessagingStub get(final Address address) {
     final var client = clients.computeIfAbsent(address, this::createClient);
-    return client.getStub();
+    return client.stub();
   }
 
   @Override
@@ -67,13 +66,13 @@ public final class ClientRegistry implements ClusterMembershipEventListener, Clo
 
   private void shutdownClient(final Address address) {
     final var client = clients.remove(address);
+    // TODO: what happens if someone else is using this client?
     CloseHelper.quietClose(client);
   }
 
   private Client createClient(final Address address) {
     final var channel = transportFactory.createClientBuilder(address).build();
-    final var stub =
-        io.camunda.zeebe.messaging.protocol.MessagingGrpc.newStub(channel).withCompression("gzip");
+    final var stub = MessagingGrpc.newStub(channel).withCompression("gzip");
 
     return new Client(channel, stub);
   }

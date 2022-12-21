@@ -22,7 +22,6 @@ import io.atomix.cluster.messaging.grpc.client.ClientRegistry;
 import io.atomix.cluster.messaging.grpc.service.Service;
 import io.atomix.cluster.messaging.grpc.service.ServiceHandlerRegistry;
 import io.atomix.utils.net.Address;
-import java.util.stream.Collectors;
 
 public final class GrpcMessagingFactory {
   private GrpcMessagingFactory() {}
@@ -45,7 +44,7 @@ public final class GrpcMessagingFactory {
     final var bindAddresses =
         config.getInterfaces().stream()
             .map(hostname -> Address.from(hostname, config.getPort()))
-            .collect(Collectors.toUnmodifiableList());
+            .toList();
 
     final var transportFactory = new NettyTransportFactory(config, advertisedAddress, serviceName);
     final var handlerRegistry = new ServiceHandlerRegistry();

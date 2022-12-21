@@ -110,8 +110,8 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
             config.getNodeConfig().getAddress(),
             config.getClusterId(),
             "atomix");
-    this.messagingService = managedMessagingServices.getMessagingService();
-    this.unicastService = managedMessagingServices.getUnicastService();
+    messagingService = managedMessagingServices.messagingService();
+    unicastService = managedMessagingServices.unicastService();
 
     discoveryProvider = buildLocationProvider(config);
     membershipProtocol = buildMembershipProtocol(config);

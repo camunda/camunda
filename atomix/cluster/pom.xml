@@ -182,11 +182,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-tool</artifactId>
-    </dependency>
-
     <!-- begin grpc -->
 
     <dependency>
@@ -210,6 +205,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-services</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
     </dependency>
@@ -217,6 +217,12 @@
     <dependency>
       <groupId>javax.annotation</groupId>
       <artifactId>javax.annotation-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.xerial.snappy</groupId>
+      <artifactId>snappy-java</artifactId>
+      <version>1.1.8.4</version>
     </dependency>
 
     <!-- end grpc -->

@@ -24,12 +24,12 @@ import java.net.ConnectException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
-final class RequestObserver<V> implements StreamObserver<V> {
+final class ClientRequestObserver<V> implements StreamObserver<V> {
   private final Address remoteAddress;
   private final Request request;
   private final CompletableFuture<V> future;
 
-  RequestObserver(
+  ClientRequestObserver(
       final Address remoteAddress, final Request request, final CompletableFuture<V> future) {
     this.remoteAddress = remoteAddress;
     this.request = request;
@@ -43,46 +43,34 @@ final class RequestObserver<V> implements StreamObserver<V> {
 
   @Override
   public void onError(final Throwable t) {
-    if (!(t instanceof StatusRuntimeException)) {
+    if (!(t instanceof final StatusRuntimeException statusError)) {
       future.completeExceptionally(t);
       return;
     }
 
     // convert to switch/case as the number of cases grow; this should anyway go away as we migrate
     // things to use the gRPC services over time
-    final var statusError = (StatusRuntimeException) t;
     switch (statusError.getStatus().getCode()) {
-      case DEADLINE_EXCEEDED:
-        future.completeExceptionally(
-            new TimeoutException(
-                String.format(
-                    "Request %s to %s timed out: %s",
-                    formatRequest(), remoteAddress, statusError)));
-        break;
-      case UNIMPLEMENTED:
-        future.completeExceptionally(
-            new MessagingException.NoRemoteHandler(
-                String.format(
-                    "Request %s to %s failed due to no remote handler registered",
-                    formatRequest(), remoteAddress),
-                statusError));
-        break;
-      case INTERNAL:
-        future.completeExceptionally(
-            new MessagingException.RemoteHandlerFailure(
-                String.format(
-                    "Request %s to %s failed unexpectedly", formatRequest(), remoteAddress),
-                statusError));
-        break;
-      case UNAVAILABLE:
-        future.completeExceptionally(
-            new ConnectException(
-                String.format(
-                    "Failed to connect to %s for request %s: %s",
-                    remoteAddress, formatRequest(), statusError.getMessage())));
-        break;
-      default:
-        future.completeExceptionally(t);
+      case DEADLINE_EXCEEDED -> future.completeExceptionally(
+          new TimeoutException(
+              String.format(
+                  "Request %s to %s timed out: %s", formatRequest(), remoteAddress, statusError)));
+      case UNIMPLEMENTED -> future.completeExceptionally(
+          new MessagingException.NoRemoteHandler(
+              String.format(
+                  "Request %s to %s failed due to no remote handler registered",
+                  formatRequest(), remoteAddress),
+              statusError));
+      case INTERNAL -> future.completeExceptionally(
+          new MessagingException.RemoteHandlerFailure(
+              String.format("Request %s to %s failed unexpectedly", formatRequest(), remoteAddress),
+              statusError));
+      case UNAVAILABLE -> future.completeExceptionally(
+          new ConnectException(
+              String.format(
+                  "Failed to connect to %s for request %s: %s",
+                  remoteAddress, formatRequest(), statusError.getMessage())));
+      default -> future.completeExceptionally(t);
     }
   }
 

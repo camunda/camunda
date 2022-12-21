@@ -67,7 +67,7 @@ public final class QueryApiIT {
                 clientAddress,
                 broker.getBrokerCfg().getCluster().getClusterName(),
                 "client")
-            .getMessagingService();
+            .messagingService();
 
     clientTransport = new AtomixClientTransportAdapter(messagingService);
     actor.submitActor((AtomixClientTransportAdapter) clientTransport).join();

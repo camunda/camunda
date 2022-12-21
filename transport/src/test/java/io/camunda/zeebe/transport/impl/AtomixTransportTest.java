@@ -120,7 +120,7 @@ public class AtomixTransportTest {
                                 Address.from(serverAddress),
                                 "cluster",
                                 "test")
-                            .getMessagingService();
+                            .messagingService();
                     messagingService.start().join();
                   }
 
