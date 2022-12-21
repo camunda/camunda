@@ -70,7 +70,11 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
 
     try {
       server.start();
-      LOGGER.debug("Started gRPC server at {}", server.getListenSockets());
+      LOGGER.debug(
+          "Started gRPC messaging server on {} (TLS enabled: {}, compression: {})",
+          server.getListenSockets(),
+          config.isTlsEnabled(),
+          config.getCompressionAlgorithm());
       return CompletableFuture.completedFuture(server);
     } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
@@ -131,11 +135,6 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
       default -> {}
     }
 
-    LOGGER.debug(
-        "Starting gRPC messaging server on {} (TLS enabled: {}, compression: {})",
-        firstAddress,
-        config.isTlsEnabled(),
-        config.getCompressionAlgorithm());
     return builder.build();
   }
 }

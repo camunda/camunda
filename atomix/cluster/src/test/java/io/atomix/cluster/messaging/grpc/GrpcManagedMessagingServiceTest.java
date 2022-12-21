@@ -43,7 +43,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -271,7 +270,7 @@ final class GrpcManagedMessagingServiceTest {
   }
 
   @Test
-  void testSendAndReceiveWithExecutor() {
+  void testSendAndReceiveWithExecutor() throws InterruptedException {
     final String subject = nextSubject();
     final ExecutorService completionExecutor =
         Executors.newSingleThreadExecutor(r -> new Thread(r, "completion-thread"));
@@ -285,23 +284,21 @@ final class GrpcManagedMessagingServiceTest {
     final BiFunction<Address, byte[], byte[]> handler =
         (ep, data) -> {
           handlerThreadName.set(Thread.currentThread().getName());
-          try {
-            assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-          } catch (final InterruptedException e1) {
-            Thread.currentThread().interrupt();
-            Assertions.fail("InterruptedException");
-          }
           return "hello there".getBytes();
         };
     bob.registerHandler(subject, handler, handlerExecutor);
 
     final CompletableFuture<byte[]> response =
         alice.sendAndReceive(bob.address(), subject, "hello world".getBytes(), completionExecutor);
-    response.whenComplete((r, e) -> completionThreadName.set(Thread.currentThread().getName()));
-    latch.countDown();
+    response.whenComplete(
+        (r, e) -> {
+          completionThreadName.set(Thread.currentThread().getName());
+          latch.countDown();
+        });
 
     // Verify that the message was request handling and response completion happens on the correct
     // thread.
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     assertThat(Arrays.equals("hello there".getBytes(), response.join())).isTrue();
     assertThat(completionThreadName.get()).isEqualTo("completion-thread");
     assertThat(handlerThreadName.get()).isEqualTo("handler-thread");
