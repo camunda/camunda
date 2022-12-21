@@ -88,11 +88,11 @@ final class GrpcMessagingServer implements Managed<Server>, AutoCloseable {
     }
 
     final var oldServer = server;
-    server.shutdown();
+    server.shutdownNow();
     server = null;
 
     try {
-      oldServer.awaitTermination();
+      oldServer.awaitTermination(config.getShutdownTimeout().toNanos(), TimeUnit.NANOSECONDS);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
       return CompletableFuture.failedFuture(e);

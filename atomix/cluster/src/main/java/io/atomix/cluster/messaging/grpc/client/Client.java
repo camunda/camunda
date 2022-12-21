@@ -18,11 +18,19 @@ package io.atomix.cluster.messaging.grpc.client;
 import io.camunda.zeebe.messaging.protocol.MessagingGrpc.MessagingStub;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.grpc.ManagedChannel;
+import java.util.concurrent.TimeUnit;
 
 record Client(ManagedChannel channel, MessagingStub stub) implements CloseableSilently {
 
   @Override
   public void close() {
     channel.shutdownNow();
+    try {
+      // gRPC warns us that channels are not shutdown cleanly if we don't await for their
+      // termination before creating the next one. unclear why, but fair enough
+      channel.awaitTermination(1, TimeUnit.SECONDS);
+    } catch (final InterruptedException ignored) {
+      // ignore it for now
+    }
   }
 }

@@ -39,6 +39,10 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Simplifies creating both server and client channels. Note that one limitation right now is that
+ * the loop groups/executors are shared across all.
+ */
 final class NettyTransportFactory implements TransportFactory {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NettyTransportFactory.class);
@@ -85,12 +89,18 @@ final class NettyTransportFactory implements TransportFactory {
           config.getShutdownQuietPeriod().toNanos(),
           config.getShutdownTimeout().toNanos(),
           TimeUnit.NANOSECONDS);
+      //noinspection ResultOfMethodCallIgnored
+      eventLoopGroup.awaitTermination(config.getShutdownTimeout().toNanos(), TimeUnit.NANOSECONDS);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOGGER.warn("Failed to shutdown event loop group; this is most likely harmless", e);
     } catch (final Exception e) {
       LOGGER.warn("Failed to shutdown event loop group; this is most likely harmless", e);
     }
 
     try {
       grpcExecutor.shutdownNow();
+      //noinspection ResultOfMethodCallIgnored
       grpcExecutor.awaitTermination(config.getShutdownTimeout().toNanos(), TimeUnit.NANOSECONDS);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
