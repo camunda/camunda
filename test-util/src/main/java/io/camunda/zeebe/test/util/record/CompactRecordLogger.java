@@ -88,8 +88,8 @@ public class CompactRecordLogger {
           entry("EVENT", "EVNT"),
           entry("DECISION_REQUIREMENTS", "DRG"),
           entry("EVALUATION", "EVAL"),
-          entry("SIGNAL", "SIG"),
-          entry("SIGNAL_SUBSCRIPTION", "SIG_SUB"));
+          entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
+          entry("SIGNAL", "SIG"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -724,11 +724,12 @@ public class CompactRecordLogger {
   private String summarizeSignal(final Record<?> record) {
     final var value = (SignalRecordValue) record.getValue();
 
-    final var result = new StringBuilder().append("\"").append(value.getSignalName()).append("\"");
-
-    result.append(summarizeVariables(value.getVariables()));
-
-    return result.toString();
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getSignalName())
+        .append("\"")
+        .append(summarizeVariables(value.getVariables()))
+        .toString();
   }
 
   private String summarizeSignalSubscription(final Record<?> record) {
