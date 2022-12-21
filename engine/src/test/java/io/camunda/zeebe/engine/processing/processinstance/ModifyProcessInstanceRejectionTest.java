@@ -609,6 +609,69 @@ public class ModifyProcessInstanceRejectionTest {
   }
 
   @Test
+  public void shouldRejectActivationWhenAncestorScopeIsNotFlowScope() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .parallelGateway("split")
+                .subProcess(
+                    "subProcess1",
+                    sp -> sp.embeddedSubProcess().startEvent().manualTask("A").endEvent())
+                .parallelGateway("join")
+                .moveToLastGateway()
+                .subProcess(
+                    "subProcess2",
+                    sp2 -> sp2.embeddedSubProcess().startEvent().userTask("B").endEvent())
+                .connectTo("join")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("subProcess1")
+        .await();
+
+    // when
+    final var subProcess2 =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("subProcess2")
+            .getFirst();
+    final var taskB =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst();
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A", subProcess2.getKey())
+            .activateElement("B", subProcess2.getKey())
+            .activateElement("A", taskB.getKey())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that subProcess2 cannot be selected as ancestor of task A")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to modify instance of process '%s' \
+            but it contains one or more activate instructions with an ancestor scope key \
+            that is not an ancestor of the element to activate:
+            - instance '%s' of element 'subProcess2' is not an ancestor of element 'A'
+            - instance '%s' of element 'B' is not an ancestor of element 'A'"""
+                .formatted(PROCESS_ID, subProcess2.getKey(), taskB.getKey()));
+  }
+
+  @Test
   public void shouldRejectActivationOfMultiInstanceInstance() {
     // given
     ENGINE
