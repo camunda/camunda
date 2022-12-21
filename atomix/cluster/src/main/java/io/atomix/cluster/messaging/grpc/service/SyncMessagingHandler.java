@@ -15,7 +15,7 @@
  */
 package io.atomix.cluster.messaging.grpc.service;
 
-import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.messaging.protocol.MessagingOuterClass.Response;
 import io.grpc.stub.StreamObserver;
@@ -40,7 +40,7 @@ public class SyncMessagingHandler extends RequestHandler<Response> {
       final StreamObserver<Response> responseObserver) {
     final var responsePayload = handler.apply(replyTo, payload);
     final var response =
-        Response.newBuilder().setPayload(ByteString.copyFrom(responsePayload)).build();
+        Response.newBuilder().setPayload(UnsafeByteOperations.unsafeWrap(responsePayload)).build();
     responseObserver.onNext(response);
     responseObserver.onCompleted();
   }

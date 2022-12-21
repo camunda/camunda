@@ -52,8 +52,8 @@ final class NettyTransportFactory implements TransportFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(NettyTransportFactory.class);
   private static final int CONNECT_TIMEOUT_MILLIS = 1_000;
 
-  private static final int NETTY_THREAD_COUNT = 2;
-  private static final int GRPC_THREAD_COUNT = 2;
+  private static final int NETTY_THREAD_COUNT = 4;
+  private static final int GRPC_THREAD_COUNT = 4;
 
   private final MessagingConfig config;
   private final Address advertisedAddress;
