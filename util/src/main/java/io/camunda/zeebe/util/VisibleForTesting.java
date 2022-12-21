@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * comprehensive tests. In general, you should try to avoid this, but at times there is no other
  * way.
  */
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.CONSTRUCTOR})
 @Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface VisibleForTesting {}
