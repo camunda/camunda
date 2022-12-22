@@ -23,6 +23,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import com.google.common.util.concurrent.MoreExecutors;
@@ -32,6 +35,7 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.netty.channel.Channel;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -47,9 +51,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -580,6 +586,105 @@ public class NettyMessagingServiceTest {
         .havingRootCause()
         .isInstanceOf(MessagingException.RemoteHandlerFailure.class)
         .withMessage(expectedException.getMessage());
+  }
+
+  @Test
+  public void shouldCloseChannelAfterTimeout() {
+    // given
+    final var subject = nextSubject();
+    final var expectedException = new TimeoutException();
+
+    final AtomicInteger channelsOpen = new AtomicInteger(0);
+    final AtomicReference<Channel> channelRef = new AtomicReference<>();
+    final ManagedMessagingService nettyWithOwnPool =
+        createMessagingServiceWithSpiedPool(channelsOpen, channelRef);
+
+    netty2.registerHandler(
+        subject, (address, bytes) -> new CompletableFuture<>()); // never complete this future
+
+    // when
+    final CompletableFuture<byte[]> response =
+        nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(15))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(expectedException.getClass())
+        .withMessageContaining("timed out in");
+    // closing causes an CloseException which causes another close
+    verify(channelRef.get(), timeout(1000).atLeast(1)).close();
+  }
+
+  @Test
+  public void shouldCreateNewChannelOnNewRequestAfterTimeout() {
+    // given
+    final var subject = nextSubject();
+    final var expectedException = new TimeoutException();
+
+    final AtomicInteger channelsOpen = new AtomicInteger(0);
+    final AtomicReference<Channel> channelRef = new AtomicReference<>();
+    final ManagedMessagingService nettyWithOwnPool =
+        createMessagingServiceWithSpiedPool(channelsOpen, channelRef);
+
+    netty2.registerHandler(
+        subject, (address, bytes) -> new CompletableFuture<>()); // never complete this future
+    final CompletableFuture<byte[]> response =
+        nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
+    assertThat(response)
+        .failsWithin(Duration.ofSeconds(15))
+        .withThrowableOfType(ExecutionException.class)
+        .havingRootCause()
+        .isInstanceOf(expectedException.getClass())
+        .withMessageContaining("timed out in");
+
+    // when
+    nettyWithOwnPool.sendAndReceive(address2, subject, "fail".getBytes());
+
+    // then
+    // closing causes an CloseException which causes another close
+    verify(channelRef.get(), timeout(1000).atLeast(1)).close();
+    Awaitility.await("channels should be recreated").until(channelsOpen::get, c -> c == 2);
+  }
+
+  private static ManagedMessagingService createMessagingServiceWithSpiedPool(
+      final AtomicInteger channelsOpen, final AtomicReference<Channel> channelRef) {
+    final var otherAddress = Address.from(SocketUtil.getNextAddress().getPort());
+    final var config = new MessagingConfig();
+    return (ManagedMessagingService)
+        new NettyMessagingService(
+                "test",
+                otherAddress,
+                config,
+                ProtocolVersion.V2,
+                (channelFactory) ->
+                    // returning channel pool - to create spied channels
+                    new ChannelPool(
+                        (addr) -> {
+                          // channel factory
+                          channelsOpen.incrementAndGet();
+                          // we have to return another future so our spy is used in the messaging
+                          // service
+                          final CompletableFuture<Channel> channelSpyFuture =
+                              new CompletableFuture<>();
+                          final CompletableFuture<Channel> channelCreationFuture =
+                              channelFactory.apply(addr);
+                          channelCreationFuture.whenComplete(
+                              (channel, err) -> {
+                                if (err == null) {
+                                  final Channel spy = spy(channel);
+                                  channelRef.set(spy);
+                                  channelSpyFuture.complete(spy);
+                                } else {
+                                  channelSpyFuture.completeExceptionally(err);
+                                }
+                              });
+                          return channelSpyFuture;
+                        },
+                        config.getConnectionPoolSize()))
+            .start()
+            .join();
   }
 
   @Test

@@ -130,9 +130,27 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = config;
+    this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
 
     openFutures = new CopyOnWriteArrayList<>();
-    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    initAddresses(config);
+  }
+
+  // duplicated for tests - to inject channel pool
+  NettyMessagingService(
+      final String cluster,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final ProtocolVersion protocolVersion,
+      final Function<Function<Address, CompletableFuture<Channel>>, ChannelPool>
+          channelPoolFactor) {
+    preamble = cluster.hashCode();
+    this.advertisedAddress = advertisedAddress;
+    this.protocolVersion = protocolVersion;
+    this.config = config;
+    this.channelPool = channelPoolFactor.apply(this::openChannel);
+
+    openFutures = new CopyOnWriteArrayList<>();
     initAddresses(config);
   }
 
@@ -497,7 +515,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
    * @param type the message type to map to the connection
    * @param callback the callback to execute
    * @param executor an executor on which to complete the callback future
-   * @param future the future to be completed once the callback future is complete
+   * @param responseFuture the future to be completed once the callback future is complete
    * @param <T> the callback response type
    */
   private <T> void executeOnPooledConnection(
@@ -505,27 +523,39 @@ public final class NettyMessagingService implements ManagedMessagingService {
       final String type,
       final Function<ClientConnection, CompletableFuture<T>> callback,
       final Executor executor,
-      final CompletableFuture<T> future) {
+      final CompletableFuture<T> responseFuture) {
     if (address.equals(advertisedAddress)) {
       callback
           .apply(localConnection)
           .whenComplete(
               (result, error) -> {
                 if (error == null) {
-                  executor.execute(() -> future.complete(result));
+                  executor.execute(() -> responseFuture.complete(result));
                 } else {
-                  executor.execute(() -> future.completeExceptionally(error));
+                  executor.execute(() -> responseFuture.completeExceptionally(error));
                 }
               });
       return;
     }
 
-    openFutures.add(future);
+    openFutures.add(responseFuture);
     channelPool
         .getChannel(address, type)
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
+                responseFuture.whenComplete(
+                    (response, error) -> {
+                      if (error instanceof TimeoutException) {
+                        // response future has been completed exceptionally by our
+                        // timeout check, we will not receive any response on this channel
+                        // if we talk with the wrong IP or node
+                        // See https://github.com/zeebe-io/zeebe-chaos/issues/294
+                        // In order to no longer reuse a maybe broken/outdated channel we close it
+                        // On next request a new channel will be created
+                        channel.close();
+                      }
+                    });
                 final ClientConnection connection = getOrCreateClientConnection(channel);
                 callback
                     .apply(connection)
@@ -534,8 +564,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
                           if (sendError == null) {
                             executor.execute(
                                 () -> {
-                                  future.complete(result);
-                                  openFutures.remove(future);
+                                  responseFuture.complete(result);
+                                  openFutures.remove(responseFuture);
                                 });
                           } else {
                             final Throwable cause = Throwables.getRootCause(sendError);
@@ -553,16 +583,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
                             }
                             executor.execute(
                                 () -> {
-                                  future.completeExceptionally(sendError);
-                                  openFutures.remove(future);
+                                  responseFuture.completeExceptionally(sendError);
+                                  openFutures.remove(responseFuture);
                                 });
                           }
                         });
               } else {
                 executor.execute(
                     () -> {
-                      future.completeExceptionally(channelError);
-                      openFutures.remove(future);
+                      responseFuture.completeExceptionally(channelError);
+                      openFutures.remove(responseFuture);
                     });
               }
             });
