@@ -99,6 +99,8 @@ public class ElasticsearchExporterConfiguration {
         return index.deploymentDistribution;
       case ESCALATION:
         return index.escalation;
+      case SIGNAL:
+        return index.signal;
       case SIGNAL_SUBSCRIPTION:
         return index.signalSubscription;
       default:
@@ -156,6 +158,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean processEvent = false;
     public boolean deploymentDistribution = true;
     public boolean escalation = true;
+    public boolean signal = true;
     public boolean signalSubscription = true;
 
     // index settings
@@ -236,6 +239,8 @@ public class ElasticsearchExporterConfiguration {
           + deploymentDistribution
           + ", escalation="
           + escalation
+          + ", signal="
+          + signal
           + ", signalSubscription="
           + signalSubscription
           + '}';

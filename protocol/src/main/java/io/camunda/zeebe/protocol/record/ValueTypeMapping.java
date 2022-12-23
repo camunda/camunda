@@ -36,6 +36,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -58,6 +59,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
@@ -178,6 +180,7 @@ public final class ValueTypeMapping {
         ValueType.CHECKPOINT, new Mapping<>(CheckpointRecordValue.class, CheckpointIntent.class));
     mapping.put(
         ValueType.ESCALATION, new Mapping<>(EscalationRecordValue.class, EscalationIntent.class));
+    mapping.put(ValueType.SIGNAL, new Mapping<>(SignalRecordValue.class, SignalIntent.class));
     mapping.put(
         ValueType.SIGNAL_SUBSCRIPTION,
         new Mapping<>(SignalSubscriptionRecordValue.class, SignalSubscriptionIntent.class));

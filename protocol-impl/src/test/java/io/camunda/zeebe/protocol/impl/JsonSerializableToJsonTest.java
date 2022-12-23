@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -1073,6 +1074,48 @@ final class JsonSerializableToJsonTest {
               "escalationCode": "",
               "throwElementId": "",
               "catchElementId": ""
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// SignalRecord /////////////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "SignalRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String signalName = "test-signal";
+
+              return new SignalRecord()
+                  .setSignalName(wrapString(signalName))
+                  .setVariables(VARIABLES_MSGPACK);
+            },
+        """
+          {
+            "signalName":"test-signal",
+            "variables": {
+              "foo": "bar"
+            }
+          }
+          """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty SignalRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty SignalRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final String signalName = "test-signal";
+
+              return new SignalRecord().setSignalName(signalName);
+            },
+        """
+          {
+            "signalName":"test-signal",
+            "variables": {}
           }
           """
       },

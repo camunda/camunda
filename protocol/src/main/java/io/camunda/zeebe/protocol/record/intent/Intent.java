@@ -47,6 +47,7 @@ public interface Intent {
           ProcessInstanceResultIntent.class,
           CheckpointIntent.class,
           ProcessInstanceModificationIntent.class,
+          SignalIntent.class,
           SignalSubscriptionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
@@ -117,6 +118,8 @@ public interface Intent {
         return EscalationIntent.from(intent);
       case PROCESS_INSTANCE_MODIFICATION:
         return ProcessInstanceModificationIntent.from(intent);
+      case SIGNAL:
+        return SignalIntent.from(intent);
       case SIGNAL_SUBSCRIPTION:
         return SignalSubscriptionIntent.from(intent);
       case NULL_VAL:
@@ -178,6 +181,8 @@ public interface Intent {
         return CheckpointIntent.valueOf(intent);
       case ESCALATION:
         return EscalationIntent.valueOf(intent);
+      case SIGNAL:
+        return SignalIntent.valueOf(intent);
       case SIGNAL_SUBSCRIPTION:
         return SignalSubscriptionIntent.valueOf(intent);
       case NULL_VAL:

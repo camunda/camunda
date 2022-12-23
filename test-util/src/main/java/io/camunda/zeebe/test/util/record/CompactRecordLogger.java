@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -87,7 +88,8 @@ public class CompactRecordLogger {
           entry("EVENT", "EVNT"),
           entry("DECISION_REQUIREMENTS", "DRG"),
           entry("EVALUATION", "EVAL"),
-          entry("SIGNAL_SUBSCRIPTION", "SIG_SUB"));
+          entry("SIGNAL_SUBSCRIPTION", "SIG_SUBSCRIPTION"),
+          entry("SIGNAL", "SIG"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -130,6 +132,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.DECISION_REQUIREMENTS, this::summarizeDecisionRequirements);
     valueLoggers.put(ValueType.DECISION, this::summarizeDecision);
     valueLoggers.put(ValueType.DECISION_EVALUATION, this::summarizeDecisionEvaluation);
+    valueLoggers.put(ValueType.SIGNAL, this::summarizeSignal);
     valueLoggers.put(ValueType.SIGNAL_SUBSCRIPTION, this::summarizeSignalSubscription);
   }
 
@@ -716,6 +719,17 @@ public class CompactRecordLogger {
 
   private String summarizeDecisionInformation(final String decisionId, final long decisionKey) {
     return String.format(" of <decision %s[%s]>", formatId(decisionId), formatKey(decisionKey));
+  }
+
+  private String summarizeSignal(final Record<?> record) {
+    final var value = (SignalRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("\"")
+        .append(value.getSignalName())
+        .append("\"")
+        .append(summarizeVariables(value.getVariables()))
+        .toString();
   }
 
   private String summarizeSignalSubscription(final Record<?> record) {
