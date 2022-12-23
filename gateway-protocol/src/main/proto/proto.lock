@@ -304,6 +304,190 @@
             ]
           },
           {
+            "name": "EvaluateDecisionRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "decisionKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "decisionId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "EvaluateDecisionResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "decisionKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "decisionId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "decisionName",
+                "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "decisionVersion",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "decisionRequirementsId",
+                "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "decisionRequirementsKey",
+                "type": "int64"
+              },
+              {
+                "id": 7,
+                "name": "decisionOutput",
+                "type": "string"
+              },
+              {
+                "id": 8,
+                "name": "evaluatedDecisions",
+                "type": "EvaluatedDecision",
+                "is_repeated": true
+              },
+              {
+                "id": 9,
+                "name": "failedDecisionId",
+                "type": "string"
+              },
+              {
+                "id": 10,
+                "name": "failureMessage",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "EvaluatedDecision",
+            "fields": [
+              {
+                "id": 1,
+                "name": "decisionKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "decisionId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "decisionName",
+                "type": "string"
+              },
+              {
+                "id": 4,
+                "name": "decisionVersion",
+                "type": "int32"
+              },
+              {
+                "id": 5,
+                "name": "decisionType",
+                "type": "string"
+              },
+              {
+                "id": 6,
+                "name": "decisionOutput",
+                "type": "string"
+              },
+              {
+                "id": 7,
+                "name": "matchedRules",
+                "type": "MatchedDecisionRule",
+                "is_repeated": true
+              },
+              {
+                "id": 8,
+                "name": "evaluatedInputs",
+                "type": "EvaluatedDecisionInput",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "EvaluatedDecisionInput",
+            "fields": [
+              {
+                "id": 1,
+                "name": "inputId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "inputName",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "inputValue",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "EvaluatedDecisionOutput",
+            "fields": [
+              {
+                "id": 1,
+                "name": "outputId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "outputName",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "outputValue",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "MatchedDecisionRule",
+            "fields": [
+              {
+                "id": 1,
+                "name": "ruleId",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "ruleIndex",
+                "type": "int32"
+              },
+              {
+                "id": 3,
+                "name": "evaluatedOutputs",
+                "type": "EvaluatedDecisionOutput",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
             "name": "DeployProcessRequest",
             "fields": [
               {
@@ -865,6 +1049,11 @@
                 "name": "CreateProcessInstanceWithResult",
                 "in_type": "CreateProcessInstanceWithResultRequest",
                 "out_type": "CreateProcessInstanceWithResultResponse"
+              },
+              {
+                "name": "EvaluateDecision",
+                "in_type": "EvaluateDecisionRequest",
+                "out_type": "EvaluateDecisionResponse"
               },
               {
                 "name": "DeployProcess",

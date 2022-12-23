@@ -84,7 +84,7 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public long getDecisionVersion() {
+  public int getDecisionVersion() {
     return decisionVersionProp.getValue();
   }
 

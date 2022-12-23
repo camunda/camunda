@@ -32,6 +32,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -198,6 +200,16 @@ public final class EndpointManager {
           ResponseMapper::toCreateProcessInstanceWithResultResponse,
           responseObserver);
     }
+  }
+
+  public void evaluateDecision(
+      final EvaluateDecisionRequest request,
+      final ServerStreamObserver<EvaluateDecisionResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toEvaluateDecisionRequest,
+        ResponseMapper::toEvaluateDecisionResponse,
+        responseObserver);
   }
 
   public void deployProcess(

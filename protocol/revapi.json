@@ -84,6 +84,32 @@
           "code": "java.method.removed",
           "old": "method java.util.Set<java.lang.Long> io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue::getActivatedElementInstanceKeys()",
           "justification": "This method had a wrong name. It was only used internally as it provides no value for others."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method long io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue::getDecisionVersion()",
+          "new": "method int io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue::getDecisionVersion()",
+          "justification": "This method returned the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue.Builder io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue.Builder::withDecisionVersion(long)",
+          "justification": "This method provided an input argument of the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method long io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::getDecisionVersion()",
+          "new": "method int io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::getDecisionVersion()",
+          "justification": "This method returned the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue io.camunda.zeebe.protocol.record.value.ImmutableEvaluatedDecisionValue::withDecisionVersion(long)",
+          "justification": "This method provided an input argument of the wrong type. The version property is unlikely to surpass MAX_INT. Furthermore, in many cases the JVM automatically converts long to int."
         }
       ]
     }

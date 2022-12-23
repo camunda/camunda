@@ -20,7 +20,12 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecision;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionInput;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluatedDecisionOutput;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.MatchedDecisionRule;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
@@ -30,6 +35,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
@@ -39,6 +45,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import java.util.Iterator;
 import org.agrona.DirectBuffer;
 
@@ -149,6 +156,76 @@ public final class ResponseMapper {
         .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
         .setVariables(bufferAsJson(brokerResponse.getVariablesBuffer()))
         .build();
+  }
+
+  public static EvaluateDecisionResponse toEvaluateDecisionResponse(
+      final long key, final DecisionEvaluationRecord brokerResponse) {
+
+    final EvaluateDecisionResponse.Builder responseBuilder =
+        EvaluateDecisionResponse.newBuilder()
+            .setDecisionId(brokerResponse.getDecisionId())
+            .setDecisionKey(brokerResponse.getDecisionKey())
+            .setDecisionName(brokerResponse.getDecisionName())
+            .setDecisionVersion(brokerResponse.getDecisionVersion())
+            .setDecisionRequirementsId(brokerResponse.getDecisionRequirementsId())
+            .setDecisionRequirementsKey(brokerResponse.getDecisionRequirementsKey());
+
+    for (final EvaluatedDecisionValue intermediateDecision :
+        brokerResponse.getEvaluatedDecisions()) {
+      final EvaluatedDecision.Builder evaluatedDecisionBuilder =
+          EvaluatedDecision.newBuilder()
+              .setDecisionId(intermediateDecision.getDecisionId())
+              .setDecisionKey(intermediateDecision.getDecisionKey())
+              .setDecisionName(intermediateDecision.getDecisionName())
+              .setDecisionVersion(intermediateDecision.getDecisionVersion())
+              .setDecisionType(intermediateDecision.getDecisionType())
+              .setDecisionOutput(intermediateDecision.getDecisionOutput());
+
+      intermediateDecision.getEvaluatedInputs().stream()
+          .map(
+              evaluatedInput ->
+                  EvaluatedDecisionInput.newBuilder()
+                      .setInputId(evaluatedInput.getInputId())
+                      .setInputName(evaluatedInput.getInputName())
+                      .setInputValue(evaluatedInput.getInputValue())
+                      .build())
+          .forEach(evaluatedInput -> evaluatedDecisionBuilder.addEvaluatedInputs(evaluatedInput));
+
+      intermediateDecision.getMatchedRules().stream()
+          .map(
+              matchedRule -> {
+                final MatchedDecisionRule.Builder matchedRuleBuilder =
+                    MatchedDecisionRule.newBuilder()
+                        .setRuleId(matchedRule.getRuleId())
+                        .setRuleIndex(matchedRule.getRuleIndex());
+
+                matchedRule.getEvaluatedOutputs().stream()
+                    .map(
+                        evaluatedOutput ->
+                            EvaluatedDecisionOutput.newBuilder()
+                                .setOutputId(evaluatedOutput.getOutputId())
+                                .setOutputName(evaluatedOutput.getOutputName())
+                                .setOutputValue(evaluatedOutput.getOutputValue())
+                                .build())
+                    .forEach(
+                        evaluatedOutput -> matchedRuleBuilder.addEvaluatedOutputs(evaluatedOutput));
+
+                return matchedRuleBuilder.build();
+              })
+          .forEach(
+              matchedDecisionRule -> evaluatedDecisionBuilder.addMatchedRules(matchedDecisionRule));
+
+      responseBuilder.addEvaluatedDecisions(evaluatedDecisionBuilder.build());
+    }
+
+    if (brokerResponse.getFailedDecisionId().isEmpty()) {
+      return responseBuilder.setDecisionOutput(brokerResponse.getDecisionOutput()).build();
+    } else {
+      return responseBuilder
+          .setFailedDecisionId(brokerResponse.getFailedDecisionId())
+          .setFailureMessage(brokerResponse.getEvaluationFailureMessage())
+          .build();
+    }
   }
 
   public static CancelProcessInstanceResponse toCancelProcessInstanceResponse(
