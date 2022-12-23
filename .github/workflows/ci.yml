@@ -189,7 +189,7 @@ jobs:
           - os: windows
             runner: windows-latest
           - os: linux
-            runner: [ self-hosted, linux, amd64, "4" ]
+            runner: [ self-hosted, linux, amd64 ]
           - os: linux
             runner: [ self-hosted, linux, arm64, "4" ]
             arch: arm64
