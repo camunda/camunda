@@ -37,6 +37,7 @@ public class ZeebeTaskDefinitionTest extends BpmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "type", false, true),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "retries", false, false, "3"));
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "retries", false, false, "3"),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "retryBackoff", false, false));
   }
 }

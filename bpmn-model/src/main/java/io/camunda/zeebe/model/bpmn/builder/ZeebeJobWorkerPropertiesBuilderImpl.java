@@ -56,6 +56,19 @@ public class ZeebeJobWorkerPropertiesBuilderImpl<B extends AbstractBaseElementBu
   }
 
   @Override
+  public B zeebeJobRetryBackoff(final String retryBackoff) {
+    final ZeebeTaskDefinition taskDefinition =
+        elementBuilder.getCreateSingleExtensionElement(ZeebeTaskDefinition.class);
+    taskDefinition.setRetryBackoff(retryBackoff);
+    return elementBuilder;
+  }
+
+  @Override
+  public B zeebeJobRetryBackoffExpression(final String expression) {
+    return zeebeJobRetryBackoff(elementBuilder.asZeebeExpression(expression));
+  }
+
+  @Override
   public B zeebeTaskHeader(final String key, final String value) {
     final ZeebeTaskHeaders taskHeaders =
         elementBuilder.getCreateSingleExtensionElement(ZeebeTaskHeaders.class);

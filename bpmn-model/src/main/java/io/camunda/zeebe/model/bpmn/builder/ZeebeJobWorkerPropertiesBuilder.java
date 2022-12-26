@@ -53,6 +53,10 @@ public interface ZeebeJobWorkerPropertiesBuilder<T> {
    */
   T zeebeJobRetriesExpression(final String expression);
 
+  T zeebeJobRetryBackoff(final String backoff);
+
+  T zeebeJobRetryBackoffExpression(final String expression);
+
   /**
    * Adds a custom task header for the job. Can be called multiple times.
    *

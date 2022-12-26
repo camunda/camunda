@@ -77,6 +77,19 @@
           "code": "java.method.removed",
           "old": "method java.util.List<java.lang.String> io.camunda.zeebe.model.bpmn.util.ModelUtil::getDuplicateMessageNames(java.util.stream.Stream<io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition>)",
           "justification": "Remove unused method"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method T io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerPropertiesBuilder<T>::zeebeJobRetryBackoff(java.lang.String)",
+          "justification": "Ignore new methods for user task properties builder."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method T io.camunda.zeebe.model.bpmn.builder.ZeebeJobWorkerPropertiesBuilder<T>::zeebeJobRetryBackoffExpression(java.lang.String)",
+          "justification": "Ignore new methods for user task properties builder."
         }
       ]
     }

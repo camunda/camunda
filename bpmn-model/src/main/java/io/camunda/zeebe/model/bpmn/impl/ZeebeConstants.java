@@ -19,6 +19,7 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_RETRIES = "retries";
   public static final String ATTRIBUTE_TYPE = "type";
+  public static final String ATTRIBUTE_RETRY_BACKOFF = "retryBackoff";
 
   public static final String ATTRIBUTE_KEY = "key";
   public static final String ATTRIBUTE_NAME = "name";

@@ -40,5 +40,9 @@ public final class TaskDefinitionTransformer {
         expressionLanguage.parseExpression(taskDefinition.getRetries());
 
     jobWorkerProperties.setRetries(retriesExpression);
+
+    Optional.ofNullable(taskDefinition.getRetryBackoff())
+        .map(expressionLanguage::parseExpression)
+        .ifPresent(jobWorkerProperties::setRetryBackOff);
   }
 }

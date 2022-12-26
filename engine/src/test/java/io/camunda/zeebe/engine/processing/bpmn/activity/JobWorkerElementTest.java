@@ -256,4 +256,63 @@ public final class JobWorkerElementTest {
 
     Assertions.assertThat(jobCreated.getValue()).hasRetries(8);
   }
+
+  @Test
+  public void shouldCreateJobWithRetryBackoff() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(t -> t.zeebeJobType("test").zeebeJobRetryBackoff("P14DT1H30M5.35S")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(jobCreated.getValue())
+        .hasRetryBackoff(
+            (long)
+                (5.35 * 1000 // seconds
+                    + 30 * 60 * 1000 // minutes
+                    + 1 * 60 * 60 * 1000 // hours
+                    + 14 * 24 * 60 * 60 * 1000 // days
+                ));
+  }
+
+  @Test
+  public void shouldCreateJobWithRetryBackoffExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            process(t -> t.zeebeJobType("test").zeebeJobRetryBackoffExpression("retryBackoff")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("retryBackoff", "P14DT1H30M5.35S")
+            .create();
+
+    // then
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    Assertions.assertThat(jobCreated.getValue())
+        .hasRetryBackoff(
+            (long)
+                (5.35 * 1000 // seconds
+                    + 30 * 60 * 1000 // minutes
+                    + 1 * 60 * 60 * 1000 // hours
+                    + 14 * 24 * 60 * 60 * 1000 // days
+                ));
+  }
 }

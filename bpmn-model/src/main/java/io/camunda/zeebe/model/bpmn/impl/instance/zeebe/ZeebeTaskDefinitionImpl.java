@@ -29,6 +29,7 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
 
   protected static Attribute<String> typeAttribute;
   protected static Attribute<String> retriesAttribute;
+  protected static Attribute<String> retriesBackoffAttribute;
 
   public ZeebeTaskDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -54,6 +55,16 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
     retriesAttribute.setValue(this, retries);
   }
 
+  @Override
+  public String getRetryBackoff() {
+    return retriesBackoffAttribute.getValue(this);
+  }
+
+  @Override
+  public void setRetryBackoff(final String retryBackoff) {
+    retriesBackoffAttribute.setValue(this, retryBackoff);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -72,6 +83,12 @@ public class ZeebeTaskDefinitionImpl extends BpmnModelElementInstanceImpl
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_RETRIES)
             .defaultValue(ZeebeTaskDefinition.DEFAULT_RETRIES)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    retriesBackoffAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_RETRY_BACKOFF)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

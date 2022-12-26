@@ -48,6 +48,23 @@ public class JobWorkerElementValidationTest {
         process, expect(ZeebeTaskDefinition.class, "failed to parse expression 'invalid!'"));
   }
 
+  @ParameterizedTest
+  @ArgumentsSource(JobWorkerElementBuilderProvider.class)
+  @DisplayName("element with invalid job retry backoff expression")
+  void invalidJobRetryBackoffExpression(final JobWorkerElementBuilder elementBuilder) {
+    final BpmnModelInstance process =
+        processWithElement(
+            elementBuilder,
+            element ->
+                element
+                    .zeebeJobType("task")
+                    .zeebeJobRetries("3")
+                    .zeebeJobRetryBackoffExpression("invalid!"));
+
+    ProcessValidationUtil.validateProcess(
+        process, expect(ZeebeTaskDefinition.class, "failed to parse expression 'invalid!'"));
+  }
+
   private BpmnModelInstance processWithElement(
       final JobWorkerElementBuilder elementBuilder,
       final Consumer<ZeebeJobWorkerElementBuilder<?>> taskModifier) {

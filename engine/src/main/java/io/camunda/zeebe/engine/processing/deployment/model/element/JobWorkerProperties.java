@@ -18,6 +18,7 @@ public class JobWorkerProperties {
 
   private Expression type;
   private Expression retries;
+  private Expression retryBackOff;
   private Expression assignee;
   private Expression candidateGroups;
   private Expression candidateUsers;
@@ -37,6 +38,14 @@ public class JobWorkerProperties {
 
   public void setRetries(final Expression retries) {
     this.retries = retries;
+  }
+
+  public Expression getRetryBackOff() {
+    return retryBackOff;
+  }
+
+  public void setRetryBackOff(final Expression retryBackOff) {
+    this.retryBackOff = retryBackOff;
   }
 
   public Expression getAssignee() {

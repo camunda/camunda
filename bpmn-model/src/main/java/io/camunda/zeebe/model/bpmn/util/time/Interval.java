@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.util.time;
 
+import io.camunda.zeebe.util.collection.Tuple;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.Period;
@@ -173,6 +174,28 @@ public class Interval implements TemporalAmount {
 
   private boolean isCalendarBased() {
     return !getPeriod().isZero() || getDuration().compareTo(ACCURATE_DURATION_UPPER_BOUND) >= 0;
+  }
+
+  /**
+   * Convert this interval in milliseconds
+   *
+   * @throws ArithmeticException in case of long overflow
+   * @return this interval converted to milliseconds
+   */
+  public long toTotalMilliseconds() {
+    final long durationMillis = getDuration().toMillis();
+    final Period innerPeriod = getPeriod();
+    final long periodMillis =
+        innerPeriod.getUnits().stream()
+            .map(
+                temporalUnit ->
+                    new Tuple<>(innerPeriod.get(temporalUnit), temporalUnit.getDuration()))
+            .mapToLong(
+                durationValuePair ->
+                    Math.multiplyExact(
+                        durationValuePair.getLeft(), durationValuePair.getRight().toMillis()))
+            .reduce(0, Math::addExact);
+    return Math.addExact(durationMillis, periodMillis);
   }
 
   /**

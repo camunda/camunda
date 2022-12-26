@@ -75,6 +75,8 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(ZeebeTaskDefinition::getType, ExpressionVerification::isMandatory)
             .hasValidExpression(
                 ZeebeTaskDefinition::getRetries, ExpressionVerification::isMandatory)
+            .hasValidExpression(
+                ZeebeTaskDefinition::getRetryBackoff, ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeCalledElement.class)

@@ -28,4 +28,8 @@ public interface ZeebeTaskDefinition extends BpmnModelElementInstance {
   String getRetries();
 
   void setRetries(String retries);
+
+  String getRetryBackoff();
+
+  void setRetryBackoff(final String retryBackoff);
 }

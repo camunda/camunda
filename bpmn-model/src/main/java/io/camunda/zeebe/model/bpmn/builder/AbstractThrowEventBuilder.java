@@ -252,6 +252,16 @@ public abstract class AbstractThrowEventBuilder<
   }
 
   @Override
+  public B zeebeJobRetryBackoff(final String backoff) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetryBackoff(backoff);
+  }
+
+  @Override
+  public B zeebeJobRetryBackoffExpression(final String expression) {
+    return jobWorkerPropertiesBuilder.zeebeJobRetryBackoffExpression(expression);
+  }
+
+  @Override
   public B zeebeTaskHeader(final String key, final String value) {
     return jobWorkerPropertiesBuilder.zeebeTaskHeader(key, value);
   }

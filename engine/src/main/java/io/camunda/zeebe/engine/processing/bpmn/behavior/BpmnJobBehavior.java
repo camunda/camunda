@@ -27,12 +27,14 @@ import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -95,6 +97,7 @@ public final class BpmnJobBehavior {
     return Either.<Failure, JobProperties>right(new JobProperties())
         .flatMap(p -> evalTypeExp(jobWorkerProps, scopeKey).map(p::type))
         .flatMap(p -> evalRetriesExp(jobWorkerProps, scopeKey).map(p::retries))
+        .flatMap(p -> evalRetryBackoffExp(jobWorkerProps, scopeKey).map(p::retryBackoff))
         .flatMap(p -> evalAssigneeExp(jobWorkerProps, scopeKey).map(p::assignee))
         .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups))
         .flatMap(p -> evalCandidateUsersExp(jobWorkerProps, scopeKey).map(p::candidateUsers));
@@ -110,6 +113,25 @@ public final class BpmnJobBehavior {
       final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
     final Expression retries = jobWorkerProperties.getRetries();
     return expressionBehavior.evaluateLongExpression(retries, scopeKey);
+  }
+
+  private Either<Failure, Long> evalRetryBackoffExp(
+      final JobWorkerProperties jobWorkerProperties, final long scopeKey) {
+    if (jobWorkerProperties.getRetryBackOff() == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior
+        .evaluateIntervalExpression(jobWorkerProperties.getRetryBackOff(), scopeKey)
+        .flatMap(
+            backoffInterval -> {
+              try {
+                return Either.right(backoffInterval.toTotalMilliseconds());
+              } catch (final ArithmeticException e) {
+                return Either.left(
+                    // TODO: Create a proper message
+                    new Failure(e.getMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
+              }
+            });
   }
 
   private Either<Failure, String> evalAssigneeExp(
@@ -161,6 +183,8 @@ public final class BpmnJobBehavior {
         .setProcessInstanceKey(context.getProcessInstanceKey())
         .setElementId(jobWorkerElement.getId())
         .setElementInstanceKey(context.getElementInstanceKey());
+
+    Optional.ofNullable(props.getRetryBackoff()).ifPresent(jobRecord::setRetryBackoff);
 
     final var jobKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(jobKey, JobIntent.CREATED, jobRecord);
@@ -216,6 +240,8 @@ public final class BpmnJobBehavior {
     private String candidateGroups;
     private String candidateUsers;
 
+    private Long retryBackoff;
+
     public JobProperties type(final String type) {
       this.type = type;
       return this;
@@ -259,6 +285,15 @@ public final class BpmnJobBehavior {
 
     public String getCandidateUsers() {
       return candidateUsers;
+    }
+
+    public JobProperties retryBackoff(final Long retryBackoff) {
+      this.retryBackoff = retryBackoff;
+      return this;
+    }
+
+    public Long getRetryBackoff() {
+      return retryBackoff;
     }
   }
 

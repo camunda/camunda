@@ -63,6 +63,23 @@ public class ZeebeJobWorkerElementValidationTest {
 
   @ParameterizedTest
   @MethodSource("jobWorkerElementBuilderProvider")
+  @DisplayName("element with job type, retries and retries backoff expression")
+  void validJobTypeRetriesAndRetriesBackoffExpression(
+      final JobWorkerElementBuilder elementBuilder) {
+    final BpmnModelInstance process =
+        processWithJobWorkerElement(
+            elementBuilder,
+            element ->
+                element
+                    .zeebeJobTypeExpression("serviceType")
+                    .zeebeJobRetriesExpression("jobRetries")
+                    .zeebeJobRetryBackoffExpression("jobRetryBackoff"));
+
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @ParameterizedTest
+  @MethodSource("jobWorkerElementBuilderProvider")
   @DisplayName("element with custom header")
   void validCustomHeader(final JobWorkerElementBuilder elementBuilder) {
 
