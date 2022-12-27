@@ -1,0 +1,19 @@
+# This workflow set up our default benchmark, triggered by our engineering process automation cluster. It creates the benchmark based on the
+# given branch.
+#
+name: Repo dispatch Benchmark
+
+on:
+  repository_dispatch: 
+    types: [qa_run_benchmark]
+
+jobs:
+  setup-normal-benchmark:
+    name: Setup normal benchmark
+    uses: ./.github/workflows/benchmark.yml
+    secrets: inherit
+    with:
+      name: ref: ${{ github.event.client_payload.name }}
+      ref: ${{ github.event.client_payload.cluster }}
+      cluster-region: europe-west1-b
+      ref: ${{ github.event.client_payload.branch }}
