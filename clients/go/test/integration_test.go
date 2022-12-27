@@ -132,6 +132,43 @@ func (s *integrationTestSuite) TestCreateInstance() {
 	s.Greater(processInstance.GetProcessInstanceKey(), int64(0))
 }
 
+func (s *integrationTestSuite) TestEvaluateDecision() {
+	// given
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	variables := "{\"lightsaberColor\":\"blue\"}"
+
+	deployment, err := s.client.NewDeployResourceCommand().AddResourceFile("testdata/drg-force-user.dmn").Send(ctx)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	deployedResource := deployment.GetDeployments()[0]
+	s.NotNil(deployedResource)
+	decision := deployedResource.GetDecision()
+	s.NotNil(decision)
+
+	// when
+	evalDecisionCommand, err := s.client.NewEvaluateDecisionCommand().DecisionId("jedi_or_sith").VariablesFromString(variables)
+	if err != nil {
+		s.T().Fatal(err)
+	}
+	evaluationResponse, err := evalDecisionCommand.Send(context.Background())
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	// then
+	s.EqualValues(evaluationResponse.GetDecisionId(), decision.GetDmnDecisionId())
+	s.EqualValues(evaluationResponse.GetDecisionKey(), decision.GetDecisionKey())
+	s.EqualValues(evaluationResponse.GetDecisionName(), decision.GetDmnDecisionName())
+	s.EqualValues(evaluationResponse.GetDecisionVersion(), decision.GetVersion())
+	s.EqualValues(evaluationResponse.GetDecisionRequirementsKey(), decision.GetDecisionRequirementsKey())
+	s.EqualValues(evaluationResponse.GetDecisionRequirementsId(), decision.GetDmnDecisionRequirementsId())
+	s.EqualValues(evaluationResponse.GetDecisionOutput(), "\"Jedi\"")
+	s.EqualValues(evaluationResponse.GetFailedDecisionId(), "")
+	s.EqualValues(evaluationResponse.GetFailureMessage(), "")
+}
+
 func (s *integrationTestSuite) TestActivateJobs() {
 	// given
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

@@ -172,6 +172,26 @@ func (mr *MockGatewayClientMockRecorder) CreateProcessInstanceWithResult(ctx, in
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProcessInstanceWithResult", reflect.TypeOf((*MockGatewayClient)(nil).CreateProcessInstanceWithResult), varargs...)
 }
 
+// EvaluateDecision mocks base method.
+func (m *MockGatewayClient) EvaluateDecision(ctx context.Context, in *pb.EvaluateDecisionRequest, opts ...grpc.CallOption) (*pb.EvaluateDecisionResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "EvaluateDecision", varargs...)
+	ret0, _ := ret[0].(*pb.EvaluateDecisionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EvaluateDecision indicates an expected call of EvaluateDecision.
+func (mr *MockGatewayClientMockRecorder) EvaluateDecision(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EvaluateDecision", reflect.TypeOf((*MockGatewayClient)(nil).EvaluateDecision), varargs...)
+}
+
 // DeployProcess mocks base method.
 func (m *MockGatewayClient) DeployProcess(ctx context.Context, in *pb.DeployProcessRequest, opts ...grpc.CallOption) (*pb.DeployProcessResponse, error) {
 	m.ctrl.T.Helper()
@@ -590,6 +610,21 @@ func (m *MockGatewayServer) CreateProcessInstanceWithResult(arg0 context.Context
 func (mr *MockGatewayServerMockRecorder) CreateProcessInstanceWithResult(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProcessInstanceWithResult", reflect.TypeOf((*MockGatewayServer)(nil).CreateProcessInstanceWithResult), arg0, arg1)
+}
+
+// EvaluateDecision mocks base method.
+func (m *MockGatewayServer) EvaluateDecision(arg0 context.Context, arg1 *pb.EvaluateDecisionRequest) (*pb.EvaluateDecisionResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "EvaluateDecision", arg0, arg1)
+	ret0, _ := ret[0].(*pb.EvaluateDecisionResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// EvaluateDecision indicates an expected call of EvaluateDecision.
+func (mr *MockGatewayServerMockRecorder) EvaluateDecision(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EvaluateDecision", reflect.TypeOf((*MockGatewayServer)(nil).EvaluateDecision), arg0, arg1)
 }
 
 // DeployProcess mocks base method.

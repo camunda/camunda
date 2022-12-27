@@ -92,6 +92,10 @@ func (c *ClientImpl) NewDeployResourceCommand() *commands.DeployResourceCommand 
 	return commands.NewDeployResourceCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
+func (c *ClientImpl) NewEvaluateDecisionCommand() commands.EvaluateDecisionCommandStep1 {
+	return commands.NewEvaluateDecisionCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
 func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
 	return commands.NewPublishMessageCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
