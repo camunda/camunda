@@ -13,7 +13,7 @@ jobs:
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
-      name: ref: ${{ github.event.client_payload.name }}
-      ref: ${{ github.event.client_payload.cluster }}
+      name: ${{ github.event.client_payload.name }}
+      cluster: ${{ github.event.client_payload.cluster }}
       cluster-region: europe-west1-b
       ref: ${{ github.event.client_payload.branch }}
