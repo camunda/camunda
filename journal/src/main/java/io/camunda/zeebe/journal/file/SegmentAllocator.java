@@ -41,4 +41,8 @@ public interface SegmentAllocator {
   static SegmentAllocator posix() {
     return new PosixSegmentAllocator();
   }
+
+  static SegmentAllocator linux() {
+    return new LinuxSegmentAllocator();
+  }
 }

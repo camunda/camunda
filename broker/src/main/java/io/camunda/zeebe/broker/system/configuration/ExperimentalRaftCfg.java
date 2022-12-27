@@ -83,7 +83,8 @@ public final class ExperimentalRaftCfg implements ConfigurationEntry {
   public enum PreAllocateStrategy {
     NOOP(SegmentAllocator.noop()),
     FILL(SegmentAllocator.fill()),
-    POSIX(SegmentAllocator.posix());
+    POSIX(SegmentAllocator.posix()),
+    LINUX(SegmentAllocator.linux());
 
     private final SegmentAllocator segmentAllocator;
 

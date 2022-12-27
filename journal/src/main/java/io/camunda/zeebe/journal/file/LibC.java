@@ -29,7 +29,15 @@ import jnr.ffi.types.off_t;
  */
 @SuppressWarnings({"checkstyle:methodname", "unused"})
 public interface LibC {
+  // https://man7.org/linux/man-pages/man3/posix_fallocate.3.html
   int posix_fallocate(final @In int fd, final @In @off_t long offset, final @In @off_t long len);
+
+  // https://man7.org/linux/man-pages/man2/fallocate.2.html
+  int fallocate(
+      final @In int fd,
+      final @In int mode,
+      final @In @off_t long offset,
+      final @In @off_t long len);
 
   /**
    * Returns an instance of LibC bound to the system's C library (e.g. glibc, musl, etc.).
@@ -61,6 +69,11 @@ public interface LibC {
 
     @Override
     public int posix_fallocate(final int fd, final long offset, final long len) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int fallocate(final int fd, final int mode, final long offset, final long len) {
       throw new UnsupportedOperationException();
     }
   }
