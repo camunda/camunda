@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.util;
 
 import com.google.protobuf.GeneratedMessageV3;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -36,6 +37,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest;
@@ -104,6 +107,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         ModifyProcessInstanceRequest.class,
         r -> ModifyProcessInstanceResponse.getDefaultInstance());
+    addRequestHandler(
+        EvaluateDecisionRequest.class, r -> EvaluateDecisionResponse.getDefaultInstance());
   }
 
   public static Partition partition(
@@ -235,6 +240,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
+  public void evaluateDecision(
+      final EvaluateDecisionRequest request,
+      final StreamObserver<EvaluateDecisionResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
   public void deployProcess(
       final DeployProcessRequest request,
       final StreamObserver<DeployProcessResponse> responseObserver) {
@@ -353,6 +365,11 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setVersion(version)
                 .setProcessInstanceKey(processInstanceKey)
                 .build());
+  }
+
+  public void onEvaluateDecisionRequest(
+      final GatewayOuterClass.EvaluateDecisionResponse evaluateDecisionResponse) {
+    addRequestHandler(EvaluateDecisionRequest.class, request -> evaluateDecisionResponse);
   }
 
   public void onPublishMessageRequest(final long key) {
