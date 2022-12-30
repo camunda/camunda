@@ -132,7 +132,7 @@ it('should render sidebar links', async () => {
       key: 'zeebe',
       label: 'Zeebe',
       ariaLabel: 'Zeebe',
-      routeProps: {},
+      routeProps: undefined,
       target: '_blank',
     },
     {
@@ -141,7 +141,7 @@ it('should render sidebar links', async () => {
       key: 'operate',
       label: 'Operate',
       ariaLabel: 'Operate',
-      routeProps: {},
+      routeProps: undefined,
       target: '_blank',
     },
     {
@@ -150,7 +150,9 @@ it('should render sidebar links', async () => {
       key: 'optimize',
       label: 'Optimize',
       ariaLabel: 'Optimize',
-      routeProps: {},
+      routeProps: {
+        to: '/',
+      },
       target: '_blank',
     },
   ]);

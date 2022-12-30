@@ -106,9 +106,7 @@ function createWebappLinks(webappLinks) {
     href,
     target: '_blank',
     active: key === 'optimize',
-    // For some reason tactive state is not passed to SideNavLink if there are no routeProps passed
-    // I made a fix for it, hopefully it will be added to next components version
-    routeProps: {},
+    routeProps: key === 'optimize' ? {to: '/'} : undefined,
   }));
 }
 
