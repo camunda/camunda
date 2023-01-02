@@ -255,6 +255,9 @@ test('exclude raw data columns', async (t) => {
   await t.click(e.selectSwitchLabel('Process Definition Key'));
   await t.click(e.selectSwitchLabel('Business Key'));
   await t.click(e.selectSwitchLabel('End Date'));
+
+  await t.click(e.selectSectionWithLabel('VARIABLES'));
+
   await t.click(e.selectSwitchLabel('approved'));
 
   await t.takeScreenshot('process-analysis/report-analysis/img/rawdata.png').maximizeWindow();

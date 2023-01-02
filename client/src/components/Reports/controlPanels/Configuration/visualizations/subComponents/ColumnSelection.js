@@ -28,7 +28,7 @@ const labels = {
 export default function ColumnSelection({report, onChange}) {
   const {data} = report;
   const [isSectionOpen, setIsSectionOpen] = useState(
-    Object.keys(labels).reduce((prev, key) => ({...prev, [key]: true}), {})
+    Object.keys(labels).reduce((prev, key) => ({...prev, [key]: false}), {})
   );
 
   const reportColumns = getReportResult(report)?.data[0];

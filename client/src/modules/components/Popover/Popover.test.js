@@ -120,7 +120,7 @@ it('should display tooltip on button', () => {
   expect(node.find('Tooltip')).toHaveProp('content', 'myTooltip');
 });
 
-it('should limit the height and show scrollbar when there is not space', () => {
+it('should limit the height and show scrollbar when there is no space', () => {
   const node = shallow(
     <Popover title="a">
       <p>Child content</p>
@@ -132,6 +132,11 @@ it('should limit the height and show scrollbar when there is not space', () => {
   };
 
   node.instance().popoverDialogRef = {
+    clientWidth: 50,
+    clientHeight: 200,
+  };
+
+  node.instance().popoverContentRef = {
     clientWidth: 50,
     clientHeight: 200,
   };
@@ -159,6 +164,11 @@ it('should not crash on pages without a footer', () => {
   };
 
   node.instance().popoverDialogRef = {
+    clientWidth: 50,
+    clientHeight: 200,
+  };
+
+  node.instance().popoverContentRef = {
     clientWidth: 50,
     clientHeight: 200,
   };
@@ -226,6 +236,11 @@ it('should flip the popover vertically if there is no enough space below when us
   node.instance().popoverDialogRef = {
     clientWidth: 50,
     clientHeight: 400,
+  };
+
+  node.instance().popoverContentRef = {
+    clientWidth: 50,
+    clientHeight: 200,
   };
 
   node.instance().calculateDialogStyle();

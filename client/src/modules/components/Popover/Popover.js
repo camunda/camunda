@@ -32,14 +32,14 @@ export default class Popover extends React.Component {
     document.body.appendChild(this.el);
     this.mounted = true;
     document.body.addEventListener('click', this.close, {capture: true});
-    new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
-    window.addEventListener('resize', this.fixPositioning);
+    new MutationObserver(this.handleResize).observe(this.el, {childList: true, subtree: true});
+    window.addEventListener('resize', this.handleResize);
   }
 
   componentWillUnmount() {
     document.body.removeChild(this.el);
     document.body.removeEventListener('click', this.close, {capture: true});
-    window.removeEventListener('resize', this.fixPositioning);
+    window.removeEventListener('resize', this.handleResize);
     this.mounted = false;
   }
 
@@ -54,6 +54,11 @@ export default class Popover extends React.Component {
 
     this.fixPositioning();
   }
+
+  handleResize = () => {
+    this.fixPositioning();
+    this.calculateDialogStyle();
+  };
 
   fixPositioning = () => {
     const {renderInPortal} = this.props;
@@ -88,8 +93,8 @@ export default class Popover extends React.Component {
         this.setState({
           open: false,
         });
-        this.calculateDialogStyle();
       }
+      this.calculateDialogStyle();
       evt.insideClick = false;
     });
   };
@@ -106,9 +111,10 @@ export default class Popover extends React.Component {
   calculateDialogStyle = () => {
     const style = {};
     let scrollable = false;
-    if (this.buttonRef && this.popoverDialogRef) {
+    if (this.buttonRef && this.popoverDialogRef && this.popoverContentRef) {
       const overlayWidth = this.popoverDialogRef.clientWidth;
       const overlayHeight = this.popoverDialogRef.clientHeight;
+      const contentHeight = this.popoverContentRef.clientHeight;
       const buttonRect = this.buttonRef.getBoundingClientRect();
       this.initilizeFooterRef();
       const footerTop = this.footerRef?.getBoundingClientRect().top ?? window.innerHeight;
@@ -123,7 +129,7 @@ export default class Popover extends React.Component {
         style.left = 0;
       }
 
-      if (overlayHeight + buttonRect.bottom > footerTop - margin) {
+      if (overlayHeight + buttonRect.bottom > footerTop - margin || contentHeight > overlayHeight) {
         style.height = footerTop - buttonRect.bottom - 2 * margin + 'px';
         scrollable = true;
       }
@@ -146,8 +152,8 @@ export default class Popover extends React.Component {
   };
 
   createOverlay = () => {
-    const {renderInPortal} = this.props;
-    const {dialogStyles} = this.state;
+    const {renderInPortal, children} = this.props;
+    const {dialogStyles, scrollable} = this.state;
     let arrowStyles = {};
 
     if (dialogStyles.bottom) {
@@ -165,18 +171,16 @@ export default class Popover extends React.Component {
         // stop propagating the events to the document
         onClickCapture={this.catchClick}
       >
-        <span className="dialogArrowBorder" style={arrowStyles}>
-          {' '}
-        </span>
+        <span className="dialogArrowBorder" style={arrowStyles} />
         <span className="dialogArrow" style={arrowStyles} />
-        <div className="dialogContainer" style={this.state.dialogStyles}>
+        <div className="dialogContainer" style={dialogStyles}>
           <div
             ref={this.storePopoverDialogRef}
             onMouseDown={this.onPopoverDialogMouseDown}
-            style={this.state.dialogStyles}
-            className={classnames('dialog', {scrollable: this.state.scrollable})}
+            style={dialogStyles}
+            className={classnames('dialog', {scrollable})}
           >
-            {this.props.children}
+            <div ref={this.storePopoverContentRef}>{children}</div>
           </div>
         </div>
       </div>
@@ -195,6 +199,10 @@ export default class Popover extends React.Component {
 
   storePopoverDialogRef = (node) => {
     this.popoverDialogRef = node;
+  };
+
+  storePopoverContentRef = (node) => {
+    this.popoverContentRef = node;
   };
 
   storePopoverRootRef = (node) => {
