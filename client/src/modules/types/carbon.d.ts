@@ -10,6 +10,7 @@ declare module '@carbon/react' {
     children: React.ReactNode;
     theme?: 'white' | 'g10' | 'g90' | 'g100';
   }>;
+  export const useTheme: any;
   export * from 'carbon-components-react';
 }
 

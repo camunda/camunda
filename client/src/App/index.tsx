@@ -31,6 +31,7 @@ import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {createBrowserHistory} from 'history';
+import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 
 const App: React.FC = () => {
   useEffect(() => {
@@ -42,6 +43,7 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider>
+      <ThemeSwitcher />
       <NotificationProvider>
         <GlobalStyles />
         <NetworkStatusWatcher />

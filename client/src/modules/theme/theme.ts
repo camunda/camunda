@@ -445,8 +445,9 @@ const theme = {
         buttonColor: SEMANTIC_COLORS.white,
       },
       dateRangePopover: {
-        titleColor: DARK_COLORS.ui04,
-        borderColor: LIGHT_COLORS.ui05,
+        titleColor: SEMANTIC_COLORS.white,
+        borderColor: LIGHT_COLORS.ui06,
+        color: LIGHT_COLORS.ui04,
       },
       modules: {
         badge: {
@@ -701,6 +702,7 @@ const theme = {
           },
           backgroundColor: DARK_COLORS.ui02,
           color: rgba(SEMANTIC_COLORS.white, 0.9),
+          borderColor: DARK_COLORS.button02,
         },
         instancesBar: {
           greyTextStyle: {
@@ -1382,6 +1384,7 @@ const theme = {
       dateRangePopover: {
         titleColor: DARK_COLORS.ui04,
         borderColor: LIGHT_COLORS.ui05,
+        color: LIGHT_COLORS.ui06,
       },
       modules: {
         badge: {
@@ -1635,6 +1638,7 @@ const theme = {
           },
           backgroundColor: LIGHT_COLORS.ui04,
           color: rgba(DARK_COLORS.ui03, 0.9),
+          borderColor: LIGHT_COLORS.ui03,
         },
         instancesBar: {
           greyTextStyle: {

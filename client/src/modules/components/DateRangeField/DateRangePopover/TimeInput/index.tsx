@@ -31,7 +31,6 @@ const TimeInput: React.FC<Props> = ({type, labelText}) => {
             }}
             placeholder="hh:mm:ss"
             data-testid={`${type}Time`}
-            light
             maxLength={8}
             autoComplete="off"
           />

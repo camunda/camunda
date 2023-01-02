@@ -163,9 +163,7 @@ const DateRangePopover: React.FC<Props> = ({
                     }
                   }}
                   dateFormat="Y-m-d"
-                  light
                   short
-                  style={{display: 'flex', flexDirection: 'column'}}
                   onOpen={() => {
                     setCalendarRef(
                       document.querySelector('.flatpickr-calendar')

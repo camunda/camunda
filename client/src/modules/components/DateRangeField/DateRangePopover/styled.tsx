@@ -30,10 +30,25 @@ const Body = styled.div`
 
   // Make Carbon input look similar to Operate's current style.
   // Can be removed, once Operate is carbonized (see #3629).
-  input {
-    border: 1px solid #b0bac7;
-    border-radius: 3px;
-  }
+  ${({theme}) => {
+    return css`
+      label {
+        color: ${theme.colors.dateRangePopover.color};
+      }
+
+      input {
+        border: 1px solid ${theme.colors.modules.input.borderColor};
+        border-radius: 3px;
+
+        background: ${theme.colors.modules.input.backgroundColor};
+        color: ${theme.colors.modules.input.color};
+        &::placeholder {
+          color: ${theme.colors.modules.input.placeholder.color};
+        }
+      }
+    `;
+  }}
+
   .cds--text-input-wrapper {
     width: 98px;
 
@@ -41,6 +56,10 @@ const Body = styled.div`
       margin-left: 1px;
     }
   }
+
+  .cds--layer-one {
+    background: unset;
+  }.
 `;
 
 const Footer = styled.div`
