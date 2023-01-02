@@ -37,6 +37,7 @@ class FeelEvaluationResult(
     case _: ValContext => ResultType.OBJECT
     case _: ValDayTimeDuration => ResultType.DURATION
     case _: ValYearMonthDuration => ResultType.PERIOD
+    case _: ValDate => ResultType.DATE
     case _: ValDateTime => ResultType.DATE_TIME
     case _: ValLocalDateTime => ResultType.DATE_TIME
     case _ => null
