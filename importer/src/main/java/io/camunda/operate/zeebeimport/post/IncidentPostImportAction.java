@@ -227,7 +227,7 @@ public class IncidentPostImportAction implements PostImportAction {
       throw new OperateRuntimeException(message, e);
     }
     if (logger.isDebugEnabled() && !listViewFlowNodeIndices.isEmpty()) {
-      logger.debug("Processing flow node instances: " + listViewFlowNodeIndices.keySet());
+      logger.debug("Processing flow node instances: " + listViewFlowNodeIndices.keySet() + " and incidents: " + incidentIds);
     }
 
     List<IncidentEntity> incidents = new ArrayList<>();

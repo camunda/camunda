@@ -244,6 +244,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         }
         refreshIndexesInElasticsearch();
         zeebeImporter.performOneRoundOfImportFor(readers);
+        refreshOperateESIndices();
         runPostImportActions();
 
       } catch (Exception e) {
@@ -257,6 +258,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         try {
           sleepFor(500);
           zeebeImporter.performOneRoundOfImportFor(readers);
+          refreshOperateESIndices();
           runPostImportActions();
 
         } catch (Exception e) {

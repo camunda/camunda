@@ -214,11 +214,11 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
   private void processIncidentRecords(final BulkRequest bulkRequest,
       final List<Record> zeebeRecords) throws PersistenceException {
     // old style
+    incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
     for (Record record : zeebeRecords) {
       listViewZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
       flowNodeInstanceZeebeRecordProcessor.processIncidentRecord(record, bulkRequest);
     }
-    incidentZeebeRecordProcessor.processIncidentRecord(zeebeRecords, bulkRequest);
     Map<Long, List<Record<IncidentRecordValue>>> groupedIncidentRecordsPerActivityInst = zeebeRecords
         .stream()
         .map(obj -> (Record<IncidentRecordValue>) obj).collect(Collectors.groupingBy(obj -> obj.getValue().getElementInstanceKey()));

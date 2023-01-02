@@ -211,10 +211,12 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
         throw new RuntimeException(e);
       }
     });
-    ThreadUtil.sleepFor(2000L);
+    elasticsearchTestRule.refreshOperateESIndices();
 
     //when
     elasticsearchTestRule.runPostImportActions();
+
+    elasticsearchTestRule.refreshOperateESIndices();
 
     //then
     //flow node instances pendingIncident = false

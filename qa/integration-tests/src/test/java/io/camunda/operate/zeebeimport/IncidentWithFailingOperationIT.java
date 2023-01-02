@@ -70,8 +70,7 @@ public class IncidentWithFailingOperationIT extends OperateZeebeIntegrationTest 
       if (count.get() < 4 ) {
         BulkRequest bulkRequest = invocation.getArgument(4);
         UpdateRequest updateRequest = new UpdateRequest().index("wrong_index").id("someId")
-            .doc(new HashMap<>())
-            .retryOnConflict(UPDATE_RETRY_COUNT);
+            .doc(new HashMap<>());
         bulkRequest.add(updateRequest);
         count.incrementAndGet();
       } else {
