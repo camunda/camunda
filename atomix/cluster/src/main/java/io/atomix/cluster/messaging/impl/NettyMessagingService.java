@@ -116,7 +116,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private volatile LocalClientConnection localConnection;
   private SslContext serverSslContext;
   private SslContext clientSslContext;
-  private final MessagingMetrics messagingMetrics = new MessagingMetrics();
+  private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
 
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {

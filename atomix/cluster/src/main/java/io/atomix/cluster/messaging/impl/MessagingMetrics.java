@@ -7,87 +7,23 @@
  */
 package io.atomix.cluster.messaging.impl;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import io.camunda.zeebe.util.CloseableSilently;
 
-final class MessagingMetrics {
+public interface MessagingMetrics {
 
-  private static final String NAMESPACE = "zeebe";
-  private static final String LABEL_TOPIC = "topic";
-  private static final String LABEL_ADDRESS = "address";
-  private static final String REQ_TYPE_MESSAGE = "MESSAGE";
-  private static final String REQ_TYPE_REQ_RESP = "REQ_RESP";
+  CloseableSilently startRequestTimer(String name);
 
-  private static final Histogram REQUEST_RESPONSE_LATENCY =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("messaging_request_response_latency")
-          .help("The time how long it takes to retrieve a response for a request")
-          .labelNames(LABEL_TOPIC)
-          .register();
+  void observeRequestSize(String to, String name, int requestSizeInBytes);
 
-  private static final Histogram REQUEST_SIZE_IN_KB =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("messaging_request_size_kb")
-          .help("The size of the request, which has been sent")
-          .labelNames(LABEL_ADDRESS, LABEL_TOPIC)
-          .buckets(.01, .1, .250, 1, 10, 100, 500, 1_000, 2_000, 4_000)
-          .register();
-  private static final Counter REQUEST_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("messaging_request_count")
-          .help("Number of requests which has been send to a certain address")
-          .labelNames("type", LABEL_ADDRESS, LABEL_TOPIC)
-          .register();
+  void countMessage(String to, String name);
 
-  private static final Counter RESPONSE_COUNT =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("messaging_response_count")
-          .help("Number of responses which has been received")
-          .labelNames(LABEL_ADDRESS, LABEL_TOPIC, "outcome")
-          .register();
+  void countRequestResponse(String to, String name);
 
-  private static final Gauge IN_FLIGHT_REQUESTS =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("messaging_inflight_requests")
-          .help("The count of inflight requests")
-          .labelNames(LABEL_ADDRESS, LABEL_TOPIC)
-          .register();
+  void countSuccessResponse(String address, String name);
 
-  Histogram.Timer startRequestTimer(final String name) {
-    return REQUEST_RESPONSE_LATENCY.labels(name).startTimer();
-  }
+  void countFailureResponse(String address, String name, String error);
 
-  void observeRequestSize(final String to, final String name, final int requestSizeInBytes) {
-    REQUEST_SIZE_IN_KB.labels(to, name).observe(requestSizeInBytes / 1_000f);
-  }
+  void incInFlightRequests(String address, String topic);
 
-  void countMessage(final String to, final String name) {
-    REQUEST_COUNT.labels(REQ_TYPE_MESSAGE, to, name).inc();
-  }
-
-  void countRequestResponse(final String to, final String name) {
-    REQUEST_COUNT.labels(REQ_TYPE_REQ_RESP, to, name).inc();
-  }
-
-  void countSuccessResponse(final String address, final String name) {
-    RESPONSE_COUNT.labels(address, name, "SUCCESS").inc();
-  }
-
-  void countFailureResponse(final String address, final String name, String error) {
-    RESPONSE_COUNT.labels(address, name, error).inc();
-  }
-
-  void incInFlightRequests(final String address, String topic) {
-    IN_FLIGHT_REQUESTS.labels(address, topic).inc();
-  }
-
-  void decInFlightRequests(final String address, String topic) {
-    IN_FLIGHT_REQUESTS.labels(address, topic).dec();
-  }
+  void decInFlightRequests(String address, String topic);
 }
