@@ -61,14 +61,14 @@ class ProcessesPage {
     },
 
     startDate: {
-      field: screen.queryByTestId('optional-filter-startDate'),
+      field: screen.queryByTestId('optional-filter-startDateRange'),
       value: within(
         screen.queryByTestId('optional-filter-startDate').shadowRoot()
       ).queryByRole('textbox'),
     },
 
     endDate: {
-      field: screen.queryByTestId('optional-filter-endDate'),
+      field: screen.queryByTestId('optional-filter-endDateRange'),
       value: within(
         screen.queryByTestId('optional-filter-endDate').shadowRoot()
       ).queryByRole('textbox'),

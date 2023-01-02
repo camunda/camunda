@@ -59,6 +59,7 @@ const DateRangeField: React.FC<Props> = observer(
       <>
         <div ref={textFieldRef}>
           <TextField
+            data-testid={`optional-filter-${filterName}`}
             label={label}
             type="button"
             fieldSuffix={{

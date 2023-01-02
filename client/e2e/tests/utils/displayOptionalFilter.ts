@@ -14,8 +14,8 @@ type OptionalFilter =
   | 'Parent Process Instance Key'
   | 'Operation Id'
   | 'Error Message'
-  | 'Start Date'
-  | 'End Date';
+  | 'Start Date Range'
+  | 'End Date Range';
 
 const displayOptionalFilter = async (filterName: OptionalFilter) => {
   await t
