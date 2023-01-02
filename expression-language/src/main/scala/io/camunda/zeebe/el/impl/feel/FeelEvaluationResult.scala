@@ -40,7 +40,7 @@ class FeelEvaluationResult(
     case _: ValDate => ResultType.DATE
     case _: ValDateTime => ResultType.DATE_TIME
     case _: ValLocalDateTime => ResultType.DATE_TIME
-    case _ => null
+    case _ => ResultType.UNKNOWN
   }
 
   override def toBuffer: DirectBuffer = messagePackTransformer(result)
