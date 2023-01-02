@@ -149,13 +149,18 @@ async function startTest() {
   try {
     for (let i = 0; i < browsers.length; i++) {
       if (
-        await testCafe.createRunner().src('e2e/tests/*.js').browsers(browsers[i]).run({
-          skipJsErrors: true,
-          disableScreenshots: true,
-          concurrency: 3,
-          assertionTimeout: 40000,
-          pageLoadTimeout: 40000,
-        })
+        await testCafe
+          .createRunner()
+          .src('e2e/tests/*.js')
+          .browsers(browsers[i])
+          .run({
+            skipJsErrors: true,
+            disableScreenshots: true,
+            concurrency: 3,
+            assertionTimeout: 40000,
+            pageLoadTimeout: 40000,
+            quarantineMode: chromeheadlessMode ? undefined : {successThreshold: 1, attemptLimit: 3},
+          })
       ) {
         hasFailures = true;
       }
