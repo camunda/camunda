@@ -17,18 +17,22 @@
 package io.atomix.cluster.messaging.impl;
 
 import io.netty.channel.Channel;
+import io.prometheus.client.Histogram.Timer;
 import java.util.concurrent.CompletableFuture;
 
 /** Client-side Netty remote connection. */
 final class RemoteClientConnection extends AbstractClientConnection {
   private final Channel channel;
+  private final MessagingMetrics messagingMetrics;
 
-  RemoteClientConnection(final Channel channel) {
+  RemoteClientConnection(final MessagingMetrics messagingMetrics, final Channel channel) {
+    this.messagingMetrics = messagingMetrics;
     this.channel = channel;
   }
 
   @Override
   public CompletableFuture<Void> sendAsync(final ProtocolRequest message) {
+    messagingMetrics.countMessage(channel.remoteAddress().toString(), message.subject());
     final CompletableFuture<Void> future = new CompletableFuture<>();
     channel
         .writeAndFlush(message)
@@ -46,6 +50,7 @@ final class RemoteClientConnection extends AbstractClientConnection {
   @Override
   public CompletableFuture<byte[]> sendAndReceive(final ProtocolRequest message) {
     final CompletableFuture<byte[]> responseFuture = awaitResponseForRequestWithId(message.id());
+    countMetrics(message, responseFuture);
     channel
         .writeAndFlush(message)
         .addListener(
@@ -55,6 +60,32 @@ final class RemoteClientConnection extends AbstractClientConnection {
               }
             });
     return responseFuture;
+  }
+
+  private void countMetrics(final ProtocolRequest message,
+      final CompletableFuture<byte[]> responseFuture) {
+    final String toAddress = channel.remoteAddress().toString();
+    final String subject = message.subject();
+    messagingMetrics.countRequestResponse(toAddress, subject);
+    messagingMetrics.incInFlightRequests(toAddress, subject);
+    final var timer = messagingMetrics.startRequestTimer(subject);
+    final byte[] payload = message.payload();
+    messagingMetrics.observeRequestSize(toAddress, subject, payload == null ? 0 : payload.length);
+
+    responseFuture.whenComplete(
+        (success, failure) -> {
+          timer.close();
+          messagingMetrics.decInFlightRequests(toAddress, subject);
+          if (failure != null) {
+            messagingMetrics.countFailureResponse(
+                toAddress,
+                subject,
+                failure.getClass().getName());
+          } else {
+            messagingMetrics.countSuccessResponse(
+                toAddress, subject);
+          }
+        });
   }
 
   @Override
