@@ -8,6 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
+import {track} from 'tracking';
 import {getOptimizeProfile, isEnterpriseMode} from 'config';
 
 import {isEventBasedProcessEnabled} from './service';
@@ -39,6 +40,8 @@ jest.mock('react-router', () => ({
     return {pathname: '/testroute'};
   }),
 }));
+
+jest.mock('tracking', () => ({track: jest.fn()}));
 
 function getNavItem(node, key) {
   const navItems = node.find('C3Navigation').prop('navbar').elements;
@@ -156,4 +159,12 @@ it('should render sidebar links', async () => {
       target: '_blank',
     },
   ]);
+});
+
+it('should track app clicks from the app switcher', async () => {
+  const node = shallow(<Header {...props} />);
+
+  node.find('C3Navigation').prop('appBar').elementClicked('modeler');
+
+  expect(track).toHaveBeenCalledWith('modeler:open');
 });

@@ -14,6 +14,7 @@ import {getOptimizeProfile, isEnterpriseMode, getWebappLinks} from 'config';
 import {withDocs, withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import {track} from 'tracking';
 
 import {isEventBasedProcessEnabled} from './service';
 import WhatsNewModal from './WhatsNewModal';
@@ -91,6 +92,9 @@ function createAppBarProps(webappLinks) {
     ariaLabel: t('navigation.appSwitcher'),
     isOpen: false,
     elements: createWebappLinks(webappLinks),
+    elementClicked: (app) => {
+      track(app + ':open');
+    },
   };
 }
 
