@@ -10,13 +10,14 @@ on:
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: ./.github/workflows/release.yml
+    uses: ./.github/workflows/release.yml@${{ github.event.client_payload.releaseBranch }}
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}
       nextDevelopmentVersion: ${{ github.event.client_payload.nextDevelopmentVersion }}
       isLatest: ${{ github.event.client_payload.isLatest }}
       dryRun: ${{ github.event.client_payload.dryRun }}
+      releaseBranch: ${{ github.event.client_payload.releaseBranch }}
   notify-if-failed:
     name: Send slack notification on failure
     runs-on: ubuntu-latest
