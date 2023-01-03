@@ -23,7 +23,13 @@
       "tasklist": "Tasklist",
       "optimize": "Optimize",
       "modeler": "Modeler"
-    }
+    },
+    "privacyPolicy": "Privacy policy",
+    "termsOfUse": "Terms of use",
+    "imprint": "Imprint",
+    "academy": "Camunda Academy",
+    "feedback": "Feedback and Support",
+    "slack": "Slack Community Channel"
   },
   "login": {
     "label": "Log in",

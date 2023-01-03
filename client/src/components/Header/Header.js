@@ -56,7 +56,7 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
   if (!noActions) {
     props.navbar = createNavBarProps(showEventBased, enterpriseMode);
-    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, docsLink);
+    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode);
     props.userSideBar = userSideBar;
   }
 
@@ -198,7 +198,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
   };
 }
 
-function createInfoSideBarProps(setWhatsNewOpen, docsLink) {
+function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
   return {
     type: 'info',
     ariaLabel: 'Info',
@@ -215,6 +215,31 @@ function createInfoSideBarProps(setWhatsNewOpen, docsLink) {
         label: t('navigation.userGuide'),
         onClick: () => {
           window.open(docsLink + 'components/what-is-optimize/', '_blank', 'noopener,noreferrer');
+        },
+      },
+      {
+        key: 'academy',
+        label: t('navigation.academy'),
+        onClick: () => {
+          window.open('https://academy.camunda.com/', '_blank');
+        },
+      },
+      {
+        key: 'feedbackAndSupport',
+        label: t('navigation.feedback'),
+        onClick: () => {
+          if (enterpriseMode) {
+            window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
+          } else {
+            window.open('https://forum.camunda.io/', '_blank');
+          }
+        },
+      },
+      {
+        key: 'slackCommunityChannel',
+        label: t('navigation.slack'),
+        onClick: () => {
+          window.open('https://camunda-slack-invite.herokuapp.com/', '_blank');
         },
       },
     ],
