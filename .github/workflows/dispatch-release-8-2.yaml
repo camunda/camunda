@@ -1,11 +1,11 @@
 # This workflow builds the release, triggered by our engineering process automation cluster. It creates the release based on the
 # given input.
 #
-name: Repo dispatch Release
+name: Repo dispatch Release 8.2
 
 on:
   repository_dispatch: 
-    types: [trigger_release]
+    types: [trigger_release_8_2]
 
 jobs:
   run-release:
