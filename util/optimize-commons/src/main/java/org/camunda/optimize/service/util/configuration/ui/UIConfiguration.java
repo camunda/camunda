@@ -10,7 +10,6 @@ import lombok.Data;
 @Data
 public class UIConfiguration {
 
-  private HeaderCustomization header;
   private boolean logoutHidden;
   private String mixpanelToken;
 }

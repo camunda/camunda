@@ -44,7 +44,6 @@ export const areTenantsAvailable = createAccessorFunction('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction('optimizeVersion');
 export const getWebappEndpoints = createAccessorFunction('webappsEndpoints');
 export const getWebappLinks = createAccessorFunction('webappsLinks');
-export const getHeader = createAccessorFunction('header');
 export const getWebhooks = createAccessorFunction('webhooks');
 export const getMixpanelConfig = createAccessorFunction('mixpanel');
 export const getOptimizeProfile = createAccessorFunction('optimizeProfile');

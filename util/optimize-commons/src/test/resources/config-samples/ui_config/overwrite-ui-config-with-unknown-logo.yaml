@@ -1,5 +1,0 @@
-ui:
-  header:
-    textColor: 'dark'
-    pathToLogoIcon: 'unknownIcon.svg'
-    backgroundColor: '#FFFFFF'

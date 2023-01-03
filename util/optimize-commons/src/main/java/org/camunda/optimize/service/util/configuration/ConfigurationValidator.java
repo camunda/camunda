@@ -16,7 +16,6 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.util.SuppressionConstants;
 
-import java.awt.Color;
 import java.io.InputStream;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -24,14 +23,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
-import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetriever.readLogoAsBase64;
 
 @Slf4j
 public class ConfigurationValidator {
@@ -59,7 +56,6 @@ public class ConfigurationValidator {
 
   public void validate(ConfigurationService configurationService) {
     validateNoDeprecatedConfigKeysUsed(configurationService.getConfigJsonContext());
-    validateUIConfiguration(configurationService);
     configurationService.getEmailAuthenticationConfiguration().validate();
     validateWebhooks(configurationService);
   }
@@ -73,7 +69,8 @@ public class ConfigurationValidator {
     final DocumentContext failsafeConfigurationJsonContext = JsonPath.using(conf)
       .parse((Object) configJsonContext.json());
 
-    final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet().stream()
+    final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet()
+      .stream()
       .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey()))
         // in case of array structures we always a list as result, thus we need to check if it contains actual results
         .flatMap(object -> object instanceof Collection && ((Collection<?>) object).isEmpty()
@@ -93,25 +90,6 @@ public class ConfigurationValidator {
       throw new OptimizeConfigurationException(
         "Configuration contains deprecated entries", usedDeprecationKeysWithNewDocumentationPath
       );
-    }
-  }
-
-  private void validateUIConfiguration(final ConfigurationService configurationService) {
-    // validate that icon can be read from the given logo icon path
-    final String pathToLogoIcon = configurationService.getUiConfiguration().getHeader().getPathToLogoIcon();
-    Objects.requireNonNull(readLogoAsBase64(pathToLogoIcon));
-    validateColorCode(configurationService);
-  }
-
-  private void validateColorCode(final ConfigurationService configurationService) {
-    String backgroundColor = configurationService.getUiConfiguration().getHeader().getBackgroundColor();
-    try {
-      Color.decode(backgroundColor);
-    } catch (NumberFormatException e) {
-      String message = String.format(
-        "The stated background color [%s] for the header customization is not valid. Please configure valid " +
-          "hexadecimal encoded color.", backgroundColor);
-      throw new OptimizeConfigurationException(message, e);
     }
   }
 

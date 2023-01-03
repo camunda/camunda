@@ -41,6 +41,15 @@
     .Table {
       min-width: 25%;
     }
+
+    .iconLink {
+      position: fixed;
+      height: 20px;
+      left: 10px;
+      bottom: 10px;
+      opacity: 0.5;
+      z-index: var(--z-above);
+    }
   }
 
   .OptimizeReport:hover {

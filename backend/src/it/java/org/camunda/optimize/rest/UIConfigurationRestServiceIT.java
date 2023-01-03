@@ -8,13 +8,11 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Sets;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.TenantDto;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.OnboardingConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
-import org.camunda.optimize.service.util.configuration.ui.TextColorType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -26,19 +24,6 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class UIConfigurationRestServiceIT extends AbstractIT {
-
-  @Test
-  public void getHeaderCustomization() {
-    // when
-    final UIConfigurationResponseDto actualConfiguration = uiConfigurationClient.getUIConfiguration();
-
-    // then
-    HeaderCustomizationDto configurationHeader = actualConfiguration.getHeader();
-    assertThat(configurationHeader).isNotNull();
-    assertThat(configurationHeader.getTextColor()).isEqualTo(TextColorType.DARK);
-    assertThat(configurationHeader.getBackgroundColor()).isEqualTo("#FFFFFF");
-    assertThat(configurationHeader.getLogo()).startsWith("data:");
-  }
 
   @Test
   public void logoutHidden() {

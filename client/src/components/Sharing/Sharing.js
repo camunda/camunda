@@ -25,7 +25,6 @@ import {
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
-import IconLink from './IconLink';
 import {evaluateEntity, createLoadReportCallback} from './service';
 
 import './Sharing.scss';
@@ -170,7 +169,16 @@ export class Sharing extends React.Component {
         )}
         <div className="content">
           {SharingView}
-          {isEmbedded && <IconLink href={this.getEntityUrl()} />}
+          {isEmbedded && (
+            <a
+              className="iconLink"
+              href={this.getEntityUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon type="optimize" size="20" />
+            </a>
+          )}
           {isEmbedded && isReport && <DiagramScrollLock />}
         </div>
       </div>

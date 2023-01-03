@@ -17,7 +17,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class UIConfigurationResponseDto {
 
-  private HeaderCustomizationDto header = new HeaderCustomizationDto();
   private boolean emailEnabled;
   private boolean sharingEnabled;
   private boolean tenantsAvailable;
