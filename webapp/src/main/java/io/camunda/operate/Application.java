@@ -89,7 +89,10 @@ public class Application {
     return Map.of(
         "server.servlet.session.cookie.name","OPERATE-SESSION",
         SPRING_THYMELEAF_PREFIX_KEY, SPRING_THYMELEAF_PREFIX_VALUE,
-        "spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER");
+        "spring.mvc.pathmatch.matching-strategy", "ANT_PATH_MATCHER",
+        // Return error messages for all endpoints by default, except for Internal API.
+        // Internal API error handling is defined in InternalAPIErrorController.
+        "server.error.include-message" , "always");
   }
 
   public static Map<String, Object> getManagementProperties() {

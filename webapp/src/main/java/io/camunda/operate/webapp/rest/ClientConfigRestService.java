@@ -6,12 +6,13 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class ClientConfigRestService {
+public class ClientConfigRestService extends InternalAPIErrorController {
 
   public static final String CLIENT_CONFIG_RESOURCE = "/client-config.js";
 

@@ -22,7 +22,7 @@ import static io.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
 @Tag(name = "Incidents statistics")
 @RestController
 @RequestMapping(value = INCIDENT_URL)
-public class IncidentRestService {
+public class IncidentRestService extends InternalAPIErrorController {
 
   public static final String INCIDENT_URL = "/api/incidents";
 

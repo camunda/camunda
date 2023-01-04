@@ -79,7 +79,7 @@ public class BackupService {
   private void validateBackupId(String backupId) {
     if (!pattern.matcher(backupId).matches()) {
       throw new InvalidRequestException(
-          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _].");
+          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _, ].");
     }
   }
 

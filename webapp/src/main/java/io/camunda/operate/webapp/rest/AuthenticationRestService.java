@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.webapp.rest;
 
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.exception.UserNotFoundException;
 import io.camunda.operate.webapp.security.UserService;
@@ -18,7 +19,7 @@ import static io.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTIC
 
 @RestController
 @RequestMapping(value = AUTHENTICATION_URL)
-public class AuthenticationRestService {
+public class AuthenticationRestService extends InternalAPIErrorController {
 
   public static final String AUTHENTICATION_URL = "/api/authentications";
   public static final String USER_ENDPOINT = "/user";

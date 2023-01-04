@@ -27,7 +27,7 @@ import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPE
 @Tag(name = "Batch operations")
 @RestController
 @RequestMapping(value = BATCH_OPERATIONS_URL)
-public class BatchOperationRestService {
+public class BatchOperationRestService extends InternalAPIErrorController {
 
   public static final String BATCH_OPERATIONS_URL = "/api/batch-operations";
 

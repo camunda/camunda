@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Operations")
 @RestController
 @RequestMapping(value = OPERATION_URL)
-public class OperationRestService {
+public class OperationRestService extends InternalAPIErrorController {
 
   public static final String OPERATION_URL = "/api/operations";
 

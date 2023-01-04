@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Processes")
 @RestController
 @RequestMapping(value = PROCESS_URL)
-public class ProcessRestService {
+public class ProcessRestService extends InternalAPIErrorController {
 
   @Autowired
   protected ProcessReader processReader;
