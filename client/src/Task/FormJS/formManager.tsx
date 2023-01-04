@@ -35,8 +35,7 @@ class FormManager {
       this.#form.attachTo(container);
       await this.#form.importSchema(schema, data);
       this.#schema = schema;
-    } catch (error) {
-      console.log(error);
+    } catch {
       onImportError();
     }
   };
