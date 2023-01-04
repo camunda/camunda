@@ -23,7 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 @Component
-@RestControllerEndpoint(id = "backup")
+@RestControllerEndpoint(id = "backups")
 public class BackupService extends ManagementAPIErrorController {
 
   @Autowired private BackupManager backupManager;
