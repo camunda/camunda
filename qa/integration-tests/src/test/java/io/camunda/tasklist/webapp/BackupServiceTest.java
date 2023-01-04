@@ -19,6 +19,7 @@ import static org.mockito.Mockito.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.JacksonConfig;
+import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.BackupProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -45,6 +46,7 @@ import org.elasticsearch.snapshots.SnapshotId;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.elasticsearch.snapshots.SnapshotState;
+import org.elasticsearch.transport.TransportException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -101,7 +103,7 @@ public class BackupServiceTest {
   @Test
   public void shouldFailCreateBackupOnWrongBackupId() {
     final String expectedMessage =
-        "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _].";
+        "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _, ].";
 
     Exception exception =
         assertThrows(
@@ -295,6 +297,55 @@ public class BackupServiceTest {
   }
 
   @Test
+  public void shouldFailCreateBackupOn1stRequestFailedWithConnectionError() throws IOException {
+    final String repoName = "repoName";
+    final String backupId = "backupid";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    when(snapshotClient.getRepository(any(), any()))
+        .thenThrow(new TransportException("Elastic is not available"));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    final Exception exception =
+        assertThrows(
+            TasklistElasticsearchConnectionException.class,
+            () -> {
+              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
+            });
+    final String expectedMessage =
+        String.format(
+            "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
+            repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+  }
+
+  @Test
+  public void shouldFailCreateBackupOn2ndRequestFailedWithConnectionError() throws IOException {
+    final String repoName = "repoName";
+    final String backupId = "backupid";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    when(snapshotClient.getRepository(any(), any())).thenReturn(null);
+    when(snapshotClient.get(any(), any()))
+        .thenThrow(new TransportException("Elastic is not available"));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    final Exception exception =
+        assertThrows(
+            TasklistElasticsearchConnectionException.class,
+            () -> {
+              backupService.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
+            });
+    final String expectedMessage =
+        String.format(
+            "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
+            repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+  }
+
+  @Test
   public void shouldFailCreateBackupOnBackupIdAlreadyExists() throws IOException {
     final String repoName = "repoName";
     final String backupid = "backupid";
@@ -342,6 +393,28 @@ public class BackupServiceTest {
     final String actualMessage = exception.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
     verify(esClient, times(1)).snapshot();
+  }
+
+  @Test
+  public void shouldFailGetStateOnConnectionError() throws IOException {
+    final String repoName = "repoName";
+    final String backupId = "backupid";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
+
+    final Exception exception =
+        assertThrows(
+            TasklistElasticsearchConnectionException.class,
+            () -> {
+              backupService.getBackupState(backupId);
+            });
+    final String expectedMessage =
+        String.format(
+            "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+            repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test
@@ -677,6 +750,27 @@ public class BackupServiceTest {
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
     assertThat(backupService.getBackups()).isEmpty();
+  }
+
+  @Test
+  public void shouldFailGetBackupsOnConnectionError() throws IOException {
+    final String repoName = "repoName";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
+
+    final Exception exception =
+        assertThrows(
+            TasklistElasticsearchConnectionException.class,
+            () -> {
+              backupService.getBackups();
+            });
+    final String expectedMessage =
+        String.format(
+            "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+            repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test

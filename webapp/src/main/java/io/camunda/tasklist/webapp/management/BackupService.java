@@ -11,7 +11,6 @@ import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
-import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import java.util.List;
@@ -25,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 @Component
 @RestControllerEndpoint(id = "backup")
-public class BackupService extends InternalAPIErrorController {
+public class BackupService extends ManagementAPIErrorController {
 
   @Autowired private BackupManager backupManager;
 
@@ -78,7 +77,7 @@ public class BackupService extends InternalAPIErrorController {
   private void validateBackupId(String backupId) {
     if (!pattern.matcher(backupId).matches()) {
       throw new InvalidRequestException(
-          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _].");
+          "BackupId must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >, /, ?, _, ].");
     }
   }
 }

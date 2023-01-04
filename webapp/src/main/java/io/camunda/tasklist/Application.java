@@ -99,7 +99,11 @@ public class Application {
         "server.servlet.session.cookie.name",
         TasklistURIs.COOKIE_JSESSIONID,
         SPRING_THYMELEAF_PREFIX_KEY,
-        SPRING_THYMELEAF_PREFIX_VALUE);
+        SPRING_THYMELEAF_PREFIX_VALUE,
+        // Return error messages for all endpoints by default, except for Internal API.
+        // Internal API error handling is defined in InternalAPIErrorController.
+        "server.error.include-message",
+        "always");
   }
 
   public static Map<String, Object> getManagementProperties() {

@@ -11,6 +11,7 @@ import static org.elasticsearch.snapshots.SnapshotState.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.backup.*;
@@ -46,6 +47,7 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotShardFailure;
+import org.elasticsearch.transport.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -200,6 +202,12 @@ public class BackupManager {
         new GetRepositoriesRequest().repositories(new String[] {repositoryName});
     try {
       final GetRepositoriesResponse repository = getRepository(getRepositoriesRequest);
+    } catch (IOException | TransportException ex) {
+      final String reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
+              repositoryName);
+      throw new TasklistElasticsearchConnectionException(reason, ex);
     } catch (Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
@@ -227,6 +235,12 @@ public class BackupManager {
     final GetSnapshotsResponse response;
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
+    } catch (IOException | TransportException ex) {
+      final String reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
+              getRepositoryName());
+      throw new TasklistElasticsearchConnectionException(reason, ex);
     } catch (Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
@@ -439,6 +453,12 @@ public class BackupManager {
     try {
       response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
       return response.getSnapshots();
+    } catch (IOException | TransportException ex) {
+      final String reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+              getRepositoryName());
+      throw new TasklistElasticsearchConnectionException(reason, ex);
     } catch (Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
@@ -492,6 +512,12 @@ public class BackupManager {
               .collect(toList());
 
       return responses;
+    } catch (IOException | TransportException ex) {
+      final String reason =
+          String.format(
+              "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
+              getRepositoryName());
+      throw new TasklistElasticsearchConnectionException(reason, ex);
     } catch (Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
