@@ -181,12 +181,17 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     // given
     OffsetDateTime now = DateCreationFreezer.dateFreezer().freezeDateAndReturn();
     OffsetDateTime twoWeeksAgo = now.minusWeeks(2L);
-    Long expectedDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
+    long expectedDuration = now.toInstant().toEpochMilli() - twoWeeksAgo.toInstant().toEpochMilli();
 
     ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleOneUserTasksDefinition();
     ProcessInstanceEngineDto runningInstanceOneWeek = engineIntegrationExtension.startProcessInstance(
       processDefinitionEngineDto.getId());
     engineDatabaseExtension.changeProcessInstanceStartDate(runningInstanceOneWeek.getId(), twoWeeksAgo);
+    engineDatabaseExtension.changeFlowNodeTotalDuration(
+      runningInstanceOneWeek.getId(),
+      START_EVENT,
+      0L
+    );
     engineDatabaseExtension.changeFlowNodeStartDate(
       runningInstanceOneWeek.getId(),
       USER_TASK_1,
@@ -210,7 +215,7 @@ public class ProcessCsvExportServiceIT extends AbstractProcessDefinitionIT {
     expectedString = expectedString.replace("${PI_ID_1}", runningInstanceOneWeek.getId());
     expectedString = expectedString.replace("${PD_ID_1}", runningInstanceOneWeek.getDefinitionId());
     expectedString = expectedString.replace("${START_DATE_1}", twoWeeksAgo.toString());
-    expectedString = expectedString.replace("${DURATION}", expectedDuration.toString());
+    expectedString = expectedString.replace("${DURATION}", Long.toString(expectedDuration));
     expectedString = expectedString.replace("${USER_TASK_DURATION_1}", String.valueOf(userTaskDuration));
 
     // when
