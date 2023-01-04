@@ -5,7 +5,7 @@
   "homepage": ".",
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
-    "@camunda/camunda-composite-components": "^0.0.21",
+    "@camunda/camunda-composite-components": "^0.0.22",
     "@carbon/react": "^1.19.0",
     "@ibm/plex": "^6.1.1",
     "@ungap/structured-clone": "^1.0.1",
