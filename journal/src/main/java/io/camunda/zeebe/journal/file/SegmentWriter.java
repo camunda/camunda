@@ -41,7 +41,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** Segment writer. */
 final class SegmentWriter {
 
-  private final MappedByteBuffer buffer;
+  private MappedByteBuffer buffer;
   private final Segment segment;
   private final JournalIndex index;
   private final long firstIndex;
@@ -52,8 +52,9 @@ final class SegmentWriter {
   private final JournalRecordReaderUtil recordUtil;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   private final JournalRecordSerializer serializer = new SBESerializer();
-  private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
+  private MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
+  private final MappedByteBuffer origBuffer;
 
   SegmentWriter(
       final MappedByteBuffer buffer,
@@ -66,6 +67,7 @@ final class SegmentWriter {
     recordUtil = new JournalRecordReaderUtil(serializer);
     this.index = index;
     firstIndex = segment.index();
+    origBuffer = buffer;
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
@@ -208,6 +210,7 @@ final class SegmentWriter {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
+    buffer = origBuffer;
     buffer.position(descriptorLength);
     buffer.mark();
     int position = buffer.position();
@@ -271,6 +274,7 @@ final class SegmentWriter {
 
   void flush() {
     buffer.force();
+    buffer = buffer.slice();
   }
 
   void close() {
