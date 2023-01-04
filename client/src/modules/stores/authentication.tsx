@@ -42,7 +42,7 @@ class Authentication {
   handleLogin = async (username: string, password: string) => {
     const response = await request(Endpoints.Login, {
       method: 'POST',
-      body: new URLSearchParams({username, password}),
+      body: new URLSearchParams({username, password}).toString(),
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },

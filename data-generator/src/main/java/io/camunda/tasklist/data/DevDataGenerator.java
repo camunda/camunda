@@ -139,6 +139,7 @@ public class DevDataGenerator implements DataGenerator {
       startOrderProcess();
       startFlightRegistrationProcess();
       startSimpleProcess();
+      startBigFormProcess();
     }
   }
 
@@ -160,6 +161,10 @@ public class DevDataGenerator implements DataGenerator {
       payload = payloadUtil.readJSONStringFromClasspath("/large-payload.json");
     }
     ZeebeTestUtil.startProcessInstance(zeebeClient, "simpleProcess", payload);
+  }
+
+  private void startBigFormProcess() {
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "bigFormProcess", null);
   }
 
   private void startOrderProcess() {
@@ -209,6 +214,7 @@ public class DevDataGenerator implements DataGenerator {
     ZeebeTestUtil.deployProcess(zeebeClient, "orderProcess.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "registerPassenger.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "simpleProcess.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "bigFormProcess.bpmn");
   }
 
   public boolean shouldCreateData() {

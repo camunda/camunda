@@ -7,36 +7,29 @@
 
 import {useQuery, useMutation} from '@apollo/client';
 import {useParams, useLocation} from 'react-router-dom';
-
 import {GetTask, useTask} from 'modules/queries/get-task';
 import {CLAIM_TASK, ClaimTaskVariables} from 'modules/mutations/claim-task';
 import {
   UNCLAIM_TASK,
   UnclaimTaskVariables,
 } from 'modules/mutations/unclaim-task';
-import {Table, RowTH, TD, TR} from 'modules/components/Table';
+import {Table, LeftTD, RightTD, TR} from 'modules/components/Table';
 import {formatDate} from 'modules/utils/formatDate';
 import {TaskStates} from 'modules/constants/taskStates';
 import {
-  Container,
-  ClaimButton,
-  Hint,
-  Info,
-  AssigneeTD,
   Assignee,
-  Spinner,
+  ClaimButtonContainer,
+  HelperText,
+  AssigneeText,
 } from './styled';
 import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {FilterValues} from 'modules/constants/filterValues';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {useNotifications} from 'modules/notifications';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {Restricted} from 'modules/components/Restricted';
-import {getAssigneeName} from 'modules/utils/getAssigneeName';
-
 import {
   GET_CURRENT_USER,
   GetCurrentUser,
@@ -45,12 +38,30 @@ import {
   MAX_TASKS_PER_REQUEST,
   MAX_TASKS_DISPLAYED,
 } from 'modules/constants/tasks';
-import {getSortValues} from '../getSortValues';
+import {getSortValues} from 'modules/utils/getSortValues';
 import {tracking} from 'modules/tracking';
+import {useState} from 'react';
+import {notificationsStore} from 'modules/stores/notifications';
+import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+
+type AssignmentStatus =
+  | 'off'
+  | 'claiming'
+  | 'unclaiming'
+  | 'claimingSuccessful'
+  | 'unclaimingSuccessful';
+
+const ASSIGNMENT_TOGGLE_LABEL = {
+  claiming: 'Claiming...',
+  unclaiming: 'Unclaiming...',
+  claimingSuccessful: 'Claiming successful',
+  unclaimingSuccessful: 'Unclaiming successful',
+} as const;
 
 const Details: React.FC = () => {
   const {id = ''} = useParams<{id: string}>();
-
+  const [assignmentStatus, setAssignmentStatus] =
+    useState<AssignmentStatus>('off');
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -111,7 +122,6 @@ const Details: React.FC = () => {
 
   const {data, fetchMore} = useTask(id);
   const isLoading = (claimLoading || unclaimLoading) ?? false;
-  const notifications = useNotifications();
 
   if (data === undefined) {
     return null;
@@ -131,21 +141,29 @@ const Details: React.FC = () => {
   const handleClick = async () => {
     try {
       if (assignee !== null) {
+        setAssignmentStatus('unclaiming');
         await unclaimTask();
+        setAssignmentStatus('unclaimingSuccessful');
         tracking.track({eventName: 'task-unclaimed'});
       } else {
+        setAssignmentStatus('claiming');
         await claimTask();
+        setAssignmentStatus('claimingSuccessful');
         tracking.track({eventName: 'task-claimed'});
       }
     } catch (error) {
       const errorMessage = (error as Error).message ?? '';
 
+      setAssignmentStatus('off');
+
       if (shouldDisplayNotification(errorMessage)) {
-        notifications.displayNotification('error', {
-          headline: assignee
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: assignee
             ? 'Task could not be unclaimed'
             : 'Task could not be claimed',
-          description: getTaskAssignmentChangeErrorMessage(errorMessage),
+          subtitle: getTaskAssignmentChangeErrorMessage(errorMessage),
+          isDismissable: true,
         });
       }
 
@@ -156,61 +174,97 @@ const Details: React.FC = () => {
     }
   };
 
+  function getAsyncActionButtonStatus() {
+    if (isLoading || assignmentStatus !== 'off') {
+      const ACTIVE_STATES: AssignmentStatus[] = ['claiming', 'unclaiming'];
+
+      return ACTIVE_STATES.includes(assignmentStatus) ? 'active' : 'finished';
+    }
+
+    return 'inactive';
+  }
+
   return (
-    <Container>
+    <div>
       <Table data-testid="details-table">
         <tbody>
           <TR>
-            <RowTH>Task Name</RowTH>
-            <TD>{name}</TD>
+            <LeftTD>Task Name</LeftTD>
+            <RightTD>{name}</RightTD>
           </TR>
           <TR>
-            <RowTH>Process Name</RowTH>
-            <TD>{processName}</TD>
+            <LeftTD>Process Name</LeftTD>
+            <RightTD>{processName}</RightTD>
           </TR>
           <TR>
-            <RowTH>Creation Date</RowTH>
-            <TD>{formatDate(creationTime)}</TD>
+            <LeftTD>Creation Date</LeftTD>
+            <RightTD>{formatDate(creationTime)}</RightTD>
           </TR>
           {completionTime && (
             <TR>
-              <RowTH>Completion Date</RowTH>
-              <TD>{formatDate(completionTime)}</TD>
+              <LeftTD>Completion Date</LeftTD>
+              <RightTD>{formatDate(completionTime)}</RightTD>
             </TR>
           )}
 
           <TR>
-            <RowTH>Assignee</RowTH>
-            <AssigneeTD>
+            <LeftTD>Assignee</LeftTD>
+            <RightTD>
               <Assignee data-testid="assignee-task-details">
-                {getAssigneeName(assignee)}
+                <AssigneeText>
+                  {assignee ? (
+                    assignee
+                  ) : (
+                    <Restricted scopes={['write']}>
+                      <>
+                        Unassigned
+                        <HelperText>
+                          &nbsp;- claim task to work on this task.
+                        </HelperText>
+                      </>
+                    </Restricted>
+                  )}
+                </AssigneeText>
                 {taskState === TaskStates.Created && (
                   <Restricted scopes={['write']}>
-                    <ClaimButton
-                      variant="small"
-                      type="button"
-                      onClick={() => handleClick()}
-                      disabled={isLoading}
-                    >
-                      {isLoading && <Spinner data-testid="spinner" />}
-                      {assignee ? 'Unclaim' : 'Claim'}
-                    </ClaimButton>
+                    <ClaimButtonContainer>
+                      <AsyncActionButton
+                        inlineLoadingProps={{
+                          description:
+                            assignmentStatus === 'off'
+                              ? undefined
+                              : ASSIGNMENT_TOGGLE_LABEL[assignmentStatus],
+                          'aria-live': ['claiming', 'unclaiming'].includes(
+                            assignmentStatus,
+                          )
+                            ? 'assertive'
+                            : 'polite',
+                          onSuccess: () => {
+                            setAssignmentStatus('off');
+                          },
+                        }}
+                        buttonProps={{
+                          kind: assignee ? 'ghost' : 'primary',
+                          size: 'sm',
+                          type: 'button',
+                          onClick: handleClick,
+                          disabled: isLoading,
+                          autoFocus: true,
+                        }}
+                        status={getAsyncActionButtonStatus()}
+                        key={id}
+                      >
+                        {assignee ? 'Unclaim' : 'Claim'}
+                      </AsyncActionButton>
+                    </ClaimButtonContainer>
                   </Restricted>
                 )}
               </Assignee>
-              {!assignee && (
-                <Restricted scopes={['write']}>
-                  <Hint>
-                    <Info />
-                    Claim the Task to start working on it
-                  </Hint>
-                </Restricted>
-              )}
-            </AssigneeTD>
+            </RightTD>
           </TR>
         </tbody>
       </Table>
-    </Container>
+    </div>
   );
 };
 

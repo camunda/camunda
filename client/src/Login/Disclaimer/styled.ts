@@ -7,16 +7,17 @@
 
 import styled, {css} from 'styled-components';
 
-const Container = styled.div`
+const Container = styled.span`
   ${({theme}) => {
-    const colors = theme.colors.disclaimer.container;
-
     return css`
-      color: ${colors.color};
-      opacity: 0.9;
-      font-size: 12px;
-      margin-top: 35px;
-      width: 489px;
+      color: var(--cds-text-secondary);
+      text-align: center;
+      padding-top: ${theme.spacing05};
+
+      &,
+      & a {
+        ${theme.legal01};
+      }
     `;
   }}
 `;

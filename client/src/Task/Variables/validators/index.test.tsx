@@ -8,7 +8,7 @@
 import {
   validateNameCharacters,
   validateNameComplete,
-  validateNameNotDuplicate,
+  validateDuplicateNames,
   validateValueComplete,
   validateValueJSON,
 } from './index';
@@ -93,10 +93,10 @@ describe('Validators', () => {
     });
   });
 
-  describe('validateNameNotDuplicate', () => {
+  describe('validateDuplicateNames', () => {
     it('should validate', () => {
       expect(
-        validateNameNotDuplicate(
+        validateDuplicateNames(
           'test3',
           {
             '#test1': 'value1',
@@ -113,7 +113,7 @@ describe('Validators', () => {
       ).toBe(undefined);
 
       expect(
-        validateNameNotDuplicate(
+        validateDuplicateNames(
           'test2',
           {
             '#test1': 'value1',
@@ -133,7 +133,7 @@ describe('Validators', () => {
     it('should not validate', () => {
       ['test1', 'test2'].forEach((variableName) => {
         expect(
-          validateNameNotDuplicate(
+          validateDuplicateNames(
             variableName,
             {
               '#test1': 'value1',
@@ -153,7 +153,7 @@ describe('Validators', () => {
 
       ['test1', 'test2'].forEach((variableName) => {
         expect(
-          validateNameNotDuplicate(
+          validateDuplicateNames(
             variableName,
             {
               '#test1': 'value1',
@@ -173,7 +173,7 @@ describe('Validators', () => {
 
       ['test1', 'test2'].forEach((variableName) => {
         expect(
-          validateNameNotDuplicate(
+          validateDuplicateNames(
             variableName,
             {
               '#test1': 'value1',

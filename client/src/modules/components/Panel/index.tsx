@@ -5,39 +5,36 @@
  * except in compliance with the proprietary license.
  */
 
-import * as React from 'react';
 import {Base, Header, Body, Footer} from './styled';
 
-interface Props {
+type Props = {
   children: React.ReactNode;
   title: string;
   footer?: string;
   className?: string;
-  hasTransparentBackground?: boolean;
   Icon?: React.ReactElement;
-}
+  variant?: 'background' | 'layer';
+};
 
 const Panel: React.FC<Props> = ({
   children,
   title,
   footer,
   className,
-  hasTransparentBackground,
   Icon,
+  variant = 'background',
 }) => {
   const hasFooter = footer !== undefined;
 
   return (
-    <Base className={className} hasFooter={hasFooter}>
+    <Base className={className} $hasFooter={hasFooter} $variant={variant}>
       {title !== undefined && (
         <Header>
           {title}
           {Icon}
         </Header>
       )}
-      <Body hasTransparentBackground={hasTransparentBackground}>
-        {children}
-      </Body>
+      <Body>{children}</Body>
       {hasFooter && <Footer>{footer}</Footer>}
     </Base>
   );

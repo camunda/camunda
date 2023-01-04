@@ -5,15 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
+function storeStateLocally(storageKey: 'hasCompletedTask', value: true): void;
+function storeStateLocally(storageKey: 'wasReloaded', value: boolean): void;
+function storeStateLocally(
+  storageKey: 'theme',
+  value: 'light' | 'dark' | 'system',
+): void;
 function storeStateLocally(storageKey: string, value: any) {
   localStorage.setItem(storageKey, JSON.stringify(value));
 }
 
+function clearStateLocally(
+  storageKey: 'hasCompletedTask' | 'wasReloaded' | 'theme',
+): void;
 function clearStateLocally(storageKey: string) {
   localStorage.removeItem(storageKey);
 }
 
-function getStateLocally(storageKey: string) {
+function getStateLocally(
+  storageKey: 'hasCompletedTask' | 'wasReloaded' | 'theme',
+): unknown;
+function getStateLocally(storageKey: string): unknown {
   const value = localStorage.getItem(storageKey);
 
   if (value === null) {

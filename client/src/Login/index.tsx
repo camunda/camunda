@@ -12,17 +12,25 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {Pages} from 'modules/constants/pages';
 import {
   Container,
-  FormContainer,
   CopyrightNotice,
   Logo,
   Title,
-  Button,
   Error,
-  LoadingOverlay,
+  Button,
+  LogoContainer,
+  FieldContainer,
 } from './styled';
-import {Input} from './Input';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 import {Disclaimer} from './Disclaimer';
+import {
+  TextInput,
+  PasswordInput,
+  Column,
+  Grid,
+  Stack,
+  InlineNotification,
+} from '@carbon/react';
+import {LoadingSpinner} from './LoadingSpinner';
 
 function stateHasReferrer(state: unknown): state is {referrer: Location} {
   if (typeof state === 'object' && state?.hasOwnProperty('referrer')) {
@@ -32,10 +40,10 @@ function stateHasReferrer(state: unknown): state is {referrer: Location} {
   return false;
 }
 
-interface FormValues {
+type FormValues = {
   username: string;
   password: string;
-}
+};
 
 const Login: React.FC = () => {
   const location = useLocation();
@@ -43,7 +51,7 @@ const Login: React.FC = () => {
   const {handleLogin} = authenticationStore;
 
   return (
-    <Container>
+    <Grid as={Container} condensed>
       <Form<FormValues>
         onSubmit={async ({username, password}) => {
           try {
@@ -62,7 +70,7 @@ const Login: React.FC = () => {
 
             if (response.status === 401) {
               return {
-                [FORM_ERROR]: 'Username and Password do not match',
+                [FORM_ERROR]: 'Username and password do not match',
               };
             }
 
@@ -75,57 +83,130 @@ const Login: React.FC = () => {
             };
           }
         }}
-      >
-        {({handleSubmit, form, submitError, dirtyFields}) => {
-          const {submitting} = form.getState();
+        validate={({username, password}) => {
+          const errors: {username?: string; password?: string} = {};
 
+          if (!username) {
+            errors.username = 'Username is required';
+          }
+
+          if (!password) {
+            errors.password = 'Password is required';
+          }
+
+          return errors;
+        }}
+      >
+        {({handleSubmit, submitError, submitting}) => {
           return (
-            <form onSubmit={handleSubmit}>
-              {submitting && (
-                <LoadingOverlay data-testid="login-loading-overlay" />
-              )}
-              <FormContainer>
-                <Logo />
+            <Column
+              as="form"
+              sm={4}
+              md={{
+                span: 4,
+                offset: 2,
+              }}
+              lg={{
+                span: 6,
+                offset: 5,
+              }}
+              xlg={{
+                span: 4,
+                offset: 6,
+              }}
+              onSubmit={handleSubmit}
+            >
+              <Stack>
+                <LogoContainer>
+                  <Logo aria-label="Camunda logo" />
+                </LogoContainer>
                 <Title>Tasklist</Title>
-                {submitError !== undefined && <Error>{submitError}</Error>}
-                <Field<FormValues['username']> name="username" type="text">
-                  {({input}) => (
-                    <Input
-                      {...input}
-                      id={input.name}
-                      label="Username"
-                      required
+              </Stack>
+              <Stack gap={3}>
+                <Error>
+                  {submitError && (
+                    <InlineNotification
+                      title={submitError}
+                      hideCloseButton
+                      kind="error"
+                      role="alert"
                     />
                   )}
-                </Field>
-                <Field<FormValues['password']> name="password" type="password">
-                  {({input}) => (
-                    <Input
-                      {...input}
-                      id={input.name}
-                      label="Password"
-                      required
-                    />
-                  )}
-                </Field>
+                </Error>
+                <FieldContainer>
+                  <Field<FormValues['username']> name="username" type="text">
+                    {({input, meta}) => (
+                      <TextInput
+                        {...input}
+                        onBlur={(event) => {
+                          input.onBlur(
+                            event as React.FocusEvent<HTMLElement, Element>,
+                          );
+                        }}
+                        onFocus={(event) => {
+                          input.onFocus(
+                            event as React.FocusEvent<HTMLElement, Element>,
+                          );
+                        }}
+                        name={input.name}
+                        id={input.name}
+                        onChange={input.onChange}
+                        labelText="Username"
+                        invalid={meta.error && meta.touched}
+                        invalidText={meta.error}
+                        placeholder="Username"
+                      />
+                    )}
+                  </Field>
+                </FieldContainer>
+                <FieldContainer>
+                  <Field<FormValues['password']>
+                    name="password"
+                    type="password"
+                  >
+                    {({input, meta}) => (
+                      <PasswordInput
+                        {...input}
+                        onBlur={(event) => {
+                          input.onBlur(
+                            event as React.FocusEvent<HTMLElement, Element>,
+                          );
+                        }}
+                        onFocus={(event) => {
+                          input.onFocus(
+                            event as React.FocusEvent<HTMLElement, Element>,
+                          );
+                        }}
+                        name={input.name}
+                        id={input.name}
+                        onChange={input.onChange}
+                        hidePasswordLabel="Hide password"
+                        showPasswordLabel="Show password"
+                        labelText="Password"
+                        invalid={meta.error && meta.touched}
+                        invalidText={meta.error}
+                        placeholder="Password"
+                      />
+                    )}
+                  </Field>
+                </FieldContainer>
                 <Button
                   type="submit"
-                  disabled={
-                    !form
-                      .getRegisteredFields()
-                      .every((field) => dirtyFields[field]) || submitting
-                  }
+                  disabled={submitting}
+                  renderIcon={submitting ? LoadingSpinner : undefined}
                 >
-                  Login
+                  {submitting ? 'Logging in' : 'Login'}
                 </Button>
-              </FormContainer>
-            </form>
+                <Disclaimer />
+              </Stack>
+            </Column>
           );
         }}
       </Form>
-      <Disclaimer />
-      <CopyrightNotice>{getCurrentCopyrightNoticeText()}</CopyrightNotice>
-    </Container>
+      <Column sm={4} md={8} lg={16} as={CopyrightNotice}>
+        {getCurrentCopyrightNoticeText()}
+      </Column>
+    </Grid>
   );
 };
 

@@ -17,6 +17,37 @@ const currentUser: User = {
   __typename: 'User',
 };
 
+const currentUserWithC8Links: User = {
+  userId: 'demo',
+  displayName: 'Demo User',
+  permissions: ['read', 'write'],
+  salesPlanType: null,
+  roles: [],
+  c8Links: [
+    {
+      name: 'operate',
+      link: 'https://link-to-operate',
+    },
+    {
+      name: 'tasklist',
+      link: 'https://link-to-tasklist',
+    },
+    {
+      name: 'modeler',
+      link: 'https://link-to-modeler',
+    },
+    {
+      name: 'optimize',
+      link: 'https://link-to-optimize',
+    },
+    {
+      name: 'console',
+      link: 'https://link-to-console',
+    },
+  ],
+  __typename: 'User',
+};
+
 const currentRestrictedUser: User = {
   userId: 'demo',
   displayName: 'Demo User',
@@ -54,4 +85,5 @@ export {
   currentRestrictedUser,
   currentUserWithOutRole,
   currentUserWithUnknownRole,
+  currentUserWithC8Links,
 };

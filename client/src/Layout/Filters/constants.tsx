@@ -7,23 +7,23 @@
 
 import {FilterValues} from 'modules/constants/filterValues';
 
-const OPTIONS = [
-  {
-    value: FilterValues.AllOpen,
-    label: 'All open',
+const OPTIONS = {
+  [FilterValues.AllOpen]: {
+    id: FilterValues.AllOpen,
+    text: 'All open',
   },
-  {
-    value: FilterValues.ClaimedByMe,
-    label: 'Claimed by me',
+  [FilterValues.ClaimedByMe]: {
+    id: FilterValues.ClaimedByMe,
+    text: 'Claimed by me',
   },
-  {
-    value: FilterValues.Unclaimed,
-    label: 'Unclaimed',
+  [FilterValues.Unclaimed]: {
+    id: FilterValues.Unclaimed,
+    text: 'Unclaimed',
   },
-  {
-    value: FilterValues.Completed,
-    label: 'Completed',
+  [FilterValues.Completed]: {
+    id: FilterValues.Completed,
+    text: 'Completed',
   },
-] as const;
+} as const;
 
 export {OPTIONS};

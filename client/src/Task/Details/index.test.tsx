@@ -6,7 +6,7 @@
  */
 
 import {Details} from '.';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
@@ -30,12 +30,20 @@ import {
   mockGetCurrentUser,
   mockGetCurrentRestrictedUser,
 } from 'modules/queries/get-current-user';
+import userEvent from '@testing-library/user-event';
+
+const UserName = () => {
+  const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+
+  return <div>{data?.currentUser.displayName}</div>;
+};
 
 const getWrapper = (id: string = '0') => {
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
     <ApolloProvider client={client}>
+      <UserName />
       <MockThemeProvider>
         <MemoryRouter initialEntries={[`/${id}`]}>
           <Routes>
@@ -50,8 +58,20 @@ const getWrapper = (id: string = '0') => {
 };
 
 describe('<Details />', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
   it('should render completed task details', async () => {
     mockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser.result.data));
+      }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskCompleted().result.data));
       }),
@@ -67,7 +87,7 @@ describe('<Details />', () => {
       'demo',
     );
     expect(
-      screen.queryByRole('button', {name: 'Unclaim'}),
+      screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
     expect(
       screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
@@ -75,9 +95,9 @@ describe('<Details />', () => {
     expect(
       screen.getByText(/2020-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
-    expect(
-      screen.queryByText('Claim the Task to start working on it'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
   });
 
   it('should render unclaimed task details', async () => {
@@ -96,18 +116,20 @@ describe('<Details />', () => {
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
     expect(
-      await screen.findByRole('button', {name: 'Claim'}),
+      await screen.findByRole('button', {name: /^claim$/i}),
     ).toBeInTheDocument();
 
     expect(screen.getByText('Nice Process')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent('--');
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
     expect(
       screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();
     expect(screen.queryByText('Completion Time')).not.toBeInTheDocument();
-    expect(
-      screen.getByText('Claim the Task to start working on it'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
   });
 
   it('should render unclaimed task and claim it', async () => {
@@ -129,34 +151,31 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper(),
     });
-    expect(
-      await screen.findByRole('button', {name: 'Claim'}),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText('Claim the Task to start working on it'),
-    ).toBeInTheDocument();
 
-    expect(screen.getByRole('button', {name: 'Claim'})).toBeEnabled();
+    await waitFor(() =>
+      expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
+        'Unassigned - claim task to work on this task.',
+      ),
+    );
 
-    fireEvent.click(screen.getByRole('button', {name: 'Claim'}));
-    expect(screen.getByRole('button', {name: 'Claim'})).toBeDisabled();
-    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    userEvent.click(await screen.findByRole('button', {name: /^claim$/i}));
 
     expect(
-      await screen.findByRole('button', {name: 'Unclaim'}),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeEnabled();
-    expect(screen.queryByTestId('spinner')).not.toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('button', {name: 'Claim'}),
+      screen.queryByRole('button', {name: /^claim$/i}),
     ).not.toBeInTheDocument();
+    expect(screen.getByText('Claiming...')).toBeInTheDocument();
+    expect(await screen.findByText('Claiming successful')).toBeInTheDocument();
+    expect(screen.queryByText('Claiming...')).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: /^unclaim$/i}),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Claiming successful')).not.toBeInTheDocument();
     expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
       'demo',
     );
-    expect(
-      screen.queryByText('Claim the Task to start working on it'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
   });
 
   it('should render claimed task and unclaim it', async () => {
@@ -182,32 +201,29 @@ describe('<Details />', () => {
     });
 
     expect(
-      await screen.findByRole('button', {name: 'Unclaim'}),
+      await screen.findByRole('button', {name: /^unclaim$/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
+
+    userEvent.click(screen.getByRole('button', {name: /^unclaim$/i}));
+
+    expect(screen.getByText('Unclaiming...')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Unclaiming successful'),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText('Claim the Task to start working on it'),
+      await screen.findByRole('button', {name: /^claim$/i}),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Unclaiming...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Unclaiming successful')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
-
-    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeEnabled();
-
-    fireEvent.click(screen.getByRole('button', {name: 'Unclaim'}));
-
-    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeDisabled();
-    expect(screen.getByTestId('spinner')).toBeInTheDocument();
-
-    expect(
-      await screen.findByRole('button', {name: 'Claim'}),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: 'Claim'})).toBeEnabled();
-    expect(screen.queryByTestId('spinner')).not.toBeInTheDocument();
-
-    expect(
-      screen.queryByRole('button', {name: 'Unclaim'}),
-    ).not.toBeInTheDocument();
-    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent('--');
-    expect(
-      screen.getByText('Claim the Task to start working on it'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
   });
 
   it('should not render `unclaim task` for restricted users', async () => {
@@ -236,17 +252,11 @@ describe('<Details />', () => {
     expect(await screen.findByText('demo')).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: 'Unclaim'}),
+      screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
   });
 
   it('should not render `claim task` for restricted users', async () => {
-    const UserName = () => {
-      const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-
-      return <div>{data?.currentUser.displayName}</div>;
-    };
-
     mockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
@@ -262,25 +272,19 @@ describe('<Details />', () => {
       }),
     );
 
-    render(
-      <>
-        <UserName />
-        <Details />
-      </>,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    render(<Details />, {
+      wrapper: getWrapper(),
+    });
 
     expect(await screen.findByText('Nice Process')).toBeInTheDocument();
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
     expect(
-      screen.queryByRole('button', {name: 'Claim'}),
+      screen.queryByRole('button', {name: /^claim$/i}),
     ).not.toBeInTheDocument();
 
-    expect(
-      screen.queryByText('Claim the Task to start working on it'),
-    ).not.toBeInTheDocument();
+    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
+      'Unassigned - claim task to work on this task.',
+    );
   });
 });

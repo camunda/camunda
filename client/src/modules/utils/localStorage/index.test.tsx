@@ -7,7 +7,7 @@
 
 import {storeStateLocally, getStateLocally, clearStateLocally} from '.';
 
-const KEY_NAME = 'someKey';
+const KEY_NAME = 'theme';
 
 describe('localStorage', () => {
   afterAll(() => {
@@ -15,7 +15,7 @@ describe('localStorage', () => {
   });
 
   it('should manage local storage', () => {
-    const data = {a: 1, b: 2};
+    const data = 'dark';
 
     expect(getStateLocally(KEY_NAME)).toEqual(null);
 

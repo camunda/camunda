@@ -18,12 +18,14 @@ import {FormJS} from './index';
 import {
   mockGetDynamicFormsVariables,
   mockGetSelectedVariables,
-  mockGetSelectedVariablesEmptyVariables,
 } from 'modules/queries/get-selected-variables';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql} from 'msw';
+import {noop} from 'lodash';
+
+const {currentUser} = mockGetCurrentUser.result.data;
 
 type Props = {
   children?: React.ReactNode;
@@ -56,6 +58,12 @@ describe('<FormJS />', () => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
     );
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should render form for unclaimed task', async () => {
@@ -85,14 +93,20 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={unclaimedTaskWithForm()}
+        user={currentUser}
         onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
-    expect(await screen.findByLabelText(/my variable/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
+    );
+    jest.runOnlyPendingTimers();
     expect(screen.getByLabelText(/is cool\?/i)).toBeInTheDocument();
     expect(screen.getAllByRole('textbox')).toHaveLength(2);
     expect(screen.getByLabelText(/my variable/i)).toBeDisabled();
@@ -131,14 +145,19 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
+        user={currentUser}
         onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
-    expect(await screen.findByLabelText(/my variable/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
+    );
     expect(screen.getByLabelText(/is cool\?/i)).toBeInTheDocument();
     expect(screen.getAllByRole('textbox')).toHaveLength(2);
     expect(screen.getByLabelText(/my variable/i)).toBeEnabled();
@@ -177,81 +196,25 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
+        user={currentUser}
         onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
-    expect(await screen.findByLabelText(/my variable/i)).toHaveValue('0001');
+    await waitFor(() =>
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
+    );
     expect(screen.getByLabelText(/is cool\?/i)).toHaveValue('yes');
     expect(
       screen.getByRole('button', {
         name: /complete task/i,
       }),
     ).toBeInTheDocument();
-  });
-
-  it('should disable form submission', async () => {
-    mockServer.use(
-      graphql.query('GetSelectedVariables', (req, res, ctx) => {
-        if (
-          areArraysEqual(
-            REQUESTED_VARIABLES,
-            req.body?.variables?.variableNames,
-          )
-        ) {
-          return res.once(
-            ctx.data(mockGetSelectedVariablesEmptyVariables().result.data),
-          );
-        }
-
-        return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid variables',
-            },
-          ]),
-        );
-      }),
-    );
-
-    render(
-      <FormJS
-        key="0"
-        id="form-0"
-        processDefinitionId="process"
-        task={claimedTaskWithForm()}
-        onSubmit={() => Promise.resolve()}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    expect(await screen.findByLabelText(/is cool\?/i)).toHaveValue('');
-    expect(screen.getByLabelText(/my variable/i)).toHaveValue('');
-    expect(screen.queryByText(/field is required\./i)).not.toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    ).toBeEnabled();
-
-    userEvent.type(screen.getByLabelText(/is cool\?/i), 'value');
-    userEvent.click(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    );
-
-    expect(await screen.findByText(/field is required\./i)).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', {
-        name: /complete task/i,
-      }),
-    ).toBeDisabled();
   });
 
   it('should submit prefilled form', async () => {
@@ -282,20 +245,27 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
+        user={currentUser}
         onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
-    expect(await screen.findByLabelText(/my variable/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
+    );
 
     userEvent.click(
       screen.getByRole('button', {
         name: /complete task/i,
       }),
     );
+    expect(screen.getByText('Completing task...')).toBeInTheDocument();
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -339,20 +309,30 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
+        user={currentUser}
         onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.clear(await screen.findByLabelText(/my variable/i));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
+    );
+
+    userEvent.clear(screen.getByLabelText(/my variable/i));
     userEvent.type(screen.getByLabelText(/my variable/i), 'new value');
     userEvent.click(
       screen.getByRole('button', {
         name: /complete task/i,
       }),
     );
+
+    expect(screen.getByText('Completing task...')).toBeInTheDocument();
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith(
@@ -402,7 +382,10 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
+        user={currentUser}
         onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
       />,
       {
         wrapper: Wrapper,

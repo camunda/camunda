@@ -5,23 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState} from 'react';
+import {useState} from 'react';
 import {Panel} from 'modules/components/Panel';
 import {
   ExpandedPanel,
   CollapsedPanel,
   Title,
-  CollapseButton,
-  LeftIcon,
   Container,
+  Expand,
+  Collapse,
 } from './styled';
+import {IconButton} from '@carbon/react';
 
-interface Props extends React.ComponentProps<typeof Panel> {
+type Props = {
   children: React.ReactNode;
   title: string;
   className?: string;
   isInitiallyCollapsed?: boolean;
-}
+} & React.ComponentProps<typeof Panel>;
 
 const CollapsablePanel: React.FC<Props> = ({
   isInitiallyCollapsed,
@@ -29,6 +30,9 @@ const CollapsablePanel: React.FC<Props> = ({
 }) => {
   const {title, children, className} = props;
   const [isCollapsed, setIsCollapsed] = useState(isInitiallyCollapsed ?? false);
+  const [shouldAutoFocus, setShouldAutoFocus] = useState(
+    isInitiallyCollapsed ?? false,
+  );
 
   return (
     <Container className={className}>
@@ -37,8 +41,26 @@ const CollapsablePanel: React.FC<Props> = ({
           data-testid="collapsed-panel"
           onClick={() => {
             setIsCollapsed(!isCollapsed);
+
+            if (!shouldAutoFocus) {
+              setShouldAutoFocus(true);
+            }
           }}
         >
+          <IconButton
+            data-testid="collapse-button"
+            onClick={() => {
+              setIsCollapsed(!isCollapsed);
+            }}
+            autoFocus
+            label="Expand task panel"
+            kind="ghost"
+            align="right"
+            size="sm"
+          >
+            <Expand />
+          </IconButton>
+
           <Title>{title}</Title>
         </CollapsedPanel>
       ) : (
@@ -46,14 +68,19 @@ const CollapsablePanel: React.FC<Props> = ({
           <Panel
             {...props}
             Icon={
-              <CollapseButton
+              <IconButton
                 data-testid="collapse-button"
                 onClick={() => {
                   setIsCollapsed(!isCollapsed);
                 }}
+                autoFocus={shouldAutoFocus}
+                label="Close task panel"
+                kind="ghost"
+                align="bottom"
+                size="sm"
               >
-                <LeftIcon />
-              </CollapseButton>
+                <Collapse />
+              </IconButton>
             }
           >
             {children}

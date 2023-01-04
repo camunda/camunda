@@ -5,121 +5,76 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {ReactComponent} from 'modules/icons/logo.svg';
-import {LoadingOverlay as BaseLoadingOverlay} from 'modules/components/LoadingOverlay';
+import {Button as BaseButton} from '@carbon/react';
+import {rem} from '@carbon/elements';
 
-const Button = styled.button`
-  cursor: pointer;
-  color: ${({theme}) => theme.colors.button.large.default.color};
-  font-weight: 600;
-  font-size: 18px;
-  width: 340px;
-  height: 48px;
-  background-color: ${({theme}) =>
-    theme.colors.button.large.default.backgroundColor};
-  border: 1px solid ${({theme}) => theme.colors.button.large.default.border};
-  border-radius: 3px;
-  text-align: center;
-
-  &:hover {
-    background-color: ${({theme}) =>
-      theme.colors.button.large.hover.backgroundColor};
-    border: 1px solid ${({theme}) => theme.colors.button.large.hover.border};
-  }
-
-  &:active {
-    color: ${({theme}) => theme.colors.button.large.active.color};
-    background-color: ${({theme}) =>
-      theme.colors.button.large.active.backgroundColor};
-    border: 1px solid ${({theme}) => theme.colors.button.large.active.border};
-  }
-
-  &:disabled {
-    color: ${({theme}) => theme.colors.button.large.disabled.color};
-    background-color: ${({theme}) =>
-      theme.colors.button.large.disabled.backgroundColor};
-    border: 1px solid ${({theme}) => theme.colors.button.large.disabled.border};
-    box-shadow: none;
-    cursor: not-allowed;
-  }
+const Button: typeof BaseButton = styled(BaseButton)`
+  ${({theme}) =>
+    css`
+      min-width: 100%;
+      margin-top: ${theme.spacing05};
+    `}
 `;
 
 const Container = styled.main`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
+  ${({theme}) =>
+    css`
+      height: 100%;
+      padding: ${theme.spacing03};
+    `}
 `;
 
 const CopyrightNotice = styled.span`
-  color: ${({theme}) => theme.colors.text.copyrightNotice};
-  font-size: 12px;
-  margin-top: auto;
-  padding-bottom: 8px;
-  padding-top: 70px;
+  ${({theme}) => css`
+    color: var(--cds-text-secondary);
+    text-align: center;
+    align-self: end;
+    ${theme.legal01};
+  `}
 `;
 
 const Error = styled.span`
-  width: 340px;
-  color: ${({theme}) => theme.colors.red};
-  font-size: 15px;
-  text-align: left;
-  font-weight: 500;
-  height: 15px;
+  ${({theme}) => css`
+    min-height: calc(${rem(48)} + ${theme.spacing06});
+    padding-bottom: ${theme.spacing06};
+  `}
+`;
+
+const LogoContainer = styled.div`
+  ${({theme}) =>
+    css`
+      text-align: center;
+      padding-top: ${theme.spacing12};
+      padding-bottom: ${theme.spacing02};
+    `}
 `;
 
 const Logo = styled(ReactComponent)`
-  fill: ${({theme}) => theme.colors.ui06};
+  color: var(--cds-icon-primary);
 `;
 
 const Title = styled.h1`
-  color: ${({theme}) => theme.colors.ui06};
-  font-weight: normal;
+  ${({theme}) => css`
+    padding-bottom: ${theme.spacing10};
+    text-align: center;
+    color: var(--cds-text-primary);
+    ${theme.productiveHeading05};
+  `}
 `;
 
-const FormContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  & > ${Logo} {
-    margin-top: 128px;
-  }
-
-  & > ${Title} {
-    margin-top: 12px;
-    margin-bottom: 53px;
-    font-size: 28px;
-  }
-
-  & > ${Error} {
-    margin-bottom: 10px;
-  }
-
-  & > div:first-of-type {
-    margin-bottom: 16px;
-  }
-
-  & > div:last-of-type {
-    margin-bottom: 32px;
-  }
-`;
-
-const LoadingOverlay = styled(BaseLoadingOverlay)`
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
+const FieldContainer = styled.div`
+  min-height: ${rem(84)};
 `;
 
 export {
   Logo,
   Title,
   Error,
-  FormContainer,
   CopyrightNotice,
   Container,
   Button,
-  LoadingOverlay,
+  LogoContainer,
+  FieldContainer,
 };

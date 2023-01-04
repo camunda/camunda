@@ -7,54 +7,180 @@
 
 /* istanbul ignore file */
 
-import styled from 'styled-components';
-interface Props {
-  isSelected: boolean;
+import {rem} from '@carbon/elements';
+import {Stack as BaseStack} from '@carbon/react';
+import {NavLink} from 'react-router-dom';
+import styled, {css} from 'styled-components';
+
+const ENTRY_DEFAULT_BORDER_WIDTH = 1;
+const ENTRY_SELECTED_BORDER_WIDTH = 4;
+const ENTRY_FOCUSED_BORDER_WIDTH = 2;
+
+function getEntryPadding(options?: {
+  top?: number;
+  right?: number;
+  bottom?: number;
+  left?: number;
+}) {
+  const {top = 0, right = 0, bottom = 0, left = 0} = options ?? {};
+
+  return css`
+    ${({theme}) =>
+      css`
+        padding: calc(${theme.spacing05} - ${top}px)
+          calc(${theme.spacing05} - ${right}px)
+          calc(${theme.spacing05} - ${bottom}px)
+          calc(${theme.spacing05} - ${left}px);
+      `}
+  `;
 }
-const Entry = styled.li<Props>`
+
+const Name = styled.span`
+  ${({theme}) =>
+    css`
+      color: var(--cds-text-primary);
+      ${theme.bodyShort02};
+    `}
+`;
+
+const Process = styled.span`
+  ${({theme}) => css`
+    color: var(--cds-text-secondary);
+    ${theme.label01};
+  `}
+`;
+
+const Assignee = styled.span`
+  ${({theme}) =>
+    css`
+      color: var(--cds-text-secondary);
+      ${theme.bodyShort01};
+    `}
+`;
+
+const CreationTime = styled.span`
+  ${({theme}) =>
+    css`
+      color: var(--cds-text-secondary);
+      ${theme.label01};
+    `}
+`;
+
+const Row = styled.div`
+  &:nth-child(1) {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &:nth-child(2) {
+    display: flex;
+    justify-content: space-between;
+  }
+`;
+
+const TaskLink = styled(NavLink)`
+  all: unset;
   display: flex;
-  flex-direction: column;
-  padding: 17px 20px 26px;
-  min-height: 87px;
-  justify-content: space-between;
-  border-bottom: 1px solid ${({theme}) => theme.colors.ui05};
-  background-color: ${({theme, isSelected}) =>
-    isSelected ? theme.colors.link.active : theme.colors.ui04};
+  align-items: stretch;
+  box-sizing: border-box;
+`;
+
+const Stack = styled(BaseStack)`
+  width: 100%;
+`;
+
+const Li = styled.li`
   cursor: pointer;
+
+  &.active ${TaskLink} {
+    background-color: var(--cds-layer-selected);
+    border-left: ${ENTRY_SELECTED_BORDER_WIDTH}px solid
+      var(--cds-border-interactive);
+    ${getEntryPadding({
+      left: ENTRY_SELECTED_BORDER_WIDTH,
+    })}
+  }
+
+  &.active:last-child ${TaskLink} {
+    ${getEntryPadding({
+      left: ENTRY_SELECTED_BORDER_WIDTH,
+    })}
+  }
+
+  &.active + & ${TaskLink}:not(:focus) {
+    border-top: none;
+    ${getEntryPadding()}
+  }
+
+  &:not(.active) {
+    &:hover ${TaskLink} {
+      background-color: var(--cds-layer-hover);
+    }
+
+    &:last-child ${TaskLink} {
+      border-bottom: ${ENTRY_DEFAULT_BORDER_WIDTH}px solid
+        var(--cds-border-subtle-selected);
+      ${getEntryPadding({
+        top: ENTRY_DEFAULT_BORDER_WIDTH,
+        bottom: ENTRY_DEFAULT_BORDER_WIDTH,
+      })}
+    }
+
+    & ${TaskLink} {
+      border-top: ${ENTRY_DEFAULT_BORDER_WIDTH}px solid
+        var(--cds-border-subtle-selected);
+      ${getEntryPadding({
+        top: ENTRY_DEFAULT_BORDER_WIDTH,
+      })}
+    }
+  }
+
+  & ${TaskLink}:focus {
+    border: none;
+    ${getEntryPadding()}
+    outline: ${ENTRY_FOCUSED_BORDER_WIDTH}px solid var(--cds-focus);
+    outline-offset: -${ENTRY_FOCUSED_BORDER_WIDTH}px;
+  }
+
+  &:last-child ${TaskLink}:focus {
+    ${getEntryPadding()}
+  }
+
+  &:first-child ${TaskLink} {
+    border-top-color: transparent;
+  }
 `;
-const TaskInfo = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-const TaskName = styled.div`
-  color: ${({theme}) => theme.colors.label01};
-  font-weight: 600;
-  font-size: 15px;
-  margin-bottom: 5px;
-`;
-const ProcessName = styled.div`
-  color: ${({theme}) => theme.colors.ui06};
-  font-size: 11px;
-`;
-const TaskStatus = styled.div`
-  display: flex;
-  justify-content: space-between;
-`;
-const Assignee = styled.div`
-  color: ${({theme}) => theme.colors.ui06};
-  font-size: 14px;
-`;
-const CreationTime = styled.div`
-  color: ${({theme}) => theme.colors.ui06};
-  font-size: 14px;
+
+const SkeletonLi = styled.li`
+  min-height: ${rem(128)};
+  max-height: ${rem(128)};
+
+  &:last-child > * {
+    border-bottom: ${ENTRY_DEFAULT_BORDER_WIDTH}px solid
+      var(--cds-border-subtle-selected);
+    ${getEntryPadding({
+      top: ENTRY_DEFAULT_BORDER_WIDTH,
+      bottom: ENTRY_DEFAULT_BORDER_WIDTH,
+    })}
+  }
+
+  & > * {
+    border-top: ${ENTRY_DEFAULT_BORDER_WIDTH}px solid
+      var(--cds-border-subtle-selected);
+    ${getEntryPadding({
+      top: ENTRY_DEFAULT_BORDER_WIDTH,
+    })}
+  }
 `;
 
 export {
-  Entry,
-  TaskInfo,
-  TaskName,
-  ProcessName,
-  TaskStatus,
+  Row,
+  Name,
+  Process,
   Assignee,
   CreationTime,
+  TaskLink,
+  Stack,
+  Li,
+  SkeletonLi,
 };

@@ -5,9 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import {theme} from './index';
+import {Union} from 'ts-toolbelt';
+import {themes} from './themes';
 
-type CustomTheme = typeof theme;
+type CustomTheme = Union.Merge<typeof themes.g10 | typeof themes.g100>;
 
 declare module 'styled-components' {
   export interface DefaultTheme extends CustomTheme {}

@@ -17,7 +17,7 @@ import {getCompleteTaskErrorMessage} from './getCompleteTaskErrorMessage';
 import {shouldFetchMore} from './shouldFetchMore';
 import {Variables} from './Variables';
 import {Details} from './Details';
-import {Container, LoadingOverlay} from './styled';
+import {Container} from './styled';
 import {
   GetCurrentUser,
   GET_CURRENT_USER,
@@ -28,15 +28,17 @@ import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {FilterValues} from 'modules/constants/filterValues';
-import {useNotifications} from 'modules/notifications';
 import {FormJS} from './FormJS';
 
 import {
   MAX_TASKS_PER_REQUEST,
   MAX_TASKS_DISPLAYED,
 } from 'modules/constants/tasks';
-import {getSortValues} from './getSortValues';
+import {getSortValues} from 'modules/utils/getSortValues';
 import {tracking} from 'modules/tracking';
+import {notificationsStore} from 'modules/stores/notifications';
+import {Skeleton} from './Skeleton';
+import {storeStateLocally} from 'modules/utils/localStorage';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -54,13 +56,11 @@ const Task: React.FC = () => {
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
-
   const {data: dataFromCache} = useQuery<GetTasks>(GET_TASKS, {
     fetchPolicy: 'cache-only',
   });
   const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
-
-  const {data, loading, fetchMore} = useTask(id);
+  const {fetchMore, data, loading} = useTask(id);
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
@@ -83,7 +83,6 @@ const Task: React.FC = () => {
       ],
     },
   );
-  const notifications = useNotifications();
   const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
 
   useEffect(() => {
@@ -95,61 +94,76 @@ const Task: React.FC = () => {
   async function handleSubmission(
     variables: Pick<Variable, 'name' | 'value'>[],
   ) {
-    try {
-      await completeTask({
-        variables: {
-          id,
-          variables,
-        },
-      });
+    await completeTask({
+      variables: {
+        id,
+        variables,
+      },
+    });
 
-      tracking.track({
-        eventName: 'task-completed',
-        isCamundaForm: formKey ? isCamundaForms(formKey) : false,
-      });
+    tracking.track({
+      eventName: 'task-completed',
+      isCamundaForm: formKey ? isCamundaForms(formKey) : false,
+    });
 
-      notifications.displayNotification('success', {
-        headline: 'Task completed',
-      });
+    notificationsStore.displayNotification({
+      kind: 'success',
+      title: 'Task completed',
+      isDismissable: true,
+    });
+  }
 
-      navigate({
-        pathname: Pages.Initial(),
-        search: location.search,
-      });
-    } catch (error) {
-      const errorMessage = (error as Error).message ?? '';
-      notifications.displayNotification('error', {
-        headline: 'Task could not be completed',
-        description: getCompleteTaskErrorMessage(errorMessage),
-      });
+  function handleSubmissionSuccess() {
+    storeStateLocally('hasCompletedTask', true);
+    navigate({
+      pathname: Pages.Initial(),
+      search: location.search,
+    });
+  }
 
-      // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
-      if (shouldFetchMore(errorMessage)) {
-        fetchMore({variables: {id}});
-      }
+  function handleSubmissionFailure(error: Error) {
+    const errorMessage = error.message;
+    notificationsStore.displayNotification({
+      kind: 'error',
+      title: 'Task could not be completed',
+      subtitle: getCompleteTaskErrorMessage(errorMessage),
+      isDismissable: true,
+    });
+
+    // TODO: this does not have to be a separate function, once we are able to use error codes we can move this inside getCompleteTaskErrorMessage
+    if (shouldFetchMore(errorMessage)) {
+      fetchMore({variables: {id}});
     }
   }
 
   return (
     <Container>
-      {loading && id !== undefined && (
-        <LoadingOverlay data-testid="details-overlay" />
-      )}
-      {data !== undefined && (
+      {loading && <Skeleton data-testid="details-skeleton" />}
+      {data !== undefined && userData !== undefined && (
         <>
           <Details />
           {typeof formKey === 'string' &&
           typeof processDefinitionId === 'string' &&
           isCamundaForms(formKey) ? (
             <FormJS
-              key={id}
+              key={data.task.id}
               task={data.task}
               id={getFormId(formKey)}
+              user={userData.currentUser}
               onSubmit={handleSubmission}
+              onSubmitSuccess={handleSubmissionSuccess}
+              onSubmitFailure={handleSubmissionFailure}
               processDefinitionId={processDefinitionId}
             />
           ) : (
-            <Variables key={id} task={data.task} onSubmit={handleSubmission} />
+            <Variables
+              key={data.task.id}
+              task={data.task}
+              user={userData.currentUser}
+              onSubmit={handleSubmission}
+              onSubmitSuccess={handleSubmissionSuccess}
+              onSubmitFailure={handleSubmissionFailure}
+            />
           )}
         </>
       )}

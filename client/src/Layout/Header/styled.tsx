@@ -10,6 +10,12 @@ import styled from 'styled-components';
 
 const InlineLink = styled(Link)`
   display: inline;
+  color: var(--cds-link-primary);
+
+  &:visited,
+  &:visited:hover {
+    color: var(--cds-link-primary);
+  }
 `;
 
 export {InlineLink};

@@ -12,18 +12,17 @@ import {Header} from './Header';
 import {Filters} from './Filters';
 import {Tasks} from './Tasks';
 import {Container, TasksPanel, DetailsPanel} from './styled';
-import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
 const Layout: React.FC = () => {
   return (
     <>
       <Header />
       <Container>
-        <TasksPanel title="Tasks" hasTransparentBackground>
+        <TasksPanel title="Tasks">
           <Filters />
           <Tasks />
         </TasksPanel>
-        <DetailsPanel title="Details" footer={getCurrentCopyrightNoticeText()}>
+        <DetailsPanel title="Details" variant="layer">
           <Outlet />
         </DetailsPanel>
       </Container>

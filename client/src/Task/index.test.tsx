@@ -22,7 +22,10 @@ import {
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {mockCompleteTask} from 'modules/mutations/complete-task';
-import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
+import {
+  mockGetAllOpenTasks,
+  mockGetAllOpenTasksUnclaimed,
+} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import userEvent from '@testing-library/user-event';
@@ -31,17 +34,18 @@ import {
   mockGetTaskVariables,
   mockGetTaskEmptyVariables,
 } from 'modules/queries/get-task-variables';
+import {mockGetSelectedVariables} from 'modules/queries/get-selected-variables';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
+import {notificationsStore} from 'modules/stores/notifications';
 
-const mockDisplayNotification = jest.fn();
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => ({
-    displayNotification: mockDisplayNotification,
-  }),
+jest.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
+  },
 }));
 
 const getWrapper = (
@@ -70,6 +74,15 @@ const getWrapper = (
 };
 
 describe('<Task />', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
+
   it('should render created task', async () => {
     mockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
@@ -79,7 +92,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+        return res(ctx.data(mockGetTaskVariables().result.data));
       }),
     );
 
@@ -103,8 +116,8 @@ describe('<Task />', () => {
       graphql.query('GetForm', (_, res, ctx) => {
         return res.once(ctx.data(mockGetForm.result.data));
       }),
-      graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskVariables().result.data));
+      graphql.query('GetSelectedVariables', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetSelectedVariables().result.data));
       }),
     );
 
@@ -112,9 +125,15 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    expect(await screen.findByTestId('details-table')).toBeInTheDocument();
-    expect(await screen.findByTestId('embedded-form')).toBeInTheDocument();
-    expect(await screen.findByText('Complete Task')).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('details-skeleton'),
+    );
+
+    expect(screen.getByTestId('details-table')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-form')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: /complete task/i}),
+    ).toBeInTheDocument();
   });
 
   it('should render completed task', async () => {
@@ -179,7 +198,7 @@ describe('<Task />', () => {
         const {state, assigned} = req.variables;
 
         if (state === 'CREATED' && assigned === undefined) {
-          return res(ctx.data(mockGetAllOpenTasks(true).result.data));
+          return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
         }
 
         return res.once(
@@ -199,14 +218,18 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    userEvent.click(await screen.findByText('Complete Task'));
+    userEvent.click(
+      await screen.findByRole('button', {name: /complete task/i}),
+    );
 
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent('/');
     });
 
-    expect(mockDisplayNotification).toHaveBeenCalledWith('success', {
-      headline: 'Task completed',
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'success',
+      title: 'Task completed',
+      isDismissable: true,
     });
   });
 
@@ -230,17 +253,28 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    userEvent.click(await screen.findByText('Complete Task'));
+    userEvent.click(
+      await screen.findByRole('button', {name: /complete task/i}),
+    );
+
+    expect(screen.getByText('Completing task...')).toBeInTheDocument();
+    expect(await screen.findByText('Completion failed')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-        headline: 'Task could not be completed',
-        description: 'Service is not reachable',
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Task could not be completed',
+        subtitle: 'Service is not reachable',
+        isDismissable: true,
       });
     });
+
+    expect(
+      await screen.findByRole('button', {name: /complete task/i}),
+    ).toBeInTheDocument();
   });
 
-  it('should show a loading spinner while loading', async () => {
+  it('should show a skeleton while loading', async () => {
     mockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
@@ -257,9 +291,11 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    expect(screen.getByTestId('details-overlay')).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('details-skeleton'),
+    );
 
-    await waitForElementToBeRemoved(screen.getByTestId('details-overlay'));
+    expect(screen.getByTestId('details-table')).toBeInTheDocument();
   });
 
   it('should reset variables', async () => {
@@ -276,29 +312,22 @@ describe('<Task />', () => {
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
       }),
-      graphql.query('GetTasks', (req, res, ctx) => {
-        const {state, assigned} = req.variables;
-
-        if (state === 'CREATED' && assigned === undefined) {
-          return res(ctx.data(mockGetAllOpenTasks(true).result.data));
-        }
-
+      graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid query',
-            },
-          ]),
+          ctx.data(mockGetAllOpenTasksUnclaimed(true).result.data),
         );
       }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
       }),
+      graphql.query('GetTasks', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
+      }),
       graphql.query('GetTask', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskClaimed('1').result.data));
+        return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetTaskEmptyVariables('1').result.data));
+        return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
       }),
     );
 
@@ -306,22 +335,19 @@ describe('<Task />', () => {
       wrapper: getWrapper(['/0']),
     });
 
-    userEvent.click(await screen.findByText(/Add Variable/));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
+    userEvent.click(await screen.findByRole('button', {name: /add variable/i}));
+    userEvent.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
+    userEvent.click(screen.getByRole('button', {name: /^unclaim$/i}));
+    userEvent.click(await screen.findByRole('button', {name: /^claim$/i}));
 
-    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
-    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
-
-    userEvent.click(screen.getByText('Unclaim'));
-    userEvent.click(await screen.findByText('Claim'));
-
-    expect(await screen.findByText('Unclaim')).toBeInTheDocument();
-
-    expect(screen.getByText(/Task has no Variables/)).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: /^unclaim$/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/task has no variables/i)).toBeInTheDocument();
   });
 
   it('should render created task with variables form', async () => {
@@ -346,8 +372,10 @@ describe('<Task />', () => {
 
     expect(await screen.findByTestId('details-table')).toBeInTheDocument();
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
-    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
-      headline: 'Invalid Form schema',
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: 'Invalid Form schema',
+      isDismissable: true,
     });
   });
 });

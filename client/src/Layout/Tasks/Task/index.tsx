@@ -7,20 +7,19 @@
 
 import React from 'react';
 import {
-  Entry,
-  TaskInfo,
-  TaskName,
-  ProcessName,
-  TaskStatus,
+  Row,
+  Name,
+  Process,
   Assignee,
   CreationTime,
+  TaskLink,
+  Stack,
+  Li,
 } from './styled';
-import {Link, useLocation, useMatch} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
 import {Task as TaskType} from 'modules/types';
-import {getAssigneeName} from 'modules/utils/getAssigneeName';
-
+import {useLocation, useMatch} from 'react-router-dom';
 interface Props {
   taskId: TaskType['id'];
   name: TaskType['name'];
@@ -29,38 +28,36 @@ interface Props {
   creationTime: TaskType['creationTime'];
 }
 
-const Task = React.forwardRef<HTMLLIElement, Props>(
+const Task = React.forwardRef<HTMLDivElement, Props>(
   ({taskId, name, processName, assignee, creationTime}, ref) => {
     const match = useMatch('/:id');
     const location = useLocation();
 
     return (
-      <Link
-        to={{
-          ...location,
-          pathname: Pages.TaskDetails(taskId),
-        }}
-      >
-        <Entry
-          ref={ref}
-          isSelected={match?.params?.id === taskId}
-          data-testid={`task-${taskId}`}
+      <Li className={match?.params?.id === taskId ? 'active' : undefined}>
+        <TaskLink
+          to={{
+            ...location,
+            pathname: Pages.TaskDetails(taskId),
+          }}
         >
-          <TaskInfo>
-            <TaskName>{name}</TaskName>
-            <ProcessName>{processName}</ProcessName>
-          </TaskInfo>
-          <TaskStatus>
-            <Assignee data-testid="assignee">
-              {getAssigneeName(assignee)}
-            </Assignee>
+          <Stack data-testid={`task-${taskId}`} gap={8} ref={ref}>
+            <Row>
+              <Name>{name}</Name>
+              <Process>{processName}</Process>
+            </Row>
+            <Row>
+              <Assignee data-testid="assignee">
+                {assignee ? assignee : '--'}
+              </Assignee>
 
-            <CreationTime data-testid="creation-time">
-              {formatDate(creationTime)}
-            </CreationTime>
-          </TaskStatus>
-        </Entry>
-      </Link>
+              <CreationTime data-testid="creation-time">
+                {formatDate(creationTime)}
+              </CreationTime>
+            </Row>
+          </Stack>
+        </TaskLink>
+      </Li>
     );
   },
 );

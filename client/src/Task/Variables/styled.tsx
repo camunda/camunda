@@ -5,13 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {ReactComponent as CrossIcon} from 'modules/icons/cross.svg';
-import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
-import {Button} from 'modules/components/Button';
-import {IconButton as BaseIconButton} from 'modules/components/IconButton';
-import {RowTH as BaseRowTH, ColumnTH, TD} from 'modules/components/Table';
-import {TextField} from './TextField';
+import {rem} from '@carbon/elements';
+import styled, {css} from 'styled-components';
+import {IconButton} from './IconButton';
 
 const Container = styled.div`
   display: grid;
@@ -24,75 +20,26 @@ const TableContainer = styled.div`
 `;
 
 const Body = styled.div`
-  display: grid;
+  display: flex;
+  flex-direction: column;
   overflow-y: hidden;
 `;
 
-const RowTH = styled(BaseRowTH)`
-  padding-top: 14px;
-  vertical-align: top;
-`;
-
-const VariableNameTH = styled(ColumnTH)`
-  position: sticky;
-  top: 0;
-  background-color: ${({theme}) => theme.colors.ui04};
-  width: 207px;
-`;
-
-const VariableValueTH = styled(ColumnTH)`
-  position: sticky;
-  top: 0;
-  background-color: ${({theme}) => theme.colors.ui04};
-`;
-
-const InputTD = styled(TD)`
-  vertical-align: top;
-
-  &:nth-child(1) {
-    padding: 4px 0 4px 9px;
-  }
-
-  &:nth-child(2) {
-    padding: 4px 0 4px 0;
-  }
-`;
-
-const IconTD = styled(TD)`
-  width: 50px;
-  vertical-align: top;
-  padding-top: 7px;
-  padding-bottom: 4px;
-`;
-
-const CreateButton = styled(Button)`
-  display: flex;
-  align-items: center;
-`;
-
 const EmptyMessage = styled.div`
-  margin: 12px 0 0 20px;
-  color: ${({theme}) => theme.colors.text.black};
-`;
-
-const Cross = styled(CrossIcon)`
-  color: ${({theme}) => theme.colors.ui07};
-  opacity: 0.9;
-  margin-top: 4px;
-`;
-
-const Plus = styled(PlusIcon)`
-  margin-right: 5px;
-`;
-
-const IconButton = styled(BaseIconButton)`
-  margin-right: 6px;
+  ${({theme}) =>
+    css`
+      margin: ${theme.spacing03} 0 0 ${theme.spacing05};
+      color: var(--cds-text-primary);
+      ${theme.bodyShort02};
+    `}
 `;
 
 const IconContainer = styled.div`
+  height: ${rem(36)};
+  min-width: ${rem(70)};
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
 `;
 
 type FormProps = {
@@ -103,22 +50,15 @@ type FormProps = {
 const Form = styled.form<FormProps>`
   display: grid;
   grid-template-columns: 100%;
-  grid-template-rows: ${({hasFooter}) => (hasFooter ? '1fr 62px' : '1fr')};
+  grid-template-rows: ${({hasFooter}) => (hasFooter ? '1fr auto' : '1fr')};
   overflow-y: hidden;
 `;
 
-const ValueContainer = styled.div`
-  max-height: 100px;
-  overflow-y: auto;
-`;
-
-const NameTextField = styled(TextField)`
-  width: 200px;
-  display: block;
-`;
-
-const ValueTextField = styled(TextField)`
-  display: block;
+const EmptyFieldsInformationIcon = styled(IconButton)`
+  ${({theme}) =>
+    css`
+      margin-right: ${theme.spacing01};
+    `}
 `;
 
 export {
@@ -126,18 +66,7 @@ export {
   Body,
   TableContainer,
   EmptyMessage,
-  Cross,
-  RowTH,
-  VariableNameTH,
-  VariableValueTH,
-  InputTD,
-  IconTD,
-  CreateButton,
-  Plus,
-  IconButton,
   IconContainer,
   Form,
-  ValueContainer,
-  NameTextField,
-  ValueTextField,
+  EmptyFieldsInformationIcon,
 };

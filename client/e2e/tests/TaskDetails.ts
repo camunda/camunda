@@ -36,9 +36,7 @@ test('load task details when a task is selected', async (t) => {
   const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t
-    .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Task Name'}).exists,
-    )
+    .expect(withinDetailsTable.getByRole('cell', {name: 'Task Name'}).exists)
     .ok()
     .expect(
       withinDetailsTable.getByRole('cell', {name: 'Some user activity'}).exists,
@@ -46,10 +44,7 @@ test('load task details when a task is selected', async (t) => {
     .ok();
 
   await t
-    .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Process Name'})
-        .exists,
-    )
+    .expect(withinDetailsTable.getByRole('cell', {name: 'Process Name'}).exists)
     .ok()
     .expect(
       withinDetailsTable.getByRole('cell', {name: 'usertask_to_be_completed'})
@@ -59,44 +54,35 @@ test('load task details when a task is selected', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Creation Date'})
-        .exists,
+      withinDetailsTable.getByRole('cell', {name: 'Creation Date'}).exists,
     )
     .ok();
 
   await t
-    .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Assignee'}).exists,
-    )
+    .expect(withinDetailsTable.getByRole('cell', {name: 'Assignee'}).exists)
     .ok()
     .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(
-      within(screen.getByTestId('assignee-task-details')).getByText('--')
-        .exists,
-    )
+    .expect(screen.getByText('Unassigned').exists)
     .ok();
 });
 
 test('claim and unclaim task', async (t) => {
-  const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
-
   await t.click(
-    withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
+    within(screen.getByTestId('expanded-panel'))
+      .getAllByText('usertask_to_be_completed')
+      .nth(0),
   );
 
-  await t.expect(screen.queryByTestId('details-table').exists).ok();
-
   await t
+    .expect(screen.queryByTestId('details-table').exists)
+    .ok()
     .expect(screen.getByRole('button', {name: 'Claim'}).exists)
     .ok()
     .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
-    .notOk();
-
-  await t.click(screen.getByRole('button', {name: 'Claim'}));
-
-  await t
-    .expect(await screen.findByRole('button', {name: 'Unclaim'}).exists)
+    .notOk()
+    .click(screen.getByRole('button', {name: 'Claim'}))
+    .expect(screen.findByRole('button', {name: 'Unclaim'}).exists)
     .ok()
     .expect(
       within(screen.getByTestId('assignee-task-details')).getByText('demo')
@@ -104,17 +90,11 @@ test('claim and unclaim task', async (t) => {
     )
     .ok()
     .expect(screen.getByRole('button', {name: 'Complete Task'}).exists)
-    .ok();
-
-  await t.click(screen.getByRole('button', {name: 'Unclaim'}));
-
-  await t
-    .expect(await screen.findByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(
-      within(screen.getByTestId('assignee-task-details')).getByText('--')
-        .exists,
-    )
+    .click(screen.getByRole('button', {name: 'Unclaim'}))
+    .expect(screen.findByRole('button', {name: 'Claim'}).exists)
+    .ok()
+    .expect(screen.getByText('Unassigned').exists)
     .ok()
     .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
     .notOk();
@@ -131,8 +111,7 @@ test('complete task', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.queryByRole('columnheader', {name: 'Completion Date'})
-        .exists,
+      withinDetailsTable.queryByRole('cell', {name: 'Completion Date'}).exists,
     )
     .notOk();
 
@@ -143,7 +122,9 @@ test('complete task', async (t) => {
     .click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(screen.getByText('Select a Task to view the details').exists)
+    .expect(
+      screen.queryByRole('heading', {name: 'Pick a task to work on.'}).exists,
+    )
     .ok();
 
   await t.navigateTo(currentUrl);
@@ -152,8 +133,7 @@ test('complete task', async (t) => {
 
   await t
     .expect(
-      withinDetailsTable.getByRole('columnheader', {name: 'Completion Date'})
-        .exists,
+      withinDetailsTable.getByRole('cell', {name: 'Completion Date'}).exists,
     )
     .ok();
 });
@@ -166,8 +146,8 @@ test('task completion with form', async (t) => {
     .typeText(screen.findByLabelText(/address/i), 'Earth')
     .typeText(screen.findByLabelText(/age/i), '21')
     .click(screen.getByRole('button', {name: /complete task/i}))
-    .click(screen.getByRole('combobox', {name: /filter/i}))
-    .click(screen.findByRole('option', {name: /completed/i}))
+    .click(screen.findByText('All open'))
+    .click(screen.findByText('Completed'))
     .click(screen.findByText(/^user registration$/i))
     .expect(screen.findByLabelText(/name/i).value)
     .eql('Jon')
@@ -187,8 +167,8 @@ test('task completion with form on Claimed by Me filter', async (t) => {
         .hasAttribute('disabled'),
     )
     .notOk()
-    .click(screen.getByRole('combobox', {name: /filter/i}))
-    .click(screen.findByRole('option', {name: /claimed by me/i}))
+    .click(screen.findByText('All open'))
+    .click(screen.findByText('Claimed by me'))
     .click(screen.findByText(/^user registration$/i))
     .typeText(screen.findByLabelText(/name/i), 'Gaius Julius Caesar')
     .typeText(screen.findByLabelText(/address/i), 'Rome')
@@ -206,8 +186,8 @@ test('task completion with prefilled form', async (t) => {
     .typeText(screen.findByLabelText(/address/i), 'Earth')
     .typeText(screen.findByDisplayValue(/50/i), '21', {replace: true})
     .click(screen.getByRole('button', {name: /complete task/i}))
-    .click(screen.getByRole('combobox', {name: /filter/i}))
-    .click(screen.findByRole('option', {name: /completed/i}))
+    .click(screen.findByText('All open'))
+    .click(screen.findByText('Completed'))
     .click(screen.findByText(/user registration with vars/i))
     .expect(screen.findByLabelText(/name/i).value)
     .eql('Jon')

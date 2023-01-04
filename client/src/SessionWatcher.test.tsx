@@ -10,14 +10,11 @@ import {render, waitFor} from '@testing-library/react';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {authenticationStore} from 'modules/stores/authentication';
 import {SessionWatcher} from './SessionWatcher';
+import {notificationsStore} from 'modules/stores/notifications';
 
-const mockDisplayNotification = jest.fn();
-
-jest.mock('modules/notifications', () => ({
-  useNotifications: () => {
-    return {
-      displayNotification: mockDisplayNotification,
-    };
+jest.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: jest.fn(() => () => {}),
   },
 }));
 
@@ -56,9 +53,14 @@ describe('SessionWatcher', () => {
     authenticationStore.disableSession();
 
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenNthCalledWith(1, 'info', {
-        headline: 'Session expired',
-      }),
+      expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
+        1,
+        {
+          kind: 'info',
+          title: 'Session expired',
+          isDismissable: true,
+        },
+      ),
     );
   });
 
@@ -72,9 +74,14 @@ describe('SessionWatcher', () => {
     });
     authenticationStore.disableSession();
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenNthCalledWith(1, 'info', {
-        headline: 'Session expired',
-      }),
+      expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
+        1,
+        {
+          kind: 'info',
+          title: 'Session expired',
+          isDismissable: true,
+        },
+      ),
     );
   });
 
@@ -85,7 +92,7 @@ describe('SessionWatcher', () => {
       }),
     });
     authenticationStore.disableSession();
-    expect(mockDisplayNotification).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
   });
 
   it('should display notification on initial login on task detail page', async () => {
@@ -96,9 +103,14 @@ describe('SessionWatcher', () => {
     });
     authenticationStore.disableSession();
     await waitFor(() =>
-      expect(mockDisplayNotification).toHaveBeenNthCalledWith(1, 'info', {
-        headline: 'Session expired',
-      }),
+      expect(notificationsStore.displayNotification).toHaveBeenNthCalledWith(
+        1,
+        {
+          kind: 'info',
+          title: 'Session expired',
+          isDismissable: true,
+        },
+      ),
     );
   });
 
@@ -111,11 +123,11 @@ describe('SessionWatcher', () => {
 
     // initial state
     authenticationStore.disableSession();
-    expect(mockDisplayNotification).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
 
     // after first login
     authenticationStore.activateSession();
     authenticationStore.disableSession();
-    expect(mockDisplayNotification).not.toHaveBeenCalled();
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalled();
   });
 });

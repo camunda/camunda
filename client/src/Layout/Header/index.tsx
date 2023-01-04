@@ -19,6 +19,8 @@ import {
 } from 'modules/queries/get-current-user';
 import {capitalize} from 'lodash';
 import {ArrowRight} from '@carbon/react/icons';
+import {themeStore} from 'modules/stores/theme';
+import {observer} from 'mobx-react-lite';
 
 const orderedApps = [
   'console',
@@ -28,8 +30,13 @@ const orderedApps = [
   'optimize',
 ] as const;
 
-const Header: React.FC = () => {
+type AppSwitcherElementType = NonNullable<
+  React.ComponentProps<typeof C3Navigation>['appBar']['elements']
+>[number];
+
+const Header: React.FC = observer(() => {
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+  const {selectedTheme, changeTheme} = themeStore;
   const {displayName, salesPlanType, c8Links} = data?.currentUser ?? {
     displayName: null,
     salesPlanType: null,
@@ -41,6 +48,21 @@ const Header: React.FC = () => {
     typeof orderedApps[number],
     string
   >;
+  const switcherElements = orderedApps
+    .map<AppSwitcherElementType | undefined>((appName) =>
+      parsedC8Links[appName] === undefined
+        ? undefined
+        : {
+            key: appName,
+            label: capitalize(appName),
+            href: parsedC8Links[appName],
+            target: '_blank',
+            active: appName === 'tasklist',
+            routeProps:
+              appName === 'tasklist' ? {to: Pages.Initial()} : undefined,
+          },
+    )
+    .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
 
   useEffect(() => {
     if (data?.currentUser) {
@@ -84,6 +106,7 @@ const Header: React.FC = () => {
                         <InlineLink
                           href="https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/"
                           target="_blank"
+                          inline
                         >
                           terms & conditions page
                         </InlineLink>{' '}
@@ -91,6 +114,7 @@ const Header: React.FC = () => {
                         <InlineLink
                           href="https://camunda.com/contact/"
                           target="_blank"
+                          inline
                         >
                           contact sales
                         </InlineLink>
@@ -106,17 +130,7 @@ const Header: React.FC = () => {
         type: 'app',
         ariaLabel: 'App Panel',
         isOpen: false,
-        elements: window.clientConfig?.organizationId
-          ? orderedApps.map((appName) => ({
-              key: appName,
-              label: capitalize(appName),
-              href: parsedC8Links[appName],
-              target: '_blank',
-              active: appName === 'tasklist',
-              routeProps:
-                appName === 'tasklist' ? {to: Pages.Initial()} : undefined,
-            }))
-          : [],
+        elements: window.clientConfig?.organizationId ? switcherElements : [],
         elementClicked: (app: string) => {
           tracking.track({
             eventName: 'app-switcher-item-clicked',
@@ -191,6 +205,7 @@ const Header: React.FC = () => {
             },
           },
         ],
+        version: process.env.REACT_APP_VERSION,
       }}
       userSideBar={{
         type: 'user',
@@ -203,10 +218,17 @@ const Header: React.FC = () => {
               email: '',
             },
           },
+          themeSelector: {
+            currentTheme: selectedTheme,
+            onChange: (theme: string) => {
+              changeTheme(theme as 'system' | 'dark' | 'light');
+            },
+          },
         },
         elements: [
-          ...(window.Osano?.cm !== undefined
-            ? [
+          ...(window.Osano?.cm === undefined
+            ? []
+            : [
                 {
                   key: 'cookie',
                   label: 'Cookie preferences',
@@ -221,8 +243,7 @@ const Header: React.FC = () => {
                     );
                   },
                 },
-              ]
-            : []),
+              ]),
           {
             key: 'terms',
             label: 'Terms of use',
@@ -277,6 +298,6 @@ const Header: React.FC = () => {
       }}
     />
   );
-};
+});
 
 export {Header};

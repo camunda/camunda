@@ -61,9 +61,7 @@ describe('<Tasks />', () => {
     render(<Tasks />, {wrapper: getWrapper()});
 
     expect(screen.queryByTestId('task-0')).not.toBeInTheDocument();
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
   });
 
@@ -78,9 +76,7 @@ describe('<Tasks />', () => {
 
     const [firstTask, secondTask] = mockGetAllOpenTasks().result.data.tasks;
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
 
     const withinFirstTask = within(screen.getByTestId('task-0'));
     const withinSecondTask = within(screen.getByTestId('task-1'));
@@ -115,7 +111,10 @@ describe('<Tasks />', () => {
 
     render(<Tasks />, {wrapper: getWrapper()});
 
-    expect(await screen.findByText('No Tasks available')).toBeInTheDocument();
+    expect(await screen.findByText('No tasks found')).toBeInTheDocument();
+    expect(
+      screen.getByText('There are no tasks matching your filter criteria.'),
+    ).toBeInTheDocument();
   });
 
   it('should show all tasks claimed by me', async () => {
@@ -132,9 +131,7 @@ describe('<Tasks />', () => {
       wrapper: getWrapper([`/?filter=${FilterValues.ClaimedByMe}`]),
     });
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
 
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
     expect(screen.getByTestId('task-1')).toBeInTheDocument();
@@ -152,9 +149,7 @@ describe('<Tasks />', () => {
       wrapper: getWrapper([`/?filter=${FilterValues.Unclaimed}`]),
     });
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
 
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
     expect(screen.getByTestId('task-1')).toBeInTheDocument();
@@ -172,16 +167,14 @@ describe('<Tasks />', () => {
       wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
     });
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
 
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
     expect(screen.getByTestId('task-1')).toBeInTheDocument();
     expect(screen.getByTestId('task-2')).toBeInTheDocument();
   });
 
-  it('should show the loading spinner while changing filters', async () => {
+  it('should show a skeleton while changing filters', async () => {
     mockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks().result.data));
@@ -195,18 +188,14 @@ describe('<Tasks />', () => {
       wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
     });
 
-    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('tasks-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
 
     userEvent.click(screen.getByRole('link', {name: /go home/i}));
 
-    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
+    expect(screen.getByTestId('tasks-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
   });
 });

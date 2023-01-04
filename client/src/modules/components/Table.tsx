@@ -5,49 +5,117 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {rgba} from 'polished';
+import {rem} from '@carbon/elements';
+import styled, {css} from 'styled-components';
 
-interface TRProps {
-  hasNoBorder?: boolean;
-}
+const LEFT_COLUMN_WIDTH = rem(198);
+const CELL_HEIGHT = rem(52);
 
 const Table = styled.table`
   width: 100%;
-  font-size: 14px;
   border-collapse: collapse;
 `;
 
-const RowTH = styled.th`
-  width: 198px;
-  padding: 12px 20px;
-  text-align: left;
-  color: ${({theme}) => rgba(theme.colors.ui07, 0.9)};
+const TH = styled.th`
+  ${({theme}) =>
+    css`
+      &:first-child {
+        width: ${LEFT_COLUMN_WIDTH};
+        min-width: ${LEFT_COLUMN_WIDTH};
+      }
+
+      min-height: calc(${CELL_HEIGHT} - ${theme.spacing05});
+      padding: 0 ${theme.spacing05};
+      display: grid;
+      align-items: center;
+      grid-template-rows: calc(${CELL_HEIGHT} - ${theme.spacing05}) 1fr;
+      text-align: left;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      color: var(--cds-text-primary);
+      ${theme.heading01};
+    `}
 `;
 
-const ColumnTH = styled.th`
-  font-weight: normal;
-  color: ${({theme}) => theme.colors.label01};
-  text-align: left;
-  padding: 12px 12px 7px 0;
-
-  &:first-child {
-    padding-left: 20px;
-  }
-  &:nth-child(2) {
-    padding-left: 4px;
-  }
+const OuterTD = styled.td`
+  ${({theme}) =>
+    css`
+      padding: 0 ${theme.spacing05};
+      display: flex;
+      align-items: flex-start;
+    `}
 `;
 
-const TD = styled.td`
-  padding: 12px;
-  color: ${({theme}) => theme.colors.ui06};
+const InnerTD = styled.span`
+  ${({theme}) => css`
+    min-height: calc(${CELL_HEIGHT} - ${theme.spacing05});
+    display: flex;
+    align-items: center;
+    text-align: left;
+    ${theme.bodyShort01};
+  `}
+`;
+
+const InnerLeftTD = styled(InnerTD)`
+  width: ${LEFT_COLUMN_WIDTH};
+  min-width: ${LEFT_COLUMN_WIDTH};
+  color: var(--cds-text-secondary);
+`;
+
+const LeftTD: React.FC<{className?: string; children?: React.ReactNode}> = ({
+  children,
+  className,
+}) => {
+  return (
+    <OuterTD className={className}>
+      <InnerLeftTD>{children}</InnerLeftTD>
+    </OuterTD>
+  );
+};
+
+const OuterRightTD = styled(OuterTD)`
+  width: 100%;
+`;
+
+const InnerRightTD = styled(InnerTD)`
+  width: 100%;
   word-break: break-all;
+  color: var(--cds-text-primary);
 `;
 
-const TR = styled.tr<TRProps>`
-  ${({hasNoBorder, theme}) =>
-    !hasNoBorder && `border-bottom: 1px solid ${theme.colors.ui05};`}
+const RightTD: React.FC<{
+  className?: string;
+  children?: React.ReactNode;
+  suffix?: React.ReactNode;
+}> = ({children, className, suffix}) => {
+  return (
+    <OuterRightTD className={className}>
+      <InnerRightTD>{children}</InnerRightTD>
+      {suffix}
+    </OuterRightTD>
+  );
+};
+
+const ScrollableContent = styled.span`
+  max-height: ${rem(100)};
+  overflow-y: auto;
 `;
 
-export {Table, RowTH, ColumnTH, TR, TD};
+type Props = {
+  $hideBorders?: boolean;
+};
+
+const TR = styled.tr<Props>`
+  ${({theme, $hideBorders}) => css`
+    display: flex;
+    padding: ${theme.spacing03} 0;
+    box-sizing: content-box;
+    ${!$hideBorders &&
+    css`
+      border-bottom: 1px solid var(--cds-border-subtle);
+    `}
+  `}
+`;
+
+export {Table, TH, LeftTD, TR, RightTD, ScrollableContent};

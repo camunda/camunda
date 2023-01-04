@@ -7,56 +7,50 @@
 
 /* istanbul ignore file */
 
-import styled from 'styled-components';
-import {ReactComponent as LeftBar} from 'modules/icons/left-bar.svg';
+import styled, {css} from 'styled-components';
+import {RowCollapse} from '@carbon/react/icons';
+import {rem} from '@carbon/elements';
 
 const ExpandedPanel = styled.div`
-  width: 478px;
+  width: ${rem(478)};
   height: 100%;
 `;
 
 const CollapsedPanel = styled.div`
-  width: 57px;
-  height: 100%;
-  cursor: pointer;
+  ${({theme}) => css`
+    all: unset;
+    padding: ${theme.spacing04};
+    width: ${rem(57)};
+    height: 100%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    flex-direction: column;
+    gap: ${theme.spacing06};
+    box-sizing: border-box;
+  `}
 `;
 
-const Title = styled.div`
-  margin-top: 30px;
-  transform: rotate(-90deg);
-  font-size: 15px;
-  font-weight: bold;
-  color: ${({theme}) => theme.colors.ui06};
-`;
-
-interface CollapseButtonProps {
-  onClick: () => void;
-}
-
-const CollapseButton = styled.button<CollapseButtonProps>`
-  padding: 8px 9px 8px 11px;
-  border-left: 1px solid ${({theme}) => theme.colors.ui05};
-  background: transparent;
-`;
-
-const LeftIcon = styled(LeftBar)`
-  width: 16px;
-  height: 16px;
-  opacity: 0.9;
-  color: ${({theme}) => theme.colors.ui06};
+const Title = styled.h4`
+  ${({theme}) =>
+    css`
+      color: var(--cds-text-secondary);
+      transform: rotate(90deg);
+      ${theme.productiveHeading02};
+    `}
 `;
 
 const Container = styled.div`
   width: fit-content;
-  border: solid ${({theme}) => theme.colors.ui05};
-  border-width: 0 0 1px 1px;
 `;
 
-export {
-  ExpandedPanel,
-  CollapsedPanel,
-  Title,
-  CollapseButton,
-  LeftIcon,
-  Container,
-};
+const Expand = styled(RowCollapse)`
+  transform: rotate(90deg);
+`;
+
+const Collapse = styled(RowCollapse)`
+  transform: rotate(-90deg);
+`;
+
+export {ExpandedPanel, CollapsedPanel, Title, Container, Expand, Collapse};

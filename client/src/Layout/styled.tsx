@@ -10,23 +10,21 @@
 import styled from 'styled-components';
 import {Panel} from 'modules/components/Panel';
 import {CollapsablePanel} from 'modules/components/CollapsablePanel';
+import {rem} from '@carbon/elements';
 
 const TasksPanel = styled(CollapsablePanel)`
   height: 100%;
-  background-color: ${({theme}) => theme.colors.ui02};
 `;
 
 const Container = styled.main`
   display: flex;
   height: 100%;
-  padding-top: 50px;
+  padding-top: ${rem(48)};
   box-sizing: border-box;
 `;
 
 const DetailsPanel = styled(Panel)`
-  border: 1px solid ${({theme}) => theme.colors.ui05};
-  border-top-width: 0;
-
+  border-left: 1px solid var(--cds-border-subtle);
   width: 100%;
   height: 100%;
 `;

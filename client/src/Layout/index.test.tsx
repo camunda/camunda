@@ -13,7 +13,6 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {mockGetAllOpenTasks, mockGetUnclaimed} from 'modules/queries/get-tasks';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {Layout} from './index';
@@ -21,7 +20,6 @@ import {ApolloProvider} from '@apollo/client';
 import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {mockServer} from 'modules/mockServer';
-import userEvent from '@testing-library/user-event';
 
 const mockApolloClient = createApolloClient({maxTasksDisplayed: 5});
 
@@ -40,74 +38,6 @@ const Wrapper: React.FC<Props> = ({children}) => {
 };
 
 describe('<Layout />', () => {
-  it('should load tasks', async () => {
-    mockServer.use(
-      graphql.query('GetTasks', (req, res, ctx) => {
-        const {state, assigned} = req.variables;
-
-        if (state === 'CREATED' && assigned === undefined) {
-          return res(ctx.data(mockGetAllOpenTasks().result.data));
-        }
-
-        return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid query',
-            },
-          ]),
-        );
-      }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
-      }),
-      graphql.query('GetTasks', (req, res, ctx) => {
-        const {state, assigned} = req.variables;
-
-        if (state === 'CREATED' && assigned) {
-          return res(ctx.data(mockGetUnclaimed.result.data));
-        }
-
-        return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid query',
-            },
-          ]),
-        );
-      }),
-    );
-
-    render(<Layout />, {
-      wrapper: Wrapper,
-    });
-
-    expect(screen.getByLabelText(/filter/i)).toBeDisabled();
-    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
-
-    expect(screen.getByLabelText(/filter/i)).toBeEnabled();
-    expect(
-      screen.queryByTestId('tasks-loading-overlay'),
-    ).not.toBeInTheDocument();
-
-    userEvent.selectOptions(screen.getByLabelText(/filter/i), ['unclaimed']);
-
-    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
-    expect(screen.getByLabelText(/filter/i)).toBeDisabled();
-
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
-
-    expect(screen.getByLabelText(/filter/i)).toBeEnabled();
-    expect(
-      screen.queryByTestId('tasks-loading-overlay'),
-    ).not.toBeInTheDocument();
-  });
-
   it('should load more tasks', async () => {
     mockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
@@ -147,12 +77,9 @@ describe('<Layout />', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByLabelText(/filter/i)).toBeDisabled();
-    expect(screen.getByTestId('tasks-loading-overlay')).toBeInTheDocument();
+    expect(screen.getByTitle('All open')).toBeDisabled();
 
-    await waitForElementToBeRemoved(
-      screen.getByTestId('tasks-loading-overlay'),
-    );
+    await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
 
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},

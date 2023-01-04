@@ -5,22 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {LoadingOverlay as OriginalLoadingOverlay} from 'modules/components/LoadingOverlay';
+import styled, {css} from 'styled-components';
 
 const Container = styled.div`
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  position: relative;
+  ${({theme}) => css`
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    row-gap: ${theme.spacing05};
+    position: relative;
+    padding-top: ${theme.spacing07};
+  `}
 `;
 
-const LoadingOverlay = styled(OriginalLoadingOverlay)`
-  align-items: flex-start;
-  padding-top: 12.5%;
-  position: absolute;
-  z-index: 2; // TODO - Remove on issue #676
-`;
-
-export {Container, LoadingOverlay};
+export {Container};

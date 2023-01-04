@@ -8,22 +8,31 @@
 import {Form, Field} from 'react-final-form';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
-import {Select} from 'modules/components/Select';
 import {Container} from './styled';
 import {OPTIONS} from './constants';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
-import {useTasks} from '../useTasks';
+import {useTasks} from 'modules/hooks/useTasks';
 import {tracking} from 'modules/tracking';
+import {Dropdown} from '@carbon/react';
+import {useRef} from 'react';
 
-interface FormValues {
-  filter: string;
+type FilterOption = keyof typeof OPTIONS;
+
+function isFilterOption(filter: unknown): filter is FilterOption {
+  return Object.keys(OPTIONS).includes(`${filter}`);
 }
+
+type FormValues = {
+  filter: FilterOption;
+};
 
 const Filters: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const {loading} = useTasks({withPolling: false});
+  const selectedFilter = getSearchParam('filter', location.search);
+  const dropdownRef = useRef<null | HTMLButtonElement>(null);
 
   return (
     <Container>
@@ -44,33 +53,34 @@ const Filters: React.FC = () => {
           });
         }}
         initialValues={{
-          filter:
-            getSearchParam('filter', location.search) ?? FilterValues.AllOpen,
+          filter: isFilterOption(selectedFilter)
+            ? selectedFilter
+            : FilterValues.AllOpen,
         }}
       >
         {({handleSubmit, form}) => (
           <form onSubmit={handleSubmit}>
             <Field<FormValues['filter']> name="filter">
               {({input}) => (
-                <Select
-                  {...input}
-                  name={input.name}
+                <Dropdown<{id: FilterOption; text: string}>
+                  ref={dropdownRef}
                   id={input.name}
-                  onChange={(event) => {
-                    input.onChange(event);
-                    form.submit();
-                  }}
+                  titleText="Filter options"
+                  label="Filter options"
+                  items={Object.values(OPTIONS)}
+                  itemToString={(item) => (item ? item.text : '')}
                   disabled={loading}
-                  aria-label="Filter"
-                >
-                  {OPTIONS.map(({value, label}) => {
-                    return (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </Select>
+                  onChange={(event) => {
+                    if (typeof event.selectedItem?.id === 'string') {
+                      input.onChange(event.selectedItem.id);
+                      form.submit();
+                      dropdownRef.current?.focus();
+                    }
+                  }}
+                  selectedItem={OPTIONS[input.value]}
+                  onBlur={input.onBlur}
+                  onFocus={input.onFocus}
+                />
               )}
             </Field>
           </form>

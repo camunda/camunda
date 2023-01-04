@@ -7,19 +7,36 @@
 
 /* istanbul ignore file */
 
+import {Search} from '@carbon/react/icons';
 import styled, {css} from 'styled-components';
-import {LoadingOverlay} from 'modules/components/LoadingOverlay';
 
 const EmptyMessage = styled.div`
-  border: 1px solid ${({theme}) => theme.colors.ui05};
-  border-radius: 3px;
+  ${({theme}) => css`
+    width: 100%;
+    border: 1px solid var(--cds-border-subtle);
+    color: var(--cds-text-primary);
+    background-color: var(--cds-layer);
+    padding: ${theme.spacing05};
+    grid-template-columns: min-content max-content;
+  `}
+`;
 
-  margin: 16px 20px 0 20px;
-  padding: 38px 39px;
-  text-align: center;
-  font-size: 14px;
-  color: ${({theme}) => theme.colors.ui07};
-  background-color: ${({theme}) => theme.colors.ui04};
+const EmptyMessageText = styled.div`
+  grid-gap: 0;
+`;
+
+const EmptyMessageFirstLine = styled.p`
+  ${({theme}) => css`
+    color: var(--cds-text-primary);
+    ${theme.bodyLong02};
+  `}
+`;
+
+const EmptyMessageSecondLine = styled.p`
+  ${({theme}) => css`
+    color: var(--cds-text-secondary);
+    ${theme.bodyLong01};
+  `}
 `;
 
 const UL = styled.ul`
@@ -29,29 +46,35 @@ const UL = styled.ul`
 `;
 
 type ContainerProps = {
-  isLoading: boolean;
+  $enablePadding: boolean;
 };
 
 const Container = styled.div<ContainerProps>`
-  ${({isLoading}) => {
+  ${({$enablePadding, theme}) => {
     return css`
       width: 100%;
       height: 100%;
       overflow-y: hidden;
 
-      ${isLoading
+      ${$enablePadding
         ? css`
-            position: relative;
+            padding: ${theme.spacing05};
           `
         : ''}
-
-      ${LoadingOverlay} {
-        position: absolute;
-        align-items: flex-start;
-        padding-top: 12.5%;
-      }
     `;
   }}
 `;
 
-export {EmptyMessage, UL, Container};
+const EmptyListIcon = styled(Search)`
+  color: var(--cds-icon-disabled);
+`;
+
+export {
+  EmptyMessage,
+  UL,
+  Container,
+  EmptyMessageFirstLine,
+  EmptyMessageSecondLine,
+  EmptyMessageText,
+  EmptyListIcon,
+};

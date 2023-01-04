@@ -5,43 +5,44 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
 import {observer} from 'mobx-react-lite';
-import {useNotifications, Notification} from 'modules/notifications';
 import {useLocation} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
+import {notificationsStore} from 'modules/stores/notifications';
 
 const SessionWatcher: React.FC = observer(() => {
-  const [notification, setNotification] = useState<Notification | undefined>();
-
-  const {displayNotification} = useNotifications();
+  const removeNotification = useRef<(() => void) | null>(null);
   const status = authenticationStore.status;
   const location = useLocation();
 
   useEffect(() => {
-    async function handleSessionExpiration() {
-      setNotification(
-        await displayNotification('info', {
-          headline: 'Session expired',
-        }),
-      );
+    function handleSessionExpiration() {
+      removeNotification.current = notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Session expired',
+        isDismissable: true,
+      });
     }
 
-    if (notification === undefined && location.pathname !== Pages.Login) {
-      if (
-        status === 'session-expired' ||
-        (status === 'session-invalid' && location.pathname !== Pages.Initial())
-      ) {
-        handleSessionExpiration();
-      }
+    if (location.pathname === Pages.Login) {
+      return;
     }
 
+    if (
+      status === 'session-expired' ||
+      (status === 'session-invalid' && location.pathname !== Pages.Initial())
+    ) {
+      handleSessionExpiration();
+    }
+  }, [status, location.pathname]);
+
+  useEffect(() => {
     if (status === 'logged-in') {
-      notification?.remove();
-      setNotification(undefined);
+      removeNotification.current?.();
     }
-  }, [status, notification, displayNotification, location.pathname]);
+  }, [status]);
 
   return null;
 });

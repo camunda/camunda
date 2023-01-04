@@ -1,4 +1,13 @@
 @use '@carbon/react' as * with (
-  $font-path: 'https://fonts.camunda.io',
-  $css--reset: false // Remove on #1682
+  $font-path: 'https://fonts.camunda.io'
 );
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+
+.cds--g10 {
+  @include theme.theme(themes.$g10);
+}
+
+.cds--g100 {
+  @include theme.theme(themes.$g100);
+}

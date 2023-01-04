@@ -46,6 +46,10 @@ function createWrapper(
 }
 
 describe('<Login />', () => {
+  beforeEach(() => {
+    authenticationStore.disableSession();
+  });
+
   afterEach(() => {
     getFullYearMock.mockClear();
     authenticationStore.reset();
@@ -56,7 +60,6 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the initial page on success', async () => {
-    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
@@ -65,12 +68,12 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent('/'),
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i),
     );
   });
 
@@ -78,14 +81,13 @@ describe('<Login />', () => {
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
-    authenticationStore.disableSession();
     render(<Login />, {
       wrapper: createWrapper(),
     });
 
     userEvent.click(screen.getByRole('link', {name: /emulate redirection/i}));
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
@@ -96,7 +98,6 @@ describe('<Login />', () => {
   });
 
   it('should show an error for wrong credentials', async () => {
-    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(401), ctx.text('')),
@@ -106,17 +107,16 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
-      await screen.findByText('Username and Password do not match'),
+      await screen.findByText('Username and password do not match'),
     ).toBeInTheDocument();
   });
 
   it('should show a generic error message', async () => {
-    authenticationStore.disableSession();
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(404), ctx.text('')),
@@ -126,7 +126,7 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
@@ -138,7 +138,7 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res) => res.networkError('A network error')),
     );
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
@@ -147,8 +147,7 @@ describe('<Login />', () => {
     ).toBeInTheDocument();
   });
 
-  it('should show a loading overlay while the login form is submitting', async () => {
-    authenticationStore.disableSession();
+  it('should show a loading state while the login form is submitting', async () => {
     mockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
@@ -157,19 +156,20 @@ describe('<Login />', () => {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
     userEvent.type(screen.getByLabelText('Password'), 'demo');
     userEvent.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
-      await screen.findByTestId('login-loading-overlay'),
-    ).toBeInTheDocument();
+      screen.getByRole('button', {
+        name: 'Logging in',
+      }),
+    ).toBeDisabled();
   });
 
   it('should have the correct copyright notice', () => {
     const mockYear = 1984;
     getFullYearMock.mockReturnValue(mockYear);
-    authenticationStore.disableSession();
     render(<Login />, {
       wrapper: createWrapper(),
     });
@@ -182,28 +182,59 @@ describe('<Login />', () => {
   });
 
   it('should not allow the form to be submitted with empty fields', async () => {
-    authenticationStore.disableSession();
+    mockServer.use(
+      rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
+    );
 
     render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    userEvent.click(screen.getByRole('button', {name: /login/i}));
 
-    userEvent.type(screen.getByLabelText('Username'), 'demo');
+    expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
+      /username is required/i,
+    );
+    expect(screen.getByLabelText(/username/i)).toBeInvalid();
+    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+      /password is required/i,
+    );
+    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /login/i}));
 
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
+    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
+      /username is required/i,
+    );
+    expect(screen.getByLabelText(/username/i)).toBeValid();
+    expect(screen.getByLabelText(/password/i)).toHaveAccessibleDescription(
+      /password is required/i,
+    );
+    expect(screen.getByLabelText(/password/i)).toBeInvalid();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeEnabled();
+    userEvent.clear(screen.getByLabelText(/username/i));
+    userEvent.type(screen.getByLabelText(/password/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /login/i}));
 
-    userEvent.clear(screen.getByLabelText('Username'));
+    expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
+      /password is required/i,
+    );
+    expect(screen.getByLabelText(/password/i)).toBeValid();
+    expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
+      /username is required/i,
+    );
+    expect(screen.getByLabelText(/username/i)).toBeInvalid();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    userEvent.type(screen.getByLabelText(/username/i), 'demo');
+    userEvent.click(screen.getByRole('button', {name: /login/i}));
 
-    userEvent.clear(screen.getByLabelText('Password'));
-
-    expect(screen.getByRole('button', {name: 'Login'})).toBeDisabled();
+    expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i),
+    );
   });
 });

@@ -13,7 +13,29 @@ import '@testing-library/jest-dom/extend-expect';
 import {clearClientCache} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {configure} from '@testing-library/react';
-import {Textfield as MockTextfield} from 'modules/mocks/common-ui/Textfield';
+import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
+
+function mockMatchMedia() {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(),
+      removeListener: jest.fn(),
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+}
+
+mockMatchMedia();
+
+beforeEach(() => {
+  mockMatchMedia();
+});
 
 beforeAll(() => {
   mockServer.listen({
@@ -21,23 +43,8 @@ beforeAll(() => {
   });
 
   Object.defineProperty(window, 'clientConfig', {
-    value: {
-      ...window.clientConfig,
-      canLogout: true,
-    },
-  });
-});
-
-beforeEach(() => {
-  Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: jest.fn().mockImplementation(() => ({
-      matches: false,
-      addListener: jest.fn(),
-      removeListener: jest.fn(),
-      addEventListener: jest.fn(),
-      removeEventListener: jest.fn(),
-    })),
+    value: DEFAULT_MOCK_CLIENT_CONFIG,
   });
 });
 
@@ -51,14 +58,7 @@ afterAll(() => mockServer.close());
 // mock app version
 process.env.REACT_APP_VERSION = '1.2.3';
 
-jest.mock('@bpmn-io/form-js/dist/assets/form-js.css', () => undefined);
-jest.mock('@camunda-cloud/common-ui-react', () => ({
-  ...jest.requireActual('@camunda-cloud/common-ui-react'),
-  CmNotificationContainer: () => {
-    return null;
-  },
-  CmTextfield: MockTextfield,
-}));
+jest.mock('@bpmn-io/form-js-viewer/dist/assets/form-js.css', () => undefined);
 
 configure({
   asyncUtilTimeout: 7000,

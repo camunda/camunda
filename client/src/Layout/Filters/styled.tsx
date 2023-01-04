@@ -5,10 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 const Container = styled.div`
-  padding: 22px 20px 20px 20px;
+  ${({theme}) =>
+    css`
+      padding: ${theme.spacing04} ${theme.spacing05};
+      border-bottom: 1px solid var(--cds-border-subtle);
+    `}
 `;
 
 export {Container};

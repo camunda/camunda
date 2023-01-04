@@ -6,15 +6,25 @@
  */
 
 import styled from 'styled-components';
-import {LoadingOverlay, Spinner} from 'modules/components/LoadingOverlay';
+import {Loading} from '@carbon/react';
+import {rem} from '@carbon/elements';
 
-const Overlay = styled(LoadingOverlay)`
+const Spinner = styled(Loading)`
+  width: ${rem(10)};
+  height: ${rem(10)};
+  border-width: ${rem(2)};
+`;
+
+const Overlay = styled.div`
+  background-color: var(--cds-overlay);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
-  ${Spinner} {
-    width: 10px;
-    height: 10px;
-    border-width: 2px;
-  }
+  position: absolute;
+  z-index: 2;
 `;
 
 const LoadingStateContainer = styled.div`
@@ -23,4 +33,4 @@ const LoadingStateContainer = styled.div`
   display: flex;
 `;
 
-export {Overlay, LoadingStateContainer};
+export {Overlay, LoadingStateContainer, Spinner};

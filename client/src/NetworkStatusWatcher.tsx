@@ -5,21 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState} from 'react';
-import {Notification, useNotifications} from 'modules/notifications';
+import {notificationsStore} from 'modules/stores/notifications';
+import {useEffect, useRef} from 'react';
 
 const NetworkStatusWatcher: React.FC = () => {
-  const {displayNotification} = useNotifications();
-  const [notification, setNotification] = useState<Notification | undefined>();
+  const removeNotification = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     async function handleDisconnection() {
-      setNotification(
-        await displayNotification('info', {
-          headline: 'Internet connection lost',
-          isDismissable: false,
-        }),
-      );
+      removeNotification.current = notificationsStore.displayNotification({
+        kind: 'info',
+        title: 'Internet connection lost',
+        isDismissable: false,
+      });
+    }
+
+    function handleReconnection() {
+      removeNotification.current?.();
     }
 
     if (!window.navigator.onLine) {
@@ -27,23 +29,13 @@ const NetworkStatusWatcher: React.FC = () => {
     }
 
     window.addEventListener('offline', handleDisconnection);
-
-    return () => {
-      window.removeEventListener('offline', handleDisconnection);
-    };
-  }, [displayNotification]);
-
-  useEffect(() => {
-    function handleReconnection() {
-      notification?.remove();
-    }
-
     window.addEventListener('online', handleReconnection);
 
     return () => {
+      window.removeEventListener('offline', handleDisconnection);
       window.removeEventListener('online', handleReconnection);
     };
-  }, [notification]);
+  }, []);
 
   return null;
 };

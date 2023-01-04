@@ -5,25 +5,44 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {ValueTextField} from '../styled';
-import {LoadingStateContainer, Overlay} from './styled';
+import {TextInput} from '../TextInput';
+import {useLayoutEffect, useRef} from 'react';
+import {LoadingStateContainer, Overlay, Spinner} from './styled';
 
-type Props = React.ComponentProps<typeof ValueTextField> & {
+type Props = React.ComponentProps<typeof TextInput> & {
   isLoading: boolean;
+  isActive?: boolean;
 };
 
-const LoadingTextarea: React.FC<Props> = ({isLoading, ...props}) => {
+const LoadingTextarea: React.FC<Props> = ({
+  isLoading,
+  isActive = false,
+  ...props
+}) => {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (isActive && !isLoading) {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(
+        inputRef.current.value.length,
+        inputRef.current.value.length,
+      );
+    }
+  }, [isLoading, isActive]);
+
   if (isLoading) {
     return (
       <LoadingStateContainer data-testid="textarea-loading-overlay">
-        <Overlay />
-        <ValueTextField {...props} />
+        <Overlay>
+          <Spinner withOverlay={false} />
+        </Overlay>
+        <TextInput ref={inputRef} {...props} disabled />
       </LoadingStateContainer>
     );
   }
 
-  return <ValueTextField {...props} />;
+  return <TextInput ref={inputRef} {...props} />;
 };
 
 export {LoadingTextarea};

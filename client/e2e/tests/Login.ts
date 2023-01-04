@@ -79,7 +79,7 @@ test('show error message on login failure', async (t) => {
     .click(screen.getByRole('button', {name: 'Login'}));
 
   await t
-    .expect(screen.getByText('Username and Password do not match').exists)
+    .expect(screen.getByText('Username and password do not match').exists)
     .ok();
 });
 

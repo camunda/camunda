@@ -16,6 +16,7 @@ import {
   claimedTaskWithForm,
   completedTaskWithForm,
 } from 'modules/mock-schema/mocks/task';
+import {useEffect, useState} from 'react';
 
 type TaskQueryVariables = Pick<Task, 'id'>;
 
@@ -135,14 +136,44 @@ const mockGetTaskCompletedWithForm = (id = '0') => ({
 });
 
 function useTask(id: Task['id']) {
+  const [usePreviousData, setUsePrevious] = useState(true);
   const result = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
     variables: {id},
   });
 
-  return {
-    ...result,
-    data: result.data ?? result.previousData,
-  };
+  useEffect(() => {
+    const {data, previousData} = result;
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    if (data === undefined && previousData !== undefined && usePreviousData) {
+      timeoutId = setTimeout(() => {
+        setUsePrevious(false);
+      }, 500);
+    }
+
+    if (data !== undefined) {
+      setUsePrevious(true);
+      clearTimeout(timeoutId!);
+    }
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [usePreviousData, result]);
+
+  if (result.data !== undefined) {
+    return result;
+  }
+
+  if (usePreviousData && result.previousData !== undefined) {
+    return {
+      ...result,
+      loading: false,
+      data: result.previousData,
+    };
+  }
+
+  return result;
 }
 
 function useRemoveFormReference(task: GetTask['task']) {

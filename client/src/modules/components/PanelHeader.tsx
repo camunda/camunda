@@ -5,14 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import {rem} from '@carbon/elements';
+import styled, {css} from 'styled-components';
 
 const PanelHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 34px 19px 0 20px;
-  padding-bottom: 8px;
+  ${({theme}) => css`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 ${theme.spacing05};
+    min-height: ${rem(32)};
+  `}
 `;
 
 export {PanelHeader};

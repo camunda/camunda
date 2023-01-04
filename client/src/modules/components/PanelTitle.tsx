@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-const PanelTitle = styled.h1`
-  font-size: 20px;
-  font-weight: 600;
-  color: ${({theme}) => theme.colors.ui06};
+const PanelTitle = styled.h3`
+  ${({theme}) => css`
+    color: var(--cds-text-primary);
+    ${theme.productiveHeading03};
+  `}
 `;
 
 export {PanelTitle};

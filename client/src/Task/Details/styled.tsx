@@ -5,60 +5,31 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {Button} from 'modules/components/Button';
-import {ReactComponent as InfoIcon} from 'modules/icons/info.svg';
-import {TD} from 'modules/components/Table';
-import {LoadingOverlay} from 'modules/components/LoadingOverlay';
-import {Spinner as BaseSpinner} from 'modules/components/LoadingOverlay/styled';
+import {rem} from '@carbon/elements';
+import styled, {css} from 'styled-components';
 
-const Container = styled.div`
-  margin-top: 13px;
-`;
-
-const ClaimButton = styled(Button)`
-  flex-shrink: 0;
-  margin-left: 22px;
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-`;
-
-const AssigneeTD = styled(TD)`
-  display: flex;
+const ClaimButtonContainer = styled.span`
+  ${({theme}) => css`
+    flex-shrink: 0;
+    margin-left: ${theme.spacing05};
+    display: flex;
+    align-items: center;
+  `}
 `;
 
 const Assignee = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  min-width: 163px;
+  min-width: ${rem(163)};
 `;
 
-const Hint = styled.div`
-  display: flex;
-  align-items: center;
-  margin-left: 46px;
-  color: ${({theme}) => theme.colors.hint.color};
-  font-size: 13px;
-  font-weight: 600;
-  min-width: max-content;
+const AssigneeText = styled.span`
+  width: max-content;
 `;
 
-const Info = styled(InfoIcon)`
-  margin-right: 8px;
+const HelperText = styled.span`
+  color: var(--cds-text-helper);
 `;
 
-const Spinner = styled(LoadingOverlay)`
-  background-color: transparent;
-  padding-right: 6px;
-  width: unset;
-  ${BaseSpinner} {
-    width: 10px;
-    height: 10px;
-    border: 2px solid ${({theme}) => theme.colors.ui07};
-    border-right-color: transparent;
-  }
-`;
-
-export {Container, ClaimButton, Hint, Info, AssigneeTD, Assignee, Spinner};
+export {Assignee, ClaimButtonContainer, HelperText, AssigneeText};

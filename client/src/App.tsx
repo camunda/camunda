@@ -9,7 +9,7 @@
 
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
 import {ApolloProvider} from '@apollo/client';
-import {NotificationProvider} from 'modules/notifications';
+import {Notifications} from 'modules/notifications';
 import {NetworkStatusWatcher} from './NetworkStatusWatcher';
 import {AuthenticationCheck} from './AuthenticationCheck';
 import {Layout} from './Layout';
@@ -18,7 +18,7 @@ import {Pages} from 'modules/constants/pages';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
-import {EmptyDetails} from './EmptyDetails';
+import {EmptyPage} from './EmptyPage';
 import {Task} from './Task';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
 
@@ -26,34 +26,26 @@ const App: React.FC = () => {
   return (
     <ThemeProvider>
       <ApolloProvider client={client}>
-        <NotificationProvider>
-          <NetworkStatusWatcher />
-          <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
-            <SessionWatcher />
-            <TrackPagination />
-            <Routes>
-              <Route path={Pages.Login} element={<Login />} />
-              <Route
-                path={Pages.Initial()}
-                element={
-                  <AuthenticationCheck redirectPath={Pages.Login}>
-                    <Layout />
-                  </AuthenticationCheck>
-                }
-              >
-                <Route
-                  index
-                  element={
-                    <EmptyDetails>
-                      Select a Task to view the details
-                    </EmptyDetails>
-                  }
-                />
-                <Route path={Pages.TaskDetails()} element={<Task />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </NotificationProvider>
+        <Notifications />
+        <NetworkStatusWatcher />
+        <BrowserRouter basename={window.clientConfig?.contextPath ?? '/'}>
+          <SessionWatcher />
+          <TrackPagination />
+          <Routes>
+            <Route path={Pages.Login} element={<Login />} />
+            <Route
+              path={Pages.Initial()}
+              element={
+                <AuthenticationCheck redirectPath={Pages.Login}>
+                  <Layout />
+                </AuthenticationCheck>
+              }
+            >
+              <Route index element={<EmptyPage />} />
+              <Route path={Pages.TaskDetails()} element={<Task />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
       </ApolloProvider>
     </ThemeProvider>
   );

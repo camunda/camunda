@@ -8,14 +8,14 @@
 import * as React from 'react';
 import {ThemeProvider} from 'styled-components';
 
-import {theme} from './index';
+import {themes} from './themes';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const MockThemeProvider: React.FC<Props> = ({children}) => {
-  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
+  return <ThemeProvider theme={themes.g10}>{children}</ThemeProvider>;
 };
 
 export {MockThemeProvider};

@@ -5,38 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useRef, useState} from 'react';
-import {FieldState} from 'final-form';
+import {useRef, useState} from 'react';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {get, intersection} from 'lodash';
 import arrayMutators from 'final-form-arrays';
-import {Button} from 'modules/components/Button';
-import {Table, TD, TR} from 'modules/components/Table';
+import {
+  Table,
+  LeftTD,
+  RightTD,
+  TH,
+  TR,
+  ScrollableContent,
+} from 'modules/components/Table';
 import {
   Container,
   Body,
   TableContainer,
   EmptyMessage,
-  CreateButton,
-  Plus,
-  Cross,
-  InputTD,
-  VariableNameTH,
-  VariableValueTH,
-  IconTD,
   IconContainer,
-  IconButton,
-  RowTH,
   Form as StyledForm,
-  ValueContainer,
-  ValueTextField,
-  NameTextField,
+  EmptyFieldsInformationIcon,
 } from './styled';
 import {
   validateNameCharacters,
   validateNameComplete,
-  validateNameNotDuplicate,
+  validateDuplicateNames,
   validateValueComplete,
   validateValueJSON,
 } from './validators';
@@ -46,12 +40,7 @@ import {
   createNewVariableFieldName,
 } from './createVariableFieldName';
 import {getVariableFieldName} from './getVariableFieldName';
-import {Variable} from 'modules/types';
-import {
-  GetCurrentUser,
-  GET_CURRENT_USER,
-} from 'modules/queries/get-current-user';
-import {useQuery} from '@apollo/client';
+import {Variable, User} from 'modules/types';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
 import {ResetForm} from './ResetForm';
 import {GetTask} from 'modules/queries/get-task';
@@ -63,43 +52,69 @@ import {LoadingTextarea} from './LoadingTextarea';
 import {usePermissions} from 'modules/hooks/usePermissions';
 import {OnNewVariableAdded} from './OnNewVariableAdded';
 import {JSONEditorModal} from './JSONEditorModal';
+import {TextInput} from './TextInput';
+import {IconButton} from './IconButton';
+import {DelayedErrorField} from 'Task/DelayedErrorField';
+import {Button, InlineLoadingStatus, Layer} from '@carbon/react';
+import {Information, Close, Popup, Add} from '@carbon/react/icons';
+import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
+
+const CODE_EDITOR_BUTTON_TOOLTIP_LABEL = 'Open JSON code editor';
+
+function variableIndexToOrdinal(numberValue: number): string {
+  const realOrderIndex = (numberValue + 1).toString();
+
+  if (['11', '12', '13'].includes(realOrderIndex.slice(-2))) {
+    return `${realOrderIndex}th`;
+  }
+
+  switch (realOrderIndex.slice(-1)) {
+    case '1':
+      return `${realOrderIndex}st`;
+    case '2':
+      return `${realOrderIndex}nd`;
+    case '3':
+      return `${realOrderIndex}rd`;
+    default:
+      return `${realOrderIndex}th`;
+  }
+}
 
 type Props = {
   onSubmit: (variables: Pick<Variable, 'name' | 'value'>[]) => Promise<void>;
+  onSubmitSuccess: () => void;
+  onSubmitFailure: (error: Error) => void;
   task: GetTask['task'];
+  user: User;
 };
 
-const Variables: React.FC<Props> = ({onSubmit, task}) => {
+const Variables: React.FC<Props> = ({
+  onSubmit,
+  task,
+  onSubmitSuccess,
+  onSubmitFailure,
+  user,
+}) => {
   const tableContainer = useRef<HTMLDivElement>(null);
   const {hasPermission} = usePermissions(['write']);
-  const {data: userData, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-  const {
-    variables,
-    loading: areVariablesLoading,
-    queryFullVariable,
-    variablesLoadingFullValue,
-  } = useTaskVariables(task.id);
-  const [editingVariable, setEditingVariable] = useState<string | void>();
-
-  if (loading || areVariablesLoading) {
-    return null;
-  }
+  const {queryFullVariable, variablesLoadingFullValue, variables, loading} =
+    useTaskVariables(task.id);
+  const [editingVariable, setEditingVariable] = useState<string | undefined>();
+  const [submissionState, setSubmissionState] =
+    useState<InlineLoadingStatus>('inactive');
+  const isModalOpen = editingVariable !== undefined;
 
   const {assignee, taskState} = task;
   const canCompleteTask =
-    userData?.currentUser.userId === assignee &&
-    taskState === 'CREATED' &&
-    hasPermission;
-
-  const isVariableDirty = (
-    name: undefined | FieldState<string>,
-    value: undefined | FieldState<string>,
-  ): boolean => {
-    return Boolean(name?.dirty || value?.dirty);
-  };
+    user.userId === assignee && taskState === 'CREATED' && hasPermission;
 
   const hasEmptyNewVariable = (values: FormValues) =>
     values.newVariables?.some((variable) => variable === undefined);
+
+  if (loading) {
+    return null;
+  }
 
   return (
     <Form<FormValues>
@@ -116,13 +131,21 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
         }));
         const newVariables = get(values, 'newVariables') || [];
 
-        await onSubmit([
-          ...existingVariables.map((variable) => ({
-            ...variable,
-            name: getVariableFieldName(variable.name),
-          })),
-          ...newVariables,
-        ]);
+        try {
+          setSubmissionState('active');
+          await onSubmit([
+            ...existingVariables.map((variable) => ({
+              ...variable,
+              name: getVariableFieldName(variable.name),
+            })),
+            ...newVariables,
+          ]);
+
+          setSubmissionState('finished');
+        } catch (error) {
+          onSubmitFailure(error as Error);
+          setSubmissionState('error');
+        }
       }}
       initialValues={variables.reduce(
         (values, variable) => ({
@@ -133,262 +156,323 @@ const Variables: React.FC<Props> = ({onSubmit, task}) => {
       )}
       keepDirtyOnReinitialize
     >
-      {({form, handleSubmit, values}) => (
-        <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
+      {({
+        form,
+        handleSubmit,
+        values,
+        validating,
+        submitting,
+        hasValidationErrors,
+      }) => (
+        <Layer
+          as={StyledForm}
+          onSubmit={handleSubmit}
+          hasFooter={canCompleteTask}
+          data-testid="variables-table"
+        >
           <ResetForm isAssigned={canCompleteTask} />
           <Container>
             <PanelHeader>
               <PanelTitle>Variables</PanelTitle>
               {canCompleteTask && (
-                <CreateButton
+                <Button
+                  kind="ghost"
                   type="button"
-                  variant="small"
+                  size="sm"
                   onClick={() => {
                     form.mutators.push('newVariables');
                   }}
+                  renderIcon={Add}
                 >
-                  <Plus /> Add Variable
-                </CreateButton>
+                  Add Variable
+                </Button>
               )}
             </PanelHeader>
             <Body>
               {variables.length >= 1 ||
               (values?.newVariables?.length !== undefined &&
                 values?.newVariables?.length >= 1) ? (
-                <TableContainer ref={tableContainer}>
-                  <Table data-testid="variables-table">
+                <>
+                  <Table>
                     <thead>
-                      <TR hasNoBorder>
-                        <VariableNameTH>Name</VariableNameTH>
-                        <VariableValueTH colSpan={2}>Value</VariableValueTH>
+                      <TR $hideBorders>
+                        <TH>Name</TH>
+                        <TH>Value</TH>
                       </TR>
                     </thead>
-                    <tbody>
-                      {variables.map((variable) => {
-                        return (
-                          <TR key={variable.name}>
-                            {canCompleteTask ? (
-                              <>
-                                <RowTH>
-                                  <label htmlFor={variable.name}>
-                                    {variable.name}
-                                  </label>
-                                </RowTH>
-                                <InputTD>
-                                  <Field
-                                    name={createVariableFieldName(
-                                      variable.name,
-                                    )}
-                                    validate={
-                                      variable.isValueTruncated
-                                        ? () => undefined
-                                        : validateValueJSON
-                                    }
-                                  >
-                                    {({input, meta}) => (
-                                      <LoadingTextarea
-                                        name={input.name}
-                                        data-testid={`variable-value-${input.name}`}
-                                        onChange={input.onChange}
-                                        value={input.value}
-                                        error={meta.error}
-                                        isLoading={variablesLoadingFullValue.includes(
-                                          variable.id,
-                                        )}
-                                        id={variable.name}
-                                        onFocus={() => {
-                                          if (variable.isValueTruncated) {
-                                            queryFullVariable(variable.id);
+                  </Table>
+                  <TableContainer
+                    ref={tableContainer}
+                    data-testid="variables-form-table"
+                  >
+                    <Table>
+                      <tbody>
+                        {variables.map((variable) => {
+                          return (
+                            <TR key={variable.name}>
+                              {canCompleteTask ? (
+                                <>
+                                  <LeftTD>
+                                    <label
+                                      htmlFor={createVariableFieldName(
+                                        variable.name,
+                                      )}
+                                    >
+                                      {variable.name}
+                                    </label>
+                                  </LeftTD>
+                                  <RightTD
+                                    suffix={
+                                      <IconContainer>
+                                        <IconButton
+                                          label={
+                                            CODE_EDITOR_BUTTON_TOOLTIP_LABEL
                                           }
-                                        }}
-                                        fieldSuffix={{
-                                          type: 'icon',
-                                          icon: 'window',
-                                          press: () => {
+                                          onClick={() => {
                                             if (variable.isValueTruncated) {
                                               queryFullVariable(variable.id);
                                             }
-                                            setEditingVariable(input.name);
-                                          },
-                                          tooltip: 'Open JSON editor modal',
-                                        }}
-                                      />
-                                    )}
-                                  </Field>
-                                </InputTD>
-                                <IconTD />
-                              </>
-                            ) : (
-                              <>
-                                <RowTH>{variable.name}</RowTH>
-                                <TD>
-                                  <ValueContainer>
-                                    {`${variable.value}${
-                                      variable.isValueTruncated ? '...' : ''
-                                    }`}
-                                  </ValueContainer>
-                                </TD>
-                              </>
-                            )}
-                          </TR>
-                        );
-                      })}
-                      {canCompleteTask && (
-                        <>
-                          <OnNewVariableAdded
-                            name="newVariables"
-                            execute={() => {
-                              const element = tableContainer.current;
-                              if (element !== null) {
-                                element.scrollTop = element.scrollHeight;
-                              }
-                            }}
-                          />
-                          <FieldArray name="newVariables">
-                            {({fields}) =>
-                              fields.map((variable, index) => {
-                                return (
-                                  <TR key={variable} data-testid={variable}>
-                                    <InputTD>
-                                      <Field
-                                        name={createNewVariableFieldName(
-                                          variable,
-                                          'name',
-                                        )}
-                                        validate={mergeValidators(
-                                          validateNameCharacters,
-                                          validateNameComplete,
-                                          validateNameNotDuplicate,
-                                        )}
-                                      >
-                                        {({input, meta}) => (
-                                          <NameTextField
-                                            {...input}
-                                            type="text"
-                                            name={input.name}
-                                            data-testid={input.name}
-                                            onChange={input.onChange}
-                                            value={input.value}
-                                            aria-label={`New variable ${index} name`}
-                                            error={meta.error}
-                                            placeholder="Name"
-                                            autoFocus={true}
-                                            shouldDebounceError={
-                                              !meta.dirty &&
-                                              isVariableDirty(
-                                                form.getFieldState(
-                                                  `${variable}.name`,
-                                                ),
-                                                form.getFieldState(
-                                                  `${variable}.value`,
-                                                ),
-                                              )
+
+                                            setEditingVariable(
+                                              createVariableFieldName(
+                                                variable.name,
+                                              ),
+                                            );
+                                          }}
+                                        >
+                                          <Popup />
+                                        </IconButton>
+                                      </IconContainer>
+                                    }
+                                  >
+                                    <Field
+                                      name={createVariableFieldName(
+                                        variable.name,
+                                      )}
+                                      validate={
+                                        variable.isValueTruncated
+                                          ? () => undefined
+                                          : validateValueJSON
+                                      }
+                                    >
+                                      {({input, meta}) => (
+                                        <LoadingTextarea
+                                          {...input}
+                                          id={input.name}
+                                          invalidText={meta.error}
+                                          isLoading={variablesLoadingFullValue.includes(
+                                            variable.id,
+                                          )}
+                                          onFocus={(event) => {
+                                            if (variable.isValueTruncated) {
+                                              queryFullVariable(variable.id);
                                             }
-                                          />
-                                        )}
-                                      </Field>
-                                    </InputTD>
-                                    <InputTD>
-                                      <Field
-                                        name={createNewVariableFieldName(
-                                          variable,
-                                          'value',
-                                        )}
-                                        validate={validateValueComplete}
-                                      >
-                                        {({input, meta}) => (
-                                          <ValueTextField
-                                            {...input}
-                                            type="text"
-                                            name={input.name}
-                                            data-testid={`${input.name}`}
-                                            onChange={input.onChange}
-                                            value={input.value}
-                                            aria-label={`New variable ${index} value`}
-                                            error={meta.error}
-                                            placeholder="Value"
-                                            fieldSuffix={{
-                                              type: 'icon',
-                                              icon: 'window',
-                                              press: () => {
+                                            input.onFocus(event);
+                                          }}
+                                          isActive={meta.active}
+                                          type="text"
+                                          labelText={`${variable.name} value`}
+                                          placeholder={`${variable.name} value`}
+                                        />
+                                      )}
+                                    </Field>
+                                  </RightTD>
+                                </>
+                              ) : (
+                                <>
+                                  <LeftTD>{variable.name}</LeftTD>
+                                  <RightTD>
+                                    <ScrollableContent>
+                                      {`${variable.value}${
+                                        variable.isValueTruncated ? '...' : ''
+                                      }`}
+                                    </ScrollableContent>
+                                  </RightTD>
+                                </>
+                              )}
+                            </TR>
+                          );
+                        })}
+                        {canCompleteTask && (
+                          <>
+                            <OnNewVariableAdded
+                              name="newVariables"
+                              execute={() => {
+                                const element = tableContainer.current;
+                                if (element !== null) {
+                                  element.scrollTop = element.scrollHeight;
+                                }
+                              }}
+                            />
+                            <FieldArray name="newVariables">
+                              {({fields}) =>
+                                fields.map((variable, index) => {
+                                  return (
+                                    <TR key={variable}>
+                                      <LeftTD>
+                                        <DelayedErrorField
+                                          name={createNewVariableFieldName(
+                                            variable,
+                                            'name',
+                                          )}
+                                          validate={mergeValidators(
+                                            validateNameCharacters,
+                                            validateNameComplete,
+                                            validateDuplicateNames,
+                                          )}
+                                          addExtraDelay={Boolean(
+                                            !form.getFieldState(
+                                              `${variable}.name`,
+                                            )?.dirty &&
+                                              form.getFieldState(
+                                                `${variable}.value`,
+                                              )?.dirty,
+                                          )}
+                                        >
+                                          {({input, meta}) => (
+                                            <TextInput
+                                              {...input}
+                                              id={input.name}
+                                              invalidText={meta.error}
+                                              type="text"
+                                              labelText={`${variableIndexToOrdinal(
+                                                index,
+                                              )} variable name`}
+                                              placeholder="Name"
+                                              autoFocus
+                                            />
+                                          )}
+                                        </DelayedErrorField>
+                                      </LeftTD>
+                                      <RightTD
+                                        suffix={
+                                          <IconContainer>
+                                            <IconButton
+                                              label={
+                                                CODE_EDITOR_BUTTON_TOOLTIP_LABEL
+                                              }
+                                              onClick={() => {
                                                 setEditingVariable(
                                                   `${variable}.value`,
                                                 );
-                                              },
-                                              tooltip: 'Open JSON editor modal',
-                                            }}
-                                            shouldDebounceError={
-                                              !meta.dirty &&
-                                              isVariableDirty(
-                                                form.getFieldState(
-                                                  `${variable}.name`,
-                                                ),
-                                                form.getFieldState(
-                                                  `${variable}.value`,
-                                                ),
-                                              )
-                                            }
-                                          />
-                                        )}
-                                      </Field>
-                                    </InputTD>
-                                    <IconTD>
-                                      <IconContainer>
-                                        <IconButton
-                                          type="button"
-                                          aria-label={`Remove new variable ${index}`}
-                                          onClick={() => {
-                                            fields.remove(index);
-                                          }}
+                                              }}
+                                            >
+                                              <Popup />
+                                            </IconButton>
+                                            <IconButton
+                                              label={`Remove ${variableIndexToOrdinal(
+                                                index,
+                                              )} new variable`}
+                                              onClick={() => {
+                                                fields.remove(index);
+                                              }}
+                                            >
+                                              <Close />
+                                            </IconButton>
+                                          </IconContainer>
+                                        }
+                                      >
+                                        <DelayedErrorField
+                                          name={createNewVariableFieldName(
+                                            variable,
+                                            'value',
+                                          )}
+                                          validate={validateValueComplete}
+                                          addExtraDelay={Boolean(
+                                            form.getFieldState(
+                                              `${variable}.name`,
+                                            )?.dirty &&
+                                              !form.getFieldState(
+                                                `${variable}.value`,
+                                              )?.dirty,
+                                          )}
                                         >
-                                          <Cross />
-                                        </IconButton>
-                                      </IconContainer>
-                                    </IconTD>
-                                  </TR>
-                                );
-                              })
-                            }
-                          </FieldArray>
-                        </>
-                      )}
-                    </tbody>
-                  </Table>
-                </TableContainer>
+                                          {({input, meta}) => (
+                                            <TextInput
+                                              {...input}
+                                              id={input.name}
+                                              type="text"
+                                              labelText={`${variableIndexToOrdinal(
+                                                index,
+                                              )} variable value`}
+                                              invalidText={meta.error}
+                                              placeholder="Value"
+                                            />
+                                          )}
+                                        </DelayedErrorField>
+                                      </RightTD>
+                                    </TR>
+                                  );
+                                })
+                              }
+                            </FieldArray>
+                          </>
+                        )}
+                      </tbody>
+                    </Table>
+                  </TableContainer>
+                </>
               ) : (
                 <EmptyMessage>Task has no Variables</EmptyMessage>
               )}
             </Body>
           </Container>
-          {canCompleteTask && (
+          {(canCompleteTask || submissionState === 'finished') && (
             <DetailsFooter>
-              <Button
-                type="submit"
-                disabled={
-                  form.getState().submitting ||
-                  form.getState().hasValidationErrors ||
-                  form.getState().validating ||
-                  hasEmptyNewVariable(values)
-                }
+              {hasEmptyNewVariable(values) && (
+                <EmptyFieldsInformationIcon
+                  label="You first have to fill all fields"
+                  align="top"
+                >
+                  <Information size={20} />
+                </EmptyFieldsInformationIcon>
+              )}
+
+              <AsyncActionButton
+                inlineLoadingProps={{
+                  description: getCompletionButtonDescription(submissionState),
+                  'aria-live': ['error', 'finished'].includes(submissionState)
+                    ? 'assertive'
+                    : 'polite',
+                  onSuccess: () => {
+                    setSubmissionState('inactive');
+                    onSubmitSuccess();
+                  },
+                }}
+                buttonProps={{
+                  size: 'md',
+                  type: 'submit',
+                  disabled:
+                    submitting ||
+                    hasValidationErrors ||
+                    validating ||
+                    hasEmptyNewVariable(values),
+                }}
+                status={submissionState}
+                onError={() => {
+                  setSubmissionState('inactive');
+                }}
               >
                 Complete Task
-              </Button>
+              </AsyncActionButton>
             </DetailsFooter>
           )}
-          {editingVariable ? (
-            <JSONEditorModal
-              title="Edit Variable"
-              onClose={() => {
-                setEditingVariable(undefined);
-              }}
-              onSave={(value) => {
+
+          <JSONEditorModal
+            isOpen={isModalOpen}
+            title="Edit Variable"
+            onClose={() => {
+              setEditingVariable(undefined);
+            }}
+            onSave={(value) => {
+              if (isModalOpen) {
                 form.change(editingVariable, value);
                 setEditingVariable(undefined);
-              }}
-              value={get(values, editingVariable)}
-            />
-          ) : null}
-        </StyledForm>
+              }
+            }}
+            value={isModalOpen ? get(values, editingVariable) : ''}
+          />
+        </Layer>
       )}
     </Form>
   );

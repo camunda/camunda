@@ -12,6 +12,7 @@ import {
   currentRestrictedUser,
   currentUserWithUnknownRole,
   currentUserWithOutRole,
+  currentUserWithC8Links,
 } from 'modules/mock-schema/mocks/current-user';
 
 const GET_CURRENT_USER = gql`
@@ -37,6 +38,17 @@ const mockGetCurrentUser = {
   result: {
     data: {
       currentUser,
+    },
+  },
+} as const;
+
+const mockGetCurrentUserWithC8Links = {
+  request: {
+    query: GET_CURRENT_USER,
+  },
+  result: {
+    data: {
+      currentUser: currentUserWithC8Links,
     },
   },
 } as const;
@@ -74,6 +86,19 @@ const mockGetCurrentUserWithoutRole = {
   },
 } as const;
 
+const mockGetCurrentUserWithCustomSalesPlanType = (
+  salesPlanType: User['salesPlanType'],
+) => ({
+  request: {
+    query: GET_CURRENT_USER,
+  },
+  result: {
+    data: {
+      currentUser: {...currentUser, salesPlanType},
+    },
+  },
+});
+
 interface GetCurrentUser {
   currentUser: User;
 }
@@ -85,4 +110,6 @@ export {
   mockGetCurrentRestrictedUser,
   mockGetCurrentUserWithUnknownRole,
   mockGetCurrentUserWithoutRole,
+  mockGetCurrentUserWithC8Links,
+  mockGetCurrentUserWithCustomSalesPlanType,
 };

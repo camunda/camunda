@@ -9,8 +9,10 @@ import {GlobalStyle} from 'modules/theme/GlobalStyle';
 import styled, {
   ThemeProvider as StyledComponentThemeProvider,
 } from 'styled-components';
-import {theme} from './index';
-import {Theme as BaseCarbonTheme} from '@carbon/react';
+import {CarbonTheme as BaseCarbonTheme} from './CarbonTheme';
+import {observer} from 'mobx-react-lite';
+import {themeStore} from 'modules/stores/theme';
+import {themes, THEME_TOKENS} from './themes';
 
 const CarbonTheme = styled(BaseCarbonTheme)`
   width: 100%;
@@ -21,15 +23,17 @@ type Props = {
   children: React.ReactNode;
 };
 
-const ThemeProvider: React.FC<Props> = ({children}) => {
+const ThemeProvider: React.FC<Props> = observer(({children}) => {
   return (
-    <CarbonTheme theme="g10">
-      <StyledComponentThemeProvider theme={theme}>
+    <CarbonTheme>
+      <StyledComponentThemeProvider
+        theme={themes[THEME_TOKENS[themeStore.actualTheme]]}
+      >
         <GlobalStyle />
         {children}
       </StyledComponentThemeProvider>
     </CarbonTheme>
   );
-};
+});
 
 export {ThemeProvider};

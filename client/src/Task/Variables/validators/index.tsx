@@ -13,13 +13,20 @@ import {FormValues} from '../types';
 import {get} from 'lodash';
 import {FieldValidator} from 'final-form';
 
+const ERROR_MESSAGES = {
+  invalidName: 'Name is invalid',
+  emptyName: 'Name has to be filled',
+  duplicateName: 'Name must be unique',
+  invalidValue: 'Value has to be JSON',
+} as const;
+
 const VALIDATION_DELAY = 1000;
 
 const validateNameCharacters: FieldValidator<string | undefined> = (
   variableName = '',
 ) => {
   if (variableName.includes('"') || variableName.match(new RegExp('[\\s]+'))) {
-    return 'Name is invalid';
+    return ERROR_MESSAGES.invalidName;
   }
 
   return;
@@ -38,11 +45,11 @@ const validateNameComplete: FieldValidator<string | undefined> =
         return;
       }
 
-      const variableValue =
+      const variableValue: string =
         get(allValues, `${getNewVariablePrefix(fieldName)}.value`) ?? '';
 
       if (variableValue.trim() !== '' && variableName.trim() === '') {
-        return 'Name has to be filled';
+        return ERROR_MESSAGES.emptyName;
       }
 
       return;
@@ -50,7 +57,7 @@ const validateNameComplete: FieldValidator<string | undefined> =
     VALIDATION_DELAY,
   );
 
-const validateNameNotDuplicate: FieldValidator<string | undefined> =
+const validateDuplicateNames: FieldValidator<string | undefined> =
   promisifyValidator(
     (
       variableName = '',
@@ -62,7 +69,7 @@ const validateNameNotDuplicate: FieldValidator<string | undefined> =
       }
 
       if (allValues.hasOwnProperty(createVariableFieldName(variableName))) {
-        return 'Name must be unique';
+        return ERROR_MESSAGES.duplicateName;
       }
 
       if (
@@ -75,10 +82,10 @@ const validateNameNotDuplicate: FieldValidator<string | undefined> =
 
       if (
         meta?.active ||
-        meta?.error === 'Name must be unique' ||
+        meta?.error === ERROR_MESSAGES.duplicateName ||
         meta?.validating
       ) {
-        return 'Name must be unique';
+        return ERROR_MESSAGES.duplicateName;
       }
 
       return;
@@ -99,7 +106,7 @@ const validateValueComplete: FieldValidator<string | undefined> =
         return;
       }
 
-      const variableName =
+      const variableName: string =
         get(allValues, `${getNewVariablePrefix(fieldName)}.name`) ?? '';
 
       if (
@@ -109,7 +116,7 @@ const validateValueComplete: FieldValidator<string | undefined> =
         return;
       }
 
-      return 'Value has to be JSON';
+      return ERROR_MESSAGES.invalidValue;
     },
     VALIDATION_DELAY,
   );
@@ -120,7 +127,7 @@ const validateValueJSON: FieldValidator<string | undefined> =
       return;
     }
 
-    return 'Value has to be JSON';
+    return ERROR_MESSAGES.invalidValue;
   }, VALIDATION_DELAY);
 
 export {
@@ -128,5 +135,5 @@ export {
   validateValueJSON,
   validateNameCharacters,
   validateNameComplete,
-  validateNameNotDuplicate,
+  validateDuplicateNames,
 };

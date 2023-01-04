@@ -5,29 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useLayoutEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {useQuery} from '@apollo/client';
 import {GET_FORM, GetForm, FormQueryVariables} from 'modules/queries/get-form';
-import {Form, Variable} from 'modules/types';
+import {Form, Variable, User} from 'modules/types';
 import {GetTask, useRemoveFormReference} from 'modules/queries/get-task';
-import {
-  GetCurrentUser,
-  GET_CURRENT_USER,
-} from 'modules/queries/get-current-user';
-import {
-  createForm,
-  Form as FormJSViewer,
-  getSchemaVariables,
-} from '@bpmn-io/form-js';
-import '@bpmn-io/form-js/dist/assets/form-js.css';
+import {getSchemaVariables} from '@bpmn-io/form-js-viewer';
+import '@bpmn-io/form-js-viewer/dist/assets/form-js.css';
 import {DetailsFooter} from 'modules/components/DetailsFooter';
-import {Button} from 'modules/components/Button';
+import {InlineLoadingStatus} from '@carbon/react';
 import {Container, FormContainer, FormCustomStyling} from './styled';
 import {PanelTitle} from 'modules/components/PanelTitle';
 import {PanelHeader} from 'modules/components/PanelHeader';
 import {useSelectedVariables} from 'modules/queries/get-selected-variables';
-import {useNotifications} from 'modules/notifications';
 import {usePermissions} from 'modules/hooks/usePermissions';
+import {notificationsStore} from 'modules/stores/notifications';
+import {AsyncActionButton} from 'modules/components/AsyncActionButton';
+import {getCompletionButtonDescription} from 'modules/utils/getCompletionButtonDescription';
+import {formManager} from './formManager';
 
 function formatVariablesToFormData(variables: ReadonlyArray<Variable>) {
   return variables.reduce(
@@ -53,16 +48,28 @@ function extractVariablesFromFormSchema(
   }
 }
 
-const DEFAULT_EVENT_PRIORITY = 1000;
-
 type Props = {
   id: Form['id'];
   processDefinitionId: Form['processDefinitionId'];
   task: GetTask['task'];
   onSubmit: (variables: Variable[]) => Promise<void>;
+  onSubmitSuccess: () => void;
+  onSubmitFailure: (error: Error) => void;
+  user: User;
 };
 
-const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
+const FormJS: React.FC<Props> = ({
+  id,
+  processDefinitionId,
+  task,
+  onSubmit,
+  onSubmitSuccess,
+  onSubmitFailure,
+  user,
+}) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [submissionState, setSubmissionState] =
+    useState<InlineLoadingStatus>('inactive');
   const {data} = useQuery<GetForm, FormQueryVariables>(GET_FORM, {
     variables: {
       id,
@@ -70,10 +77,6 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
     },
   });
   const {hasPermission} = usePermissions(['write']);
-
-  const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const formRef = useRef<FormJSViewer | null>(null);
   const {assignee, taskState} = task;
   const {
     form: {schema},
@@ -82,122 +85,132 @@ const FormJS: React.FC<Props> = ({id, processDefinitionId, task, onSubmit}) => {
       schema: null,
     },
   };
-  const {
-    variables,
-    loading: areVariablesLoading,
-    updateSelectedVariables,
-  } = useSelectedVariables(task.id, extractVariablesFromFormSchema(schema));
-  const [isFormValid, setIsFormValid] = useState(true);
+  const {updateSelectedVariables, loading, variables} = useSelectedVariables(
+    task.id,
+    extractVariablesFromFormSchema(schema),
+  );
+  const isClaimed = user.userId === assignee;
   const canCompleteTask =
-    userData?.currentUser.userId === assignee &&
-    taskState === 'CREATED' &&
-    hasPermission;
-
+    user.userId === assignee && taskState === 'CREATED' && hasPermission;
   const {removeFormReference} = useRemoveFormReference(task);
-  const {displayNotification} = useNotifications();
 
   useEffect(() => {
-    async function renderForm() {
-      const container = containerRef.current;
+    formManager.setReadOnly(!canCompleteTask);
 
-      if (
-        container !== null &&
-        schema !== null &&
-        formRef.current === null &&
-        !areVariablesLoading
-      ) {
-        const data = formatVariablesToFormData(variables);
-        try {
-          const form = await createForm({
-            schema: JSON.parse(schema),
-            data,
-            container,
-            properties: {
-              readOnly: !canCompleteTask,
-            },
-          });
+    if (!isClaimed) {
+      formManager.reset();
+    }
+  }, [canCompleteTask, isClaimed]);
 
-          form.on('changed', DEFAULT_EVENT_PRIORITY, ({errors}: any) => {
-            setIsFormValid(Object.keys(errors).length === 0);
-          });
+  useEffect(() => {
+    const container = containerRef.current;
 
-          form.on(
-            'submit',
-            DEFAULT_EVENT_PRIORITY,
-            async ({errors, data}: any) => {
-              if (Object.keys(errors).length === 0) {
-                const variables = Object.entries(data).map(
-                  ([name, value]) =>
-                    ({
-                      name,
-                      value: JSON.stringify(value),
-                    } as Variable),
-                );
-                await onSubmit(variables);
-                updateSelectedVariables(variables);
-              }
-            },
-          );
+    function onImportError() {
+      removeFormReference();
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: 'Invalid Form schema',
+        isDismissable: true,
+      });
+    }
 
-          formRef.current = form;
-        } catch {
-          removeFormReference();
-          displayNotification('error', {
-            headline: 'Invalid Form schema',
-          });
-        }
+    function parseSchema(schema: string) {
+      try {
+        return JSON.parse(schema);
+      } catch {
+        onImportError();
       }
     }
 
-    renderForm();
-  }, [
-    canCompleteTask,
-    onSubmit,
-    schema,
-    variables,
-    areVariablesLoading,
-    updateSelectedVariables,
-    removeFormReference,
-    displayNotification,
-  ]);
-
-  useLayoutEffect(() => {
-    formRef.current?.setProperty('readOnly', !canCompleteTask);
-    formRef.current?.reset();
-  }, [canCompleteTask]);
-
-  useEffect(() => {
-    if (taskState === 'COMPLETED' && schema !== null) {
-      formRef.current?.importSchema(
-        JSON.parse(schema),
-        formatVariablesToFormData(variables),
-      );
+    if (
+      schema !== null &&
+      !loading &&
+      container !== null &&
+      submissionState === 'inactive'
+    ) {
+      const data = formatVariablesToFormData(variables);
+      formManager.render({
+        container,
+        data,
+        schema: parseSchema(schema),
+        onImportError,
+        onSubmit: async ({errors, data}: any) => {
+          if (Object.keys(errors).length === 0) {
+            const variables = Object.entries(data).map(
+              ([name, value]) =>
+                ({
+                  name,
+                  value: JSON.stringify(value),
+                } as Variable),
+            );
+            try {
+              setSubmissionState('active');
+              await onSubmit(variables);
+              updateSelectedVariables(variables);
+              setSubmissionState('finished');
+            } catch (error) {
+              onSubmitFailure(error as Error);
+              setSubmissionState('error');
+            }
+          } else {
+            setSubmissionState('inactive');
+          }
+        },
+      });
     }
-  }, [taskState, variables, schema]);
+  }, [
+    loading,
+    variables,
+    schema,
+    removeFormReference,
+    updateSelectedVariables,
+    onSubmit,
+    onSubmitFailure,
+    submissionState,
+  ]);
 
   useEffect(() => {
     return () => {
-      formRef.current = null;
-      setIsFormValid(false);
+      formManager.detach();
     };
   }, [task.id]);
 
   return (
-    <Container hasFooter={canCompleteTask} data-testid="embedded-form">
+    <Container $hasFooter={canCompleteTask} data-testid="embedded-form">
       <PanelHeader>
         <PanelTitle>Task Form</PanelTitle>
       </PanelHeader>
       <FormCustomStyling />
-      <FormContainer ref={containerRef} key={task.id} />
-      {canCompleteTask && (
+      <FormContainer ref={containerRef} tabIndex={-1} />
+      {(canCompleteTask || submissionState === 'finished') && (
         <DetailsFooter>
-          <Button
-            type="submit"
-            disabled={!isFormValid}
-            onClick={() => formRef.current?.submit()}
+          <AsyncActionButton
+            inlineLoadingProps={{
+              description: getCompletionButtonDescription(submissionState),
+              'aria-live': ['error', 'finished'].includes(submissionState)
+                ? 'assertive'
+                : 'polite',
+              onSuccess: () => {
+                onSubmitSuccess();
+                setSubmissionState('inactive');
+              },
+            }}
+            buttonProps={{
+              size: 'md',
+              type: 'submit',
+              disabled: submissionState === 'active',
+              onClick: () => {
+                setSubmissionState('active');
+                formManager.submit();
+              },
+            }}
+            status={submissionState}
+            onError={() => {
+              setSubmissionState('inactive');
+            }}
           >
             Complete Task
-          </Button>
+          </AsyncActionButton>
         </DetailsFooter>
       )}
     </Container>

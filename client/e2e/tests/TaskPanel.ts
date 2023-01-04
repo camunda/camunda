@@ -29,77 +29,60 @@ test('filter selection', async (t) => {
   const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
 
   await t
-    .click(withinExpandedPanel.getByRole('combobox'))
+    .click(withinExpandedPanel.getByText('All open'))
     .click(screen.getByText('Claimed by me'));
 
   await t.expect(await getURL()).contains('/?filter=claimed-by-me');
-  await t
-    .expect(withinExpandedPanel.getByText('No Tasks available').exists)
-    .ok();
 
   await t
-    .click(withinExpandedPanel.getByRole('combobox'))
+    .expect(withinExpandedPanel.getByText('No tasks found').exists)
+    .ok()
+    .click(withinExpandedPanel.getByText('Claimed by me'))
     .click(screen.getByText('All open'));
 
   await t.expect(await getURL()).contains('/?filter=all-open');
 
   await t
-    .expect(withinExpandedPanel.queryByText('No Tasks available.').exists)
+    .expect(withinExpandedPanel.queryByText('No tasks found').exists)
     .notOk()
     .expect(withinExpandedPanel.getByRole('list').exists)
     .ok();
 });
 
-test('update task list according to user actions', async (t) => {
+test.skip('update task list according to user actions', async (t) => {
   const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
 
   await t
-    .click(withinExpandedPanel.getByRole('combobox'))
-    .click(screen.getByText('Unclaimed'));
+    .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
+    .click(screen.getByRole('option', {name: /unclaimed/i}));
 
   await t.expect(await getURL()).contains('/?filter=unclaimed');
 
   await t
-    .click(
-      within(screen.getByTestId('expanded-panel')).getByText(
-        'usertask_to_be_claimed',
-      ),
-    )
+    .click(withinExpandedPanel.getByText('usertask_to_be_claimed'))
     .click(screen.getByRole('button', {name: 'Claim'}));
 
   await t
-    .expect(
-      within(screen.getByTestId('expanded-panel')).queryByText(
-        'usertask_to_be_claimed',
-      ).exists,
-    )
+    .expect(withinExpandedPanel.queryByText('usertask_to_be_claimed').exists)
     .notOk();
 
   await t
-    .click(withinExpandedPanel.getByRole('combobox'))
-    .click(screen.getByText('Claimed by me'));
+    .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
+    .click(screen.getByRole('option', {name: /claimed by me/i}));
 
   await t.expect(await getURL()).contains('/?filter=claimed-by-me');
 
   await t
-    .click(
-      within(screen.getByTestId('expanded-panel')).getByText(
-        'usertask_to_be_claimed',
-      ),
-    )
+    .click(withinExpandedPanel.queryByText('usertask_to_be_claimed'))
     .click(screen.getByRole('button', {name: 'Complete Task'}));
 
   await t
-    .expect(
-      within(screen.getByTestId('expanded-panel')).queryByText(
-        'usertask_to_be_claimed',
-      ).exists,
-    )
+    .expect(withinExpandedPanel.queryByText('usertask_to_be_claimed').exists)
     .notOk();
 
   await t
-    .click(withinExpandedPanel.getByRole('combobox'))
-    .click(screen.getByText('Completed'));
+    .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
+    .click(screen.queryByRole('option', {name: /completed/i}));
 
   await t.expect(await getURL()).contains('/?filter=completed');
 

@@ -5,13 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import * as React from 'react';
 import {
   render,
   screen,
   waitFor,
   waitForElementToBeRemoved,
-  within,
 } from '@testing-library/react';
 import {
   mockGetCurrentUser,
@@ -33,6 +31,9 @@ import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {mockServer} from 'modules/mockServer';
 import {graphql} from 'msw';
+import {noop} from 'lodash';
+
+const {currentUser} = mockGetCurrentUser.result.data;
 
 type Props = {
   children?: React.ReactNode;
@@ -51,6 +52,13 @@ describe('<Variables />', () => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
     );
+
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should show existing variables for unassigned tasks', async () => {
@@ -61,14 +69,19 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={unclaimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={unclaimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
-    expect(screen.getByText('myVar')).toBeInTheDocument();
+    expect(await screen.findByText('myVar')).toBeInTheDocument();
     expect(screen.getByText('"0001"')).toBeInTheDocument();
     expect(screen.getByText('isCool')).toBeInTheDocument();
     expect(screen.getByText('"yes"')).toBeInTheDocument();
@@ -83,7 +96,13 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -92,7 +111,9 @@ describe('<Variables />', () => {
     expect(
       await screen.findByText('Task has no Variables'),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId('variables-table')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('variables-form-table'),
+    ).not.toBeInTheDocument();
   });
 
   it('should edit variable', async () => {
@@ -103,7 +124,13 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -130,36 +157,42 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
-    userEvent.click(screen.getByText(/Add Variable/));
+    userEvent.click(await screen.findByText(/add variable/i));
+    userEvent.click(screen.getByText(/add variable/i));
 
-    expect(screen.getAllByPlaceholderText(/name/i)).toHaveLength(2);
-    expect(screen.getAllByPlaceholderText(/value/i)).toHaveLength(2);
-    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
-    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
-    expect(screen.getByLabelText('New variable 1 name')).toBeInTheDocument();
-    expect(screen.getByLabelText('New variable 1 value')).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText(/^name$/i)).toHaveLength(2);
+    expect(screen.getAllByPlaceholderText(/^value$/i)).toHaveLength(2);
+    expect(screen.getByLabelText(/1st variable name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/1st variable value/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/2nd variable name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/2nd variable value/i)).toBeInTheDocument();
 
     expect(await screen.findByText(/complete task/i)).toBeDisabled();
 
-    userEvent.click(screen.getByLabelText('Remove new variable 1'));
+    userEvent.click(screen.getByLabelText(/remove 2nd new variable/i));
 
-    expect(screen.getAllByPlaceholderText(/name/i)).toHaveLength(1);
-    expect(screen.getAllByPlaceholderText(/value/i)).toHaveLength(1);
-    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
-    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
+    expect(screen.getAllByPlaceholderText(/^name$/i)).toHaveLength(1);
+    expect(screen.getAllByPlaceholderText(/^value$/i)).toHaveLength(1);
+    expect(screen.getByLabelText(/1st variable name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/1st variable value/i)).toBeInTheDocument();
 
     expect(
-      screen.queryByLabelText('New variable 1 name'),
+      screen.queryByLabelText(/2nd variable name/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByLabelText('New variable 1 value'),
+      screen.queryByLabelText(/2nd variable value/i),
     ).not.toBeInTheDocument();
   });
 
@@ -171,16 +204,22 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.click(await screen.findByText(/add variable/i));
 
-    expect(screen.getByLabelText('New variable 0 name')).toBeInTheDocument();
-    expect(screen.getByLabelText('New variable 0 value')).toBeInTheDocument();
+    expect(screen.getByLabelText(/1st variable name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/1st variable value/i)).toBeInTheDocument();
 
     expect(await screen.findByText(/complete task/i)).toBeDisabled();
   });
@@ -193,25 +232,32 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.click(await screen.findByText(/add variable/i));
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
 
-    expect(
-      await screen.findByText('Name has to be filled'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/1st variable name/i),
+      ).toHaveAccessibleDescription(/name has to be filled/i),
+    );
   });
 
   it('should validate an invalid variable name', async () => {
-    jest.useFakeTimers();
     mockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
@@ -219,33 +265,42 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), '"');
+    userEvent.click(await screen.findByText(/add variable/i));
+    userEvent.type(screen.getByLabelText(/1st variable name/i), '"');
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
 
-    expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
-
-    userEvent.clear(screen.getByLabelText('New variable 0 name'));
-
-    await waitForElementToBeRemoved(() =>
-      screen.queryByText('Name is invalid'),
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/1st variable name/i),
+      ).toHaveAccessibleDescription(/name is invalid/i),
     );
 
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'test ');
+    userEvent.clear(screen.getByLabelText(/1st variable name/i));
 
-    expect(await screen.findByText('Name is invalid')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/1st variable name/i),
+      ).not.toHaveAccessibleDescription(/name is invalid/i),
+    );
 
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    userEvent.type(screen.getByLabelText(/1st variable name/i), 'test ');
+
+    expect(await screen.findByText(/name is invalid/i)).toBeInTheDocument();
   });
 
   it('should validate an empty variable value', async () => {
@@ -256,16 +311,26 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
+    userEvent.click(await screen.findByText(/add variable/i));
+    userEvent.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
 
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/1st variable value/i),
+      ).toHaveAccessibleDescription(/value has to be json/i),
+    );
   });
 
   it('should validate an invalid variable value', async () => {
@@ -276,23 +341,33 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
+    userEvent.click(await screen.findByText(/add variable/i));
 
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       'invalid_value}}}',
     );
 
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/1st variable name/i),
+      ).toHaveAccessibleDescription(/name has to be filled/i),
+    );
     expect(
-      await screen.findByText('Name has to be filled'),
-    ).toBeInTheDocument();
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+      screen.getByLabelText(/1st variable value/i),
+    ).toHaveAccessibleDescription(/value has to be json/i);
   });
 
   it('should not validate valid variables', async () => {
@@ -303,16 +378,22 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
-    userEvent.click(await screen.findByText(/Add Variable/));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'valid_name');
+    userEvent.click(await screen.findByText(/add variable/i));
+    userEvent.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
 
@@ -321,12 +402,14 @@ describe('<Variables />', () => {
     );
 
     expect(
-      screen.queryByTitle('Name has to be filled and Value has to be JSON'),
+      screen.queryByTitle(/name has to filled and value has to be json/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle('Name has to be filled'),
+      screen.queryByTitle(/name has to be filled/i),
     ).not.toBeInTheDocument();
-    expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
+    expect(
+      screen.queryByTitle(/value has to be json/i),
+    ).not.toBeInTheDocument();
   });
 
   it('should handle submission', async () => {
@@ -338,20 +421,33 @@ describe('<Variables />', () => {
 
     const mockOnSubmit = jest.fn();
     const {rerender} = render(
-      <Variables key="id_0" task={claimedTask()} onSubmit={mockOnSubmit} />,
+      <Variables
+        key="id_0"
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
     );
 
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+
     userEvent.click(await screen.findByText(/complete task/i));
 
-    await waitFor(() => expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []));
+    expect(screen.getByText('Completing task...'));
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(1);
+    expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []);
 
     userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'var');
-    userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
+    userEvent.type(screen.getByLabelText(/1st variable name/i), 'var');
+    userEvent.type(screen.getByLabelText(/1st variable value/i), '1');
 
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
@@ -359,25 +455,32 @@ describe('<Variables />', () => {
 
     userEvent.click(screen.getByText(/complete task/i));
 
-    await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
-        {
-          name: 'var',
-          value: '1',
-        },
-      ]),
-    );
+    expect(screen.getByText('Completing task...'));
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(2);
+    expect(mockOnSubmit).toHaveBeenNthCalledWith(2, [
+      {
+        name: 'var',
+        value: '1',
+      },
+    ]);
 
     rerender(
-      <Variables key="id_1" task={claimedTask()} onSubmit={mockOnSubmit} />,
+      <Variables
+        key="id_1"
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
     );
 
     expect(await screen.findByLabelText('myVar')).toBeInTheDocument();
 
     userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText('New variable 0 name'), 'name');
-    userEvent.type(screen.getByLabelText('New variable 0 value'), '"Jon"');
+    userEvent.type(screen.getByLabelText(/1st variable name/i), 'name');
+    userEvent.type(screen.getByLabelText(/1st variable value/i), '"Jon"');
 
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
@@ -385,15 +488,15 @@ describe('<Variables />', () => {
 
     userEvent.click(screen.getByText(/complete task/i));
 
-    await waitFor(() =>
-      expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
-        {
-          name: 'name',
-          value: '"Jon"',
-        },
-      ]),
-    );
+    expect(screen.getByText('Completing task...'));
+    expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(3);
+    expect(mockOnSubmit).toHaveBeenNthCalledWith(3, [
+      {
+        name: 'name',
+        value: '"Jon"',
+      },
+    ]);
   });
 
   it('should change variable and complete task', async () => {
@@ -405,9 +508,18 @@ describe('<Variables />', () => {
 
     const mockOnSubmit = jest.fn();
 
-    render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     userEvent.clear(await screen.findByLabelText('myVar'));
     userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
@@ -434,9 +546,11 @@ describe('<Variables />', () => {
       return <div>{data?.currentUser.displayName}</div>;
     };
 
+    const restrictedUser = mockGetCurrentRestrictedUser.result.data;
+
     mockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
+        return res.once(ctx.data(restrictedUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
@@ -448,7 +562,13 @@ describe('<Variables />', () => {
     render(
       <>
         <UserName />
-        <Variables task={claimedTask()} onSubmit={mockOnSubmit} />
+        <Variables
+          task={claimedTask()}
+          user={restrictedUser.currentUser}
+          onSubmit={mockOnSubmit}
+          onSubmitFailure={noop}
+          onSubmitSuccess={noop}
+        />
       </>,
       {
         wrapper: Wrapper,
@@ -458,7 +578,7 @@ describe('<Variables />', () => {
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(await screen.findByText(/myVar/)).toBeInTheDocument();
 
-    expect(screen.queryByText('Add Variable')).not.toBeInTheDocument();
+    expect(screen.queryByText(/add variable/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText('myVar')).not.toBeInTheDocument();
     expect(screen.queryByText(/complete task/i)).not.toBeInTheDocument();
   });
@@ -472,17 +592,26 @@ describe('<Variables />', () => {
 
     const mockOnSubmit = jest.fn();
 
-    render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
-    userEvent.click(await screen.findByText('Add Variable'));
+    userEvent.click(await screen.findByText(/add variable/i));
     userEvent.type(
-      screen.getByLabelText('New variable 0 name'),
+      screen.getByLabelText(/1st variable name/i),
       'newVariableName',
     );
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       '"newVariableValue"',
     );
 
@@ -509,7 +638,13 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -517,7 +652,12 @@ describe('<Variables />', () => {
 
     userEvent.type(await screen.findByLabelText('myVar'), '{{ invalid value');
 
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByLabelText('myVar')).toHaveAccessibleDescription(
+        /value has to be json/i,
+      ),
+    );
+
     expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
@@ -529,7 +669,13 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -537,11 +683,16 @@ describe('<Variables />', () => {
 
     userEvent.click(await screen.findByText(/add variable/i));
     userEvent.type(
-      screen.getByLabelText('New variable 0 value'),
+      screen.getByLabelText(/1st variable value/i),
       '{{ invalid value',
     );
 
-    expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByLabelText(/1st variable value/i),
+      ).toHaveAccessibleDescription(/value has to be json/i),
+    );
+
     expect(screen.getByText(/complete task/i)).toBeDisabled();
   });
 
@@ -553,7 +704,13 @@ describe('<Variables />', () => {
     );
 
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -579,9 +736,18 @@ describe('<Variables />', () => {
       }),
     );
     const mockOnSubmit = jest.fn();
-    render(<Variables task={claimedTask()} onSubmit={mockOnSubmit} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();
 
@@ -634,7 +800,13 @@ describe('<Variables />', () => {
       }),
     );
     render(
-      <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+      <Variables
+        task={claimedTask()}
+        user={currentUser}
+        onSubmit={() => Promise.resolve()}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
       {
         wrapper: Wrapper,
       },
@@ -662,15 +834,6 @@ describe('<Variables />', () => {
   });
 
   describe('Duplicate variable validations', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-      jest.clearAllTimers();
-      jest.useRealTimers();
-    });
-
     it('should display error if name is the same with one of the existing variables', async () => {
       mockServer.use(
         graphql.query('GetTaskVariables', (_, res, ctx) => {
@@ -679,25 +842,32 @@ describe('<Variables />', () => {
       );
 
       render(
-        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        <Variables
+          task={claimedTask()}
+          user={currentUser}
+          onSubmit={() => Promise.resolve()}
+          onSubmitFailure={noop}
+          onSubmitSuccess={noop}
+        />,
         {
           wrapper: Wrapper,
         },
       );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.click(await screen.findByText(/add variable/i));
+      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar');
 
-      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar');
-
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/1st variable value/i),
+        ).toHaveAccessibleDescription(/value has to be json/i),
+      );
       expect(
-        await screen.findByText('Name must be unique'),
-      ).toBeInTheDocument();
-      expect(
-        await screen.findByText('Value has to be JSON'),
-      ).toBeInTheDocument();
+        screen.getByLabelText(/1st variable name/i),
+      ).toHaveAccessibleDescription(/name must be unique/i);
     });
 
-    it('should display error on the last modified field when two new variables are added with the same name', async () => {
+    it('should display duplicate name error on last edited variable', async () => {
       mockServer.use(
         graphql.query('GetTaskVariables', (_, res, ctx) => {
           return res.once(ctx.data(mockGetTaskVariables().result.data));
@@ -705,63 +875,50 @@ describe('<Variables />', () => {
       );
 
       render(
-        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        <Variables
+          task={claimedTask()}
+          user={currentUser}
+          onSubmit={() => Promise.resolve()}
+          onSubmitFailure={noop}
+          onSubmitSuccess={noop}
+        />,
         {
           wrapper: Wrapper,
         },
       );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
-      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
+      userEvent.click(await screen.findByText(/add variable/i));
+      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
 
       expect(
-        await screen.findByText('Value has to be JSON'),
-      ).toBeInTheDocument();
+        screen.getByLabelText(/1st variable name/i),
+      ).not.toHaveAccessibleDescription(/name must be unique/i);
 
-      userEvent.click(screen.getByText(/Add Variable/));
-      userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
+      userEvent.click(screen.getByText(/add variable/i));
+      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
 
-      expect(
-        await within(screen.getByTestId('newVariables[1]')).findByText(
-          'Name must be unique',
-        ),
-      ).toBeInTheDocument();
-
-      expect(
-        await within(screen.getByTestId('newVariables[1]')).findByText(
-          'Value has to be JSON',
-        ),
-      ).toBeInTheDocument();
-
-      expect(
-        // eslint-disable-next-line testing-library/prefer-presence-queries
-        within(screen.getByTestId('newVariables[0]')).queryByText(
-          'Name must be unique',
-        ),
-      ).not.toBeInTheDocument();
-
-      userEvent.type(screen.getByLabelText('New variable 1 name'), '3');
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText('Name must be unique'),
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/2nd variable name/i),
+        ).toHaveAccessibleDescription(/name must be unique/i),
       );
 
-      userEvent.type(screen.getByLabelText('New variable 0 name'), '3');
-      expect(
-        await within(screen.getByTestId('newVariables[0]')).findByText(
-          'Name must be unique',
-        ),
-      ).toBeInTheDocument();
-      expect(
-        // eslint-disable-next-line testing-library/prefer-presence-queries
-        within(screen.getByTestId('newVariables[1]')).queryByText(
-          'Name must be unique',
-        ),
-      ).not.toBeInTheDocument();
+      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'foo');
 
-      userEvent.type(screen.getByLabelText('New variable 1 name'), '4');
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText('Name must be unique'),
+      expect(
+        screen.getByLabelText(/2nd variable name/i),
+      ).not.toHaveAccessibleDescription(/name must be unique/i);
+
+      userEvent.type(screen.getByLabelText(/1st variable name/i), 'foo');
+
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/1st variable name/i),
+        ).toHaveAccessibleDescription(/name must be unique/i),
       );
+      expect(
+        screen.getByLabelText(/2nd variable name/i),
+      ).not.toHaveAccessibleDescription(/name must be unique/i);
     });
 
     it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
@@ -772,38 +929,41 @@ describe('<Variables />', () => {
       );
 
       render(
-        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        <Variables
+          task={claimedTask()}
+          user={currentUser}
+          onSubmit={() => Promise.resolve()}
+          onSubmitFailure={noop}
+          onSubmitSuccess={noop}
+        />,
         {
           wrapper: Wrapper,
         },
       );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.click(await screen.findByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
-      userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
+      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
+      userEvent.type(screen.getByLabelText(/1st variable value/i), '1');
 
       await waitFor(() =>
         expect(screen.getByText(/complete task/i)).toBeEnabled(),
       );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.click(await screen.findByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
-      userEvent.type(screen.getByLabelText('New variable 1 value'), '2');
+      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
+      userEvent.type(screen.getByLabelText(/2nd variable value/i), '2');
+
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/2nd variable name/i),
+        ).toHaveAccessibleDescription(/name must be unique/i),
+      );
 
       expect(
-        await within(screen.getByTestId('newVariables[1]')).findByText(
-          'Name must be unique',
-        ),
-      ).toBeInTheDocument();
-
-      expect(
-        // eslint-disable-next-line testing-library/prefer-presence-queries
-        within(screen.getByTestId('newVariables[0]')).queryByText(
-          'Name must be unique',
-        ),
-      ).not.toBeInTheDocument();
+        screen.getByLabelText(/1st variable name/i),
+      ).not.toHaveAccessibleDescription(/name must be unique/i);
     });
 
     it('should continue to display existing duplicate name error', async () => {
@@ -814,55 +974,55 @@ describe('<Variables />', () => {
       );
 
       render(
-        <Variables task={claimedTask()} onSubmit={() => Promise.resolve()} />,
+        <Variables
+          task={claimedTask()}
+          user={currentUser}
+          onSubmit={() => Promise.resolve()}
+          onSubmitFailure={noop}
+          onSubmitSuccess={noop}
+        />,
         {
           wrapper: Wrapper,
         },
       );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.click(await screen.findByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText('New variable 0 name'), 'myVar2');
-      userEvent.type(screen.getByLabelText('New variable 0 value'), '1');
+      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
+      userEvent.type(screen.getByLabelText(/1st variable value/i), '1');
 
       await waitFor(() =>
         expect(screen.getByText(/complete task/i)).toBeEnabled(),
       );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.click(screen.getByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText('New variable 1 name'), 'myVar2');
-      userEvent.type(screen.getByLabelText('New variable 1 value'), '2');
+      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
+      userEvent.type(screen.getByLabelText(/2nd variable value/i), '2');
 
-      expect(
-        await within(screen.getByTestId('newVariables[1]')).findByText(
-          'Name must be unique',
-        ),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/2nd variable name/i),
+        ).toHaveAccessibleDescription(/name must be unique/i),
+      );
 
-      userEvent.click(await screen.findByText(/Add Variable/));
+      userEvent.click(screen.getByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText('New variable 2 name'), 'myVar2');
-      userEvent.type(screen.getByLabelText('New variable 2 value'), '3');
+      userEvent.type(screen.getByLabelText(/3rd variable name/i), 'myVar2');
+      userEvent.type(screen.getByLabelText(/3rd variable value/i), '3');
 
-      expect(
-        await within(screen.getByTestId('newVariables[2]')).findByText(
-          'Name must be unique',
-        ),
-      ).toBeInTheDocument();
-
-      expect(
-        within(screen.getByTestId('newVariables[1]')).getByText(
-          'Name must be unique',
-        ),
-      ).toBeInTheDocument();
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/3rd variable name/i),
+        ).toHaveAccessibleDescription(/name must be unique/i),
+      );
 
       expect(
-        // eslint-disable-next-line testing-library/prefer-presence-queries
-        within(screen.getByTestId('newVariables[0]')).queryByText(
-          'Name must be unique',
-        ),
-      ).not.toBeInTheDocument();
+        screen.getByLabelText(/2nd variable name/i),
+      ).toHaveAccessibleDescription(/name must be unique/i);
+      expect(
+        screen.getByLabelText(/1st variable name/i),
+      ).not.toHaveAccessibleDescription(/name must be unique/i);
     });
   });
 });

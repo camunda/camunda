@@ -5,29 +5,34 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useRef} from 'react';
-
-import {EmptyMessage, UL, Container} from './styled';
+import {useEffect, useRef} from 'react';
+import {
+  EmptyMessage,
+  UL,
+  Container,
+  EmptyMessageFirstLine,
+  EmptyMessageSecondLine,
+  EmptyMessageText,
+  EmptyListIcon,
+} from './styled';
 import {Task} from './Task';
-import {LoadingOverlay} from 'modules/components/LoadingOverlay';
-import {useTasks} from '../useTasks';
+import {useTasks} from 'modules/hooks/useTasks';
 import {useLocation} from 'react-router-dom';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
+import {Stack} from '@carbon/react';
+import {Skeleton} from './Skeleton';
 
 const Tasks: React.FC = () => {
   const {
-    tasks,
-    loading,
-    isFirstLoad,
     fetchPreviousTasks,
     fetchNextTasks,
     shouldFetchMoreTasks,
+    loading,
+    tasks,
   } = useTasks({withPolling: true});
-
-  const taskRef = useRef<HTMLLIElement>(null);
+  const taskRef = useRef<HTMLDivElement>(null);
   const scrollableListRef = useRef<HTMLUListElement>(null);
-
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -37,48 +42,59 @@ const Tasks: React.FC = () => {
   }, [filter]);
 
   return (
-    <Container isLoading={loading}>
-      {loading && <LoadingOverlay data-testid="tasks-loading-overlay" />}
-      <UL
-        data-testid="scrollable-list"
-        ref={scrollableListRef}
-        onScroll={async (event) => {
-          const target = event.target as HTMLDivElement;
+    <Container $enablePadding={tasks.length === 0 && !loading}>
+      {loading && <Skeleton />}
+      {tasks.length > 0 && (
+        <UL
+          data-testid="scrollable-list"
+          ref={scrollableListRef}
+          onScroll={async (event) => {
+            const target = event.target as HTMLDivElement;
 
-          if (!shouldFetchMoreTasks) {
-            return;
-          }
+            if (!shouldFetchMoreTasks) {
+              return;
+            }
 
-          if (
-            target.scrollHeight - target.clientHeight - target.scrollTop <=
-            0
-          ) {
-            await fetchNextTasks();
-          } else if (target.scrollTop === 0) {
-            const previousTasks = await fetchPreviousTasks();
+            if (
+              target.scrollHeight - target.clientHeight - target.scrollTop <=
+              0
+            ) {
+              await fetchNextTasks();
+            } else if (target.scrollTop === 0) {
+              const previousTasks = await fetchPreviousTasks();
 
-            target.scrollTop =
-              (taskRef?.current?.clientHeight ?? 0) * previousTasks.length;
-          }
-        }}
-      >
-        {tasks.map((task) => {
-          return (
-            <Task
-              ref={taskRef}
-              key={task.id}
-              taskId={task.id}
-              name={task.name}
-              processName={task.processName}
-              assignee={task.assignee}
-              creationTime={task.creationTime}
-            />
-          );
-        })}
-        {tasks.length === 0 && !isFirstLoad ? (
-          <EmptyMessage>No Tasks available</EmptyMessage>
-        ) : null}
-      </UL>
+              target.scrollTop =
+                (taskRef?.current?.clientHeight ?? 0) * previousTasks.length;
+            }
+          }}
+          tabIndex={-1}
+        >
+          {tasks.map((task) => {
+            return (
+              <Task
+                ref={taskRef}
+                key={task.id}
+                taskId={task.id}
+                name={task.name}
+                processName={task.processName}
+                assignee={task.assignee}
+                creationTime={task.creationTime}
+              />
+            );
+          })}
+        </UL>
+      )}
+      {tasks.length === 0 && !loading && (
+        <Stack as={EmptyMessage} gap={5} orientation="horizontal">
+          <EmptyListIcon size={24} alt="" />
+          <Stack gap={1} as={EmptyMessageText}>
+            <EmptyMessageFirstLine>No tasks found</EmptyMessageFirstLine>
+            <EmptyMessageSecondLine>
+              There are no tasks matching your filter criteria.
+            </EmptyMessageSecondLine>
+          </Stack>
+        </Stack>
+      )}
     </Container>
   );
 };

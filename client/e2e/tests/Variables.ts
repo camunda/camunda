@@ -54,9 +54,7 @@ test('display variables when task has variables', async (t) => {
     )
     .ok();
   await t
-    .expect(
-      withinVariablesTable.getByRole('columnheader', {name: 'testData'}).exists,
-    )
+    .expect(withinVariablesTable.getByRole('cell', {name: 'testData'}).exists)
     .ok();
   await t
     .expect(
@@ -66,34 +64,36 @@ test('display variables when task has variables', async (t) => {
 });
 
 test.after(async (t) => {
-  await t.click(screen.getByRole('button', {name: 'Unclaim'}));
-  await t.expect(screen.getByRole('button', {name: 'Claim'}).exists).ok();
+  await t
+    .click(screen.getByRole('button', {name: 'Unclaim'}))
+    .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
+    .ok();
 })('new variable disappears after refresh', async (t) => {
-  await t.click(
-    within(screen.getByTestId('expanded-panel'))
-      .getAllByText('usertask_with_variables')
-      .nth(0),
-  );
-
   await t
+    .click(
+      within(screen.getByTestId('expanded-panel'))
+        .getAllByText('usertask_with_variables')
+        .nth(0),
+    )
     .expect(screen.queryByRole('button', {name: 'Add Variable'}).exists)
-    .notOk();
-
-  await t
+    .notOk()
     .click(screen.getByRole('button', {name: 'Claim'}))
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 
   await t.typeText(
-    within(screen.getByTestId('newVariables[0].name').shadowRoot()).getByRole(
-      'textbox',
-    ),
+    screen.queryByLabelText(/1st variable name/i),
     'newVariableName',
+    {
+      paste: true,
+    },
   );
+
   await t.typeText(
-    within(screen.getByTestId('newVariables[0].value').shadowRoot()).getByRole(
-      'textbox',
-    ),
+    screen.queryByLabelText(/1st variable value/i),
     '"newVariableValue"',
+    {
+      paste: true,
+    },
   );
 
   await t.navigateTo(await getURL());
@@ -106,46 +106,40 @@ test.after(async (t) => {
 });
 
 test('new variable still exists after refresh if task is completed', async (t) => {
-  await t.click(
-    within(screen.getByTestId('expanded-panel'))
-      .getAllByText('usertask_with_variables')
-      .nth(0),
-  );
-
   await t
+    .click(
+      within(screen.getByTestId('expanded-panel'))
+        .getAllByText('usertask_with_variables')
+        .nth(0),
+    )
     .expect(screen.queryByRole('button', {name: 'Add Variable'}).exists)
-    .notOk();
-
-  await t
+    .notOk()
     .click(screen.getByRole('button', {name: 'Claim'}))
     .click(screen.getByRole('button', {name: 'Add Variable'}));
 
   await t.typeText(
-    within(screen.getByTestId('newVariables[0].name').shadowRoot()).getByRole(
-      'textbox',
-    ),
+    screen.queryByLabelText(/1st variable name/i),
     'newVariableName',
+    {
+      paste: true,
+    },
   );
 
-  await t.typeText(
-    within(screen.getByTestId('newVariables[0].value').shadowRoot()).getByRole(
-      'textbox',
-    ),
-    '"newVariableValue"',
-  );
+  await t.typeText(screen.queryByLabelText(/1st variable value/i), '"newVal"', {
+    paste: true,
+  });
 
   const currentUrl = await getURL();
+
   await t
     .expect(
       screen
         .getByRole('button', {name: 'Complete Task'})
         .hasAttribute('disabled'),
     )
-    .notOk();
-  await t.click(screen.getByRole('button', {name: 'Complete Task'}));
-
-  await t
-    .expect(screen.getByText('Select a Task to view the details').exists)
+    .notOk()
+    .click(screen.getByRole('button', {name: 'Complete Task'}))
+    .expect(screen.queryByText('Pick a task to work on.').exists)
     .ok();
 
   await t.navigateTo(currentUrl);
@@ -153,61 +147,51 @@ test('new variable still exists after refresh if task is completed', async (t) =
   await t
     .expect(screen.queryByText('newVariableName').exists)
     .ok()
-    .expect(screen.getByText('"newVariableValue"').exists)
+    .expect(screen.getByText('"newVal"').exists)
     .ok();
 });
 
 test.after(async (t) => {
-  await t.click(screen.getByRole('button', {name: 'Unclaim'}));
-  await t.expect(screen.getByRole('button', {name: 'Claim'}).exists).ok();
+  await t
+    .click(screen.getByRole('button', {name: 'Unclaim'}))
+    .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
+    .ok();
 })('edited variable is not saved after refresh', async (t) => {
-  const variableValueField = within(
-    screen.getByTestId('variable-value-#testData').shadowRoot(),
-  ).getByRole('textbox');
-
-  await t.click(
-    within(screen.getByTestId('expanded-panel'))
-      .getAllByText('usertask_with_variables')
-      .nth(0),
-  );
-
-  await t.click(screen.getByRole('button', {name: 'Claim'}));
-  await t.expect(variableValueField.value).eql('"something"');
-
   await t
-    .selectText(variableValueField)
-    .pressKey('delete')
-    .typeText(variableValueField, '"updatedValue"');
-
-  await t
-    .click(screen.getByText('Tasklist'))
     .click(
       within(screen.getByTestId('expanded-panel'))
         .getAllByText('usertask_with_variables')
         .nth(0),
-    );
+    )
+    .click(screen.getByRole('button', {name: 'Claim'}))
+    .expect(screen.queryByDisplayValue('"something"').exists)
+    .ok()
+    .selectText(screen.queryByLabelText(/testdata value/i))
+    .pressKey('delete')
+    .typeText(screen.queryByLabelText(/testdata value/i), '"updatedValue"', {
+      paste: true,
+    });
 
-  await t.expect(variableValueField.value).eql('"something"');
+  await t.navigateTo(await getURL());
+
+  await t.expect(screen.queryByDisplayValue('"something"').exists).ok();
 });
 
 test('edited variable is saved after refresh if task is completed', async (t) => {
-  await t.click(
-    within(screen.getByTestId('expanded-panel'))
-      .getAllByText('usertask_with_variables')
-      .nth(0),
-  );
-
-  const variableValueField = within(
-    screen.getByTestId('variable-value-#testData').shadowRoot(),
-  ).getByRole('textbox');
-
-  await t.click(screen.getByRole('button', {name: 'Claim'}));
-  await t.expect(variableValueField.value).eql('"something"');
-
   await t
-    .selectText(variableValueField)
+    .click(
+      within(screen.getByTestId('expanded-panel'))
+        .getAllByText('usertask_with_variables')
+        .nth(0),
+    )
+    .click(screen.getByRole('button', {name: 'Claim'}))
+    .expect(screen.queryByDisplayValue('"something"').exists)
+    .ok()
+    .selectText(screen.queryByLabelText(/testdata value/i))
     .pressKey('delete')
-    .typeText(variableValueField, '"updatedValue"');
+    .typeText(screen.queryByLabelText(/testdata value/i), '"updatedValue"', {
+      paste: true,
+    });
 
   const currentUrl = await getURL();
   await t
@@ -216,12 +200,11 @@ test('edited variable is saved after refresh if task is completed', async (t) =>
         .getByRole('button', {name: 'Complete Task'})
         .hasAttribute('disabled'),
     )
-    .notOk();
-  await t.click(screen.getByRole('button', {name: 'Complete Task'}));
-
-  await t
-    .expect(screen.getByText('Select a Task to view the details').exists)
+    .notOk()
+    .click(screen.getByRole('button', {name: 'Complete Task'}))
+    .expect(screen.queryByText('Pick a task to work on.').exists)
     .ok();
+
   await t.navigateTo(currentUrl);
   await t.expect(screen.queryByText('"updatedValue"').exists).ok();
 });

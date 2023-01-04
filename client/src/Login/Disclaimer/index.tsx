@@ -5,26 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
-import {Anchor} from 'modules/components/Anchor/styled';
+import {Link} from '@carbon/react';
 import {Container} from './styled';
 
-const Disclaimer: React.FC = () => {
+type Props = {
+  className?: string;
+};
+
+const Disclaimer: React.FC<Props> = (props) => {
   return window.clientConfig?.isEnterprise ? null : (
-    <Container>
+    <Container {...props}>
       Non-Production License. If you would like information on production usage,
       please refer to our{' '}
-      <Anchor
+      <Link
         href="https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-self-managed/"
         target="_blank"
+        inline
       >
         terms & conditions page
-      </Anchor>{' '}
+      </Link>{' '}
       or{' '}
-      <Anchor href="https://camunda.com/contact/" target="_blank">
+      <Link href="https://camunda.com/contact/" target="_blank" inline>
         contact sales
-      </Anchor>
+      </Link>
       .
     </Container>
   );

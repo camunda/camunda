@@ -7,67 +7,66 @@
 
 /* istanbul ignore file */
 
+import {rem} from '@carbon/elements';
 import styled, {css} from 'styled-components';
 
-interface BaseProps {
-  hasFooter?: boolean;
-}
+type BaseProps = {
+  $hasFooter?: boolean;
+  $variant: 'background' | 'layer';
+};
 
-const Header = styled.div`
+const Header = styled.h5`
   ${({theme}) => {
     return css`
-      height: 31px;
-      line-height: 32px;
-      font-size: 15px;
-      font-weight: bold;
-      background-color: ${theme.colors.ui02};
-      color: ${theme.colors.ui06};
-      padding: 3px 0 3px 19px;
-      border-bottom: 1px solid ${theme.colors.ui05};
+      ${theme.heading02};
+      color: var(--cds-text-primary);
+      padding: ${theme.spacing03} ${theme.spacing05};
+      border-bottom: 1px solid var(--cds-border-subtle);
       display: flex;
       justify-content: space-between;
+      align-items: center;
     `;
   }}
 `;
 
 const Base = styled.div<BaseProps>`
-  ${({hasFooter}) => {
+  ${({$hasFooter, $variant}) => {
     return css`
+      background-color: ${$variant === 'background'
+        ? css`var(--cds-background)`
+        : css`var(--cds-layer)`};
+      padding: 0;
       display: grid;
       grid-template-columns: 100%;
-      grid-template-rows: ${hasFooter ? '38px auto 38px' : '38px auto'};
+      grid-template-rows: ${$hasFooter
+        ? css`
+            ${rem(38)} auto ${rem(38)}
+          `
+        : css`
+            ${rem(38)} auto
+          `};
     `;
   }}
 `;
 
-interface BodyProps {
-  hasTransparentBackground?: boolean;
-}
-
-const Body = styled.div<BodyProps>`
-  ${({hasTransparentBackground, theme}) => {
-    return css`
-      background-color: ${hasTransparentBackground
-        ? 'transparent'
-        : theme.colors.ui04};
-      overflow-y: hidden;
-      display: flex;
-      flex-direction: column;
-    `;
-  }}
+const Body = styled.div`
+  overflow-y: hidden;
+  display: flex;
+  flex-direction: column;
 `;
 
 const Footer = styled.div`
   ${({theme}) => {
     return css`
-      height: 37px;
-      background-color: ${theme.colors.ui02};
-      border-top: 1px solid ${theme.colors.ui05};
-      color: ${theme.colors.text.copyrightNotice};
-      font-size: 12px;
+      height: ${rem(37)};
+      color: var(--cds-text-helper);
+      ${theme.legal01};
       text-align: right;
-      line-height: 38px;
-      padding-right: 20px;
+      padding-right: ${rem(20)};
+      border-top: 1px solid var(--cds-border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
     `;
   }}
 `;
