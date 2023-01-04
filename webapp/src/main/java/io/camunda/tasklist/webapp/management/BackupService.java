@@ -6,12 +6,14 @@
  */
 package io.camunda.tasklist.webapp.management;
 
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
+import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -26,22 +28,35 @@ public class BackupService extends InternalAPIErrorController {
 
   @Autowired private BackupManager backupManager;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   private final Pattern pattern = Pattern.compile("((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$");
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
   public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
     validateRequest(request);
+    validateRepositoryNameIsConfigured();
     return backupManager.takeBackup(request);
+  }
+
+  private void validateRepositoryNameIsConfigured() {
+    if (tasklistProperties.getBackup() == null
+        || tasklistProperties.getBackup().getRepositoryName() == null
+        || tasklistProperties.getBackup().getRepositoryName().isEmpty()) {
+      throw new NotFoundException("No backup repository configured.");
+    }
   }
 
   @GetMapping("/{backupId}")
   public GetBackupStateResponseDto getBackupState(@PathVariable String backupId) {
+    validateRepositoryNameIsConfigured();
     return backupManager.getBackupState(backupId);
   }
 
   @DeleteMapping("/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteBackup(@PathVariable String backupId) {
+    validateRepositoryNameIsConfigured();
     validateBackupId(backupId);
     backupManager.deleteBackup(backupId);
   }

@@ -6,16 +6,29 @@
  */
 package io.camunda.tasklist.webapp.management.dto;
 
+import java.util.List;
 import java.util.Objects;
 
 public class GetBackupStateResponseDto {
 
+  private String backupId;
   private BackupStateDto state;
+  private String failureReason;
+  private List<GetBackupStateResponseDetailDto> details;
 
   public GetBackupStateResponseDto() {}
 
-  public GetBackupStateResponseDto(BackupStateDto state) {
-    this.state = state;
+  public GetBackupStateResponseDto(String backupId) {
+    this.backupId = backupId;
+  }
+
+  public String getBackupId() {
+    return backupId;
+  }
+
+  public GetBackupStateResponseDto setBackupId(String backupId) {
+    this.backupId = backupId;
+    return this;
   }
 
   public BackupStateDto getState() {
@@ -24,6 +37,24 @@ public class GetBackupStateResponseDto {
 
   public GetBackupStateResponseDto setState(BackupStateDto state) {
     this.state = state;
+    return this;
+  }
+
+  public String getFailureReason() {
+    return failureReason;
+  }
+
+  public GetBackupStateResponseDto setFailureReason(String failureReason) {
+    this.failureReason = failureReason;
+    return this;
+  }
+
+  public List<GetBackupStateResponseDetailDto> getDetails() {
+    return details;
+  }
+
+  public GetBackupStateResponseDto setDetails(List<GetBackupStateResponseDetailDto> details) {
+    this.details = details;
     return this;
   }
 
@@ -36,11 +67,14 @@ public class GetBackupStateResponseDto {
       return false;
     }
     final GetBackupStateResponseDto that = (GetBackupStateResponseDto) o;
-    return state == that.state;
+    return Objects.equals(backupId, that.backupId)
+        && state == that.state
+        && Objects.equals(failureReason, that.failureReason)
+        && Objects.equals(details, that.details);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(state);
+    return Objects.hash(backupId, state, failureReason, details);
   }
 }
