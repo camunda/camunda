@@ -71,12 +71,12 @@ public class OperateAPICaller {
 
   public TakeBackupResponseDto backup(String backupId) {
     TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
-    return restTemplate.postForObject(restTemplate.getURL("/actuator/backup"), takeBackupRequest,
+    return restTemplate.postForObject(restTemplate.getURL("/actuator/backups"), takeBackupRequest,
         TakeBackupResponseDto.class);
   }
 
   public GetBackupStateResponseDto getBackupState(String backupId) {
-    return restTemplate.getForObject(restTemplate.getURL("/actuator/backup/" + backupId),
+    return restTemplate.getForObject(restTemplate.getURL("/actuator/backups/" + backupId),
         GetBackupStateResponseDto.class);
   }
 

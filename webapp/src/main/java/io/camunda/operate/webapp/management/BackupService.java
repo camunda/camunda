@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 @Component
-@RestControllerEndpoint(id = "backup")
+@RestControllerEndpoint(id = "backups")
 public class BackupService {
 
   @Autowired
