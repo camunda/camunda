@@ -7,10 +7,11 @@
 package io.camunda.operate.metric;
 
 import static io.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import io.camunda.operate.Metrics;
+import io.camunda.operate.management.ModelMetricProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.operate.entities.OperationState;
@@ -34,6 +35,12 @@ public class MetricIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
+
+  @Autowired
+  private Metrics metrics;
+
+  @Autowired
+  private ModelMetricProvider modelMetricProvider;
 
   @Before
   public void before() {
@@ -113,6 +120,29 @@ public class MetricIT extends OperateZeebeIntegrationTest {
     assertThatMetricsFrom(mockMvc,
         new MetricAssert.ValueMatcher("operate_commands_total{status=\""+OperationState.FAILED+"\",type=\""+OperationType.CANCEL_PROCESS_INSTANCE+"\",}",
             d -> d.doubleValue() == 1));
+  }
+
+  @Test // OPE-3857
+  public void testBPMNAndDNMModelMetrics() {
+    // Given metrics are registered
+    metrics.registerGaugeSupplier(Metrics.GAUGE_BPMN_MODEL_COUNT, modelMetricProvider::getBPMNModelCount);
+    metrics.registerGaugeSupplier(Metrics.GAUGE_DMN_MODEL_COUNT, modelMetricProvider::getDMNModelCount);
+    // When
+    tester
+        .deployProcess("demoProcess_v_1.bpmn")
+        .waitUntil().processIsDeployed();
+    tester
+        .deployProcess("complexProcess_v_3.bpmn")
+        .waitUntil().processIsDeployed();
+    //
+    tester.deployDecision("invoiceBusinessDecisions_v_1.dmn")
+        .waitUntil().decisionsAreDeployed(2);
+
+    // Then
+    assertThatMetricsFrom(mockMvc,allOf(
+        containsString(Metrics.GAUGE_BPMN_MODEL_COUNT.replace('.', '_') +" 2.0"),
+        containsString(Metrics.GAUGE_DMN_MODEL_COUNT.replace('.','_') + " 2.0")
+    ));
   }
   
 }

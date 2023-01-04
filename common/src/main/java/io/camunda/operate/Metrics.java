@@ -10,7 +10,9 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.Queue;
+import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +49,8 @@ public class Metrics {
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
   //Gauges:
   public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
+  public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
+  public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
 
   // Tags
   // -----
@@ -60,6 +64,7 @@ public class Metrics {
                              TAG_VALUE_CORESTATISTICS = "corestatistics",
                              TAG_VALUE_SUCCEEDED = "succeeded",
                              TAG_VALUE_FAILED = "failed";
+
 
   @Autowired
   private MeterRegistry registry;
@@ -82,6 +87,10 @@ public class Metrics {
     Gauge.builder(OPERATE_NAMESPACE + name, stateObject, valueFunction)
         .tags(tags)
         .register(registry);
+  }
+
+  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier){
+    Gauge.builder(name, gaugeSupplier).register(registry);
   }
 
   public <E> void registerGaugeQueueSize(String name, Queue<E> queue, String... tags) {

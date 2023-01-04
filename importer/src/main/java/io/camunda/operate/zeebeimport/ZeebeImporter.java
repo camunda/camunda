@@ -6,6 +6,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import java.util.Collection;
 import javax.annotation.PostConstruct;
@@ -37,6 +38,9 @@ public class ZeebeImporter {
   @Autowired
   @Qualifier("recordsReaderThreadPoolExecutor")
   private ThreadPoolTaskScheduler recordsReaderThreadPoolExecutor;
+
+  @Autowired
+  private Metrics metrics;
 
   @PostConstruct
   public void startImportingData() {

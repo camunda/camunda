@@ -8,6 +8,7 @@ package io.camunda.operate.webapp;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+
 import io.camunda.operate.data.DataGenerator;
 import io.camunda.operate.es.ElasticsearchConnector;
 import io.camunda.operate.property.OperateProperties;
@@ -45,6 +46,8 @@ public class StartupBean {
 
   @Autowired
   private OperateProperties operateProperties;
+
+
 
   @PostConstruct
   public void initApplication() {
