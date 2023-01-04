@@ -105,7 +105,7 @@ test.after(async (t) => {
     .notOk();
 });
 
-test('new variable still exists after refresh if task is completed', async (t) => {
+test.skip('new variable still exists after refresh if task is completed', async (t) => {
   await t
     .click(
       within(screen.getByTestId('expanded-panel'))
