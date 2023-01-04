@@ -14,6 +14,7 @@ import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.InternalAPIErrorController;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundException;
+import java.util.List;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -51,6 +52,12 @@ public class BackupService extends InternalAPIErrorController {
   public GetBackupStateResponseDto getBackupState(@PathVariable String backupId) {
     validateRepositoryNameIsConfigured();
     return backupManager.getBackupState(backupId);
+  }
+
+  @GetMapping
+  public List<GetBackupStateResponseDto> getBackups() {
+    validateRepositoryNameIsConfigured();
+    return backupManager.getBackups();
   }
 
   @DeleteMapping("/{backupId}")

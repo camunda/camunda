@@ -6,7 +6,7 @@
  */
 package io.camunda.tasklist.webapp.es.backup;
 
-import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.*;
 import static org.elasticsearch.snapshots.SnapshotState.*;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -27,10 +27,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -46,6 +43,7 @@ import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotShardFailure;
 import org.slf4j.Logger;
@@ -94,7 +92,8 @@ public class BackupManager {
               .setVersion(version)
               .setPartCount(count)
               .setPartNo(index + 1)
-              .buildSnapshotName(backupId);
+              .setBackupId(backupId)
+              .buildSnapshotName();
       final DeleteSnapshotRequest request = new DeleteSnapshotRequest(repositoryName);
       request.snapshots(snapshotName);
       esClient.snapshot().deleteAsync(request, RequestOptions.DEFAULT, getDeleteListener());
@@ -128,6 +127,13 @@ public class BackupManager {
             .contains(SNAPSHOT_MISSING_EXCEPTION_TYPE);
   }
 
+  private boolean isRepositoryMissingException(Exception e) {
+    return e instanceof ElasticsearchStatusException
+        && ((ElasticsearchStatusException) e)
+            .getDetailedMessage()
+            .contains(REPOSITORY_MISSING_EXCEPTION_TYPE);
+  }
+
   public TakeBackupResponseDto takeBackup(TakeBackupRequestDto request) {
     validateRepositoryExists();
     validateNoDuplicateBackupId(request.getBackupId());
@@ -150,8 +156,12 @@ public class BackupManager {
     for (int index = 0; index < count; index++) {
       final String[] indexPattern = getIndexPatternsOrdered()[index];
       final Metadata metadata =
-          new Metadata().setVersion(version).setPartCount(count).setPartNo(index + 1);
-      final String snapshotName = metadata.buildSnapshotName(request.getBackupId());
+          new Metadata()
+              .setVersion(version)
+              .setPartCount(count)
+              .setPartNo(index + 1)
+              .setBackupId(request.getBackupId());
+      final String snapshotName = metadata.buildSnapshotName();
       requestsQueue.offer(
           new CreateSnapshotRequest()
               .repository(repositoryName)
@@ -191,10 +201,7 @@ public class BackupManager {
     try {
       final GetRepositoriesResponse repository = getRepository(getRepositoriesRequest);
     } catch (Exception e) {
-      if (e instanceof ElasticsearchStatusException
-          && ((ElasticsearchStatusException) e)
-              .getDetailedMessage()
-              .contains(REPOSITORY_MISSING_EXCEPTION_TYPE)) {
+      if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
         throw new TasklistRuntimeException(reason);
@@ -350,6 +357,12 @@ public class BackupManager {
 
   public GetBackupStateResponseDto getBackupState(String backupId) {
     final List<SnapshotInfo> snapshots = findSnapshots(backupId);
+    final GetBackupStateResponseDto response = getBackupResponse(backupId, snapshots);
+    return response;
+  }
+
+  private GetBackupStateResponseDto getBackupResponse(
+      String backupId, List<SnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Metadata metadata =
@@ -431,8 +444,68 @@ public class BackupManager {
         // no snapshot with given backupID exists
         throw new NotFoundException(String.format("No backup with id [%s] found.", backupId), e);
       }
+      if (isRepositoryMissingException(e)) {
+        final String reason =
+            String.format(
+                "No repository with name [%s] could be found.",
+                tasklistProperties.getBackup().getRepositoryName());
+        throw new TasklistRuntimeException(reason);
+      }
       final String reason =
           String.format("Exception occurred when searching for backup with ID [%s].", backupId);
+      throw new TasklistRuntimeException(reason, e);
+    }
+  }
+
+  public List<GetBackupStateResponseDto> getBackups() {
+    final GetSnapshotsRequest snapshotsStatusRequest =
+        new GetSnapshotsRequest()
+            .repository(getRepositoryName())
+            .snapshots(new String[] {Metadata.SNAPSHOT_NAME_PREFIX + "*"})
+            // it looks like sorting as well as size/offset are not working, need to sort
+            // additionally before return
+            .sort(GetSnapshotsRequest.SortBy.START_TIME)
+            .order(SortOrder.DESC);
+    final GetSnapshotsResponse response;
+    try {
+      response = esClient.snapshot().get(snapshotsStatusRequest, RequestOptions.DEFAULT);
+      final List<SnapshotInfo> snapshots =
+          response.getSnapshots().stream()
+              .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed())
+              .collect(toList());
+
+      final LinkedHashMap<String, List<SnapshotInfo>> groupedSnapshotInfos =
+          snapshots.stream()
+              .collect(
+                  groupingBy(
+                      si -> {
+                        final Metadata metadata =
+                            objectMapper.convertValue(si.userMetadata(), Metadata.class);
+                        return metadata.getBackupId();
+                      },
+                      LinkedHashMap::new,
+                      toList()));
+
+      final List<GetBackupStateResponseDto> responses =
+          groupedSnapshotInfos.entrySet().stream()
+              .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
+              .collect(toList());
+
+      return responses;
+    } catch (Exception e) {
+      if (isRepositoryMissingException(e)) {
+        final String reason =
+            String.format(
+                "No repository with name [%s] could be found.",
+                tasklistProperties.getBackup().getRepositoryName());
+        throw new TasklistRuntimeException(reason);
+      }
+      if (isSnapshotMissingException(e)) {
+        // no snapshots exist
+        return new ArrayList<>();
+      }
+      final String reason =
+          String.format("Exception occurred when searching for backups: %s", e.getMessage());
       throw new TasklistRuntimeException(reason, e);
     }
   }

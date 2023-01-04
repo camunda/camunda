@@ -16,12 +16,14 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.BackupProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
+import io.camunda.tasklist.webapp.es.backup.Metadata;
 import io.camunda.tasklist.webapp.management.BackupService;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDetailDto;
 import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
@@ -618,33 +620,189 @@ public class BackupServiceTest {
     verify(esClient, times(1)).snapshot();
   }
 
+  @Test
+  public void shouldFailGetBackupOnNonExistingRepository() throws IOException {
+    final String repoName = "repoName";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
+    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
+    when(esClient.snapshot()).thenThrow(elsEx);
+    final Exception exception =
+        assertThrows(
+            TasklistRuntimeException.class,
+            () -> {
+              backupService.getBackupState("backup1");
+            });
+
+    final String expectedMessage =
+        String.format("No repository with name [%s] could be found.", repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+    verify(esClient, times(1)).snapshot();
+  }
+
+  @Test
+  public void shouldFailGetBackupsOnNonExistingRepository() throws IOException {
+    final String repoName = "repoName";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
+    when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
+    when(esClient.snapshot()).thenThrow(elsEx);
+
+    final Exception exception =
+        assertThrows(
+            TasklistRuntimeException.class,
+            () -> {
+              backupService.getBackups();
+            });
+
+    final String expectedMessage =
+        String.format("No repository with name [%s] could be found.", repoName);
+    final String actualMessage = exception.getMessage();
+    assertTrue(actualMessage.contains(expectedMessage));
+    verify(esClient, times(1)).snapshot();
+  }
+
+  @Test
+  public void shouldReturnEmptyBackupsOnNoBackupFound() throws IOException {
+    final String repoName = "repoName";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    when(snapshotClient.get(any(), any()))
+        .thenThrow(
+            new ElasticsearchStatusException(
+                SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    assertThat(backupService.getBackups()).isEmpty();
+  }
+
+  @Test
+  public void shouldReturnThreeBackups() throws IOException {
+    final String repoName = "repoName";
+    final String backupId1 = "backupId1";
+    final String backupId2 = "backupId2";
+    final String backupId3 = "backupId3";
+    when(tasklistProperties.getBackup())
+        .thenReturn(new BackupProperties().setRepositoryName(repoName));
+    // COMPLETED
+    final SnapshotInfo snapshotInfo11 =
+        createSnapshotInfoMock(
+            new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(1).setPartCount(2),
+            UUID.randomUUID().toString(),
+            SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo12 =
+        createSnapshotInfoMock(
+            new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(2).setPartCount(2),
+            UUID.randomUUID().toString(),
+            SnapshotState.SUCCESS);
+    // we have only 2 out of 3 snapshots -> INCOMPLETE
+    final SnapshotInfo snapshotInfo21 =
+        createSnapshotInfoMock(
+            new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(1).setPartCount(3),
+            UUID.randomUUID().toString(),
+            SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo22 =
+        createSnapshotInfoMock(
+            new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(2).setPartCount(3),
+            UUID.randomUUID().toString(),
+            SnapshotState.SUCCESS);
+    // IN_PROGRESS
+    final SnapshotInfo snapshotInfo31 =
+        createSnapshotInfoMock(
+            new Metadata().setBackupId(backupId3).setVersion("8.8.8").setPartNo(1).setPartCount(3),
+            UUID.randomUUID().toString(),
+            SnapshotState.SUCCESS);
+    final SnapshotInfo snapshotInfo32 =
+        createSnapshotInfoMock(
+            new Metadata().setBackupId(backupId3).setVersion("8.8.8").setPartNo(2).setPartCount(3),
+            UUID.randomUUID().toString(),
+            SnapshotState.IN_PROGRESS);
+    final List<SnapshotInfo> snapshotInfos =
+        asList(
+            new SnapshotInfo[] {
+              snapshotInfo11,
+              snapshotInfo12,
+              snapshotInfo21,
+              snapshotInfo22,
+              snapshotInfo31,
+              snapshotInfo32
+            });
+    when(snapshotClient.get(any(), any()))
+        .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+
+    final List<GetBackupStateResponseDto> backups = backupService.getBackups();
+    assertThat(backups).hasSize(3);
+    final GetBackupStateResponseDto backup3 = backups.get(0);
+    assertThat(backup3.getState()).isEqualTo(IN_PROGRESS);
+    assertThat(backup3.getBackupId()).isEqualTo(backupId3);
+    assertThat(backup3.getFailureReason()).isNull();
+    assertBackupDetails(List.of(snapshotInfo31, snapshotInfo32), backup3);
+
+    final GetBackupStateResponseDto backup2 = backups.get(1);
+    assertThat(backup2.getState()).isEqualTo(INCOMPLETE);
+    assertThat(backup2.getBackupId()).isEqualTo(backupId2);
+    assertThat(backup2.getFailureReason()).isNull();
+    assertBackupDetails(List.of(snapshotInfo21, snapshotInfo22), backup2);
+
+    final GetBackupStateResponseDto backup1 = backups.get(2);
+    assertThat(backup1.getState()).isEqualTo(COMPLETED);
+    assertThat(backup1.getBackupId()).isEqualTo(backupId1);
+    assertThat(backup1.getFailureReason()).isNull();
+    assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
+  }
+
   private void assertBackupDetails(
       List<SnapshotInfo> snapshotInfos, GetBackupStateResponseDto backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
     assertThat(backupState.getDetails())
         .extracting(GetBackupStateResponseDetailDto::getSnapshotName)
-        .containsExactly(
+        .containsExactlyInAnyOrder(
             snapshotInfos.stream().map(si -> si.snapshotId().getName()).toArray(String[]::new));
     assertThat(backupState.getDetails())
         .extracting(GetBackupStateResponseDetailDto::getState)
-        .containsExactly(
+        .containsExactlyInAnyOrder(
             snapshotInfos.stream().map(si -> si.state().name()).toArray(String[]::new));
     assertThat(backupState.getDetails())
         .extracting(d -> d.getStartTime().toInstant().toEpochMilli())
-        .containsExactly(snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
+        .containsExactlyInAnyOrder(
+            snapshotInfos.stream().map(si -> si.startTime()).toArray(Long[]::new));
   }
 
   private SnapshotInfo createSnapshotInfoMock(String name, String uuid, SnapshotState state) {
-    return createSnapshotInfoMock(name, uuid, state, null);
+    return createSnapshotInfoMock(null, name, uuid, state, null);
+  }
+
+  private SnapshotInfo createSnapshotInfoMock(Metadata metadata, String uuid, SnapshotState state) {
+    return createSnapshotInfoMock(metadata, null, uuid, state, null);
+  }
+
+  private SnapshotInfo createSnapshotInfoMock(
+      String name, String uuid, SnapshotState state, List<SnapshotShardFailure> failures) {
+    return createSnapshotInfoMock(null, name, uuid, state, failures);
   }
 
   @NotNull
   private SnapshotInfo createSnapshotInfoMock(
-      String name, String uuid, SnapshotState state, List<SnapshotShardFailure> failures) {
+      Metadata metadata,
+      String name,
+      String uuid,
+      SnapshotState state,
+      List<SnapshotShardFailure> failures) {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
-    when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId(name, uuid));
-    when(snapshotInfo.userMetadata())
-        .thenReturn(asMap("version", "someVersion", "partNo", 1, "partCount", 3));
+    if (metadata != null) {
+      when(snapshotInfo.snapshotId())
+          .thenReturn(new SnapshotId(metadata.buildSnapshotName(), uuid));
+      when(snapshotInfo.userMetadata())
+          .thenReturn(objectMapper.convertValue(metadata, new TypeReference<>() {}));
+    } else {
+      when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId(name, uuid));
+      when(snapshotInfo.userMetadata())
+          .thenReturn(asMap("version", "someVersion", "partNo", 1, "partCount", 3));
+    }
     when(snapshotInfo.state()).thenReturn(state);
     when(snapshotInfo.shardFailures()).thenReturn(failures);
     when(snapshotInfo.startTime()).thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());
