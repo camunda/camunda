@@ -55,23 +55,27 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
   }
 
   private Map<AppName, String> retrieveWebappsLinks(String accessToken) {
-     try {
+    try {
       log.info("Fetching cluster metadata.");
       final HttpGet request = new HttpGet(String.format(
         GET_CLUSTERS_TEMPLATE,
         String.format(CONSOLE_ROOTURL_TEMPLATE, retrieveDomainOfRunningInstance()),
         getCloudAuthConfiguration().getOrganizationId()
       ));
-      final CloseableHttpResponse response = performRequest(request, accessToken);
-      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
-        throw new OptimizeRuntimeException(String.format(
-          "Unexpected response when fetching cluster metadata: %s", response.getStatusLine().getStatusCode()));
+      final ClusterMetadata[] metadataForAllClusters;
+      try (CloseableHttpResponse response = performRequest(request, accessToken)) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+          throw new OptimizeRuntimeException(String.format(
+            "Unexpected response when fetching cluster metadata: %s", response.getStatusLine().getStatusCode()));
+        }
+        log.info("Processing response from Cluster metadata");
+        // To make sure we don't crash when an unknown app is sent, ignore the unknowns
+        objectMapper.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
+        metadataForAllClusters = objectMapper.readValue(
+          response.getEntity().getContent(),
+          ClusterMetadata[].class
+        );
       }
-      log.info("Processing response from Cluster metadata");
-      // To make sure we don't crash when an unknown app is sent, ignore the unknowns
-      objectMapper.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
-      final ClusterMetadata[] metadataForAllClusters = objectMapper.readValue(response.getEntity().getContent(),
-                                                                         ClusterMetadata[].class);
       if (metadataForAllClusters != null) {
         String currentClusterId = getCloudAuthConfiguration().getClusterId();
         return Arrays.stream(metadataForAllClusters)
@@ -93,44 +97,40 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
     final String organizationId = getCloudAuthConfiguration().getOrganizationId();
     final String domain = retrieveDomainOfRunningInstance();
     final String clusterId = getCloudAuthConfiguration().getClusterId();
-    urls.computeIfAbsent(MODELER, key ->  String.format(MODELER_URL_TEMPLATE, domain, organizationId));
-    urls.computeIfAbsent(CONSOLE, key ->  String.format(CONSOLE_URL_TEMPLATE, domain, organizationId, clusterId));
+    urls.computeIfAbsent(MODELER, key -> String.format(MODELER_URL_TEMPLATE, domain, organizationId));
+    urls.computeIfAbsent(CONSOLE, key -> String.format(CONSOLE_URL_TEMPLATE, domain, organizationId, clusterId));
     return urls;
   }
 
   private String retrieveDomainOfRunningInstance() {
-    final Optional<String> containerAccessUrl = configurationService.getContainerAccessUrl();
-    String rootUrl;
-    if (containerAccessUrl.isPresent()) {
-      rootUrl = containerAccessUrl.get();
-    } else {
-      Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
-      String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
-      Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
-      rootUrl = httpPrefix + configurationService.getContainerHost()
-        + ":" + port + configurationService.getContextPath().orElse("");
-    }
-    // Now strip the URL and get only the main part
-    // URL looks like this https://bru-2.optimize.dev.ultrawombat.com/ff488019-8082-411e-8abc-46f8597cd7d3/
+    String rootUrl = configurationService.getContainerAccessUrl()
+      .orElseGet(() -> {
+        Optional<Integer> containerHttpPort = configurationService.getContainerHttpPort();
+        String httpPrefix = containerHttpPort.map(p -> HTTP_PREFIX).orElse(HTTPS_PREFIX);
+        Integer port = containerHttpPort.orElse(configurationService.getContainerHttpsPort());
+        return httpPrefix + configurationService.getContainerHost()
+          + ":" + port + configurationService.getContextPath().orElse("");
+      });
+    // Strip the URL and get only the main part
+    // The full URL looks like this, for example: https://bru-2.optimize.dev.ultrawombat.com/ff488019-8082-411e-8abc-46f8597cd7d3/
     Pattern urlPattern = Pattern.compile("^(?:https?://)?(?:[^@/\\n]+@)?(?:www\\.)?([^:/?\\n]+)");
     Matcher matcher = urlPattern.matcher(rootUrl);
-    if(matcher.find()) {
+    if (matcher.find()) {
+      // The pureUrl should look like this, for example: bru-2.optimize.dev.ultrawombat.com
       String pureUrl = matcher.group();
-      // Now I have sth like bru-2.optimize.dev.ultrawombat.com in my hand, let's get the juicy part
       Pattern domainPattern = Pattern.compile("(?<=" + OPTIMIZE + ").*");
       Matcher domainMatcher = domainPattern.matcher(pureUrl);
-      if(domainMatcher.find()) {
-        // Now I only have what I'm actually interested in: .dev.ultrawombat.com
+      if (domainMatcher.find()) {
+        // The domain, if found, should therefore look something like this: .dev.ultrawombat.com
         return domainMatcher.group();
-      }
-      else {
-        log.warn("The processed URL that I received looks odd and I cannot parse it: " + pureUrl + " . Therefore I'm " +
-                   "returning the fallback domain " + DEFAULT_DOMAIN_WHEN_ERROR_OCCURS);
+      } else {
+        log.warn(
+          "The processed URL cannot be parsed: {}. Using the fallback domain {}", pureUrl, DEFAULT_DOMAIN_WHEN_ERROR_OCCURS);
         return DEFAULT_DOMAIN_WHEN_ERROR_OCCURS;
       }
     } else {
-      log.warn("The domain URL that I received looks odd and I cannot parse it: " + rootUrl + " . Therefore I'm " +
-                 "returning the fallback domain " + DEFAULT_DOMAIN_WHEN_ERROR_OCCURS);
+      log.warn(
+        "The following domain URL cannot be parsed: {}. Using the fallback domain {}", rootUrl, DEFAULT_DOMAIN_WHEN_ERROR_OCCURS);
       return DEFAULT_DOMAIN_WHEN_ERROR_OCCURS;
     }
   }
