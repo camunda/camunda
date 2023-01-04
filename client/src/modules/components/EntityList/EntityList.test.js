@@ -346,3 +346,9 @@ it('should add "hidden" classname to select all checkbox if there are no bulk ac
 
   expect(node.find('.columnHeaders > [type="checkbox"].hidden')).toExist();
 });
+
+it('should force dropdown on list item', () => {
+  const node = shallow(<EntityList {...props} forceActionsDropdown />);
+
+  expect(node.find('ListItem').at(0).prop('singleAction')).toBe(false);
+});

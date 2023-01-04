@@ -120,7 +120,7 @@ export function Home({mightFail, user}) {
           <EmptyState
             title={t('home.emptyState.title')}
             description={t('home.emptyState.description')}
-            icon="dashboard-optimize"
+            icon="dashboard-optimize-accent"
             actions={
               <>
                 <Button main primary onClick={() => setCreatingDashboard(true)}>

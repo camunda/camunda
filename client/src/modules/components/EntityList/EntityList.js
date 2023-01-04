@@ -29,6 +29,7 @@ export default function EntityList({
   columns,
   sorting,
   onChange,
+  forceActionsDropdown,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
@@ -190,7 +191,7 @@ export default function EntityList({
                 }}
                 data={data}
                 hasWarning={hasWarning}
-                singleAction={hasSingleAction}
+                singleAction={hasSingleAction && !forceActionsDropdown}
                 selectable={hasBulkActions}
               />
             ))}

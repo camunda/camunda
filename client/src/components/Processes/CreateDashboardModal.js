@@ -20,12 +20,7 @@ export default function CreateDashboardModal({onClose, onConfirm, linkToDashboar
         <Button main className="close" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Link
-          className="Button primary main"
-          to={linkToDashboard}
-          target="_blank"
-          onClick={onConfirm}
-        >
+        <Link className="Button primary main" to={linkToDashboard} onClick={onConfirm}>
           {t('dashboard.create')}
         </Link>
       </Modal.Actions>

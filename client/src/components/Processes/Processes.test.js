@@ -17,6 +17,11 @@ import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 import ConfigureProcessModal from './ConfigureProcessModal';
 import CreateDashboardModal from './CreateDashboardModal';
 
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useHistory: jest.fn().mockReturnValue({push: jest.fn()}),
+}));
+
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 
 jest.mock('./service', () => ({
@@ -57,11 +62,18 @@ it('should load processes', async () => {
   expect(entityData.id);
   expect(node.find(EntityList).prop('data')).toEqual([
     {
-      icon: 'data-source',
+      icon: 'dashboard-optimize',
       id: 'defKey',
       meta: expect.any(Array),
       name: 'defName',
       type: 'Process',
+      onClick: expect.any(Function),
+      actions: [
+        {
+          action: expect.any(Function),
+          text: 'Configure',
+        },
+      ],
     },
   ]);
 });
@@ -82,11 +94,12 @@ it('should hide owner column and process config button in ccsm mode', async () =
   await runAllEffects();
 
   const columns = node.find(EntityList).prop('columns');
+  const data = node.find(EntityList).prop('data');
 
   expect(columns[1]).not.toBe('owner');
-  expect(columns[columns.length - 1]).not.toBe('Configure');
-  expect(columns.length).toBe(4);
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(3);
+  expect(columns.length).toBe(3);
+  expect(data[0].meta.length).toBe(2);
+  expect(data[0].actions.length).toBe(0);
 });
 
 it('should edit a process config', async () => {
@@ -98,8 +111,8 @@ it('should edit a process config', async () => {
   const node = shallow(<Processes {...props} />);
   await runAllEffects();
 
-  const configureProcessBtn = node.find(EntityList).prop('data')[0].meta[4];
-  configureProcessBtn.props.onClick();
+  const configureProcessBtn = node.find(EntityList).prop('data')[0].actions[0];
+  configureProcessBtn.action();
 
   node.find(ConfigureProcessModal).simulate('confirm', testConfig);
   expect(updateProcess).toHaveBeenCalledWith('defKey', testConfig);
@@ -114,8 +127,8 @@ it('should show process update notification if digest & email are enabled', asyn
   const node = shallow(<Processes {...props} />);
   await runAllEffects();
 
-  const configureProcessBtn = node.find(EntityList).prop('data')[0].meta[4];
-  configureProcessBtn.props.onClick();
+  const configureProcessBtn = node.find(EntityList).prop('data')[0].actions[0];
+  configureProcessBtn.action();
 
   node.find(ConfigureProcessModal).simulate('confirm', testConfig, true, 'testName');
   expect(addNotification).toHaveBeenCalled();
@@ -175,8 +188,7 @@ it('should hide the link to view the dashboard if the user has no edit rights', 
 
   await runAllEffects();
 
-  expect(node.find(EntityList).prop('columns')[4]).not.toBe('Dashboard');
-  expect(node.find(EntityList).prop('data')[0].meta.length).toBe(4);
+  expect(node.find(EntityList).prop('data')[0].onClick).not.toBeDefined();
 });
 
 it('display the search info correctly', async () => {
@@ -196,21 +208,18 @@ it('should show create default dashboard modal when there is no default dashboar
 
   await runAllEffects();
 
-  const defaultDashboardBtn = node.find(EntityList).prop('data')[0].meta[3];
-  defaultDashboardBtn.props.onClick();
+  const evt = {target: {closest: () => false}};
+
+  node.find(EntityList).prop('data')[0].onClick(evt);
 
   expect(node.find(CreateDashboardModal)).toExist();
 
   node.find(CreateDashboardModal).simulate('confirm');
 
   expect(node.find(CreateDashboardModal)).not.toExist();
-
-  const defaultDashboardLink = node.find(EntityList).prop('data')[0].meta[3];
-
-  expect(defaultDashboardLink.props.to).toBe('dashboardLink');
 });
 
-it('should render view link instead of button when there is default dashboard', async () => {
+it('should not show create dashboard modal when there is default dashboard', async () => {
   loadProcesses.mockReturnValueOnce([
     {
       processDefinitionKey: 'defKey',
@@ -225,6 +234,7 @@ it('should render view link instead of button when there is default dashboard', 
 
   await runAllEffects();
 
-  const defaultDashboardLink = node.find(EntityList).prop('data')[0].meta[3];
-  expect(defaultDashboardLink.props.to).toBe('dashboardLink');
+  node.find(EntityList).prop('data')[0].onClick();
+
+  expect(node.find(CreateDashboardModal)).not.toExist();
 });

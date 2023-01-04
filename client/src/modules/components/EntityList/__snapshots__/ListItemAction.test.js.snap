@@ -17,7 +17,6 @@ exports[`should render a Dropdown per default 1`] = `
     <Icon
       type="delete"
     />
-     
     Delete
   </ForwardRef(DropdownOption)>
 </Dropdown>

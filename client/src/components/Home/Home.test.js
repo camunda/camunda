@@ -107,7 +107,7 @@ it('should show empty state component', async () => {
   expect(emptyState.prop('description')).toBe(
     'Click Create New Dashboard to get insights into business processes'
   );
-  expect(emptyState.prop('icon')).toBe('dashboard-optimize');
+  expect(emptyState.prop('icon')).toBe('dashboard-optimize-accent');
 
   expect(node.find('EntityList')).not.toExist();
 });
