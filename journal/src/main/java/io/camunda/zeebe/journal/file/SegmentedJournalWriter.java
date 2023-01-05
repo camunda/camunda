@@ -60,12 +60,13 @@ class SegmentedJournalWriter {
     }
 
     journalMetrics.observeSegmentCreation(this::createNewSegment);
+    final var startTime2 = System.currentTimeMillis();
     final var appendResultOnNewSegment = currentWriter.append(asqn, recordDataWriter);
     if (appendResultOnNewSegment.isLeft()) {
       throw appendResultOnNewSegment.getLeft();
     }
     final var endTime = System.currentTimeMillis();
-    journalMetrics.observeAppend((endTime - startTime) / 1000f);
+    journalMetrics.observeAppend((endTime - startTime2) / 1000f);
     return appendResultOnNewSegment.get();
   }
 
@@ -83,12 +84,13 @@ class SegmentedJournalWriter {
     }
 
     journalMetrics.observeSegmentCreation(this::createNewSegment);
+    final var startTime2 = System.currentTimeMillis();
     final var resultInNewSegment = currentWriter.append(record);
     if (resultInNewSegment.isLeft()) {
       throw resultInNewSegment.getLeft();
     }
     final var endTime = System.currentTimeMillis();
-    journalMetrics.observeAppend((endTime - startTime) / 1000f);
+    journalMetrics.observeAppend((endTime - startTime2) / 1000f);
   }
 
   public void reset(final long index) {
