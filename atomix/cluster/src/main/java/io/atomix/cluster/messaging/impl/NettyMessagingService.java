@@ -116,6 +116,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private volatile LocalClientConnection localConnection;
   private SslContext serverSslContext;
   private SslContext clientSslContext;
+  private final MessagingMetrics messagingMetrics = new MessagingMetricsImpl();
 
   public NettyMessagingService(
       final String cluster, final Address advertisedAddress, final MessagingConfig config) {
@@ -652,7 +653,9 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private RemoteClientConnection getOrCreateClientConnection(final Channel channel) {
     RemoteClientConnection connection = connections.get(channel);
     if (connection == null) {
-      connection = connections.computeIfAbsent(channel, RemoteClientConnection::new);
+      connection =
+          connections.computeIfAbsent(
+              channel, c -> new RemoteClientConnection(messagingMetrics, c));
       channel
           .closeFuture()
           .addListener(
