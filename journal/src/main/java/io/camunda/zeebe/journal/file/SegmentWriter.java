@@ -54,6 +54,7 @@ final class SegmentWriter {
   private final JournalRecordSerializer serializer = new SBESerializer();
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
+  private int lastFlushedPosition = 0;
 
   SegmentWriter(
       final MappedByteBuffer buffer,
@@ -269,14 +270,18 @@ final class SegmentWriter {
     }
   }
 
-  void flush() {
+  void flush(final JournalMetrics journalMetrics) {
+    final int bytesFlushed = buffer.position() - lastFlushedPosition;
     buffer.force();
+    lastFlushedPosition = buffer.position();
+    journalMetrics.observeFlushBytes(bytesFlushed);
   }
 
   void close() {
     if (isOpen) {
       isOpen = false;
-      flush();
+      // flush();
+      buffer.force();
     }
   }
 }

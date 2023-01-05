@@ -54,6 +54,16 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Histogram SEGMENT_FLUSH_BYTES =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("segment_flush_bytes")
+          .help("Number of bytes in buffer than needs to be flushed (in kb)")
+          .labelNames(PARTITION_LABEL)
+          .buckets()
+          .buckets(.001, .01, .1, .5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2000, 5000, 10000)
+          .register();
+
   private static final Gauge SEGMENT_COUNT =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -81,6 +91,10 @@ final class JournalMetrics {
 
   void observeSegmentFlush(final Runnable segmentFlush) {
     SEGMENT_FLUSH_TIME.labels(logName).time(segmentFlush);
+  }
+
+  void observeFlushBytes(final int bytes) {
+    SEGMENT_FLUSH_BYTES.labels(logName).observe(bytes / 1000f);
   }
 
   void observeAppend(final double time) {

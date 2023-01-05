@@ -109,7 +109,7 @@ class SegmentedJournalWriter {
   }
 
   public void flush() {
-    journalMetrics.observeSegmentFlush(currentWriter::flush);
+    journalMetrics.observeSegmentFlush(() -> currentWriter.flush(journalMetrics));
   }
 
   public void close() {
@@ -117,7 +117,7 @@ class SegmentedJournalWriter {
   }
 
   private void createNewSegment() {
-    currentWriter.flush();
+    currentWriter.flush(journalMetrics);
     currentSegment = journal.getNextSegment();
     currentWriter = currentSegment.writer();
   }
