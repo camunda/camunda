@@ -186,6 +186,7 @@ final class LeaderAppender {
         break;
       }
     }
+    metrics.appendRequestBytes(size, member.getMember().memberId().id());
 
     // Add the entries to the request builder and build the request.
     return builder.withEntries(entries).build();

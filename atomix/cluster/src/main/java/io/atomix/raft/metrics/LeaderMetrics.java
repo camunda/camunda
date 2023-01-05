@@ -28,11 +28,26 @@ public class LeaderMetrics extends RaftMetrics {
           .labelNames("follower", "partitionGroupName", "partition")
           .register();
 
+  private static final Histogram APPEND_REQUEST_SIZE =
+      Histogram.build()
+          .namespace("atomix")
+          .name("append_entries_size")
+          .help("Size of an append request (in kb)")
+          .labelNames("follower", "partitionGroupName", "partition")
+          .buckets(.01, .1, .5, 1, 2, 4, 8, 16, 32, 64, 128, 512, 1024, 2048, 4096)
+          .register();
+
   public LeaderMetrics(final String partitionName) {
     super(partitionName);
   }
 
   public void appendComplete(final long latencyms, final String memberId) {
     APPEND_LATENCY.labels(memberId, partitionGroupName, partition).observe(latencyms / 1000f);
+  }
+
+  public void appendRequestBytes(final int sizeInBytes, final String memberId) {
+    APPEND_REQUEST_SIZE
+        .labels(memberId, partitionGroupName, partition)
+        .observe(sizeInBytes / 1024f);
   }
 }
