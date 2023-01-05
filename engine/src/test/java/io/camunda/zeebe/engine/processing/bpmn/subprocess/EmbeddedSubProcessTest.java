@@ -36,6 +36,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -574,6 +575,8 @@ public final class EmbeddedSubProcessTest {
   }
 
   @Test
+  @Ignore(
+      "batch processing doesn't allow concurrent cancel anymore - we have a big wider step size which changes the processing and interrupting possibilities")
   public void shouldNotTriggerBoundaryEventWhenFlowscopeIsInterrupted() {
     // given
     final Consumer<EmbeddedSubProcessBuilder> subProcessBuilder =

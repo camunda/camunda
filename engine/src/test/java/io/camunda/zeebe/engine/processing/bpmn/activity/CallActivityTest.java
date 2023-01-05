@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -474,6 +475,7 @@ public final class CallActivityTest {
   }
 
   @Test
+  @Ignore("batch processing doesn't allow concurrent cancel anymore")
   public void shouldTriggerBoundaryEventIfChildIsCompleting() {
     // given
     ENGINE

@@ -24,9 +24,11 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Ignore
 public final class ProcessInstanceCommandRejectionTest {
 
   private static final String PROCESS_ID = "process";

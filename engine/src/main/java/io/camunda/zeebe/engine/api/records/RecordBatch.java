@@ -94,6 +94,11 @@ public final class RecordBatch implements MutableRecordBatch {
     return recordBatchEntries.spliterator();
   }
 
+  @Override
+  public List<ImmutableRecordBatchEntry> entries() {
+    return recordBatchEntries;
+  }
+
   /**
    * This exception is part of the contract with the engine. The engine may handle this exception
    * explicitly
