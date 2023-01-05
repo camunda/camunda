@@ -31,6 +31,9 @@ const processInstancesMock = createMultiInstanceFlowNodeInstances('1');
 
 describe('FlowNodeInstanceLog', () => {
   beforeAll(async () => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+
     mockFetchProcessInstance().withSuccess(
       createInstance({
         id: '1',
@@ -45,6 +48,9 @@ describe('FlowNodeInstanceLog', () => {
 
   afterAll(() => {
     processInstanceDetailsStore.reset();
+
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   afterEach(() => {

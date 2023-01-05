@@ -79,6 +79,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('New Variable Modifications', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
@@ -98,7 +108,6 @@ describe('New Variable Modifications', () => {
     ]);
 
     mockFetchVariables().withSuccess([createVariable()]);
-
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     flowNodeMetaDataStore.init();
@@ -124,10 +133,11 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if fields are empty', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
-    await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
-
+    jest.useFakeTimers();
     modificationsStore.enableModificationMode();
+
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    await waitForElementToBeRemoved(() => screen.getByTestId('skeleton-rows'));
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -140,15 +150,21 @@ describe('New Variable Modifications', () => {
     await user.tab();
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
     expect(modificationsStore.state.modifications.length).toBe(0);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it.each(['textfield', 'jsoneditor'])(
     'should not create add variable modification if name field is empty - %p',
     async (type) => {
+      jest.useFakeTimers();
+
+      modificationsStore.enableModificationMode();
+
       const {user} = render(<VariablePanel />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      modificationsStore.enableModificationMode();
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i})
@@ -169,16 +185,21 @@ describe('New Variable Modifications', () => {
         await screen.findByText(/Name has to be filled/i)
       ).toBeInTheDocument();
       expect(modificationsStore.state.modifications.length).toBe(0);
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     }
   );
 
   it.each(['textfield', 'jsoneditor'])(
     'should not create add variable modification if name field is duplicate - %p',
     async (type) => {
+      jest.useFakeTimers();
+      modificationsStore.enableModificationMode();
+
       const {user} = render(<VariablePanel />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      modificationsStore.enableModificationMode();
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i})
@@ -235,14 +256,19 @@ describe('New Variable Modifications', () => {
           type: 'variable',
         },
       ]);
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     }
   );
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
+    jest.useFakeTimers();
+    modificationsStore.enableModificationMode();
+
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    modificationsStore.enableModificationMode();
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -263,11 +289,18 @@ describe('New Variable Modifications', () => {
       await screen.findByText(/Value has to be JSON/i)
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications.length).toBe(0);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it.each(['textfield', 'jsoneditor'])(
     'should create add variable modification on blur and update same modification if name or value is changed - %p',
     async (type) => {
+      jest.useFakeTimers();
+
+      modificationsStore.enableModificationMode();
+
       const {user} = render(
         <>
           <VariablePanel />
@@ -277,7 +310,6 @@ describe('New Variable Modifications', () => {
       );
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      modificationsStore.enableModificationMode();
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i})
@@ -446,16 +478,21 @@ describe('New Variable Modifications', () => {
           value: '12345',
         },
       ]);
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     }
   );
 
   it.each(['textfield', 'jsoneditor'])(
     'should not apply modification if value is the same as the last modification - %p',
     async (type) => {
+      jest.useFakeTimers();
+      modificationsStore.enableModificationMode();
+
       const {user} = render(<VariablePanel />, {wrapper: Wrapper});
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      modificationsStore.enableModificationMode();
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i})
@@ -501,14 +538,19 @@ describe('New Variable Modifications', () => {
           value: '12345',
         },
       ]);
+
+      jest.clearAllTimers();
+      jest.useRealTimers();
     }
   );
 
   it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
+    jest.useFakeTimers();
+    modificationsStore.enableModificationMode();
+
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    modificationsStore.enableModificationMode();
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -561,5 +603,8 @@ describe('New Variable Modifications', () => {
 
     expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
     expect(screen.getByDisplayValue('456')).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

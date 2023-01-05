@@ -18,6 +18,16 @@ import {createWrapper, INSTANCE, ACTIVE_INSTANCE} from './mocks';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 describe('display instances List', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     processInstancesStore.reset();
     panelStatesStore.reset();

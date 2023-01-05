@@ -16,6 +16,16 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 jest.mock('modules/utils/bpmn');
 
 describe('TimeStampPill', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchProcessXML().withSuccess('');
   });

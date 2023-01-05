@@ -36,6 +36,16 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Footer', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     flowNodeSelectionStore.init();
   });

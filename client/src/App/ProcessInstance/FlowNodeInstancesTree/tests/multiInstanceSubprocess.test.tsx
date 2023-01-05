@@ -25,6 +25,16 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Multi Instance Subprocess', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);

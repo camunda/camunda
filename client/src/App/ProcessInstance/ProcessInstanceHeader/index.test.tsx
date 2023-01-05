@@ -73,6 +73,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('InstanceHeader', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     operationsStore.reset();
     variablesStore.reset();
@@ -165,6 +175,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should navigate to Instances Page and expand Filters Panel on "View All" click', async () => {
+    jest.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
@@ -189,6 +200,9 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should render parent Process Instance Key', async () => {

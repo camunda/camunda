@@ -34,6 +34,16 @@ function getWrapper(initialEntries = ['/']) {
 }
 
 describe('<SessionWatcher />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     authenticationStore.reset();
     mockDisplayNotification.mockReset();

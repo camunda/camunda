@@ -60,6 +60,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('VariablePanel', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
@@ -366,7 +376,9 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     await user.type(screen.getByTestId('add-variable-name'), '2');
-    expect(screen.queryByText('Name should be unique')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Name should be unique')
+    );
 
     await user.type(screen.getByTestId('add-variable-name'), '{backspace}');
 
@@ -557,9 +569,10 @@ describe('VariablePanel', () => {
 
     flowNodeSelectionStore.clearSelection();
 
-    expect(
-      screen.queryByText('No Input Mappings defined')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('No Input Mappings defined')
+    );
+
     expect(
       screen.getByRole('heading', {name: 'Variables'})
     ).toBeInTheDocument();
@@ -608,6 +621,7 @@ describe('VariablePanel', () => {
       flowNodeId: 'TEST_FLOW_NODE',
     });
 
+    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
     expect(screen.getByText('test2')).toBeInTheDocument();
 
@@ -629,7 +643,7 @@ describe('VariablePanel', () => {
       flowNodeId: 'non-existing',
     });
 
-    expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() => screen.getByText('testVariableName'));
 
     await user.dblClick(screen.getByRole('button', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
@@ -653,9 +667,9 @@ describe('VariablePanel', () => {
     });
 
     // initial state
-    expect(
-      screen.queryByRole('button', {name: /add variable/i})
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('button', {name: /add variable/i})
+    );
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
       screen.queryByText('The Flow Node has no Variables')
@@ -915,9 +929,9 @@ describe('VariablePanel', () => {
       },
     });
 
-    expect(
-      screen.queryByRole('button', {name: /add variable/i})
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('button', {name: /add variable/i})
+    );
     expect(
       screen.getByText('The Flow Node has no Variables')
     ).toBeInTheDocument();
@@ -1141,10 +1155,11 @@ describe('VariablePanel', () => {
       },
     });
 
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('button', {name: /add variable/i})
+    );
     expect(screen.getByText('some-other-variable')).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', {name: /add variable/i})
-    ).not.toBeInTheDocument();
+
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /enter edit mode/i})
@@ -1182,7 +1197,9 @@ describe('VariablePanel', () => {
       },
     });
 
-    expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('edit-variable-value')
+    );
   });
 
   it('should display readonly state for existing node if cancel modification is applied on the flow node and one new token is added', async () => {
@@ -1247,9 +1264,10 @@ describe('VariablePanel', () => {
       },
     });
 
-    expect(
-      screen.queryByRole('button', {name: /add variable/i})
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('button', {name: /add variable/i})
+    );
+
     expect(
       screen.getByText('The Flow Node has no Variables')
     ).toBeInTheDocument();

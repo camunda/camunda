@@ -18,6 +18,16 @@ import CreateOperationDropdown from './index';
 jest.mock('./useOperationApply', () => () => mockUseOperationApply);
 
 describe('CreateOperationDropdown', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     jest.resetAllMocks();
   });

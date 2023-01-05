@@ -29,8 +29,16 @@ const Wrapper = ({children}: Props) => {
 };
 
 describe('LastModification', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
   afterAll(() => {
     modificationsStore.reset();
+
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   it('should not display last modification if no modifications applied', () => {

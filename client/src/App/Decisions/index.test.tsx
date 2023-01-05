@@ -55,6 +55,16 @@ function createWrapper(initialPath: string = '/decisions') {
 }
 
 describe('<Decisions />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     decisionInstancesStore.reset();
     groupedDecisionsStore.reset();

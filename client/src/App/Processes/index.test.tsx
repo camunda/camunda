@@ -60,6 +60,16 @@ function getWrapper(initialPath: string = '/processes') {
 }
 
 describe('Instances', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
@@ -169,6 +179,8 @@ describe('Instances', () => {
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     await user.click(screen.getByRole('button', {name: 'Sort by Name'}));
+
+    expect(await screen.findByTestId('instances-loader')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('instances-loader'));
 
     expect(

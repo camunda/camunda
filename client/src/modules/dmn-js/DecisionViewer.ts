@@ -30,7 +30,7 @@ class DecisionViewer {
     }
 
     if (this.#decisionViewId !== decisionViewId || this.#xml !== xml) {
-      const view = this.#viewer.getViews().find((view) => {
+      const view = this.#viewer?.getViews()?.find((view) => {
         return view.id === decisionViewId;
       });
 

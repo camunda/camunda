@@ -15,6 +15,16 @@ describe('Date Range', () => {
     dateRangePopoverStore.reset();
   });
 
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should render readonly input field', async () => {
     render(<MockDateRangeField />, {wrapper: getWrapper()});
 

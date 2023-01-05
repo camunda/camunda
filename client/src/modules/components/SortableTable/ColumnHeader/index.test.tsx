@@ -22,6 +22,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('ColumnHeader', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should render a button if the column is sortable', () => {
     render(<ColumnHeader label="Start Date" sortKey="startDate" />, {
       wrapper: Wrapper,

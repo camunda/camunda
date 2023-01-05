@@ -6,7 +6,11 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Layout} from '.';
@@ -28,6 +32,16 @@ function getWrapper(initialPath: string = '/') {
 }
 
 describe('Layout', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     modificationsStore.reset();
   });
@@ -38,7 +52,10 @@ describe('Layout', () => {
     expect(screen.getByText(/All rights reserved/)).toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
-    expect(screen.queryByText(/All rights reserved/)).not.toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(/All rights reserved/)
+    );
   });
 
   it('should not display footer in processes page', async () => {

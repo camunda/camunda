@@ -17,6 +17,16 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Modification Dropdown - Multi Scopes', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
   });

@@ -32,6 +32,16 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Add variable', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     flowNodeSelectionStore.init();
   });
@@ -141,7 +151,9 @@ describe('Add variable', () => {
     await user.dblClick(screen.getByTestId('add-variable-value'));
     await user.type(screen.getByTestId('add-variable-value'), '"valid value"');
 
-    expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      expect(screen.getByText('Value has to be JSON'))
+    );
     expect(screen.getByText('Name is invalid')).toBeInTheDocument();
   });
 
@@ -183,9 +195,10 @@ describe('Add variable', () => {
 
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
 
-    expect(
-      screen.queryByText('Value has to be filled')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Value has to be filled')
+    );
+
     expect(screen.getByText('Name should be unique')).toBeInTheDocument();
 
     await user.dblClick(screen.getByTestId('add-variable-name'));
@@ -297,7 +310,10 @@ describe('Add variable', () => {
       ...instanceMock,
       state: 'CANCELED',
     });
-    expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('add-variable-row')
+    );
   });
 
   it('should have JSON editor when adding a new Variable', async () => {

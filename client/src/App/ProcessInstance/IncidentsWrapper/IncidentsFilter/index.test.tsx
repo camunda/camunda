@@ -16,8 +16,15 @@ import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstan
 const {reset, fetchIncidents} = incidentsStore;
 
 describe('IncidentsFilter', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
   afterAll(() => {
     reset();
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   it('should render pills by incident type', async () => {

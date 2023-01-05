@@ -14,6 +14,16 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Input Mappings', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() =>
     mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML)
   );

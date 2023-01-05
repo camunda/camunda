@@ -10,6 +10,16 @@ import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('<JSONEditorModal />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should not render the modal', () => {
     render(<JSONEditorModal isVisible={false} value="" />, {
       wrapper: ThemeProvider,

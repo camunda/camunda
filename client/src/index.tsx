@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import ReactDOM from 'react-dom';
 import {App} from './App';
 import './index.scss';
 import '@camunda-cloud/common-ui/dist/common-ui/common-ui.css';
@@ -15,6 +14,7 @@ import 'dmn-js/dist/assets/dmn-js-drd.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 import {tracking} from 'modules/tracking';
+import {createRoot} from 'react-dom/client';
 
 function enableMockingForDevEnv(): Promise<void> {
   return new Promise((resolve) => {
@@ -36,5 +36,9 @@ Promise.all([
   tracking.loadAnalyticsToWillingUsers(),
   enableMockingForDevEnv(),
 ]).then(() => {
-  ReactDOM.render(<App />, document.getElementById('root'));
+  const rootElement = document.getElementById('root');
+  if (rootElement !== null) {
+    const root = createRoot(rootElement);
+    root.render(<App />);
+  }
 });

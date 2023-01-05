@@ -33,6 +33,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<DecisionInstance />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionXML().withSuccess(mockDmnXml);
@@ -122,7 +132,7 @@ describe('<DecisionInstance />', () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
     await user.click(
-      within(screen.getByTestId('drd')).getByRole('button', {
+      await screen.findByRole('button', {
         name: 'Close DRD Panel',
       })
     );

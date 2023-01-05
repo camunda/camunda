@@ -6,7 +6,7 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, screen, UserEvent} from 'modules/testing-library';
+import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -61,6 +61,9 @@ const editValueFromTextfieldAndBlur = async (
 const editValueFromJSONEditor = async (user: UserEvent, value: string) => {
   await user.click(screen.getByTitle(/open json editor modal/i));
   await user.click(screen.getByTestId('monaco-editor'));
+  await waitFor(() =>
+    expect(screen.getByTestId('monaco-editor')).toHaveValue()
+  );
   await user.type(screen.getByTestId('monaco-editor'), value);
   await user.click(screen.getByRole('button', {name: /apply/i}));
 };
@@ -75,6 +78,16 @@ const editValue = async (type: string, user: UserEvent, value: string) => {
 };
 
 describe('Variables', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     processInstanceDetailsStore.setProcessInstance(
       createInstance({id: 'process-instance-id'})
@@ -108,12 +121,12 @@ describe('Variables', () => {
   it.each(['textfield', 'jsoneditor'])(
     'should create edit variable modification on blur - %p',
     async (type) => {
+      modificationsStore.enableModificationMode();
+
       const {user} = render(
         <ExistingVariable variableName="foo" variableValue="123" />,
         {wrapper: Wrapper}
       );
-
-      modificationsStore.enableModificationMode();
 
       await editValue(type, user, '4');
 
@@ -178,12 +191,12 @@ describe('Variables', () => {
   );
 
   it('should not apply modification if value is invalid', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
       {wrapper: Wrapper}
     );
-
-    modificationsStore.enableModificationMode();
 
     await editValue('textfield', user, 'invalid value');
 
@@ -191,12 +204,12 @@ describe('Variables', () => {
   });
 
   it('should not apply modification if value is empty', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="1" />,
       {wrapper: Wrapper}
     );
-
-    modificationsStore.enableModificationMode();
 
     await editValue('textfield', user, '{backspace}');
 
@@ -204,12 +217,12 @@ describe('Variables', () => {
   });
 
   it('should not apply modification if value has not changed from textfield', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
       {wrapper: Wrapper}
     );
-
-    modificationsStore.enableModificationMode();
 
     await user.click(screen.getByTestId('edit-variable-value'));
     await user.tab();
@@ -218,12 +231,12 @@ describe('Variables', () => {
   });
 
   it('should not apply modification if value has not changed from json editor', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
       {wrapper: Wrapper}
     );
-
-    modificationsStore.enableModificationMode();
 
     await user.click(screen.getByTitle(/open json editor modal/i));
     await user.click(screen.getByRole('button', {name: /apply/i}));
@@ -232,12 +245,12 @@ describe('Variables', () => {
   });
 
   it('should not apply modification if value is the same as the last modification', async () => {
+    modificationsStore.enableModificationMode();
+
     const {user} = render(
       <ExistingVariable variableName="foo" variableValue="123" />,
       {wrapper: Wrapper}
     );
-
-    modificationsStore.enableModificationMode();
 
     await editValue('textfield', user, '4');
 
@@ -281,12 +294,12 @@ describe('Variables', () => {
   it.each(['textfield', 'jsoneditor'])(
     'should apply modification if its different from last modification but same as the initial value - %p',
     async (type) => {
+      modificationsStore.enableModificationMode();
+
       const {user} = render(
         <ExistingVariable variableName="foo" variableValue="123" />,
         {wrapper: Wrapper}
       );
-
-      modificationsStore.enableModificationMode();
 
       await editValue(type, user, '4');
 

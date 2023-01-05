@@ -44,6 +44,16 @@ const createWrapper = (initialPath: string = '/decisions') => {
 };
 
 describe('<InstancesTable />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
     groupedDecisionsStore.fetchDecisions();
@@ -183,6 +193,8 @@ describe('<InstancesTable />', () => {
   });
 
   it('should navigate to decision instance page', async () => {
+    jest.useFakeTimers();
+
     mockFetchDecisionInstances().withSuccess(mockDecisionInstances);
 
     const {user} = render(<InstancesTable />, {
@@ -199,12 +211,19 @@ describe('<InstancesTable />', () => {
       })
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/decisions\/2251799813689541$/
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        /^\/decisions\/2251799813689541$/
+      )
     );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should navigate to process instance page', async () => {
+    jest.useFakeTimers();
+
     mockFetchDecisionInstances().withSuccess({
       totalCount: 1,
       decisionInstances: [
@@ -234,9 +253,14 @@ describe('<InstancesTable />', () => {
       })
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      /^\/processes\/2251799813689544$/
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        /^\/processes\/2251799813689544$/
+      )
     );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should display loading skeleton when sorting is applied', async () => {

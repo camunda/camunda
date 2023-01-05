@@ -54,6 +54,16 @@ const mockInstances: ProcessInstanceEntity[] = [
 ];
 
 describe('ListFooter', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     processInstancesSelectionStore.reset();
   });

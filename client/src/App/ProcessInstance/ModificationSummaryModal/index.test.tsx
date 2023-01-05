@@ -32,6 +32,16 @@ jest.mock('modules/notifications', () => ({
 }));
 
 describe('Modification Summary Modal', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     processInstanceDetailsStore.setProcessInstance(createInstance({id: '1'}));
   });
@@ -517,11 +527,11 @@ describe('Modification Summary Modal', () => {
       },
     });
 
-    expect(
-      screen.queryByText(
+    await waitForElementToBeRemoved(() =>
+      screen.getByText(
         'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.'
       )
-    ).not.toBeInTheDocument();
+    );
   });
 
   it('should display error message and diable apply button if all modifications are about to be canceled and process has a parent', async () => {

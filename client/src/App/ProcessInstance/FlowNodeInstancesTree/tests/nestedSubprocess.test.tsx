@@ -6,7 +6,12 @@
  */
 
 import {createRef} from 'react';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -26,6 +31,16 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(nestedSubProcessesInstance);
     mockFetchProcessXML().withSuccess(open('NestedSubProcesses.bpmn'));
@@ -100,7 +115,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
 
     modificationsStore.disableModificationMode();
 
-    expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() => screen.getByText('Sub Process 1'));
     expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
     expect(screen.queryByText('User Task')).not.toBeInTheDocument();
   });
@@ -154,7 +169,7 @@ describe('FlowNodeInstancesTree - Nested Subprocesses', () => {
 
     modificationsStore.disableModificationMode();
 
-    expect(screen.queryByText('Sub Process 1')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() => screen.getByText('Sub Process 1'));
     expect(screen.queryByText('Sub Process 2')).not.toBeInTheDocument();
     expect(screen.queryByText('User Task')).not.toBeInTheDocument();
   });

@@ -15,6 +15,16 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 
 describe('spinner', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     processInstancesStore.reset();
     panelStatesStore.reset();

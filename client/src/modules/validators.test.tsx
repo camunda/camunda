@@ -35,6 +35,7 @@ describe('validators', () => {
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+    jest.restoreAllMocks();
   });
 
   it('should validate ids without delay', async () => {

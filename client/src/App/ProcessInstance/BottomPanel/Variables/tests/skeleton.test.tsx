@@ -31,6 +31,16 @@ jest.mock('modules/notifications', () => ({
 }));
 
 describe('Skeleton', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     flowNodeSelectionStore.init();
   });

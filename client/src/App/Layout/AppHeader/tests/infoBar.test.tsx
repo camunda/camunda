@@ -14,6 +14,16 @@ import {UserDto} from 'modules/api/getUser';
 import {Wrapper} from './mocks';
 
 describe('Info bar', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     authenticationStore.reset();
   });

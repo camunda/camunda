@@ -21,6 +21,16 @@ import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations'
 import {createWrapper} from './mocks';
 
 describe('ListPanel', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     processInstancesStore.reset();
     panelStatesStore.reset();

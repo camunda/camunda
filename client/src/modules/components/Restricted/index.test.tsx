@@ -10,6 +10,16 @@ import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 
 describe('Restricted', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     authenticationStore.reset();
   });

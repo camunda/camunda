@@ -44,6 +44,8 @@ describe('Restricted user', () => {
   });
 
   beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -57,6 +59,8 @@ describe('Restricted user', () => {
 
   afterAll(() => {
     authenticationStore.reset();
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   it('should not display Edit Variable button', async () => {

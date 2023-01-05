@@ -43,6 +43,16 @@ function createWrapper(initialPath: string = '/') {
 }
 
 describe('IncidentsByError', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
   });
@@ -220,6 +230,7 @@ describe('IncidentsByError', () => {
   });
 
   it('should expand filters panel on click', async () => {
+    jest.useFakeTimers();
     mockFetchIncidentsByError().withSuccess(mockIncidentsByError);
 
     const {user} = render(<IncidentsByError />, {
@@ -240,6 +251,7 @@ describe('IncidentsByError', () => {
     const processLink = withinIncident.getByRole('link', {
       name: "View 36 Instances with error JSON path '$.paid' has no result.",
     });
+
     await user.click(processLink);
 
     await waitFor(() =>
@@ -248,5 +260,8 @@ describe('IncidentsByError', () => {
       )
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

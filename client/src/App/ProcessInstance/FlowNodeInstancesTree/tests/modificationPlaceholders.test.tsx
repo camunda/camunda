@@ -6,7 +6,12 @@
  */
 
 import {createRef} from 'react';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -34,6 +39,16 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 
 describe('FlowNodeInstancesTree - Modification placeholders', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(multiInstanceProcessInstance);
     mockFetchProcessXML().withSuccess(multiInstanceProcess);
@@ -123,7 +138,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     modificationsStore.reset();
 
-    expect(screen.queryByText('Peter Join')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() => screen.getAllByText('Peter Join'));
     // modification icons
     expect(screen.queryByText('plus.svg')).not.toBeInTheDocument();
     expect(
@@ -187,7 +202,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     modificationsStore.reset();
 
     // modification icons
-    expect(screen.queryByText('stop.svg')).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() => screen.getByText('stop.svg'));
     expect(screen.queryByText('plus.svg')).not.toBeInTheDocument();
     expect(
       screen.queryByText('warning-message-icon.svg')

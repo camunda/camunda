@@ -20,6 +20,16 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('<VariablesPanel />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should have 2 tabs', () => {
     render(<VariablesPanel />, {wrapper: ThemeProvider});
 

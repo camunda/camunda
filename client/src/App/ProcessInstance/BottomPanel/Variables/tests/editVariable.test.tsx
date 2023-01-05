@@ -33,6 +33,16 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Edit variable', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     flowNodeSelectionStore.init();
   });
@@ -111,12 +121,11 @@ describe('Edit variable', () => {
       state: 'CANCELED',
     });
 
-    expect(
-      within(
-        // eslint-disable-next-line testing-library/prefer-presence-queries
-        screen.getByTestId(inactiveOperationVariable!.name)
-      ).queryByTestId('edit-variable-button')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      within(screen.getByTestId(inactiveOperationVariable!.name)).queryByTestId(
+        'edit-variable-button'
+      )
+    );
   });
 
   it('should show/hide edit variable inputs', async () => {

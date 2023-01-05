@@ -20,6 +20,16 @@ import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 describe('<DecisionPanel />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
     decisionXmlStore.init();

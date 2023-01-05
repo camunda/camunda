@@ -23,6 +23,16 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Interaction with other fields during validation', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);

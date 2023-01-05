@@ -14,6 +14,16 @@ describe('Date Range - tracking', () => {
   let trackSpy: jest.SpyInstance;
   let user: UserEvent;
 
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     trackSpy = jest.spyOn(tracking, 'track');
     user = render(<MockDateRangeField />, {wrapper: getWrapper()}).user;

@@ -36,6 +36,16 @@ function createWrapper(initialPath: string = '/') {
 }
 
 describe('InstancesByProcess', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
   });
@@ -219,6 +229,7 @@ describe('InstancesByProcess', () => {
   });
 
   it('should expand filters panel on click', async () => {
+    jest.useFakeTimers();
     mockFetchProcessInstancesByName().withSuccess(mockWithSingleVersion);
 
     const {user} = render(<InstancesByProcess />, {
@@ -244,6 +255,9 @@ describe('InstancesByProcess', () => {
       )
     );
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should update after next poll', async () => {

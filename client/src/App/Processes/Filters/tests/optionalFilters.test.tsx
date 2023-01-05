@@ -22,6 +22,16 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Optional Filters', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);

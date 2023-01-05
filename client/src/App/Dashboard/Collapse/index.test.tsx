@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Collapse} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
@@ -24,6 +28,16 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<Collapse />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should be collapsed by default', () => {
     const mockContent = 'mock-content';
     const mockHeader = 'mock-header';
@@ -74,6 +88,8 @@ describe('<Collapse />', () => {
 
     await user.click(screen.getByText(/go to initial/));
 
-    expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText(new RegExp(mockContent))
+    );
   });
 });

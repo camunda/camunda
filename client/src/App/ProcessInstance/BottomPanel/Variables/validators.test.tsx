@@ -34,6 +34,7 @@ describe('validators', () => {
   afterEach(() => {
     jest.clearAllTimers();
     jest.useRealTimers();
+    jest.restoreAllMocks();
   });
   afterAll(() => {
     variablesStore.reset();

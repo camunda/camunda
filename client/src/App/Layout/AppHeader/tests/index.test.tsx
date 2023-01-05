@@ -10,6 +10,16 @@ import {render, screen, within} from 'modules/testing-library';
 import {Wrapper} from './mocks';
 
 describe('Header', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should go to the correct pages when clicking on header links', async () => {
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,

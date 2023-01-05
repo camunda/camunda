@@ -13,6 +13,16 @@ import {createUser} from 'modules/testUtils';
 import {Wrapper} from './mocks';
 
 describe('App switcher', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     authenticationStore.reset();
     window.clientConfig = undefined;

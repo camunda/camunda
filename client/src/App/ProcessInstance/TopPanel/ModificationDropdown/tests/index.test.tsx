@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {screen, waitFor} from 'modules/testing-library';
+import {
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
@@ -18,6 +22,16 @@ import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/proces
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Modification Dropdown', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
@@ -152,6 +166,7 @@ describe('Modification Dropdown', () => {
       await screen.findByText(/Flow Node Modifications/)
     ).toBeInTheDocument();
     await user.click(await screen.findByText(/Move/));
+
     expect(
       screen.queryByText(/Flow Node Modifications/)
     ).not.toBeInTheDocument();
@@ -302,8 +317,8 @@ describe('Modification Dropdown', () => {
       flowNodeId: 'timer_intermediate_catch_non_selectable',
     });
 
+    await waitForElementToBeRemoved(() => screen.getByText(/Add/));
     expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
 

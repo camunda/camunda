@@ -47,6 +47,16 @@ const processInstance = {
   ],
 };
 describe('User', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should render breadcrumb', async () => {
     render(<Breadcrumb processInstance={processInstance} />, {
       wrapper: createWrapper(),

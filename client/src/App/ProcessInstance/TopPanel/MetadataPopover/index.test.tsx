@@ -8,6 +8,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -76,6 +77,16 @@ const renderPopover = () => {
 };
 
 describe('MetadataPopover', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     flowNodeMetaDataStore.init();
     flowNodeSelectionStore.init();
@@ -327,6 +338,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should render completed decision', async () => {
+    jest.useFakeTimers();
     const {instanceMetadata} = calledDecisionMetadata;
 
     mockFetchProcessXML().withSuccess(metadataDemoProcess);
@@ -355,12 +367,19 @@ describe('MetadataPopover', () => {
       )
     );
 
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      `/decisions/${instanceMetadata!.calledDecisionInstanceId}`
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        `/decisions/${instanceMetadata!.calledDecisionInstanceId}`
+      )
     );
+
+    jest.clearAllTimers();
+    jest.useFakeTimers();
   });
 
   it('should render failed decision', async () => {
+    jest.useFakeTimers();
+
     const {instanceMetadata} = calledFailedDecisionMetadata;
     const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
 
@@ -395,10 +414,14 @@ describe('MetadataPopover', () => {
         `${rootCauseDecision!.decisionName!} - ${rootCauseDecision!.instanceId}`
       )
     );
-
-    expect(screen.getByTestId('pathname')).toHaveTextContent(
-      `/decisions/${rootCauseDecision!.instanceId}`
+    await waitFor(() =>
+      expect(screen.getByTestId('pathname')).toHaveTextContent(
+        `/decisions/${rootCauseDecision!.instanceId}`
+      )
     );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should render unevaluated decision', async () => {

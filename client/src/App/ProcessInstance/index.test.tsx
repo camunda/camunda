@@ -84,6 +84,7 @@ const clearPollingStates = () => {
   processInstanceDetailsStore.isPollRequestRunning = false;
   incidentsStore.isPollRequestRunning = false;
   flowNodeInstanceStore.isPollRequestRunning = false;
+  processInstanceDetailsStatisticsStore.isPollRequestRunning = false;
 };
 
 function getWrapper(
@@ -139,6 +140,16 @@ const mockRequests = (contextPath: string = '') => {
 };
 
 describe('Instance', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     mockRequests();
     modificationsStore.reset();
@@ -291,9 +302,10 @@ describe('Instance', () => {
     await user.click(screen.getByTestId('discard-all-button'));
     await user.click(await screen.findByTestId('discard-button'));
 
-    expect(
-      screen.queryByText('Process Instance Modification Mode')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Process Instance Modification Mode')
+    );
+
     expect(screen.queryByTestId('discard-all-button')).not.toBeInTheDocument();
     expect(
       screen.queryByTestId('apply-modifications-button')
@@ -535,18 +547,14 @@ describe('Instance', () => {
     jest.runOnlyPendingTimers();
 
     await waitFor(() => {
-      expect(variablesStore.state.status).toBe('fetched');
-      expect(processInstanceDetailsStore.state.status).toBe('fetched');
-      expect(flowNodeInstanceStore.state.status).toBe('fetched');
+      expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
+      expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
+      expect(
+        handlePollingProcessInstanceDetailStatisticsSpy
+      ).toHaveBeenCalledTimes(2);
     });
-
-    expect(handlePollingSequenceFlowsSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingInstanceDetailsSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingFlowNodeInstanceSpy).toHaveBeenCalledTimes(2);
-    expect(handlePollingVariablesSpy).toHaveBeenCalledTimes(2);
-    expect(
-      handlePollingProcessInstanceDetailStatisticsSpy
-    ).toHaveBeenCalledTimes(2);
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -554,7 +562,7 @@ describe('Instance', () => {
 
   it('should display loading overlay when modifications are applied', async () => {
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockModify().withDelay(
+    mockModify().withSuccess(
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'})
     );
 
@@ -598,15 +606,6 @@ describe('Instance', () => {
     await user.click(screen.getByTestId('apply-modifications-button'));
     await user.click(await screen.findByRole('button', {name: 'Apply'}));
     expect(screen.getByText(/applying modifications.../i)).toBeInTheDocument();
-
-    mockRequests();
-
-    mockFetchProcessInstance().withSuccess({
-      ...testData.fetch.onPageLoad.processInstance,
-      state: 'COMPLETED',
-    });
-
-    jest.runOnlyPendingTimers();
 
     await waitForElementToBeRemoved(() =>
       screen.getByText(/applying modifications.../i)

@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {getWrapper} from './mocks';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {
@@ -22,6 +26,16 @@ import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInst
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('Validations', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
@@ -61,11 +75,11 @@ describe('Validations', () => {
 
     await user.clear(screen.getByLabelText(/process instance key\(s\)/i));
 
-    expect(
-      screen.queryByText(
+    await waitForElementToBeRemoved(() =>
+      screen.getByText(
         'Key has to be a 16 to 19 digit number, separated by space or comma'
       )
-    ).not.toBeInTheDocument();
+    );
 
     await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
 
@@ -77,11 +91,11 @@ describe('Validations', () => {
 
     await user.clear(screen.getByLabelText(/process instance key\(s\)/i));
 
-    expect(
-      screen.queryByText(
+    await waitForElementToBeRemoved(() =>
+      screen.getByText(
         'Key has to be a 16 to 19 digit number, separated by space or comma'
       )
-    ).not.toBeInTheDocument();
+    );
   });
 
   it('should validate Parent Process Instance Key', async () => {
@@ -101,9 +115,9 @@ describe('Validations', () => {
 
     await user.clear(screen.getByLabelText(/Parent Process Instance Key/i));
 
-    expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Key has to be a 16 to 19 digit number')
+    );
 
     await user.type(screen.getByLabelText(/Parent Process Instance Key/i), '1');
 
@@ -113,9 +127,9 @@ describe('Validations', () => {
 
     await user.clear(screen.getByLabelText(/Parent Process Instance Key/i));
 
-    expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Key has to be a 16 to 19 digit number')
+    );
 
     await user.type(
       screen.getByLabelText(/Parent Process Instance Key/i),
@@ -128,9 +142,9 @@ describe('Validations', () => {
 
     await user.clear(screen.getByLabelText(/Parent Process Instance Key/i));
 
-    expect(
-      screen.queryByText('Key has to be a 16 to 19 digit number')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Key has to be a 16 to 19 digit number')
+    );
   });
 
   (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
@@ -153,9 +167,9 @@ describe('Validations', () => {
 
       await user.clear(screen.getByLabelText(/start date/i));
 
-      expect(
-        screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).not.toBeInTheDocument();
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      );
 
       await user.type(screen.getByLabelText(/start date/i), '2021-05');
 
@@ -186,9 +200,9 @@ describe('Validations', () => {
 
       await user.clear(screen.getByLabelText(/end date/i));
 
-      expect(
-        screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).not.toBeInTheDocument();
+      await waitForElementToBeRemoved(() =>
+        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
+      );
 
       await user.type(screen.getByLabelText(/end date/i), '2021-05');
 
@@ -249,9 +263,9 @@ describe('Validations', () => {
 
     await user.clear(screen.getByTestId('optional-filter-variable-name'));
 
-    expect(
-      screen.queryByText('Value has to be filled')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByText('Value has to be filled')
+    );
 
     await user.type(screen.getByLabelText(/value/i), 'invalidValue');
 

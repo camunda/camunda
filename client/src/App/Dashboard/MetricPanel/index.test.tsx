@@ -37,6 +37,16 @@ function createWrapper(initialPath: string = '/') {
 }
 
 describe('<MetricPanel />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     panelStatesStore.toggleFiltersPanel();
     mockFetchProcessCoreStatistics().withSuccess(statistics);

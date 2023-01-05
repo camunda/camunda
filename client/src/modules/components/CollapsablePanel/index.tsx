@@ -85,6 +85,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
             <ExpandButton
               ref={expandButtonRef}
               title={`Expand ${label}`}
+              aria-label={`Expand ${label}`}
               onClick={toggle}
               data-testid="expand-button"
             >

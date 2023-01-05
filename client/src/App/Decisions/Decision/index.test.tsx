@@ -28,6 +28,16 @@ function createWrapper(initialPath: string = '/') {
   return Wrapper;
 }
 describe('<Decision />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(async () => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
 

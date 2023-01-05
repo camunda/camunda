@@ -13,6 +13,16 @@ import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
 describe('<Bar />', () => {
+  beforeAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    //@ts-ignore
+    IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     flowNodeTimeStampStore.reset();
   });
