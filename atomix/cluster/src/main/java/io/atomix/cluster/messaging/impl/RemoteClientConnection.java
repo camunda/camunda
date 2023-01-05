@@ -69,8 +69,8 @@ final class RemoteClientConnection extends AbstractClientConnection {
     messagingMetrics.observeRequestSize(toAddress, subject, payload == null ? 0 : payload.length);
   }
 
-  private void countReqResponseMetrics(final ProtocolRequest message,
-      final CompletableFuture<byte[]> responseFuture) {
+  private void countReqResponseMetrics(
+      final ProtocolRequest message, final CompletableFuture<byte[]> responseFuture) {
     final String toAddress = channel.remoteAddress().toString();
     final String subject = message.subject();
     messagingMetrics.countRequestResponse(toAddress, subject);
@@ -84,13 +84,9 @@ final class RemoteClientConnection extends AbstractClientConnection {
           timer.close();
           messagingMetrics.decInFlightRequests(toAddress, subject);
           if (failure != null) {
-            messagingMetrics.countFailureResponse(
-                toAddress,
-                subject,
-                failure.getClass().getName());
+            messagingMetrics.countFailureResponse(toAddress, subject, failure.getClass().getName());
           } else {
-            messagingMetrics.countSuccessResponse(
-                toAddress, subject);
+            messagingMetrics.countSuccessResponse(toAddress, subject);
           }
         });
   }
