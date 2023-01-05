@@ -1,3 +1,43 @@
+# v8.2.0-alpha3
+## 🚀 New Features
+* **backend**: return 502 in case of Elastic connection error ([#3880](https://github.com/camunda/operate/issues/3880))
+* **backend**: Add BPMN and DMN model count as metric (prometheus) ([#3863](https://github.com/camunda/operate/issues/3863))
+* add dark mode support for date range filters ([#3872](https://github.com/camunda/operate/issues/3872))
+* **backend**: endpoint to list backups ([#3875](https://github.com/camunda/operate/issues/3875))
+* **backend**: add fromFlowNodeInstanceKey to CANCEL and MOVE token ([#3873](https://github.com/camunda/operate/issues/3873))
+* support escalation events ([#3854](https://github.com/camunda/operate/issues/3854))
+* support link events ([#3848](https://github.com/camunda/operate/issues/3848))
+* **feature-flagged**: add mixpanel tracking for date range filter ([#3771](https://github.com/camunda/operate/issues/3771))
+* **test-data**: test data for data storage ([#3846](https://github.com/camunda/operate/issues/3846))
+
+## 💊 Bugfixes
+* **chore**: fix build release docker images ([#3896](https://github.com/camunda/operate/issues/3896))
+* **backend**: rename `backup` endpoint to `backups` ([#3881](https://github.com/camunda/operate/issues/3881))
+* **incident/imp**: stop control when no incidents found ([#3865](https://github.com/camunda/operate/issues/3865))
+* **backend**: use domain instead of backendDomain ([#3856](https://github.com/camunda/operate/issues/3856))
+* move date range filter popup position on scroll ([#3858](https://github.com/camunda/operate/issues/3858))
+* **deps**: update dependency @carbon/react to v1.19.0 ([#3240](https://github.com/camunda/operate/issues/3240))
+* display correct variable panel state when switching between tabs ([#3841](https://github.com/camunda/operate/issues/3841))
+
+## 🧹 Chore
+* **backend**: expose `backups` actuator endpoint
+* **ci**: fix release script
+* **backend**: update Zeebe and Identity to 8.2.0-alpha3 ([#3891](https://github.com/camunda/operate/issues/3891))
+* enable e2e test for date range filters ([#3853](https://github.com/camunda/operate/issues/3853))
+* **qa**: fix flaky tests ([#3884](https://github.com/camunda/operate/issues/3884))
+* Update Browserlist DB
+* **deps**: bump springdoc-openapi-ui from 1.6.13 to 1.6.14 ([#3874](https://github.com/camunda/operate/issues/3874))
+* **deps**: bump mockito-core from 4.9.0 to 4.10.0 ([#3870](https://github.com/camunda/operate/issues/3870))
+* **deps**: bump version.elasticsearch from 7.17.6 to 7.17.8 ([#3871](https://github.com/camunda/operate/issues/3871))
+* Update Browserlist DB
+* update date range popover design ([#3852](https://github.com/camunda/operate/issues/3852))
+* **project**: use docker buildx for multi-architecture images ([#3843](https://github.com/camunda/operate/issues/3843))
+* **preview-env**: Add missing requests and limits resources ([#3839](https://github.com/camunda/operate/issues/3839))
+* **backend**: improve exception logging for delete backup ([#3840](https://github.com/camunda/operate/issues/3840))
+* update common ui to use correct error notification icon ([#3847](https://github.com/camunda/operate/issues/3847))
+* refactor date range popover ([#3842](https://github.com/camunda/operate/issues/3842))
+* remove pre-commit tests ([#3844](https://github.com/camunda/operate/issues/3844))
+* **qa**: test clean up
 # v8.2.0-alpha2
 ## 🚀 New Features
 * add modeler link to dashboard in SaaS ([#3814](https://github.com/camunda/operate/issues/3814))
