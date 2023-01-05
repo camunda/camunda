@@ -33,7 +33,7 @@ export function getReportResult(report, idx = 0) {
   if (report?.result?.measures) {
     return {
       ...report.result,
-      data: report?.result?.measures?.[idx].data,
+      data: report?.result?.measures?.[idx]?.data,
     };
   }
 
@@ -100,7 +100,7 @@ function convertHyperMapToMap(report) {
     newResult.measures = newResult.measures.map((measure) => ({
       ...measure,
       type: 'map',
-      data: measure.data[0].value,
+      data: measure.data[0]?.value,
     }));
   }
 
