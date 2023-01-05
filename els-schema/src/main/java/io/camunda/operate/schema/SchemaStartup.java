@@ -7,7 +7,6 @@
 package io.camunda.operate.schema;
 
 import io.camunda.operate.exceptions.MigrationException;
-import io.camunda.operate.management.ModelMetricProvider;
 import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.migration.Migrator;
@@ -34,9 +33,6 @@ public class SchemaStartup {
   @Autowired private OperateProperties operateProperties;
 
   @Autowired private MigrationProperties migrationProperties;
-
-  @Autowired
-  private ModelMetricProvider modelMetricProvider;
 
   @PostConstruct
   public void initializeSchema() throws MigrationException {

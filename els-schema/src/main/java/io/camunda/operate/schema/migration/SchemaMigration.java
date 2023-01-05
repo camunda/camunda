@@ -7,6 +7,7 @@
 package io.camunda.operate.schema.migration;
 
 import io.camunda.operate.JacksonConfig;
+import io.camunda.operate.Metrics;
 import io.camunda.operate.schema.SchemaStartup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @ComponentScan(basePackages = { "io.camunda.operate.property", "io.camunda.operate.es", "io.camunda.operate.schema","io.camunda.operate.management" },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Import(JacksonConfig.class)
+@Import({JacksonConfig.class, Metrics.class})
 public class SchemaMigration implements CommandLineRunner {
 
   private static final Logger logger = LoggerFactory.getLogger(SchemaMigration.class);
