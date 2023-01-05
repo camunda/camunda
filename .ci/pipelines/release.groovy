@@ -110,7 +110,8 @@ spec:
     env:
       # This disabled automatic TLS setup as this is not exposed to the network anyway
       - name: DOCKER_TLS_CERTDIR
-        value: ""    tty: true
+        value: ""
+    tty: true
     resources:
       limits:
         cpu: 1
