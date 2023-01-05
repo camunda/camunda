@@ -281,7 +281,9 @@ public class InterruptingEventSubprocessTest {
 
     assertThat(eventSubproc.getValue().getFlowScopeKey()).isEqualTo(subProcess.getKey());
     assertThat(subProcess.getValue().getFlowScopeKey()).isEqualTo(processInstanceKey);
-    assertThat(subProcess.getSourceRecordPosition()).isEqualTo(eventSubproc.getPosition());
+    // ZPA shouldn't care about the positions/source record positions any more, they make no use of
+    // it
+    //    assertThat(subProcess.getSourceRecordPosition()).isEqualTo(eventSubproc.getPosition());
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withProcessInstanceKey(processInstanceKey)

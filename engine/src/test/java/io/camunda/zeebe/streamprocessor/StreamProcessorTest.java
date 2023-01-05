@@ -238,8 +238,7 @@ public final class StreamProcessorTest {
 
     when(defaultRecordProcessor.process(any(), any()))
         .thenReturn(firstResultBuilder.build())
-        .thenReturn(secondResultBuilder.build())
-        .thenReturn(EmptyProcessingResult.INSTANCE);
+        .thenReturn(secondResultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 

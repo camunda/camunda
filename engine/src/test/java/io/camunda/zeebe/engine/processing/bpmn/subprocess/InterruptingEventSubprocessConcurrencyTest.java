@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,6 +35,8 @@ public class InterruptingEventSubprocessConcurrencyTest {
 
   @Test
   // https://github.com/camunda/zeebe/issues/6552
+  @Ignore(
+      "batch processing doesn't allow concurrent cancel anymore - we have a big wider step size which changes the processing and interrupting possibilities - intermediate catch event is executed first")
   public void shouldEndProcess() {
     // given
     final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);

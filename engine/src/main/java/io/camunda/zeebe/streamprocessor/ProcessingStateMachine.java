@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatch;
+import io.camunda.zeebe.engine.api.records.ImmutableRecordBatchEntry;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -29,13 +31,19 @@ import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
 /**
@@ -139,6 +147,8 @@ public final class ProcessingStateMachine {
   private RecordProcessor currentProcessor;
   private final LogStreamBatchWriter logStreamBatchWriter;
   private boolean inProcessing;
+  private List<ImmutableRecordBatchEntry> toWriteEntries;
+  private final int partitionId;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -159,7 +169,7 @@ public final class ProcessingStateMachine {
     updateStateRetryStrategy = new RecoverableRetryStrategy(actor);
     this.shouldProcessNext = shouldProcessNext;
 
-    final int partitionId = context.getLogStream().getPartitionId();
+    partitionId = context.getLogStream().getPartitionId();
     typedCommand = new TypedRecordImpl(partitionId);
 
     metrics = new StreamProcessorMetrics(partitionId);
@@ -202,7 +212,7 @@ public final class ProcessingStateMachine {
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
-      if (eventFilter.applies(currentRecord)) {
+      if (currentRecord.getSourceEventPosition() <= 0 && eventFilter.applies(currentRecord)) {
         processCommand(currentRecord);
       } else {
         skipRecord();
@@ -221,7 +231,7 @@ public final class ProcessingStateMachine {
     return reachedEnd;
   }
 
-  private void processCommand(final LoggedEvent command) {
+  private void processCommand(final LoggedEvent loggedEvent) {
     // we have to mark ourself has inProcessing to not interfere with readNext calls, which
     // are triggered from commit listener
     inProcessing = true;
@@ -229,7 +239,7 @@ public final class ProcessingStateMachine {
     currentProcessingResult = EmptyProcessingResult.INSTANCE;
 
     metadata.reset();
-    command.readMetadata(metadata);
+    loggedEvent.readMetadata(metadata);
 
     // Here we need to get the current time, since we want to calculate
     // how long it took between writing to the dispatcher and processing.
@@ -238,30 +248,67 @@ public final class ProcessingStateMachine {
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
     try {
-      final var value = recordValues.readRecordValue(command, metadata.getValueType());
-      typedCommand.wrap(command, metadata, value);
 
-      final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
           new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
 
-      metrics.processingLatency(command.getTimestamp(), processingStartTime);
+      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
 
-      currentProcessor =
-          recordProcessors.stream()
-              .filter(p -> p.accepts(typedCommand.getValueType()))
-              .findFirst()
-              .orElse(null);
+      toWriteEntries = new ArrayList<>();
+      final Deque<TypedRecordImpl> toProcessCmds = new ArrayDeque<>();
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            if (currentProcessor != null) {
-              currentProcessingResult =
-                  currentProcessor.process(typedCommand, processingResultBuilder);
-            }
+            final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+            typedCommand.wrap(loggedEvent, metadata, value);
+            final var transientCommand = new TypedRecordImpl(partitionId);
+            transientCommand.wrap(loggedEvent, metadata, value);
+            final var commandPosition = typedCommand.getPosition();
 
-            lastProcessedPositionState.markAsProcessed(position);
+            var index = 0;
+            toProcessCmds.push(transientCommand);
+            var lastCommandPosition = commandPosition;
+            while (!toProcessCmds.isEmpty()) {
+
+              //////////////////////////////////////////////////////
+              ///////// PROCESSING
+              //////////////////////////////////////////////////////
+              final var nextToProcessedCommand = toProcessCmds.pollFirst();
+              final var valueType = nextToProcessedCommand.getValueType();
+              currentProcessor =
+                  recordProcessors.stream()
+                      .filter(p -> p.accepts(valueType))
+                      .findFirst()
+                      .orElse(null);
+
+              if (currentProcessor != null) {
+                currentProcessingResult =
+                    currentProcessor.process(nextToProcessedCommand, processingResultBuilder);
+              }
+              lastProcessedPositionState.markAsProcessed(lastCommandPosition);
+
+              ///////////////////////////
+              ///////// Post - prepare for next
+              ///////////////////////////
+              final ImmutableRecordBatch recordBatch = currentProcessingResult.getRecordBatch();
+
+              final List<ImmutableRecordBatchEntry> entries = recordBatch.entries();
+              for (; index < entries.size(); index++) {
+                final var entry = entries.get(index);
+                if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
+                  final TypedRecordImpl typedRecord = new TypedRecordImpl(partitionId);
+                  lastCommandPosition = commandPosition + index + 1;
+                  typedRecord.wrap(
+                      new MinimalLoggedEvent(entry, lastCommandPosition),
+                      entry.recordMetadata(),
+                      entry.recordValue());
+                  toProcessCmds.add(typedRecord);
+                }
+
+                toWriteEntries.add(entry);
+              }
+            }
           });
 
       metrics.commandsProcessed();
@@ -276,7 +323,7 @@ public final class ProcessingStateMachine {
       // recoverable
       LOG.error(
           ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
-          command,
+          loggedEvent,
           metadata,
           recoverableException);
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
@@ -326,6 +373,9 @@ public final class ProcessingStateMachine {
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
+
+          toWriteEntries.clear();
+          currentProcessingResult.getRecordBatch().forEach(toWriteEntries::add);
         });
   }
 
@@ -336,17 +386,15 @@ public final class ProcessingStateMachine {
               logStreamBatchWriter.reset();
               logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
 
-              currentProcessingResult
-                  .getRecordBatch()
-                  .forEach(
-                      entry ->
-                          logStreamBatchWriter
-                              .event()
-                              .key(entry.key())
-                              .metadataWriter(entry.recordMetadata())
-                              .sourceIndex(entry.sourceIndex())
-                              .valueWriter(entry.recordValue())
-                              .done());
+              toWriteEntries.forEach(
+                  entry ->
+                      logStreamBatchWriter
+                          .event()
+                          .key(entry.key())
+                          .metadataWriter(entry.recordMetadata())
+                          .sourceIndex(entry.sourceIndex())
+                          .valueWriter(entry.recordValue())
+                          .done());
 
               final long position = logStreamBatchWriter.tryWrite();
               if (position > 0) {
@@ -378,7 +426,8 @@ public final class ProcessingStateMachine {
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.commit();
-              lastSuccessfulProcessedRecordPosition = currentRecord.getPosition();
+              lastSuccessfulProcessedRecordPosition =
+                  lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
               metrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
               return true;
@@ -498,5 +547,86 @@ public final class ProcessingStateMachine {
     }
 
     actor.submit(this::readNextRecord);
+  }
+
+  private static final class MinimalLoggedEvent implements LoggedEvent {
+
+    private final ImmutableRecordBatchEntry entry;
+    private final long position;
+
+    private MinimalLoggedEvent(final ImmutableRecordBatchEntry entry, final long position) {
+      this.entry = entry;
+      this.position = position;
+    }
+
+    @Override
+    public long getPosition() {
+      return 0;
+    }
+
+    @Override
+    public long getSourceEventPosition() {
+      return entry.sourceIndex();
+    }
+
+    @Override
+    public long getKey() {
+      return entry.key();
+    }
+
+    @Override
+    public long getTimestamp() {
+      return ActorClock.currentTimeMillis();
+    }
+
+    @Override
+    public DirectBuffer getMetadata() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getMetadataOffset() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public short getMetadataLength() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void readMetadata(final BufferReader reader) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DirectBuffer getValueBuffer() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getValueOffset() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getValueLength() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void readValue(final BufferReader reader) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int getLength() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

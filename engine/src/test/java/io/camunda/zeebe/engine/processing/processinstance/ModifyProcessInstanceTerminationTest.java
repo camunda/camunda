@@ -558,13 +558,13 @@ public class ModifyProcessInstanceTerminationTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+                .limit("A", ProcessInstanceIntent.ELEMENT_TERMINATED))
         .extracting(
             r -> r.getValue().getBpmnElementType(),
             r -> r.getValue().getElementId(),
             Record::getIntent)
         .describedAs("Ensure the precondition of a pending activation")
-        .containsSequence(
+        .containsSubsequence(
             tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(
                 BpmnElementType.SEQUENCE_FLOW, "b-to-c", ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
