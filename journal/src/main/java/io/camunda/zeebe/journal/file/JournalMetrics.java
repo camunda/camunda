@@ -30,6 +30,14 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Histogram JOURNAL_APPEND_TIME =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("journal_append_time")
+          .help("Time spend to write a record to the journal (in  seconds)")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
   private static final Histogram SEGMENT_TRUNCATE_TIME =
       Histogram.build()
           .namespace(NAMESPACE)
@@ -73,6 +81,10 @@ final class JournalMetrics {
 
   void observeSegmentFlush(final Runnable segmentFlush) {
     SEGMENT_FLUSH_TIME.labels(logName).time(segmentFlush);
+  }
+
+  void observeAppend(final double time) {
+    JOURNAL_APPEND_TIME.labels(logName).observe(time);
   }
 
   void observeSegmentTruncation(final Runnable segmentTruncation) {

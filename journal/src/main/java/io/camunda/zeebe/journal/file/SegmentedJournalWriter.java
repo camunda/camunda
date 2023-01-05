@@ -46,8 +46,12 @@ class SegmentedJournalWriter {
   }
 
   public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
+    final var startTime = System.currentTimeMillis();
+
     final var appendResult = currentWriter.append(asqn, recordDataWriter);
     if (appendResult.isRight()) {
+      final var endTime = System.currentTimeMillis();
+      journalMetrics.observeAppend((endTime - startTime) / 1000f);
       return appendResult.get();
     }
 
@@ -60,12 +64,17 @@ class SegmentedJournalWriter {
     if (appendResultOnNewSegment.isLeft()) {
       throw appendResultOnNewSegment.getLeft();
     }
+    final var endTime = System.currentTimeMillis();
+    journalMetrics.observeAppend((endTime - startTime) / 1000f);
     return appendResultOnNewSegment.get();
   }
 
   public void append(final JournalRecord record) {
+    final var startTime = System.currentTimeMillis();
     final var appendResult = currentWriter.append(record);
     if (appendResult.isRight()) {
+      final var endTime = System.currentTimeMillis();
+      journalMetrics.observeAppend((endTime - startTime) / 1000f);
       return;
     }
 
@@ -78,6 +87,8 @@ class SegmentedJournalWriter {
     if (resultInNewSegment.isLeft()) {
       throw resultInNewSegment.getLeft();
     }
+    final var endTime = System.currentTimeMillis();
+    journalMetrics.observeAppend((endTime - startTime) / 1000f);
   }
 
   public void reset(final long index) {
