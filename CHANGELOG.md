@@ -1,3 +1,43 @@
+# v8.2.0-alpha3
+## 🚀 New Features
+* **backend**: return 502 in case of Elastic connection error ([#2365](https://github.com/camunda/tasklist/issues/2365))
+* **backend**: endpoint to list backups ([#2364](https://github.com/camunda/tasklist/issues/2364))
+* Migrate Tasklist to Carbon design ([#2347](https://github.com/camunda/tasklist/issues/2347))
+* **backend**: Get backup state endpoint ([#2362](https://github.com/camunda/tasklist/issues/2362))
+* **backend**: delete backup endpoint ([#2335](https://github.com/camunda/tasklist/issues/2335))
+
+## 💊 Bugfixes
+* Fix adornements styles
+* **backend**: rename `backup` endpoint to `backups` ([#2372](https://github.com/camunda/tasklist/issues/2372))
+* **deps**: update dependency react-router-dom to v6.6.1 ([#2354](https://github.com/camunda/tasklist/issues/2354))
+* **deps**: update dependency sass to v1.57.1 ([#2355](https://github.com/camunda/tasklist/issues/2355))
+* **backend**: use domain instead of backendDomain ([#2345](https://github.com/camunda/tasklist/issues/2345))
+* **deps**: update dependency @carbon/elements to v11.16.0 ([#2332](https://github.com/camunda/tasklist/issues/2332))
+* **deps**: update dependency @carbon/react to v1.19.0 ([#2333](https://github.com/camunda/tasklist/issues/2333))
+* Show footer on task details ([#2328](https://github.com/camunda/tasklist/issues/2328))
+
+## 🧹 Chore
+* **backend**: expose `backups` actuator endpoint
+* **backend**: update Zeebe abd identity to 8.2.0-alpha3 ([#2373](https://github.com/camunda/tasklist/issues/2373))
+* **deps**: update node.js to v16.19.0 ([#2343](https://github.com/camunda/tasklist/issues/2343))
+* **deps**: update all non-major dependencies ([#2334](https://github.com/camunda/tasklist/issues/2334))
+* **deps**: update dependency eslint-config-prettier to v8.6.0 ([#2367](https://github.com/camunda/tasklist/issues/2367))
+* **deps**: update dependency testcafe to v2.2.0 ([#2368](https://github.com/camunda/tasklist/issues/2368))
+* Skip flaky test
+* Remove logging
+* **deps**: update actions/add-to-project digest to aebf7de ([#2353](https://github.com/camunda/tasklist/issues/2353))
+* Update Browserlist DB
+* bump version.elasticsearch from 7.17.7 to 7.17.8 ([#2351](https://github.com/camunda/tasklist/issues/2351))
+* bump mockito-core from 4.9.0 to 4.10.0 ([#2349](https://github.com/camunda/tasklist/issues/2349))
+* bump netty-bom from 4.1.85.Final to 4.1.86.Final ([#2341](https://github.com/camunda/tasklist/issues/2341))
+* bump byte-buddy from 1.12.19 to 1.12.20 ([#2350](https://github.com/camunda/tasklist/issues/2350))
+* **project**: use docker 20 dind ([#2339](https://github.com/camunda/tasklist/issues/2339))
+* **deps**: update actions/add-to-project digest to dc0c796 ([#2346](https://github.com/camunda/tasklist/issues/2346))
+* **preview-env**: Add missing requests and limits resources ([#2336](https://github.com/camunda/tasklist/issues/2336))
+* **deps**: update all non-major dependencies ([#2310](https://github.com/camunda/tasklist/issues/2310))
+* Update Browserlist DB
+* **deps**: update actions/add-to-project digest to 2558057 ([#2331](https://github.com/camunda/tasklist/issues/2331))
+* **deps**: update actions/add-to-project digest to f8f1995 ([#2329](https://github.com/camunda/tasklist/issues/2329))
 # v8.2.0-alpha2
 ## 🚀 New Features
 * Implement App switcher ([#2319](https://github.com/camunda/tasklist/issues/2319))
