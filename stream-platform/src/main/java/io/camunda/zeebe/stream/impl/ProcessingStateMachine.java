@@ -10,6 +10,7 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.impl.Loggers;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.stream.api.MetadataFilter;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
@@ -37,6 +39,9 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.prometheus.client.Histogram;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -224,7 +229,7 @@ public final class ProcessingStateMachine {
     return reachedEnd;
   }
 
-  private void processCommand(final LoggedEvent command) {
+  private void processCommand(final LoggedEvent loggedEvent) {
     // we have to mark ourself has inProcessing to not interfere with readNext calls, which
     // are triggered from commit listener
     inProcessing = true;
@@ -232,7 +237,7 @@ public final class ProcessingStateMachine {
     currentProcessingResult = EmptyProcessingResult.INSTANCE;
 
     metadata.reset();
-    command.readMetadata(metadata);
+    loggedEvent.readMetadata(metadata);
 
     // Here we need to get the current time, since we want to calculate
     // how long it took between writing to the dispatcher and processing.
@@ -241,30 +246,61 @@ public final class ProcessingStateMachine {
     processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
 
     try {
-      final var value = recordValues.readRecordValue(command, metadata.getValueType());
-      typedCommand.wrap(command, metadata, value);
 
-      final long position = typedCommand.getPosition();
       final ProcessingResultBuilder processingResultBuilder =
           new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
 
-      metrics.processingLatency(command.getTimestamp(), processingStartTime);
+      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
 
-      currentProcessor =
-          recordProcessors.stream()
-              .filter(p -> p.accepts(typedCommand.getValueType()))
-              .findFirst()
-              .orElse(null);
+      final List<LogAppendEntry> toWriteEntries = new ArrayList<>();
+      final Deque<TypedRecordImpl> toProcessCmds = new ArrayDeque<>();
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(
           () -> {
-            if (currentProcessor != null) {
-              currentProcessingResult =
-                  currentProcessor.process(typedCommand, processingResultBuilder);
+
+            final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
+            typedCommand.wrap(loggedEvent, metadata, value);
+            final long position = typedCommand.getPosition();
+
+            toProcessCmds.push(typedCommand);
+            while (!toProcessCmds.isEmpty()) {
+
+              //////////////////////////////////////////////////////
+              ///////// PROCESSING
+              //////////////////////////////////////////////////////
+              final var nextToProcessedCommand = toProcessCmds.pop();
+              final var valueType = nextToProcessedCommand.getValueType();
+              currentProcessor =
+                  recordProcessors.stream()
+                      .filter(p -> p.accepts(valueType))
+                      .findFirst()
+                      .orElse(null);
+
+              if (currentProcessor != null) {
+                currentProcessingResult =
+                    currentProcessor.process(nextToProcessedCommand, processingResultBuilder);
+              }
+
+              ///////////////////////////
+              ///////// Post - prepare for next
+              ///////////////////////////
+              final ImmutableRecordBatch recordBatch = currentProcessingResult.getRecordBatch();
+
+              for (final var entry : recordBatch.entries()) {
+                if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
+                  nextToProcessedCommand.wrap(null, // todo
+                      entry.recordMetadata(),
+                      entry.recordValue());
+                  toProcessCmds.push(nextToProcessedCommand);
+
+                }
+
+                toWriteEntries.add(entry);
+              }
             }
 
-            lastProcessedPositionState.markAsProcessed(position);
+              lastProcessedPositionState.markAsProcessed(position);
           });
 
       metrics.commandsProcessed();
@@ -279,7 +315,7 @@ public final class ProcessingStateMachine {
       // recoverable
       LOG.error(
           ERROR_MESSAGE_PROCESSING_FAILED_RETRY_PROCESSING,
-          command,
+          loggedEvent,
           metadata,
           recoverableException);
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
