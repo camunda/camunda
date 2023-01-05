@@ -204,10 +204,10 @@ pipeline {
             sh """
               docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
               docker buildx create --use
-              docker buildx . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:${IMAGE_TAG}  --push
+              docker buildx build . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:${IMAGE_TAG}  --push
 
               if ${IS_LATEST}; then
-                docker buildx . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:latest --push
+                docker buildx build . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:latest --push
               fi
             """
           }
