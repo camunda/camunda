@@ -8,13 +8,14 @@ package org.camunda.optimize.service.alert;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
 import org.camunda.optimize.service.identity.CCSaaSIdentityService;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,9 +32,7 @@ public class CCSaaSAlertRecipientValidator implements AlertRecipientValidator {
       .stream().map(UserDto::getEmail).collect(Collectors.toList());
     final Collection<String> unknownEmails = CollectionUtils.subtract(emails, userEmails);
     if (!unknownEmails.isEmpty()) {
-      throw new OptimizeValidationException(
-        "Users with the following email addresses are not available for receiving alerts: " + unknownEmails
-      );
+      throw new OptimizeAlertEmailValidationException(new HashSet<>(unknownEmails));
     }
   }
 
