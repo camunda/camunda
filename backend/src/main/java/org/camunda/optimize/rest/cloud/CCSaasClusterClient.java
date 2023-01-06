@@ -27,20 +27,25 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.CONSOLE;
 import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.MODELER;
+import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.OPERATE;
 import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.OPTIMIZE;
+import static org.camunda.optimize.dto.optimize.query.ui_configuration.AppName.TASKLIST;
+import static org.camunda.optimize.rest.constants.RestConstants.HTTPS_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.HTTP_PREFIX;
 
 @Component
 @Slf4j
 @Conditional(CCSaaSCondition.class)
 public class CCSaasClusterClient extends AbstractCCSaaSClient {
   private Map<AppName, String> webappsLinks;
-  private static final String HTTP_PREFIX = "http://";
-  private static final String HTTPS_PREFIX = "https://";
+  private static final Set<AppName> REQUIRED_WEBAPPS_LINKS = Set.of(CONSOLE, OPERATE, OPTIMIZE, MODELER, TASKLIST);
 
   public CCSaasClusterClient(final ConfigurationService configurationService,
                              final ObjectMapper objectMapper) {
@@ -81,7 +86,7 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
         return Arrays.stream(metadataForAllClusters)
           .filter(cm -> cm.getUuid().equals(currentClusterId))
           .findFirst()
-          .map(cluster -> addModelerAndConsoleLinksIfNotExists(cluster.getUrls()))
+          .map(cluster -> mapToWebappsLinks(cluster.getUrls()))
           // If we can't find cluster metadata for the current cluster, we can't return URLs
           .orElseThrow(() -> new OptimizeRuntimeException(
             "Fetched Cluster metadata successfully, but there was no data for the cluster " + currentClusterId));
@@ -93,13 +98,18 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
     }
   }
 
-  private Map<AppName, String> addModelerAndConsoleLinksIfNotExists(final Map<AppName, String> urls) {
+  private Map<AppName, String> mapToWebappsLinks(final Map<AppName, String> urls) {
+    // add console and modeler URL if not already present
     final String organizationId = getCloudAuthConfiguration().getOrganizationId();
     final String domain = retrieveDomainOfRunningInstance();
     final String clusterId = getCloudAuthConfiguration().getClusterId();
     urls.computeIfAbsent(MODELER, key -> String.format(MODELER_URL_TEMPLATE, domain, organizationId));
     urls.computeIfAbsent(CONSOLE, key -> String.format(CONSOLE_URL_TEMPLATE, domain, organizationId, clusterId));
-    return urls;
+    // remove any webapps URL the UI does not require
+    return urls.entrySet()
+      .stream()
+      .filter(entry -> REQUIRED_WEBAPPS_LINKS.contains(entry.getKey()))
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private String retrieveDomainOfRunningInstance() {

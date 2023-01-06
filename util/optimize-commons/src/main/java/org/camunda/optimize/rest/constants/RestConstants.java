@@ -25,5 +25,7 @@ public class RestConstants {
   public static final String SAME_SITE_COOKIE_STRICT_VALUE = "Strict";
 
   public static final String HTTPS_SCHEME = "https";
+  public static final String HTTPS_PREFIX = "https://";
+  public static final String HTTP_PREFIX = "http://";
 
 }
