@@ -53,6 +53,14 @@ public class RaftRoleMetrics extends RaftMetrics {
           .labelNames("partitionGroupName", "partition")
           .register();
 
+  private static final Histogram METASTORE_UPDATE_TIME =
+      Histogram.build()
+          .namespace("raft")
+          .name("metastore_update_time")
+          .help("Time to write lastWrittenIndex to metastore")
+          .labelNames("partitionGroupName", "partition")
+          .register();
+
   public RaftRoleMetrics(final String partitionName) {
     super(partitionName);
   }
@@ -83,5 +91,9 @@ public class RaftRoleMetrics extends RaftMetrics {
 
   public void setElectionLatency(final long latencyMs) {
     ELECTION_LATENCY.labels(partitionGroupName, partition).set(latencyMs);
+  }
+
+  public void observeMetastoreUpdate(final Runnable update) {
+    METASTORE_UPDATE_TIME.labels(partitionGroupName, partition).time(update);
   }
 }

@@ -1038,7 +1038,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   public void setLastWrittenIndex(final long index) {
-    meta.storeLastWrittenIndex(index);
+    raftRoleMetrics.observeMetastoreUpdate(() -> meta.storeLastWrittenIndex(index));
   }
 
   /**
