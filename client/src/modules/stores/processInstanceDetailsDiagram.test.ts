@@ -301,6 +301,7 @@ describe('stores/processInstanceDiagram', () => {
 
     expect(processInstanceDetailsDiagramStore.cancellableFlowNodes).toEqual([
       'multi-instance-subprocess',
+      'subprocess-service-task',
       'message-boundary',
       'service-task-7',
     ]);
@@ -323,6 +324,7 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-6',
       'intermediate-throw',
       'multi-instance-service-task',
+      'subprocess-service-task',
       'message-boundary',
     ]);
 
@@ -330,7 +332,6 @@ describe('stores/processInstanceDiagram', () => {
       'StartEvent_1',
       'subprocess-start-1',
       'subprocess-end-task',
-      'subprocess-service-task',
       'error-boundary',
       'non-interrupt-timer-boundary',
       'non-interrupt-message-boundary',

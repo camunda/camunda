@@ -205,9 +205,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
 
   get cancellableFlowNodes() {
     return this.flowNodes
-      .filter(
-        (flowNode) => !flowNode.hasMultiInstanceParent && flowNode.isCancellable
-      )
+      .filter((flowNode) => flowNode.isCancellable)
       .map(({id}) => id);
   }
 
