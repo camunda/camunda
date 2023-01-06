@@ -147,3 +147,21 @@ Generally, there are two ways we could idempotently process inter-partition comm
 > - the command rejection describes a reason to further clarify what happened.
 > - idempotency in event appliers can be easily achieved in some cases (e.g. using upsert over insert to change the state), but this could hide actual consistency problems.
 
+## How to run docker image of a specific platform locally
+
+You can run a docker image of a different than your native platform locally by using [binfmt](https://github.com/tonistiigi/binfmt), a cross-platform emulator collection for docker. You can either install all emulators via:
+
+```
+docker run --privileged --rm tonistiigi/binfmt --install all
+```
+
+or just specific ones, see the [install section for binfmt](https://github.com/tonistiigi/binfmt#installing-emulators).
+
+Once binfmt is setup you can explicitly run the zeebe image for a specific platform by specifying it to the run command:
+
+```
+docker run --platform=linux/arm64 camunda/zeebe:SNAPSHOT
+```
+
+or using the equivalent [platform property of docker-compose](https://docs.docker.com/compose/compose-file/#platform).
+
