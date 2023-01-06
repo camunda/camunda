@@ -79,7 +79,7 @@ public class MetaStore implements AutoCloseable {
             metaFile.toPath(),
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
-            StandardOpenOption.SYNC);
+            StandardOpenOption.DSYNC);
 
     confFile = new File(storage.directory(), String.format("%s.conf", storage.prefix()));
 
