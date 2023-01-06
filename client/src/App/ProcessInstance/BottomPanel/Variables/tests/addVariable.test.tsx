@@ -151,9 +151,7 @@ describe('Add variable', () => {
     await user.dblClick(screen.getByTestId('add-variable-value'));
     await user.type(screen.getByTestId('add-variable-value'), '"valid value"');
 
-    await waitForElementToBeRemoved(() =>
-      expect(screen.getByText('Value has to be JSON'))
-    );
+    expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
     expect(screen.getByText('Name is invalid')).toBeInTheDocument();
   });
 
@@ -194,10 +192,9 @@ describe('Add variable', () => {
     await user.type(screen.getByTestId('add-variable-value'), '123');
 
     expect(screen.getByTitle(/save variable/i)).toBeDisabled();
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByText('Value has to be filled')
-    );
+    expect(
+      screen.queryByText('Value has to be filled')
+    ).not.toBeInTheDocument();
 
     expect(screen.getByText('Name should be unique')).toBeInTheDocument();
 

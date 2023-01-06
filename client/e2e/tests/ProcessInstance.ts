@@ -35,7 +35,9 @@ test('Resolve an incident', async (t) => {
   // click and expand incident bar
   await t
     .click(
-      screen.queryByRole('button', {name: /view 2 incidents in instance/i})
+      screen.queryByRole('button', {
+        description: /view 2 incidents in instance/i,
+      })
     )
     .expect(screen.queryByText(/incident type:/i).exists)
     .ok()
@@ -164,7 +166,7 @@ test('Cancel an instance', async (t) => {
   await t
     .expect(
       screen.queryByRole('button', {
-        name: `View 3 Incidents in Instance ${instanceId}`,
+        description: `View 3 Incidents in Instance ${instanceId}`,
       }).exists
     )
     .ok();
@@ -172,7 +174,7 @@ test('Cancel an instance', async (t) => {
   await t
     .click(
       screen.queryByRole('button', {
-        name: `Cancel Instance ${instanceId}`,
+        description: `Cancel Instance ${instanceId}`,
       })
     )
     .click(screen.getByRole('button', {name: 'Apply'}))
@@ -184,7 +186,7 @@ test('Cancel an instance', async (t) => {
   await t
     .expect(
       screen.queryByRole('button', {
-        name: `View 3 Incidents in Instance ${instanceId}`,
+        description: `View 3 Incidents in Instance ${instanceId}`,
       }).exists
     )
     .notOk();

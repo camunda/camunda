@@ -84,7 +84,7 @@ describe('<Header />', () => {
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
-        name: `View decision ${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion} instances`,
+        description: `View decision ${invoiceClassification.decisionName} version ${invoiceClassification.decisionVersion} instances`,
       })
     ).toHaveTextContent(invoiceClassification.decisionVersion.toString());
     expect(
@@ -94,7 +94,7 @@ describe('<Header />', () => {
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('link', {
-        name: `View process instance ${invoiceClassification.processInstanceId}`,
+        description: `View process instance ${invoiceClassification.processInstanceId}`,
       })
     ).toBeInTheDocument();
   });

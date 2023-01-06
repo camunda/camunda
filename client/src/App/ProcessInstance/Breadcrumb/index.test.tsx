@@ -47,16 +47,6 @@ const processInstance = {
   ],
 };
 describe('User', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should render breadcrumb', async () => {
     render(<Breadcrumb processInstance={processInstance} />, {
       wrapper: createWrapper(),
@@ -83,7 +73,7 @@ describe('User', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View Process Parent Process Name - Instance 546546543276/,
+        description: /View Process Parent Process Name - Instance 546546543276/,
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
@@ -92,7 +82,8 @@ describe('User', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View Process 1st level Child Process Name - Instance 968765314354/,
+        description:
+          /View Process 1st level Child Process Name - Instance 968765314354/,
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(
@@ -101,7 +92,8 @@ describe('User', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View Process 2nd level Child Process Name - Instance 2251799813685447/,
+        description:
+          /View Process 2nd level Child Process Name - Instance 2251799813685447/,
       })
     );
     expect(screen.getByTestId('pathname')).toHaveTextContent(

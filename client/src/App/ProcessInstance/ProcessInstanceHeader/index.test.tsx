@@ -131,7 +131,7 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
-        name: `View process ${getProcessName(
+        description: `View process ${getProcessName(
           mockInstanceWithActiveOperation
         )} version ${mockInstanceWithActiveOperation.processVersion} instances`,
       })
@@ -219,7 +219,7 @@ describe('InstanceHeader', () => {
 
     expect(
       screen.getByRole('link', {
-        name: `View parent instance ${mockInstanceWithParentInstance.parentInstanceId}`,
+        description: `View parent instance ${mockInstanceWithParentInstance.parentInstanceId}`,
       })
     ).toBeInTheDocument();
   });

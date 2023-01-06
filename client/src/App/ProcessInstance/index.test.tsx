@@ -701,7 +701,7 @@ describe('Instance', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View process someProcessName version 1 instances/,
+        description: /View process someProcessName version 1 instances/,
       })
     );
 
@@ -720,7 +720,7 @@ describe('Instance', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View process someProcessName version 1 instances/,
+        description: /View process someProcessName version 1 instances/,
       })
     );
 
@@ -762,7 +762,7 @@ describe('Instance', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View process someProcessName version 1 instances/,
+        description: /View process someProcessName version 1 instances/,
       })
     );
 
@@ -781,7 +781,7 @@ describe('Instance', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /View process someProcessName version 1 instances/,
+        description: /View process someProcessName version 1 instances/,
       })
     );
 

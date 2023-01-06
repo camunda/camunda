@@ -10,16 +10,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {TabView} from './index';
 
 describe('TabView', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should render panel header if there is only one tab', () => {
     render(
       <TabView

@@ -207,7 +207,7 @@ describe('<InstancesTable />', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /view decision instance 2251799813689541/i,
+        description: /view decision instance 2251799813689541/i,
       })
     );
 
@@ -249,7 +249,7 @@ describe('<InstancesTable />', () => {
 
     await user.click(
       screen.getByRole('link', {
-        name: /view process instance 2251799813689544/i,
+        description: /view process instance 2251799813689544/i,
       })
     );
 

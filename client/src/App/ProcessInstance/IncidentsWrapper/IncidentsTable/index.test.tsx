@@ -75,6 +75,7 @@ describe('IncidentsTable', () => {
     incidentsStore.reset();
     authenticationStore.reset();
     flowNodeSelectionStore.reset();
+    processInstanceDetailsDiagramStore.reset();
   });
 
   it('should render the right column headers', async () => {
@@ -95,8 +96,11 @@ describe('IncidentsTable', () => {
     expect(screen.getByText('Root Cause Instance')).toBeInTheDocument();
   });
 
-  it('should render the right column headers for restricted user', () => {
+  it('should render the right column headers for restricted user', async () => {
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
+
     incidentsStore.setIncidents(incidentsMock);
+    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -142,7 +146,7 @@ describe('IncidentsTable', () => {
     expect(withinRow.getByText(firstIncident.errorMessage)).toBeInTheDocument();
     expect(
       withinRow.getByRole('link', {
-        name: /view root cause instance/i,
+        description: /view root cause instance/i,
       })
     ).toBeInTheDocument();
     expect(
@@ -169,7 +173,10 @@ describe('IncidentsTable', () => {
     ).toBeInTheDocument();
   });
 
-  it('should render incident details for restricted user', () => {
+  it('should render incident details for restricted user', async () => {
+    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
+    await processInstanceDetailsDiagramStore.fetchProcessXml('1');
+
     incidentsStore.setIncidents(incidentsMock);
     authenticationStore.setUser({
       displayName: 'demo',
@@ -200,7 +207,7 @@ describe('IncidentsTable', () => {
 
     expect(
       withinRow.getByRole('link', {
-        name: /view root cause instance/i,
+        description: /view root cause instance/i,
       })
     ).toBeInTheDocument();
     expect(
@@ -228,7 +235,7 @@ describe('IncidentsTable', () => {
     ).not.toBeInTheDocument();
     expect(
       withinRow.queryByRole('link', {
-        name: /view root cause instance/i,
+        description: /view root cause instance/i,
       })
     ).not.toBeInTheDocument();
   });

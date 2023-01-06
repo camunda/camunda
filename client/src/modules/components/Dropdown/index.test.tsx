@@ -20,16 +20,6 @@ const mockOnOpen = jest.fn();
 const mockOnClick = jest.fn();
 
 describe('Dropdown', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   afterEach(() => {
     mockOnOpen.mockClear();
   });

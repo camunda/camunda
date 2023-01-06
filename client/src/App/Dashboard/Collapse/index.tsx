@@ -30,7 +30,6 @@ const Collapse: React.FC<Props> = ({title, content, header}) => {
           setIsCollapsed((isCollapsed) => !isCollapsed);
         }}
         title={title}
-        aria-label={title}
         isExpanded={!isCollapsed}
         iconButtonTheme="default"
       />

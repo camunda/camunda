@@ -5,11 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Collapse} from './index';
 import {Link, MemoryRouter} from 'react-router-dom';
@@ -28,16 +24,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<Collapse />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should be collapsed by default', () => {
     const mockContent = 'mock-content';
     const mockHeader = 'mock-header';
@@ -49,7 +35,9 @@ describe('<Collapse />', () => {
     );
 
     expect(screen.getByText(mockHeader)).toBeInTheDocument();
-    expect(screen.getByRole('button', {name: mockTitle})).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {description: mockTitle})
+    ).toBeInTheDocument();
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
 
@@ -63,11 +51,11 @@ describe('<Collapse />', () => {
       {wrapper: Wrapper}
     );
 
-    await user.click(screen.getByRole('button', {name: mockTitle}));
+    await user.click(screen.getByRole('button', {description: mockTitle}));
 
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: mockTitle}));
+    await user.click(screen.getByRole('button', {description: mockTitle}));
 
     expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
@@ -82,14 +70,12 @@ describe('<Collapse />', () => {
       {wrapper: Wrapper}
     );
 
-    await user.click(screen.getByRole('button', {name: mockTitle}));
+    await user.click(screen.getByRole('button', {description: mockTitle}));
 
     expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
 
     await user.click(screen.getByText(/go to initial/));
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByText(new RegExp(mockContent))
-    );
+    expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
 });

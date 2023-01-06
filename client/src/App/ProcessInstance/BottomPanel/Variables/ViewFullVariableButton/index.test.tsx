@@ -14,16 +14,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ViewFullVariableButton} from './index';
 
 describe('<ViewFullVariableButton />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should load full value', async () => {
     jest.useFakeTimers();
     const mockOnClick: () => Promise<null | string> = jest.fn(function mock() {

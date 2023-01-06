@@ -436,7 +436,7 @@ describe('Operations', () => {
 
       await user.click(
         screen.getByRole('link', {
-          name: `View root instance ${rootInstanceId}`,
+          description: `View root instance ${rootInstanceId}`,
         })
       );
 

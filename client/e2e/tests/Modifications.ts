@@ -372,17 +372,19 @@ test('Should apply/remove add variable modifications', async (t) => {
     .pressKey('tab')
     .click(screen.getByTestId('apply-modifications-button'));
 
-  await t.expect(screen.queryAllByText(/test2: 1/gi).count).eql(2);
+  const withinModal = within(screen.queryByTestId('modal'));
+
+  await t.expect(withinModal.queryAllByText(/test2: 1/gi).count).eql(2);
 
   await t.click(
-    screen
+    withinModal
       .getAllByRole('button', {
         name: 'Delete variable modification',
       })
       .nth(1)
   );
 
-  await t.click(screen.getByRole('button', {name: 'Cancel'}));
+  await t.click(withinModal.getByRole('button', {name: 'Cancel'}));
 
   await t.expect(screen.queryByTestId('newVariables[0]').exists).notOk();
 
