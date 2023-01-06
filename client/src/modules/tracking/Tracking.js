@@ -20,7 +20,7 @@ export function track(eventName, properties) {
   }
 }
 
-export function Tracking({getUser}) {
+export function Tracking({user}) {
   const location = useLocation();
   const [initialized, setInitialized] = useState(false);
 
@@ -34,50 +34,63 @@ export function Tracking({getUser}) {
 
   useEffect(() => {
     (async () => {
-      const {enabled, token, apiHost, organizationId, osanoScriptUrl, stage, clusterId} =
-        await getMixpanelConfig();
-      if (!enabled || !osanoScriptUrl || !(await isOsanoAnalyticsEnabled(osanoScriptUrl))) {
-        return;
+      const {enabled, osanoScriptUrl} = await getMixpanelConfig();
+
+      if (enabled && osanoScriptUrl) {
+        await loadOsanoScript(osanoScriptUrl);
+
+        window.Osano?.cm?.addEventListener('osano-cm-consent-saved', async ({ANALYTICS}) => {
+          if (ANALYTICS === 'ACCEPT') {
+            await initMixpanel();
+            setInitialized(true);
+            trackingEnabled = true;
+          }
+        });
       }
+    })();
+  }, []);
 
-      window.mixpanel.init(token, {
-        api_host: apiHost,
-        batch_requests: true,
-        debug: process.env.NODE_ENV === 'development',
-      });
-
-      const user = await getUser();
+  useEffect(() => {
+    if (initialized && user?.id) {
       window.mixpanel.identify(user.id);
       window.mixpanel.register({
         userId: user.id,
-        orgId: organizationId,
-        stage: stage,
-        clusterId: clusterId,
-        product: 'optimize',
-        version: await getOptimizeVersion(),
-        development: process.env.NODE_ENV === 'development',
-        frontend: true,
-        // additional project group properties
-        org_id: organizationId,
-        cluster_id: clusterId,
       });
-      setInitialized(true);
-      trackingEnabled = true;
-    })();
-  }, [getUser]);
+    }
+  }, [initialized, user?.id]);
 
   return null;
 }
 
-async function isOsanoAnalyticsEnabled(osanoScriptUrl) {
+async function initMixpanel() {
+  const {token, apiHost, organizationId, stage, clusterId} = await getMixpanelConfig();
+
+  window.mixpanel.init(token, {
+    api_host: apiHost,
+    batch_requests: true,
+    debug: process.env.NODE_ENV === 'development',
+  });
+
+  window.mixpanel.register({
+    orgId: organizationId,
+    stage: stage,
+    clusterId: clusterId,
+    product: 'optimize',
+    version: await getOptimizeVersion(),
+    development: process.env.NODE_ENV === 'development',
+    frontend: true,
+    // additional project group properties
+    org_id: organizationId,
+    cluster_id: clusterId,
+  });
+}
+
+async function loadOsanoScript(osanoScriptUrl) {
   return new Promise((resolve) => {
     const osanoScriptElement = document.createElement('script');
     osanoScriptElement.src = osanoScriptUrl;
     document.head.appendChild(osanoScriptElement);
-
-    osanoScriptElement.onload = () => {
-      resolve(window.Osano?.cm?.analytics);
-    };
+    osanoScriptElement.onload = resolve;
   });
 }
 
