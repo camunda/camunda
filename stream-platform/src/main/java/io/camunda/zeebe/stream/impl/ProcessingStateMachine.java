@@ -267,7 +267,7 @@ public final class ProcessingStateMachine {
             typedCommand.wrap(loggedEvent, metadata, value);
             final var transientCommand = new TypedRecordImpl(partitionId);
             transientCommand.wrap(loggedEvent, metadata, value);
-            var position = typedCommand.getPosition();
+            final var commandPosition = typedCommand.getPosition();
 
             var index = 0;
             toProcessCmds.push(transientCommand);
@@ -298,19 +298,19 @@ public final class ProcessingStateMachine {
               for (; index < entries.size(); index++) {
                 final var entry = entries.get(index);
                 if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
-                  position = position + index;
-                  nextToProcessedCommand.wrap(
-                      new MinimalLoggedEvent(entry, position),
+                  final TypedRecordImpl typedRecord = new TypedRecordImpl(partitionId);
+                  typedRecord.wrap(
+                      new MinimalLoggedEvent(entry, commandPosition + index + 1),
                       entry.recordMetadata(),
                       entry.recordValue());
-                  toProcessCmds.push(nextToProcessedCommand);
+                  toProcessCmds.push(typedRecord);
                 }
 
                 toWriteEntries.add(entry);
               }
             }
 
-            lastProcessedPositionState.markAsProcessed(position);
+            lastProcessedPositionState.markAsProcessed(commandPosition);
           });
 
       metrics.commandsProcessed();
