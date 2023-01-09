@@ -1,3 +1,11 @@
+## Vernesserte Camunda 8 Plattform navigation
+
+Camunda Saas remöglicht eine einfache und intutive navigation zwischenn den Anwednungen (Console, Modeler, Operate, Optimize).
+
+## Dashboard fokusierte navigation
+
+Von Camunda vorkonfigurierte Dashboards sind einfach zu finden.
+
 ## ML Ready Dataset als CSV export
 
 Exportiere ein ML optimiertes Datenset für die Analyse und Manipulation mit Werkzeugen wie z.B. Panda.
