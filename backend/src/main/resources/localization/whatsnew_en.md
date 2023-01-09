@@ -1,3 +1,11 @@
+## Improved Camunda 8 Platform navigation
+
+Camunda SaaS provides easy and intuitive navigation between applications (Console, Modeler, Operate, Optimize)
+
+## Dashboard focused navigation
+
+Easily find dashboards pre-build by Camunda.
+
 ## ML Ready Dataset as CSV export
 
 Export optimized ML datasets for analyses in data analysis and manipulation tools like Panda.
