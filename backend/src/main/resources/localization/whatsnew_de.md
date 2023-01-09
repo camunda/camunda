@@ -1,8 +1,8 @@
 ## Verbesserte Camunda 8 Plattform Navigation
 
-Camunda Saas remöglicht eine einfache und intutive navigation zwischenn den Anwednungen (Console, Modeler, Operate, Optimize).
+Camunda Saas ermöglicht eine einfache und intuitive Navigation zwischen den Anwendungen (Console, Modeler, Operate, Optimize).
 
-## Dashboard fokusierte navigation
+## Dashboard fokussierte Navigation
 
 Von Camunda vorkonfigurierte Dashboards sind einfach zu finden.
 
@@ -14,7 +14,7 @@ Exportiere ein ML optimiertes Datenset für die Analyse und Manipulation mit Wer
 
 Die Hot backup API wurde um folgende Funktionen erweitert:
 
-- "Get backup state" API stellt mehr informationen zum Backup zur verfügung
+- "Get backup state" API stellt mehr Informationen zum Backup zur Verfügung
 - "Get backup state" API erlaubt die Abfrage der Info zu allen existierenden Backups
 - "Delete" API zum Löschen von existierenden backups via ID
 
