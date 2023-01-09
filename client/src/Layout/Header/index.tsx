@@ -45,7 +45,7 @@ const Header: React.FC = observer(() => {
   const parsedC8Links = c8Links
     .filter(({name}) => orderedApps.includes(name))
     .reduce((acc, {name, link}) => ({...acc, [name]: link}), {}) as Record<
-    typeof orderedApps[number],
+    (typeof orderedApps)[number],
     string
   >;
   const switcherElements = orderedApps
