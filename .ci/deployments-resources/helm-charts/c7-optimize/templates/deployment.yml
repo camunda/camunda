@@ -39,6 +39,13 @@ spec:
         command: ["sysctl", "-w", "vm.max_map_count=262144"]
         securityContext:
           privileged: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 1
+            memory: 300Mi
       {{ else if eq .Values.env "persistent" }}
       - name: migration
         image: "{{ .Values.optimize.image.repository }}:{{ .Values.optimize.image.tag }}"
@@ -47,6 +54,13 @@ spec:
           - name: configuration
             mountPath: /optimize/config/environment-config.yaml
             subPath: environment-config.yaml
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 1
+            memory: 500Mi
       {{ end }}
       containers:
       - name: optimize
@@ -167,6 +181,13 @@ spec:
               - "1025"
           initialDelaySeconds: 30
           periodSeconds: 30
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits:
+            cpu: 1
+            memory: 500Mi
       {{ if eq .Values.env "stage" }}
       - name: elasticsearch
         image: "{{ .Values.elasticsearch.image.repository }}:{{ .Values.elasticsearch.image.tag }}"

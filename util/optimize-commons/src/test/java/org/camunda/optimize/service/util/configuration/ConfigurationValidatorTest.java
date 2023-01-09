@@ -9,7 +9,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.extension.EnvironmentVariablesExtension;
 import org.camunda.optimize.service.util.configuration.extension.SystemPropertiesExtension;
-import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -170,6 +169,34 @@ public class ConfigurationValidatorTest {
   }
 
   @Test
+  public void deprecatedUiHeaderConfigs() {
+    // given
+    ConfigurationService configurationService =
+      createConfiguration("config-samples/config-deprecated-ui-header.yaml");
+    String[] deprecatedLocations = {"deprecated-config.yaml"};
+    ConfigurationValidator underTest = new ConfigurationValidator(deprecatedLocations);
+
+    // when
+    Map<String, String> deprecations = validateForAndReturnDeprecationsFailIfNone(configurationService, underTest);
+
+    // then
+    assertThat(deprecations)
+      .hasSize(3)
+      .containsEntry(
+        "ui.header.textColor",
+        generateExpectedDocUrl("/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration")
+      )
+      .containsEntry(
+        "ui.header.pathToLogoIcon",
+        generateExpectedDocUrl("/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration")
+      )
+      .containsEntry(
+        "ui.header.backgroundColor",
+        generateExpectedDocUrl("/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration")
+      );
+  }
+
+  @Test
   public void testNonDeprecatedArrayLeafKey_allFine() {
     // given
     String[] locations = {"config-samples/config-wo-tcpPort-leaf-key.yaml"};
@@ -197,96 +224,6 @@ public class ConfigurationValidatorTest {
 
     // then
     assertThat(deprecations).isNotPresent();
-  }
-
-  @Test
-  public void canResolveRelativeSVGLogoPath() {
-    // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/another_camunda_icon.svg";
-    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
-    configurationService.setUiConfiguration(uiConfiguration);
-
-    // when
-    underTest.validate(configurationService);
-
-    // then no exception is thrown
-  }
-
-  @Test
-  public void canAbsoluteLogoPath() {
-    // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/another_camunda_icon.svg";
-    String pathToLogoIcon = createAbsolutePath(relativePathToLogo);
-    UIConfiguration uiConfiguration = createUIConfiguration(pathToLogoIcon);
-    configurationService.setUiConfiguration(uiConfiguration);
-
-    // when
-    underTest.validate(configurationService);
-
-    // then no exception is thrown
-  }
-
-  @Test
-  public void logoSupportsJPEGFormat() {
-    // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/camunda_icon.jpg";
-    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
-    configurationService.setUiConfiguration(uiConfiguration);
-
-    // when
-    underTest.validate(configurationService);
-
-    // then no exception is thrown
-  }
-
-  @Test
-  public void logoSupportsPNGFormat() {
-    // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/camunda_icon.png";
-    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
-    configurationService.setUiConfiguration(uiConfiguration);
-
-    // when
-    underTest.validate(configurationService);
-
-    // then no exception is thrown
-  }
-
-  @Test
-  public void logoSupportsSVGWithoutDoctypeHeader() {
-    // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/logo_without_doctype_header.svg";
-    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
-    configurationService.setUiConfiguration(uiConfiguration);
-
-    // when
-    underTest.validate(configurationService);
-
-    // then no exception is thrown
-  }
-
-  @Test
-  public void unsupportedMimeTypeOfLogoThrowsError() {
-    // given
-    ConfigurationService configurationService = createConfiguration();
-    ConfigurationValidator underTest = new ConfigurationValidator(new String[]{});
-    String relativePathToLogo = "logo/camunda_icon.invalid";
-    UIConfiguration uiConfiguration = createUIConfiguration(relativePathToLogo);
-    configurationService.setUiConfiguration(uiConfiguration);
-
-    // then
-    assertThatThrownBy(() -> underTest.validate(configurationService))
-      .isInstanceOf(OptimizeConfigurationException.class);
   }
 
   @Test
@@ -356,15 +293,6 @@ public class ConfigurationValidatorTest {
   private String createAbsolutePath(final String relativePathToLogo) {
     return Objects.requireNonNull(ConfigurationValidatorTest.class.getClassLoader().getResource(relativePathToLogo))
       .getPath();
-  }
-
-  private UIConfiguration createUIConfiguration(final String pathToLogoIcon) {
-    HeaderCustomization headerCustomization = new HeaderCustomization();
-    headerCustomization.setPathToLogoIcon(pathToLogoIcon);
-    headerCustomization.setBackgroundColor("#FFFFFF");
-    UIConfiguration uiConfiguration = new UIConfiguration();
-    uiConfiguration.setHeader(headerCustomization);
-    return uiConfiguration;
   }
 
   private HashMap<String, WebhookConfiguration> createSingleWebhookConfiguration(final String name,

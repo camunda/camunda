@@ -39,6 +39,8 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
   const [availableTenants, setAvailableTenants] = useState(versions.length ? tenantInfo : []);
   const [xml, setXml] = useState();
   const [loadingXml, setLoadingXml] = useState(true);
+  const [loadingVersions, setLoadingVersions] = useState(false);
+  const [loadingTenants, setLoadingTenants] = useState(false);
   const [displayName, setDisplayName] = useState(definition.displayName);
   const [diagramModalOpen, setDiagramModalOpen] = useState(false);
   const [variableModalOpen, setVariableModalOpen] = useState(false);
@@ -70,18 +72,21 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
             versions={availableVersions}
             selected={definition.versions}
             selectedSpecificVersions={selectedSpecificVersions}
-            onChange={(newVersions) => {
+            loading={loadingVersions}
+            onChange={async (newVersions) => {
+              setLoadingVersions(true);
               if (isSpecificVersion(newVersions)) {
                 setSelectedSpecificVersions(newVersions);
               }
 
               if (!newVersions.length) {
                 setAvailableTenants([]);
-                onChange({...definition, versions: newVersions, tenantIds: []});
+                await onChange({...definition, versions: newVersions, tenantIds: []});
+                setLoadingVersions(false);
               } else {
                 mightFail(
                   loadTenants(type, [{key: definition.key, version: newVersions}], collection),
-                  ([{tenants: newAvailableTenants}]) => {
+                  async ([{tenants: newAvailableTenants}]) => {
                     const prevTenants = availableTenants;
                     const deselectedTenants = prevTenants
                       ?.map(({id}) => id)
@@ -91,7 +96,8 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
                       .filter((tenant) => !deselectedTenants?.includes(tenant));
 
                     setAvailableTenants(newAvailableTenants);
-                    onChange({...definition, versions: newVersions, tenantIds});
+                    await onChange({...definition, versions: newVersions, tenantIds});
+                    setLoadingVersions(false);
                   },
                   showError
                 );
@@ -105,8 +111,11 @@ export function DefinitionEditor({mightFail, collection, type, definition, tenan
             <TenantPopover
               tenants={availableTenants}
               selected={definition.tenantIds}
-              onChange={(newTenants) => {
-                onChange({...definition, tenantIds: newTenants});
+              loading={loadingTenants}
+              onChange={async (newTenants) => {
+                setLoadingTenants(true);
+                await onChange({...definition, tenantIds: newTenants});
+                setLoadingTenants(false);
               }}
             />
           </div>

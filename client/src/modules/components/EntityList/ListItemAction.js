@@ -37,7 +37,8 @@ export default function ListItemAction({actions = [], singleAction}) {
     <Dropdown className="ListItemAction" icon label={<Icon type="context-menu" />}>
       {actions.map(({action, icon, text}, idx) => (
         <Dropdown.Option onClick={action} key={idx}>
-          <Icon type={icon} /> {text}
+          {icon && <Icon type={icon} />}
+          {text}
         </Dropdown.Option>
       ))}
     </Dropdown>

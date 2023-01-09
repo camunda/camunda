@@ -1,0 +1,83 @@
+name: Create docker image from a dev branch and deploy it to GCR
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        required: true
+        description: 'Required format: 3.x.branchnumber-SNAPSHOT, eg 3.10.6376-SNAPSHOT for a branch called OPT-6376'
+env:
+  IMAGE_NAME: optimize
+permissions:
+  contents: read  # for git clone
+  id-token: write # for authenticating with GCP
+jobs:
+  build:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # The nexus username and pwd are being read from the VAULT secret management
+      # that is being administrated by infra.
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@8fa61e909919a3f94952e9e07ace6b5a1114440b
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/optimize NEXUS_USERNAME;
+            secret/data/products/optimize/ci/optimize NEXUS_PASSWORD;
+
+      - name: Set image build label from ISO 8601 DATE
+        id: get-date
+        shell: bash
+        run: echo "::set-output name=result::$(date --iso-8601=seconds)"
+
+      - name: Configure Google tools
+        id: auth
+        uses: camunda-cloud/action-setup-gcloud@v2
+        with:
+          account-alias: registry
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
+            }]
+          mirrors: '[{"url": "https://camunda.jfrog.io/artifactory/internal", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
+      - name: Build a package
+        run: mvn -B package --file pom.xml -Dmaven.test.skip
+
+      - name: Compute metadata
+        id: meta
+        run: |
+          export SHA="$(git rev-parse ${{ github.sha }})"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "docker_image=gcr.io/${{ steps.auth.outputs.project_id }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and Push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            VERSION=3.10.0-SNAPSHOT
+            DATE= ${{ steps.get-date.outputs.result }}
+            REVISION= ${{ github.sha }}
+          tags: ${{ steps.meta.outputs.docker_image }}

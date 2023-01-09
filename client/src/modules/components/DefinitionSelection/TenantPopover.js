@@ -7,14 +7,15 @@
 
 import React from 'react';
 
-import {Popover, ButtonGroup, Button, Switch, Form} from 'components';
-
-import './TenantPopover.scss';
 import {t} from 'translation';
 import {formatters} from 'services';
+import {Popover, ButtonGroup, Button, Switch, Form, LoadingIndicator} from 'components';
+
+import './TenantPopover.scss';
+
 const {formatTenantName} = formatters;
 
-export default function TenantPopover({tenants, selected, disabled, onChange, ...props}) {
+export default function TenantPopover({loading, tenants, selected, disabled, onChange, ...props}) {
   const allSelected = tenants && tenants.length === selected.length;
   const noneSelected = selected.length === 0;
 
@@ -36,10 +37,11 @@ export default function TenantPopover({tenants, selected, disabled, onChange, ..
       title={label || '-'}
       {...props}
     >
+      {loading && <LoadingIndicator />}
       <Form compact>
         <fieldset>
           <legend>{t('common.definitionSelection.tenant.includeData')}</legend>
-          <ButtonGroup>
+          <ButtonGroup disabled={loading}>
             <Button onClick={() => onChange(tenants.map(({id}) => id))}>
               {t('common.enableAll')}
             </Button>
@@ -50,6 +52,7 @@ export default function TenantPopover({tenants, selected, disabled, onChange, ..
               <Switch
                 key={tenant.id}
                 checked={selected.includes(tenant.id)}
+                disabled={loading}
                 onChange={({target}) => {
                   if (target.checked) {
                     onChange(selected.concat([tenant.id]));

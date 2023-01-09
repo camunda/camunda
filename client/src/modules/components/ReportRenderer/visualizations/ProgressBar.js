@@ -8,6 +8,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
+import {Tooltip} from 'components';
 import {numberParser} from 'services';
 import {t} from 'translation';
 
@@ -36,8 +37,25 @@ export default function ProgressBar({min, max, value, isBelow, formatter, precis
     warning = isBelow ? value > max : value < max;
   }
 
+  const getTargetStyle = () => {
+    if (goalPercentage > 50) {
+      return {
+        right: `${100 - goalPercentage}%`,
+        textAlign: 'right',
+      };
+    }
+    return {
+      left: `${goalPercentage}%`,
+    };
+  };
+
   return (
     <div className="ProgressBar">
+      {goalExceeded && (
+        <span className={classnames('goalLabel')} style={getTargetStyle()}>
+          {t('report.progressBar.goal')} {isBelow ? '<' : '>'} {formatter(max)}
+        </span>
+      )}
       <div className="barContainer">
         {goalExceeded && (
           <div
@@ -45,11 +63,7 @@ export default function ProgressBar({min, max, value, isBelow, formatter, precis
             style={{
               width: `${goalPercentage}%`,
             }}
-          >
-            <span className={classnames('goalLabel', {rightSide: goalPercentage > 50})}>
-              {t('report.progressBar.goal')} {isBelow ? '<' : '>'} {formatter(max)}
-            </span>
-          </div>
+          ></div>
         )}
         <div className="progressLabel">{formatter(value, precision)}</div>
         <div
@@ -57,8 +71,10 @@ export default function ProgressBar({min, max, value, isBelow, formatter, precis
           style={{width: `${relative * 100}%`}}
         />
         <div className={classnames('rangeLabels')}>
-          {leftLabel}
-          <span className="rightLabel">{rightLabel}</span>
+          <span>{leftLabel}</span>
+          <Tooltip content={rightLabel} overflowOnly>
+            <span className="rightLabel">{rightLabel}</span>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -19,9 +19,9 @@ spec:
         app: postgresql
     spec:
       nodeSelector:
-        cloud.google.com/gke-nodepool: n1-standard-8-netssd-stable
+        cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-stable
       tolerations:
-        - key: "n1-standard-8-netssd-stable"
+        - key: "agents-n1-standard-8-netssd-stable"
           operator: "Exists"
           effect: "NoSchedule"
       volumes:

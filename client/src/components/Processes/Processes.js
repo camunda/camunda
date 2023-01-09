@@ -6,9 +6,9 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {Link} from 'react-router-dom';
+import {useHistory} from 'react-router-dom';
 
-import {Button, DocsLink, EntityList, Icon, PageTitle, Tooltip} from 'components';
+import {DocsLink, EntityList, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
 import {withErrorHandling, withUser} from 'HOC';
 import {addNotification, showError} from 'notifications';
@@ -32,6 +32,8 @@ export function Processes({mightFail, user}) {
   const [dashboard, setDashboard] = useState();
   const [linkToCreateDashboard, setLinkToCreateDashboard] = useState();
   const [viewedProcesses, setViewedProcesses] = useState([]);
+
+  const history = useHistory();
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -65,15 +67,9 @@ export function Processes({mightFail, user}) {
     </>,
   ];
 
-  const isEditor = user?.authorizations.includes('entity_editor');
-  if (isEditor) {
-    columns.push(t('dashboard.label'));
-  }
-
   if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
     const ownerColumn = t('processes.owner');
     columns.splice(1, 0, ownerColumn);
-    columns.push(<span className="hidden">{t('common.configure')}</span>);
   }
 
   const processesLabel =
@@ -81,9 +77,9 @@ export function Processes({mightFail, user}) {
 
   return (
     <div className="Processes">
-      <PageTitle pageName={t('processes.processOverview')} />
+      <PageTitle pageName={t('processes.defaultDashboardAndKPI')} />
       <h1 className="processOverview">
-        {t('processes.processOverview')}
+        {t('processes.adoptionDashboard')}
         {processes && (
           <div className="info">
             <span>
@@ -104,7 +100,7 @@ export function Processes({mightFail, user}) {
         />
       )}
       <EntityList
-        name={t('processes.list')}
+        name={t('processes.defaultDashboardAndKPI')}
         displaySearchInfo={
           processes &&
           ((query, count) => (
@@ -124,6 +120,7 @@ export function Processes({mightFail, user}) {
         columns={columns}
         sorting={sorting}
         onChange={loadProcessesList}
+        forceActionsDropdown
         data={processes?.map(
           ({
             processDefinitionKey,
@@ -150,48 +147,37 @@ export function Processes({mightFail, user}) {
               </Tooltip>,
             ];
 
-            if (isEditor) {
-              if (!hasDefaultDashboard && !viewedProcesses.includes(linkToDashboard)) {
-                meta.push(
-                  <Button
-                    link
-                    className="processHoverBtn"
-                    onClick={() => {
-                      setLinkToCreateDashboard(linkToDashboard);
-                    }}
-                  >
-                    {t('common.view')} <Icon type="jump" />
-                  </Button>
-                );
-              } else {
-                meta.push(
-                  <Link className="processHoverBtn" to={linkToDashboard} target="_blank">
-                    {t('common.view')} <Icon type="jump" />
-                  </Link>
-                );
-              }
-            }
+            let listItem = {
+              id: processDefinitionKey,
+              type: t('common.process.label'),
+              icon: 'dashboard-optimize',
+              name: processDefinitionName || processDefinitionKey,
+              meta,
+              actions: [],
+            };
 
             if (optimizeProfile === 'cloud' || optimizeProfile === 'platform') {
               meta.unshift(owner?.name);
 
-              meta.push(
-                <Button
-                  className="processHoverBtn"
-                  onClick={() => setEditProcessConfig({processDefinitionKey, owner, digest})}
-                >
-                  {t('common.configure')}
-                </Button>
-              );
+              listItem.actions.push({
+                text: t('common.configure'),
+                action: () => setEditProcessConfig({processDefinitionKey, owner, digest}),
+              });
             }
 
-            return {
-              id: processDefinitionKey,
-              type: t('common.process.label'),
-              icon: 'data-source',
-              name: processDefinitionName || processDefinitionKey,
-              meta,
+            const onItemClick = () => {
+              if (!hasDefaultDashboard && !viewedProcesses.includes(linkToDashboard)) {
+                setLinkToCreateDashboard(linkToDashboard);
+              } else {
+                history.push(linkToDashboard);
+              }
             };
+
+            if (user?.authorizations.includes('entity_editor')) {
+              listItem.onClick = onItemClick;
+            }
+
+            return listItem;
           }
         )}
       />

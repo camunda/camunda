@@ -79,3 +79,10 @@ it('should not crash, but be disabled if no versions are provided', () => {
   const node = shallow(<VersionPopover selected={[]} />);
   expect(node.find('Popover').prop('disabled')).toBe(true);
 });
+
+it('should diplay a loading indicator and disable the inputs while loading', () => {
+  const node = shallow(<VersionPopover selected={[]} loading />);
+
+  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find(LabeledInput).at(0).prop('disabled')).toBe(true);
+});

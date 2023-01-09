@@ -5,7 +5,16 @@
 }
 
 .ProgressBar {
-  overflow: auto;
+  position: relative;
+
+  .goalLabel {
+    display: block;
+    padding-right: 10px;
+    padding-left: 10px;
+    white-space: nowrap;
+    font-size: 18px;
+    position: absolute;
+  }
 
   .barContainer {
     height: 65px;
@@ -25,30 +34,14 @@
         background: var(--red-lighten-85);
       }
 
-      .goalLabel {
-        display: block;
-        height: 100%;
-        text-align: right;
-        margin-left: 100%;
-        margin-top: -28px;
-        padding-right: 10px;
-        padding-left: 10px;
-        white-space: nowrap;
-        font-size: 18px;
-
-        &.rightSide {
-          margin-left: 0%;
-        }
-
-        &:after {
-          content: '';
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 135%;
-          border-right: 2px solid var(--black);
-        }
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 135%;
+        border-right: 2px solid var(--black);
       }
     }
 
@@ -82,12 +75,18 @@
     }
 
     .rangeLabels {
+      display: flex;
       height: 25px;
       line-height: 28px;
       font-size: 1.3em;
 
       .rightLabel {
-        float: right;
+        flex: 1;
+        text-align: right;
+        margin-left: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
     }
   }

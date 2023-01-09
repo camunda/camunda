@@ -6,13 +6,12 @@
     height: 32px;
     position: relative;
 
-    >span {
+    > span {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       width: calc(100% - 32px);
     }
-
 
     .Button {
       position: absolute;

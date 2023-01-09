@@ -9,41 +9,39 @@ import React from 'react';
 
 import {processResult} from 'services';
 
-import {formatters} from 'services';
+import {getFormatter} from './service';
 import {Number, Table, Heatmap, Chart} from './visualizations';
 
-export default class ProcessReportRenderer extends React.Component {
-  render() {
-    const {report} = this.props;
-    const Component = this.getComponent();
-    const props = {
-      ...this.props,
-      formatter: formatters[report.data.view.properties[0]],
-      report: {...this.props.report, result: processResult(this.props.report)},
-    };
-
-    return (
-      <div className="component">
-        <Component {...props} />
-      </div>
-    );
-  }
-
-  getComponent = () => {
-    switch (this.props.report.data.visualization) {
-      case 'number':
-        return Number;
-      case 'table':
-        return Table;
-      case 'bar':
-      case 'line':
-      case 'pie':
-      case 'barLine':
-        return Chart;
-      case 'heat':
-        return Heatmap;
-      default:
-        return;
-    }
+export default function ProcessReportRenderer(props) {
+  const {report} = props;
+  const Component = getComponent(report.data.visualization);
+  const newProps = {
+    ...props,
+    formatter: getFormatter(report.data.view.properties[0]),
+    report: {...report, result: processResult(report)},
   };
+
+  return (
+    <div className="component">
+      <Component {...newProps} />
+    </div>
+  );
+}
+
+function getComponent(visualization) {
+  switch (visualization) {
+    case 'number':
+      return Number;
+    case 'table':
+      return Table;
+    case 'bar':
+    case 'line':
+    case 'pie':
+    case 'barLine':
+      return Chart;
+    case 'heat':
+      return Heatmap;
+    default:
+      return;
+  }
 }

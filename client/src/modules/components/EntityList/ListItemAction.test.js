@@ -8,9 +8,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {Button, Icon} from 'components';
 
 import ListItemAction from './ListItemAction';
+import DropdownOption from '../Dropdown/DropdownOption';
 
 it('should render a placeholder when no actions are provided', () => {
   const node = shallow(<ListItemAction />);
@@ -36,4 +37,16 @@ it('should render a Dropdown per default', () => {
   );
 
   expect(node).toMatchSnapshot();
+});
+
+it('should render dropdown icon if passed', () => {
+  let node = shallow(
+    <ListItemAction actions={[{icon: 'dashboard', text: 'Delete', action: () => {}}]} />
+  );
+
+  expect(node.find(DropdownOption).find(Icon).prop('type')).toBe('dashboard');
+
+  node = shallow(<ListItemAction actions={[{text: 'Delete', action: () => {}}]} />);
+
+  expect(node.find(DropdownOption).find(Icon)).not.toExist();
 });

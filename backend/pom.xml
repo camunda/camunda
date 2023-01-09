@@ -11,7 +11,7 @@
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.49.v20220914</jetty.version>
+    <jetty.version>9.4.50.v20221201</jetty.version>
     <jersey.version>2.35</jersey.version>
     <spring.security.version>5.7.5</spring.security.version>
     <it.test.excludedGroups />
@@ -310,7 +310,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.6.11</version>
+      <version>1.6.12</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -332,7 +332,7 @@
     <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
-      <version>0.16.0</version>
+      <version>0.16.3</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -374,6 +374,7 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <version>${spring.boot.version}</version>
       </plugin>
 
       <plugin>

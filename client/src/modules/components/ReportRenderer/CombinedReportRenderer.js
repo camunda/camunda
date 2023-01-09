@@ -10,8 +10,8 @@ import React from 'react';
 import {withErrorHandling} from 'HOC';
 import {processResult as processSingleReportResult} from 'services';
 
-import {formatters} from 'services';
 import {Table, Chart} from './visualizations';
+import {getFormatter} from './service';
 
 const getComponent = (visualization) => {
   if (visualization === 'table') {
@@ -38,7 +38,7 @@ export default withErrorHandling(
           <Component
             {...this.props}
             report={processedReport}
-            formatter={formatters[view.properties[0]]}
+            formatter={getFormatter(view.properties[0])}
           />
         </div>
       );

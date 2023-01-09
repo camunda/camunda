@@ -17,7 +17,6 @@ import java.util.Map;
 @NoArgsConstructor
 public class UIConfigurationResponseDto {
 
-  private HeaderCustomizationDto header = new HeaderCustomizationDto();
   private boolean emailEnabled;
   private boolean sharingEnabled;
   private boolean tenantsAvailable;
@@ -25,6 +24,7 @@ public class UIConfigurationResponseDto {
   private boolean isEnterpriseMode;
   private String optimizeProfile;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
+  private Map<AppName, String> webappsLinks; // links for the app switcher
   private List<String> webhooks;
   private boolean logoutHidden;
   private Integer exportCsvLimit;

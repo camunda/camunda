@@ -3,9 +3,7 @@
   "appName": "Optimize",
   "appFullName": "Camunda Optimize",
   "navigation": {
-    "homepage": "Home",
     "analysis": "Analyse",
-    "processes": "Prozesse",
     "events": "Eventbasierte Prozesse",
     "telemetry": "Telemetrie-Einstellungen",
     "logout": "Abmelden",
@@ -15,7 +13,23 @@
     "userGuide": "Benutzerhandbuch",
     "help": "Hilfe",
     "profile": "Profil",
-    "appSwitcher": "App Switcher"
+    "appSwitcher": "App Switcher",
+    "dashboards": "Dashboards",
+    "collections": "Sammlungen",
+    "apps": {
+      "zeebe": "Zeebe",
+      "operate": "Operate",
+      "console": "Console",
+      "tasklist": "Tasklist",
+      "optimize": "Optimize",
+      "modeler": "Modeler"
+    },
+    "privacyPolicy": "Datenschutzerklärung",
+    "termsOfUse": "Bedingungen für die Nutzung",
+    "imprint": "Impressum",
+    "academy": "Camunda Academy",
+    "feedback": "Feedback und Support",
+    "slack": "Slack-Community-Kanal"
   },
   "login": {
     "label": "Einloggen",
@@ -176,7 +190,8 @@
   "processes": {
     "label": "Prozess",
     "label-plural": "Prozesse",
-    "list": "Prozessliste",
+    "adoptionDashboard": "Adoption Dashboard",
+    "defaultDashboardAndKPI": "Prozess Dashboards und KPIs",
     "empty": "Es sind noch keine Prozesse importiert",
     "owner": "Eigentümer",
     "processOwner": "Prozess Eigentümer",
@@ -189,7 +204,6 @@
     "goalRemoved": "Ziele aus dem '{processName}' Prozess wurden entfernt",
     "ownerInfo": "Der Prozesseigentümer ist für Geschäftsmetriken des Prozesses verantwortlich. Sie können den Prozesseigentümer verwenden, um Prozesse zu sortieren und zu filtern",
     "ownerRemoveWarning": "Der Eigentümer '{owner}' wird aus dem Prozess entfernt",
-    "processOverview": "Prozesse Übersicht",
     "configureProcess": "Prozess konfigurieren",
     "createDefaultDashboard": "Neues Standard Dashboard Erstellen",
     "createDashboardMessage": "Für diesen Prozess gibt es noch kein Dashboard. Möchten Sie, dass Optimize automatisch ein Dashboard basierend auf einer Prozessvorlage für Sie erstellt?",

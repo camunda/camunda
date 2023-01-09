@@ -25,6 +25,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -153,7 +154,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       deployAndStartInstanceForProcess(createSimpleUserTaskProcess(processName));
 
     // when
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
     importAllZeebeEntitiesFromScratch();
 
     // then
@@ -388,6 +389,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         .hasSizeGreaterThan(1));
   }
 
+  @DisabledIfSystemProperty(named = "zeebe.docker.version", matches = "8.0.0")
   @Test
   public void importZeebeProcessInstanceData_processStartedDuringProcess() {
     // given
@@ -414,6 +416,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
   }
 
+  @DisabledIfSystemProperty(named = "zeebe.docker.version", matches = "8.0.0")
   @Test
   public void importZeebeProcessInstanceData_processContainsTerminateEndEvent() {
     // given
@@ -435,6 +438,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
         ));
   }
 
+  @DisabledIfSystemProperty(named = "zeebe.docker.version", matches = "8.0.0")
   @Test
   public void importZeebeProcessInstanceData_processContainsInclusiveGateway() {
     // given
@@ -524,10 +528,10 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
                 .size(100));
     final SearchResponse searchResponse = esClient.searchWithoutPrefixing(searchRequest);
     return ElasticsearchReaderUtil.mapHits(
-        searchResponse.getHits(),
-        ZeebeProcessInstanceRecordDto.class,
-        embeddedOptimizeExtension.getObjectMapper()
-      ).stream()
+      searchResponse.getHits(),
+      ZeebeProcessInstanceRecordDto.class,
+      embeddedOptimizeExtension.getObjectMapper()
+    ).stream()
       .collect(Collectors.groupingBy(event -> event.getValue().getElementId()));
   }
 

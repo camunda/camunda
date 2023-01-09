@@ -262,7 +262,7 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
 
     // then
     assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-      .equals(FIRST_PROCESS_DEFINITION_KEY))
+        .equals(FIRST_PROCESS_DEFINITION_KEY))
       .singleElement()
       .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
         // No suffix

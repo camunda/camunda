@@ -47,3 +47,10 @@ spec:
                 - "1025"
             initialDelaySeconds: 30
             periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 1
+              memory: 500Mi

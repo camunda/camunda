@@ -193,6 +193,14 @@ describe('Process table', () => {
     const {processInstanceId, processDefinitionKey} = result.data[0];
     expect(spy).toHaveBeenCalledWith('var3', processInstanceId, processDefinitionKey);
   });
+
+  it('should disable sorting for flow node duration columns', () => {
+    const {head} = processRawData({report: {reportType: 'process', data, result}});
+
+    const flowNodeDurationColumns = head.filter((column) => column.type === 'flowNodeDurations');
+
+    expect(flowNodeDurationColumns[0].sortable).toBe(false);
+  });
 });
 
 describe('Decision table', () => {

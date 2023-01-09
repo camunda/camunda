@@ -65,6 +65,8 @@ import {ReactComponent as warningOutline} from './warning-outline.svg';
 import {ReactComponent as infoOutline} from './info-outline.svg';
 import {ReactComponent as questionMark} from './question-mark.svg';
 import {ReactComponent as dashboardOptimize} from './dashboard-optimize.svg';
+import {ReactComponent as dashboardOptimizeAccent} from './dashboard-optimize-accent.svg';
+import {ReactComponent as optimize} from './optimize.svg';
 
 const icons = {
   autorefresh,
@@ -127,6 +129,8 @@ const icons = {
   'info-outline': infoOutline,
   'question-mark': questionMark,
   'dashboard-optimize': dashboardOptimize,
+  'dashboard-optimize-accent': dashboardOptimizeAccent,
+  optimize,
 };
 
 export default icons;

@@ -45,6 +45,7 @@ export default function DateRange({type, startDate, endDate, onDateChange, endDa
       months={2}
       onChange={({range1}) => onDateChange(range1)}
       direction="horizontal"
+      shownDate={endDateSelected ? range.endDate : range.startDate}
     />
   ) : (
     <Calendar

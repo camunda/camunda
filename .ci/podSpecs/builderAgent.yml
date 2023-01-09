@@ -3,9 +3,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-8-netssd-preempt
+    cloud.google.com/gke-nodepool: agents-n1-standard-16-netssd-preempt
   tolerations:
-    - key: "agents-n1-standard-8-netssd-preempt"
+    - key: "agents-n1-standard-16-netssd-preempt"
       operator: "Exists"
       effect: "NoSchedule"
   containers:
@@ -22,10 +22,10 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 2
+        cpu: 6
         memory: 4Gi
       requests:
-        cpu: 2
+        cpu: 6
         memory: 4Gi
   # this docker-in-docker container is used to spawn containers dynamically inside a docker container
   - name: dind
@@ -71,8 +71,8 @@ spec:
             resource: limits.cpu
     resources:
       limits:
-        cpu: 2
+        cpu: 4
         memory: 4Gi
       requests:
-        cpu: 2
+        cpu: 4
         memory: 4Gi

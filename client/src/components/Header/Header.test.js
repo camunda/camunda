@@ -8,6 +8,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
+import {track} from 'tracking';
 import {getOptimizeProfile, isEnterpriseMode} from 'config';
 
 import {isEventBasedProcessEnabled} from './service';
@@ -22,6 +23,11 @@ jest.mock('config', () => ({
   }),
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
   isEnterpriseMode: jest.fn().mockReturnValue(true),
+  getWebappLinks: jest.fn().mockReturnValue({
+    zeebe: 'http://zeebe.com',
+    operate: 'http://operate.com',
+    optimize: 'http://optimize.com',
+  }),
 }));
 
 jest.mock('./service', () => ({
@@ -34,6 +40,8 @@ jest.mock('react-router', () => ({
     return {pathname: '/testroute'};
   }),
 }));
+
+jest.mock('tracking', () => ({track: jest.fn()}));
 
 function getNavItem(node, key) {
   const navItems = node.find('C3Navigation').prop('navbar').elements;
@@ -112,4 +120,51 @@ it('should no display navbar and sidebar is noAction prop is specified', () => {
   expect(node.find('C3Navigation').prop('navbar')).toEqual({elements: []});
   expect(node.find('C3Navigation').prop('infoSideBar')).not.toBeDefined();
   expect(node.find('C3Navigation').prop('userSideBar')).not.toBeDefined();
+});
+
+it('should render sidebar links', async () => {
+  const node = shallow(<Header {...props} />);
+
+  runLastEffect();
+  await flushPromises();
+
+  expect(node.find('C3Navigation').prop('appBar').elements).toEqual([
+    {
+      active: false,
+      href: 'http://zeebe.com',
+      key: 'zeebe',
+      label: 'Zeebe',
+      ariaLabel: 'Zeebe',
+      routeProps: undefined,
+      target: '_blank',
+    },
+    {
+      active: false,
+      href: 'http://operate.com',
+      key: 'operate',
+      label: 'Operate',
+      ariaLabel: 'Operate',
+      routeProps: undefined,
+      target: '_blank',
+    },
+    {
+      active: true,
+      href: 'http://optimize.com',
+      key: 'optimize',
+      label: 'Optimize',
+      ariaLabel: 'Optimize',
+      routeProps: {
+        to: '/',
+      },
+      target: '_blank',
+    },
+  ]);
+});
+
+it('should track app clicks from the app switcher', async () => {
+  const node = shallow(<Header {...props} />);
+
+  node.find('C3Navigation').prop('appBar').elementClicked('modeler');
+
+  expect(track).toHaveBeenCalledWith('modeler:open');
 });

@@ -21,3 +21,6 @@ historyCleanup.perProcessDefinitionConfig: '/technical-guide/setup/configuration
 historyCleanup.perDecisionDefinitionConfig: '/technical-guide/setup/configuration/#history-cleanup-settings'
 eventBasedProcess.eventIngestion.accessToken: '/technical-guide/setup/configuration/#public-api'
 externalVariable.variableIngestion.accessToken: '/technical-guide/setup/configuration/#public-api'
+ui.header.textColor: '/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration'
+ui.header.pathToLogoIcon: '/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration'
+ui.header.backgroundColor: '/optimize/self-managed/optimize-deployment/configuration/system-configuration/#ui-configuration'

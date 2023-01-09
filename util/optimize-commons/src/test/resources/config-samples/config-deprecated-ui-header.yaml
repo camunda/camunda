@@ -2,4 +2,4 @@ ui:
   header:
     textColor: 'dark'
     pathToLogoIcon: 'logo/camunda_icon.svg'
-    backgroundColor: '#asdfasdfasdf8888'
+    backgroundColor: '#FFFFFF'

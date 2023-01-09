@@ -75,7 +75,7 @@ it('should load collection entities with sort parameters', () => {
   expect(loadEntities).toHaveBeenCalledWith('lastModifier', 'desc');
 });
 
-it('should set the loading state of the entity list', async () => {
+it('should show the loading indicator', async () => {
   const node = shallow(
     <Home
       {...props}
@@ -86,15 +86,11 @@ it('should set the loading state of the entity list', async () => {
 
   runAllEffects();
 
-  expect(node.find('EntityList').prop('isLoading')).toBe(true);
+  expect(node.find('LoadingIndicator')).toExist();
   await flushPromises();
-  expect(node.find('EntityList').prop('isLoading')).toBe(false);
+  expect(node.find('LoadingIndicator')).not.toExist();
 
-  node.find('EntityList').prop('onChange')('lastModifier', 'desc');
-
-  expect(node.find('EntityList').prop('isLoading')).toBe(true);
-  await flushPromises();
-  expect(node.find('EntityList').prop('isLoading')).toBe(false);
+  expect(node.find('EntityList')).toExist();
 });
 
 it('should show empty state component', async () => {
@@ -111,7 +107,27 @@ it('should show empty state component', async () => {
   expect(emptyState.prop('description')).toBe(
     'Click Create New Dashboard to get insights into business processes'
   );
-  expect(emptyState.prop('icon')).toBe('dashboard-optimize');
+  expect(emptyState.prop('icon')).toBe('dashboard-optimize-accent');
+
+  expect(node.find('EntityList')).not.toExist();
+});
+
+it('should show entity list component when user is not editor and there no entities', async () => {
+  loadEntities.mockReturnValueOnce([]);
+  const node = shallow(
+    <Home
+      {...props}
+      user={{name: 'John Doe', authorizations: []}}
+      mightFail={async (data, cb) => cb(await data)}
+    />
+  );
+
+  runAllEffects();
+
+  await flushPromises();
+
+  expect(node.find('EntityList')).toExist();
+  expect(node.find('EmptyState')).not.toExist();
 });
 
 it('should include an option to export reports for superusers', () => {

@@ -1,10 +1,5 @@
 @mixin placeholder() {
-  $selectors: (
-    '::-webkit-input-',
-    '::-moz-',
-    ':-ms-input-',
-    ':-moz-'
-  );
+  $selectors: ('::-webkit-input-', '::-moz-', ':-ms-input-', ':-moz-');
   @each $selector in $selectors {
     &#{$selector}placeholder {
       @content;

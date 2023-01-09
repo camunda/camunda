@@ -7,7 +7,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 // general properties for CI execution
-static String NODE_POOL() { return "agents-n1-standard-8-netssd-stable" }
+static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
 static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 

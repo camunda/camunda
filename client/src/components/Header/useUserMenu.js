@@ -40,13 +40,38 @@ export default function useUserMenu({user, mightFail, setTelemetrySettingsOpen})
         },
       },
     },
-    elements: [],
+    elements: [
+      {
+        key: 'terms',
+        label: t('navigation.termsOfUse'),
+        onClick: () => {
+          window.open(
+            'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
+            '_blank'
+          );
+        },
+      },
+      {
+        key: 'privacy',
+        label: t('navigation.privacyPolicy'),
+        onClick: () => {
+          window.open('https://camunda.com/legal/privacy/', '_blank');
+        },
+      },
+      {
+        key: 'imprint',
+        label: t('navigation.imprint'),
+        onClick: () => {
+          window.open('https://camunda.com/legal/imprint/', '_blank');
+        },
+      },
+    ],
     bottomElements: [],
   };
 
   const isTelemetryAdmin = user?.authorizations.includes('telemetry_administration');
   if (isTelemetryAdmin) {
-    menu.elements.push({
+    menu.elements.unshift({
       key: 'telemetry',
       label: t('navigation.telemetry'),
       onClick: () => setTelemetrySettingsOpen(true),

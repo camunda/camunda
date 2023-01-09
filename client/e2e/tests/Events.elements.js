@@ -7,7 +7,7 @@
 
 import {Selector} from 'testcafe';
 
-export const navItem = Selector('header a').withText('Event Based Processes');
+export const navItem = Selector('header a[href="#/events/processes/"]');
 export const createDropdown = Selector('.Events .Dropdown');
 export const invoiceEventProcess = Selector('.ListItem').withText('Event Invoice process');
 export const editAccess = (element) => element.find('.DropdownOption').withText('Edit Access');

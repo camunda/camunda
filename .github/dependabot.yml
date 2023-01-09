@@ -15,8 +15,6 @@ updates:
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
-    reviewers:
-      - "camunda/optimize"
     labels:
       - "dependencies"
       - "backend"
@@ -30,8 +28,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    reviewers:
-      - "camunda/optimize"
     labels:
       - "dependencies"
       - "frontend"
@@ -45,8 +41,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    reviewers:
-      - "camunda/optimize"
     labels:
       - "dependencies"
 
@@ -68,8 +62,6 @@ updates:
       - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
       - dependency-name: "*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
-    reviewers:
-      - "camunda/optimize"
     labels:
       - "dependencies"
       - "backend"
@@ -86,8 +78,6 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
-    reviewers:
-      - "camunda/optimize"
     labels:
       - "dependencies"
       - "frontend"
@@ -101,7 +91,5 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    reviewers:
-      - "camunda/optimize"
     labels:
       - "dependencies"

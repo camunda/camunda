@@ -10,10 +10,11 @@ import {Link, useLocation} from 'react-router-dom';
 import {C3Navigation} from '@camunda/camunda-composite-components';
 
 import {Tooltip, NavItem} from 'components';
-import {getOptimizeProfile, isEnterpriseMode} from 'config';
+import {getOptimizeProfile, isEnterpriseMode, getWebappLinks} from 'config';
 import {withDocs, withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import {track} from 'tracking';
 
 import {isEventBasedProcessEnabled} from './service';
 import WhatsNewModal from './WhatsNewModal';
@@ -25,6 +26,7 @@ import './Header.scss';
 export function Header({user, mightFail, docsLink, noActions}) {
   const [showEventBased, setShowEventBased] = useState(false);
   const [enterpriseMode, setEnterpiseMode] = useState(true);
+  const [webappLinks, setwebappLinks] = useState(null);
   const [whatsNewOpen, setWhatsNewOpen] = useState(false);
   const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
   const location = useLocation();
@@ -32,10 +34,16 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
   useEffect(() => {
     mightFail(
-      Promise.all([isEventBasedProcessEnabled(), getOptimizeProfile(), isEnterpriseMode()]),
-      ([enabled, optimizeProfile, isEnterpriseMode]) => {
+      Promise.all([
+        isEventBasedProcessEnabled(),
+        getOptimizeProfile(),
+        isEnterpriseMode(),
+        getWebappLinks(),
+      ]),
+      ([enabled, optimizeProfile, isEnterpriseMode, webappLinks]) => {
         setShowEventBased(enabled && optimizeProfile === 'platform');
         setEnterpiseMode(isEnterpriseMode);
+        setwebappLinks(webappLinks);
       },
       showError
     );
@@ -43,13 +51,13 @@ export function Header({user, mightFail, docsLink, noActions}) {
 
   const props = {
     app: createAppProps(location),
-    appBar: createAppBarProps(),
+    appBar: createAppBarProps(webappLinks),
     navbar: {elements: []},
   };
 
   if (!noActions) {
     props.navbar = createNavBarProps(showEventBased, enterpriseMode);
-    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, docsLink);
+    props.infoSideBar = createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode);
     props.userSideBar = userSideBar;
   }
 
@@ -78,39 +86,59 @@ function createAppProps(location) {
   };
 }
 
-function createAppBarProps() {
+function createAppBarProps(webappLinks) {
   return {
     type: 'app',
     ariaLabel: t('navigation.appSwitcher'),
     isOpen: false,
-    elements: [],
+    elements: createWebappLinks(webappLinks),
+    elementClicked: (app) => {
+      track(app + ':open');
+    },
   };
+}
+
+function createWebappLinks(webappLinks) {
+  if (!webappLinks) {
+    return [];
+  }
+
+  return Object.entries(webappLinks).map(([key, href]) => ({
+    key,
+    label: t(`navigation.apps.${key}`),
+    ariaLabel: t(`navigation.apps.${key}`),
+    href,
+    target: '_blank',
+    active: key === 'optimize',
+    routeProps: key === 'optimize' ? {to: '/'} : undefined,
+  }));
 }
 
 function createNavBarProps(showEventBased, enterpriseMode) {
   const elements = [
     {
-      key: 'home',
-      label: t('navigation.homepage'),
+      key: 'dashboards',
+      label: t('navigation.dashboards'),
       routeProps: {
         element: NavItem,
-        name: t('navigation.homepage'),
-        linksTo: '/',
-        active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
-        breadcrumbsEntities: ['collection', 'dashboard', 'report'],
-      },
-    },
-    {
-      key: 'processes',
-      label: t('navigation.processes'),
-      routeProps: {
-        element: NavItem,
-        name: t('navigation.processes'),
+        name: t('navigation.dashboards'),
         linksTo: '/processes',
         active: ['/processes/', '/processes/*'],
         breadcrumbsEntities: ['report'],
       },
     },
+    {
+      key: 'collections',
+      label: t('navigation.collections'),
+      routeProps: {
+        element: NavItem,
+        name: t('navigation.collections'),
+        linksTo: '/',
+        active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
+        breadcrumbsEntities: ['collection', 'dashboard', 'report'],
+      },
+    },
+
     {
       key: 'analysis',
       label: t('navigation.analysis'),
@@ -174,7 +202,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
   };
 }
 
-function createInfoSideBarProps(setWhatsNewOpen, docsLink) {
+function createInfoSideBarProps(setWhatsNewOpen, docsLink, enterpriseMode) {
   return {
     type: 'info',
     ariaLabel: 'Info',
@@ -191,6 +219,31 @@ function createInfoSideBarProps(setWhatsNewOpen, docsLink) {
         label: t('navigation.userGuide'),
         onClick: () => {
           window.open(docsLink + 'components/what-is-optimize/', '_blank', 'noopener,noreferrer');
+        },
+      },
+      {
+        key: 'academy',
+        label: t('navigation.academy'),
+        onClick: () => {
+          window.open('https://academy.camunda.com/', '_blank');
+        },
+      },
+      {
+        key: 'feedbackAndSupport',
+        label: t('navigation.feedback'),
+        onClick: () => {
+          if (enterpriseMode) {
+            window.open('https://jira.camunda.com/projects/SUPPORT/queues', '_blank');
+          } else {
+            window.open('https://forum.camunda.io/', '_blank');
+          }
+        },
+      },
+      {
+        key: 'slackCommunityChannel',
+        label: t('navigation.slack'),
+        onClick: () => {
+          window.open('https://camunda-slack-invite.herokuapp.com/', '_blank');
         },
       },
     ],

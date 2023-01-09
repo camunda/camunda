@@ -7,11 +7,14 @@ package org.camunda.optimize.rest.cloud;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.AppName;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 @Component
@@ -21,6 +24,7 @@ import java.util.Optional;
 public class CloudSaasMetaInfoService {
   private final CCSaaSOrganizationsClient organizationsClient;
   private final AccountsUserAccessTokenProvider accessTokenProvider;
+  private final CCSaasClusterClient clusterClient;
 
   public Optional<String> getSalesPlanType() {
     final Optional<String> accessToken = accessTokenProvider.getCurrentUsersAccessToken();
@@ -34,6 +38,21 @@ public class CloudSaasMetaInfoService {
     } else {
       log.warn("No user access token found, will not retrieve salesPlanType");
       return Optional.empty();
+    }
+  }
+
+  public Map<AppName, String> getWebappsLinks() {
+    final Optional<String> accessToken = accessTokenProvider.getCurrentUsersAccessToken();
+    if (accessToken.isPresent()) {
+      try {
+        return clusterClient.getWebappLinks(accessToken.get());
+      } catch (OptimizeRuntimeException e) {
+        log.warn("Failed retrieving webapp links  .", e);
+        return Collections.emptyMap();
+      }
+    } else {
+      log.warn("No user access token found, will not retrieve links to other webapps.");
+      return Collections.emptyMap();
     }
   }
 

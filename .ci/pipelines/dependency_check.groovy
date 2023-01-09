@@ -113,14 +113,17 @@ pipeline {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
             sh("""
+              apt-get update && \
+              apt-get -y install git openssh-client
+
+              git config --global --add safe.directory "\$PWD"
+
               cd ./util/dependency-doc-creation/
               ./createOptimizeDependencyFiles.sh useCISettings
   
               mv backend-dependencies.md ./curr_backend-dependencies.md
               mv frontend-dependencies.md ./curr_frontend-dependencies.md
   
-              apt-get update && \
-              apt-get -y install git openssh-client
               mkdir -p ~/.ssh
               ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
   

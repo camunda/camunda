@@ -5,10 +5,10 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
-
 MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim"
+
 // general properties for CI execution
-static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
+static String NODE_POOL() { return "agents-n1-standard-16-netssd-stable" }
 static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
 static String TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
 static String DOCKERHUB_IMAGE() { return 'camunda/optimize' }
@@ -590,6 +590,7 @@ pipeline {
                   # This step is needed to fetch repo branches so SonarQube can diff them.
                   # It's used to scan and report only differences instead whole branch.
                   # TODO: Remove git config manipulation when project switched to SSH checkout.
+                  git config --global --add safe.directory "\$PWD"
                   git config url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
                   .ci/scripts/sonarqube-mvn.sh
                 '''

@@ -152,80 +152,87 @@ export default function FiltersEdit({
         }
       })}
 
-      {typeof filterToEdit !== 'undefined' && availableFilters[filterToEdit].type === 'variable' && (
-        <VariableFilter
-          className="dashboardVariableFilter"
-          forceEnabled={(variable) =>
-            ['Date', 'Boolean'].includes(variable?.type) || (variable && allowCustomValues)
-          }
-          addFilter={({type, data}) => {
-            setAvailableFilters(
-              availableFilters.map((filter, idx) => {
-                if (idx !== filterToEdit) {
-                  return filter;
-                }
-                if (['Boolean', 'Date'].includes(data.type)) {
-                  return {type, data: {name: data.name, type: data.type}, filterLevel: 'instance'};
-                } else {
-                  return {
-                    type,
-                    data: {
-                      data: {...data.data, allowCustomValues},
-                      name: data.name,
-                      type: data.type,
-                    },
-                    filterLevel: 'instance',
-                  };
-                }
-              })
-            );
-            setFilter(filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit])));
-            setFilterToEdit();
-            setAllowCustomValues(false);
-          }}
-          getPretext={(variable) => {
-            if (variable) {
-              let text;
-              switch (variable?.type) {
-                case 'Date':
-                case 'Boolean':
-                  text = t('dashboard.filter.modal.pretext.' + variable.type);
-                  break;
-                default:
-                  text = t('dashboard.filter.modal.pretext.default');
-              }
-              return <div className="preText">{text}</div>;
+      {typeof filterToEdit !== 'undefined' &&
+        availableFilters[filterToEdit].type === 'variable' && (
+          <VariableFilter
+            className="dashboardVariableFilter"
+            forceEnabled={(variable) =>
+              ['Date', 'Boolean'].includes(variable?.type) || (variable && allowCustomValues)
             }
-          }}
-          getPosttext={(variable) => {
-            if (variable && !['Date', 'Boolean'].includes(variable.type)) {
-              return (
-                <LabeledInput
-                  type="checkbox"
-                  label={t('dashboard.filter.modal.allowCustomValues')}
-                  className="customValueCheckbox"
-                  checked={allowCustomValues}
-                  onChange={(evt) => setAllowCustomValues(evt.target.checked)}
-                />
+            addFilter={({type, data}) => {
+              setAvailableFilters(
+                availableFilters.map((filter, idx) => {
+                  if (idx !== filterToEdit) {
+                    return filter;
+                  }
+                  if (['Boolean', 'Date'].includes(data.type)) {
+                    return {
+                      type,
+                      data: {name: data.name, type: data.type},
+                      filterLevel: 'instance',
+                    };
+                  } else {
+                    return {
+                      type,
+                      data: {
+                        data: {...data.data, allowCustomValues},
+                        name: data.name,
+                        type: data.type,
+                      },
+                      filterLevel: 'instance',
+                    };
+                  }
+                })
               );
-            }
-            return null;
-          }}
-          close={() => {
-            setFilterToEdit();
-            setAllowCustomValues(false);
-          }}
-          config={{
-            getVariables: () => getVariableNames(reportIds),
-            getValues: (...args) => getVariableValues(reportIds, ...args),
-          }}
-          filterType="variable"
-          filterData={{
-            type: 'variable',
-            data: augmentFilterData(availableFilters[filterToEdit].data),
-          }}
-        />
-      )}
+              setFilter(
+                filter.filter((filter) => !isOfType(filter, availableFilters[filterToEdit]))
+              );
+              setFilterToEdit();
+              setAllowCustomValues(false);
+            }}
+            getPretext={(variable) => {
+              if (variable) {
+                let text;
+                switch (variable?.type) {
+                  case 'Date':
+                  case 'Boolean':
+                    text = t('dashboard.filter.modal.pretext.' + variable.type);
+                    break;
+                  default:
+                    text = t('dashboard.filter.modal.pretext.default');
+                }
+                return <div className="preText">{text}</div>;
+              }
+            }}
+            getPosttext={(variable) => {
+              if (variable && !['Date', 'Boolean'].includes(variable.type)) {
+                return (
+                  <LabeledInput
+                    type="checkbox"
+                    label={t('dashboard.filter.modal.allowCustomValues')}
+                    className="customValueCheckbox"
+                    checked={allowCustomValues}
+                    onChange={(evt) => setAllowCustomValues(evt.target.checked)}
+                  />
+                );
+              }
+              return null;
+            }}
+            close={() => {
+              setFilterToEdit();
+              setAllowCustomValues(false);
+            }}
+            config={{
+              getVariables: () => getVariableNames(reportIds),
+              getValues: (...args) => getVariableValues(reportIds, ...args),
+            }}
+            filterType="variable"
+            filterData={{
+              type: 'variable',
+              data: augmentFilterData(availableFilters[filterToEdit].data),
+            }}
+          />
+        )}
 
       {typeof filterToEdit !== 'undefined' &&
         ['assignee', 'candidateGroup'].includes(availableFilters[filterToEdit].type) && (

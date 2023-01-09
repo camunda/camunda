@@ -13,6 +13,12 @@ import {processResult} from 'services';
 import ProcessReportRenderer from './ProcessReportRenderer';
 import {Number, Table} from './visualizations';
 
+jest.mock('./service', () => {
+  return {
+    getFormatter: (view) => (v) => v,
+  };
+});
+
 jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
@@ -41,9 +47,6 @@ const report = {
 
 it('should display a number if visualization is number', () => {
   const node = shallow(<ProcessReportRenderer report={report} />);
-  node.setState({
-    loaded: true,
-  });
 
   expect(node.find(Number)).toExist();
   expect(node.find(Number).prop('report')).toEqual(report);
@@ -51,9 +54,7 @@ it('should display a number if visualization is number', () => {
 
 it('should provide an errorMessage property to the component', () => {
   const node = shallow(<ProcessReportRenderer report={report} errorMessage={'test'} />);
-  node.setState({
-    loaded: true,
-  });
+
   expect(node.find(Number)).toHaveProp('errorMessage');
 });
 
@@ -81,9 +82,6 @@ const exampleDurationReport = {
 
 it('should pass the report to the visualization component', () => {
   const node = shallow(<ProcessReportRenderer report={exampleDurationReport} type="process" />);
-  node.setState({
-    loaded: true,
-  });
 
   expect(node.find(Table)).toHaveProp('report', exampleDurationReport);
 });

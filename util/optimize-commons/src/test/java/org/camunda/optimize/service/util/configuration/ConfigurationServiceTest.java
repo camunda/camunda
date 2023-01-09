@@ -120,26 +120,6 @@ public class ConfigurationServiceTest {
   }
 
   @Test
-  public void unresolvedLogoPathThrowsErrorOnConfigCreation() {
-    String[] locations = {defaultConfigFile(), "config-samples/ui_config/overwrite-ui-config-with-unknown-logo.yaml"};
-    assertThatThrownBy(() -> createConfiguration(locations)).isInstanceOf(OptimizeConfigurationException.class);
-  }
-
-  @Test
-  public void wrongBackgroundColorThrowsErrorOnConfigCreation() {
-    String[] locations = {defaultConfigFile(),
-      "config-samples/ui_config/overwrite-ui-config-with-wrong-background-color-option.yaml"};
-    assertThatThrownBy(() -> createConfiguration(locations)).isInstanceOf(OptimizeConfigurationException.class);
-  }
-
-  @Test
-  public void wrongTextColorThrowsErrorOnConfigCreation() {
-    String[] locations = {defaultConfigFile(),
-      "config-samples/ui_config/overwrite-ui-config-with-wrong-text-color-option.yaml"};
-    assertThatThrownBy(() -> createConfiguration(locations)).isInstanceOf(MappingException.class);
-  }
-
-  @Test
   public void disableHttpPort() {
     String[] possibilitiesToDisableHttpPortConnection = {
       "config-samples/port/empty-http-port.yaml",

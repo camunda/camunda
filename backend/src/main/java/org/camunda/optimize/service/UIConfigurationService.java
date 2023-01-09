@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsResponseDto;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.MixpanelConfigResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.OnboardingResponseDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationResponseDto;
@@ -17,11 +16,8 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointD
 import org.camunda.optimize.rest.cloud.CloudSaasMetaInfoService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -34,12 +30,11 @@ import java.util.Optional;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CCSM_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CLOUD_PROFILE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.PLATFORM_PROFILE;
-import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetriever.readLogoAsBase64;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
-public class UIConfigurationService implements ConfigurationReloadable {
+public class UIConfigurationService {
 
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
@@ -49,12 +44,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
   // optional as it is only available conditionally, see implementations of the interface
   private final Optional<CloudSaasMetaInfoService> cloudSaasMetaInfoService;
 
-  // cached version
-  private String logoAsBase64;
-
   public UIConfigurationResponseDto getUIConfiguration() {
     final UIConfigurationResponseDto uiConfigurationDto = new UIConfigurationResponseDto();
-    uiConfigurationDto.setHeader(getHeaderCustomization());
     uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(settingService.getSettings().getSharingEnabled().orElse(false));
@@ -87,6 +78,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     onboarding.setClusterId(configurationService.getOnboarding().getProperties().getClusterId());
 
     cloudSaasMetaInfoService.flatMap(CloudSaasMetaInfoService::getSalesPlanType).ifPresent(onboarding::setSalesPlanType);
+    cloudSaasMetaInfoService.ifPresent(service -> uiConfigurationDto.setWebappsLinks(service.getWebappsLinks()));
 
     return uiConfigurationDto;
   }
@@ -136,25 +128,4 @@ public class UIConfigurationService implements ConfigurationReloadable {
     return sortedWebhooksList;
   }
 
-  private HeaderCustomizationDto getHeaderCustomization() {
-    HeaderCustomization headerCustomization = configurationService.getUiConfiguration().getHeader();
-    return new HeaderCustomizationDto(
-      headerCustomization.getTextColor(),
-      headerCustomization.getBackgroundColor(),
-      getLogoAsBase64()
-    );
-  }
-
-  private String getLogoAsBase64() {
-    String pathToLogoIcon = configurationService.getUiConfiguration().getHeader().getPathToLogoIcon();
-    if (logoAsBase64 == null) {
-      this.logoAsBase64 = readLogoAsBase64(pathToLogoIcon);
-    }
-    return this.logoAsBase64;
-  }
-
-  @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    this.logoAsBase64 = null;
-  }
 }

@@ -1,0 +1,5 @@
+"processDefinitionKey","processDefinitionId","processInstanceId","numberOfIncidents","numberOfOpenIncidents","numberOfUserTasks","businessKey","startDate","endDate","duration","engineName","tenantId","dur:startEvent","dur:endEvent","dur:userTask1"
+"aProcess",${PD_ID_1},${PI_ID_1},"0","0","1","aBusinessKey",${START_DATE_1},${END_DATE_1},${DURATION_1},"camunda-bpm",,"0",,"1209600000"
+"aProcess",${PD_ID_2},${PI_ID_2},"0","0","1","aBusinessKey",${START_DATE_2},${END_DATE_2},${DURATION_2},"camunda-bpm",,"1","1","99"
+"aProcess",${PD_ID_3},${PI_ID_3},"0","0","1","aBusinessKey",${START_DATE_3},${END_DATE_3},${DURATION_3},"camunda-bpm",,"0",,"172800000"
+"aProcess",${PD_ID_4},${PI_ID_4},"0","0","1","aBusinessKey",${START_DATE_4},${END_DATE_4},${DURATION_4},"camunda-bpm",,"1","1","99"

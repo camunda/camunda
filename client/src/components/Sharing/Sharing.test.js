@@ -11,7 +11,6 @@ import {shallow} from 'enzyme';
 import {ReportRenderer, InstanceCount} from 'components';
 
 import {Sharing} from './Sharing';
-import IconLink from './IconLink';
 import {evaluateEntity} from './service';
 
 jest.mock('./service', () => {
@@ -211,7 +210,7 @@ it('should show a compact version and lock scroll when a shared report is embedd
   });
 
   expect(node.find('DiagramScrollLock')).toExist();
-  expect(node.find(IconLink)).toExist();
+  expect(node.find('.iconLink')).toExist();
   expect(node.find('.Sharing')).toHaveClassName('compact');
   expect(node.find('.title-button')).toHaveClassName('small');
 });

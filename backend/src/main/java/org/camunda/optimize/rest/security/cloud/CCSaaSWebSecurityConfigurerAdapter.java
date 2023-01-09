@@ -99,6 +99,10 @@ public class CCSaaSWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
       // csrf is not used but the same-site property of the auth cookie, see AuthCookieService#createNewOptimizeAuthCookie
       .csrf().disable()
       .httpBasic().disable()
+      // disable frame options so embed links work, it's not a risk disabling this globally as click-jacking
+      // is prevented by the samesite flag being set to `strict` on the authentication cookie
+      .headers().frameOptions().disable()
+      .and()
       // spring session management is not needed as we have stateless session handling using a JWT token stored as cookie
       .sessionManagement()
         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

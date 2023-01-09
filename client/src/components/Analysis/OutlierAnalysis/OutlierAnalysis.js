@@ -48,11 +48,11 @@ export class OutlierAnalysis extends React.Component {
     );
   };
 
-  updateConfig = (updates) => {
+  updateConfig = async (updates) => {
     const newConfig = {...this.state.config, ...updates};
 
     if (updates.processDefinitionKey && updates.processDefinitionVersions && updates.tenantIds) {
-      this.props.mightFail(
+      await this.props.mightFail(
         loadProcessDefinitionXml(
           updates.processDefinitionKey,
           updates.processDefinitionVersions[0],

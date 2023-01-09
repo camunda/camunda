@@ -408,7 +408,7 @@ public class ElasticsearchWriterUtil {
           final TaskResponse.Status taskStatus = taskResponse.getTaskStatus();
           progress = currentProgress;
           log.info(
-            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed is {}",
+            "Progress of task (ID:{}) on {}: {}% (total: {}, updated: {}, created: {}, deleted: {}). Completed: {}",
             taskId,
             taskItemIdentifier,
             progress,

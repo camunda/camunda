@@ -13,7 +13,6 @@ import org.camunda.optimize.service.UIConfigurationService;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -139,12 +138,6 @@ public class UIConfigurationServiceTest {
   }
 
   private void initializeMocks() {
-    HeaderCustomization headerCustomization = new HeaderCustomization();
-    headerCustomization.setPathToLogoIcon("logo/camunda_icon.svg");
-    headerCustomization.setBackgroundColor("#FFFFFF");
-    UIConfiguration uiConfiguration = new UIConfiguration();
-    uiConfiguration.setHeader(headerCustomization);
-    when(configurationService.getUiConfiguration()).thenReturn(uiConfiguration);
     when(configurationService.getConfiguredWebhooks()).thenReturn(Collections.emptyMap());
   }
 

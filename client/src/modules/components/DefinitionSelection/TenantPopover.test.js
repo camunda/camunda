@@ -71,3 +71,10 @@ it('should allow manual disabling', () => {
   const node = shallow(<TenantPopover tenants={tenants} selected={[null]} disabled />);
   expect(node.find('Popover').prop('disabled')).toBe(true);
 });
+
+it('should diplay a loading indicator and disable the switches while loading', () => {
+  const node = shallow(<TenantPopover tenants={tenants} selected={[null]} loading />);
+
+  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find('Switch').at(0).prop('disabled')).toBe(true);
+});
