@@ -1,4 +1,4 @@
-## Verbesserte Camunda 8 Plattform navigation
+## Verbesserte Camunda 8 Plattform Navigation
 
 Camunda Saas remöglicht eine einfache und intutive navigation zwischenn den Anwednungen (Console, Modeler, Operate, Optimize).
 
