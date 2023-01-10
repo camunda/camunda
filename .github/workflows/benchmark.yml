@@ -105,7 +105,6 @@ jobs:
       - uses: azure/setup-helm@v3
       - name: Add camunda helm repo
         run: |
-          helm repo add camunda https://helm.camunda.io
           helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm
           helm repo update
       - name: Helm install
