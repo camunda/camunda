@@ -108,7 +108,6 @@ jobs:
           helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm
           helm repo update
       - name: Helm install
-        working-directory: benchmark-helm/zeebe-benchmark
         run: >
           helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark
           --namespace ${{ inputs.name }}
