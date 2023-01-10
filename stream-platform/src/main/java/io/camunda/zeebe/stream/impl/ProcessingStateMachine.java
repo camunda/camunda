@@ -304,9 +304,9 @@ public final class ProcessingStateMachine {
                       entry.recordMetadata(),
                       entry.recordValue());
                   toProcessCmds.push(typedRecord);
+                } else {
+                  toWriteEntries.add(entry);
                 }
-
-                toWriteEntries.add(entry);
               }
             }
 
