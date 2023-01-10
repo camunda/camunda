@@ -110,6 +110,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           repository: zeebe-io/benchmark-helm
+          ref: stable
           path: benchmark-helm
       - name: Helm dependency build
         working-directory: benchmark-helm/zeebe-benchmark
