@@ -12,12 +12,19 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {createInstance} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createRef} from 'react';
+import {createRef, useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
 import {ModificationDropdown} from '..';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {modificationsStore} from 'modules/stores/modifications';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    initializeStores();
+
+    return resetStores;
+  }, []);
+
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={['/processes/1']}>{children}</MemoryRouter>
@@ -53,4 +60,12 @@ const initializeStores = () => {
   );
 };
 
-export {renderPopover, initializeStores};
+const resetStores = () => {
+  flowNodeSelectionStore.reset();
+  processInstanceDetailsStore.reset();
+  modificationsStore.reset();
+  processInstanceDetailsStatisticsStore.reset();
+  processInstanceDetailsDiagramStore.reset();
+};
+
+export {renderPopover};

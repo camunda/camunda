@@ -34,7 +34,7 @@ const Popover = styled(DefaultPopover)`
 `;
 
 const Title = styled.div`
-  ${styles.label01}
+  ${styles.label01};
   padding: 13px 19px 6px 15px;
 `;
 
@@ -55,7 +55,7 @@ const Option = styled.button`
       width: 100%;
       height: 100%;
       padding: 9px 16px 9px 15px;
-      ${styles.label02}
+      ${styles.label02};
       font-weight: 500;
 
       &:hover {
@@ -71,8 +71,14 @@ const Option = styled.button`
 
 const Unsupported = styled.div`
   padding: 9px 16px 9px 15px;
-  ${styles.label02}
-  font-style:italic;
+  ${styles.label02};
+  font-style: italic;
+`;
+
+const SelectedInstanceCount = styled.div`
+  padding: 2px 16px 1px 15px;
+  font-size: 11px;
+  font-style: italic;
 `;
 
 export {
@@ -84,4 +90,5 @@ export {
   AddIcon,
   CancelIcon,
   Unsupported,
+  SelectedInstanceCount,
 };

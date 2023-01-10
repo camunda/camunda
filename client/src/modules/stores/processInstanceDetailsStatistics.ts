@@ -79,6 +79,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
       const response = await fetchProcessInstanceDetailStatistics(
         processInstanceId
       );
+
       if (response.isSuccess) {
         this.handleFetchSuccess(response.data);
       } else {

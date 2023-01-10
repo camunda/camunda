@@ -7,12 +7,10 @@
 
 import {screen, waitFor} from '@testing-library/react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {initializeStores, renderPopover} from './mocks';
+import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
@@ -29,14 +27,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
 
   beforeEach(() => {
     mockFetchProcessXML().withSuccess(open('multipleInstanceSubProcess.bpmn'));
-  });
-
-  afterEach(() => {
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
   });
 
   it('should support add modification for task with multiple scopes', async () => {
@@ -64,7 +54,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
       },
     ]);
 
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -111,7 +100,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
       },
     ]);
 
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -158,7 +146,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
       },
     ]);
 
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -205,7 +192,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
       },
     ]);
 
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>

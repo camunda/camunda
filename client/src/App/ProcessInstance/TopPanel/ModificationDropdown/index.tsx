@@ -14,6 +14,7 @@ import {
   AddIcon,
   CancelIcon,
   Unsupported,
+  SelectedInstanceCount,
 } from './styled';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
@@ -23,6 +24,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
+import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -39,6 +41,8 @@ const ModificationDropdown: React.FC<Props> = observer(
     ) {
       return null;
     }
+
+    const {selectedRunningInstanceCount} = flowNodeSelectionStore;
 
     const businessObject =
       processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
@@ -84,6 +88,12 @@ const ModificationDropdown: React.FC<Props> = observer(
             <Unsupported>No modifications available</Unsupported>
           ) : (
             <>
+              {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
+                selectedRunningInstanceCount > 0 && (
+                  <SelectedInstanceCount>
+                    Selected running instances: {selectedRunningInstanceCount}
+                  </SelectedInstanceCount>
+                )}
               {canNewTokensBeAdded && (
                 <Option
                   title="Add single flow node instance"

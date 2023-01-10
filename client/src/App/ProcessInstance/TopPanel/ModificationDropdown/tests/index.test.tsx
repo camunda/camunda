@@ -11,13 +11,11 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
-import {initializeStores, renderPopover} from './mocks';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
@@ -88,16 +86,7 @@ describe('Modification Dropdown', () => {
     mockFetchProcessXML().withSuccess(mockProcessForModifications);
   });
 
-  afterEach(() => {
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStore.reset();
-    modificationsStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-  });
-
   it('should not render dropdown when no flow node is selected', async () => {
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -148,7 +137,6 @@ describe('Modification Dropdown', () => {
   });
 
   it('should not render dropdown when moving token', async () => {
-    initializeStores();
     const {user} = renderPopover();
 
     await waitFor(() =>
@@ -173,7 +161,6 @@ describe('Modification Dropdown', () => {
   });
 
   it('should only render add option for completed flow nodes', async () => {
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -196,7 +183,6 @@ describe('Modification Dropdown', () => {
   });
 
   it('should only render move and cancel options for boundary events', async () => {
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -219,7 +205,6 @@ describe('Modification Dropdown', () => {
   });
 
   it('should render unsupported flow node type for non modifiable flow nodes', async () => {
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -283,7 +268,6 @@ describe('Modification Dropdown', () => {
 
     mockFetchProcessXML().withSuccess(mockProcessWithEventBasedGateway);
 
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>
@@ -354,7 +338,6 @@ describe('Modification Dropdown', () => {
 
     mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
-    initializeStores();
     renderPopover();
 
     await waitFor(() =>

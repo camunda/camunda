@@ -11,6 +11,7 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {modificationsStore} from './modifications';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {flowNodeMetaDataStore} from './flowNodeMetaData';
 
 type Selection = {
   flowNodeId?: string;
@@ -141,6 +142,29 @@ class FlowNodeSelection {
       this.state.selection?.isPlaceholder ||
       (!this.hasRunningOrFinishedTokens &&
         this.newTokenCountForSelectedNode === 1)
+    );
+  }
+
+  get selectedRunningInstanceCount() {
+    const currentSelection = this.state.selection;
+    if (currentSelection === null) {
+      return 0;
+    }
+
+    if (
+      currentSelection.isPlaceholder ||
+      this.isRootNodeSelected ||
+      currentSelection.flowNodeId === undefined
+    ) {
+      return 0;
+    }
+
+    if (currentSelection.flowNodeInstanceId !== undefined) {
+      return flowNodeMetaDataStore.isSelectedInstanceRunning ? 1 : 0;
+    }
+
+    return processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+      currentSelection.flowNodeId
     );
   }
 
