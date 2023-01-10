@@ -26,5 +26,5 @@ cd $namespace
 sed_inplace "s/default/$namespace/g" Makefile *.yaml
 
 # get latest updates from zeebe repo
-helm repo add camunda https://helm.camunda.io # skips if already exists
+helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm # skips if already exists
 helm repo update
