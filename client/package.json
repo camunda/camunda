@@ -6,7 +6,7 @@
   "dependencies": {
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@camunda/camunda-composite-components": "^0.0.22",
-    "@carbon/react": "^1.19.0",
+    "@carbon/react": "^1.20.0",
     "@ibm/plex": "^6.1.1",
     "@ungap/structured-clone": "^1.0.1",
     "bpmn-js": "11.1.1",
