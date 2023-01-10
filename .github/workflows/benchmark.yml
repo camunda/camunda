@@ -105,21 +105,12 @@ jobs:
       - uses: azure/setup-helm@v3
       - name: Add camunda helm repo
         run: |
-          helm repo add camunda https://helm.camunda.io
+          helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm
           helm repo update
-      - uses: actions/checkout@v3
-        with:
-          repository: zeebe-io/benchmark-helm
-          ref: stable
-          path: benchmark-helm
-      - name: Helm dependency build
-        working-directory: benchmark-helm/zeebe-benchmark
-        run: |
-          helm dependency build
       - name: Helm install
         working-directory: benchmark-helm/zeebe-benchmark
         run: >
-          helm upgrade --install ${{ inputs.name }} .
+          helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark
           --namespace ${{ inputs.name }}
           --create-namespace
           --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
