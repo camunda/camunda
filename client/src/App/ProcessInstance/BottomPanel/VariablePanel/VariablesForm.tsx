@@ -11,7 +11,6 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {variablesStore} from 'modules/stores/variables';
 import {VariableFormValues} from 'modules/types/variables';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {FormRenderProps} from 'react-final-form';
@@ -33,27 +32,21 @@ const VariablesForm: React.FC<
   const {isModificationModeEnabled} = modificationsStore;
 
   const isVariableModificationAllowed = computed(() => {
-    if (!isModificationModeEnabled || variablesStore.hasNoContent) {
+    if (
+      !isModificationModeEnabled ||
+      flowNodeSelectionStore.state.selection === null
+    ) {
       return false;
     }
 
-    const currentFlowNodeSelection = flowNodeSelectionStore.state.selection;
-
-    if (
-      flowNodeSelectionStore.isRootNodeSelected ||
-      currentFlowNodeSelection?.flowNodeId === undefined
-    ) {
+    if (flowNodeSelectionStore.isRootNodeSelected) {
       return !processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled;
     }
 
     return (
-      currentFlowNodeSelection?.isPlaceholder ||
-      (!modificationsStore.isCancelModificationAppliedOnFlowNode(
-        currentFlowNodeSelection.flowNodeId
-      ) &&
-        flowNodeMetaDataStore.isSelectedInstanceRunning) ||
-      (!flowNodeSelectionStore.hasRunningOrFinishedTokens &&
-        flowNodeSelectionStore.newTokenCountForSelectedNode === 1)
+      flowNodeSelectionStore.isPlaceholderSelected ||
+      (flowNodeMetaDataStore.isSelectedInstanceRunning &&
+        !flowNodeSelectionStore.hasPendingCancelModification)
     );
   });
 

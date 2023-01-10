@@ -136,6 +136,14 @@ class FlowNodeSelection {
     );
   }
 
+  get isPlaceholderSelected() {
+    return (
+      this.state.selection?.isPlaceholder ||
+      (!this.hasRunningOrFinishedTokens &&
+        this.newTokenCountForSelectedNode === 1)
+    );
+  }
+
   get selectedFlowNodeName() {
     if (
       processInstanceDetailsStore.state.processInstance === null ||
@@ -183,6 +191,26 @@ class FlowNodeSelection {
           modification.operation !== 'CANCEL_TOKEN' &&
           Object.keys(modification.parentScopeIds).includes(flowNodeId)
       ).length
+    );
+  }
+
+  get hasPendingCancelModification() {
+    const currentSelection = this.state.selection;
+
+    if (currentSelection === null) {
+      return false;
+    }
+
+    const {flowNodeId} = currentSelection;
+
+    if (this.isRootNodeSelected || flowNodeId === undefined) {
+      return processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled;
+    }
+
+    return modificationsStore.flowNodeModifications.some(
+      (modification) =>
+        modification.operation === 'CANCEL_TOKEN' &&
+        modification.flowNode.id === flowNodeId
     );
   }
 
