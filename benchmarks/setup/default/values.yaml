@@ -1,6 +1,7 @@
 global:
   image:
-    repository: "camunda/zeebe"
+    # Image.repository used by worker and starter
+    repository: "gcr.io/zeebe-io"
     tag: SNAPSHOT
     pullPolicy: Always
 
