@@ -123,7 +123,8 @@ public final class LogStoragePartitionTransitionStep implements PartitionTransit
           new NotLeaderException(
               String.format(WRONG_TERM_ERROR_MSG, targetTerm, raftTerm, context.getPartitionId())));
     } else {
-      final var logStorage = AtomixLogStorage.ofPartition(server::openReader, logAppender);
+      final var logStorage =
+          AtomixLogStorage.ofPartition(server::openUncommittedReader, logAppender);
       return right(logStorage);
     }
   }
