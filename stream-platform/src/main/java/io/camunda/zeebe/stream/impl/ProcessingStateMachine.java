@@ -155,6 +155,7 @@ public final class ProcessingStateMachine {
   private List<LogAppendEntry> toWriteEntries;
   private final int partitionId;
   private final TreeMap<Long, Runnable> sideEffectBuffer;
+  private long lastCommittedPosition;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -449,7 +450,8 @@ public final class ProcessingStateMachine {
     inProcessing = false;
     actor.submit(this::readNextRecord);
 
-    sideEffectBuffer.put(currentRecord.getPosition(), () -> sideEffectsRetryStrategy.runWithRetry(
+
+    final Runnable runSideEffects = () -> sideEffectsRetryStrategy.runWithRetry(
         () -> {
           // TODO refactor this into two parallel tasks, which are then combined, and on the
           // completion of which the process continues
@@ -483,8 +485,13 @@ public final class ProcessingStateMachine {
           }
           return futureProcessingResult.executePostCommitTasks();
         },
-        abortCondition));
+        abortCondition);
 
+    if (currentRecord.getPosition() <= lastCommittedPosition) {
+      runSideEffects.run();
+    } else {
+      sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
+    }
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
@@ -535,6 +542,7 @@ public final class ProcessingStateMachine {
 
   public void onCommit(final long position) {
     actor.submit(() -> {
+      this.lastCommittedPosition = position;
       final var sideEffectsToRun = sideEffectBuffer.headMap(position,
           true);
       sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
