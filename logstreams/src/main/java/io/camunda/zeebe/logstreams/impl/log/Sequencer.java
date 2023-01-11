@@ -46,10 +46,10 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   Sequencer(final int partitionId, final long initialPosition, final int maxFragmentSize) {
     LOG.trace("Starting new sequencer at position {}", initialPosition);
-    this.position = initialPosition;
+    position = initialPosition;
     this.partitionId = partitionId;
     this.maxFragmentSize = maxFragmentSize;
-    this.metrics = new SequencerMetrics(partitionId);
+    metrics = new SequencerMetrics(partitionId);
   }
 
   /** {@inheritDoc} */

@@ -171,6 +171,11 @@ public final class LogStreamImpl extends Actor
   }
 
   @Override
+  public ActorFuture<LogStreamReader> newLogStreamReaderUncommitted() {
+    return actor.call(this::createLogStreamReaderUncommitted);
+  }
+
+  @Override
   public ActorFuture<LogStreamWriter> newLogStreamWriter() {
     return createNewLogStreamWriter();
   }
@@ -207,6 +212,12 @@ public final class LogStreamImpl extends Actor
 
   private LogStreamReader createLogStreamReader() {
     final LogStreamReader newReader = new LogStreamReaderImpl(logStorage.newReader());
+    readers.add(newReader);
+    return newReader;
+  }
+
+  private LogStreamReader createLogStreamReaderUncommitted() {
+    final LogStreamReader newReader = new LogStreamReaderImpl(logStorage.newUncommittedReader());
     readers.add(newReader);
     return newReader;
   }

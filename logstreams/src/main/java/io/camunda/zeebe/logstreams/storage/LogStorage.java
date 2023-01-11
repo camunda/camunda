@@ -32,6 +32,10 @@ public interface LogStorage {
    */
   LogStorageReader newReader();
 
+  default LogStorageReader newUncommittedReader() {
+    return newReader();
+  }
+
   /**
    * Writes a block containing one or multiple log entries in the storage and returns the address at
    * which the block has been written.
