@@ -9,6 +9,8 @@ package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.fs.PosixFs;
+import io.camunda.zeebe.journal.fs.PosixFs.Advice;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,16 +33,18 @@ final class SegmentLoader {
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;
   private final JournalMetrics metrics;
+  private final PosixFs posixFs;
 
   SegmentLoader(final int minFreeDiskSpace, final JournalMetrics metrics) {
-    this(minFreeDiskSpace, metrics, SegmentAllocator.fill());
+    this(minFreeDiskSpace, metrics, SegmentAllocator.fill(), PosixFs.defaultInstance());
   }
 
   SegmentLoader(
-      final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
+      final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator, final PosixFs posixFs) {
     this.minFreeDiskSpace = minFreeDiskSpace;
     this.metrics = metrics;
     this.allocator = allocator;
+    this.posixFs = posixFs;
   }
 
   Segment createSegment(
@@ -143,6 +147,7 @@ final class SegmentLoader {
     final var mappedSegment = channel.map(MapMode.READ_WRITE, 0, segmentSize);
     mappedSegment.order(ENDIANNESS);
 
+    posixFs.madvise(mappedSegment, segmentSize, Advice.POSIX_MADV_SEQUENTIAL);
     return mappedSegment;
   }
 

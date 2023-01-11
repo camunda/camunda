@@ -52,6 +52,17 @@
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
+    <!-- Native bindings -->
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-ffi</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-constants</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
