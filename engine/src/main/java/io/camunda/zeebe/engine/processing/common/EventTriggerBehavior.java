@@ -59,8 +59,8 @@ public class EventTriggerBehavior {
         new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
   }
 
-  private void unsubscribeEventSubprocesses(final BpmnElementContext context,
-      final SideEffects sideEffectQueue) {
+  private void unsubscribeEventSubprocesses(
+      final BpmnElementContext context, final SideEffects sideEffectQueue) {
     catchEventBehavior.unsubscribeEventSubprocesses(context, sideEffectQueue);
   }
 
@@ -68,7 +68,8 @@ public class EventTriggerBehavior {
       final ExecutableStartEvent startEvent,
       final long flowScopeElementInstanceKey,
       final ProcessInstanceRecord recordValue,
-      final DirectBuffer variables, final SideEffects sideEffectQueue) {
+      final DirectBuffer variables,
+      final SideEffects sideEffectQueue) {
 
     final var flowScopeElementInstance =
         elementInstanceState.getInstance(flowScopeElementInstanceKey);

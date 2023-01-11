@@ -40,21 +40,25 @@ public final class BusinessRuleTaskProcessor
 
   @Override
   public void onActivate(
-      final ExecutableBusinessRuleTask element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableBusinessRuleTask element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     eventBehaviorOf(element, context).onActivate(element, context, sideEffects, sideEffectQueue);
   }
 
   @Override
   public void onComplete(
-      final ExecutableBusinessRuleTask element, final BpmnElementContext context,
+      final ExecutableBusinessRuleTask element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     eventBehaviorOf(element, context).onComplete(element, context, sideEffects);
   }
 
   @Override
   public void onTerminate(
-      final ExecutableBusinessRuleTask element, final BpmnElementContext context,
+      final ExecutableBusinessRuleTask element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     eventBehaviorOf(element, context).onTerminate(element, context, sideEffects);
   }
@@ -94,8 +98,10 @@ public final class BusinessRuleTaskProcessor
 
     @Override
     public void onActivate(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext context,
-        final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+        final ExecutableBusinessRuleTask element,
+        final BpmnElementContext context,
+        final SideEffects sideEffects,
+        final SideEffects sideEffectQueue) {
       variableMappingBehavior
           .applyInputMappings(context, element)
           .flatMap(ok -> decisionBehavior.evaluateDecision(element, context))
@@ -109,7 +115,8 @@ public final class BusinessRuleTaskProcessor
 
     @Override
     public void onComplete(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext context,
+        final ExecutableBusinessRuleTask element,
+        final BpmnElementContext context,
         final SideEffects sideEffects) {
       variableMappingBehavior
           .applyOutputMappings(context, element)
@@ -121,7 +128,8 @@ public final class BusinessRuleTaskProcessor
 
     @Override
     public void onTerminate(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext context,
+        final ExecutableBusinessRuleTask element,
+        final BpmnElementContext context,
         final SideEffects sideEffects) {
       final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
@@ -159,21 +167,25 @@ public final class BusinessRuleTaskProcessor
 
     @Override
     public void onActivate(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext activating,
-        final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+        final ExecutableBusinessRuleTask element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects,
+        final SideEffects sideEffectQueue) {
       delegate.onActivate(element, activating, sideEffects, sideEffectQueue);
     }
 
     @Override
     public void onComplete(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext completing,
+        final ExecutableBusinessRuleTask element,
+        final BpmnElementContext completing,
         final SideEffects sideEffects) {
       delegate.onComplete(element, completing, sideEffects);
     }
 
     @Override
     public void onTerminate(
-        final ExecutableBusinessRuleTask element, final BpmnElementContext terminating,
+        final ExecutableBusinessRuleTask element,
+        final BpmnElementContext terminating,
         final SideEffects sideEffects) {
       delegate.onTerminate(element, terminating, sideEffects);
     }
@@ -181,13 +193,20 @@ public final class BusinessRuleTaskProcessor
 
   /** Extract different behaviors depending on the type of task. */
   private interface BusinessRuleTaskBehavior {
-    void onActivate(ExecutableBusinessRuleTask element, BpmnElementContext activating,
-        final SideEffects sideEffects, final SideEffects sideEffectQueue);
+    void onActivate(
+        ExecutableBusinessRuleTask element,
+        BpmnElementContext activating,
+        final SideEffects sideEffects,
+        final SideEffects sideEffectQueue);
 
-    void onComplete(ExecutableBusinessRuleTask element, BpmnElementContext completing,
+    void onComplete(
+        ExecutableBusinessRuleTask element,
+        BpmnElementContext completing,
         final SideEffects sideEffects);
 
-    void onTerminate(ExecutableBusinessRuleTask element, BpmnElementContext terminating,
+    void onTerminate(
+        ExecutableBusinessRuleTask element,
+        BpmnElementContext terminating,
         final SideEffects sideEffects);
   }
 }

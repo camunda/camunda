@@ -82,8 +82,10 @@ public final class MultiInstanceBodyProcessor
 
   @Override
   public void onActivate(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     // verify that the input collection variable is present and valid
     readInputCollectionVariable(element, context)
         .flatMap(
@@ -98,7 +100,8 @@ public final class MultiInstanceBodyProcessor
 
   @Override
   public void onComplete(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context,
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
@@ -117,7 +120,8 @@ public final class MultiInstanceBodyProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context,
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);

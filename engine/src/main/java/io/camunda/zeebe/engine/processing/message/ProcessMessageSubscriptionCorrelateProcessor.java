@@ -77,7 +77,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command, final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(
+      final TypedRecord<ProcessMessageSubscriptionRecord> command,
+      final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffects = new SideEffectQueue();
     sideEffect.accept(sideEffects);
     final var record = command.getValue();

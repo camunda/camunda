@@ -47,8 +47,10 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onActivate(
-      final ExecutableExclusiveGateway element, final BpmnElementContext activating,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableExclusiveGateway element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     findSequenceFlowToTake(element, activating)
         .ifRightOrLeft(
@@ -68,7 +70,8 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onComplete(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context,
+      final ExecutableExclusiveGateway element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     throw new UnsupportedOperationException(
         String.format(
@@ -78,7 +81,8 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context,
+      final ExecutableExclusiveGateway element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     incidentBehavior.resolveIncidents(context);
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);

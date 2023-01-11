@@ -85,7 +85,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   @Override
   public void processRecord(
-      final TypedRecord<TimerRecord> record, final Consumer<SideEffectProducer> sideEffectsConsumer) {
+      final TypedRecord<TimerRecord> record,
+      final Consumer<SideEffectProducer> sideEffectsConsumer) {
     final var sideEffects = new SideEffectQueue();
     sideEffectsConsumer.accept(sideEffects);
     final var timer = record.getValue();
@@ -115,8 +116,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       }
 
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
-      eventHandle.activateElement(catchEvent, elementInstanceKey, elementInstance.getValue(),
-          sideEffects);
+      eventHandle.activateElement(
+          catchEvent, elementInstanceKey, elementInstance.getValue(), sideEffects);
     }
 
     if (shouldReschedule(timer)) {
@@ -140,9 +141,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   }
 
   private void rescheduleTimer(
-      final TimerRecord record,
-      final ExecutableCatchEvent event,
-      final SideEffects sideEffects) {
+      final TimerRecord record, final ExecutableCatchEvent event, final SideEffects sideEffects) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
     if (timer.isLeft()) {

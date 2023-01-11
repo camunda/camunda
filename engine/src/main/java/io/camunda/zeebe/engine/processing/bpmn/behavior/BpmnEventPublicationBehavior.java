@@ -65,8 +65,8 @@ public final class BpmnEventPublicationBehavior {
    *
    * @param catchEventTuple a tuple representing a catch event and its current instance
    */
-  public void throwErrorEvent(final CatchEventTuple catchEventTuple,
-      final SideEffects sideEffectQueue) {
+  public void throwErrorEvent(
+      final CatchEventTuple catchEventTuple, final SideEffects sideEffectQueue) {
     final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
 
@@ -84,14 +84,18 @@ public final class BpmnEventPublicationBehavior {
    * @param catchEventTuple a tuple representing a catch event and its current instance
    */
   public void throwErrorEvent(
-      final CatchEventTuple catchEventTuple, final DirectBuffer variables,
+      final CatchEventTuple catchEventTuple,
+      final DirectBuffer variables,
       final SideEffects sideEffectQueue) {
     final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
 
     if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
       eventHandle.activateElement(
-          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables,
+          catchEvent,
+          eventScopeInstance.getKey(),
+          eventScopeInstance.getValue(),
+          variables,
           sideEffectQueue);
     }
   }
@@ -143,7 +147,8 @@ public final class BpmnEventPublicationBehavior {
   public boolean throwEscalationEvent(
       final DirectBuffer throwElementId,
       final DirectBuffer escalationCode,
-      final BpmnElementContext context, final SideEffects sideEffectQueue) {
+      final BpmnElementContext context,
+      final SideEffects sideEffectQueue) {
 
     ensureNotNullOrEmpty("escalationCode", escalationCode);
 
@@ -171,7 +176,10 @@ public final class BpmnEventPublicationBehavior {
 
       if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
         eventHandle.activateElement(
-            catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), sideEffectQueue);
+            catchEvent,
+            eventScopeInstance.getKey(),
+            eventScopeInstance.getValue(),
+            sideEffectQueue);
         stateWriter.appendFollowUpEvent(key, EscalationIntent.ESCALATED, record);
         escalated = true;
       }

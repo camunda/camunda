@@ -74,8 +74,8 @@ import org.slf4j.Logger;
 
 https://textik.com/#f8692d3c3e76c699
 */
-public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter,
-    io.atomix.raft.RaftCommittedEntryListener {
+public class StreamProcessor extends Actor
+    implements HealthMonitorable, LogRecordAwaiter, io.atomix.raft.RaftCommittedEntryListener {
 
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);

@@ -220,7 +220,8 @@ public final class ProcessInstanceModificationProcessor
                                   scopeKey,
                                   processInstance,
                                   process,
-                                  instruction), sideEffectQueue);
+                                  instruction),
+                          sideEffectQueue);
 
                   extendedRecord.addActivateInstruction(
                       ((ProcessInstanceModificationActivateInstruction) instruction)

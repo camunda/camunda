@@ -49,8 +49,10 @@ public final class SubProcessProcessor
 
   @Override
   public void onActivate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext activating,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
 
     variableMappingBehavior
         .applyInputMappings(activating, element)
@@ -68,7 +70,8 @@ public final class SubProcessProcessor
 
   @Override
   public void onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext completing,
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext completing,
       final SideEffects sideEffects) {
 
     variableMappingBehavior
@@ -85,7 +88,8 @@ public final class SubProcessProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext terminating,
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext terminating,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating, sideEffects);

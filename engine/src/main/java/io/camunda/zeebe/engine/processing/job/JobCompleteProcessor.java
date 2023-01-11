@@ -56,7 +56,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final JobRecord value, final SideEffects sideEffectQueue) {
+      final JobRecord value,
+      final SideEffects sideEffectQueue) {
 
     final var serviceTaskKey = value.getElementInstanceKey();
 

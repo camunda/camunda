@@ -33,8 +33,11 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onActivate(final ExecutableFlowNode element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     // the joining of the incoming sequence flows into the parallel gateway happens in the
     // sequence flow processor. The activating event of the parallel gateway is written when all
     // incoming sequence flows are taken
@@ -51,7 +54,9 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onComplete(final ExecutableFlowNode element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     throw new UnsupportedOperationException(
         String.format(
@@ -60,7 +65,9 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onTerminate(final ExecutableFlowNode element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);

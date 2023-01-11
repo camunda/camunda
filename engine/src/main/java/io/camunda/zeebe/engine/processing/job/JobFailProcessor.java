@@ -70,7 +70,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final JobRecord value, final SideEffects sideEffectQueue) {
+      final JobRecord value,
+      final SideEffects sideEffectQueue) {
 
     // set fail job variables locally
     final DirectBuffer variables = value.getVariablesBuffer();

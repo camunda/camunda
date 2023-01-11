@@ -61,19 +61,26 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   @Override
-  public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableEndEvent element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     eventBehaviorOf(element).onActivate(element, activating, sideEffectQueue);
   }
 
   @Override
-  public void onComplete(final ExecutableEndEvent element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableEndEvent element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     eventBehaviorOf(element).onComplete(element, context);
   }
 
   @Override
-  public void onTerminate(final ExecutableEndEvent element, final BpmnElementContext terminating,
+  public void onTerminate(
+      final ExecutableEndEvent element,
+      final BpmnElementContext terminating,
       final SideEffects sideEffects) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
@@ -97,7 +104,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     boolean isSuitableForEvent(final ExecutableEndEvent element);
 
-    void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+    void onActivate(
+        final ExecutableEndEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue);
 
     default void onComplete(
@@ -115,7 +124,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+    public void onActivate(
+        final ExecutableEndEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
@@ -137,7 +148,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+    public void onActivate(
+        final ExecutableEndEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
 
       // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event
@@ -176,7 +189,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+    public void onActivate(
+        final ExecutableEndEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
@@ -212,7 +227,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+    public void onActivate(
+        final ExecutableEndEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
@@ -235,7 +252,9 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+    public void onActivate(
+        final ExecutableEndEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       evaluateEscalationCode(element, activating)
           .ifRightOrLeft(

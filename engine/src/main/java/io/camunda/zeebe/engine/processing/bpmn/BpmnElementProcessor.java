@@ -30,9 +30,8 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * The element is about to be entered. Perform every action to initialize and activate the
    * element.
    *
-   * <p>If the element is a wait-state (i.e. it is waiting for an event or an external trigger)
-   * then it is waiting after this step to continue. Otherwise, it continues directly to the next
-   * step.
+   * <p>If the element is a wait-state (i.e. it is waiting for an event or an external trigger) then
+   * it is waiting after this step to continue. Otherwise, it continues directly to the next step.
    *
    * <p>Possible actions:
    *
@@ -53,8 +52,11 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
    */
-  default void onActivate(final T element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {}
+  default void onActivate(
+      final T element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {}
 
   /**
    * The element is going to be left. Perform every action to leave the element and continue with
@@ -71,12 +73,12 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * </ul>
    *
    * Next step: none.
-   *  @param element the instance of the BPMN element that is executed
    *
+   * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
    */
-  default void onComplete(final T element, final BpmnElementContext context,
-      final SideEffects sideEffects) {}
+  default void onComplete(
+      final T element, final BpmnElementContext context, final SideEffects sideEffects) {}
 
   /**
    * The element is going to be terminated. Perform every action to terminate the element and
@@ -94,10 +96,10 @@ public interface BpmnElementProcessor<T extends ExecutableFlowElement> {
    * </ul>
    *
    * Next step: none.
-   *  @param element the instance of the BPMN element that is executed
    *
+   * @param element the instance of the BPMN element that is executed
    * @param context process instance-related data of the element that is executed
    */
-  default void onTerminate(final T element, final BpmnElementContext context,
-      final SideEffects sideEffects) {}
+  default void onTerminate(
+      final T element, final BpmnElementContext context, final SideEffects sideEffects) {}
 }

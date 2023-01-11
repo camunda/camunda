@@ -90,8 +90,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
 
     eventSubscriptionBehavior =
-        new BpmnEventSubscriptionBehavior(
-            catchEventBehavior, eventTriggerBehavior, zeebeState);
+        new BpmnEventSubscriptionBehavior(catchEventBehavior, eventTriggerBehavior, zeebeState);
 
     incidentBehavior =
         new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), writers.state());

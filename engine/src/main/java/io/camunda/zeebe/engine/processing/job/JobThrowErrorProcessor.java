@@ -87,7 +87,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long jobKey,
       final Intent intent,
-      final JobRecord job, final SideEffects sideEffectQueue) {
+      final JobRecord job,
+      final SideEffects sideEffectQueue) {
     jobMetrics.jobErrorThrown(job.getType());
 
     final var serviceTaskInstanceKey = job.getElementId();
@@ -97,8 +98,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       return;
     }
 
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer(),
-        sideEffectQueue);
+    eventPublicationBehavior.throwErrorEvent(
+        foundCatchEvent.get(), job.getVariablesBuffer(), sideEffectQueue);
   }
 
   private void acceptCommand(

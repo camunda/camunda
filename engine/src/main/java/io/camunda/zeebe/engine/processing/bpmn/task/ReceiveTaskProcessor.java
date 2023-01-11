@@ -41,8 +41,11 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivate(final ExecutableReceiveTask element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableReceiveTask element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
 
     variableMappingBehavior
         .applyInputMappings(context, element)
@@ -53,7 +56,9 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onComplete(final ExecutableReceiveTask element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableReceiveTask element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     variableMappingBehavior
@@ -69,7 +74,9 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onTerminate(final ExecutableReceiveTask element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableReceiveTask element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 

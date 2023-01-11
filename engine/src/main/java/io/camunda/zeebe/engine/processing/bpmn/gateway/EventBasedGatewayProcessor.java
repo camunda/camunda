@@ -39,8 +39,10 @@ public final class EventBasedGatewayProcessor
 
   @Override
   public void onActivate(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
 
     eventSubscriptionBehavior
         .subscribeToEvents(element, context, sideEffects)
@@ -51,7 +53,8 @@ public final class EventBasedGatewayProcessor
 
   @Override
   public void onComplete(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context,
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
@@ -81,7 +84,8 @@ public final class EventBasedGatewayProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context,
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);

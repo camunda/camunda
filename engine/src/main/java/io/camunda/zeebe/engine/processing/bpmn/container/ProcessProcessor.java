@@ -55,15 +55,18 @@ public final class ProcessProcessor
 
   @Override
   public void onActivate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
     activateStartEvent(element, activatedContext);
   }
 
   @Override
   public void onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context,
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
@@ -80,7 +83,8 @@ public final class ProcessProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context,
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);

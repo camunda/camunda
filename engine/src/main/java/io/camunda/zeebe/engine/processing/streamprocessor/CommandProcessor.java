@@ -42,7 +42,8 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final T value, final SideEffects sideEffectQueue) {}
+      final T value,
+      final SideEffects sideEffectQueue) {}
 
   /**
    * Try to handle an error that occurred during processing.

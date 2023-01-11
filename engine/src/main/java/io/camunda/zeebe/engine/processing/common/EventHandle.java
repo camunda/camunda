@@ -105,7 +105,8 @@ public final class EventHandle {
   public void activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
-      final ProcessInstanceRecord elementRecord, final SideEffects sideEffectQueue) {
+      final ProcessInstanceRecord elementRecord,
+      final SideEffects sideEffectQueue) {
     activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES, sideEffectQueue);
   }
 
@@ -113,7 +114,8 @@ public final class EventHandle {
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
-      final DirectBuffer variables, final SideEffects sideEffectQueue) {
+      final DirectBuffer variables,
+      final SideEffects sideEffectQueue) {
 
     final var processEventKey =
         triggeringProcessEvent(

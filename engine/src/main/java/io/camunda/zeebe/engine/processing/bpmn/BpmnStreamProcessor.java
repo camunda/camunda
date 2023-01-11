@@ -99,7 +99,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private void processEvent(
       final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
-      final ExecutableFlowElement element, final SideEffects sideEffectQueue) {
+      final ExecutableFlowElement element,
+      final SideEffects sideEffectQueue) {
 
     switch (intent) {
       case ACTIVATE_ELEMENT:
@@ -107,8 +108,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
             .ifRightOrLeft(
-                ok -> processor.onActivate(element, activatingContext, sideEffectQueue,
-                    sideEffectQueue),
+                ok ->
+                    processor.onActivate(
+                        element, activatingContext, sideEffectQueue, sideEffectQueue),
                 failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
       case COMPLETE_ELEMENT:

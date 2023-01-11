@@ -58,7 +58,8 @@ public final class CreateProcessInstanceWithResultProcessor
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final ProcessInstanceCreationRecord value, final SideEffects sideEffectQueue) {
+      final ProcessInstanceCreationRecord value,
+      final SideEffects sideEffectQueue) {
     createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value, sideEffectQueue);
   }
 

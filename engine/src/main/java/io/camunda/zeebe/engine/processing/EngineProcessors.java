@@ -27,7 +27,6 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -83,8 +82,7 @@ public final class EngineProcessors {
             partitionsCount,
             timerChecker,
             jobMetrics,
-            decisionBehavior
-        );
+            decisionBehavior);
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
@@ -104,8 +102,7 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker
-        );
+            timerChecker);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, zeebeState);
 
@@ -153,8 +150,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers
-    );
+        writers);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

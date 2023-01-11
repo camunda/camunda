@@ -102,7 +102,8 @@ public final class CreateProcessInstanceProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller, final Consumer<SideEffectProducer> sideEffect) {
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffects = new SideEffectQueue();
     sideEffect.accept(sideEffects);
     final ProcessInstanceCreationRecord record = command.getValue();
@@ -133,7 +134,8 @@ public final class CreateProcessInstanceProcessor
   private void createProcessInstance(
       final CommandControl<ProcessInstanceCreationRecord> controller,
       final ProcessInstanceCreationRecord record,
-      final DeployedProcess process, final SideEffects sideEffectQueue) {
+      final DeployedProcess process,
+      final SideEffects sideEffectQueue) {
     final long processInstanceKey = keyGenerator.nextKey();
 
     setVariablesFromDocument(
@@ -144,8 +146,8 @@ public final class CreateProcessInstanceProcessor
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
     } else {
-      activateElementsForStartInstructions(record.startInstructions(), process, processInstance,
-          sideEffectQueue);
+      activateElementsForStartInstructions(
+          record.startInstructions(), process, processInstance, sideEffectQueue);
     }
 
     record
@@ -389,7 +391,8 @@ public final class CreateProcessInstanceProcessor
   private void activateElementsForStartInstructions(
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
       final DeployedProcess process,
-      final ProcessInstanceRecord processInstance, final SideEffects sideEffectQueue) {
+      final ProcessInstanceRecord processInstance,
+      final SideEffects sideEffectQueue) {
 
     startInstructions.forEach(
         instruction -> {

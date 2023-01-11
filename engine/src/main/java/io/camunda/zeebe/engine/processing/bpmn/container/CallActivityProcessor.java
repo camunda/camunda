@@ -59,8 +59,11 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onActivate(final ExecutableCallActivity element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     variableMappingBehavior
         .applyInputMappings(context, element)
         .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context, sideEffects))
@@ -82,7 +85,9 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onComplete(final ExecutableCallActivity element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
@@ -97,7 +102,9 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onTerminate(final ExecutableCallActivity element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
     incidentBehavior.resolveIncidents(context);

@@ -44,14 +44,19 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onActivate(final ExecutableStartEvent element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableStartEvent element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     stateTransitionBehavior.completeElement(activated);
   }
 
   @Override
-  public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableStartEvent element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
@@ -61,7 +66,9 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
-            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext, sideEffects))
+            ok ->
+                eventSubscriptionBehavior.subscribeToEvents(
+                    flowScope, flowScopeInstanceContext, sideEffects))
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
@@ -69,7 +76,9 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableStartEvent element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
 

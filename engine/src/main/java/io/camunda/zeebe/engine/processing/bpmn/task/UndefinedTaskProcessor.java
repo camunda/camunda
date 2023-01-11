@@ -33,14 +33,19 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public void onActivate(final ExecutableActivity element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     stateTransitionBehavior.completeElement(activated);
   }
 
   @Override
-  public void onComplete(final ExecutableActivity element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     stateTransitionBehavior
         .transitionToCompleted(element, context)
@@ -50,7 +55,9 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public void onTerminate(final ExecutableActivity element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     incidentBehavior.resolveIncidents(context);

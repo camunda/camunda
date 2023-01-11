@@ -60,21 +60,25 @@ public class IntermediateThrowEventProcessor
 
   @Override
   public void onActivate(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableIntermediateThrowEvent element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     eventBehaviorOf(element).onActivate(element, activating, sideEffectQueue);
   }
 
   @Override
   public void onComplete(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing,
+      final ExecutableIntermediateThrowEvent element,
+      final BpmnElementContext completing,
       final SideEffects sideEffects) {
     eventBehaviorOf(element).onComplete(element, completing);
   }
 
   @Override
   public void onTerminate(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating,
+      final ExecutableIntermediateThrowEvent element,
+      final BpmnElementContext terminating,
       final SideEffects sideEffects) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
@@ -100,7 +104,8 @@ public class IntermediateThrowEventProcessor
     boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element);
 
     void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating,
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue);
 
     default void onComplete(
@@ -119,7 +124,8 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating,
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       stateTransitionBehavior.completeElement(activated);
@@ -146,7 +152,8 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating,
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       if (element.getJobWorkerProperties() != null) {
         variableMappingBehavior
@@ -186,7 +193,8 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating,
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       stateTransitionBehavior.completeElement(activated);
@@ -215,7 +223,8 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating,
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
         final SideEffects sideEffectQueue) {
       evaluateEscalationCode(element, activating)
           .ifRightOrLeft(

@@ -37,8 +37,11 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onActivate(final ExecutableBoundaryEvent element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableBoundaryEvent element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     // the boundary event is activated by writing an ACTIVATING and ACTIVATED event to pass the
     // variables from the event for the output mapping
     throw new BpmnProcessingException(
@@ -47,7 +50,9 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onComplete(final ExecutableBoundaryEvent element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableBoundaryEvent element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     variableMappingBehavior
@@ -59,7 +64,9 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onTerminate(final ExecutableBoundaryEvent element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableBoundaryEvent element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
 
     incidentBehavior.resolveIncidents(context);

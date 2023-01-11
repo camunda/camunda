@@ -45,19 +45,26 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
   }
 
   @Override
-  public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+  public void onActivate(
+      final ExecutableScriptTask element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     eventBehaviorOf(element, context).onActivate(element, context, sideEffects, sideEffectQueue);
   }
 
   @Override
-  public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context,
+  public void onComplete(
+      final ExecutableScriptTask element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     eventBehaviorOf(element, context).onComplete(element, context, sideEffects);
   }
 
   @Override
-  public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context,
+  public void onTerminate(
+      final ExecutableScriptTask element,
+      final BpmnElementContext context,
       final SideEffects sideEffects) {
     eventBehaviorOf(element, context).onTerminate(element, context, sideEffects);
   }
@@ -98,8 +105,11 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     }
 
     @Override
-    public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context,
-        final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+    public void onActivate(
+        final ExecutableScriptTask element,
+        final BpmnElementContext context,
+        final SideEffects sideEffects,
+        final SideEffects sideEffectQueue) {
       variableMappingBehavior
           .applyInputMappings(context, element)
           .flatMap(ok -> evaluateScript(element, context))
@@ -112,7 +122,9 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     }
 
     @Override
-    public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context,
+    public void onComplete(
+        final ExecutableScriptTask element,
+        final BpmnElementContext context,
         final SideEffects sideEffects) {
       variableMappingBehavior
           .applyOutputMappings(context, element)
@@ -123,7 +135,9 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     }
 
     @Override
-    public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context,
+    public void onTerminate(
+        final ExecutableScriptTask element,
+        final BpmnElementContext context,
         final SideEffects sideEffects) {
       final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
@@ -197,21 +211,25 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
 
     @Override
     public void onActivate(
-        final ExecutableScriptTask element, final BpmnElementContext activating,
-        final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+        final ExecutableScriptTask element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects,
+        final SideEffects sideEffectQueue) {
       delegate.onActivate(element, activating, sideEffects, sideEffectQueue);
     }
 
     @Override
     public void onComplete(
-        final ExecutableScriptTask element, final BpmnElementContext completing,
+        final ExecutableScriptTask element,
+        final BpmnElementContext completing,
         final SideEffects sideEffects) {
       delegate.onComplete(element, completing, sideEffects);
     }
 
     @Override
     public void onTerminate(
-        final ExecutableScriptTask element, final BpmnElementContext terminating,
+        final ExecutableScriptTask element,
+        final BpmnElementContext terminating,
         final SideEffects sideEffects) {
       delegate.onTerminate(element, terminating, sideEffects);
     }
@@ -219,13 +237,18 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
 
   /** Extract different behaviors depending on the type of task. */
   private interface ScriptTaskBehavior {
-    void onActivate(ExecutableScriptTask element, BpmnElementContext activating,
-        final SideEffects sideEffects, final SideEffects sideEffectQueue);
+    void onActivate(
+        ExecutableScriptTask element,
+        BpmnElementContext activating,
+        final SideEffects sideEffects,
+        final SideEffects sideEffectQueue);
 
-    void onComplete(ExecutableScriptTask element, BpmnElementContext completing,
-        final SideEffects sideEffects);
+    void onComplete(
+        ExecutableScriptTask element, BpmnElementContext completing, final SideEffects sideEffects);
 
-    void onTerminate(ExecutableScriptTask element, BpmnElementContext terminating,
+    void onTerminate(
+        ExecutableScriptTask element,
+        BpmnElementContext terminating,
         final SideEffects sideEffects);
   }
 }

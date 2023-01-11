@@ -46,14 +46,17 @@ public class IntermediateCatchEventProcessor
 
   @Override
   public void onActivate(
-      final ExecutableCatchEventElement element, final BpmnElementContext activating,
-      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      final ExecutableCatchEventElement element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects,
+      final SideEffects sideEffectQueue) {
     eventBehaviorOf(element).onActivate(element, activating, sideEffects);
   }
 
   @Override
   public void onComplete(
-      final ExecutableCatchEventElement element, final BpmnElementContext completing,
+      final ExecutableCatchEventElement element,
+      final BpmnElementContext completing,
       final SideEffects sideEffects) {
     variableMappingBehavior
         .applyOutputMappings(completing, element)
@@ -69,7 +72,8 @@ public class IntermediateCatchEventProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableCatchEventElement element, final BpmnElementContext terminating,
+      final ExecutableCatchEventElement element,
+      final BpmnElementContext terminating,
       final SideEffects sideEffects) {
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating, sideEffects);
     incidentBehavior.resolveIncidents(terminating);
@@ -93,7 +97,9 @@ public class IntermediateCatchEventProcessor
 
     boolean isSuitableForEvent(final ExecutableCatchEventElement element);
 
-    void onActivate(final ExecutableCatchEventElement element, final BpmnElementContext activating,
+    void onActivate(
+        final ExecutableCatchEventElement element,
+        final BpmnElementContext activating,
         final SideEffects sideEffects);
   }
 
@@ -106,11 +112,13 @@ public class IntermediateCatchEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableCatchEventElement element, final BpmnElementContext activating,
+        final ExecutableCatchEventElement element,
+        final BpmnElementContext activating,
         final SideEffects sideEffects) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
-          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating, sideEffects))
+          .flatMap(
+              ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating, sideEffects))
           .ifRightOrLeft(
               ok -> stateTransitionBehavior.transitionToActivated(activating),
               failure -> incidentBehavior.createIncident(failure, activating));
@@ -126,7 +134,8 @@ public class IntermediateCatchEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableCatchEventElement element, final BpmnElementContext activating,
+        final ExecutableCatchEventElement element,
+        final BpmnElementContext activating,
         final SideEffects sideEffects) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       stateTransitionBehavior.completeElement(activated);
