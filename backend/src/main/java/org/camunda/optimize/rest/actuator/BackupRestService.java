@@ -15,7 +15,7 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeElasticsearchConnectionException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
-import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
+import org.camunda.optimize.service.util.configuration.condition.CamundaCloudCondition;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
@@ -47,7 +47,7 @@ import static org.camunda.optimize.rest.providers.GenericExceptionMapper.NOT_FOU
 @RequiredArgsConstructor
 @Component
 @RestControllerEndpoint(id = "backups")
-@Conditional(CCSMCondition.class)
+@Conditional(CamundaCloudCondition.class)
 public class BackupRestService {
   private final BackupService backupService;
   private final LocalizationService localizationService;
