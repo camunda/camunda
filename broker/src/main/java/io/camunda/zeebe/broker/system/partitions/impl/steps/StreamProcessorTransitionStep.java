@@ -61,6 +61,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     if (streamprocessor != null
         && (shouldInstallOnTransition(targetRole, currentRole) || targetRole == Role.INACTIVE)) {
       context.getComponentHealthMonitor().removeComponent(streamprocessor.getName());
+      context.getRaftPartition().getServer().removeCommittedEntryListener(streamprocessor);
       final ActorFuture<Void> future = streamprocessor.closeAsync();
       future.onComplete(
           (success, error) -> {
@@ -101,6 +102,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
               context
                   .getComponentHealthMonitor()
                   .registerComponent(streamProcessor.getName(), streamProcessor);
+              if (targetRole == Role.LEADER) {
+                context.getRaftPartition().getServer().addCommittedEntryListener(streamProcessor);
+              }
               future.complete(null);
             } else {
               future.completeExceptionally(err);

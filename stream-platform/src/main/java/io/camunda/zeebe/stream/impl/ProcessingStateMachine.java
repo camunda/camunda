@@ -44,6 +44,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.function.BooleanSupplier;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -152,6 +154,7 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
   private List<LogAppendEntry> toWriteEntries;
   private final int partitionId;
+  private final TreeMap<Long, Runnable> sideEffectBuffer;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -177,6 +180,7 @@ public final class ProcessingStateMachine {
 
     metrics = new StreamProcessorMetrics(partitionId);
     streamProcessorListener = context.getStreamProcessorListener();
+    sideEffectBuffer = new TreeMap<>();
   }
 
   private void skipRecord() {
@@ -434,60 +438,53 @@ public final class ProcessingStateMachine {
   }
 
   private void executeSideEffects() {
-    final ActorFuture<Boolean> retryFuture =
-        sideEffectsRetryStrategy.runWithRetry(
-            () -> {
-              // TODO refactor this into two parallel tasks, which are then combined, and on the
-              // completion of which the process continues
+    final var futureProcessingResult = currentProcessingResult;
 
-              final var processingResponseOptional =
-                  currentProcessingResult.getProcessingResponse();
+    notifyProcessedListener(typedCommand);
 
-              if (processingResponseOptional.isPresent()) {
-                final var processingResponse = processingResponseOptional.get();
-                final var responseWriter = context.getCommandResponseWriter();
+    // observe the processing duration
+    processingTimer.close();
 
-                final var responseValue = processingResponse.responseValue();
-                final var recordMetadata = responseValue.recordMetadata();
-                final boolean responseSent =
-                    responseWriter
-                        .intent(recordMetadata.getIntent())
-                        .key(responseValue.key())
-                        .recordType(recordMetadata.getRecordType())
-                        .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                        .rejectionType(recordMetadata.getRejectionType())
-                        .partitionId(context.getPartitionId())
-                        .valueType(recordMetadata.getValueType())
-                        .valueWriter(responseValue.recordValue())
-                        .tryWriteResponse(
-                            processingResponse.requestStreamId(), processingResponse.requestId());
-                if (!responseSent) {
-                  return false;
-                } else {
-                  return currentProcessingResult.executePostCommitTasks();
-                }
-              }
-              return currentProcessingResult.executePostCommitTasks();
-            },
-            abortCondition);
+    // continue with next record
+    inProcessing = false;
+    actor.submit(this::readNextRecord);
 
-    actor.runOnCompletion(
-        retryFuture,
-        (bool, throwable) -> {
-          if (throwable != null) {
-            LOG.error(
-                ERROR_MESSAGE_EXECUTE_SIDE_EFFECT_ABORTED, currentRecord, metadata, throwable);
+    sideEffectBuffer.put(currentRecord.getPosition(), () -> sideEffectsRetryStrategy.runWithRetry(
+        () -> {
+          // TODO refactor this into two parallel tasks, which are then combined, and on the
+          // completion of which the process continues
+
+          final var processingResponseOptional =
+              futureProcessingResult.getProcessingResponse();
+
+          if (processingResponseOptional.isPresent()) {
+            final var processingResponse = processingResponseOptional.get();
+            final var responseWriter = context.getCommandResponseWriter();
+
+            final var responseValue = processingResponse.responseValue();
+            final var recordMetadata = responseValue.recordMetadata();
+            final boolean responseSent =
+                responseWriter
+                    .intent(recordMetadata.getIntent())
+                    .key(responseValue.key())
+                    .recordType(recordMetadata.getRecordType())
+                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                    .rejectionType(recordMetadata.getRejectionType())
+                    .partitionId(context.getPartitionId())
+                    .valueType(recordMetadata.getValueType())
+                    .valueWriter(responseValue.recordValue())
+                    .tryWriteResponse(
+                        processingResponse.requestStreamId(), processingResponse.requestId());
+            if (!responseSent) {
+              return false;
+            } else {
+              return futureProcessingResult.executePostCommitTasks();
+            }
           }
+          return futureProcessingResult.executePostCommitTasks();
+        },
+        abortCondition));
 
-          notifyProcessedListener(typedCommand);
-
-          // observe the processing duration
-          processingTimer.close();
-
-          // continue with next record
-          inProcessing = false;
-          actor.submit(this::readNextRecord);
-        });
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
@@ -534,6 +531,15 @@ public final class ProcessingStateMachine {
     }
 
     actor.submit(this::readNextRecord);
+  }
+
+  public void onCommit(final long position) {
+    actor.submit(() -> {
+      final var sideEffectsToRun = sideEffectBuffer.headMap(position,
+          true);
+      sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
+      sideEffectsToRun.clear();
+    });
   }
 
   private static final class MinimalLoggedEvent implements LoggedEvent {

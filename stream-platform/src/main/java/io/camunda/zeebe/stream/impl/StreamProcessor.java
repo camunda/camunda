@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -73,7 +74,8 @@ import org.slf4j.Logger;
 
 https://textik.com/#f8692d3c3e76c699
 */
-public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter {
+public class StreamProcessor extends Actor implements HealthMonitorable, LogRecordAwaiter,
+    io.atomix.raft.RaftCommittedEntryListener {
 
   public static final long UNSET_POSITION = -1L;
   public static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
@@ -528,6 +530,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public void onRecordAvailable() {
     actor.run(processingStateMachine::readNextRecord);
+  }
+
+  @Override
+  public void onCommit(final IndexedRaftLogEntry indexedRaftLogEntry) {
+    if (indexedRaftLogEntry.isApplicationEntry()) {
+      processingStateMachine.onCommit(indexedRaftLogEntry.getApplicationEntry().highestPosition());
+    }
   }
 
   public enum Phase {
