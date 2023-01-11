@@ -23,6 +23,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -90,7 +91,8 @@ class PartitionRestoreServiceTest {
 
     final var raftPartition =
         new RaftPartition(
-            PartitionId.from("raft", partitionId), null, dataDirectoryToRestore.toFile());
+            PartitionId.from("raft", partitionId), null, dataDirectoryToRestore.toFile(),
+            new File(partitionsStateDir, String.valueOf(i + 1)));
     restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2), nodeId);
 
     journal =

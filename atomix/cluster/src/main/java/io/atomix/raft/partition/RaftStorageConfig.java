@@ -40,6 +40,7 @@ public class RaftStorageConfig {
 
   @Optional("SnapshotStoreFactory")
   private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
+  private String stateDirectory;
 
   /**
    * Returns the partition data directory.
@@ -50,6 +51,12 @@ public class RaftStorageConfig {
   public String getDirectory(final String groupName) {
     return directory != null
         ? directory
+        : System.getProperty("atomix.data", DATA_PREFIX) + "/" + groupName;
+  }
+
+  public String getStateDirectory(final String groupName) {
+    return stateDirectory != null
+        ? stateDirectory
         : System.getProperty("atomix.data", DATA_PREFIX) + "/" + groupName;
   }
 
@@ -103,6 +110,11 @@ public class RaftStorageConfig {
    */
   public RaftStorageConfig setDirectory(final String directory) {
     this.directory = directory;
+    return this;
+  }
+
+  public RaftStorageConfig setStateDirectory(final String stateDir) {
+    stateDirectory = stateDir;
     return this;
   }
 

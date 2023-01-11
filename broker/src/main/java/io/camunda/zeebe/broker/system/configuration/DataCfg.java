@@ -18,6 +18,7 @@ import org.springframework.util.unit.DataSize;
 public final class DataCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_DIRECTORY = "data";
+  public static final String DEFAULT_STATE_DIRECTORY = "state-data";
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
@@ -29,6 +30,7 @@ public final class DataCfg implements ConfigurationEntry {
   private static final double DISABLED_DISK_USAGE_WATERMARK = 1.0;
 
   private String directory = DEFAULT_DIRECTORY;
+  private final String stateDirectory = DEFAULT_STATE_DIRECTORY;
 
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
@@ -64,6 +66,10 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setDirectory(final String directory) {
     this.directory = directory;
+  }
+
+  public String getStateDirectory() {
+    return stateDirectory;
   }
 
   public long getLogSegmentSizeInBytes() {

@@ -64,6 +64,7 @@ public final class RaftStorage {
   private RaftStorage(
       final String prefix,
       final File directory,
+      final File stateDirectory,
       final int maxSegmentSize,
       final long freeDiskSpace,
       final boolean flushExplicitly,
@@ -84,6 +85,13 @@ public final class RaftStorage {
     } catch (final IOException e) {
       throw new UncheckedIOException(
           String.format("Failed to create partition's directory %s", directory.toPath()), e);
+    }
+
+    try {
+      FileUtil.ensureDirectoryExists(stateDirectory.toPath());
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          String.format("Failed to create partition's state directory %s", directory.toPath()), e);
     }
   }
 
@@ -247,6 +255,7 @@ public final class RaftStorage {
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
     private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+    private File stateDirectory;
 
     private Builder() {}
 
@@ -360,12 +369,18 @@ public final class RaftStorage {
       return new RaftStorage(
           prefix,
           directory,
+          stateDirectory,
           maxSegmentSize,
           freeDiskSpace,
           flushExplicitly,
           persistedSnapshotStore,
           journalIndexDensity,
           preallocateSegmentFiles);
+    }
+
+    public Builder withStateDirectory(final File stateDirectory) {
+      this.stateDirectory = stateDirectory;
+      return this;
     }
   }
 }

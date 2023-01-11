@@ -102,15 +102,18 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
-    final File partitionsDir =
+    final File partitionsDataDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
+    final File partitionsStateDir =
+        new File(config.getStorageConfig().getStateDirectory(config.getName()), "partitions");
     final List<RaftPartition> partitions = new ArrayList<>(config.getPartitionCount());
     for (int i = 0; i < config.getPartitionCount(); i++) {
       partitions.add(
           new RaftPartition(
               PartitionId.from(config.getName(), i + 1),
               config,
-              new File(partitionsDir, String.valueOf(i + 1))));
+              new File(partitionsDataDir, String.valueOf(i + 1)),
+              new File(partitionsStateDir, String.valueOf(i + 1))));
     }
     return partitions;
   }
@@ -369,6 +372,13 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
       config
           .getStorageConfig()
           .setDirectory(new File("user.dir").toURI().relativize(dataDir.toURI()).getPath());
+      return this;
+    }
+
+    public Builder withStateDirectory(final File stateDir) {
+      config
+          .getStorageConfig()
+          .setStateDirectory(new File("user.dir").toURI().relativize(stateDir.toURI()).getPath());
       return this;
     }
 
