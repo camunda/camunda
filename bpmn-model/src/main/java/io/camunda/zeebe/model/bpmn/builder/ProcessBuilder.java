@@ -74,7 +74,9 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
   protected void setCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds bounds = targetBpmnShape.getBounds();
     bounds.setX(100);
-    bounds.setY(100 + getLowestHeight());
+    // Y coordinate is 36 lower than X. This is because the start event will have a height of 36.
+    // This shape is already added to the model, so the getLowestHeight will add these 36 pixels.
+    bounds.setY(64 + getLowestHeight());
   }
 
   protected void setEventSubProcessCoordinates(final BpmnShape targetBpmnShape) {
