@@ -167,6 +167,9 @@ public final class ProcessInstanceModificationProcessor
   public void processRecord(
       final TypedRecord<ProcessInstanceModificationRecord> command,
       final Consumer<SideEffectProducer> sideEffect) {
+    final var sideEffectQueue = new SideEffectQueue();
+    sideEffect.accept(sideEffectQueue);
+
     final long commandKey = command.getKey();
     final var value = command.getValue();
 
@@ -217,7 +220,7 @@ public final class ProcessInstanceModificationProcessor
                                   scopeKey,
                                   processInstance,
                                   process,
-                                  instruction));
+                                  instruction), sideEffectQueue);
 
                   extendedRecord.addActivateInstruction(
                       ((ProcessInstanceModificationActivateInstruction) instruction)
@@ -226,9 +229,6 @@ public final class ProcessInstanceModificationProcessor
                   return activatedElementKeys.getFlowScopeKeys().stream();
                 })
             .collect(Collectors.toSet());
-
-    final var sideEffectQueue = new SideEffectQueue();
-    sideEffect.accept(sideEffectQueue);
 
     value
         .getTerminateInstructions()

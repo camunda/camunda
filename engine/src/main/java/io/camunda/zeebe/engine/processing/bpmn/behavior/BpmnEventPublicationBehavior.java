@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
@@ -64,13 +65,14 @@ public final class BpmnEventPublicationBehavior {
    *
    * @param catchEventTuple a tuple representing a catch event and its current instance
    */
-  public void throwErrorEvent(final CatchEventAnalyzer.CatchEventTuple catchEventTuple) {
+  public void throwErrorEvent(final CatchEventTuple catchEventTuple,
+      final SideEffects sideEffectQueue) {
     final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
 
     if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
       eventHandle.activateElement(
-          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), sideEffectQueue);
     }
   }
 
@@ -82,13 +84,15 @@ public final class BpmnEventPublicationBehavior {
    * @param catchEventTuple a tuple representing a catch event and its current instance
    */
   public void throwErrorEvent(
-      final CatchEventAnalyzer.CatchEventTuple catchEventTuple, final DirectBuffer variables) {
+      final CatchEventTuple catchEventTuple, final DirectBuffer variables,
+      final SideEffects sideEffectQueue) {
     final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
 
     if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
       eventHandle.activateElement(
-          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables);
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables,
+          sideEffectQueue);
     }
   }
 
@@ -98,7 +102,7 @@ public final class BpmnEventPublicationBehavior {
    * returned.
    *
    * <p>The returned {@link CatchEventTuple} can be used to throw the event via {@link
-   * #throwErrorEvent(CatchEventTuple)}.
+   * #throwErrorEvent(CatchEventTuple, SideEffects)}.
    *
    * @param errorCode the error code of the error event
    * @param context the current element context
@@ -139,7 +143,7 @@ public final class BpmnEventPublicationBehavior {
   public boolean throwEscalationEvent(
       final DirectBuffer throwElementId,
       final DirectBuffer escalationCode,
-      final BpmnElementContext context) {
+      final BpmnElementContext context, final SideEffects sideEffectQueue) {
 
     ensureNotNullOrEmpty("escalationCode", escalationCode);
 
@@ -167,7 +171,7 @@ public final class BpmnEventPublicationBehavior {
 
       if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
         eventHandle.activateElement(
-            catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+            catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), sideEffectQueue);
         stateWriter.appendFollowUpEvent(key, EscalationIntent.ESCALATED, record);
         escalated = true;
       }

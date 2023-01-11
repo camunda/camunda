@@ -71,7 +71,6 @@ public final class EngineProcessors {
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
-    final var sideEffectQueue = new SideEffectQueue();
 
     final var decisionBehavior =
         new DecisionBehavior(
@@ -84,8 +83,8 @@ public final class EngineProcessors {
             partitionsCount,
             timerChecker,
             jobMetrics,
-            decisionBehavior,
-            sideEffectQueue);
+            decisionBehavior
+        );
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
@@ -105,8 +104,8 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker,
-            sideEffectQueue);
+            timerChecker
+        );
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, zeebeState);
 
@@ -130,10 +129,8 @@ public final class EngineProcessors {
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics,
-      final DecisionBehavior decisionBehavior,
-      final SideEffectQueue sideEffectQueue) {
+      final DecisionBehavior decisionBehavior) {
     return new BpmnBehaviorsImpl(
-        sideEffectQueue,
         zeebeState,
         writers,
         jobMetrics,
@@ -149,16 +146,15 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker,
-      final SideEffectQueue sideEffectQueue) {
+      final DueDateTimerChecker timerChecker) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers,
-        sideEffectQueue);
+        writers
+    );
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

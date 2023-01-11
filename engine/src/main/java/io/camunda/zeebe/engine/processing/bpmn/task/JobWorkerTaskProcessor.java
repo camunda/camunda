@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 /**
  * A BPMN processor for tasks that are based on jobs and should be processed by job workers. For
@@ -47,10 +48,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+  public void onActivate(final ExecutableJobWorkerTask element, final BpmnElementContext context,
+      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context, sideEffects))
         .flatMap(ok -> jobBehavior.createNewJob(context, element))
         .ifRightOrLeft(
             ok -> stateTransitionBehavior.transitionToActivated(context),
@@ -58,12 +60,13 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+  public void onComplete(final ExecutableJobWorkerTask element, final BpmnElementContext context,
+      final SideEffects sideEffects) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(
@@ -72,11 +75,12 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
   }
 
   @Override
-  public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+  public void onTerminate(final ExecutableJobWorkerTask element, final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     jobBehavior.cancelJob(context);
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
     incidentBehavior.resolveIncidents(context);
 
     eventSubscriptionBehavior

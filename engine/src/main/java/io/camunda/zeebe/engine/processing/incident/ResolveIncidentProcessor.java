@@ -35,7 +35,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
 
   private final ProcessInstanceRecord failedRecord = new ProcessInstanceRecord();
-  private final SideEffectQueue sideEffects = new SideEffectQueue();
 
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
   private final StateWriter stateWriter;
@@ -99,11 +98,8 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     getFailedCommand(incident)
         .ifRightOrLeft(
             failedCommand -> {
-              sideEffects.clear();
-
-              bpmnStreamProcessor.processRecord(failedCommand, sideEffects::add);
-
-              sideEffect.accept(sideEffects);
+              // FIXME: This is definitely not correct!
+              bpmnStreamProcessor.processRecord(failedCommand, sideEffect);
             },
             failure -> {
               final var message =

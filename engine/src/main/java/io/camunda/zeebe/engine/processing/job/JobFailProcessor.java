@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -69,7 +70,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final JobRecord value) {
+      final JobRecord value, final SideEffects sideEffectQueue) {
 
     // set fail job variables locally
     final DirectBuffer variables = value.getVariablesBuffer();

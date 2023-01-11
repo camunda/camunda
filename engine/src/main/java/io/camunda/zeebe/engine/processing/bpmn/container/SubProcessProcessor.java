@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 public final class SubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -48,7 +49,8 @@ public final class SubProcessProcessor
 
   @Override
   public void onActivate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
+      final ExecutableFlowElementContainer element, final BpmnElementContext activating,
+      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
 
     variableMappingBehavior
         .applyInputMappings(activating, element)
@@ -66,13 +68,14 @@ public final class SubProcessProcessor
 
   @Override
   public void onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
+      final ExecutableFlowElementContainer element, final BpmnElementContext completing,
+      final SideEffects sideEffects) {
 
     variableMappingBehavior
         .applyOutputMappings(completing, element)
         .flatMap(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
+              eventSubscriptionBehavior.unsubscribeFromEvents(completing, sideEffects);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
         .ifRightOrLeft(
@@ -82,9 +85,10 @@ public final class SubProcessProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+      final ExecutableFlowElementContainer element, final BpmnElementContext terminating,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
+    eventSubscriptionBehavior.unsubscribeFromEvents(terminating, sideEffects);
     incidentBehavior.resolveIncidents(terminating);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(terminating);

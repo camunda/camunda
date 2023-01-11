@@ -48,8 +48,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
 
-  private final SideEffectQueue sideEffects = new SideEffectQueue();
-
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
   private final TimerInstanceState timerInstanceState;
@@ -88,7 +86,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   @Override
   public void processRecord(
       final TypedRecord<DeploymentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
-
+    final var sideEffects = new SideEffectQueue();
     sideEffect.accept(sideEffects);
 
     final DeploymentRecord deploymentEvent = command.getValue();

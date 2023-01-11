@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -34,7 +35,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
-  private final SideEffectQueue sideEffectQueue;
   private final ProcessState processState;
   private final BpmnElementProcessors processors;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
@@ -46,7 +46,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnBehaviors bpmnBehaviors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final SideEffectQueue sideEffectQueue,
       final ProcessEngineMetrics processEngineMetrics) {
     processState = zeebeState.getProcessState();
 
@@ -61,7 +60,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             this::getContainerProcessor,
             writers);
     processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
-    this.sideEffectQueue = sideEffectQueue;
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -73,10 +71,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
       final Consumer<SideEffectProducer> sideEffect) {
-
+    final var sideEffects = new SideEffectQueue();
     // initialize
-    sideEffectQueue.clear();
-    sideEffect.accept(sideEffectQueue);
+    sideEffect.accept(sideEffects);
 
     final var intent = (ProcessInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
@@ -92,7 +89,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .ifRightOrLeft(
             ok -> {
               LOGGER.trace("Process process instance event [context: {}]", context);
-              processEvent(intent, processor, element);
+              processEvent(intent, processor, element, sideEffects);
             },
             violation ->
                 rejectionWriter.appendRejection(
@@ -102,7 +99,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private void processEvent(
       final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
-      final ExecutableFlowElement element) {
+      final ExecutableFlowElement element, final SideEffects sideEffectQueue) {
 
     switch (intent) {
       case ACTIVATE_ELEMENT:
@@ -110,16 +107,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
             .ifRightOrLeft(
-                ok -> processor.onActivate(element, activatingContext),
+                ok -> processor.onActivate(element, activatingContext, sideEffectQueue,
+                    sideEffectQueue),
                 failure -> incidentBehavior.createIncident(failure, activatingContext));
         break;
       case COMPLETE_ELEMENT:
         final var completingContext = stateTransitionBehavior.transitionToCompleting(context);
-        processor.onComplete(element, completingContext);
+        processor.onComplete(element, completingContext, sideEffectQueue);
         break;
       case TERMINATE_ELEMENT:
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
-        processor.onTerminate(element, terminatingContext);
+        processor.onTerminate(element, terminatingContext, sideEffectQueue);
         break;
       default:
         throw new BpmnProcessingException(

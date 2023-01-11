@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -36,11 +37,13 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -68,8 +71,6 @@ public final class CreateProcessInstanceProcessor
           BpmnElementType.UNSPECIFIED);
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
-
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
@@ -101,16 +102,15 @@ public final class CreateProcessInstanceProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-    // cleanup side effects from previous command
-    sideEffectQueue.clear();
-
+      final CommandControl<ProcessInstanceCreationRecord> controller, final Consumer<SideEffectProducer> sideEffect) {
+    final var sideEffects = new SideEffectQueue();
+    sideEffect.accept(sideEffects);
     final ProcessInstanceCreationRecord record = command.getValue();
 
     getProcess(record)
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, record, process),
+            process -> createProcessInstance(controller, record, process, sideEffects),
             rejection -> controller.reject(rejection.type, rejection.reason));
 
     return true;
@@ -133,7 +133,7 @@ public final class CreateProcessInstanceProcessor
   private void createProcessInstance(
       final CommandControl<ProcessInstanceCreationRecord> controller,
       final ProcessInstanceCreationRecord record,
-      final DeployedProcess process) {
+      final DeployedProcess process, final SideEffects sideEffectQueue) {
     final long processInstanceKey = keyGenerator.nextKey();
 
     setVariablesFromDocument(
@@ -144,7 +144,8 @@ public final class CreateProcessInstanceProcessor
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
     } else {
-      activateElementsForStartInstructions(record.startInstructions(), process, processInstance);
+      activateElementsForStartInstructions(record.startInstructions(), process, processInstance,
+          sideEffectQueue);
     }
 
     record
@@ -388,12 +389,12 @@ public final class CreateProcessInstanceProcessor
   private void activateElementsForStartInstructions(
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
       final DeployedProcess process,
-      final ProcessInstanceRecord processInstance) {
+      final ProcessInstanceRecord processInstance, final SideEffects sideEffectQueue) {
 
     startInstructions.forEach(
         instruction -> {
           final var element = process.getProcess().getElementById(instruction.getElementId());
-          elementActivationBehavior.activateElement(processInstance, element);
+          elementActivationBehavior.activateElement(processInstance, element, sideEffectQueue);
         });
   }
 

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -41,7 +42,7 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final T value) {}
+      final T value, final SideEffects sideEffectQueue) {}
 
   /**
    * Try to handle an error that occurred during processing.

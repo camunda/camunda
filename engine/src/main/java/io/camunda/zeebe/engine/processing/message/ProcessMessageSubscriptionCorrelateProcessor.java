@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -26,7 +27,9 @@ import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscri
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class ProcessMessageSubscriptionCorrelateProcessor
@@ -74,8 +77,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
-
+  public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command, final Consumer<SideEffectProducer> sideEffect) {
+    final var sideEffects = new SideEffectQueue();
+    sideEffect.accept(sideEffects);
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();
 
@@ -114,7 +118,8 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
             catchEvent,
             elementInstanceKey,
             elementInstance.getValue(),
-            record.getVariablesBuffer());
+            record.getVariablesBuffer(),
+            sideEffects);
 
         sendAcknowledgeCommand(record);
       }

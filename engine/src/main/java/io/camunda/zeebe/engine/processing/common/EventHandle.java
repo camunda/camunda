@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -104,15 +105,15 @@ public final class EventHandle {
   public void activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
-      final ProcessInstanceRecord elementRecord) {
-    activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES);
+      final ProcessInstanceRecord elementRecord, final SideEffects sideEffectQueue) {
+    activateElement(catchEvent, eventScopeKey, elementRecord, NO_VARIABLES, sideEffectQueue);
   }
 
   public void activateElement(
       final ExecutableFlowElement catchEvent,
       final long eventScopeKey,
       final ProcessInstanceRecord elementRecord,
-      final DirectBuffer variables) {
+      final DirectBuffer variables, final SideEffects sideEffectQueue) {
 
     final var processEventKey =
         triggeringProcessEvent(
@@ -129,7 +130,7 @@ public final class EventHandle {
         && catchEvent.getElementType() == BpmnElementType.START_EVENT) {
       final var startEvent = (ExecutableStartEvent) catchEvent;
       eventTriggerBehavior.triggerEventSubProcess(
-          startEvent, eventScopeKey, elementRecord, variables);
+          startEvent, eventScopeKey, elementRecord, variables, sideEffectQueue);
 
     } else if (isInterrupting(catchEvent)) {
       // terminate the activated element and then activate the triggered catch event

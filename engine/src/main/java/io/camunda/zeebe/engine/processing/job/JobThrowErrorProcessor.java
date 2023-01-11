@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
@@ -86,7 +87,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long jobKey,
       final Intent intent,
-      final JobRecord job) {
+      final JobRecord job, final SideEffects sideEffectQueue) {
     jobMetrics.jobErrorThrown(job.getType());
 
     final var serviceTaskInstanceKey = job.getElementId();
@@ -96,7 +97,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       return;
     }
 
-    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
+    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer(),
+        sideEffectQueue);
   }
 
   private void acceptCommand(

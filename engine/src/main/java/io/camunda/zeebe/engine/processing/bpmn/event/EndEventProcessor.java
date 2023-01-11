@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -60,17 +61,20 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   }
 
   @Override
-  public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
-    eventBehaviorOf(element).onActivate(element, activating);
+  public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+    eventBehaviorOf(element).onActivate(element, activating, sideEffectQueue);
   }
 
   @Override
-  public void onComplete(final ExecutableEndEvent element, final BpmnElementContext context) {
+  public void onComplete(final ExecutableEndEvent element, final BpmnElementContext context,
+      final SideEffects sideEffects) {
     eventBehaviorOf(element).onComplete(element, context);
   }
 
   @Override
-  public void onTerminate(final ExecutableEndEvent element, final BpmnElementContext terminating) {
+  public void onTerminate(final ExecutableEndEvent element, final BpmnElementContext terminating,
+      final SideEffects sideEffects) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
     // common behavior for all end events
@@ -93,7 +97,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     boolean isSuitableForEvent(final ExecutableEndEvent element);
 
-    void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating);
+    void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+        final SideEffects sideEffectQueue);
 
     default void onComplete(
         final ExecutableEndEvent element, final BpmnElementContext completing) {}
@@ -110,7 +115,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+        final SideEffects sideEffectQueue) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
 
@@ -131,7 +137,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+        final SideEffects sideEffectQueue) {
 
       // the error must be caught at the parent or an upper scope (e.g. interrupting boundary event
       // or
@@ -142,7 +149,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .ifRightOrLeft(
               catchEvent -> {
                 stateTransitionBehavior.transitionToActivated(activating);
-                eventPublicationBehavior.throwErrorEvent(catchEvent);
+                eventPublicationBehavior.throwErrorEvent(catchEvent, sideEffectQueue);
               },
               failure -> incidentBehavior.createIncident(failure, activating));
     }
@@ -169,7 +176,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+        final SideEffects sideEffectQueue) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
           .flatMap(ok -> jobBehavior.createNewJob(activating, element))
@@ -204,7 +212,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+        final SideEffects sideEffectQueue) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       final var completing = stateTransitionBehavior.transitionToCompleting(activated);
       stateTransitionBehavior
@@ -226,14 +235,15 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     }
 
     @Override
-    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating,
+        final SideEffects sideEffectQueue) {
       evaluateEscalationCode(element, activating)
           .ifRightOrLeft(
               escalationCode -> {
                 final var activated = stateTransitionBehavior.transitionToActivated(activating);
                 final boolean canBeCompleted =
                     eventPublicationBehavior.throwEscalationEvent(
-                        element.getId(), escalationCode, activated);
+                        element.getId(), escalationCode, activated, sideEffectQueue);
 
                 if (canBeCompleted) {
                   stateTransitionBehavior.completeElement(activated);

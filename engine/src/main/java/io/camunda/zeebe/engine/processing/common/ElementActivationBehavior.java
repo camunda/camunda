@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -36,8 +36,6 @@ import org.agrona.DirectBuffer;
 public final class ElementActivationBehavior {
 
   public static final long NO_ANCESTOR_SCOPE_KEY = -1L;
-
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
@@ -66,8 +64,8 @@ public final class ElementActivationBehavior {
    * starting a process instance at a different place than the start event.
    *
    * <p>If there are multiple flow scope instances, then you should use {@link
-   * #activateElement(ProcessInstanceRecord, AbstractFlowElement, long, BiConsumer)} to select a
-   * specific ancestor.
+   * #activateElement(ProcessInstanceRecord, AbstractFlowElement, long, BiConsumer, SideEffects)} to
+   * select a specific ancestor.
    *
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
@@ -75,9 +73,10 @@ public final class ElementActivationBehavior {
    */
   public ActivatedElementKeys activateElement(
       final ProcessInstanceRecord processInstanceRecord,
-      final AbstractFlowElement elementToActivate) {
+      final AbstractFlowElement elementToActivate, final SideEffects sideEffectQueue) {
     return activateElement(
-        processInstanceRecord, elementToActivate, NO_ANCESTOR_SCOPE_KEY, (empty, function) -> {});
+        processInstanceRecord, elementToActivate, NO_ANCESTOR_SCOPE_KEY, (empty, function) -> {},
+        sideEffectQueue);
   }
 
   /**
@@ -93,7 +92,7 @@ public final class ElementActivationBehavior {
    * @param processInstanceRecord the record of the process instance
    * @param elementToActivate The element to activate
    * @param ancestorScopeKey The key of the chosen ancestor scope in case there are multiple flow
-   *     scope instances
+   * scope instances
    * @param createVariablesCallback Callback to create variables at a given scope
    * @return The key of the activated element instance and the keys of all it's flow scopes
    */
@@ -101,7 +100,8 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord processInstanceRecord,
       final AbstractFlowElement elementToActivate,
       final long ancestorScopeKey,
-      final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
+      final BiConsumer<DirectBuffer, Long> createVariablesCallback,
+      final SideEffects sideEffectQueue) {
     final var activatedElementKeys = new ActivatedElementKeys();
 
     final var flowScopes = collectFlowScopesOfElement(elementToActivate);
@@ -112,15 +112,12 @@ public final class ElementActivationBehavior {
             flowScopes,
             ancestorScopeKey,
             createVariablesCallback,
-            activatedElementKeys);
+            activatedElementKeys, sideEffectQueue);
 
     final long elementInstanceKey =
         activateElementByCommand(processInstanceRecord, elementToActivate, flowScopeKey);
     createVariablesCallback.accept(elementToActivate.getId(), elementInstanceKey);
     activatedElementKeys.setElementInstanceKey(elementInstanceKey);
-
-    // applying the side effects is part of creating the event subscriptions
-    sideEffectQueue.flush();
 
     return activatedElementKeys;
   }
@@ -147,7 +144,8 @@ public final class ElementActivationBehavior {
    *
    * <p>This method uses recursion, each time polling an element from the subprocesses parameter.
    *
-   * <p>It is able to determine whether a new instance of an ancestral subprocess must be activated,
+   * <p>It is able to determine whether a new instance of an ancestral subprocess must be
+   * activated,
    * or that one of the existing instances can be used. In some cases this requires the
    * ancestorScopeKey to choose between multiple available instances of the same subprocess.
    *
@@ -155,19 +153,19 @@ public final class ElementActivationBehavior {
    * subprocesses, if the ancestorScopeKey refers to an ancestor of that subprocess.
    *
    * @param processInstanceRecord the record of the process instance in which an element is being
-   *     activated
+   * activated
    * @param flowScopeKey key of the element instance that should be used as direct flow scope of the
-   *     next to poll subprocess from subprocesses
+   * next to poll subprocess from subprocesses
    * @param subprocesses the elements to activate, these are ancestors of the element targeted for
-   *     activation, instances may or may not yet exist of these elements
+   * activation, instances may or may not yet exist of these elements
    * @param ancestorScopeKey the key of an ancestor (indirect/direct flow scope) used for ancestor
-   *     selection, determines whether new instances of subprocesses should be activated or that we
-   *     can use existing ones
+   * selection, determines whether new instances of subprocesses should be activated or that we can
+   * use existing ones
    * @param createVariablesCallback a callback function to create variables in the activated
-   *     subprocesses, and the selected instances
+   * subprocesses, and the selected instances
    * @param activatedElementKeys collects the keys of the subprocesses encountered and/or activated
    * @return the key of the last subprocess, to be used as direct flow scope of the element targeted
-   *     for activation
+   * for activation
    */
   private long activateAncestralSubprocesses(
       final ProcessInstanceRecord processInstanceRecord,
@@ -175,7 +173,7 @@ public final class ElementActivationBehavior {
       final Deque<ExecutableFlowElement> subprocesses,
       final long ancestorScopeKey,
       final BiConsumer<DirectBuffer, Long> createVariablesCallback,
-      final ActivatedElementKeys activatedElementKeys) {
+      final ActivatedElementKeys activatedElementKeys, final SideEffects sideEffectQueue) {
 
     if (subprocesses.isEmpty()) {
       return flowScopeKey;
@@ -205,7 +203,8 @@ public final class ElementActivationBehavior {
 
       activatedInstanceKey =
           activateFlowScope(
-              processInstanceRecord, flowScopeKey, nextSubprocess, createVariablesCallback);
+              processInstanceRecord, flowScopeKey, nextSubprocess, createVariablesCallback,
+              sideEffectQueue);
     }
 
     activatedElementKeys.addFlowScopeKey(activatedInstanceKey);
@@ -216,13 +215,12 @@ public final class ElementActivationBehavior {
         subprocesses,
         ancestorScopeKey,
         createVariablesCallback,
-        activatedElementKeys);
+        activatedElementKeys, sideEffectQueue);
   }
 
   /**
    * This method tries to find the instance of the subprocess that should be used as the flow scope
-   * of the next recursion of {@link #activateAncestralSubprocesses(ProcessInstanceRecord, long,
-   * Deque, long, BiConsumer, ActivatedElementKeys)}.
+   * of the next recursion of {@link #activateAncestralSubprocesses(ProcessInstanceRecord, long, Deque, long, BiConsumer, ActivatedElementKeys, SideEffects)}.
    *
    * <p>This method works by looking up element instances of the specific subprocess, and then
    * considers whether we can use one of the instances that are found, or whether a new instance
@@ -349,7 +347,8 @@ public final class ElementActivationBehavior {
       final ProcessInstanceRecord processInstanceRecord,
       final long flowScopeKey,
       final ExecutableFlowElement flowScope,
-      final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
+      final BiConsumer<DirectBuffer, Long> createVariablesCallback,
+      final SideEffects sideEffectQueue) {
     final long elementInstanceKey;
     final long elementInstanceFlowScopeKey;
 
@@ -367,7 +366,7 @@ public final class ElementActivationBehavior {
         flowScope,
         elementInstanceKey,
         elementInstanceFlowScopeKey,
-        createVariablesCallback);
+        createVariablesCallback, sideEffectQueue);
 
     return elementInstanceKey;
   }
@@ -377,7 +376,8 @@ public final class ElementActivationBehavior {
       final ExecutableFlowElement element,
       final long elementInstanceKey,
       final long flowScopeKey,
-      final BiConsumer<DirectBuffer, Long> createVariablesCallback) {
+      final BiConsumer<DirectBuffer, Long> createVariablesCallback,
+      final SideEffects sideEffectQueue) {
 
     final var elementRecord = createElementRecord(processInstanceRecord, element, flowScopeKey);
 
@@ -387,7 +387,7 @@ public final class ElementActivationBehavior {
     stateWriter.appendFollowUpEvent(
         elementInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, elementRecord);
 
-    createEventSubscriptions(element, elementRecord, elementInstanceKey);
+    createEventSubscriptions(element, elementRecord, elementInstanceKey, sideEffectQueue);
   }
 
   private long activateElementByCommand(
@@ -431,7 +431,7 @@ public final class ElementActivationBehavior {
   private void createEventSubscriptions(
       final ExecutableFlowElement element,
       final ProcessInstanceRecord elementRecord,
-      final long elementInstanceKey) {
+      final long elementInstanceKey, final SideEffects sideEffectQueue) {
 
     if (element instanceof ExecutableCatchEventSupplier catchEventSupplier) {
       final var bpmnElementContext = new BpmnElementContextImpl();

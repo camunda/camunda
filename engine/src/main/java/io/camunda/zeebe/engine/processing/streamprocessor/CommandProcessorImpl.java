@@ -36,8 +36,6 @@ import java.util.function.Consumer;
 public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
 
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
-
   private final CommandProcessor<T> wrappedProcessor;
 
   private final KeyGenerator keyGenerator;
@@ -72,7 +70,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
       final TypedRecord<T> command, final Consumer<SideEffectProducer> sideEffect) {
 
     entityKey = command.getKey();
-
+    final var sideEffectQueue = new SideEffectQueue();
     sideEffect.accept(sideEffectQueue);
     sideEffectQueue.clear();
 
@@ -82,7 +80,8 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
     if (isAccepted) {
       stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
-      wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue);
+      wrappedProcessor.afterAccept(commandWriter, stateWriter, entityKey, newState, updatedValue,
+          sideEffectQueue);
       if (respond) {
         responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }

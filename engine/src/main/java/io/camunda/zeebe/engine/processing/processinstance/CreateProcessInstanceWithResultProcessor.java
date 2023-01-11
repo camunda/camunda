@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -57,8 +58,8 @@ public final class CreateProcessInstanceWithResultProcessor
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final ProcessInstanceCreationRecord value) {
-    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
+      final ProcessInstanceCreationRecord value, final SideEffects sideEffectQueue) {
+    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value, sideEffectQueue);
   }
 
   private class CommandControlWithAwaitResult

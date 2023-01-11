@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 public final class EventSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableFlowElementContainer> {
@@ -40,7 +41,8 @@ public final class EventSubProcessProcessor
 
   @Override
   public void onActivate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
+      final ExecutableFlowElementContainer element, final BpmnElementContext activating,
+      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
     variableMappingBehavior
         .applyInputMappings(activating, element)
         .ifRightOrLeft(
@@ -56,7 +58,8 @@ public final class EventSubProcessProcessor
 
   @Override
   public void onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
+      final ExecutableFlowElementContainer element, final BpmnElementContext completing,
+      final SideEffects sideEffects) {
 
     variableMappingBehavior
         .applyOutputMappings(completing, element)
@@ -66,7 +69,8 @@ public final class EventSubProcessProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+      final ExecutableFlowElementContainer element, final BpmnElementContext terminating,
+      final SideEffects sideEffects) {
 
     incidentBehavior.resolveIncidents(terminating);
 

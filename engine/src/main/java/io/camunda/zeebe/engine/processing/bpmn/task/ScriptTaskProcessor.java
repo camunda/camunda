@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -44,18 +45,21 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
   }
 
   @Override
-  public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context) {
-    eventBehaviorOf(element, context).onActivate(element, context);
+  public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context,
+      final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+    eventBehaviorOf(element, context).onActivate(element, context, sideEffects, sideEffectQueue);
   }
 
   @Override
-  public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context) {
-    eventBehaviorOf(element, context).onComplete(element, context);
+  public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context,
+      final SideEffects sideEffects) {
+    eventBehaviorOf(element, context).onComplete(element, context, sideEffects);
   }
 
   @Override
-  public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context) {
-    eventBehaviorOf(element, context).onTerminate(element, context);
+  public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context,
+      final SideEffects sideEffects) {
+    eventBehaviorOf(element, context).onTerminate(element, context, sideEffects);
   }
 
   private ScriptTaskBehavior eventBehaviorOf(
@@ -94,7 +98,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     }
 
     @Override
-    public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context) {
+    public void onActivate(final ExecutableScriptTask element, final BpmnElementContext context,
+        final SideEffects sideEffects, final SideEffects sideEffectQueue) {
       variableMappingBehavior
           .applyInputMappings(context, element)
           .flatMap(ok -> evaluateScript(element, context))
@@ -107,7 +112,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     }
 
     @Override
-    public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context) {
+    public void onComplete(final ExecutableScriptTask element, final BpmnElementContext context,
+        final SideEffects sideEffects) {
       variableMappingBehavior
           .applyOutputMappings(context, element)
           .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
@@ -117,7 +123,8 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
     }
 
     @Override
-    public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context) {
+    public void onTerminate(final ExecutableScriptTask element, final BpmnElementContext context,
+        final SideEffects sideEffects) {
       final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
       incidentBehavior.resolveIncidents(context);
@@ -190,29 +197,35 @@ public final class ScriptTaskProcessor implements BpmnElementProcessor<Executabl
 
     @Override
     public void onActivate(
-        final ExecutableScriptTask element, final BpmnElementContext activating) {
-      delegate.onActivate(element, activating);
+        final ExecutableScriptTask element, final BpmnElementContext activating,
+        final SideEffects sideEffects, final SideEffects sideEffectQueue) {
+      delegate.onActivate(element, activating, sideEffects, sideEffectQueue);
     }
 
     @Override
     public void onComplete(
-        final ExecutableScriptTask element, final BpmnElementContext completing) {
-      delegate.onComplete(element, completing);
+        final ExecutableScriptTask element, final BpmnElementContext completing,
+        final SideEffects sideEffects) {
+      delegate.onComplete(element, completing, sideEffects);
     }
 
     @Override
     public void onTerminate(
-        final ExecutableScriptTask element, final BpmnElementContext terminating) {
-      delegate.onTerminate(element, terminating);
+        final ExecutableScriptTask element, final BpmnElementContext terminating,
+        final SideEffects sideEffects) {
+      delegate.onTerminate(element, terminating, sideEffects);
     }
   }
 
   /** Extract different behaviors depending on the type of task. */
   private interface ScriptTaskBehavior {
-    void onActivate(ExecutableScriptTask element, BpmnElementContext activating);
+    void onActivate(ExecutableScriptTask element, BpmnElementContext activating,
+        final SideEffects sideEffects, final SideEffects sideEffectQueue);
 
-    void onComplete(ExecutableScriptTask element, BpmnElementContext completing);
+    void onComplete(ExecutableScriptTask element, BpmnElementContext completing,
+        final SideEffects sideEffects);
 
-    void onTerminate(ExecutableScriptTask element, BpmnElementContext terminating);
+    void onTerminate(ExecutableScriptTask element, BpmnElementContext terminating,
+        final SideEffects sideEffects);
   }
 }
