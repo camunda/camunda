@@ -337,7 +337,7 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
-  public ActorFuture<Void>  copySnapshot(
+  public ActorFuture<Void> copySnapshot(
       final PersistedSnapshot snapshot, final Path targetDirectory) {
     final CompletableActorFuture<Void> result = new CompletableActorFuture<>();
     actor.run(

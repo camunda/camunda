@@ -40,6 +40,7 @@ public class RaftStorageConfig {
 
   @Optional("SnapshotStoreFactory")
   private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory;
+
   private String stateDirectory;
 
   /**
