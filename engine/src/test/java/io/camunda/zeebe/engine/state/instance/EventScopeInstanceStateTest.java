@@ -460,6 +460,20 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
+  void shouldStoreProcessInstanceKeyInEventTrigger() {
+    // given
+    final EventTrigger eventTrigger = createEventTrigger();
+    final long processInstanceKey = 12345L;
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger, processInstanceKey);
+
+    // when
+    final EventTrigger stateEventTrigger = state.peekEventTrigger(SCOPE_KEY);
+
+    // then
+    assertThat(stateEventTrigger.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
   void shouldDeleteTrigger() {
     // given
     final long eventKey = 456;
