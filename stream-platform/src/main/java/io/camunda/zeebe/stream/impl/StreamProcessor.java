@@ -145,7 +145,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorStarting() {
     actor.runOnCompletionBlockingCurrentPhase(
-        logStream.newLogStreamReader(), this::onRetrievingReader);
+        streamProcessorContext.getProcessorMode() == StreamProcessorMode.REPLAY
+            ? logStream.newLogStreamReader()
+            : logStream.newLogStreamReaderUncommitted(),
+        this::onRetrievingReader);
   }
 
   @Override
