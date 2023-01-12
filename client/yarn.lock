@@ -1336,6 +1336,14 @@
     ids "^1.0.0"
     min-dash "^3.5.2"
 
+"@bpmn-io/element-templates-icons-renderer@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/element-templates-icons-renderer/-/element-templates-icons-renderer-0.3.0.tgz#32005487de24ca747d96874f6bae7c45698fd8a2"
+  integrity sha512-F6UWtjqkd1CmMoiGk+cl4m3JjGzR37e+8lO7OsW9NncMpY3Xxcafn6kPaLBfJDhiwAlFzK6jMd9/cSs5YRXusQ==
+  dependencies:
+    inherits "^2.0.4"
+    tiny-svg "^3.0.0"
+
 "@camunda/camunda-composite-components@^0.0.22":
   version "0.0.22"
   resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.22.tgz#779e25262ced01dc87cb8d6caaf3fa867c1bd7e8"
