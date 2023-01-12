@@ -445,6 +445,10 @@ public final class ProcessingStateMachine {
     // observe the processing duration
     processingTimer.close();
 
+    // continue with next record
+    inProcessing = false;
+    actor.submit(this::readNextRecord);
+
     final Runnable runSideEffects =
         () -> {
           try {
@@ -472,22 +476,18 @@ public final class ProcessingStateMachine {
                   .valueWriter(responseValue.recordValue())
                   .tryWriteResponse(
                       processingResponse.requestStreamId(), processingResponse.requestId());
-
-              futureProcessingResult.executePostCommitTasks();
             }
+            futureProcessingResult.executePostCommitTasks();
           } catch (final Exception e) {
             LOG.warn("Failed to execute side effect");
           }
         };
 
-    sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
-    final var sideEffectsToRun = sideEffectBuffer.headMap(lastCommittedPosition, true);
-    sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
-    sideEffectsToRun.clear();
-
-    // continue with next record
-    inProcessing = false;
-    actor.submit(this::readNextRecord);
+    if (currentRecord.getPosition() <= lastCommittedPosition) {
+      runSideEffects.run();
+    } else {
+      sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
+    }
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
@@ -537,7 +537,13 @@ public final class ProcessingStateMachine {
   }
 
   public void onCommit(final long position) {
-    actor.submit(() -> lastCommittedPosition = Math.max(lastCommittedPosition, position));
+    actor.submit(
+        () -> {
+          lastCommittedPosition = Math.max(lastCommittedPosition, position);
+          final var sideEffectsToRun = sideEffectBuffer.headMap(lastCommittedPosition, true);
+          sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
+          sideEffectsToRun.clear();
+        });
   }
 
   private static final class MinimalLoggedEvent implements LoggedEvent {
