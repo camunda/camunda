@@ -18,7 +18,9 @@ import java.io.Closeable;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +39,12 @@ final class Sequencer implements LogStreamWriter, Closeable {
   private final int partitionId;
   private final int maxFragmentSize;
 
+//  private volatile long position;
   private volatile long position;
   private volatile boolean isClosed = false;
   private volatile ActorCondition consumer;
-  private final Queue<SequencedBatch> queue = new ArrayBlockingQueue<>(128);
+//  private final Queue<SequencedBatch> queue = new ArrayBlockingQueue<>(128);
+  private final ManyToOneConcurrentArrayQueue<SequencedBatch> queue = new ManyToOneConcurrentArrayQueue<>(128);
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
 
@@ -83,6 +87,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
     final long currentPosition;
     final boolean isEnqueued;
+
     lock.lock();
     try {
       currentPosition = position;
