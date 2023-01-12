@@ -449,9 +449,9 @@ public final class ProcessingStateMachine {
     inProcessing = false;
     actor.submit(this::readNextRecord);
 
-    final var bufferStartTime = metrics.startBufferingDelay();
     if (futureProcessingResult.hasPostcommitTasks()
         || futureProcessingResult.getProcessingResponse().isPresent()) {
+      final var bufferStartTime = metrics.startBufferingDelay();
       final Runnable runSideEffects =
           () -> {
             try {
@@ -547,10 +547,12 @@ public final class ProcessingStateMachine {
         () -> {
           lastCommittedPosition = Math.max(lastCommittedPosition, position);
           final var sideEffectsToRun = sideEffectBuffer.headMap(lastCommittedPosition, true);
-          metrics.setSideeffectBufferCount(sideEffectBuffer.size());
-          metrics.observeSideffectExecutionTime(
-              () -> sideEffectsToRun.forEach((aLong, runnable) -> runnable.run()));
-          sideEffectsToRun.clear();
+          if (!sideEffectsToRun.isEmpty()) {
+            metrics.setSideeffectBufferCount(sideEffectBuffer.size());
+            metrics.observeSideffectExecutionTime(
+                () -> sideEffectsToRun.forEach((aLong, runnable) -> runnable.run()));
+            sideEffectsToRun.clear();
+          }
         });
   }
 
