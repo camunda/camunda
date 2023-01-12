@@ -537,7 +537,7 @@ public final class ProcessingStateMachine {
   }
 
   public void onCommit(final long position) {
-    actor.submit(() -> lastCommittedPosition = position);
+    actor.submit(() -> lastCommittedPosition = Math.max(lastCommittedPosition, position));
   }
 
   private static final class MinimalLoggedEvent implements LoggedEvent {
