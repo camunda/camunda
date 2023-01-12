@@ -445,55 +445,49 @@ public final class ProcessingStateMachine {
     // observe the processing duration
     processingTimer.close();
 
+    final Runnable runSideEffects =
+        () -> {
+          try {
+            // TODO refactor this into two parallel tasks, which are then combined, and on the
+            // completion of which the process continues
+
+            final var processingResponseOptional = futureProcessingResult.getProcessingResponse();
+
+            // TODO: Retry and handle errors
+            if (processingResponseOptional.isPresent()) {
+              final var processingResponse = processingResponseOptional.get();
+              final var responseWriter = context.getCommandResponseWriter();
+
+              final var responseValue = processingResponse.responseValue();
+              final var recordMetadata = responseValue.recordMetadata();
+
+              responseWriter
+                  .intent(recordMetadata.getIntent())
+                  .key(responseValue.key())
+                  .recordType(recordMetadata.getRecordType())
+                  .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                  .rejectionType(recordMetadata.getRejectionType())
+                  .partitionId(context.getPartitionId())
+                  .valueType(recordMetadata.getValueType())
+                  .valueWriter(responseValue.recordValue())
+                  .tryWriteResponse(
+                      processingResponse.requestStreamId(), processingResponse.requestId());
+
+              futureProcessingResult.executePostCommitTasks();
+            }
+          } catch (final Exception e) {
+            LOG.warn("Failed to execute side effect");
+          }
+        };
+
+    sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
+    final var sideEffectsToRun = sideEffectBuffer.headMap(lastCommittedPosition, true);
+    sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
+    sideEffectsToRun.clear();
+
     // continue with next record
     inProcessing = false;
     actor.submit(this::readNextRecord);
-
-    final Runnable runSideEffects =
-        () ->
-            sideEffectsRetryStrategy.runWithRetry(
-                () -> {
-                  // TODO refactor this into two parallel tasks, which are then combined, and on the
-                  // completion of which the process continues
-
-                  final var processingResponseOptional =
-                      futureProcessingResult.getProcessingResponse();
-
-                  if (processingResponseOptional.isPresent()) {
-                    final var processingResponse = processingResponseOptional.get();
-                    final var responseWriter = context.getCommandResponseWriter();
-
-                    final var responseValue = processingResponse.responseValue();
-                    final var recordMetadata = responseValue.recordMetadata();
-                    final boolean responseSent =
-                        responseWriter
-                            .intent(recordMetadata.getIntent())
-                            .key(responseValue.key())
-                            .recordType(recordMetadata.getRecordType())
-                            .rejectionReason(
-                                BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                            .rejectionType(recordMetadata.getRejectionType())
-                            .partitionId(context.getPartitionId())
-                            .valueType(recordMetadata.getValueType())
-                            .valueWriter(responseValue.recordValue())
-                            .tryWriteResponse(
-                                processingResponse.requestStreamId(),
-                                processingResponse.requestId());
-                    if (!responseSent) {
-                      return false;
-                    } else {
-                      return futureProcessingResult.executePostCommitTasks();
-                    }
-                  }
-                  return futureProcessingResult.executePostCommitTasks();
-                },
-                abortCondition);
-
-    if (currentRecord.getPosition() <= lastCommittedPosition) {
-      runSideEffects.run();
-    } else {
-      sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
-    }
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
@@ -543,13 +537,7 @@ public final class ProcessingStateMachine {
   }
 
   public void onCommit(final long position) {
-    actor.submit(
-        () -> {
-          lastCommittedPosition = position;
-          final var sideEffectsToRun = sideEffectBuffer.headMap(position, true);
-          sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
-          sideEffectsToRun.clear();
-        });
+    actor.submit(() -> lastCommittedPosition = position);
   }
 
   private static final class MinimalLoggedEvent implements LoggedEvent {
