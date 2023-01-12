@@ -136,7 +136,6 @@ it('should render sidebar links', async () => {
       label: 'Zeebe',
       ariaLabel: 'Zeebe',
       routeProps: undefined,
-      target: '_blank',
     },
     {
       active: false,
@@ -145,7 +144,6 @@ it('should render sidebar links', async () => {
       label: 'Operate',
       ariaLabel: 'Operate',
       routeProps: undefined,
-      target: '_blank',
     },
     {
       active: true,
@@ -156,7 +154,6 @@ it('should render sidebar links', async () => {
       routeProps: {
         to: '/',
       },
-      target: '_blank',
     },
   ]);
 });
