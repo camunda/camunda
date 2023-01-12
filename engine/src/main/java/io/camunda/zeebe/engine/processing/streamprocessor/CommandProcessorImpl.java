@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -65,8 +64,7 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<T> command, final SideEffects sideEffect) {
+  public void processRecord(final TypedRecord<T> command, final SideEffects sideEffect) {
 
     entityKey = command.getKey();
 

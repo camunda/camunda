@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -77,8 +76,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<ProcessMessageSubscriptionRecord> command,
-      final SideEffects sideEffect) {
+      final TypedRecord<ProcessMessageSubscriptionRecord> command, final SideEffects sideEffect) {
 
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();

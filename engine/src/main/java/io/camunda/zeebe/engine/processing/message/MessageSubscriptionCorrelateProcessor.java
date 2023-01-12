@@ -47,8 +47,7 @@ public final class MessageSubscriptionCorrelateProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final SideEffects sideEffect) {
+      final TypedRecord<MessageSubscriptionRecord> record, final SideEffects sideEffect) {
 
     final MessageSubscriptionRecord command = record.getValue();
     final MessageSubscription subscription =

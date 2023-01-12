@@ -47,9 +47,7 @@ public final class DeploymentDistributionBehavior {
   }
 
   public void distributeDeployment(
-      final DeploymentRecord deploymentEvent,
-      final long key,
-      final SideEffects sideEffectQueue) {
+      final DeploymentRecord deploymentEvent, final long key, final SideEffects sideEffectQueue) {
     final var copiedDeploymentBuffer = BufferUtil.createCopy(deploymentEvent);
 
     otherPartitions.forEach(

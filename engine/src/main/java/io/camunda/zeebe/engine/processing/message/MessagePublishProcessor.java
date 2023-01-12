@@ -118,7 +118,22 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
 
-    sideEffect.add(this::sendCorrelateCommand);
+    correlatingSubscriptions.visitSubscriptions(
+        subscription -> {
+          sideEffect.add(
+              () -> {
+                commandSender.correlateProcessMessageSubscription(
+                    subscription.getProcessInstanceKey(),
+                    subscription.getElementInstanceKey(),
+                    subscription.getBpmnProcessId(),
+                    messageRecord.getNameBuffer(),
+                    messageKey,
+                    messageRecord.getVariablesBuffer(),
+                    messageRecord.getCorrelationKeyBuffer());
+                return true;
+              });
+          return true;
+        });
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up
@@ -177,18 +192,5 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
                 subscription.getKey(), subscriptionRecord, messageKey, messageRecord);
           }
         });
-  }
-
-  private boolean sendCorrelateCommand() {
-    return correlatingSubscriptions.visitSubscriptions(
-        subscription ->
-            commandSender.correlateProcessMessageSubscription(
-                subscription.getProcessInstanceKey(),
-                subscription.getElementInstanceKey(),
-                subscription.getBpmnProcessId(),
-                messageRecord.getNameBuffer(),
-                messageKey,
-                messageRecord.getVariablesBuffer(),
-                messageRecord.getCorrelationKeyBuffer()));
   }
 }

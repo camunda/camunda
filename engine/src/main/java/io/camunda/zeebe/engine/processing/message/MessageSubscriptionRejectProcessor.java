@@ -44,8 +44,7 @@ public final class MessageSubscriptionRejectProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final SideEffects sideEffect) {
+      final TypedRecord<MessageSubscriptionRecord> record, final SideEffects sideEffect) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
@@ -63,8 +62,7 @@ public final class MessageSubscriptionRejectProcessor
   }
 
   private void findSubscriptionToCorrelate(
-      final SideEffects sideEffect,
-      final MessageSubscriptionRecord subscriptionRecord) {
+      final SideEffects sideEffect, final MessageSubscriptionRecord subscriptionRecord) {
 
     final var messageKey = subscriptionRecord.getMessageKey();
 

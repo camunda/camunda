@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -83,8 +82,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
   @Override
   public void processRecord(
-      final TypedRecord<TimerRecord> record,
-      final SideEffects sideEffectsConsumer) {
+      final TypedRecord<TimerRecord> record, final SideEffects sideEffectsConsumer) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();

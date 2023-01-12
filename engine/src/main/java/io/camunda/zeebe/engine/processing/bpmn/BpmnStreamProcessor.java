@@ -66,8 +66,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   @Override
   public void processRecord(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final SideEffects sideEffect) {
+      final TypedRecord<ProcessInstanceRecord> record, final SideEffects sideEffect) {
     // initialize
 
     final var intent = (ProcessInstanceIntent) record.getIntent();
@@ -89,7 +88,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             violation ->
                 rejectionWriter.appendRejection(
                     record, RejectionType.INVALID_STATE, violation.getMessage()));
-
   }
 
   private void processEvent(

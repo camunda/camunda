@@ -32,8 +32,6 @@ public final class MessageSubscriptionDeleteProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
-  private MessageSubscriptionRecord subscriptionRecord;
-
   public MessageSubscriptionDeleteProcessor(
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
@@ -46,9 +44,8 @@ public final class MessageSubscriptionDeleteProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final SideEffects sideEffect) {
-    subscriptionRecord = record.getValue();
+      final TypedRecord<MessageSubscriptionRecord> record, final SideEffects sideEffect) {
+    final var subscriptionRecord = record.getValue();
 
     final var messageSubscription =
         subscriptionState.get(
@@ -64,7 +61,7 @@ public final class MessageSubscriptionDeleteProcessor
       rejectCommand(record);
     }
 
-    sideEffect.add(this::sendAcknowledgeCommand);
+    sideEffect.add(() -> sendAcknowledgeCommand(subscriptionRecord));
   }
 
   private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
@@ -78,7 +75,7 @@ public final class MessageSubscriptionDeleteProcessor
     rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, reason);
   }
 
-  private boolean sendAcknowledgeCommand() {
+  private boolean sendAcknowledgeCommand(final MessageSubscriptionRecord subscriptionRecord) {
     return commandSender.closeProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),

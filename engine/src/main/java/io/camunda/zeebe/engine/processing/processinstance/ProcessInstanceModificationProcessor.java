@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -163,8 +162,7 @@ public final class ProcessInstanceModificationProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<ProcessInstanceModificationRecord> command,
-      final SideEffects sideEffect) {
+      final TypedRecord<ProcessInstanceModificationRecord> command, final SideEffects sideEffect) {
 
     final long commandKey = command.getKey();
     final var value = command.getValue();

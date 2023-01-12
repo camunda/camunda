@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
-import java.util.function.Consumer;
 import org.agrona.collections.MutableBoolean;
 
 public final class MessageCorrelator {
@@ -58,7 +56,8 @@ public final class MessageCorrelator {
   private boolean correlateMessage(
       final long subscriptionKey,
       final MessageSubscriptionRecord subscriptionRecord,
-      final StoredMessage storedMessage, final SideEffects sideEffect) {
+      final StoredMessage storedMessage,
+      final SideEffects sideEffect) {
     final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 

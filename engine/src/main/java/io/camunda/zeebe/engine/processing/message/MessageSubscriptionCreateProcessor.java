@@ -34,8 +34,6 @@ public final class MessageSubscriptionCreateProcessor
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
-
-  private MessageSubscriptionRecord subscriptionRecord;
   private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionCreateProcessor(
@@ -54,13 +52,12 @@ public final class MessageSubscriptionCreateProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final SideEffects sideEffect) {
-    subscriptionRecord = record.getValue();
+      final TypedRecord<MessageSubscriptionRecord> record, final SideEffects sideEffect) {
+    final var subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sideEffect.add(this::sendAcknowledgeCommand);
+      sideEffect.add(() -> sendAcknowledgeCommand(subscriptionRecord));
 
       rejectionWriter.appendRejection(
           record,
@@ -72,10 +69,11 @@ public final class MessageSubscriptionCreateProcessor
       return;
     }
 
-    handleNewSubscription(sideEffect);
+    handleNewSubscription(sideEffect, subscriptionRecord);
   }
 
-  private void handleNewSubscription(final SideEffects sideEffect) {
+  private void handleNewSubscription(
+      final SideEffects sideEffect, final MessageSubscriptionRecord subscriptionRecord) {
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -85,11 +83,11 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
 
     if (!isMessageCorrelated) {
-      sideEffect.add(this::sendAcknowledgeCommand);
+      sideEffect.add(() -> sendAcknowledgeCommand(subscriptionRecord));
     }
   }
 
-  private boolean sendAcknowledgeCommand() {
+  private boolean sendAcknowledgeCommand(final MessageSubscriptionRecord subscriptionRecord) {
     return commandSender.openProcessMessageSubscription(
         subscriptionRecord.getProcessInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
