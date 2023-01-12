@@ -16,7 +16,7 @@ public final class RocksDbConfiguration {
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
   public static final boolean DEFAULT_STATISTICS_ENABLED = false;
-  public static final boolean DEFAULT_WAL_DISABLED = false;
+  public static final boolean DEFAULT_WAL_DISABLED = true;
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
 
   private Properties columnFamilyOptions = new Properties();
