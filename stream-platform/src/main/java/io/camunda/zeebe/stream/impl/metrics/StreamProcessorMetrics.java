@@ -62,6 +62,39 @@ public final class StreamProcessorMetrics {
           .help("Time taken for startup and recovery of stream processor (in ms)")
           .labelNames(LABEL_NAME_PARTITION)
           .register();
+
+  private static final Histogram SIDEEFFECT_BUFFER_COUNT =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("sideffect_buffer_size")
+          .help("Number of sideffects buffered")
+          .labelNames(LABEL_NAME_PARTITION)
+          .buckets(0, 1, 10, 50, 100, 500, 1000, 5000, 10000)
+          .register();
+
+  private static final Histogram SIDEEFFECT_BUFFER_EXECUTION_TIME =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("sideffect_buffer_execution_time")
+          .help("Time to execute buffered sideeffects")
+          .labelNames(LABEL_NAME_PARTITION)
+          .register();
+
+  private static final Histogram SIDEEFFECT_BUFFERED_DELAY =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("sideffect_buffered_delay")
+          .help("Delay until buffered side effects are executed")
+          .labelNames(LABEL_NAME_PARTITION)
+          .register();
+  private static final Histogram UNCOMMITTED_RECORDS_COUNT =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_uncommitted_processed_count")
+          .help("Number of records processed but not committed")
+          .labelNames(LABEL_NAME_PARTITION)
+          .buckets(-5000, -1000, -500, -100, -10, 0, 10, 100, 500, 1000, 5000)
+          .register();
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(final int partitionId) {
@@ -108,5 +141,21 @@ public final class StreamProcessorMetrics {
 
   public void setLastProcessedPosition(final long position) {
     LAST_PROCESSED_POSITION.labels(partitionIdLabel).set(position);
+  }
+
+  public void setSideeffectBufferCount(final int count) {
+    SIDEEFFECT_BUFFER_COUNT.labels(partitionIdLabel).observe(count);
+  }
+
+  public void observeSideffectExecutionTime(final Runnable runnable) {
+    SIDEEFFECT_BUFFER_EXECUTION_TIME.labels(partitionIdLabel).time(runnable);
+  }
+
+  public void setUncommittedRecordsCount(final long count) {
+    UNCOMMITTED_RECORDS_COUNT.labels(partitionIdLabel).observe(count);
+  }
+
+  public Histogram.Timer startBufferingDelay() {
+    return SIDEEFFECT_BUFFERED_DELAY.labels(partitionIdLabel).startTimer();
   }
 }

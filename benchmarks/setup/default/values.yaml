@@ -10,11 +10,11 @@ worker:
   capacity: 60
 
 starter:
-  replicas: 1
+  replicas: 0
   rate: 75
 
 publisher:
-  replicas: 0
+  replicas: 1
   rate: 25
 
 timer:

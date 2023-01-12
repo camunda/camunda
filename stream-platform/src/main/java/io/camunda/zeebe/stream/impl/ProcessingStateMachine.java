@@ -449,12 +449,14 @@ public final class ProcessingStateMachine {
     inProcessing = false;
     actor.submit(this::readNextRecord);
 
+    final var bufferStartTime = metrics.startBufferingDelay();
     final Runnable runSideEffects =
         () -> {
           try {
             // TODO refactor this into two parallel tasks, which are then combined, and on the
             // completion of which the process continues
 
+            bufferStartTime.close();
             final var processingResponseOptional = futureProcessingResult.getProcessingResponse();
 
             // TODO: Retry and handle errors
@@ -488,6 +490,8 @@ public final class ProcessingStateMachine {
     } else {
       sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
     }
+
+    metrics.setUncommittedRecordsCount(currentRecord.getPosition() - lastCommittedPosition);
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
@@ -541,7 +545,9 @@ public final class ProcessingStateMachine {
         () -> {
           lastCommittedPosition = Math.max(lastCommittedPosition, position);
           final var sideEffectsToRun = sideEffectBuffer.headMap(lastCommittedPosition, true);
-          sideEffectsToRun.forEach((aLong, runnable) -> runnable.run());
+          metrics.setSideeffectBufferCount(sideEffectBuffer.size());
+          metrics.observeSideffectExecutionTime(
+              () -> sideEffectsToRun.forEach((aLong, runnable) -> runnable.run()));
           sideEffectsToRun.clear();
         });
   }

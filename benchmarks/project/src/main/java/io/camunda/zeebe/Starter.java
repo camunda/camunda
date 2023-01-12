@@ -22,6 +22,7 @@ import io.camunda.zeebe.config.StarterCfg;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -130,14 +131,21 @@ public class Starter extends App {
     if (shouldContinue.getAsBoolean()) {
       try {
         if (starterCfg.isStartViaMessage()) {
+          final String correlationKey = UUID.randomUUID().toString();
           requestFutures.put(
               client
                   .newPublishMessageCommand()
                   .messageName(starterCfg.getMsgName())
-                  .correlationKey(UUID.randomUUID().toString())
-                  .variables(variables)
+                  .correlationKey(correlationKey)
+                  .variables(Map.of("key", correlationKey))
                   .timeToLive(Duration.ZERO)
                   .send());
+          client
+              .newPublishMessageCommand()
+              .messageName("msg2")
+              .correlationKey(correlationKey)
+              .timeToLive(Duration.ofMinutes(10))
+              .send();
         } else {
           startViaCommand(starterCfg, processId, requestFutures, client, variables);
         }
