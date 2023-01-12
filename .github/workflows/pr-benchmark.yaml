@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
-      name: ${{github.event.pull_request.head_ref}}-benchmark
+      name: ${{github.event.pull_request.head.ref}}-benchmark
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ github.event.pull_request.head.ref }}
@@ -24,7 +24,7 @@ jobs:
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:      
-      name: ${{github.event.pull_request.head_ref}}-benchmark
+      name: ${{github.event.pull_request.head.ref}}-benchmark
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ github.event.pull_request.head.ref }}
@@ -48,4 +48,4 @@ jobs:
           location: europe-west1-b
       - name: Delete benchmarks
         run: |
-          kubectl delete ns ${{github.event.pull_request.head_ref}}-benchmark
+          kubectl delete ns ${{github.event.pull_request.head.ref}}-benchmark
