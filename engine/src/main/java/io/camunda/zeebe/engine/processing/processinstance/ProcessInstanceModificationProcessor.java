@@ -168,7 +168,6 @@ public final class ProcessInstanceModificationProcessor
       final TypedRecord<ProcessInstanceModificationRecord> command,
       final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffectQueue = new SideEffectQueue();
-    sideEffect.accept(sideEffectQueue);
 
     final long commandKey = command.getKey();
     final var value = command.getValue();
@@ -255,6 +254,8 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
+
+    sideEffect.accept(sideEffectQueue);
   }
 
   @Override

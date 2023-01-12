@@ -87,7 +87,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   public void processRecord(
       final TypedRecord<DeploymentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffects = new SideEffectQueue();
-    sideEffect.accept(sideEffects);
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
@@ -122,6 +121,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
     }
+
+    sideEffect.accept(sideEffects);
   }
 
   private void createTimerIfTimerStartEvent(

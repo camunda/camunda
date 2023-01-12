@@ -36,4 +36,8 @@ public interface ProcessingResult {
    * @return <code>false</code> to indicate that the side effect could not be applied successfully
    */
   boolean executePostCommitTasks();
+
+  default boolean hasPostcommitTasks() {
+    return false;
+  }
 }

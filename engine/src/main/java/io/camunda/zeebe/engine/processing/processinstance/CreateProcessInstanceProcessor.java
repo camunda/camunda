@@ -105,7 +105,7 @@ public final class CreateProcessInstanceProcessor
       final CommandControl<ProcessInstanceCreationRecord> controller,
       final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffects = new SideEffectQueue();
-    sideEffect.accept(sideEffects);
+
     final ProcessInstanceCreationRecord record = command.getValue();
 
     getProcess(record)
@@ -113,6 +113,8 @@ public final class CreateProcessInstanceProcessor
         .ifRightOrLeft(
             process -> createProcessInstance(controller, record, process, sideEffects),
             rejection -> controller.reject(rejection.type, rejection.reason));
+
+    sideEffect.accept(sideEffects);
 
     return true;
   }

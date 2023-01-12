@@ -71,8 +71,6 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
     entityKey = command.getKey();
     final var sideEffectQueue = new SideEffectQueue();
-    sideEffect.accept(sideEffectQueue);
-    sideEffectQueue.clear();
 
     final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffectQueue::add);
 
@@ -91,6 +89,8 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
         responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
+
+    sideEffect.accept(sideEffectQueue);
   }
 
   @Override

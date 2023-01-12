@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.P
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -128,6 +129,11 @@ public class Engine implements RecordProcessor {
             record,
             (sep) -> {
               processingResultBuilder.resetPostCommitTasks();
+              if (sep instanceof SideEffectQueue queue) {
+                if (queue.sideEffects.isEmpty()) {
+                  return;
+                }
+              }
               processingResultBuilder.appendPostCommitTask(sep::flush);
             });
       }

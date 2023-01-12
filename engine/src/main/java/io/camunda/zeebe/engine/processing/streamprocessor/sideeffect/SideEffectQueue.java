@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class SideEffectQueue implements SideEffectProducer, SideEffects {
-  private final List<SideEffectProducer> sideEffects = new ArrayList<>();
+  public final List<SideEffectProducer> sideEffects = new ArrayList<>();
 
   public void clear() {
     sideEffects.clear();

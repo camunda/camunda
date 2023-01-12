@@ -450,47 +450,49 @@ public final class ProcessingStateMachine {
     actor.submit(this::readNextRecord);
 
     final var bufferStartTime = metrics.startBufferingDelay();
-    final Runnable runSideEffects =
-        () -> {
-          try {
-            // TODO refactor this into two parallel tasks, which are then combined, and on the
-            // completion of which the process continues
+    if (futureProcessingResult.hasPostcommitTasks()
+        || futureProcessingResult.getProcessingResponse().isPresent()) {
+      final Runnable runSideEffects =
+          () -> {
+            try {
+              // TODO refactor this into two parallel tasks, which are then combined, and on the
+              // completion of which the process continues
 
-            bufferStartTime.close();
-            final var processingResponseOptional = futureProcessingResult.getProcessingResponse();
+              bufferStartTime.close();
+              final var processingResponseOptional = futureProcessingResult.getProcessingResponse();
 
-            // TODO: Retry and handle errors
-            if (processingResponseOptional.isPresent()) {
-              final var processingResponse = processingResponseOptional.get();
-              final var responseWriter = context.getCommandResponseWriter();
+              // TODO: Retry and handle errors
+              if (processingResponseOptional.isPresent()) {
+                final var processingResponse = processingResponseOptional.get();
+                final var responseWriter = context.getCommandResponseWriter();
 
-              final var responseValue = processingResponse.responseValue();
-              final var recordMetadata = responseValue.recordMetadata();
+                final var responseValue = processingResponse.responseValue();
+                final var recordMetadata = responseValue.recordMetadata();
 
-              responseWriter
-                  .intent(recordMetadata.getIntent())
-                  .key(responseValue.key())
-                  .recordType(recordMetadata.getRecordType())
-                  .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                  .rejectionType(recordMetadata.getRejectionType())
-                  .partitionId(context.getPartitionId())
-                  .valueType(recordMetadata.getValueType())
-                  .valueWriter(responseValue.recordValue())
-                  .tryWriteResponse(
-                      processingResponse.requestStreamId(), processingResponse.requestId());
+                responseWriter
+                    .intent(recordMetadata.getIntent())
+                    .key(responseValue.key())
+                    .recordType(recordMetadata.getRecordType())
+                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                    .rejectionType(recordMetadata.getRejectionType())
+                    .partitionId(context.getPartitionId())
+                    .valueType(recordMetadata.getValueType())
+                    .valueWriter(responseValue.recordValue())
+                    .tryWriteResponse(
+                        processingResponse.requestStreamId(), processingResponse.requestId());
+              }
+              futureProcessingResult.executePostCommitTasks();
+            } catch (final Exception e) {
+              LOG.warn("Failed to execute side effect");
             }
-            futureProcessingResult.executePostCommitTasks();
-          } catch (final Exception e) {
-            LOG.warn("Failed to execute side effect");
-          }
-        };
+          };
 
-    if (currentRecord.getPosition() <= lastCommittedPosition) {
-      runSideEffects.run();
-    } else {
-      sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
+      if (currentRecord.getPosition() <= lastCommittedPosition) {
+        runSideEffects.run();
+      } else {
+        sideEffectBuffer.put(currentRecord.getPosition(), runSideEffects);
+      }
     }
-
     metrics.setUncommittedRecordsCount(currentRecord.getPosition() - lastCommittedPosition);
   }
 

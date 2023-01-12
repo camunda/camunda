@@ -81,7 +81,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final TypedRecord<ProcessMessageSubscriptionRecord> command,
       final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffects = new SideEffectQueue();
-    sideEffect.accept(sideEffects);
+
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();
 
@@ -126,6 +126,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         sendAcknowledgeCommand(record);
       }
     }
+    sideEffect.accept(sideEffects);
   }
 
   private ExecutableFlowElement getCatchEvent(

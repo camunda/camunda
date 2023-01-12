@@ -73,7 +73,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final Consumer<SideEffectProducer> sideEffect) {
     final var sideEffects = new SideEffectQueue();
     // initialize
-    sideEffect.accept(sideEffects);
 
     final var intent = (ProcessInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
@@ -94,6 +93,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             violation ->
                 rejectionWriter.appendRejection(
                     record, RejectionType.INVALID_STATE, violation.getMessage()));
+
+    sideEffect.accept(sideEffects);
   }
 
   private void processEvent(

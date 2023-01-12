@@ -88,7 +88,6 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
       final TypedRecord<TimerRecord> record,
       final Consumer<SideEffectProducer> sideEffectsConsumer) {
     final var sideEffects = new SideEffectQueue();
-    sideEffectsConsumer.accept(sideEffects);
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();
@@ -123,6 +122,8 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     if (shouldReschedule(timer)) {
       rescheduleTimer(timer, catchEvent, sideEffects);
     }
+
+    sideEffectsConsumer.accept(sideEffects);
   }
 
   private void rejectNoActiveTimer(final TypedRecord<TimerRecord> record) {
