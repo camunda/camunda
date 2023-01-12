@@ -8,6 +8,11 @@ on:
       - closed
 
 jobs:
+  echo-job:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ${{github.event.pull_request.head_ref}}-benchmark
+      - run: echo ${{github.head_ref}}-benchmark
   create-benchmark:
     name: Create PR benchmark
     if: github.event.action == 'labeled' && github.event.label.name == 'benchmark'
