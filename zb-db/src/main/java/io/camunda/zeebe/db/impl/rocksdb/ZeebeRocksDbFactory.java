@@ -29,6 +29,7 @@ import org.rocksdb.DataBlockIndexType;
 import org.rocksdb.IndexType;
 import org.rocksdb.LRUCache;
 import org.rocksdb.Options;
+import org.rocksdb.PlainTableConfig;
 import org.rocksdb.RateLimiter;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -234,39 +235,6 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
 
   private TableFormatConfig createTableFormatConfig(
       final List<AutoCloseable> closeables, final long blockCacheMemory) {
-    // you can use the perf context to check if we're often blocked on the block cache mutex, in
-    // which case we want to increase the number of shards (shard count == 2^shardBits)
-    final var cache = new LRUCache(blockCacheMemory, 8, false, 0.15);
-    closeables.add(cache);
-
-    final var filter = new BloomFilter(10, false);
-    closeables.add(filter);
-
-    return new BlockBasedTableConfig()
-        .setBlockCache(cache)
-        // increasing block size means reducing memory usage, but increasing read iops
-        .setBlockSize(32 * 1024L)
-        // full and partitioned filters use a more efficient bloom filter implementation when
-        // using format 5
-        .setFormatVersion(5)
-        .setFilterPolicy(filter)
-        // caching and pinning indexes and filters is important to keep reads/seeks fast when we
-        // have many memtables, and pinning them ensures they are never evicted from the block
-        // cache
-        .setCacheIndexAndFilterBlocks(true)
-        .setPinL0FilterAndIndexBlocksInCache(true)
-        .setCacheIndexAndFilterBlocksWithHighPriority(true)
-        // default is binary search, but all of our scans are prefix based which is a good use
-        // case for efficient hashing
-        .setIndexType(IndexType.kHashSearch)
-        .setDataBlockIndexType(DataBlockIndexType.kDataBlockBinaryAndHash)
-        // RocksDB dev benchmarks show improvements when this is between 0.5 and 1, so let's
-        // start with the middle and optimize later from there
-        .setDataBlockHashTableUtilRatio(0.75)
-        // while we mostly care about the prefixes, these are covered below by the
-        // setMemtablePrefixBloomSizeRatio which will create a separate index for prefixes, so
-        // keeping the whole keys in the prefixes is still useful for efficient gets. think of
-        // it as a two-tiered index
-        .setWholeKeyFiltering(true);
+    return new PlainTableConfig();
   }
 }
