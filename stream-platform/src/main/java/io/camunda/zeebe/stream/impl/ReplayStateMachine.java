@@ -134,7 +134,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     replayNextEvent();
 
     if (streamProcessorMode == StreamProcessorMode.REPLAY) {
-      logStream.registerRecordAvailableListener(this);
+//      logStream.registerRecordAvailableListener(this);
     }
 
     return recoveryFuture;
