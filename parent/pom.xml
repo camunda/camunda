@@ -109,7 +109,7 @@
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
     <version.spotbugs>4.7.3</version.spotbugs>
     <version.archunit>1.0.1</version.archunit>
-    <version.easy-random>5.0.0</version.easy-random>
+    <version.instancio>2.2.0</version.instancio>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.16</version.jnr-posix>
     <version.zpt>8.1.5</version.zpt>
@@ -891,9 +891,9 @@
       </dependency>
 
       <dependency>
-        <groupId>org.jeasy</groupId>
-        <artifactId>easy-random-core</artifactId>
-        <version>${version.easy-random}</version>
+        <groupId>org.instancio</groupId>
+        <artifactId>instancio-core</artifactId>
+        <version>${version.instancio}</version>
       </dependency>
 
       <dependency>

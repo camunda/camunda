@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.test.broker.protocol;
 
+import static org.instancio.Select.all;
+import static org.instancio.Select.field;
+
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
@@ -18,19 +21,15 @@ import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
-import java.lang.reflect.Field;
-import java.util.EnumSet;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
-import org.jeasy.random.EasyRandom;
-import org.jeasy.random.EasyRandomParameters;
-import org.jeasy.random.FieldPredicates;
-import org.jeasy.random.api.Randomizer;
-import org.jeasy.random.randomizers.range.LongRangeRandomizer;
-import org.jeasy.random.randomizers.registry.CustomRandomizerRegistry;
+import org.instancio.Instancio;
+import org.instancio.Mode;
+import org.instancio.TypeToken;
+import org.instancio.settings.Keys;
+import org.instancio.settings.Settings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,12 +51,21 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("java:S1452")
 public final class ProtocolFactory {
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ProtocolFactory.class);
   private static final String PROTOCOL_PACKAGE_NAME = Record.class.getPackage().getName() + "*";
 
-  private final CustomRandomizerRegistry randomizerRegistry;
-  private final EasyRandomParameters parameters;
-  private final EasyRandom random;
+  private final Settings settings =
+      Settings.create()
+          // restrict longs to be between 0 and max value because many of our long properties
+          // are timestamps, which are semantically between 0 and any future time
+          .set(Keys.LONG_MIN, 0L)
+          .set(Keys.LONG_MAX, Long.MAX_VALUE)
+          .set(Keys.COLLECTION_MIN_SIZE, 0)
+          .set(Keys.COLLECTION_MAX_SIZE, 5)
+          .set(Keys.MODE, Mode.LENIENT);
+
+  private final SeedSequence seedSequence;
 
   /**
    * Every call to this constructor will always return a factory which produces the exact same
@@ -79,10 +87,8 @@ public final class ProtocolFactory {
    * @param seed the seed to use
    */
   public ProtocolFactory(final long seed) {
-    randomizerRegistry = new CustomRandomizerRegistry();
-    parameters = getDefaultParameters().seed(seed);
-    random = new EasyRandom(parameters);
-    registerRandomizers();
+    this.seedSequence = new SeedSequence(seed);
+    findProtocolTypes().forEach(this::registerProtocolType);
   }
 
   /**
@@ -124,6 +130,7 @@ public final class ProtocolFactory {
    */
   public <T extends RecordValue> Stream<Record<T>> generateForAllValueTypes(
       final UnaryOperator<Builder<T>> modifier) {
+
     return ValueTypeMapping.getAcceptedValueTypes().stream()
         .map(valueType -> generateRecord(valueType, modifier));
   }
@@ -146,7 +153,16 @@ public final class ProtocolFactory {
    */
   public <T extends RecordValue> Record<T> generateRecord(
       final UnaryOperator<Builder<T>> modifier) {
-    final var valueType = random.nextObject(ValueType.class);
+    final var valueType =
+        Instancio.of(ValueType.class)
+            .generate(
+                all(ValueType.class),
+                gen ->
+                    gen.enumOf(ValueType.class)
+                        .excluding(ValueType.NULL_VAL, ValueType.SBE_UNKNOWN))
+            .withSettings(settings)
+            .withSeed(seedSequence.next())
+            .create();
     return generateRecord(valueType, modifier);
   }
 
@@ -200,37 +216,18 @@ public final class ProtocolFactory {
    * @throws NullPointerException if {@code objectClass} is null
    */
   public <T> T generateObject(final Class<T> objectClass) {
-    return random.nextObject(objectClass);
+    return Instancio.of(objectClass)
+        .subtype(all(Object.class), getRandomTypeForObject())
+        .withSettings(settings)
+        .withSeed(seedSequence.next())
+        .create();
   }
 
   /**
    * @return the seed used when creating this factory
    */
   public long getSeed() {
-    return parameters.getSeed();
-  }
-
-  private void registerRandomizers() {
-    findProtocolTypes().forEach(this::registerProtocolType);
-    randomizerRegistry.registerRandomizer(Object.class, new RawObjectRandomizer());
-
-    // restrict longs to be between 0 and max value - this is because many of our long properties
-    // are timestamps, which are semantically between 0 and any future time
-    randomizerRegistry.registerRandomizer(
-        Long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE, getSeed()));
-    randomizerRegistry.registerRandomizer(
-        long.class, new LongRangeRandomizer(0L, Long.MAX_VALUE, getSeed()));
-
-    // never use NULL_VAL or SBE_UNKNOWN for ValueType or RecordType
-    randomizerRegistry.registerRandomizer(
-        ValueType.class,
-        new EnumRandomizer<>(
-            getSeed(), ValueTypeMapping.getAcceptedValueTypes().toArray(ValueType[]::new)));
-
-    final var excludedRecordTypes = EnumSet.of(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN);
-    final var recordTypes = EnumSet.complementOf(excludedRecordTypes);
-    randomizerRegistry.registerRandomizer(
-        RecordType.class, new EnumRandomizer<>(getSeed(), recordTypes.toArray(RecordType[]::new)));
+    return seedSequence.getInitial();
   }
 
   private void registerProtocolType(final ClassInfo abstractType) {
@@ -257,30 +254,7 @@ public final class ProtocolFactory {
           implementation.getName());
     }
 
-    randomizerRegistry.registerRandomizer(
-        abstractType.loadClass(), () -> random.nextObject(implementation));
-  }
-
-  private EasyRandomParameters getDefaultParameters() {
-    // as we will ensure value/intent/valueType having matching types, omit them from the
-    // randomization process - we will do that individually afterwards
-    final Predicate<Field> excludedRecordFields =
-        FieldPredicates.inClass(ImmutableRecord.class)
-            .and(
-                FieldPredicates.named("value")
-                    .or(FieldPredicates.named("intent"))
-                    .or(FieldPredicates.named("valueType")));
-
-    return new EasyRandomParameters()
-        .randomizerRegistry(randomizerRegistry)
-        // we have to bypass the setters since our types are almost exclusively immutable
-        .bypassSetters(true)
-        // allow empty collections, and only generate up to 5 items
-        .collectionSizeRange(0, 5)
-        // as we have nested types in our protocol, let's give a generous depth here, but let's
-        // still limit it to avoid errors/issues with nested collections
-        .randomizationDepth(8)
-        .excludeField(excludedRecordFields);
+    settings.mapType(abstractType.loadClass(), implementation);
   }
 
   private <T extends RecordValue> Record<T> generateImmutableRecord(
@@ -289,20 +263,48 @@ public final class ProtocolFactory {
     Objects.requireNonNull(modifier, "must specify a builder modifier");
 
     final var typeInfo = ValueTypeMapping.get(valueType);
-    final var intent = random.nextObject(typeInfo.getIntentClass());
-    final var value = generateObject(typeInfo.getValueClass());
-    final var seedRecord = random.nextObject(Record.class);
+
+    final var seedRecord =
+        Instancio.of(ImmutableRecord.class)
+            .withTypeParameters(typeInfo.getValueClass())
+            .generate(
+                all(RecordType.class),
+                gen ->
+                    gen.enumOf(RecordType.class)
+                        .excluding(RecordType.NULL_VAL, RecordType.SBE_UNKNOWN))
+            .subtype(all(Object.class), getRandomTypeForObject())
+            .subtype(field("intent"), typeInfo.getIntentClass())
+            .set(field("valueType"), valueType)
+            .withSettings(settings)
+            .withSeed(seedSequence.next())
+            .create();
 
     //noinspection unchecked
-    final Builder<T> builder =
-        ImmutableRecord.builder()
-            .from(seedRecord)
-            .withValueType(valueType)
-            .withValue(value)
-            .withIntent(intent);
+    final Builder<T> builder = ImmutableRecord.builder().from(seedRecord);
 
     return Objects.requireNonNull(modifier.apply(builder), "must return a non null builder")
         .build();
+  }
+
+  /**
+   * A few of the protocol types refer to {@code Map<String, Object>}. Instancio doesn't really know
+   * how to randomize the object type, and instead just creates raw {@link Object} instances. This
+   * not only doesn't really simulate the expected data set, but it's not serializable, which would
+   * prevent this class from being used in any kind of serialization context (e.g. exporters)
+   *
+   * <p>To circumvent this, we randomize the type to some easy to serialize and randomize type, and
+   * return that.
+   *
+   * <p>NOTE: floats and doubles were omitted on purpose as Jackson has trouble deserializing them,
+   * and instead will always deserialize them as {@link java.math.BigDecimal}. This is a regression,
+   * so we could think about adding them back once that's fixed, but it didn't seem super important
+   * at the moment.
+   */
+  private Class<?> getRandomTypeForObject() {
+    return Instancio.of(new TypeToken<Class<?>>() {})
+        .generate(all(Class.class), gen -> gen.oneOf(Boolean.class, Long.class, String.class))
+        .withSeed(seedSequence.next())
+        .create();
   }
 
   // visible for testing
@@ -316,27 +318,21 @@ public final class ProtocolFactory {
         .directOnly();
   }
 
-  /**
-   * A few of the protocol types refer to {@code Map<String, Object>}. easy-random doesn't really
-   * know how to randomize the object type, and instead just creates raw {@link Object} instances.
-   * This not only doesn't really simulate the expected data set, but it's not serializable, which
-   * would prevent this class from being used in any kind of serialization context (e.g. exporters)
-   *
-   * <p>To circumvent this, we randomize the type to some easy to serialize and randomize type, and
-   * return that.
-   *
-   * <p>NOTE: floats and doubles were omitted on purpose as Jackson has trouble deserializing them,
-   * and instead will always deserialize them as {@link java.math.BigDecimal}. This is a regression,
-   * so we could think about adding them back once that's fixed, but it didn't seem super important
-   * at the moment.
-   */
-  private final class RawObjectRandomizer implements Randomizer<Object> {
-    private final Class<?>[] variableTypes = new Class[] {Boolean.class, Long.class, String.class};
+  private static class SeedSequence {
+    private final long initialSeed;
+    private long currentSeed;
 
-    @Override
-    public Object getRandomValue() {
-      final var variableType = variableTypes[random.nextInt(variableTypes.length)];
-      return random.nextObject(variableType);
+    public SeedSequence(final long seed) {
+      this.initialSeed = seed;
+      this.currentSeed = seed;
+    }
+
+    public long next() {
+      return currentSeed++;
+    }
+
+    public long getInitial() {
+      return initialSeed;
     }
   }
 }
