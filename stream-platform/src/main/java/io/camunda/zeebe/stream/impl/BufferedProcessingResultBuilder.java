@@ -14,10 +14,10 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
@@ -33,7 +33,7 @@ import java.util.List;
  */
 final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
-  private final List<PostCommitTask> postCommitTasks = new ArrayList<>();
+  private final List<SideEffectProducer> postCommitTasks = new ArrayList<>();
 
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
@@ -93,7 +93,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
-  public ProcessingResultBuilder appendPostCommitTask(final PostCommitTask task) {
+  public ProcessingResultBuilder appendPostCommitTask(final SideEffectProducer task) {
     postCommitTasks.add(task);
     return this;
   }

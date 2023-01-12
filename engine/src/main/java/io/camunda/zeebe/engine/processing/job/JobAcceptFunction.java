@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -19,5 +20,5 @@ public interface JobAcceptFunction {
   void accept(
       final TypedRecord<JobRecord> record,
       final CommandControl<JobRecord> commandControl,
-      final Consumer<SideEffectProducer> sideEffect);
+      final SideEffects sideEffect);
 }

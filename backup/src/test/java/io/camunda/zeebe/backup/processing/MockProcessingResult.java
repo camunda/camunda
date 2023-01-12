@@ -13,10 +13,10 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.util.Either;
@@ -82,7 +82,7 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     }
 
     @Override
-    public ProcessingResultBuilder appendPostCommitTask(final PostCommitTask task) {
+    public ProcessingResultBuilder appendPostCommitTask(final SideEffectProducer task) {
       return null;
     }
 

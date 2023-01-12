@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
@@ -24,8 +25,6 @@ public final class MessageCorrelator {
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
 
-  private Consumer<SideEffectProducer> sideEffect;
-
   public MessageCorrelator(
       final MessageState messageState,
       final SubscriptionCommandSender commandSender,
@@ -38,8 +37,7 @@ public final class MessageCorrelator {
   public boolean correlateNextMessage(
       final long subscriptionKey,
       final MessageSubscriptionRecord subscriptionRecord,
-      final Consumer<SideEffectProducer> sideEffect) {
-    this.sideEffect = sideEffect;
+      final SideEffects sideEffect) {
 
     final var isMessageCorrelated = new MutableBoolean(false);
 
@@ -49,7 +47,7 @@ public final class MessageCorrelator {
         storedMessage -> {
           // correlate the first message which is not correlated to the process instance yet
           final var isCorrelated =
-              correlateMessage(subscriptionKey, subscriptionRecord, storedMessage);
+              correlateMessage(subscriptionKey, subscriptionRecord, storedMessage, sideEffect);
           isMessageCorrelated.set(isCorrelated);
           return !isCorrelated;
         });
@@ -60,7 +58,7 @@ public final class MessageCorrelator {
   private boolean correlateMessage(
       final long subscriptionKey,
       final MessageSubscriptionRecord subscriptionRecord,
-      final StoredMessage storedMessage) {
+      final StoredMessage storedMessage, final SideEffects sideEffect) {
     final long messageKey = storedMessage.getMessageKey();
     final var message = storedMessage.getMessage();
 
@@ -75,7 +73,7 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
+      sideEffect.add(() -> sendCorrelateCommand(subscriptionRecord));
     }
 
     return correlateMessage;

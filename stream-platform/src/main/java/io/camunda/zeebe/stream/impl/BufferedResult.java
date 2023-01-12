@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.impl.BufferedProcessingResultBuilder.ProcessingResponseImpl;
@@ -23,14 +23,14 @@ import java.util.Optional;
  */
 final class BufferedResult implements ProcessingResult, TaskResult {
 
-  private final List<PostCommitTask> postCommitTasks;
+  private final List<SideEffectProducer> postCommitTasks;
   private final ImmutableRecordBatch immutableRecordBatch;
   private final ProcessingResponseImpl processingResponse;
 
   BufferedResult(
       final ImmutableRecordBatch immutableRecordBatch,
       final ProcessingResponseImpl processingResponse,
-      final List<PostCommitTask> postCommitTasks) {
+      final List<SideEffectProducer> postCommitTasks) {
     this.postCommitTasks = new ArrayList<>(postCommitTasks);
     this.processingResponse = processingResponse;
     this.immutableRecordBatch = immutableRecordBatch;
@@ -50,7 +50,7 @@ final class BufferedResult implements ProcessingResult, TaskResult {
   public boolean executePostCommitTasks() {
     boolean aggregatedResult = true;
 
-    for (final PostCommitTask task : postCommitTasks) {
+    for (final SideEffectProducer task : postCommitTasks) {
       try {
         aggregatedResult = aggregatedResult && task.flush();
       } catch (final Exception e) {

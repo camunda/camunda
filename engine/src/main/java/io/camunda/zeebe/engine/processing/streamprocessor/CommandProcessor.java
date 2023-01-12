@@ -14,9 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.function.Consumer;
 
 /**
  * High-level record processor abstraction that implements the common behavior of most
@@ -31,7 +29,7 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
   default boolean onCommand(
       final TypedRecord<T> command,
       final CommandControl<T> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final SideEffects sideEffect) {
     return onCommand(command, commandControl);
   }
 

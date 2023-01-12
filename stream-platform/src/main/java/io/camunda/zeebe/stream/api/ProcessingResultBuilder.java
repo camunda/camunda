@@ -85,7 +85,7 @@ public interface ProcessingResultBuilder {
    *
    * @return returns itself for method chaining
    */
-  ProcessingResultBuilder appendPostCommitTask(PostCommitTask task);
+  ProcessingResultBuilder appendPostCommitTask(SideEffectProducer task);
 
   /**
    * Resets itself with the post commit tasks reset

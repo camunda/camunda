@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -17,10 +18,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.function.Consumer;
 
 /**
  * Decorates a command processor with simple accept and reject logic.
@@ -67,19 +66,18 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
 
   @Override
   public void processRecord(
-      final TypedRecord<T> command, final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<T> command, final SideEffects sideEffect) {
 
     entityKey = command.getKey();
-    final var sideEffectQueue = new SideEffectQueue();
 
-    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffectQueue::add);
+    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffect);
 
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 
     if (isAccepted) {
       stateWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
       wrappedProcessor.afterAccept(
-          commandWriter, stateWriter, entityKey, newState, updatedValue, sideEffectQueue);
+          commandWriter, stateWriter, entityKey, newState, updatedValue, sideEffect);
       if (respond) {
         responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
@@ -89,8 +87,6 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
         responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
-
-    sideEffect.accept(sideEffectQueue);
   }
 
   @Override

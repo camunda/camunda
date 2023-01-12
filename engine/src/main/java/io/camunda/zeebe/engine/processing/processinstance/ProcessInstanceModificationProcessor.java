@@ -44,7 +44,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -55,7 +54,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.Strings;
 
@@ -166,8 +164,7 @@ public final class ProcessInstanceModificationProcessor
   @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceModificationRecord> command,
-      final Consumer<SideEffectProducer> sideEffect) {
-    final var sideEffectQueue = new SideEffectQueue();
+      final SideEffects sideEffect) {
 
     final long commandKey = command.getKey();
     final var value = command.getValue();
@@ -220,7 +217,7 @@ public final class ProcessInstanceModificationProcessor
                                   processInstance,
                                   process,
                                   instruction),
-                          sideEffectQueue);
+                          sideEffect);
 
                   extendedRecord.addActivateInstruction(
                       ((ProcessInstanceModificationActivateInstruction) instruction)
@@ -245,8 +242,8 @@ public final class ProcessInstanceModificationProcessor
               }
               final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
-              terminateElement(elementInstance, sideEffectQueue);
-              terminateFlowScopes(flowScopeKey, sideEffectQueue, requiredKeysForActivation);
+              terminateElement(elementInstance, sideEffect);
+              terminateFlowScopes(flowScopeKey, sideEffect, requiredKeysForActivation);
             });
 
     stateWriter.appendFollowUpEvent(
@@ -254,8 +251,6 @@ public final class ProcessInstanceModificationProcessor
 
     responseWriter.writeEventOnCommand(
         eventKey, ProcessInstanceModificationIntent.MODIFIED, extendedRecord, command);
-
-    sideEffect.accept(sideEffectQueue);
   }
 
   @Override

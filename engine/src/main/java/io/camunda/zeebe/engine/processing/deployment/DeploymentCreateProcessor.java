@@ -35,12 +35,10 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
@@ -85,8 +83,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   @Override
   public void processRecord(
-      final TypedRecord<DeploymentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
-    final var sideEffects = new SideEffectQueue();
+      final TypedRecord<DeploymentRecord> command, final SideEffects sideEffect) {
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
@@ -95,7 +92,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, sideEffects);
+        createTimerIfTimerStartEvent(command, sideEffect);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
         responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
@@ -107,7 +104,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
-      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key, sideEffects);
+      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key, sideEffect);
       // manage the top-level start event subscriptions except for timers
       startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
 
@@ -121,8 +118,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
     }
-
-    sideEffect.accept(sideEffects);
   }
 
   private void createTimerIfTimerStartEvent(

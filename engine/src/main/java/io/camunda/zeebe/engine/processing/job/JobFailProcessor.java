@@ -60,7 +60,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command,
       final CommandControl<JobRecord> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final SideEffects sideEffect) {
     return defaultProcessor.onCommand(command, commandControl, sideEffect);
   }
 
@@ -111,7 +111,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private void acceptCommand(
       final TypedRecord<JobRecord> command,
       final CommandControl<JobRecord> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final SideEffects sideEffect) {
     final long key = command.getKey();
     final JobRecord failedJob = jobState.getJob(key);
     final var retries = command.getValue().getRetries();
@@ -124,7 +124,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     if (retries > 0 && retryBackOff > 0) {
       final long receivedTime = command.getTimestamp();
       failedJob.setRecurringTime(receivedTime + retryBackOff);
-      sideEffect.accept(
+      sideEffect.add(
           () -> {
             jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
             return true;

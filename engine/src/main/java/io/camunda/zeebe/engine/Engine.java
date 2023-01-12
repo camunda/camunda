@@ -125,17 +125,7 @@ public class Engine implements RecordProcessor {
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
-        currentProcessor.processRecord(
-            record,
-            (sep) -> {
-              processingResultBuilder.resetPostCommitTasks();
-              if (sep instanceof SideEffectQueue queue) {
-                if (queue.sideEffects.isEmpty()) {
-                  return;
-                }
-              }
-              processingResultBuilder.appendPostCommitTask(sep::flush);
-            });
+        currentProcessor.processRecord(record, processingResultBuilder::appendPostCommitTask);
       }
     }
     return processingResultBuilder.build();

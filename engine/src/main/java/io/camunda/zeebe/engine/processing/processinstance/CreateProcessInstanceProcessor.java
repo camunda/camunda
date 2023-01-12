@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -37,13 +36,11 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
@@ -103,19 +100,15 @@ public final class CreateProcessInstanceProcessor
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller,
-      final Consumer<SideEffectProducer> sideEffect) {
-    final var sideEffects = new SideEffectQueue();
+      final SideEffects sideEffect) {
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
     getProcess(record)
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, record, process, sideEffects),
+            process -> createProcessInstance(controller, record, process, sideEffect),
             rejection -> controller.reject(rejection.type, rejection.reason));
-
-    sideEffect.accept(sideEffects);
-
     return true;
   }
 

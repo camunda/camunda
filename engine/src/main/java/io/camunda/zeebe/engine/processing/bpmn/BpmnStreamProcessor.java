@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -24,9 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -70,8 +67,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   @Override
   public void processRecord(
       final TypedRecord<ProcessInstanceRecord> record,
-      final Consumer<SideEffectProducer> sideEffect) {
-    final var sideEffects = new SideEffectQueue();
+      final SideEffects sideEffect) {
     // initialize
 
     final var intent = (ProcessInstanceIntent) record.getIntent();
@@ -88,13 +84,12 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .ifRightOrLeft(
             ok -> {
               LOGGER.trace("Process process instance event [context: {}]", context);
-              processEvent(intent, processor, element, sideEffects);
+              processEvent(intent, processor, element, sideEffect);
             },
             violation ->
                 rejectionWriter.appendRejection(
                     record, RejectionType.INVALID_STATE, violation.getMessage()));
 
-    sideEffect.accept(sideEffects);
   }
 
   private void processEvent(

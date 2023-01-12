@@ -30,13 +30,11 @@ import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Instant;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -86,8 +84,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   @Override
   public void processRecord(
       final TypedRecord<TimerRecord> record,
-      final Consumer<SideEffectProducer> sideEffectsConsumer) {
-    final var sideEffects = new SideEffectQueue();
+      final SideEffects sideEffectsConsumer) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();
@@ -116,14 +113,12 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
 
       stateWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
       eventHandle.activateElement(
-          catchEvent, elementInstanceKey, elementInstance.getValue(), sideEffects);
+          catchEvent, elementInstanceKey, elementInstance.getValue(), sideEffectsConsumer);
     }
 
     if (shouldReschedule(timer)) {
-      rescheduleTimer(timer, catchEvent, sideEffects);
+      rescheduleTimer(timer, catchEvent, sideEffectsConsumer);
     }
-
-    sideEffectsConsumer.accept(sideEffects);
   }
 
   private void rejectNoActiveTimer(final TypedRecord<TimerRecord> record) {
