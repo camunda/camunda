@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -208,6 +210,67 @@ public class InterruptingEventSubprocessConcurrencyTest {
         .withCorrelationKey("123")
         .withVariables(Map.of("key", "123"))
         .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  // https://github.com/camunda-cloud/zeebe/issues/6587
+  public void shouldInterruptBoundaryEvent() {
+    // given
+    final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);
+
+    process
+        .eventSubProcess("event_sub_proc")
+        .startEvent("event_sub_start")
+        .interrupting(true)
+        .message(b -> b.name(MSG_NAME).zeebeCorrelationKeyExpression("key"))
+        .endEvent("event_sub_end");
+
+    final BpmnModelInstance model =
+        process
+            .startEvent("start_proc")
+            .sequenceFlowId("toParallel")
+            .serviceTask("serviceTask", s -> s.zeebeJobType("task"))
+            .boundaryEvent("boundary")
+            .cancelActivity(true)
+            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+            .endEvent("end_proc")
+            .done();
+
+    engineRule.deployment().withXmlResource(model).deploy();
+
+    final long processInstanceKey =
+        engineRule
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("key", 123))
+            .create();
+
+    // when
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withMessageName("msg")
+        .await();
+
+    engineRule.writeRecords(
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord().setName("msg").setCorrelationKey("123").setTimeToLive(0)),
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord().setName(MSG_NAME).setCorrelationKey("123").setTimeToLive(0)));
 
     // then
     assertThat(
