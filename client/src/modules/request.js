@@ -114,9 +114,9 @@ async function parseError(error) {
 
   if (typeof error.json === 'function') {
     try {
-      const {errorCode, errorMessage, ...errorProps} = await error.json();
+      const {errorCode, errorMessage, invalidAlertEmails, ...errorProps} = await error.json();
       parsedProps = {
-        message: errorCode ? t('apiErrors.' + errorCode) : errorMessage,
+        message: errorCode ? t('apiErrors.' + errorCode, {invalidAlertEmails}) : errorMessage,
         ...errorProps,
       };
     } catch (e) {

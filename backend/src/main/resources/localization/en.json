@@ -1468,6 +1468,7 @@
     "importDefinitionDoesNotExist": "Import failed because the imported entity requires definitions that don't exist.",
     "importIndexVersionMismatch": "Import failed because the data structure of the imported entities do not match the current data structure. Please migrate the data in your source Optimize before exporting to ensure the Optimize Version matches.",
     "importDefinitionForbidden": "Import failed because you are not authorized to access some of the required definitions for the imported entity.",
-    "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported."
+    "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported.",
+    "invalidAlertEmailAddresses": "Users with the following email addresses are not available for receiving alerts: {invalidAlertEmails}"
   }
 }

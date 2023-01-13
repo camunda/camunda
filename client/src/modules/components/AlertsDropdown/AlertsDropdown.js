@@ -32,6 +32,7 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
   const [openAlert, setOpenAlert] = useState();
   const [deleting, setDeleting] = useState();
   const [webhooks, setWebhooks] = useState();
+  const [loading, setLoading] = useState(false);
   const collection = React.useMemo(() => getCollection(location.pathname), [location]);
 
   const loadEntityAlerts = useCallback(() => {
@@ -57,9 +58,9 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
     }
   }, [loadEntityAlerts, loadCollectionReports, location, collection, mightFail]);
 
-  const addNewAlert = (newAlert) => {
-    setOpenAlert();
-    mightFail(
+  const addNewAlert = async (newAlert) => {
+    setLoading(true);
+    await mightFail(
       addAlert(newAlert),
       () => {
         addNotification({
@@ -67,14 +68,17 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
           text: t('common.collection.created', {name: newAlert.name}),
         });
         loadEntityAlerts();
+        setOpenAlert();
+        setLoading(false);
       },
       showError
     );
+    setLoading(false);
   };
 
-  const editExistingAlert = (changedAlert) => {
-    setOpenAlert();
-    mightFail(
+  const editExistingAlert = async (changedAlert) => {
+    setLoading(true);
+    await mightFail(
       editAlert(openAlert.id, changedAlert),
       () => {
         addNotification({
@@ -82,9 +86,12 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
           text: t('alert.updated', {name: changedAlert.name}),
         });
         loadEntityAlerts();
+        setOpenAlert();
+        setLoading(false);
       },
       showError
     );
+    setLoading(false);
   };
 
   const reportsInScope = reports.filter((report) =>
@@ -157,6 +164,7 @@ export function AlertsDropdown({mightFail, dashboardReports, numberReport, locat
             }
           }}
           onRemove={openAlert.id ? () => setDeleting(openAlert) : undefined}
+          disabled={loading}
         />
       )}
     </div>

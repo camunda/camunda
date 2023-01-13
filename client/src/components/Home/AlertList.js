@@ -39,6 +39,7 @@ export default withErrorHandling(
       reports: null,
       alerts: null,
       webhooks: null,
+      loading: false,
     };
 
     componentDidMount() {
@@ -88,18 +89,30 @@ export default withErrorHandling(
     openAddAlertModal = () => this.setState({editing: {}});
     openEditAlertModal = (editing) => this.setState({editing});
 
-    addAlert = (newAlert) => {
-      this.closeEditAlertModal();
-      this.props.mightFail(addAlert(newAlert), this.loadAlerts, showError);
-    };
-
-    editAlert = (changedAlert) => {
-      this.closeEditAlertModal();
-      this.props.mightFail(
-        editAlert(this.state.editing.id, changedAlert),
-        this.loadAlerts,
+    addAlert = async (newAlert) => {
+      this.setState({loading: true});
+      await this.props.mightFail(
+        addAlert(newAlert),
+        () => {
+          this.closeEditAlertModal();
+          this.loadAlerts();
+        },
         showError
       );
+      this.setState({loading: false});
+    };
+
+    editAlert = async (changedAlert) => {
+      this.setState({loading: true});
+      await this.props.mightFail(
+        editAlert(this.state.editing.id, changedAlert),
+        () => {
+          this.closeEditAlertModal();
+          this.loadAlerts();
+        },
+        showError
+      );
+      this.setState({loading: false});
     };
     closeEditAlertModal = () => this.setState({editing: null});
 
@@ -107,7 +120,7 @@ export default withErrorHandling(
     closeCopyAlertModal = () => this.setState({copying: null});
 
     render() {
-      const {deleting, editing, copying, alerts, reports, webhooks} = this.state;
+      const {deleting, editing, copying, alerts, reports, webhooks, loading} = this.state;
       const {readOnly} = this.props;
 
       const isLoading = alerts === null || reports === null;
@@ -202,6 +215,7 @@ export default withErrorHandling(
                   this.addAlert(alert);
                 }
               }}
+              disabled={loading}
             />
           )}
           {copying && (
