@@ -1,4 +1,6 @@
-@use '@carbon/react';
+@use '@carbon/react' with (
+  $css--reset: false
+); // the 'with' part is temporary solution and has to be deleted when whole Optimize will be carbonized
 
 @import 'shared-styles/shared-styles.scss';
 @import '~@ibm/plex/css/ibm-plex.css';
