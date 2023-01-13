@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -51,8 +52,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private long messageKey;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final int currentPartitionId;
 
   public MessagePublishProcessor(
+      final int partitionId,
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
@@ -66,6 +69,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
+    currentPartitionId = partitionId;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -118,6 +122,23 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
+
+    correlatingSubscriptions.visitSubscriptions(
+        subscription -> {
+          final int receiverPartitionId =
+              Protocol.decodePartitionId(subscription.getProcessInstanceKey());
+          if (receiverPartitionId == currentPartitionId) {
+            return commandSender.correlateProcessMessageSubscription(
+                subscription.getProcessInstanceKey(),
+                subscription.getElementInstanceKey(),
+                subscription.getBpmnProcessId(),
+                messageRecord.getNameBuffer(),
+                messageKey,
+                messageRecord.getVariablesBuffer(),
+                messageRecord.getCorrelationKeyBuffer());
+          }
+          return true;
+        });
 
     sideEffect.accept(this::sendCorrelateCommand);
 
