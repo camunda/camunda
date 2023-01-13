@@ -34,16 +34,19 @@ public final class MessageSubscriptionCorrelateProcessor
   private final MessageCorrelator messageCorrelator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final int partitionId;
 
   public MessageSubscriptionCorrelateProcessor(
+      final int partitionId,
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
       final Writers writers) {
+    this.partitionId = partitionId;
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator = new MessageCorrelator(partitionId, messageState, commandSender, stateWriter);
   }
 
   @Override

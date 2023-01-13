@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.record.ProcessInstances;
+import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
@@ -158,6 +159,8 @@ public final class MessageCorrelationTest {
     final Map<String, String> variables =
         ProcessInstances.getCurrentVariables(processInstanceKey, event.getPosition());
     assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("foo", "\"bar\""));
+
+    RecordLogger.logRecords();
   }
 
   @Test

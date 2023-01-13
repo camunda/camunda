@@ -56,6 +56,7 @@ public final class CatchEventBehavior {
   private final TimerRecord timerRecord = new TimerRecord();
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
+  private final int currentPartitionId;
 
   public CatchEventBehavior(
       final ZeebeState zeebeState,
@@ -76,6 +77,8 @@ public final class CatchEventBehavior {
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
+
+    currentPartitionId = zeebeState.getPartitionId();
   }
 
   /**
@@ -250,16 +253,27 @@ public final class CatchEventBehavior {
     stateWriter.appendFollowUpEvent(
         subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
-    sideEffects.add(
-        () ->
-            sendOpenMessageSubscription(
-                subscriptionPartitionId,
-                processInstanceKey,
-                elementInstanceKey,
-                bpmnProcessId,
-                messageName,
-                correlationKey,
-                event.isInterrupting()));
+    if (subscriptionPartitionId == currentPartitionId) {
+      sendOpenMessageSubscription(
+          subscriptionPartitionId,
+          processInstanceKey,
+          elementInstanceKey,
+          bpmnProcessId,
+          messageName,
+          correlationKey,
+          event.isInterrupting());
+    } else {
+      sideEffects.add(() ->
+          sendOpenMessageSubscription(
+              subscriptionPartitionId,
+              processInstanceKey,
+              elementInstanceKey,
+              bpmnProcessId,
+              messageName,
+              correlationKey,
+              event.isInterrupting()));
+    }
+
   }
 
   private void subscribeToTimerEvents(

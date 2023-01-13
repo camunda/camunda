@@ -40,6 +40,7 @@ public final class MessageSubscriptionCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
 
   public MessageSubscriptionCreateProcessor(
+      final int partitionId,
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
@@ -50,7 +51,7 @@ public final class MessageSubscriptionCreateProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator = new MessageCorrelator(partitionId, messageState, commandSender, stateWriter);
   }
 
   @Override
