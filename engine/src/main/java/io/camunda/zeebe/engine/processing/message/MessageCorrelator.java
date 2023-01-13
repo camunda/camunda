@@ -80,14 +80,13 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-
-      final int receiverPartitionId = Protocol.decodePartitionId(subscriptionRecord.getProcessInstanceKey());
+      final int receiverPartitionId =
+          Protocol.decodePartitionId(subscriptionRecord.getProcessInstanceKey());
       if (receiverPartitionId == currentPartitionId) {
         sendCorrelateCommand(subscriptionRecord);
       } else {
         sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
       }
-
     }
 
     return correlateMessage;
