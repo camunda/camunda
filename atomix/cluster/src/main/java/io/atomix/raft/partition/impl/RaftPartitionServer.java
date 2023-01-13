@@ -210,6 +210,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     return server.getContext().getLog().openCommittedReader();
   }
 
+  public RaftLogReader openUncommittedReader() {
+    return server.getContext().getLog().openUncommittedReader();
+  }
+
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
     if (server == null) {
       deferredRoleChangeListeners.add(listener);
@@ -342,6 +346,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     return RaftStorage.builder()
         .withPrefix(partition.name())
         .withDirectory(partition.dataDirectory())
+        .withStateDirectory(partition.getStateDirectory())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize().bytes())
         .withFlushExplicitly(storageConfig.shouldFlushExplicitly())
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())

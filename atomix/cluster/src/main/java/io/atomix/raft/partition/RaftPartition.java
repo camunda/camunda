@@ -50,14 +50,17 @@ public class RaftPartition implements Partition, HealthMonitorable {
       new CopyOnWriteArraySet<>();
   private PartitionMetadata partitionMetadata;
   private RaftPartitionServer server;
+  private final File stateDirectory;
 
   public RaftPartition(
       final PartitionId partitionId,
       final RaftPartitionGroupConfig config,
-      final File dataDirectory) {
+      final File dataDirectory,
+      final File stateDirectory) {
     this.partitionId = partitionId;
     this.config = config;
     this.dataDirectory = dataDirectory;
+    this.stateDirectory = stateDirectory;
   }
 
   public void addRoleChangeListener(final RaftRoleChangeListener listener) {
@@ -80,6 +83,10 @@ public class RaftPartition implements Partition, HealthMonitorable {
    */
   public File dataDirectory() {
     return dataDirectory;
+  }
+
+  public File getStateDirectory() {
+    return stateDirectory;
   }
 
   /**

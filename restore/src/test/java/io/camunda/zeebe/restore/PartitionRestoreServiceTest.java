@@ -49,6 +49,7 @@ class PartitionRestoreServiceTest {
   private static final String SNAPSHOT_FILE_NAME = "file1";
   @TempDir Path dataDirectory;
   @TempDir Path dataDirectoryToRestore;
+  @TempDir Path stateDirectoryToRestore;
   private TestRestorableBackupStore backupStore;
   private SegmentedJournal journal;
   private PartitionRestoreService restoreService;
@@ -90,7 +91,10 @@ class PartitionRestoreServiceTest {
 
     final var raftPartition =
         new RaftPartition(
-            PartitionId.from("raft", partitionId), null, dataDirectoryToRestore.toFile());
+            PartitionId.from("raft", partitionId),
+            null,
+            dataDirectoryToRestore.toFile(),
+            stateDirectoryToRestore.toFile());
     restoreService = new PartitionRestoreService(backupStore, raftPartition, Set.of(1, 2), nodeId);
 
     journal =

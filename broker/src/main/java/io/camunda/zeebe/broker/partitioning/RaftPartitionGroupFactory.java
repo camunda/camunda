@@ -33,20 +33,35 @@ public final class RaftPartitionGroupFactory {
       final BrokerCfg configuration, final ReceivableSnapshotStoreFactory snapshotStoreFactory) {
 
     final DataCfg dataConfiguration = configuration.getData();
-    final String rootDirectory = dataConfiguration.getDirectory();
-    final var rootPath = Paths.get(rootDirectory);
+    final String rootDataDirectory = dataConfiguration.getDirectory();
+    final var rootDataPath = Paths.get(rootDataDirectory);
     try {
-      FileUtil.ensureDirectoryExists(rootPath);
+      FileUtil.ensureDirectoryExists(rootDataPath);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create data directory", e);
     }
 
-    final var raftDataDirectory = rootPath.resolve(PartitionManagerImpl.GROUP_NAME);
+    final String rootStateDirectory = dataConfiguration.getStateDirectory();
+    final var rootStatePath = Paths.get(rootStateDirectory);
+    try {
+      FileUtil.ensureDirectoryExists(rootStatePath);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create state directory", e);
+    }
+
+    final var raftDataDirectory = rootDataPath.resolve(PartitionManagerImpl.GROUP_NAME);
+    final var raftStateDirectory = rootStatePath.resolve(PartitionManagerImpl.GROUP_NAME);
 
     try {
       FileUtil.ensureDirectoryExists(raftDataDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create Raft data directory", e);
+    }
+
+    try {
+      FileUtil.ensureDirectoryExists(raftStateDirectory);
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to create Raft state directory", e);
     }
 
     final ClusterCfg clusterCfg = configuration.getCluster();
@@ -62,6 +77,7 @@ public final class RaftPartitionGroupFactory {
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDataDirectory.toFile())
+            .withStateDirectory(raftStateDirectory.toFile())
             .withSnapshotStoreFactory(snapshotStoreFactory)
             .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())
             .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())

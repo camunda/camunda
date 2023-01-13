@@ -186,7 +186,7 @@ final class PartitionFactory {
       final RaftPartition raftPartition,
       final ConstructableSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
-    final var runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
+    final var runtimeDirectory = raftPartition.getStateDirectory().toPath().resolve("runtime");
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
 
