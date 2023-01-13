@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class DashboardDefinitionImportAuthorizationIT extends AbstractExportImportEntityDefinitionIT {
@@ -28,6 +29,7 @@ public class DashboardDefinitionImportAuthorizationIT extends AbstractExportImpo
   public void importDashboard_asNonSuperuser() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
 
     // when
     final Response response = importClient.importEntityAsUser(
@@ -37,7 +39,7 @@ public class DashboardDefinitionImportAuthorizationIT extends AbstractExportImpo
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test

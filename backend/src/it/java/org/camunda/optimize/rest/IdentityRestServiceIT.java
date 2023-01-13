@@ -37,7 +37,6 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.CSV_EXPORT;
 import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.ENTITY_EDITOR;
-import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.IMPORT_EXPORT;
 import static org.camunda.optimize.dto.optimize.rest.AuthorizationType.TELEMETRY;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -462,7 +461,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), List.of(TELEMETRY, IMPORT_EXPORT, CSV_EXPORT, ENTITY_EDITOR));
+      ), List.of(TELEMETRY, CSV_EXPORT, ENTITY_EDITOR));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
@@ -489,7 +488,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), List.of(TELEMETRY, IMPORT_EXPORT, CSV_EXPORT));
+      ), List.of(TELEMETRY, CSV_EXPORT));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }
@@ -564,7 +563,7 @@ public class IdentityRestServiceIT extends AbstractIT {
         DEFAULT_FIRSTNAME,
         DEFAULT_LASTNAME,
         KERMIT_USER + DEFAULT_EMAIL_DOMAIN
-      ), List.of(TELEMETRY, IMPORT_EXPORT, CSV_EXPORT, ENTITY_EDITOR));
+      ), List.of(TELEMETRY, CSV_EXPORT, ENTITY_EDITOR));
 
     assertThat(currentUserDto).isEqualTo(expectedUser);
   }

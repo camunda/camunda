@@ -23,7 +23,6 @@ import org.camunda.optimize.service.entities.dashboard.DashboardImportService;
 import org.camunda.optimize.service.entities.report.ReportImportService;
 import org.camunda.optimize.service.exceptions.OptimizeImportFileInvalidException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Component;
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
-import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -56,8 +54,6 @@ import static org.camunda.optimize.dto.optimize.rest.export.ExportEntityType.SIN
 public class EntityImportService {
 
   public static final String API_IMPORT_OWNER_NAME = "System User";
-
-  private final AbstractIdentityService identityService;
   private final ReportImportService reportImportService;
   private final DashboardImportService dashboardImportService;
   private final AuthorizedCollectionService authorizedCollectionService;
@@ -90,7 +86,6 @@ public class EntityImportService {
   public List<EntityIdResponseDto> importEntitiesAsUser(final String userId,
                                                         final String collectionId,
                                                         final Set<OptimizeEntityExportDto> entitiesToImport) {
-    validateUserAuthorizedToImportEntitiesOrFail(userId);
     final CollectionDefinitionDto collection =
       getAndValidateCollectionExistsAndIsAccessibleOrFail(userId, collectionId);
     validateCompletenessOrFail(entitiesToImport);
@@ -206,17 +201,7 @@ public class EntityImportService {
           "report or dashboard are missing. The missing reports have IDs: " + requiredReportIds
       );
     }
-  }
 
-  private void validateUserAuthorizedToImportEntitiesOrFail(final String userId) {
-    if (!identityService.isSuperUserIdentity(userId)) {
-      throw new ForbiddenException(
-        String.format(
-          "User with ID [%s] is not authorized to import entities. Only superusers are authorized to import entities.",
-          userId
-        )
-      );
-    }
   }
 
 }

@@ -7,12 +7,15 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.service.entities.EntityImportService;
+import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -30,6 +33,7 @@ public class ImportRestService {
 
   private final SessionService sessionService;
   private final EntityImportService entityImportService;
+  private final AbstractIdentityService identityService;
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
@@ -39,7 +43,14 @@ public class ImportRestService {
                                                   final String exportedDtoJson) {
     final Set<OptimizeEntityExportDto> exportDtos = entityImportService.readExportDtoOrFailIfInvalid(exportedDtoJson);
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateUserAuthorization(userId, collectionId);
     return entityImportService.importEntitiesAsUser(userId, collectionId, exportDtos);
+  }
+
+  private void validateUserAuthorization(final String userId, final String collectionId) {
+    if (collectionId == null && !identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
+      throw new ForbiddenException("User not authorized to create reports outside of a collection");
+    }
   }
 
 }
