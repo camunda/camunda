@@ -22,13 +22,16 @@ public final class MessageCorrelator {
   private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
   private final StateWriter stateWriter;
-  private SideEffectWriter sideEffectWriter;
+  private final SideEffectWriter sideEffectWriter;
+  private final int currentPartitionId;
 
   public MessageCorrelator(
+      final int currentPartitionId,
       final MessageState messageState,
       final SubscriptionCommandSender commandSender,
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter) {
+    this.currentPartitionId = currentPartitionId;
     this.messageState = messageState;
     this.commandSender = commandSender;
     this.stateWriter = stateWriter;
@@ -72,7 +75,7 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      sideEffectWriter.appendSideEffect(() -> sendCorrelateCommand(subscriptionRecord));
+      sendCorrelateCommand(subscriptionRecord);
     }
 
     return correlateMessage;

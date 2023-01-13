@@ -67,6 +67,7 @@ public final class EngineProcessors {
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
 
+    subscriptionCommandSender.setWriters(writers);
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             zeebeState,
