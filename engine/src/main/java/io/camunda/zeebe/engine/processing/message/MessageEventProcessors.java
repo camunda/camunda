@@ -45,6 +45,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
             new MessagePublishProcessor(
+                zeebeState.getPartitionId(),
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,
