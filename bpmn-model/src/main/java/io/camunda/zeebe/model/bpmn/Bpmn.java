@@ -214,6 +214,7 @@ import io.camunda.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeAssignmentDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledDecisionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeErrorImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeFormDefinitionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.zeebe.ZeebeInputImpl;
@@ -649,6 +650,7 @@ public class Bpmn {
     ZeebePropertyImpl.registerType(bpmnModelBuilder);
     ZeebePropertiesImpl.registerType(bpmnModelBuilder);
     ZeebeScriptImpl.registerType(bpmnModelBuilder);
+    ZeebeErrorImpl.registerType(bpmnModelBuilder);
   }
 
   /**
