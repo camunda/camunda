@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
+import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
@@ -194,6 +195,21 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   SetVariablesCommandStep1 newSetVariablesCommand(long elementInstanceKey);
+
+  /**
+   * Command to evaluate a decision.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newEvaluateDecisionCommand()
+   *  .decisionKey("my-decision")
+   *  .variables(json)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  EvaluateDecisionCommandStep1 newEvaluateDecisionCommand();
 
   /**
    * Command to publish a message which can be correlated to a process instance.
