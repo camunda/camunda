@@ -60,13 +60,22 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CREATE,
-            new MessageSubscriptionCreateProcessor(zeebeState.getPartitionId(),
-                messageState, subscriptionState, subscriptionCommandSender, writers, keyGenerator))
+            new MessageSubscriptionCreateProcessor(
+                zeebeState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers,
+                keyGenerator))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new MessageSubscriptionCorrelateProcessor(zeebeState.getPartitionId(),
-                messageState, subscriptionState, subscriptionCommandSender, writers))
+            new MessageSubscriptionCorrelateProcessor(
+                zeebeState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.DELETE,

@@ -51,7 +51,8 @@ public final class MessageSubscriptionCreateProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
-    messageCorrelator = new MessageCorrelator(partitionId, messageState, commandSender, stateWriter);
+    messageCorrelator =
+        new MessageCorrelator(partitionId, messageState, commandSender, stateWriter);
   }
 
   @Override

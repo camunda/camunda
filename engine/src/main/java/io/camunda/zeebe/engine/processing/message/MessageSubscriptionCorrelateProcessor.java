@@ -46,7 +46,8 @@ public final class MessageSubscriptionCorrelateProcessor
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    messageCorrelator = new MessageCorrelator(partitionId, messageState, commandSender, stateWriter);
+    messageCorrelator =
+        new MessageCorrelator(partitionId, messageState, commandSender, stateWriter);
   }
 
   @Override

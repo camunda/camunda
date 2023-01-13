@@ -263,17 +263,17 @@ public final class CatchEventBehavior {
           correlationKey,
           event.isInterrupting());
     } else {
-      sideEffects.add(() ->
-          sendOpenMessageSubscription(
-              subscriptionPartitionId,
-              processInstanceKey,
-              elementInstanceKey,
-              bpmnProcessId,
-              messageName,
-              correlationKey,
-              event.isInterrupting()));
+      sideEffects.add(
+          () ->
+              sendOpenMessageSubscription(
+                  subscriptionPartitionId,
+                  processInstanceKey,
+                  elementInstanceKey,
+                  bpmnProcessId,
+                  messageName,
+                  correlationKey,
+                  event.isInterrupting()));
     }
-
   }
 
   private void subscribeToTimerEvents(
