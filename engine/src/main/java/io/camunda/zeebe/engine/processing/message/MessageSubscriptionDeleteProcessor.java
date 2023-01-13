@@ -64,7 +64,7 @@ public final class MessageSubscriptionDeleteProcessor
       rejectCommand(record);
     }
 
-    sideEffectWriter.appendSideEffect(this::sendAcknowledgeCommand);
+    sendAcknowledgeCommand();
   }
 
   private void rejectCommand(final TypedRecord<MessageSubscriptionRecord> record) {
