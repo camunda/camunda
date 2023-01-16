@@ -209,7 +209,7 @@ export function Home({mightFail, user}) {
                   );
                 }
 
-                if (user?.authorizations.includes('import_export') && entityType !== 'collection') {
+                if (currentUserRole === 'editor' && entityType !== 'collection') {
                   actions.push({
                     icon: 'save',
                     text: t('common.export'),

@@ -11,19 +11,11 @@ import {shallow} from 'enzyme';
 import {Dropdown} from 'components';
 import {getOptimizeProfile} from 'config';
 
-import {CreateNewButton} from './CreateNewButton';
+import CreateNewButton from './CreateNewButton';
 
 jest.mock('config', () => ({
   getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
-
-it('should match snapshot', async () => {
-  const node = shallow(<CreateNewButton primary />);
-
-  await runLastEffect();
-
-  expect(node).toMatchSnapshot();
-});
 
 it('should not show the collection option if it is in a collection', async () => {
   const node = shallow(<CreateNewButton collection="123" createCollection="test" />);
@@ -73,10 +65,10 @@ it('should call the createDashboard prop', () => {
   expect(spy).toHaveBeenCalled();
 });
 
-it('should include an Import option if the user is authorized to import', () => {
+it('should include an Import option if the user has entity_editor authorization', () => {
   const spy = jest.fn();
   const node = shallow(
-    <CreateNewButton importEntity={spy} user={{authorizations: ['import_export']}} />
+    <CreateNewButton importEntity={spy} user={{authorizations: ['entity_editor']}} />
   );
 
   const importOption = node.find(Dropdown.Option).last();

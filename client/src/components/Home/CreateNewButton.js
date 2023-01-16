@@ -9,10 +9,9 @@ import React, {useEffect, useState} from 'react';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
-import {withUser} from 'HOC';
 import {getOptimizeProfile} from 'config';
 
-export function CreateNewButton({
+export default function CreateNewButton({
   createCollection,
   createProcessReport,
   createDashboard,
@@ -59,13 +58,7 @@ export function CreateNewButton({
           {t('home.createBtn.report.default')}
         </Dropdown.Option>
       )}
-      {user?.authorizations.includes('import_export') && (
-        <Dropdown.Option onClick={importEntity}>
-          {t('common.importReportDashboard')}
-        </Dropdown.Option>
-      )}
+      <Dropdown.Option onClick={importEntity}>{t('common.importReportDashboard')}</Dropdown.Option>
     </Dropdown>
   );
 }
-
-export default withUser(CreateNewButton);
