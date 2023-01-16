@@ -243,7 +243,7 @@ public class RaftPartition implements Partition, HealthMonitorable {
     }
   }
 
-  private boolean shouldStepDown() {
+  public boolean shouldStepDown() {
     final var primary = partitionMetadata.getPrimary();
     final var partitionConfig = config.getPartitionConfig();
     return server != null
