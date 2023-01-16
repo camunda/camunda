@@ -231,6 +231,12 @@ public class RaftPartition implements Partition, HealthMonitorable {
    */
   public CompletableFuture<Void> stepDownIfNotPrimary() {
     if (shouldStepDown()) {
+      LOG.info(
+          "Decided that {} should step down as {} from partition {} because {} is primary",
+          server.getMemberId(),
+          server.getRole(),
+          partitionMetadata.id(),
+          partitionMetadata.getPrimary().orElse(null));
       return stepDown();
     } else {
       return CompletableFuture.completedFuture(null);
