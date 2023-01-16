@@ -139,7 +139,7 @@ public final class EventScopeInstanceStateTest {
     assertThat(canInterruptScope).isTrue();
 
     final var eventTrigger = createEventTrigger(bufferAsString(interruptingElementId), "");
-    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+    triggerEvent(SCOPE_KEY, 123, eventTrigger, -1L);
 
     // when
     final var canTriggerEventAgain = state.canTriggerEvent(SCOPE_KEY, interruptingElementId);
@@ -166,7 +166,7 @@ public final class EventScopeInstanceStateTest {
     assertThat(canInterruptScope).isTrue();
 
     final var eventTrigger = createEventTrigger(bufferAsString(interruptingElementId), "");
-    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+    triggerEvent(SCOPE_KEY, 123, eventTrigger, -1L);
 
     // when
     final var canTriggerInterruptingBoundaryEvent =
@@ -196,7 +196,7 @@ public final class EventScopeInstanceStateTest {
 
     final var eventTrigger =
         createEventTrigger(bufferAsString(nonInterruptingBoundaryElementId), "");
-    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+    triggerEvent(SCOPE_KEY, 123, eventTrigger, -1L);
 
     // when
     final var canTriggerInterruptingBoundaryEvent =
@@ -230,7 +230,7 @@ public final class EventScopeInstanceStateTest {
     assertThat(canTriggerBoundaryEvent).isTrue();
 
     final var eventTrigger = createEventTrigger(bufferAsString(interruptingBoundaryElementId), "");
-    triggerEvent(SCOPE_KEY, 123, eventTrigger);
+    triggerEvent(SCOPE_KEY, 123, eventTrigger, -1L);
 
     // when
     final var canTriggerInterruptingBoundaryEventAgain =
@@ -258,7 +258,7 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, interruptingElementIds, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(SCOPE_KEY, eventKey, eventTrigger);
+    triggerEvent(SCOPE_KEY, eventKey, eventTrigger, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
@@ -281,8 +281,8 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, interruptingElementIds, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
-    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1, -1L);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -304,8 +304,8 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
-    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1, -1L);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -330,8 +330,8 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, interruptingIds, boundaryElementIds);
 
     // when
-    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
-    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1, -1L);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -356,8 +356,8 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, interruptingIds, boundaryElementIds);
 
     // when
-    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
-    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1, -1L);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -385,9 +385,9 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, interruptingIds, boundaryElementIds);
 
     // when
-    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1);
-    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2);
-    triggerEvent(SCOPE_KEY, eventKey3, eventTrigger3);
+    triggerEvent(SCOPE_KEY, eventKey1, eventTrigger1, -1L);
+    triggerEvent(SCOPE_KEY, eventKey2, eventTrigger2, -1L);
+    triggerEvent(SCOPE_KEY, eventKey3, eventTrigger3, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -404,7 +404,7 @@ public final class EventScopeInstanceStateTest {
     final EventTrigger eventTrigger = createEventTrigger();
 
     // when
-    triggerStartEvent(SCOPE_KEY, 456, eventTrigger);
+    triggerStartEvent(SCOPE_KEY, 456, eventTrigger, -1L);
 
     // then
     assertThat(state.peekEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
@@ -418,7 +418,7 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
 
     // when
-    triggerEvent(SCOPE_KEY, 1, eventTrigger);
+    triggerEvent(SCOPE_KEY, 1, eventTrigger, -1L);
 
     // then
     assertThat(state.peekEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger);
@@ -434,8 +434,8 @@ public final class EventScopeInstanceStateTest {
     state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_INTERRUPTING_ELEMENT_IDS);
 
     // when
-    triggerEvent(SCOPE_KEY, 1, eventTrigger1);
-    triggerEvent(SCOPE_KEY, 2, eventTrigger2);
+    triggerEvent(SCOPE_KEY, 1, eventTrigger1, -1L);
+    triggerEvent(SCOPE_KEY, 2, eventTrigger2, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -450,8 +450,8 @@ public final class EventScopeInstanceStateTest {
     final EventTrigger eventTrigger2 = createEventTrigger();
 
     // when
-    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1);
-    triggerStartEvent(SCOPE_KEY, 2, eventTrigger2);
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1, -1L);
+    triggerStartEvent(SCOPE_KEY, 2, eventTrigger2, -1L);
 
     // then
     assertThat(state.pollEventTrigger(SCOPE_KEY)).isEqualTo(eventTrigger1);
@@ -460,12 +460,26 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
+  void shouldStoreProcessInstanceKeyInEventTrigger() {
+    // given
+    final EventTrigger eventTrigger = createEventTrigger();
+    final long processInstanceKey = 12345L;
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger, processInstanceKey);
+
+    // when
+    final EventTrigger stateEventTrigger = state.peekEventTrigger(SCOPE_KEY);
+
+    // then
+    assertThat(stateEventTrigger.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
   void shouldDeleteTrigger() {
     // given
     final long eventKey = 456;
 
     state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
-    triggerEvent(SCOPE_KEY, eventKey, createEventTrigger());
+    triggerEvent(SCOPE_KEY, eventKey, createEventTrigger(), -1L);
 
     // when
     state.deleteTrigger(SCOPE_KEY, eventKey);
@@ -478,7 +492,7 @@ public final class EventScopeInstanceStateTest {
   void shouldDeleteStartEventTrigger() {
     // given
     final EventTrigger eventTrigger1 = createEventTrigger();
-    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1);
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1, -1L);
 
     // when
     state.deleteTrigger(SCOPE_KEY, 1);
@@ -491,9 +505,9 @@ public final class EventScopeInstanceStateTest {
   void shouldDeleteEventScopeAndTriggers() {
     // given
     state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
-    triggerEvent(SCOPE_KEY, 1, createEventTrigger());
-    triggerEvent(SCOPE_KEY, 2, createEventTrigger());
-    triggerEvent(SCOPE_KEY, 3, createEventTrigger());
+    triggerEvent(SCOPE_KEY, 1, createEventTrigger(), -1L);
+    triggerEvent(SCOPE_KEY, 2, createEventTrigger(), -1L);
+    triggerEvent(SCOPE_KEY, 3, createEventTrigger(), -1L);
 
     // when
     state.deleteInstance(SCOPE_KEY);
@@ -507,7 +521,7 @@ public final class EventScopeInstanceStateTest {
   void shouldDeleteStartEventTriggerOnDeletionOfInstance() {
     // given
     final EventTrigger eventTrigger1 = createEventTrigger();
-    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1);
+    triggerStartEvent(SCOPE_KEY, 1, eventTrigger1, -1L);
 
     // when
     state.deleteInstance(SCOPE_KEY);
@@ -546,15 +560,29 @@ public final class EventScopeInstanceStateTest {
   }
 
   private void triggerEvent(
-      final long eventScopeKey, final long eventKey, final EventTrigger eventTrigger) {
+      final long eventScopeKey,
+      final long eventKey,
+      final EventTrigger eventTrigger,
+      final long processInstanceKey) {
     state.triggerEvent(
-        eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
+        eventScopeKey,
+        eventKey,
+        eventTrigger.getElementId(),
+        eventTrigger.getVariables(),
+        processInstanceKey);
   }
 
   private void triggerStartEvent(
-      final long eventScopeKey, final long eventKey, final EventTrigger eventTrigger) {
+      final long eventScopeKey,
+      final long eventKey,
+      final EventTrigger eventTrigger,
+      final long processInstanceKey) {
     state.triggerStartEvent(
-        eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
+        eventScopeKey,
+        eventKey,
+        eventTrigger.getElementId(),
+        eventTrigger.getVariables(),
+        processInstanceKey);
   }
 
   private EventTrigger createEventTrigger() {

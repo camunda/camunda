@@ -42,11 +42,14 @@ final class ProcessEventTriggeringApplier
 
     final var targetElementIdBuffer = value.getTargetElementIdBuffer();
     final var scopeKey = value.getScopeKey();
+    final var processInstanceKey = value.getProcessInstanceKey();
 
     if (value.getProcessDefinitionKey() == scopeKey) {
-      eventScopeState.triggerStartEvent(scopeKey, key, targetElementIdBuffer, variables);
+      eventScopeState.triggerStartEvent(
+          scopeKey, key, targetElementIdBuffer, variables, processInstanceKey);
     } else {
-      eventScopeState.triggerEvent(scopeKey, key, targetElementIdBuffer, variables);
+      eventScopeState.triggerEvent(
+          scopeKey, key, targetElementIdBuffer, variables, processInstanceKey);
     }
     eventSubProcessInterruptionMarker.markInstanceIfInterrupted(
         scopeKey, value.getProcessDefinitionKey(), targetElementIdBuffer);

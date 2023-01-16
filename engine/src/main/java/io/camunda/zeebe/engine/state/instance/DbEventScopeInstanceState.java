@@ -101,7 +101,8 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       final long eventScopeKey,
       final long eventKey,
       final DirectBuffer elementId,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final long processInstanceKey) {
     this.eventScopeKey.wrapLong(eventScopeKey);
     final EventScopeInstance instance = eventScopeInstanceColumnFamily.get(this.eventScopeKey);
 
@@ -118,7 +119,7 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       }
       eventScopeInstanceColumnFamily.update(this.eventScopeKey, instance);
 
-      createTrigger(eventScopeKey, eventKey, elementId, variables);
+      createTrigger(eventScopeKey, eventKey, elementId, variables, processInstanceKey);
     }
   }
 
@@ -127,8 +128,9 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       final long processDefinitionKey,
       final long eventKey,
       final DirectBuffer elementId,
-      final DirectBuffer variables) {
-    createTrigger(processDefinitionKey, eventKey, elementId, variables);
+      final DirectBuffer variables,
+      final long processInstanceKey) {
+    createTrigger(processDefinitionKey, eventKey, elementId, variables, processInstanceKey);
   }
 
   @Override
@@ -183,11 +185,16 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
       final long eventScopeKey,
       final long eventKey,
       final DirectBuffer elementId,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final long processInstanceKey) {
     eventTriggerScopeKey.wrapLong(eventScopeKey);
     eventTriggerEventKey.wrapLong(eventKey);
 
-    eventTrigger.setElementId(elementId).setVariables(variables).setEventKey(eventKey);
+    eventTrigger
+        .setElementId(elementId)
+        .setVariables(variables)
+        .setEventKey(eventKey)
+        .setProcessInstanceKey(processInstanceKey);
 
     eventTriggerColumnFamily.insert(eventTriggerKey, eventTrigger);
   }

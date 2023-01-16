@@ -56,9 +56,14 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
    * @param eventKey the key of the event record (used for ordering)
    * @param elementId the id of the element which should be triggered, e.g. boundary event
    * @param variables the variables of the occurred event, i.e. message variables
+   * @param processInstanceKey the key of the process instance this event is a part of
    */
   void triggerEvent(
-      long eventScopeKey, long eventKey, DirectBuffer elementId, DirectBuffer variables);
+      long eventScopeKey,
+      long eventKey,
+      DirectBuffer elementId,
+      DirectBuffer variables,
+      long processInstanceKey);
 
   /**
    * Creates an event trigger for a process start event. Uses the process definition key as the
@@ -69,9 +74,14 @@ public interface MutableEventScopeInstanceState extends EventScopeInstanceState 
    * @param eventKey the key of the event record (used for ordering)
    * @param elementId the id of the start event which should be triggered
    * @param variables the variables of the occurred event, i.e. message variables
+   * @param processInstanceKey the key of the process instance this event is a part of
    */
   void triggerStartEvent(
-      long processDefinitionKey, long eventKey, DirectBuffer elementId, DirectBuffer variables);
+      long processDefinitionKey,
+      long eventKey,
+      DirectBuffer elementId,
+      DirectBuffer variables,
+      long processInstanceKey);
 
   /**
    * Deletes an event trigger by key and scope key. Does not fail if the trigger does not exist.

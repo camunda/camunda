@@ -105,7 +105,8 @@ final class ProcessInstanceElementActivatingApplier
           newEventScopeKey,
           eventTrigger.getEventKey(),
           eventTrigger.getElementId(),
-          eventTrigger.getVariables());
+          eventTrigger.getVariables(),
+          eventTrigger.getProcessInstanceKey());
       eventScopeInstanceState.deleteTrigger(oldEventScopeKey, eventTrigger.getEventKey());
     }
   }

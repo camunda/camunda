@@ -89,11 +89,22 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
   protected void setCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds bounds = targetBpmnShape.getBounds();
     bounds.setX(100);
-    bounds.setY(100);
+    // Y coordinate is 36 lower than X. This is because the start event will have a height of 36.
+    // This shape is already added to the model, so the getLowestHeight will add these 36 pixels.
+    bounds.setY(64 + getLowestHeight());
   }
 
   protected void setEventCoordinates(final BpmnShape targetBpmnShape) {
     final Bounds targetBounds = targetBpmnShape.getBounds();
+    final double yCoord = getLowestHeight() + 50.0;
+    final double xCoord = 100.0;
+
+    // move target
+    targetBounds.setY(yCoord);
+    targetBounds.setX(xCoord);
+  }
+
+  private double getLowestHeight() {
     double lowestheight = 0;
 
     // find the lowest element in the model
@@ -105,12 +116,6 @@ public class ProcessBuilder extends AbstractProcessBuilder<ProcessBuilder> {
         lowestheight = bottom;
       }
     }
-
-    final double ycoord = lowestheight + 50.0;
-    final double xcoord = 100.0;
-
-    // move target
-    targetBounds.setY(ycoord);
-    targetBounds.setX(xcoord);
+    return lowestheight;
   }
 }
