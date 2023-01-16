@@ -222,6 +222,14 @@ public class RaftPartition implements Partition, HealthMonitorable {
     return server.stepDown();
   }
 
+  public PartitionMetadata getMetadata() {
+    return partitionMetadata;
+  }
+
+  public void setMetadata(final PartitionMetadata partitionMetadata) {
+    this.partitionMetadata = partitionMetadata;
+  }
+
   /**
    * Tries to step down if the following conditions are met:
    *
@@ -245,7 +253,7 @@ public class RaftPartition implements Partition, HealthMonitorable {
     }
   }
 
-  private boolean shouldStepDown() {
+  public boolean shouldStepDown() {
     final var primary = partitionMetadata.getPrimary();
     final var partitionConfig = config.getPartitionConfig();
     return server != null
