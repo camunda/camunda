@@ -14,6 +14,10 @@
 
 _Source: [modules.puml](https://github.com/camunda/operate/blob/master/modules.puml)_
 
+## Building locally
+
+To build Operate locally, following Maven configuration is needed: https://confluence.camunda.com/display/HAN/Artifactory#Artifactory-ViaMaven
+
 ## Running locally
 
 ### Use maven
