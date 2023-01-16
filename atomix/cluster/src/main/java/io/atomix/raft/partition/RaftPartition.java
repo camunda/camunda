@@ -26,6 +26,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -244,7 +245,8 @@ public class RaftPartition implements Partition, HealthMonitorable {
     }
   }
 
-  private boolean shouldStepDown() {
+  @VisibleForTesting
+  public boolean shouldStepDown() {
     final var primary = partitionMetadata.getPrimary();
     final var partitionConfig = config.getPartitionConfig();
     return server != null
