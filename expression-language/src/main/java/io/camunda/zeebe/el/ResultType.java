@@ -9,12 +9,14 @@ package io.camunda.zeebe.el;
 
 /** The possible types of an evaluation result. */
 public enum ResultType {
+  UNKNOWN,
   NULL,
   BOOLEAN,
   NUMBER,
   STRING,
   DURATION,
   PERIOD,
+  DATE,
   DATE_TIME,
   ARRAY,
   OBJECT
