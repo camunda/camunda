@@ -182,7 +182,7 @@ public class EvaluationResultTest {
   public void dateExpression() {
     final var evaluationResult = evaluateExpression("=date(\"2020-04-02\")");
 
-    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.DATE);
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();
@@ -194,7 +194,7 @@ public class EvaluationResultTest {
   public void timeExpression() {
     final var evaluationResult = evaluateExpression("=time(\"14:00:00\")");
 
-    assertThat(evaluationResult.getType()).isNull();
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.UNKNOWN);
     assertThat(evaluationResult.getString()).isNull();
     assertThat(evaluationResult.getBoolean()).isNull();
     assertThat(evaluationResult.getNumber()).isNull();

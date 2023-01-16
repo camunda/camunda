@@ -615,4 +615,37 @@ public final class TimerCatchEventTest {
 
     assertThat(triggerTimer.getSourceRecordPosition()).isLessThan(0);
   }
+
+  // regression test for https://github.com/camunda/zeebe/issues/5934
+  @Test
+  public void shouldRaiseIncidentWhenDurationExpressionResultIsNotADuration() {
+    // This duration expression is faulty because the process expects a duration,
+    // but the expression would evaluate to a date (today + 1 day = tomorrow)
+    final var faultyDurationExpression = "today() + duration(\"P1D\")";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("missing_time_component")
+                .startEvent()
+                .intermediateCatchEvent(
+                    "timer", t -> t.timerWithDurationExpression(faultyDurationExpression))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("missing_time_component").create();
+
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasElementId("timer")
+        .hasErrorMessage(
+            """
+            Expected result of the expression 'today() + duration("P1D")' \
+            to be one of '[DURATION, PERIOD, STRING]', \
+            but was 'DATE'""");
+  }
 }
