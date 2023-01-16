@@ -250,7 +250,7 @@ public class RaftPartition implements Partition, HealthMonitorable {
     return server != null
         && partitionConfig.isPriorityElectionEnabled()
         && primary.isPresent()
-        && primary.get() != server.getMemberId();
+        && !primary.get().equals(server.getMemberId());
   }
 
   public CompletableFuture<Void> stop() {
