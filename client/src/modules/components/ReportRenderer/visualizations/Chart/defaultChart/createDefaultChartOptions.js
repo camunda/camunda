@@ -10,12 +10,14 @@ import {isDurationReport, formatters} from 'services';
 import {t} from 'translation';
 
 import {getFormattedTargetValue} from './service';
+
 import {
   formatTooltip,
   formatTooltipTitle,
   getTooltipLabelColor,
   canBeInterpolated,
   hasReportPersistedTooltips,
+  getAxesConfig,
 } from '../service';
 import {getColorFor, determineBarColor} from '../colorsUtils';
 
@@ -142,6 +144,7 @@ export function createBarOptions({
   );
   const hasCountMeasure = measures.some(({property}) => property === 'frequency');
   const topPadding = isPersistedTooltips && !horizontalBar;
+  const {axis0, axis1, groupBy} = getAxesConfig(horizontalBar);
 
   const measuresAxis = {
     'axis-0': {
@@ -166,9 +169,7 @@ export function createBarOptions({
         precision: hasCountMeasure ? 0 : undefined,
       },
       suggestedMax: targetLine,
-      id: 'axis-0',
-      axis: horizontalBar ? 'x' : 'y',
-      position: horizontalBar ? 'bottom' : 'left',
+      ...axis0,
       stacked,
     },
   };
@@ -198,9 +199,7 @@ export function createBarOptions({
         color: getColorFor('label', isDark),
       },
       suggestedMax: targetLine,
-      id: 'axis-1',
-      position: horizontalBar ? 'top' : 'right',
-      axis: horizontalBar ? 'x' : 'y',
+      ...axis1,
     };
   }
 
@@ -236,7 +235,7 @@ export function createBarOptions({
         : {}),
     },
     stacked: stacked || isCombinedNumber,
-    axis: horizontalBar ? 'y' : 'x',
+    ...groupBy,
   };
 
   if (logScale) {
@@ -247,13 +246,13 @@ export function createBarOptions({
 
   return {
     ...(pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
-    indexAxis: horizontalBar ? 'y' : 'x',
+    indexAxis: groupBy.id,
     layout: {
       padding: {top: topPadding ? 30 : 0},
     },
     scales: {
       ...measuresAxis,
-      groupByAxis,
+      [groupBy.id]: groupByAxis,
     },
     spanGaps: true,
     // plugin property
@@ -262,7 +261,7 @@ export function createBarOptions({
     plugins: {
       datalabels: {
         align: (context) => {
-          if (!configuration.horizontalBar) {
+          if (!horizontalBar) {
             return 'end';
           }
 

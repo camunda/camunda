@@ -146,3 +146,19 @@ export function hasReportPersistedTooltips(report) {
   const isDuration = isDurationReport(report);
   return isDuration ? alwaysShowAbsolute : alwaysShowAbsolute || alwaysShowRelative;
 }
+
+export function getAxesConfig(isHorizontal) {
+  return {
+    axis0: {
+      position: isHorizontal ? 'bottom' : 'left',
+      axis: isHorizontal ? 'x' : 'y',
+      id: 'axis-0',
+    },
+    axis1: {position: isHorizontal ? 'top' : 'right', axis: isHorizontal ? 'x' : 'y', id: 'axis-1'},
+    groupBy: {
+      position: isHorizontal ? 'left' : 'bottom',
+      axis: isHorizontal ? 'y' : 'x',
+      id: isHorizontal ? 'y' : 'x',
+    },
+  };
+}

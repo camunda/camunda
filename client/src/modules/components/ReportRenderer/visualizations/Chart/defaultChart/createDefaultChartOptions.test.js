@@ -141,7 +141,7 @@ it('should create multi-axis chart for multi-measure reports', () => {
   expect(chartConfig.scales['axis-1'].title.text).toBe('Flow Node Duration');
   expect(chartConfig.scales['axis-1'].position).toBe('right');
 
-  expect(chartConfig.scales['groupByAxis'].title.text).toBe('Flow Nodes');
+  expect(chartConfig.scales['x'].title.text).toBe('Flow Nodes');
 });
 
 it('should switch axis positions when horizontalBar config is eanbled', () => {
@@ -170,7 +170,7 @@ it('should switch axis positions when horizontalBar config is eanbled', () => {
   expect(chartConfig.scales['axis-1'].position).toBe('top');
   expect(chartConfig.scales['axis-0'].axis).toBe('x');
 
-  expect(chartConfig.scales['groupByAxis'].axis).toBe('y');
+  expect(chartConfig.scales['y'].axis).toBe('y');
 });
 
 it('should switch tooltip alignment of an item when surpassing 70% of the available area', () => {
