@@ -10,7 +10,7 @@
 #   REVISION - required; the sha1 of the commit used to build the artifact
 #   DATE - required; the ISO 8601 date at which the image was built
 #   ARCHITECTURE - required; the architecture (e.g. amd64, arm64) for which the image was built
-#   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3.17.0)
+#   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3)
 # Arguments:
 #   1 - Docker image names to be checked (no limit on number of images, each is checked separately)
 # Outputs:
@@ -47,7 +47,7 @@ if [ -z "${ARCHITECTURE}" ]; then
 fi
 
 if [ -z "${BASE_IMAGE}" ]; then
-  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3.17.0"
+  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3"
   exit 1
 fi
 
