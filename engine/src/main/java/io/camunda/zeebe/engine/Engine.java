@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.P
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContextImpl;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.ZeebeDbState;
@@ -28,9 +29,12 @@ import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -104,6 +108,8 @@ public class Engine implements RecordProcessor {
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
+
+    final List<SideEffectProducer> producers = new ArrayList<>();
     try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
       TypedRecordProcessor<?> currentProcessor = null;
 
@@ -126,12 +132,22 @@ public class Engine implements RecordProcessor {
       if (isNotOnBlacklist) {
         currentProcessor.processRecord(
             record,
-            (sep) -> {
-              processingResultBuilder.resetPostCommitTasks();
-              processingResultBuilder.appendPostCommitTask(sep::flush);
-            });
+            producers::add);
       }
     }
+
+
+    // todo here side effect collection to add to the post commit
+    producers.forEach((sep) -> {
+        if (sep instanceof SideEffectQueue sideEffectQueue) {
+          final List<SideEffectProducer> sideEffects = sideEffectQueue.getSideEffects();
+          sideEffects.forEach(sideEffectProducer -> processingResultBuilder.appendPostCommitTask(
+              sideEffectProducer::flush));
+        }
+        else {
+          processingResultBuilder.appendPostCommitTask(sep::flush);
+        }
+    });
     return processingResultBuilder.build();
   }
 

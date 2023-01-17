@@ -49,6 +49,10 @@ public final class SideEffectQueue implements SideEffectProducer, SideEffects {
     return flushed;
   }
 
+  public List<SideEffectProducer> getSideEffects() {
+    return sideEffects;
+  }
+
   @Override
   public void add(final SideEffectProducer sideEffectProducer) {
     sideEffects.add(sideEffectProducer);
