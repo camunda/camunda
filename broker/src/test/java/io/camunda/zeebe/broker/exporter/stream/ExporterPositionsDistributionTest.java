@@ -11,13 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
 public class ExporterPositionsDistributionTest {
 
   private ExporterStateDistributionService exporterStateDistributionService;
-  private Map<String, Long> exporterPositions;
+  private Map<String, ExporterStateDistributeMessage.ExporterStateEntry> exporterPositions;
   private SimplePartitionMessageService partitionMessagingService;
 
   @Before
@@ -44,23 +45,29 @@ public class ExporterPositionsDistributionTest {
   public void shouldConsumeExporterMessage() {
     // given
     final var exporterPositionsMessage = new ExporterStateDistributeMessage();
-    exporterPositionsMessage.putExporter("elastic", 123);
-    exporterPositionsMessage.putExporter("metric", 345);
+    exporterPositionsMessage.putExporter("elastic", 123, new UnsafeBuffer());
+    exporterPositionsMessage.putExporter("metric", 345, new UnsafeBuffer());
     exporterStateDistributionService.subscribeForExporterState(Runnable::run);
 
     // when
     exporterStateDistributionService.distributeExporterState(exporterPositionsMessage);
 
     // then
-    assertThat(exporterPositions).containsEntry("elastic", 123L).containsEntry("metric", 345L);
+    assertThat(exporterPositions)
+        .containsEntry(
+            "elastic",
+            new ExporterStateDistributeMessage.ExporterStateEntry(123L, new UnsafeBuffer()))
+        .containsEntry(
+            "metric",
+            new ExporterStateDistributeMessage.ExporterStateEntry(345L, new UnsafeBuffer()));
   }
 
   @Test
   public void shouldRemoveSubscriptionOnClose() throws Exception {
     // given
     final var exporterPositionsMessage = new ExporterStateDistributeMessage();
-    exporterPositionsMessage.putExporter("elastic", 123);
-    exporterPositionsMessage.putExporter("metric", 345);
+    exporterPositionsMessage.putExporter("elastic", 123, new UnsafeBuffer());
+    exporterPositionsMessage.putExporter("metric", 345, new UnsafeBuffer());
     exporterStateDistributionService.subscribeForExporterState(Runnable::run);
 
     // when

@@ -23,13 +23,15 @@ public class ExporterStateDistributionService implements AutoCloseable {
       new ThrottledLogger(Loggers.EXPORTER_LOGGER, Duration.ofSeconds(60));
   private final PartitionMessagingService partitionMessagingService;
   private final String exporterStateTopic;
-  private final BiConsumer<String, Long> exporterPositionConsumer;
+  private final BiConsumer<String, ExporterStateDistributeMessage.ExporterStateEntry>
+      exporterStateConsumer;
 
   public ExporterStateDistributionService(
-      final BiConsumer<String, Long> exporterPositionConsumer,
+      final BiConsumer<String, ExporterStateDistributeMessage.ExporterStateEntry>
+          exporterStateConsumer,
       final PartitionMessagingService partitionMessagingService,
       final String exporterStateTopic) {
-    this.exporterPositionConsumer = exporterPositionConsumer;
+    this.exporterStateConsumer = exporterStateConsumer;
     this.partitionMessagingService = partitionMessagingService;
     this.exporterStateTopic = exporterStateTopic;
   }
@@ -43,12 +45,12 @@ public class ExporterStateDistributionService implements AutoCloseable {
     final var distributeMessage = new ExporterStateDistributeMessage();
     distributeMessage.wrap(readBuffer, 0, readBuffer.capacity());
 
-    final var exporterPositions = distributeMessage.getExporterPositions();
+    final var exporterState = distributeMessage.getExporterState();
 
-    Loggers.EXPORTER_LOGGER.trace("Received new exporter state {}", exporterPositions);
-    PERIODIC_LOGGER.debug("Current exporter state {}", exporterPositions);
+    Loggers.EXPORTER_LOGGER.trace("Received new exporter state {}", exporterState);
+    PERIODIC_LOGGER.debug("Current exporter state {}", exporterState);
 
-    exporterPositions.forEach(exporterPositionConsumer);
+    exporterState.forEach(exporterStateConsumer);
   }
 
   public void distributeExporterState(final ExporterStateDistributeMessage distributeMessage) {

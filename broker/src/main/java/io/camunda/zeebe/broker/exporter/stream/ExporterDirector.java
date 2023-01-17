@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
@@ -192,7 +193,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       recoverFromSnapshot();
       exporterDistributionService =
           new ExporterStateDistributionService(
-              this::consumeExporterPositionFromLeader,
+              this::consumeExporterStateFromLeader,
               partitionMessagingService,
               exporterPositionsTopic);
 
@@ -263,10 +264,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
   }
 
-  private void consumeExporterPositionFromLeader(
-      final String exporterId, final long receivedPosition) {
-    if (state.getPosition(exporterId) < receivedPosition) {
-      state.setPosition(exporterId, receivedPosition);
+  private void consumeExporterStateFromLeader(
+      final String exporterId,
+      final ExporterStateDistributeMessage.ExporterStateEntry exporterState) {
+
+    if (state.getPosition(exporterId) < exporterState.position()) {
+      state.setPosition(exporterId, exporterState.position());
     }
   }
 
@@ -363,7 +366,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     final var distributeMessage = new ExporterStateDistributeMessage();
     state.visitExporterState(
         (exporterId, exporterStateEntry) ->
-            distributeMessage.putExporter(exporterId, exporterStateEntry.getPosition()));
+            distributeMessage.putExporter(
+                exporterId, exporterStateEntry.getPosition(), new UnsafeBuffer()));
     exporterDistributionService.distributeExporterState(distributeMessage);
   }
 
