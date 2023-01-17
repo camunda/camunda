@@ -23,9 +23,13 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   private final StringProperty elementIdProp = new StringProperty("elementId");
   private final BinaryProperty variablesProp = new BinaryProperty("variables");
   private final LongProperty eventKeyProp = new LongProperty("eventKey");
+  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
 
   public EventTrigger() {
-    declareProperty(elementIdProp).declareProperty(variablesProp).declareProperty(eventKeyProp);
+    declareProperty(elementIdProp)
+        .declareProperty(variablesProp)
+        .declareProperty(eventKeyProp)
+        .declareProperty(processInstanceKeyProp);
   }
 
   // Copies over the previous event
@@ -62,6 +66,15 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
 
   public EventTrigger setEventKey(final long eventKey) {
     eventKeyProp.setValue(eventKey);
+    return this;
+  }
+
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProp.getValue();
+  }
+
+  public EventTrigger setProcessInstanceKey(final long processInstanceKey) {
+    processInstanceKeyProp.setValue(processInstanceKey);
     return this;
   }
 

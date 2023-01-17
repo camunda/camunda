@@ -37,6 +37,7 @@ import io.camunda.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.ManualTask;
 import io.camunda.zeebe.model.bpmn.instance.ParallelGateway;
+import io.camunda.zeebe.model.bpmn.instance.Process;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import io.camunda.zeebe.model.bpmn.instance.ScriptTask;
 import io.camunda.zeebe.model.bpmn.instance.SendTask;
@@ -427,6 +428,15 @@ public abstract class AbstractFlowNodeBuilder<
       return (T) ((Activity) instance).builder();
     } else {
       throw new BpmnModelException("Activity not found for id " + identifier);
+    }
+  }
+
+  public <T extends ProcessBuilder> T moveToProcess(final String identifier) {
+    final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
+    if (instance instanceof Process) {
+      return (T) ((Process) instance).builder();
+    } else {
+      throw new BpmnModelException("Process not found for id " + identifier);
     }
   }
 
