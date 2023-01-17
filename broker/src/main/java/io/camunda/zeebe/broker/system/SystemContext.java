@@ -145,28 +145,19 @@ public final class SystemContext {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
 
-    final var diskUsageCommandWatermark = dataCfg.getDiskUsageCommandWatermark();
-    if (!(diskUsageCommandWatermark > 0 && diskUsageCommandWatermark <= 1)) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected diskUsageCommandWatermark to be in the range (0,1], but found %f",
-              diskUsageCommandWatermark));
-    }
-
-    final var diskUsageReplicationWatermark = dataCfg.getDiskUsageReplicationWatermark();
-    if (!(diskUsageReplicationWatermark > 0 && diskUsageReplicationWatermark <= 1)) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected diskUsageReplicationWatermark to be in the range (0,1], but found %f",
-              diskUsageReplicationWatermark));
-    }
-
-    if (dataCfg.isDiskUsageMonitoringEnabled()
-        && diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
-      throw new IllegalArgumentException(
-          String.format(
-              "diskUsageCommandWatermark (%f) must be less than diskUsageReplicationWatermark (%f)",
-              diskUsageCommandWatermark, diskUsageReplicationWatermark));
+    if (dataCfg.isDiskUsageMonitoringEnabled()) {
+      try {
+        final var processingFreeSpace = dataCfg.getFreeDiskSpaceCommandWatermark();
+        final var replicationFreeSpace = dataCfg.getFreeDiskSpaceReplicationWatermark();
+        if (processingFreeSpace <= replicationFreeSpace) {
+          throw new IllegalArgumentException(
+              "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d). Configured values are %s"
+                  .formatted(
+                      processingFreeSpace, replicationFreeSpace, dataCfg.getDisk().getFreeSpace()));
+        }
+      } catch (final Exception e) {
+        throw new InvalidConfigurationException("Failed to parse disk monitoring configuration", e);
+      }
     }
 
     if (backupFeatureEnabled) {
