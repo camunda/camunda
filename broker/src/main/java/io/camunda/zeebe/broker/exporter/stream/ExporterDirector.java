@@ -46,7 +46,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.agrona.LangUtil;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
@@ -269,7 +268,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ExporterStateDistributeMessage.ExporterStateEntry exporterState) {
 
     if (state.getPosition(exporterId) < exporterState.position()) {
-      state.setPosition(exporterId, exporterState.position());
+      state.setExporterState(exporterId, exporterState.position(), exporterState.metadata());
     }
   }
 
@@ -367,7 +366,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     state.visitExporterState(
         (exporterId, exporterStateEntry) ->
             distributeMessage.putExporter(
-                exporterId, exporterStateEntry.getPosition(), new UnsafeBuffer()));
+                exporterId, exporterStateEntry.getPosition(), exporterStateEntry.getMetadata()));
     exporterDistributionService.distributeExporterState(distributeMessage);
   }
 

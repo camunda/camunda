@@ -9,25 +9,26 @@ package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ExporterPositionsDistributionTest {
+public class ExporterStateDistributionTest {
 
   private ExporterStateDistributionService exporterStateDistributionService;
-  private Map<String, ExporterStateDistributeMessage.ExporterStateEntry> exporterPositions;
+  private Map<String, ExporterStateDistributeMessage.ExporterStateEntry> exporterState;
   private SimplePartitionMessageService partitionMessagingService;
 
   @Before
   public void setup() {
-    exporterPositions = new HashMap<>();
+    exporterState = new HashMap<>();
     partitionMessagingService = new SimplePartitionMessageService();
     exporterStateDistributionService =
         new ExporterStateDistributionService(
-            exporterPositions::put, partitionMessagingService, "topic");
+            exporterState::put, partitionMessagingService, "topic");
   }
 
   @Test
@@ -44,22 +45,23 @@ public class ExporterPositionsDistributionTest {
   @Test
   public void shouldConsumeExporterMessage() {
     // given
+    final var metadata1 = BufferUtil.wrapString("e1");
+    final var metadata2 = BufferUtil.wrapString("e2");
+
     final var exporterPositionsMessage = new ExporterStateDistributeMessage();
-    exporterPositionsMessage.putExporter("elastic", 123, new UnsafeBuffer());
-    exporterPositionsMessage.putExporter("metric", 345, new UnsafeBuffer());
+    exporterPositionsMessage.putExporter("elastic", 123, metadata1);
+    exporterPositionsMessage.putExporter("metric", 345, metadata2);
     exporterStateDistributionService.subscribeForExporterState(Runnable::run);
 
     // when
     exporterStateDistributionService.distributeExporterState(exporterPositionsMessage);
 
     // then
-    assertThat(exporterPositions)
+    assertThat(exporterState)
         .containsEntry(
-            "elastic",
-            new ExporterStateDistributeMessage.ExporterStateEntry(123L, new UnsafeBuffer()))
+            "elastic", new ExporterStateDistributeMessage.ExporterStateEntry(123L, metadata1))
         .containsEntry(
-            "metric",
-            new ExporterStateDistributeMessage.ExporterStateEntry(345L, new UnsafeBuffer()));
+            "metric", new ExporterStateDistributeMessage.ExporterStateEntry(345L, metadata2));
   }
 
   @Test

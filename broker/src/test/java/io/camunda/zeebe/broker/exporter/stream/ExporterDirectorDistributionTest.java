@@ -16,11 +16,13 @@ import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionEvaluationListener;
 import org.awaitility.core.EvaluatedCondition;
@@ -33,6 +35,11 @@ public final class ExporterDirectorDistributionTest {
 
   private static final String EXPORTER_ID_1 = "exporter-1";
   private static final String EXPORTER_ID_2 = "exporter-2";
+
+  private static final DirectBuffer EXPORTER_METADATA_1 = BufferUtil.wrapString("e1");
+  private static final DirectBuffer EXPORTER_METADATA_2 = BufferUtil.wrapString("e2");
+
+  private static final UnsafeBuffer NO_METADATA = new UnsafeBuffer();
 
   private static final Duration DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
 
@@ -57,8 +64,8 @@ public final class ExporterDirectorDistributionTest {
     exporters.clear();
     exporterDescriptors.clear();
 
-    createExporter(EXPORTER_ID_1, Collections.singletonMap("x", 1));
-    createExporter(EXPORTER_ID_2, Collections.singletonMap("y", 2));
+    createExporter(EXPORTER_ID_1, EXPORTER_METADATA_1);
+    createExporter(EXPORTER_ID_2, EXPORTER_METADATA_2);
   }
 
   @After
@@ -67,12 +74,19 @@ public final class ExporterDirectorDistributionTest {
     passiveExporters.closeExporterDirector();
   }
 
-  private void createExporter(final String exporterId, final Map<String, Object> arguments) {
+  private void createExporter(final String exporterId, final DirectBuffer exporterMetadata) {
     final ControlledTestExporter exporter = spy(new ControlledTestExporter());
 
     final ExporterDescriptor descriptor =
-        spy(new ExporterDescriptor(exporterId, exporter.getClass(), arguments));
+        spy(new ExporterDescriptor(exporterId, exporter.getClass(), Map.of()));
     doAnswer(c -> exporter).when(descriptor).newInstance();
+
+    final var exporterMetadataBytes = BufferUtil.bufferAsArray(exporterMetadata);
+    exporter.onExport(
+        record ->
+            exporter
+                .getController()
+                .updateLastExportedRecordPosition(record.getPosition(), exporterMetadataBytes));
 
     exporters.add(exporter);
     exporterDescriptors.add(descriptor);
@@ -84,9 +98,8 @@ public final class ExporterDirectorDistributionTest {
   }
 
   @Test
-  public void shouldDistributeExporterPositions() {
+  public void shouldDistributeExporterState() {
     // given
-    exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
     startExporters(exporterDescriptors);
 
     final long position =
@@ -97,12 +110,20 @@ public final class ExporterDirectorDistributionTest {
         .untilAsserted(
             () -> {
               assertThat(activeExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+              assertThat(activeExporterState.getExporterMetadata(EXPORTER_ID_1))
+                  .isEqualTo(EXPORTER_METADATA_1);
+
               assertThat(activeExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+              assertThat(activeExporterState.getExporterMetadata(EXPORTER_ID_2))
+                  .isEqualTo(EXPORTER_METADATA_2);
             });
 
     final var passiveExporterState = passiveExporters.getExportersState();
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(-1);
+    assertThat(passiveExporterState.getExporterMetadata(EXPORTER_ID_1)).isEqualTo(NO_METADATA);
+
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+    assertThat(passiveExporterState.getExporterMetadata(EXPORTER_ID_2)).isEqualTo(NO_METADATA);
 
     // when
     activeExporters.getClock().addTime(DISTRIBUTION_INTERVAL);
@@ -113,14 +134,18 @@ public final class ExporterDirectorDistributionTest {
         .untilAsserted(
             () -> {
               assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+              assertThat(passiveExporterState.getExporterMetadata(EXPORTER_ID_1))
+                  .isEqualTo(EXPORTER_METADATA_1);
+
               assertThat(passiveExporterState.getPosition(EXPORTER_ID_2)).isEqualTo(position);
+              assertThat(passiveExporterState.getExporterMetadata(EXPORTER_ID_2))
+                  .isEqualTo(EXPORTER_METADATA_2);
             });
   }
 
   @Test
   public void shouldNotResetExporterPositionWhenOldPositionReceived() {
     // given
-    exporters.forEach(e -> e.shouldAutoUpdatePosition(true));
     startExporters(exporterDescriptors);
 
     Awaitility.await("Exporter has recovered and started exporting.")
