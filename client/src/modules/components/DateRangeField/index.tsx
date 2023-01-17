@@ -71,6 +71,7 @@ const DateRangeField: React.FC<Props> = observer(
             ref={cmTextFieldRef}
             readonly
             title={getInputValue()}
+            placeholder="Enter date range"
             onCmClick={() => {
               if (!isDateRangePopoverVisible) {
                 dateRangePopoverStore.setVisiblePopover(filterName);
