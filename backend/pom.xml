@@ -22,6 +22,17 @@
   </properties>
 
   <dependencies>
+    <!-- Logging dependencies -->
+    <dependency>
+      <groupId>net.logstash.logback</groupId>
+      <artifactId>logstash-logback-encoder</artifactId>
+      <version>7.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.codehaus.janino</groupId>
+      <artifactId>janino</artifactId>
+      <version>3.1.9</version>
+    </dependency>
 
     <!-- Optimize dependencies -->
     <dependency>

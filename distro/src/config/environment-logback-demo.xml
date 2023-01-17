@@ -15,10 +15,17 @@
       <maxHistory>30</maxHistory>
       <totalSizeCap>1GB</totalSizeCap>
     </rollingPolicy>
-
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
+    <if condition='property("JSON_LOGGING").contains("true")'>
+      <then>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        </encoder>
+      </then>
+      <else>
+        <encoder>
+          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+      </else>
+    </if>
   </appender>
 
   <!-- Change the log level for the Optimize runtime here -->
