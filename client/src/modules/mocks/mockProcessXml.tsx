@@ -11,22 +11,22 @@ const mockProcessXml = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>SequenceFlow_04ev4jl</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:userTask id="ServiceTask_0kt6c5i">
+    <bpmn:userTask id="userTask">
       <bpmn:incoming>SequenceFlow_04ev4jl</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1njhlr0</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:sequenceFlow id="SequenceFlow_04ev4jl" sourceRef="StartEvent_1" targetRef="ServiceTask_0kt6c5i" />
+    <bpmn:sequenceFlow id="SequenceFlow_04ev4jl" sourceRef="StartEvent_1" targetRef="userTask" />
     <bpmn:endEvent id="EndEvent_0crvjrk">
       <bpmn:incoming>SequenceFlow_1njhlr0</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1njhlr0" sourceRef="ServiceTask_0kt6c5i" targetRef="EndEvent_0crvjrk" />
+    <bpmn:sequenceFlow id="SequenceFlow_1njhlr0" sourceRef="userTask" targetRef="EndEvent_0crvjrk" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="173" y="102" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0kt6c5i_di" bpmnElement="ServiceTask_0kt6c5i">
+      <bpmndi:BPMNShape id="userTask_di" bpmnElement="userTask">
         <dc:Bounds x="259" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_04ev4jl_di" bpmnElement="SequenceFlow_04ev4jl">

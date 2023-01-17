@@ -24,6 +24,103 @@ type AddModificationPayload = Extract<
 >;
 
 describe('stores/modifications', () => {
+  beforeEach(() => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'StartEvent_1',
+        active: 2,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-1',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-2',
+        active: 2,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-3',
+        active: 3,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-4',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-5',
+        active: 2,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-6',
+        active: 2,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-7',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 0,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'subprocess-start-1',
+        active: 0,
+        incidents: 0,
+        completed: 0,
+        canceled: 1,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 2,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'multi-instance-service-task',
+        active: 2,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'message-boundary',
+        active: 1,
+        incidents: 0,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
+  });
+
   afterEach(() => {
     modificationsStore.reset();
     processInstanceDetailsDiagramStore.reset();
@@ -43,6 +140,14 @@ describe('stores/modifications', () => {
   });
 
   it('should add/remove flow node modifications', async () => {
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
     const uniqueID = generateUniqueID();
     const uniqueIDForMove = generateUniqueID();
     expect(modificationsStore.state.modifications).toEqual([]);
@@ -51,7 +156,7 @@ describe('stores/modifications', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: uniqueID,
-        flowNode: {id: '1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
@@ -59,15 +164,7 @@ describe('stores/modifications', () => {
     });
 
     expect(modificationsStore.state.modifications.length).toEqual(1);
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: '2', name: 'flow-node-2'},
-        affectedTokenCount: 3,
-        visibleAffectedTokenCount: 3,
-      },
-    });
+    modificationsStore.cancelAllTokens('service-task-2');
 
     expect(modificationsStore.state.modifications.length).toEqual(2);
 
@@ -75,8 +172,8 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: '3', name: 'flow-node-3'},
-        targetFlowNode: {id: '4', name: 'flow-node-4'},
+        flowNode: {id: 'service-task-3', name: 'service-task-3'},
+        targetFlowNode: {id: 'service-task-4', name: 'service-task-4'},
         affectedTokenCount: 2,
         visibleAffectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
@@ -90,21 +187,21 @@ describe('stores/modifications', () => {
       {
         operation: 'ADD_TOKEN',
         scopeId: uniqueID,
-        flowNode: {id: '1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
       {
         operation: 'CANCEL_TOKEN',
-        flowNode: {id: '2', name: 'flow-node-2'},
+        flowNode: {id: 'service-task-2', name: 'service-task-2'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
       },
       {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: '3', name: 'flow-node-3'},
-        targetFlowNode: {id: '4', name: 'flow-node-4'},
+        flowNode: {id: 'service-task-3', name: 'service-task-3'},
+        targetFlowNode: {id: 'service-task-4', name: 'service-task-4'},
         affectedTokenCount: 2,
         visibleAffectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
@@ -122,7 +219,7 @@ describe('stores/modifications', () => {
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
     modificationsStore.removeFlowNodeModification({
-      flowNode: {id: '4', name: ''},
+      flowNode: {id: 'service-task-4', name: ''},
       operation: 'ADD_TOKEN',
       scopeId: '1',
       affectedTokenCount: 1,
@@ -131,7 +228,7 @@ describe('stores/modifications', () => {
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
     modificationsStore.removeFlowNodeModification({
-      flowNode: {id: '2', name: ''},
+      flowNode: {id: 'service-task-2', name: ''},
       operation: 'ADD_TOKEN',
       scopeId: '2',
       affectedTokenCount: 1,
@@ -140,14 +237,14 @@ describe('stores/modifications', () => {
     });
     expect(modificationsStore.state.modifications.length).toEqual(3);
     modificationsStore.removeFlowNodeModification({
-      flowNode: {id: '2', name: ''},
+      flowNode: {id: 'service-task-2', name: ''},
       operation: 'CANCEL_TOKEN',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
     });
     expect(modificationsStore.state.modifications.length).toEqual(2);
     modificationsStore.removeFlowNodeModification({
-      flowNode: {id: '1', name: ''},
+      flowNode: {id: 'service-task-1', name: ''},
       operation: 'ADD_TOKEN',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
@@ -159,8 +256,8 @@ describe('stores/modifications', () => {
     expect(modificationsStore.flowNodeModifications).toEqual([
       {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: '3', name: 'flow-node-3'},
-        targetFlowNode: {id: '4', name: 'flow-node-4'},
+        flowNode: {id: 'service-task-3', name: 'service-task-3'},
+        targetFlowNode: {id: 'service-task-4', name: 'service-task-4'},
         affectedTokenCount: 2,
         visibleAffectedTokenCount: 2,
         scopeIds: [uniqueIDForMove],
@@ -270,6 +367,14 @@ describe('stores/modifications', () => {
   });
 
   it('should remove last modification', async () => {
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
     const uniqueID = generateUniqueID();
 
     modificationsStore.addModification({
@@ -277,27 +382,19 @@ describe('stores/modifications', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: uniqueID,
-        flowNode: {id: '1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: '2', name: 'flow-node-2'},
-        affectedTokenCount: 3,
-        visibleAffectedTokenCount: 3,
-      },
-    });
+    modificationsStore.cancelAllTokens('service-task-2');
 
     expect(modificationsStore.lastModification).toEqual({
       payload: {
         operation: 'CANCEL_TOKEN',
-        flowNode: {id: '2', name: 'flow-node-2'},
+        flowNode: {id: 'service-task-2', name: 'service-task-2'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
       },
@@ -310,7 +407,7 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
-        flowNode: {id: '1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         scopeId: uniqueID,
@@ -324,23 +421,6 @@ describe('stores/modifications', () => {
   });
 
   it('should get modifications by flow node', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'multi-instance-subprocess',
-        active: 0,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'subprocess-service-task',
-        active: 2,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
-
     mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
@@ -353,7 +433,7 @@ describe('stores/modifications', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: generateUniqueID(),
-        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
@@ -365,29 +445,21 @@ describe('stores/modifications', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: generateUniqueID(),
-        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
     });
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'flowNode2', name: 'flow-node-2'},
-        affectedTokenCount: 3,
-        visibleAffectedTokenCount: 3,
-      },
-    });
+    modificationsStore.cancelAllTokens('service-task-2');
 
     modificationsStore.addModification({
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'flowNode3', name: 'flow-node-3'},
-        targetFlowNode: {id: 'flowNode4', name: 'flow-node-4'},
+        flowNode: {id: 'service-task-3', name: 'service-task-3'},
+        targetFlowNode: {id: 'service-task-4', name: 'service-task-4'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         scopeIds: ['1', '2', '3'],
@@ -400,7 +472,7 @@ describe('stores/modifications', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: generateUniqueID(),
-        flowNode: {id: 'flowNode5', name: 'flow-node-5'},
+        flowNode: {id: 'service-task-5', name: 'service-task-5'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
@@ -411,8 +483,8 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'flowNode5', name: 'flow-node-5'},
-        targetFlowNode: {id: 'flowNode6', name: 'flow-node-6'},
+        flowNode: {id: 'service-task-5', name: 'service-task-5'},
+        targetFlowNode: {id: 'service-task-6', name: 'service-task-6'},
         affectedTokenCount: 2,
         visibleAffectedTokenCount: 2,
         scopeIds: ['4', '5'],
@@ -420,48 +492,40 @@ describe('stores/modifications', () => {
       },
     });
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'multi-instance-subprocess', name: 'flow-node-7'},
-        affectedTokenCount: 0,
-        visibleAffectedTokenCount: 0,
-      },
-    });
+    modificationsStore.cancelAllTokens('multi-instance-subprocess');
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
-      flowNode1: {
+      'service-task-1': {
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 0,
       },
-      flowNode2: {
+      'service-task-2': {
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 3,
       },
-      flowNode3: {
+      'service-task-3': {
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 3,
       },
-      flowNode4: {
+      'service-task-4': {
         cancelledTokens: 0,
         newTokens: 3,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 0,
       },
-      flowNode5: {
+      'service-task-5': {
         cancelledTokens: 2,
         newTokens: 1,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 2,
       },
-      flowNode6: {
+      'service-task-6': {
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
@@ -495,12 +559,20 @@ describe('stores/modifications', () => {
   });
 
   it('should check if tokens on a flow node is cancelled', async () => {
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
     modificationsStore.addModification({
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: generateUniqueID(),
-        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
+        flowNode: {id: 'service-task-1', name: 'service-task-1'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
@@ -508,20 +580,13 @@ describe('stores/modifications', () => {
     });
 
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode1')
+      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-1')
     ).toBe(false);
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'flowNode1', name: 'flow-node-1'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('service-task-1');
+
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode1')
+      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-1')
     ).toBe(true);
 
     expect(
@@ -534,8 +599,8 @@ describe('stores/modifications', () => {
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'flowNode2', name: 'flow-node-2'},
-        targetFlowNode: {id: 'flowNode3', name: 'flow-node-3'},
+        flowNode: {id: 'service-task-2', name: 'service-task-2'},
+        targetFlowNode: {id: 'service-task-3', name: 'service-task-3'},
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         scopeIds: ['1'],
@@ -543,24 +608,14 @@ describe('stores/modifications', () => {
       },
     });
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode2')
+      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-2')
     ).toBe(true);
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('flowNode3')
+      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-3')
     ).toBe(false);
   });
 
   it('should move tokens', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'StartEvent_1',
-        active: 2,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
-
     mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
@@ -603,65 +658,6 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens from multi instance process', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'StartEvent_1',
-        active: 0,
-        incidents: 0,
-        completed: 1,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-1',
-        active: 0,
-        incidents: 0,
-        completed: 1,
-        canceled: 0,
-      },
-      {
-        activityId: 'multi-instance-subprocess',
-        active: 0,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'subprocess-start-1',
-        active: 0,
-        incidents: 0,
-        completed: 0,
-        canceled: 1,
-      },
-      {
-        activityId: 'subprocess-service-task',
-        active: 0,
-        incidents: 1,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'service-task-7',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'multi-instance-service-task',
-        active: 2,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'message-boundary',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
-
     mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
@@ -1120,15 +1116,8 @@ describe('stores/modifications', () => {
         },
       },
     });
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'flow_node_2', name: 'flow node 2'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('flow_node_2');
+
     modificationsStore.addModification({
       type: 'token',
       payload: {

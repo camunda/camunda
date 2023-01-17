@@ -7,7 +7,7 @@
 
 const mockProcessStatistics = [
   {
-    activityId: 'ServiceTask_0kt6c5i',
+    activityId: 'userTask',
     active: 1,
     canceled: 2,
     incidents: 0,

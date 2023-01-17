@@ -148,8 +148,20 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should show and remove one cancel modification flow nodes', async () => {
-    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'peterJoin',
+        active: 2,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
 
+    await processInstanceDetailsDiagramStore.fetchProcessXml(processId);
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      processInstanceId
+    );
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
@@ -179,15 +191,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByText('stop.svg')).not.toBeInTheDocument();
 
     modificationsStore.enableModificationMode();
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'peterJoin', name: 'Peter Join'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('peterJoin');
 
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
     expect(screen.getAllByText('Peter Join')).toHaveLength(2);

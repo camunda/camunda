@@ -201,15 +201,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     );
     modificationsStore.enableModificationMode();
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'TaskB', name: 'Task B'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('TaskB');
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'TaskB',

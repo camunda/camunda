@@ -50,8 +50,8 @@ describe('stores/processDiagram', () => {
 
     expect(processDiagramStore.flowNodeFilterOptions).toEqual([
       {label: 'EndEvent_0crvjrk', value: 'EndEvent_0crvjrk'},
-      {label: 'ServiceTask_0kt6c5i', value: 'ServiceTask_0kt6c5i'},
       {label: 'StartEvent_1', value: 'StartEvent_1'},
+      {label: 'userTask', value: 'userTask'},
     ]);
   });
 
@@ -68,12 +68,12 @@ describe('stores/processDiagram', () => {
     expect(processDiagramStore.flowNodeStates).toEqual([
       {
         count: 1,
-        flowNodeId: 'ServiceTask_0kt6c5i',
+        flowNodeId: 'userTask',
         flowNodeState: 'active',
       },
       {
         count: 2,
-        flowNodeId: 'ServiceTask_0kt6c5i',
+        flowNodeId: 'userTask',
         flowNodeState: 'canceled',
       },
       {
@@ -101,7 +101,7 @@ describe('stores/processDiagram', () => {
 
     expect(processDiagramStore.overlaysData).toEqual([
       {
-        flowNodeId: 'ServiceTask_0kt6c5i',
+        flowNodeId: 'userTask',
         payload: {
           count: 1,
           flowNodeState: 'active',
@@ -113,7 +113,7 @@ describe('stores/processDiagram', () => {
         type: 'statistics-active',
       },
       {
-        flowNodeId: 'ServiceTask_0kt6c5i',
+        flowNodeId: 'userTask',
         payload: {
           count: 2,
           flowNodeState: 'canceled',
@@ -260,7 +260,7 @@ describe('stores/processDiagram', () => {
     const newStatisticsResponse = [
       ...mockProcessStatistics,
       {
-        activityId: 'ServiceTask_0kt6c5i_new',
+        activityId: 'userTask_new',
         active: 1,
         canceled: 0,
         incidents: 0,

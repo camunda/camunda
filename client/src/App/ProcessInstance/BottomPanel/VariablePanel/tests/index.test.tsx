@@ -915,19 +915,7 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
 
-    // cancel the running token
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
-        },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
 
     await waitForElementToBeRemoved(() =>
       screen.getByRole('button', {name: /add variable/i})
@@ -1141,19 +1129,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
-    // cancel the running token
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
-        },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
 
     await waitForElementToBeRemoved(() =>
       screen.getByRole('button', {name: /add variable/i})
@@ -1187,15 +1163,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'Activity_0qtp1k6', name: 'Activity_0qtp1k6'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('edit-variable-value')
@@ -1250,19 +1218,7 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i})
     ).toBeInTheDocument();
 
-    // cancel the running token
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {
-          id: 'Activity_0qtp1k6',
-          name: 'Flow Node with running tokens',
-        },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('Activity_0qtp1k6');
 
     await waitForElementToBeRemoved(() =>
       screen.getByRole('button', {name: /add variable/i})

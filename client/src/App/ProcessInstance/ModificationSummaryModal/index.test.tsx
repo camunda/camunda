@@ -357,18 +357,7 @@ describe('Modification Summary Modal', () => {
       },
     });
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {
-          id: 'multi-instance-subprocess',
-          name: 'multi instance subprocess',
-        },
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('multi-instance-subprocess');
 
     const [
       addModificationAffectedTokenCount,
@@ -483,15 +472,7 @@ describe('Modification Summary Modal', () => {
       )
     ).not.toBeInTheDocument();
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'taskA', name: 'task a'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('taskA');
 
     expect(
       screen.queryByText(
@@ -499,15 +480,7 @@ describe('Modification Summary Modal', () => {
       )
     ).not.toBeInTheDocument();
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'taskB', name: 'task b'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('taskB');
 
     expect(
       await screen.findByText(
@@ -587,15 +560,7 @@ describe('Modification Summary Modal', () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
 
-    modificationsStore.addModification({
-      type: 'token',
-      payload: {
-        operation: 'CANCEL_TOKEN',
-        flowNode: {id: 'taskA', name: 'task a'},
-        affectedTokenCount: 1,
-        visibleAffectedTokenCount: 1,
-      },
-    });
+    modificationsStore.cancelAllTokens('taskA');
 
     expect(
       await screen.findByText(
