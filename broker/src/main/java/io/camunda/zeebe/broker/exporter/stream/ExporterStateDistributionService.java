@@ -17,34 +17,33 @@ import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ExporterPositionsDistributionService implements AutoCloseable {
+public class ExporterStateDistributionService implements AutoCloseable {
 
   private static final Logger PERIODIC_LOGGER =
       new ThrottledLogger(Loggers.EXPORTER_LOGGER, Duration.ofSeconds(60));
   private final PartitionMessagingService partitionMessagingService;
-  private final String exporterPositionsTopic;
+  private final String exporterStateTopic;
   private final BiConsumer<String, Long> exporterPositionConsumer;
 
-  public ExporterPositionsDistributionService(
+  public ExporterStateDistributionService(
       final BiConsumer<String, Long> exporterPositionConsumer,
       final PartitionMessagingService partitionMessagingService,
-      final String exporterTopic) {
+      final String exporterStateTopic) {
     this.exporterPositionConsumer = exporterPositionConsumer;
     this.partitionMessagingService = partitionMessagingService;
-    exporterPositionsTopic = exporterTopic;
+    this.exporterStateTopic = exporterStateTopic;
   }
 
-  public void subscribeForExporterPositions(final Executor executor) {
-    partitionMessagingService.subscribe(
-        exporterPositionsTopic, this::storeExporterPositions, executor);
+  public void subscribeForExporterState(final Executor executor) {
+    partitionMessagingService.subscribe(exporterStateTopic, this::storeExporterState, executor);
   }
 
-  private void storeExporterPositions(final ByteBuffer byteBuffer) {
+  private void storeExporterState(final ByteBuffer byteBuffer) {
     final var readBuffer = new UnsafeBuffer(byteBuffer);
-    final var exportPositionsMessage = new ExporterPositionsMessage();
-    exportPositionsMessage.wrap(readBuffer, 0, readBuffer.capacity());
+    final var distributeMessage = new ExporterStateDistributeMessage();
+    distributeMessage.wrap(readBuffer, 0, readBuffer.capacity());
 
-    final var exporterPositions = exportPositionsMessage.getExporterPositions();
+    final var exporterPositions = distributeMessage.getExporterPositions();
 
     Loggers.EXPORTER_LOGGER.trace("Received new exporter state {}", exporterPositions);
     PERIODIC_LOGGER.debug("Current exporter state {}", exporterPositions);
@@ -52,13 +51,12 @@ public class ExporterPositionsDistributionService implements AutoCloseable {
     exporterPositions.forEach(exporterPositionConsumer);
   }
 
-  public void distributeExporterPositions(final ExporterPositionsMessage exporterPositionsMessage) {
-    partitionMessagingService.broadcast(
-        exporterPositionsTopic, exporterPositionsMessage.toByteBuffer());
+  public void distributeExporterState(final ExporterStateDistributeMessage distributeMessage) {
+    partitionMessagingService.broadcast(exporterStateTopic, distributeMessage.toByteBuffer());
   }
 
   @Override
   public void close() {
-    partitionMessagingService.unsubscribe(exporterPositionsTopic);
+    partitionMessagingService.unsubscribe(exporterStateTopic);
   }
 }

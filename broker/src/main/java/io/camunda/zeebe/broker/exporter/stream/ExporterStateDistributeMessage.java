@@ -18,7 +18,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.MutableInteger;
 
-public class ExporterPositionsMessage
+public class ExporterStateDistributeMessage
     extends SbeBufferWriterReader<ExporterPositionsEncoder, ExporterPositionsDecoder> {
 
   private final Map<String, Long> exporterPositions = new HashMap<>();

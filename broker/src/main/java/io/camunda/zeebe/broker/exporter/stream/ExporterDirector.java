@@ -81,7 +81,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final String exporterPositionsTopic;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
-  private ExporterPositionsDistributionService exporterDistributionService;
+  private ExporterStateDistributionService exporterDistributionService;
   private final int partitionId;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
@@ -191,7 +191,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       LOG.debug("Recovering exporter from snapshot");
       recoverFromSnapshot();
       exporterDistributionService =
-          new ExporterPositionsDistributionService(
+          new ExporterStateDistributionService(
               this::consumeExporterPositionFromLeader,
               partitionMessagingService,
               exporterPositionsTopic);
@@ -339,7 +339,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         exporterPhase = ExporterPhase.PAUSED;
       }
 
-      actor.runAtFixedRate(distributionInterval, this::distributeExporterPositions);
+      actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
 
     } else {
       actor.close();
@@ -353,18 +353,18 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     if (state.hasExporters()) {
-      exporterDistributionService.subscribeForExporterPositions(actor::run);
+      exporterDistributionService.subscribeForExporterState(actor::run);
     } else {
       actor.close();
     }
   }
 
-  private void distributeExporterPositions() {
-    final var exportPositionsMessage = new ExporterPositionsMessage();
+  private void distributeExporterState() {
+    final var distributeMessage = new ExporterStateDistributeMessage();
     state.visitExporterState(
         (exporterId, exporterStateEntry) ->
-            exportPositionsMessage.putExporter(exporterId, exporterStateEntry.getPosition()));
-    exporterDistributionService.distributeExporterPositions(exportPositionsMessage);
+            distributeMessage.putExporter(exporterId, exporterStateEntry.getPosition()));
+    exporterDistributionService.distributeExporterState(distributeMessage);
   }
 
   private void skipRecord(final LoggedEvent currentEvent) {

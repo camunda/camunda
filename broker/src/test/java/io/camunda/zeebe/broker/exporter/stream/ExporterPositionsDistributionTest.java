@@ -16,7 +16,7 @@ import org.junit.Test;
 
 public class ExporterPositionsDistributionTest {
 
-  private ExporterPositionsDistributionService exporterPositionsDistributionService;
+  private ExporterStateDistributionService exporterStateDistributionService;
   private Map<String, Long> exporterPositions;
   private SimplePartitionMessageService partitionMessagingService;
 
@@ -24,8 +24,8 @@ public class ExporterPositionsDistributionTest {
   public void setup() {
     exporterPositions = new HashMap<>();
     partitionMessagingService = new SimplePartitionMessageService();
-    exporterPositionsDistributionService =
-        new ExporterPositionsDistributionService(
+    exporterStateDistributionService =
+        new ExporterStateDistributionService(
             exporterPositions::put, partitionMessagingService, "topic");
   }
 
@@ -34,7 +34,7 @@ public class ExporterPositionsDistributionTest {
     // given
 
     // when
-    exporterPositionsDistributionService.subscribeForExporterPositions(Runnable::run);
+    exporterStateDistributionService.subscribeForExporterState(Runnable::run);
 
     // then
     assertThat(partitionMessagingService.consumers).containsKey("topic");
@@ -43,13 +43,13 @@ public class ExporterPositionsDistributionTest {
   @Test
   public void shouldConsumeExporterMessage() {
     // given
-    final var exporterPositionsMessage = new ExporterPositionsMessage();
+    final var exporterPositionsMessage = new ExporterStateDistributeMessage();
     exporterPositionsMessage.putExporter("elastic", 123);
     exporterPositionsMessage.putExporter("metric", 345);
-    exporterPositionsDistributionService.subscribeForExporterPositions(Runnable::run);
+    exporterStateDistributionService.subscribeForExporterState(Runnable::run);
 
     // when
-    exporterPositionsDistributionService.distributeExporterPositions(exporterPositionsMessage);
+    exporterStateDistributionService.distributeExporterState(exporterPositionsMessage);
 
     // then
     assertThat(exporterPositions).containsEntry("elastic", 123L).containsEntry("metric", 345L);
@@ -58,13 +58,13 @@ public class ExporterPositionsDistributionTest {
   @Test
   public void shouldRemoveSubscriptionOnClose() throws Exception {
     // given
-    final var exporterPositionsMessage = new ExporterPositionsMessage();
+    final var exporterPositionsMessage = new ExporterStateDistributeMessage();
     exporterPositionsMessage.putExporter("elastic", 123);
     exporterPositionsMessage.putExporter("metric", 345);
-    exporterPositionsDistributionService.subscribeForExporterPositions(Runnable::run);
+    exporterStateDistributionService.subscribeForExporterState(Runnable::run);
 
     // when
-    exporterPositionsDistributionService.close();
+    exporterStateDistributionService.close();
 
     // then
     assertThat(partitionMessagingService.consumers).isEmpty();

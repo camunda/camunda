@@ -12,12 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
-public class ExporterPositionsMessageTest {
+public class ExporterStateDistributeMessageTest {
 
   @Test
   public void shouldEncodeExporterPositions() {
     // given
-    final var exportPositionsMessage = new ExporterPositionsMessage();
+    final var exportPositionsMessage = new ExporterStateDistributeMessage();
     exportPositionsMessage.putExporter("elasticsearch", 1001);
     exportPositionsMessage.putExporter("metrics", 95);
     final var length = exportPositionsMessage.getLength();
@@ -37,7 +37,7 @@ public class ExporterPositionsMessageTest {
   @Test
   public void shouldDecodeExporterPositions() {
     // given
-    final var exportPositionsMessage = new ExporterPositionsMessage();
+    final var exportPositionsMessage = new ExporterStateDistributeMessage();
     exportPositionsMessage.putExporter("elasticsearch", 1001);
     exportPositionsMessage.putExporter("metrics", 95);
     final var length = exportPositionsMessage.getLength();
@@ -45,7 +45,7 @@ public class ExporterPositionsMessageTest {
     exportPositionsMessage.write(buffer, 0);
 
     // when
-    final var otherMessage = new ExporterPositionsMessage();
+    final var otherMessage = new ExporterStateDistributeMessage();
     otherMessage.wrap(buffer, 0, length);
 
     // then
