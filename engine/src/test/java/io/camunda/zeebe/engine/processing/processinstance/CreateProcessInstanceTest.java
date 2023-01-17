@@ -11,12 +11,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -31,6 +38,8 @@ public final class CreateProcessInstanceTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldActivateProcess() {
@@ -197,5 +206,90 @@ public final class CreateProcessInstanceTest {
         .hasFlowScopeKey(processInstanceKey)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey);
+  }
+
+  // Regression test for https://github.com/camunda/zeebe/issues/10536
+  @Test
+  public void shouldActivateNoneStartEventWhenEventTriggerIsAvailableInState() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent("noneStart")
+            .endEvent()
+            .moveToProcess(processId)
+            .startEvent("msgStart")
+            .message("msg")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(modelInstance).deploy();
+
+    // when
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .processInstanceCreation(
+                ProcessInstanceCreationIntent.CREATE,
+                new ProcessInstanceCreationRecord().setBpmnProcessId(processId).setVersion(1)),
+        RecordToWrite.command()
+            .message(
+                MessageIntent.PUBLISH,
+                new MessageRecord().setName("msg").setCorrelationKey("").setTimeToLive(0)));
+
+    final var processInstanceKey =
+        RecordingExporter.processInstanceCreationRecords()
+            .withBpmnProcessId(processId)
+            .withIntent(ProcessInstanceCreationIntent.CREATED)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, processId, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, processId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, processId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(
+                BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .doesNotContain(
+            tuple(BpmnElementType.START_EVENT, "msgStart", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(
+                BpmnElementType.START_EVENT, "msgStart", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                BpmnElementType.START_EVENT, "msgStart", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withBpmnProcessId(processId)
+                .filter(r -> r.getValue().getProcessInstanceKey() != processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(
+            r -> r.getValue().getBpmnElementType(),
+            r -> r.getValue().getElementId(),
+            Record::getIntent)
+        .containsSequence(
+            tuple(BpmnElementType.PROCESS, processId, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.PROCESS, processId, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, processId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                BpmnElementType.START_EVENT, "msgStart", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, "msgStart", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .doesNotContain(
+            tuple(BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(
+                BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 }

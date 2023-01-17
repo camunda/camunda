@@ -95,6 +95,10 @@ public final class ProcessProcessor
     if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
       eventSubscriptionBehavior
           .getEventTriggerForProcessDefinition(activated.getProcessDefinitionKey())
+          .filter(
+              eventTrigger ->
+                  eventTrigger.getProcessInstanceKey() == activated.getProcessInstanceKey()
+                      || eventTrigger.getProcessInstanceKey() == -1L)
           .ifPresentOrElse(
               eventTrigger ->
                   eventSubscriptionBehavior.activateTriggeredStartEvent(activated, eventTrigger),

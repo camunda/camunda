@@ -75,7 +75,11 @@ final class ProcessInstanceElementCompletedApplier
         || callActivity.isPropagateAllChildVariablesEnabled()) {
       final var variables = variableState.getVariablesAsDocument(key);
       eventScopeInstanceState.triggerEvent(
-          parentElementInstanceKey, parentElementInstanceKey, elementId, variables);
+          parentElementInstanceKey,
+          parentElementInstanceKey,
+          elementId,
+          variables,
+          parentElementInstance.getValue().getProcessInstanceKey());
     }
   }
 }
