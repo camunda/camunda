@@ -58,14 +58,13 @@ public class Metrics {
   public static final String TAG_KEY_NAME = "name",
                              TAG_KEY_TYPE = "type",
                              TAG_KEY_PARTITION = "partition",
-                             TAG_KEY_STATUS = "status";
+                             TAG_KEY_STATUS = "status",
+                             TAG_KEY_ORGANIZATIONID = "organizationId";
   //  Values:
   public static final String TAG_VALUE_PROCESSINSTANCES = "processInstances",
                              TAG_VALUE_CORESTATISTICS = "corestatistics",
                              TAG_VALUE_SUCCEEDED = "succeeded",
                              TAG_VALUE_FAILED = "failed";
-
-
   @Autowired
   private MeterRegistry registry;
 
@@ -89,8 +88,8 @@ public class Metrics {
         .register(registry);
   }
 
-  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier){
-    Gauge.builder(name, gaugeSupplier).register(registry);
+  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier, String ... tags){
+    Gauge.builder(name, gaugeSupplier).tags(tags).register(registry);
   }
 
   public <E> void registerGaugeQueueSize(String name, Queue<E> queue, String... tags) {

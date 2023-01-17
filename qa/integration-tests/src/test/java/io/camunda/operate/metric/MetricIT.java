@@ -12,6 +12,8 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import io.camunda.operate.Metrics;
 import io.camunda.operate.management.ModelMetricProvider;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.util.TestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.operate.entities.OperationState;
@@ -125,8 +127,10 @@ public class MetricIT extends OperateZeebeIntegrationTest {
   @Test // OPE-3857
   public void testBPMNAndDNMModelMetrics() {
     // Given metrics are registered
-    metrics.registerGaugeSupplier(Metrics.GAUGE_BPMN_MODEL_COUNT, modelMetricProvider::getBPMNModelCount);
-    metrics.registerGaugeSupplier(Metrics.GAUGE_DMN_MODEL_COUNT, modelMetricProvider::getDMNModelCount);
+    metrics.registerGaugeSupplier(Metrics.GAUGE_BPMN_MODEL_COUNT, modelMetricProvider::getBPMNModelCount,
+        Metrics.TAG_KEY_ORGANIZATIONID, "orga");
+    metrics.registerGaugeSupplier(Metrics.GAUGE_DMN_MODEL_COUNT, modelMetricProvider::getDMNModelCount,
+        Metrics.TAG_KEY_ORGANIZATIONID, "orga");
     // When
     tester
         .deployProcess("demoProcess_v_1.bpmn")
@@ -140,8 +144,12 @@ public class MetricIT extends OperateZeebeIntegrationTest {
 
     // Then
     assertThatMetricsFrom(mockMvc,allOf(
-        containsString(Metrics.GAUGE_BPMN_MODEL_COUNT.replace('.', '_') +" 2.0"),
-        containsString(Metrics.GAUGE_DMN_MODEL_COUNT.replace('.','_') + " 2.0")
+        containsString(
+            Metrics.GAUGE_BPMN_MODEL_COUNT.replace('.', '_')
+                +"{"+Metrics.TAG_KEY_ORGANIZATIONID+"=\"orga\",} 2.0"),
+        containsString(
+            Metrics.GAUGE_DMN_MODEL_COUNT.replace('.','_')
+                + "{"+Metrics.TAG_KEY_ORGANIZATIONID+"=\"orga\",} 2.0")
     ));
   }
   

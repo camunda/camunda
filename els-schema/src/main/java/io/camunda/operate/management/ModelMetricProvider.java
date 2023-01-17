@@ -7,6 +7,7 @@
 package io.camunda.operate.management;
 
 import io.camunda.operate.Metrics;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.DecisionIndex;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import org.elasticsearch.action.search.SearchRequest;
@@ -20,9 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
 import java.util.Optional;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
@@ -46,14 +47,25 @@ public class ModelMetricProvider {
   @Autowired
   private Metrics metrics;
 
+  @Autowired
+  private OperateProperties operateProperties;
+
   private Long lastBPMNModelCount = 0L;
   private Long lastDMNModelCount = 0L;
 
   @PostConstruct
   private void registerMetrics(){
     logger.info("Register BPMN/DMN model metrics.");
-    metrics.registerGaugeSupplier(Metrics.GAUGE_BPMN_MODEL_COUNT, this::getBPMNModelCount);
-    metrics.registerGaugeSupplier(Metrics.GAUGE_DMN_MODEL_COUNT, this::getDMNModelCount);
+    final String organizationId = operateProperties.getCloud().getOrganizationId();
+    if (StringUtils.hasText(organizationId)) {
+      metrics.registerGaugeSupplier(Metrics.GAUGE_BPMN_MODEL_COUNT, this::getBPMNModelCount,
+          Metrics.TAG_KEY_ORGANIZATIONID, organizationId);
+      metrics.registerGaugeSupplier(Metrics.GAUGE_DMN_MODEL_COUNT, this::getDMNModelCount,
+          Metrics.TAG_KEY_ORGANIZATIONID, organizationId);
+    } else {
+      metrics.registerGaugeSupplier(Metrics.GAUGE_BPMN_MODEL_COUNT, this::getBPMNModelCount);
+      metrics.registerGaugeSupplier(Metrics.GAUGE_DMN_MODEL_COUNT, this::getDMNModelCount);
+    }
   }
 
   public Long getBPMNModelCount(){
@@ -82,7 +94,7 @@ public class ModelMetricProvider {
       final Cardinality distinctFieldCounts  = searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
     } catch (Exception e) {
-      logger.error("Error in distinct count for field {} in index alias {}.", fieldName, indexAlias);
+      logger.error(String.format("Error in distinct count for field %s in index alias %s.", fieldName, indexAlias), e);
       return Optional.empty();
     }
   }

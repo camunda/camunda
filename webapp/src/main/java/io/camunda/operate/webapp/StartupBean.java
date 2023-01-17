@@ -11,7 +11,6 @@ import javax.annotation.PreDestroy;
 
 import io.camunda.operate.data.DataGenerator;
 import io.camunda.operate.es.ElasticsearchConnector;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.es.ElasticSearchUserDetailsService;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -43,12 +42,6 @@ public class StartupBean {
 
   @Autowired
   private OperationExecutor operationExecutor;
-
-  @Autowired
-  private OperateProperties operateProperties;
-
-
-
   @PostConstruct
   public void initApplication() {
     if (elasticsearchUserDetailsService != null) {
