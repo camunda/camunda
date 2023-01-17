@@ -31,6 +31,7 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -234,11 +235,18 @@ describe('TopPanel', () => {
     expect(
       screen.getByTitle(/Add single flow node instance/)
     ).toBeInTheDocument();
-    expect(
-      screen.getByTitle(
-        /Cancel all running flow node instances in this flow node/
-      )
-    ).toBeInTheDocument();
+    if (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED) {
+      expect(
+        screen.getByTitle(/Cancel selected instance in this flow node/)
+      ).toBeInTheDocument();
+    } else {
+      expect(
+        screen.getByTitle(
+          /Cancel all running flow node instances in this flow node/
+        )
+      ).toBeInTheDocument();
+    }
+
     expect(
       screen.getByTitle(
         /Move all running instances in this flow node to another target/

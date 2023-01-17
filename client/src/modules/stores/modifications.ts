@@ -653,6 +653,55 @@ class Modifications {
     return parentScope.parentScopeIds[flowNodeId] ?? null;
   };
 
+  addCancelModification = ({
+    flowNodeId,
+    // flowNodeInstanceKey,
+    affectedTokenCount,
+    visibleAffectedTokenCount,
+  }: {
+    flowNodeId: string;
+    flowNodeInstanceKey?: string;
+    affectedTokenCount: number;
+    visibleAffectedTokenCount: number;
+  }) => {
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'CANCEL_TOKEN',
+        flowNode: {
+          id: flowNodeId,
+          name: processInstanceDetailsDiagramStore.getFlowNodeName(flowNodeId),
+        },
+        // flowNodeInstanceKey,
+        affectedTokenCount,
+        visibleAffectedTokenCount,
+      },
+    });
+  };
+
+  cancelToken = (flowNodeId: string, flowNodeInstanceKey: string) => {
+    this.addCancelModification({
+      flowNodeId,
+      flowNodeInstanceKey,
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+    });
+  };
+
+  cancelAllTokens = (flowNodeId: string) => {
+    this.addCancelModification({
+      flowNodeId,
+      affectedTokenCount:
+        processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
+          flowNodeId
+        ),
+      visibleAffectedTokenCount:
+        processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
+          flowNodeId
+        ),
+    });
+  };
+
   reset = () => {
     this.state = {...DEFAULT_STATE};
     window.clearTimeout(this.modificationsLoadingTimeout);

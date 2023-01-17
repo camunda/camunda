@@ -21,10 +21,11 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {modificationRulesStore} from 'modules/stores/modificationRules';
+import {isNil} from 'lodash';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -34,6 +35,9 @@ type Props = {
 const ModificationDropdown: React.FC<Props> = observer(
   ({selectedFlowNodeRef, diagramCanvasRef}) => {
     const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+    const flowNodeInstanceId =
+      flowNodeSelectionStore.state.selection?.flowNodeInstanceId ??
+      flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
 
     if (
       flowNodeId === undefined ||
@@ -43,33 +47,11 @@ const ModificationDropdown: React.FC<Props> = observer(
     }
 
     const {selectedRunningInstanceCount} = flowNodeSelectionStore;
-
-    const businessObject =
-      processInstanceDetailsDiagramStore.businessObjects[flowNodeId];
-
-    const canSelectedFlowNodeBeModified =
-      !processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
-        flowNodeId
-      ) &&
-      !(
-        isMultiInstance(businessObject) &&
-        !flowNodeSelectionStore.state.selection?.isMultiInstance
-      );
-
-    const canNewTokensBeAdded =
-      processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
-        flowNodeId
-      );
-
-    const canBeCanceled =
-      processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
-        flowNodeId
-      ) &&
-      !modificationsStore.isCancelModificationAppliedOnFlowNode(flowNodeId);
+    const {canBeModified, availableModifications} = modificationRulesStore;
 
     return (
       <Popover
-        key={flowNodeSelectionStore.state.selection?.flowNodeInstanceId}
+        key={flowNodeInstanceId}
         referenceElement={selectedFlowNodeRef}
         offsetOptions={[10]}
         flipOptions={[
@@ -82,76 +64,47 @@ const ModificationDropdown: React.FC<Props> = observer(
       >
         <Title>Flow Node Modifications</Title>
         <Options>
-          {!canSelectedFlowNodeBeModified ? (
-            <Unsupported>Unsupported flow node type</Unsupported>
-          ) : !canNewTokensBeAdded && !canBeCanceled ? (
-            <Unsupported>No modifications available</Unsupported>
-          ) : (
-            <>
-              {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
-                selectedRunningInstanceCount > 0 && (
-                  <SelectedInstanceCount>
-                    Selected running instances: {selectedRunningInstanceCount}
-                  </SelectedInstanceCount>
-                )}
-              {canNewTokensBeAdded && (
-                <Option
-                  title="Add single flow node instance"
-                  aria-label="Add single flow node instance"
-                  onClick={() => {
-                    tracking.track({
-                      eventName: 'add-token',
-                    });
+          {(() => {
+            if (!canBeModified) {
+              return <Unsupported>Unsupported flow node type</Unsupported>;
+            }
 
-                    modificationsStore.addModification({
-                      type: 'token',
-                      payload: {
-                        operation: 'ADD_TOKEN',
-                        scopeId: generateUniqueID(),
-                        flowNode: {
-                          id: flowNodeId,
-                          name: processInstanceDetailsDiagramStore.getFlowNodeName(
-                            flowNodeId
-                          ),
-                        },
-                        affectedTokenCount: 1,
-                        visibleAffectedTokenCount: 1,
-                        parentScopeIds:
-                          modificationsStore.generateParentScopeIds(flowNodeId),
-                      },
-                    });
-                    flowNodeSelectionStore.clearSelection();
-                  }}
-                >
-                  <AddIcon />
-                  Add
-                </Option>
-              )}
-              {canBeCanceled && (
-                <>
+            if (availableModifications.length === 0) {
+              return <Unsupported>No modifications available</Unsupported>;
+            }
+
+            return (
+              <>
+                {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
+                  selectedRunningInstanceCount > 0 && (
+                    <SelectedInstanceCount>
+                      Selected running instances: {selectedRunningInstanceCount}
+                    </SelectedInstanceCount>
+                  )}
+                {availableModifications.includes('add') && (
                   <Option
-                    title="Cancel all running flow node instances in this flow node"
+                    title="Add single flow node instance"
+                    aria-label="Add single flow node instance"
                     onClick={() => {
                       tracking.track({
-                        eventName: 'cancel-token',
+                        eventName: 'add-token',
                       });
 
                       modificationsStore.addModification({
                         type: 'token',
                         payload: {
-                          operation: 'CANCEL_TOKEN',
+                          operation: 'ADD_TOKEN',
+                          scopeId: generateUniqueID(),
                           flowNode: {
                             id: flowNodeId,
                             name: processInstanceDetailsDiagramStore.getFlowNodeName(
                               flowNodeId
                             ),
                           },
-                          affectedTokenCount:
-                            processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-                              flowNodeId
-                            ),
-                          visibleAffectedTokenCount:
-                            processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
+                          affectedTokenCount: 1,
+                          visibleAffectedTokenCount: 1,
+                          parentScopeIds:
+                            modificationsStore.generateParentScopeIds(
                               flowNodeId
                             ),
                         },
@@ -159,25 +112,64 @@ const ModificationDropdown: React.FC<Props> = observer(
                       flowNodeSelectionStore.clearSelection();
                     }}
                   >
-                    <CancelIcon />
-                    Cancel
+                    <AddIcon />
+                    Add
                   </Option>
-                  {businessObject?.$type !== 'bpmn:SubProcess' && (
+                )}
+
+                {availableModifications.includes('cancel-instance') &&
+                  !isNil(flowNodeInstanceId) && (
                     <Option
-                      title="Move all running instances in this flow node to another target"
+                      title="Cancel selected instance in this flow node"
                       onClick={() => {
-                        modificationsStore.startMovingToken(flowNodeId);
+                        tracking.track({
+                          eventName: 'cancel-token',
+                        });
+
+                        modificationsStore.cancelToken(
+                          flowNodeId,
+                          flowNodeInstanceId
+                        );
                         flowNodeSelectionStore.clearSelection();
                       }}
                     >
-                      <MoveIcon />
-                      Move
+                      <CancelIcon />
+                      Cancel instance
                     </Option>
                   )}
-                </>
-              )}
-            </>
-          )}
+
+                {availableModifications.includes('cancel-all') && (
+                  <Option
+                    title="Cancel all running flow node instances in this flow node"
+                    onClick={() => {
+                      tracking.track({
+                        eventName: 'cancel-token',
+                      });
+
+                      modificationsStore.cancelAllTokens(flowNodeId);
+                      flowNodeSelectionStore.clearSelection();
+                    }}
+                  >
+                    <CancelIcon />
+                    Cancel all
+                  </Option>
+                )}
+
+                {availableModifications.includes('move-all') && (
+                  <Option
+                    title="Move all running instances in this flow node to another target"
+                    onClick={() => {
+                      modificationsStore.startMovingToken(flowNodeId);
+                      flowNodeSelectionStore.clearSelection();
+                    }}
+                  >
+                    <MoveIcon />
+                    Move all
+                  </Option>
+                )}
+              </>
+            );
+          })()}
         </Options>
       </Popover>
     );

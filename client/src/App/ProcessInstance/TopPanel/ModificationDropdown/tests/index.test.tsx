@@ -18,6 +18,10 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
+import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
+import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 
 describe('Modification Dropdown', () => {
   beforeAll(() => {
@@ -41,7 +45,7 @@ describe('Modification Dropdown', () => {
       },
       {
         activityId: 'service-task-1',
-        active: 0,
+        active: 5,
         canceled: 0,
         incidents: 0,
         completed: 1,
@@ -66,6 +70,13 @@ describe('Modification Dropdown', () => {
         canceled: 0,
         incidents: 1,
         completed: 0,
+      },
+      {
+        activityId: 'service-task-3',
+        active: 0,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
       },
       {
         activityId: 'service-task-7',
@@ -115,7 +126,7 @@ describe('Modification Dropdown', () => {
     ).not.toBeInTheDocument();
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
+      flowNodeId: 'service-task-1',
     });
 
     expect(
@@ -147,13 +158,13 @@ describe('Modification Dropdown', () => {
     modificationsStore.enableModificationMode();
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-7',
+      flowNodeId: 'service-task-1',
     });
-
     expect(
       await screen.findByText(/Flow Node Modifications/)
     ).toBeInTheDocument();
-    await user.click(await screen.findByText(/Move/));
+
+    await user.click(await screen.findByText(/Move all/));
 
     expect(
       screen.queryByText(/Flow Node Modifications/)
@@ -171,7 +182,7 @@ describe('Modification Dropdown', () => {
     modificationsStore.enableModificationMode();
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'service-task-1',
+      flowNodeId: 'service-task-3',
     });
 
     expect(
@@ -368,4 +379,60 @@ describe('Modification Dropdown', () => {
       await screen.findByText(/Unsupported flow node type/)
     ).toBeInTheDocument();
   });
+
+  (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
+    'should support cancel instance when flow node has 1 running instance',
+    async () => {
+      renderPopover();
+
+      await waitFor(() =>
+        expect(
+          processInstanceDetailsDiagramStore.state.diagramModel
+        ).not.toBeNull()
+      );
+      modificationsStore.enableModificationMode();
+
+      // select a flow node that has 1 running instance
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-7',
+      });
+
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+      flowNodeMetaDataStore.fetchMetaData({flowNodeId: 'service-task-7'});
+
+      expect(
+        await screen.findByText(/Flow Node Modifications/)
+      ).toBeInTheDocument();
+      expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
+      expect(screen.getByText(/Move/)).toBeInTheDocument();
+      expect(screen.getByText(/Add/)).toBeInTheDocument();
+
+      // select a flow node that has more than 1 running instances
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-1',
+      });
+
+      expect(
+        await screen.findByText(/Flow Node Modifications/)
+      ).toBeInTheDocument();
+      expect(await screen.findByText(/Cancel all/)).toBeInTheDocument();
+      expect(screen.getByText(/Move/)).toBeInTheDocument();
+      expect(screen.getByText(/Add/)).toBeInTheDocument();
+
+      // select a flow node instance
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-1',
+        flowNodeInstanceId: 'some-instance-id',
+      });
+
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+      flowNodeMetaDataStore.fetchMetaData({
+        flowNodeId: 'service-task-1',
+        flowNodeInstanceId: 'some-instance-id',
+      });
+      expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
+      expect(screen.getByText(/Move/)).toBeInTheDocument();
+      expect(screen.getByText(/Add/)).toBeInTheDocument();
+    }
+  );
 });

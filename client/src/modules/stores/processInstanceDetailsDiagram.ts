@@ -26,6 +26,8 @@ import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/utils/isAttachedT
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
+import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 
 type State = {
   diagramModel: DiagramModel | null;
@@ -239,6 +241,16 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
       ({$type}) => $type === 'bpmn:CallActivity'
     );
   }
+
+  isSubProcess = (flowNodeId: string) => {
+    const businessObject = this.businessObjects[flowNodeId];
+    return isSubProcess(businessObject);
+  };
+
+  isMultiInstance = (flowNodeId: string) => {
+    const businessObject = this.businessObjects[flowNodeId];
+    return isMultiInstance(businessObject);
+  };
 
   handleFetchFailure = (error?: unknown) => {
     this.state.status = 'error';
