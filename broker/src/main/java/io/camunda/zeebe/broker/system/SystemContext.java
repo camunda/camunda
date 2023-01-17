@@ -145,7 +145,7 @@ public final class SystemContext {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
 
-    if (dataCfg.isDiskUsageMonitoringEnabled()) {
+    if (dataCfg.getDisk().isEnableMonitoring()) {
       try {
         final long processingFreeSpace =
             dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());

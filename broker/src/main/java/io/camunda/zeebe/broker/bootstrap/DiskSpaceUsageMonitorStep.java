@@ -29,7 +29,7 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
 
     final var data = brokerStartupContext.getBrokerConfiguration().getData();
 
-    if (!data.isDiskUsageMonitoringEnabled()) {
+    if (!data.getDisk().isEnableMonitoring()) {
       brokerStartupContext.setDiskSpaceUsageMonitor(new DisabledDiskUsageMonitor());
       startupFuture.complete(brokerStartupContext);
       return;

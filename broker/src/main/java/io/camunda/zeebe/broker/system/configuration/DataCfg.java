@@ -32,6 +32,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   private int logIndexDensity = 100;
 
+  // diskUsageMonitoring and watermark configs are deprecated and replaced by DiskCfg
   private boolean diskUsageMonitoringEnabled = DEFAULT_DISK_USAGE_MONITORING_ENABLED;
   private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
   private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
@@ -108,10 +109,6 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setLogIndexDensity(final int logIndexDensity) {
     this.logIndexDensity = logIndexDensity;
-  }
-
-  public boolean isDiskUsageMonitoringEnabled() {
-    return disk.isEnableMonitoring();
   }
 
   public void setDiskUsageMonitoringEnabled(final boolean diskUsageMonitoringEnabled) {
