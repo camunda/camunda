@@ -32,14 +32,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const isDark = theme === 'dark';
   const isDuration = isDurationReport(report);
-  const maxValue = isDuration
-    ? Math.max(
-        ...result.measures
-          .filter(({property}) => property === 'duration')
-          .map((measure) => measure.data.map(({value}) => value))
-          .flat()
-      )
-    : 0;
   const isPersistedTooltips = hasReportPersistedTooltips(report);
 
   const groupedByDurationMaxValue =
@@ -57,7 +49,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         targetValue,
         visualization,
         configuration,
-        maxDuration: maxValue,
+        maxDuration: getMaxDuration(result, isDuration),
         groupedByDurationMaxValue,
         isDark,
         isPersistedTooltips,
@@ -396,4 +388,18 @@ export function createDatasetOptions({
         borderWidth: undefined,
       };
   }
+}
+
+function getMaxDuration(result, isDuration) {
+  if (!isDuration) {
+    return 0;
+  }
+
+  return Math.max(
+    ...result.measures
+      .filter(({property}) => property === 'duration')
+      .map((measure) => measure.data.map(({value}) => value))
+      .flat(),
+    0
+  );
 }
