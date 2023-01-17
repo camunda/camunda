@@ -27,7 +27,6 @@ import {tracking} from 'modules/tracking';
 import {MetadataPopover} from './MetadataPopover';
 import {modificationsStore} from 'modules/stores/modifications';
 import {ModificationDropdown} from './ModificationDropdown';
-import {MoveTokenBanner} from './MoveTokenBanner';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {
   CANCELED_BADGE,
@@ -37,6 +36,8 @@ import {
   COMPLETED_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {ModificationInfoBanner} from './ModificationInfoBanner';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -176,8 +177,19 @@ const TopPanel: React.FC = observer(() => {
               <IncidentsWrapper setIsInTransition={setIsInTransition} />
             )}
             {modificationsStore.state.status === 'moving-token' && (
-              <MoveTokenBanner />
+              <ModificationInfoBanner
+                text="Select the target flow node in the diagram"
+                button={{
+                  onClick: () => modificationsStore.finishMovingToken(),
+                  label: 'Discard',
+                }}
+              />
             )}
+            {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
+              modificationsStore.isModificationModeEnabled &&
+              flowNodeSelectionStore.selectedRunningInstanceCount > 1 && (
+                <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
+              )}
             {xml !== null && (
               <Diagram
                 xml={xml}

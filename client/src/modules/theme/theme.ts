@@ -31,6 +31,8 @@ const SEMANTIC_COLORS = {
   outlineError: '#ffafaf',
   transparent: 'transparent',
   shimmer: '#82b1ff',
+  supportWarning: '#f1c21b',
+  borderStrong01: '#8d8d8d',
 } as const;
 const DARK_COLORS = {
   ...SEMANTIC_COLORS,
@@ -295,10 +297,15 @@ const theme = {
         instanceHeader: {
           backgroundColor: DARK_COLORS.ui03,
         },
-        moveTokenBanner: {
-          backgroundColor: DARK_COLORS.ui05,
-          separatorColor: DARK_COLORS.ui06,
-          color: SEMANTIC_COLORS.white,
+        modificationInfoBanner: {
+          backgroundColor: SEMANTIC_COLORS.supportWarning,
+          separatorColor: SEMANTIC_COLORS.borderStrong01,
+          color: DARK_COLORS.ui04,
+          linkButton: {
+            default: LIGHT_COLORS.linkDefault,
+            hover: LIGHT_COLORS.linkHover,
+            active: LIGHT_COLORS.linkActive,
+          },
         },
       },
       emptyMessage: {
@@ -1010,7 +1017,10 @@ const theme = {
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
       },
       topPanel: {
-        moveTokenBanner: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
+        modificationInfoBanner: `0 2px 4px 0 ${rgba(
+          SEMANTIC_COLORS.black,
+          0.2
+        )}`,
       },
       modules: {
         button: {
@@ -1238,10 +1248,15 @@ const theme = {
         instanceHeader: {
           backgroundColor: LIGHT_COLORS.ui02,
         },
-        moveTokenBanner: {
-          backgroundColor: LIGHT_COLORS.ui05,
-          separatorColor: LIGHT_COLORS.ui03,
+        modificationInfoBanner: {
+          backgroundColor: SEMANTIC_COLORS.supportWarning,
+          separatorColor: SEMANTIC_COLORS.borderStrong01,
           color: DARK_COLORS.ui04,
+          linkButton: {
+            default: LIGHT_COLORS.linkDefault,
+            hover: LIGHT_COLORS.linkHover,
+            active: LIGHT_COLORS.linkActive,
+          },
         },
       },
       emptyMessage: {
@@ -1946,7 +1961,10 @@ const theme = {
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
       },
       topPanel: {
-        moveTokenBanner: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
+        modificationInfoBanner: `0 2px 4px 0 ${rgba(
+          SEMANTIC_COLORS.black,
+          0.2
+        )}`,
       },
       modules: {
         button: {

@@ -7,21 +7,22 @@
 
 import React from 'react';
 import {Container, Text, Button} from './styled';
-import {modificationsStore} from 'modules/stores/modifications';
 
-const MoveTokenBanner: React.FC = () => {
+type Props = {
+  text: string;
+  button?: {
+    onClick: () => void;
+    label: string;
+  };
+};
+
+const ModificationInfoBanner: React.FC<Props> = ({text, button}) => {
   return (
     <Container>
-      <Text>Select the target flow node in the diagram</Text>
-      <Button
-        onClick={() => {
-          modificationsStore.finishMovingToken();
-        }}
-      >
-        Discard
-      </Button>
+      <Text containsButton={button !== undefined}>{text}</Text>
+      {button && <Button onClick={button.onClick}>{button.label}</Button>}
     </Container>
   );
 };
 
-export {MoveTokenBanner};
+export {ModificationInfoBanner};

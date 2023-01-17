@@ -21,9 +21,10 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   calledInstanceMetadata,
+  incidentFlowNodeMetaData,
   PROCESS_INSTANCE_ID,
 } from 'modules/mocks/metadata';
-import {createInstance, mockCallActivityProcessXML} from 'modules/testUtils';
+import {createInstance} from 'modules/testUtils';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
@@ -32,6 +33,7 @@ import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenc
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -51,7 +53,6 @@ jest.mock('react-transition-group', () => {
     }),
   };
 });
-jest.mock('modules/utils/bpmn');
 
 type Props = {
   children?: React.ReactNode;
@@ -81,7 +82,7 @@ describe('TopPanel', () => {
   });
 
   beforeEach(() => {
-    mockFetchProcessXML().withSuccess('');
+    mockFetchProcessXML().withSuccess(mockProcessForModifications);
 
     mockFetchProcessInstance().withSuccess(
       createInstance({id: 'instance_id', state: 'INCIDENT'})
@@ -90,11 +91,18 @@ describe('TopPanel', () => {
     mockFetchSequenceFlows().withSuccess(mockSequenceFlows);
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
-        activityId: 'taskD',
+        activityId: 'service-task-1',
         active: 0,
-        canceled: 0,
         incidents: 1,
         completed: 0,
+        canceled: 0,
+      },
+      {
+        activityId: 'service-task-7',
+        active: 5,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
       },
     ]);
     processInstanceDetailsStatisticsStore.init('id');
@@ -184,8 +192,6 @@ describe('TopPanel', () => {
 
   it('should render metadata for default mode and modification dropdown for modification mode', async () => {
     processInstanceDetailsDiagramStore.init();
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -203,7 +209,7 @@ describe('TopPanel', () => {
     );
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'taskD',
+      flowNodeId: 'service-task-1',
     });
 
     expect(
@@ -226,7 +232,7 @@ describe('TopPanel', () => {
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'taskD',
+      flowNodeId: 'service-task-1',
     });
 
     expect(
@@ -257,7 +263,6 @@ describe('TopPanel', () => {
   it('should display move token banner in moving mode', async () => {
     processInstanceDetailsDiagramStore.init();
 
-    mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
     mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -274,7 +279,7 @@ describe('TopPanel', () => {
     modificationsStore.enableModificationMode();
 
     flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'taskD',
+      flowNodeId: 'service-task-1',
     });
 
     expect(
@@ -297,4 +302,65 @@ describe('TopPanel', () => {
       screen.queryByText(/select the target flow node in the diagram/i)
     ).not.toBeInTheDocument();
   });
+
+  (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
+    'should display multiple instances banner when a flow node with multiple running instances is selected',
+    async () => {
+      processInstanceDetailsStore.init({id: 'active_instance'});
+      processInstanceDetailsDiagramStore.init();
+
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+
+      render(<TopPanel />, {
+        wrapper: Wrapper,
+      });
+
+      modificationsStore.enableModificationMode();
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-7',
+      });
+
+      expect(
+        await screen.findByText(
+          /Flow node has multiple instances. To select one, use the instance history tree below./i
+        )
+      ).toBeInTheDocument();
+
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-1',
+      });
+
+      await waitForElementToBeRemoved(() =>
+        screen.queryByText(
+          /Flow node has multiple instances. To select one, use the instance history tree below./i
+        )
+      );
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-7',
+      });
+
+      expect(
+        await screen.findByText(
+          /Flow node has multiple instances. To select one, use the instance history tree below./i
+        )
+      ).toBeInTheDocument();
+
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-7',
+        flowNodeInstanceId: 'some-instance-id',
+      });
+
+      expect(
+        await screen.findByText(
+          /Flow node has multiple instances. To select one, use the instance history tree below./i
+        )
+      ).toBeInTheDocument();
+    }
+  );
 });
