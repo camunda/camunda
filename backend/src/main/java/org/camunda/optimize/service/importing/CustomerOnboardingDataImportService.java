@@ -18,6 +18,8 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -47,7 +49,7 @@ public class CustomerOnboardingDataImportService {
   private static final String PROCESSED_INSTANCES = "customer_onboarding_process_instances.json";
   private static final int BATCH_SIZE = 2000;
 
-  @PostConstruct
+  @EventListener(ApplicationReadyEvent.class)
   public void importData() {
     importData(PROCESSED_INSTANCES, CUSTOMER_ONBOARDING_DEFINITION, BATCH_SIZE);
   }
