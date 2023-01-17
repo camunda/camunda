@@ -269,34 +269,67 @@
       "disabled": true
     },
     {
+      "subtype": "time",
+      "dateLabel": "Date",
+      "type": "datetime",
+      "id": "Field_0dal4g3",
+      "key": "time_field",
+      "timeLabel": "I am a time field",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "use24h": false,
+      "description": "I am time field description"
+    },
+    {
+      "subtype": "time",
+      "dateLabel": "Date",
+      "type": "datetime",
+      "id": "Field_16am9zx",
+      "key": "disabled_time",
+      "timeLabel": "I am a disabled time field",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "description": "I am a disabled time field description",
+      "disabled": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "I am a datetime field date label",
+      "type": "datetime",
+      "id": "Field_0e4j7fb",
+      "key": "datetime_field",
+      "timeLabel": "I am a datetime field time label",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "description": "I am a datetime field description"
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "I am a disabled datetime field date label",
+      "type": "datetime",
+      "id": "Field_0qupyln",
+      "key": "disabled_datetime",
+      "timeLabel": "I am a disabled datetime field time label",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "disabled": true,
+      "description": "I am a disabled datetime description",
+      "validate": {
+        "required": true
+      }
+    },
+    {
       "label": "I am an adorned field",
       "type": "textfield",
       "id": "Field_0k58wk0",
       "key": "adorned_field",
       "description": "I am an adorned field description",
       "appearance": {
-        "prefixAdorner": "camunda.com/"
-      }
-    },
-    {
-      "label": "I am an adorned field",
-      "type": "textfield",
-      "id": "Field_0k58wk01",
-      "key": "adorned_field1",
-      "description": "I am an adorned field description",
-      "appearance": {
-        "suffixAdorner": "@gmail.com"
-      }
-    },
-    {
-      "label": "I am an adorned field",
-      "type": "textfield",
-      "id": "Field_0k58wk02",
-      "key": "adorned_field2",
-      "description": "I am an adorned field description",
-      "appearance": {
-        "prefixAdorner": "✨",
-        "suffixAdorner": "🚀"
+        "prefixAdorner": "prefix",
+        "suffixAdorner": "suffix"
       }
     },
     {

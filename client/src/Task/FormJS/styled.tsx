@@ -48,6 +48,41 @@ const FormContainer = styled.div`
   `}
 `;
 
+const getBaseInputStyles = ({height}: {height: string}) => css`
+  ${({theme}) => css`
+    color: var(--cds-text-primary);
+    background-color: var(--cds-field);
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--cds-border-strong);
+    height: ${height};
+    ${theme.bodyShort01};
+
+    &:focus {
+      outline: 2px solid var(--cds-focus);
+      outline-offset: -2px;
+    }
+  `}
+`;
+
+const getSelectArrowStyles = ({
+  arrowRightPosition,
+}: {
+  arrowRightPosition: string;
+}) => css`
+  ${({theme}) => css`
+    cursor: pointer;
+    appearance: none;
+    background-image: ${getSelectArrowSvg(theme.iconPrimary)};
+    background-repeat: no-repeat;
+    background-position: right ${arrowRightPosition} bottom 50%;
+
+    &:disabled {
+      background-image: ${getSelectArrowSvg(theme.iconDisabled)};
+    }
+  `}
+`;
+
 const MARKDOWN_STYLES = css`
   ${({theme}) => css`
     .fjs-container .fjs-form-field.fjs-form-field-text .markup {
@@ -376,62 +411,6 @@ const TAGLIST_STYLES = css`
         outline-offset: -2px;
       }
 
-      .fjs-form-field-taglist .fjs-taglist-anchor .fjs-dropdownlist {
-        margin: 0;
-        max-height: ${rem(264)};
-        border: none;
-        background-color: var(--cds-layer);
-        overflow-y: auto;
-        cursor: pointer;
-        border-radius: 0;
-        box-shadow: 0 2px 6px var(--cds-shadow);
-
-        & .fjs-dropdownlist-item {
-          border: none;
-          box-sizing: border-box;
-          padding: 0;
-          margin: 0 ${theme.spacing05};
-        }
-
-        & .fjs-dropdownlist-item:not(:first-of-type):not(:hover) {
-          border-top: 1px solid var(--cds-border-subtle);
-        }
-
-        & .fjs-dropdownlist-item,
-        & .fjs-dropdownlist-empty {
-          ${theme.bodyShort01};
-          height: ${rem(40)};
-          color: var(--cds-text-secondary);
-          cursor: pointer;
-          user-select: none;
-          display: flex;
-          align-items: center;
-          background-color: transparent;
-        }
-
-        & .fjs-dropdownlist-empty {
-          color: var(--cds-text-disabled);
-          cursor: default;
-        }
-
-        & .fjs-dropdownlist-item:hover,
-        & .fjs-dropdownlist-item.focused {
-          background-color: var(--cds-layer-hover);
-          color: var(--cds-text-primary);
-          margin: 0;
-          padding: 0 ${theme.spacing05};
-        }
-
-        & .fjs-dropdownlist-item:not(:first-of-type):hover {
-          padding-top: 1px;
-        }
-
-        & .fjs-dropdownlist-item.focused + .fjs-dropdownlist-item {
-          border: none;
-          padding-top: 1px;
-        }
-      }
-
       .fjs-taglist .fjs-taglist-input {
         color: var(--cds-text-primary);
       }
@@ -675,6 +654,13 @@ const DATETIME_INPUTS = css`
         border: none;
       }
 
+      select {
+        ${getBaseInputStyles({height: '1.5rem'})};
+        ${getSelectArrowStyles({arrowRightPosition: 'var(--cds-spacing-03)'})};
+        border-bottom: none;
+        padding-right: 2rem;
+      }
+
       .fjs-input-group {
         display: flex;
         flex-direction: row-reverse;
@@ -690,10 +676,15 @@ const DATETIME_INPUTS = css`
 
       .fjs-input-group .fjs-input-adornment svg {
         color: var(--cds-icon-primary);
+        cursor: pointer;
       }
 
       .flatpickr-wrapper {
         height: 100%;
+      }
+
+      .fjs-timepicker.fjs-timepicker-anchor {
+        position: unset;
       }
 
       .flatpickr-calendar.static {
@@ -704,113 +695,178 @@ const DATETIME_INPUTS = css`
       .flatpickr-calendar .flatpickr-next-month svg {
         height: 16px;
       }
+
+      .flatpickr-day.today {
+        position: relative;
+        color: var(--cds-link-primary);
+        font-weight: 600;
+        border-color: transparent;
+      }
+
+      .flatpickr-day.selected,
+      .flatpickr-day.today.selected,
+      .flatpickr-day.selected:hover,
+      .flatpickr-day.today.selected:hover {
+        background-color: var(--cds-button-primary);
+        color: var(--cds-text-on-color);
+      }
+
+      .flatpickr-day:focus {
+        outline: 2px solid var(--cds-focus, #0f62fe);
+        outline-offset: -2px;
+      }
+
+      .flatpickr-day.selected:focus {
+        outline: 0.0625rem solid var(--cds-focus);
+        outline-offset: -0.1875rem;
+      }
+
+      .flatpickr-day:hover {
+        background: var(--cds-layer-hover);
+      }
     }
   }
 `;
 
 const REMAINING_INPUTS = css`
+  .fjs-container {
+    .fjs-form-field-textfield .fjs-input-group,
+    .fjs-form-field-datetime .fjs-input-group,
+    .fjs-textarea,
+    .fjs-taglist,
+    .fjs-select,
+    .fjs-select:disabled {
+      ${getBaseInputStyles({height: '2.5rem'})}
+    }
+
+    .fjs-form-field-textfield .fjs-input-group,
+    .fjs-form-field-datetime .fjs-input-group {
+      &:focus-within {
+        outline: 2px solid var(--cds-focus);
+        outline-offset: -2px;
+      }
+    }
+    .fjs-form-field-textfield .fjs-input,
+    .fjs-form-field-datetime .fjs-input {
+      background-color: var(--cds-field);
+      color: var(--cds-text-primary);
+    }
+
+    .fjs-select {
+      ${getSelectArrowStyles({arrowRightPosition: 'var(--cds-spacing-05)'})}
+    }
+
+    .fjs-has-errors.fjs-form-field-number .fjs-input-group:focus-within,
+    .fjs-has-errors.fjs-form-field-select .fjs-select:focus,
+    .fjs-has-errors.fjs-form-field-textarea .fjs-textarea:focus,
+    .fjs-form-field-textfield.fjs-has-errors .fjs-input-group:focus-within,
+    .fjs-form-field-textfield.fjs-has-errors .fjs-input-group:focus,
+    .fjs-form-field-datetime.fjs-has-errors .fjs-input-group:focus-within,
+    .fjs-form-field-datetime.fjs-has-errors .fjs-input-group:focus {
+      outline: 2px solid var(--cds-focus);
+      outline-offset: -2px;
+    }
+
+    .fjs-has-errors.fjs-form-field-number .fjs-input-group,
+    .fjs-has-errors.fjs-form-field-select .fjs-select,
+    .fjs-has-errors.fjs-form-field-textarea .fjs-textarea,
+    .fjs-form-field-textfield.fjs-has-errors .fjs-input-group,
+    .fjs-form-field-textfield.fjs-has-errors .fjs-input-group,
+    .fjs-form-field-datetime.fjs-has-errors .fjs-input-group,
+    .fjs-form-field-datetime.fjs-has-errors .fjs-input-group {
+      outline: 2px solid var(--cds-text-error);
+      outline-offset: -2px;
+    }
+  }
+`;
+
+const DROPDOWN_STYLES = css`
   ${({theme}) =>
     css`
       .fjs-container {
-        .fjs-form-field-textfield .fjs-input-group,
-        .fjs-form-field-datetime .fjs-input-group,
-        .fjs-textarea,
-        .fjs-taglist,
-        .fjs-select,
-        .fjs-select:disabled {
-          color: var(--cds-text-primary);
-          background-color: var(--cds-field);
-          border-radius: 0;
+        .fjs-form-field-taglist .fjs-taglist-anchor .fjs-dropdownlist,
+        .fjs-form-field-datetime .fjs-timepicker-anchor .fjs-dropdownlist {
+          margin: 0;
+          max-height: ${rem(264)};
           border: none;
-          border-bottom: 1px solid var(--cds-border-strong);
-          height: 2.5rem;
-
-          &:focus {
-            outline: 2px solid var(--cds-focus);
-            outline-offset: -2px;
-          }
-        }
-
-        .fjs-form-field-textfield .fjs-input-group,
-        .fjs-form-field-datetime .fjs-input-group {
-          &:focus-within {
-            outline: 2px solid var(--cds-focus);
-            outline-offset: -2px;
-          }
-        }
-        .fjs-form-field-textfield .fjs-input,
-        .fjs-form-field-datetime .fjs-input {
-          background-color: var(--cds-field);
-          color: var(--cds-text-primary);
-        }
-
-        .fjs-select {
+          background-color: var(--cds-layer);
+          overflow-y: auto;
           cursor: pointer;
-          appearance: none;
-          background-image: ${getSelectArrowSvg(theme.iconPrimary)};
-          background-repeat: no-repeat;
-          background-position: right ${theme.spacing05} bottom 50%;
+          border-radius: 0;
+          box-shadow: 0 2px 6px var(--cds-shadow);
 
-          &:disabled {
-            background-image: ${getSelectArrowSvg(theme.iconDisabled)};
+          & .fjs-dropdownlist-item {
+            border: none;
+            box-sizing: border-box;
+            padding: 0;
+            margin: 0 ${theme.spacing05};
           }
-        }
 
-        .fjs-input-group .fjs-input {
-          ${theme.bodyShort01};
-        }
+          & .fjs-dropdownlist-item:not(:first-of-type):not(:hover) {
+            border-top: 1px solid var(--cds-border-subtle);
+          }
 
-        .fjs-has-errors.fjs-form-field-number .fjs-input-group:focus-within,
-        .fjs-has-errors.fjs-form-field-select .fjs-select:focus,
-        .fjs-has-errors.fjs-form-field-textarea .fjs-textarea:focus,
-        .fjs-form-field-textfield.fjs-has-errors .fjs-input-group:focus-within,
-        .fjs-form-field-textfield.fjs-has-errors .fjs-input-group:focus,
-        .fjs-form-field-datetime.fjs-has-errors .fjs-input-group:focus-within,
-        .fjs-form-field-datetime.fjs-has-errors .fjs-input-group:focus {
-          outline: 2px solid var(--cds-focus);
-          outline-offset: -2px;
-        }
+          & .fjs-dropdownlist-item,
+          & .fjs-dropdownlist-empty {
+            ${theme.bodyShort01};
+            height: ${rem(40)};
+            color: var(--cds-text-secondary);
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            background-color: transparent;
+          }
 
-        .fjs-has-errors.fjs-form-field-number .fjs-input-group,
-        .fjs-has-errors.fjs-form-field-select .fjs-select,
-        .fjs-has-errors.fjs-form-field-textarea .fjs-textarea,
-        .fjs-form-field-textfield.fjs-has-errors .fjs-input-group,
-        .fjs-form-field-textfield.fjs-has-errors .fjs-input-group,
-        .fjs-form-field-datetime.fjs-has-errors .fjs-input-group,
-        .fjs-form-field-datetime.fjs-has-errors .fjs-input-group {
-          outline: 2px solid var(--cds-text-error);
-          outline-offset: -2px;
+          & .fjs-dropdownlist-empty {
+            color: var(--cds-text-disabled);
+            cursor: default;
+          }
+
+          & .fjs-dropdownlist-item:hover,
+          & .fjs-dropdownlist-item.focused {
+            background-color: var(--cds-layer-hover);
+            color: var(--cds-text-primary);
+            margin: 0;
+            padding: 0 ${theme.spacing05};
+          }
+
+          & .fjs-dropdownlist-item:not(:first-of-type):hover {
+            padding-top: 1px;
+          }
+
+          & .fjs-dropdownlist-item.focused + .fjs-dropdownlist-item {
+            border: none;
+            padding-top: 1px;
+          }
         }
       }
     `}
 `;
 
 const ADORNMENTS_STYLES = css`
-  ${({theme}) => css`
-    .fjs-container .fjs-form-field:not(.fjs-form-field-datetime) {
-      .fjs-input-group .fjs-input-adornment {
-        all: unset;
-        display: flex;
-        align-items: center;
-        color: var(--cds-text-secondary);
-        padding: 0 var(--cds-spacing-04);
-        cursor: default;
-        ${theme.bodyShort01};
+  .fjs-container .fjs-form-field:not(.fjs-form-field-datetime) {
+    .fjs-input-group .fjs-input-adornment {
+      all: unset;
+      display: flex;
+      align-items: center;
+      color: var(--cds-text-secondary);
+      padding: 0 var(--cds-spacing-04);
+      cursor: default;
 
-        &.border-right {
-          padding-right: 0;
-        }
-
-        &.border-left {
-          padding-left: 0;
-        }
+      &.border-right {
+        padding-right: 0;
       }
 
-      &.fjs-disabled .fjs-input-group .fjs-input-adornment {
-        color: var(--cds-text-disabled);
+      &.border-left {
+        padding-left: 0;
       }
     }
-  `}
+
+    &.fjs-disabled .fjs-input-group .fjs-input-adornment {
+      color: var(--cds-text-disabled);
+    }
+  }
 `;
 
 const FormCustomStyling = createGlobalStyle`
@@ -826,6 +882,7 @@ const FormCustomStyling = createGlobalStyle`
   ${DATETIME_INPUTS}
   ${REMAINING_INPUTS}
   ${ADORNMENTS_STYLES}
+  ${DROPDOWN_STYLES}
 
   .fjs-container {
     height: min-content;
@@ -841,7 +898,7 @@ const FormCustomStyling = createGlobalStyle`
       margin-right: 0;
     }
 
-    .fjs-input-group{
+    .fjs-input-group {
       margin: 0;
     }
 
