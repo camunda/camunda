@@ -28,13 +28,14 @@ public class DiskSpaceUsageMonitorActor extends Actor implements DiskSpaceUsageM
   private final long minFreeDiskSpaceRequired;
 
   public DiskSpaceUsageMonitorActor(final DataCfg dataCfg) {
-    monitoringDelay = dataCfg.getDiskUsageMonitoringInterval();
-    minFreeDiskSpaceRequired = dataCfg.getFreeDiskSpaceCommandWatermark();
+    final var diskCfg = dataCfg.getDisk();
+    monitoringDelay = diskCfg.getMonitoringInterval();
     final var directory = new File(dataCfg.getDirectory());
-
     if (!directory.exists()) {
       throw new UncheckedIOException(new IOException("Folder '" + directory + "' does not exist."));
     }
+    minFreeDiskSpaceRequired =
+        diskCfg.getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
     freeDiskSpaceSupplier = directory::getUsableSpace;
   }
 

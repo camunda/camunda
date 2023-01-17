@@ -68,7 +68,7 @@ public class DiskCfg implements ConfigurationEntry {
     return "DiskCfg{" + "enableMonitoring=" + enableMonitoring + ", freeSpace=" + freeSpace + '}';
   }
 
-  static class FreeSpaceCfg implements ConfigurationEntry {
+  public static class FreeSpaceCfg implements ConfigurationEntry {
 
     private static final String DEFAULT_PROCESSING_FREESPACE = "2GB";
     private static final String DEFAULT_REPLICATION_FREESPACE = "1GB";

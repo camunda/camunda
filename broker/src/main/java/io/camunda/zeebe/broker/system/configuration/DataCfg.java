@@ -122,20 +122,12 @@ public final class DataCfg implements ConfigurationEntry {
     this.diskUsageCommandWatermark = diskUsageCommandWatermark;
   }
 
-  public long getFreeDiskSpaceCommandWatermark() {
-    return disk.getFreeSpace().getMinFreeSpaceForProcessing(getDirectory());
-  }
-
   public void setDiskUsageReplicationWatermark(final double diskUsageReplicationWatermark) {
     this.diskUsageReplicationWatermark = diskUsageReplicationWatermark;
   }
 
   public long getFreeDiskSpaceReplicationWatermark() {
     return disk.getFreeSpace().getMinFreeSpaceForReplication(getDirectory());
-  }
-
-  public Duration getDiskUsageMonitoringInterval() {
-    return disk.getMonitoringInterval();
   }
 
   public void setDiskUsageMonitoringInterval(final Duration diskUsageMonitoringInterval) {

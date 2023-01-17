@@ -147,8 +147,10 @@ public final class SystemContext {
 
     if (dataCfg.isDiskUsageMonitoringEnabled()) {
       try {
-        final var processingFreeSpace = dataCfg.getFreeDiskSpaceCommandWatermark();
-        final var replicationFreeSpace = dataCfg.getFreeDiskSpaceReplicationWatermark();
+        final long processingFreeSpace =
+            dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
+        final long replicationFreeSpace =
+            dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
         if (processingFreeSpace <= replicationFreeSpace) {
           throw new IllegalArgumentException(
               "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d). Configured values are %s"

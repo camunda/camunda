@@ -26,9 +26,9 @@ public class DataCfgTest {
     dataCfg.init(new BrokerCfg(), "/base");
 
     // then
-    assertThat(dataCfg.getFreeDiskSpaceReplicationWatermark())
+    assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing("ignore"))
         .isEqualTo(DataSize.ofGigabytes(1).toBytes());
-    assertThat(dataCfg.getFreeDiskSpaceCommandWatermark())
+    assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForReplication("ignore"))
         .isEqualTo(DataSize.ofGigabytes(2).toBytes());
   }
 
