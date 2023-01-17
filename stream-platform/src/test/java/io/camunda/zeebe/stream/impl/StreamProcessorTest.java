@@ -276,6 +276,20 @@ public final class StreamProcessorTest {
 
     final var secondResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
     secondResultBuilder.appendRecordReturnEither(
+        1,
+        RecordType.EVENT,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
+    secondResultBuilder.appendRecordReturnEither(
+        2,
+        RecordType.COMMAND,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
+    secondResultBuilder.appendRecordReturnEither(
         3,
         RecordType.EVENT,
         ACTIVATE_ELEMENT,
@@ -285,8 +299,7 @@ public final class StreamProcessorTest {
 
     when(defaultRecordProcessor.process(any(), any()))
         .thenReturn(firstResultBuilder.build())
-        .thenReturn(secondResultBuilder.build())
-        .thenReturn(EmptyProcessingResult.INSTANCE);
+        .thenReturn(secondResultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 
@@ -328,8 +341,7 @@ public final class StreamProcessorTest {
         Records.processInstance(1));
 
     when(defaultRecordProcessor.process(any(), any()))
-        .thenReturn(resultBuilder.build())
-        .thenReturn(EmptyProcessingResult.INSTANCE);
+        .thenReturn(resultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 
