@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.camunda.zeebe.broker.protocol" id="5" version="2"
+  package="io.camunda.zeebe.broker.protocol" id="5" version="3"
   semanticVersion="0.1.0" description="Zeebe Broker Communication Protocol" byteOrder="littleEndian" >
 
   <xi:include href="../../../../protocol/src/main/resources/common-types.xml"/>
 
-  <sbe:message id="1" name="ExporterPositions">
-    <group id="0" name="positions">
+  <sbe:message id="1" name="ExporterState">
+    <group id="0" name="state">
       <field id="0" name="position" type="uint64" semanticType="long"/>
       <data id="1" name="exporterId" type="varDataEncoding" semanticType="string"/>
+      <data id="2" name="metadata" type="varDataEncoding" semanticType="binary" sinceVersion="3"/>
     </group>
   </sbe:message>
 
