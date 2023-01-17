@@ -27,9 +27,9 @@ public class DataCfgTest {
 
     // then
     assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing("ignore"))
-        .isEqualTo(DataSize.ofGigabytes(1).toBytes());
-    assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForReplication("ignore"))
         .isEqualTo(DataSize.ofGigabytes(2).toBytes());
+    assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForReplication("ignore"))
+        .isEqualTo(DataSize.ofGigabytes(1).toBytes());
   }
 
   @Test

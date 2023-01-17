@@ -150,7 +150,7 @@ public final class SystemContext {
         final long processingFreeSpace =
             dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
         final long replicationFreeSpace =
-            dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
+            dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForReplication(dataCfg.getDirectory());
         if (processingFreeSpace <= replicationFreeSpace) {
           throw new IllegalArgumentException(
               "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d). Configured values are %s"
