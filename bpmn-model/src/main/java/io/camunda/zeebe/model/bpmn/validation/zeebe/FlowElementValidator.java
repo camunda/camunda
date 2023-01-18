@@ -87,7 +87,13 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
 
     if (!SUPPORTED_ELEMENT_TYPES.contains(elementType)
         && !NON_EXECUTABLE_ELEMENT_TYPES.contains(elementType)) {
-      validationResultCollector.addError(0, "Elements of this type are not supported");
+      validationResultCollector.addError(
+          0,
+          String.format(
+              "Elements of type '%s' are currently not supported. Please refer "
+                  + "to the documentation for a list of supported elements: "
+                  + "https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-coverage/",
+              elementType.getSimpleName()));
     }
   }
 }

@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.impl.BpmnImpl;
 import io.camunda.zeebe.model.bpmn.impl.BpmnParser;
 import io.camunda.zeebe.model.bpmn.impl.instance.ActivationConditionImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.ActivityImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.AdHocSubProcessImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.ArtifactImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.AssignmentImpl;
 import io.camunda.zeebe.model.bpmn.impl.instance.AssociationImpl;
@@ -434,6 +435,7 @@ public class Bpmn {
   protected void doRegisterTypes(final ModelBuilder bpmnModelBuilder) {
     ActivationConditionImpl.registerType(bpmnModelBuilder);
     ActivityImpl.registerType(bpmnModelBuilder);
+    AdHocSubProcessImpl.registerType(bpmnModelBuilder);
     ArtifactImpl.registerType(bpmnModelBuilder);
     AssignmentImpl.registerType(bpmnModelBuilder);
     AssociationImpl.registerType(bpmnModelBuilder);
