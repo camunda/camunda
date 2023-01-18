@@ -575,7 +575,8 @@ public final class EmbeddedSubProcessTest {
   }
 
   @Test
-  @Ignore("batch processing doesn't allow concurrent cancel anymore - we have a big wider step size which changes the processing and interrupting possibilities")
+  @Ignore(
+      "batch processing doesn't allow concurrent cancel anymore - we have a big wider step size which changes the processing and interrupting possibilities")
   public void shouldNotTriggerBoundaryEventWhenFlowscopeIsInterrupted() {
     // given
     final Consumer<EmbeddedSubProcessBuilder> subProcessBuilder =
