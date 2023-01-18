@@ -83,7 +83,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +106,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final MessagingConfig config;
 
   private EventLoopGroup serverBossGroup;
-  private EventLoopGroup serverWorkGroup;
+  private EventLoopGroup serverWorkerGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends Channel> clientChannelClass;
@@ -164,9 +164,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
       bindingAddresses.add(Address.from(advertisedAddress.host(), port));
     } else {
       final List<Address> addresses =
-          config.getInterfaces().stream()
-              .map(iface -> Address.from(iface, port))
-              .collect(Collectors.toList());
+          config.getInterfaces().stream().map(iface -> Address.from(iface, port)).toList();
       bindingAddresses.addAll(addresses);
     }
   }
@@ -380,35 +378,13 @@ public final class NettyMessagingService implements ManagedMessagingService {
   @Override
   public CompletableFuture<Void> stop() {
     if (started.compareAndSet(true, false)) {
-      return CompletableFuture.supplyAsync(
+      return CompletableFuture.runAsync(
           () -> {
-            boolean interrupted = false;
             try {
-              try {
-                serverChannel.close().sync();
-              } catch (final InterruptedException e) {
-                interrupted = true;
-              }
-              final Future<?> serverShutdownFuture =
-                  serverBossGroup.shutdownGracefully(
-                      config.getShutdownQuietPeriod().toMillis(),
-                      config.getShutdownTimeout().toMillis(),
-                      TimeUnit.MILLISECONDS);
-              final Future<?> clientShutdownFuture =
-                  clientGroup.shutdownGracefully(
-                      config.getShutdownQuietPeriod().toMillis(),
-                      config.getShutdownTimeout().toMillis(),
-                      TimeUnit.MILLISECONDS);
-              try {
-                serverShutdownFuture.sync();
-              } catch (final InterruptedException e) {
-                interrupted = true;
-              }
-              try {
-                clientShutdownFuture.sync();
-              } catch (final InterruptedException e) {
-                interrupted = true;
-              }
+              serverChannel.close().awaitUninterruptibly();
+              Stream.of(serverBossGroup, serverWorkerGroup, clientGroup)
+                  .forEach(group -> shutdownEventGroup(group).awaitUninterruptibly());
+
               timeoutExecutor.shutdown();
 
               for (final var entry : connections.entrySet()) {
@@ -418,21 +394,24 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 connection.close();
               }
 
-              for (final CompletableFuture openFuture : openFutures) {
-                openFuture.completeExceptionally(
-                    new IllegalStateException("MessagingService has been closed."));
-              }
+              final var failure = new IllegalStateException("MessagingService has been closed");
+              openFutures.forEach(f -> f.completeExceptionally(failure));
               openFutures.clear();
             } finally {
-              log.info("Stopped");
-              if (interrupted) {
-                Thread.currentThread().interrupt();
-              }
+              log.info("Stopped messaging service bound to {}", bindingAddresses);
             }
-            return null;
-          });
+          },
+          Runnable::run);
     }
+
     return CompletableFuture.completedFuture(null);
+  }
+
+  private Future<?> shutdownEventGroup(final EventLoopGroup group) {
+    return group.shutdownGracefully(
+        config.getShutdownQuietPeriod().toMillis(),
+        config.getShutdownTimeout().toMillis(),
+        TimeUnit.MILLISECONDS);
   }
 
   private CompletableFuture<Void> loadClientSslContext() {
@@ -478,7 +457,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     clientGroup = new EpollEventLoopGroup(0, namedThreads("messaging-service-client-%d", log));
     serverBossGroup =
         new EpollEventLoopGroup(0, namedThreads("messaging-service-server-boss-%d", log));
-    serverWorkGroup =
+    serverWorkerGroup =
         new EpollEventLoopGroup(0, namedThreads("messaging-service-server-worker-%d", log));
     serverChannelClass = EpollServerSocketChannel.class;
     clientChannelClass = EpollSocketChannel.class;
@@ -488,7 +467,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     clientGroup = new NioEventLoopGroup(0, namedThreads("messaging-service-client-%d", log));
     serverBossGroup =
         new NioEventLoopGroup(0, namedThreads("messaging-service-server-boss-%d", log));
-    serverWorkGroup =
+    serverWorkerGroup =
         new NioEventLoopGroup(0, namedThreads("messaging-service-server-worker-%d", log));
     serverChannelClass = NioServerSocketChannel.class;
     clientChannelClass = NioSocketChannel.class;
@@ -763,7 +742,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     b.childOption(ChannelOption.SO_KEEPALIVE, true);
     b.childOption(ChannelOption.TCP_NODELAY, true);
     b.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
-    b.group(serverBossGroup, serverWorkGroup);
+    b.group(serverBossGroup, serverWorkerGroup);
     b.channel(serverChannelClass);
     b.childHandler(new BasicServerChannelInitializer());
     return bind(b);
