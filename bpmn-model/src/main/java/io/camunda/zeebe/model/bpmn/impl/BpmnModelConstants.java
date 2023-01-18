@@ -231,6 +231,7 @@ public final class BpmnModelConstants {
   public static final String BPMN_ELEMENT_NONE_BEHAVIOR_EVENT_REF = "noneBehaviorEventRef";
   public static final String BPMN_ELEMENT_GROUP = "group";
   public static final String BPMN_ELEMENT_CATEGORY = "category";
+  public static final String BPMN_ELEMENT_AD_HOC_SUB_PROCESS = "adHocSubProcess";
 
   /** DC */
   public static final String DC_ELEMENT_FONT = "Font";
