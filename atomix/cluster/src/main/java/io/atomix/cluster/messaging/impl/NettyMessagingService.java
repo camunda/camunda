@@ -105,7 +105,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final List<CompletableFuture> openFutures;
   private final MessagingConfig config;
 
-  private EventLoopGroup serverGroup;
+  private EventLoopGroup serverBossGroup;
+  private EventLoopGroup serverWorkGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends Channel> clientChannelClass;
@@ -132,7 +133,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = config;
-    this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
 
     openFutures = new CopyOnWriteArrayList<>();
     initAddresses(config);
@@ -151,7 +152,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
     this.config = config;
-    this.channelPool = channelPoolFactor.apply(this::openChannel);
+    channelPool = channelPoolFactor.apply(this::openChannel);
 
     openFutures = new CopyOnWriteArrayList<>();
     initAddresses(config);
@@ -389,7 +390,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
                 interrupted = true;
               }
               final Future<?> serverShutdownFuture =
-                  serverGroup.shutdownGracefully(
+                  serverBossGroup.shutdownGracefully(
                       config.getShutdownQuietPeriod().toMillis(),
                       config.getShutdownTimeout().toMillis(),
                       TimeUnit.MILLISECONDS);
@@ -474,19 +475,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   private void initEpollTransport() {
-    clientGroup =
-        new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-client-%d", log));
-    serverGroup =
-        new EpollEventLoopGroup(0, namedThreads("netty-messaging-event-epoll-server-%d", log));
+    clientGroup = new EpollEventLoopGroup(0, namedThreads("messaging-service-client-%d", log));
+    serverBossGroup =
+        new EpollEventLoopGroup(0, namedThreads("messaging-service-server-boss-%d", log));
+    serverWorkGroup =
+        new EpollEventLoopGroup(0, namedThreads("messaging-service-server-worker-%d", log));
     serverChannelClass = EpollServerSocketChannel.class;
     clientChannelClass = EpollSocketChannel.class;
   }
 
   private void initNioTransport() {
-    clientGroup =
-        new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-client-%d", log));
-    serverGroup =
-        new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-server-%d", log));
+    clientGroup = new NioEventLoopGroup(0, namedThreads("messaging-service-client-%d", log));
+    serverBossGroup =
+        new NioEventLoopGroup(0, namedThreads("messaging-service-server-boss-%d", log));
+    serverWorkGroup =
+        new NioEventLoopGroup(0, namedThreads("messaging-service-server-worker-%d", log));
     serverChannelClass = NioServerSocketChannel.class;
     clientChannelClass = NioSocketChannel.class;
   }
@@ -760,7 +763,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     b.childOption(ChannelOption.SO_KEEPALIVE, true);
     b.childOption(ChannelOption.TCP_NODELAY, true);
     b.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
-    b.group(serverGroup, clientGroup);
+    b.group(serverBossGroup, serverWorkGroup);
     b.channel(serverChannelClass);
     b.childHandler(new BasicServerChannelInitializer());
     return bind(b);
