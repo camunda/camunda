@@ -59,7 +59,8 @@ final class SegmentFilePool {
     synchronized (freeSegments) {
       final int poolSize = freeSegments.size();
 
-      // make sure we can fill up the pool eventually
+      // make sure we can fill up the pool eventually; remove this if we just want to let it reuse
+      // as soon as there are any
       if (liveSegmentCount + poolSize >= maxCount) {
         pooledFile = freeSegments.pollLast();
         sizeMetric.set(poolSize);
