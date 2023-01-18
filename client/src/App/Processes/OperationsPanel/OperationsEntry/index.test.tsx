@@ -55,16 +55,6 @@ const FinishingOperationsEntry: React.FC = () => {
 };
 
 describe('OperationsEntry', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   it('should render retry operation', () => {
     render(<OperationsEntry {...mockProps} operation={OPERATIONS.RETRY} />, {
       wrapper: createWrapper(),

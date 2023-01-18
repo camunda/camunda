@@ -11,23 +11,17 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {createUser} from 'modules/testUtils';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 import {UserDto} from 'modules/api/getUser';
-import {Wrapper} from './mocks';
+import {Wrapper as BaseWrapper} from './mocks';
+import {useEffect} from 'react';
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    return authenticationStore.reset;
+  }, []);
+  return <BaseWrapper>{children}</BaseWrapper>;
+};
 
 describe('Info bar', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    authenticationStore.reset();
-  });
-
   it('should render with correct links', async () => {
     const originalWindowOpen = window.open;
     const mockOpenFn = jest.fn();

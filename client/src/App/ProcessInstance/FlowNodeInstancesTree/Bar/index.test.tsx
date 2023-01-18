@@ -5,28 +5,21 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {act, render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Bar} from './index';
 import {mockStartNode, mockStartEventBusinessObject} from './index.setup';
 import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {useEffect} from 'react';
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => flowNodeTimeStampStore.reset, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
 
 describe('<Bar />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    flowNodeTimeStampStore.reset();
-  });
-
   it('should show an icon based on node type and the node name', () => {
     render(
       <Bar
@@ -38,7 +31,7 @@ describe('<Bar />', () => {
         hasTopBorder={false}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
@@ -59,13 +52,15 @@ describe('<Bar />', () => {
         hasTopBorder={false}
       />,
       {
-        wrapper: ThemeProvider,
+        wrapper: Wrapper,
       }
     );
 
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
 
-    flowNodeTimeStampStore.toggleTimeStampVisibility();
+    act(() => {
+      flowNodeTimeStampStore.toggleTimeStampVisibility();
+    });
 
     expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
   });

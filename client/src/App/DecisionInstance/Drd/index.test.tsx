@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {useEffect} from 'react';
 import {render, screen} from 'modules/testing-library';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
@@ -20,6 +21,17 @@ import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  drdDataStore.init();
+  decisionXmlStore.init();
+  decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
+
+  useEffect(() => {
+    return () => {
+      decisionInstanceDetailsStore.reset();
+      decisionXmlStore.reset();
+      drdDataStore.reset();
+    };
+  }, []);
   return (
     <ThemeProvider>
       <MemoryRouter>{children}</MemoryRouter>
@@ -28,30 +40,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<Drd />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-
-    drdDataStore.init();
-    decisionXmlStore.init();
-    decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
-  });
-
-  afterEach(() => {
-    decisionInstanceDetailsStore.reset();
-    decisionXmlStore.reset();
-    drdDataStore.reset();
   });
 
   it('should render DRD', async () => {

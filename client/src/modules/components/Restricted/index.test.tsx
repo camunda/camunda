@@ -8,22 +8,19 @@
 import {Restricted} from './index';
 import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
+import {useEffect} from 'react';
+
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return () => {
+      authenticationStore.reset();
+    };
+  }, []);
+
+  return <>{children}</>;
+};
 
 describe('Restricted', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    authenticationStore.reset();
-  });
-
   it('should not render content that user has no permission for', () => {
     authenticationStore.setUser({
       displayName: 'demo',
@@ -38,7 +35,8 @@ describe('Restricted', () => {
     render(
       <Restricted scopes={['write']}>
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
+      {wrapper: Wrapper}
     );
 
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
@@ -58,7 +56,8 @@ describe('Restricted', () => {
     render(
       <Restricted scopes={['read', 'write']}>
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
+      {wrapper: Wrapper}
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -78,7 +77,8 @@ describe('Restricted', () => {
     render(
       <Restricted scopes={['write']}>
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
+      {wrapper: Wrapper}
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -98,7 +98,8 @@ describe('Restricted', () => {
     render(
       <Restricted scopes={['write']}>
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
+      {wrapper: Wrapper}
     );
 
     expect(screen.getByText('test content')).toBeInTheDocument();
@@ -119,7 +120,8 @@ describe('Restricted', () => {
     render(
       <Restricted scopes={['write']} fallback={mockFallback}>
         <div>test content</div>
-      </Restricted>
+      </Restricted>,
+      {wrapper: Wrapper}
     );
 
     expect(screen.getByText(mockFallback)).toBeInTheDocument();

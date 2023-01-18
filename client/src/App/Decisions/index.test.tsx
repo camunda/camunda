@@ -24,6 +24,7 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
+import {useEffect} from 'react';
 
 const handleRefetchSpy = jest.spyOn(groupedDecisionsStore, 'handleRefetch');
 
@@ -41,6 +42,13 @@ jest.mock('modules/notifications', () => {
 
 function createWrapper(initialPath: string = '/decisions') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        decisionInstancesStore.reset();
+        groupedDecisionsStore.reset();
+        decisionXmlStore.reset();
+      };
+    }, []);
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -55,22 +63,6 @@ function createWrapper(initialPath: string = '/decisions') {
 }
 
 describe('<Decisions />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    decisionInstancesStore.reset();
-    groupedDecisionsStore.reset();
-    decisionXmlStore.reset();
-  });
-
   it('should show page title', async () => {
     mockFetchDecisionInstances().withSuccess({
       decisionInstances: [],

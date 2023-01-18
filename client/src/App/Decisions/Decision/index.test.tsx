@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
@@ -15,9 +15,20 @@ import {Decision} from '.';
 import {MemoryRouter} from 'react-router-dom';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
+import {useEffect} from 'react';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      decisionXmlStore.init();
+      groupedDecisionsStore.fetchDecisions();
+
+      return () => {
+        decisionXmlStore.reset();
+        groupedDecisionsStore.reset();
+      };
+    }, []);
+
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
@@ -28,30 +39,8 @@ function createWrapper(initialPath: string = '/') {
   return Wrapper;
 }
 describe('<Decision />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  beforeEach(async () => {
+  beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
-
-    decisionXmlStore.init();
-    groupedDecisionsStore.fetchDecisions();
-
-    await waitFor(() =>
-      expect(groupedDecisionsStore.state.status).toBe('fetched')
-    );
-  });
-
-  afterEach(() => {
-    decisionXmlStore.reset();
-    groupedDecisionsStore.reset();
   });
 
   it('should render decision table and panel header', async () => {
@@ -67,7 +56,7 @@ describe('<Decision />', () => {
     expect(screen.getByRole('heading', {name: 'invoiceClassification'}));
   });
 
-  it('should render text when no decision is selected', () => {
+  it('should render text when no decision is selected', async () => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decision />, {
@@ -75,7 +64,7 @@ describe('<Decision />', () => {
     });
 
     expect(
-      screen.getByText(/there is no decision selected/i)
+      await screen.findByText(/there is no decision selected/i)
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -85,7 +74,7 @@ describe('<Decision />', () => {
     expect(screen.getByRole('heading', {name: 'Decision'}));
   });
 
-  it('should render text when no version is selected', () => {
+  it('should render text when no version is selected', async () => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<Decision />, {
@@ -95,7 +84,7 @@ describe('<Decision />', () => {
     });
 
     expect(
-      screen.getByText(
+      await screen.findByText(
         /there is more than one version selected for decision "invoiceClassification"/i
       )
     ).toBeInTheDocument();

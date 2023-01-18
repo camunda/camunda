@@ -12,26 +12,23 @@ import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {useEffect} from 'react';
+
+const Wrapper = ({children}: {children?: React.ReactNode}) => {
+  useEffect(() => {
+    return () => {
+      flowNodeSelectionStore.reset();
+      processInstanceDetailsDiagramStore.reset();
+    };
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
 
 describe('Input Mappings', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() =>
     mockFetchProcessXML().withSuccess(mockProcessWithInputOutputMappingsXML)
   );
-
-  afterEach(() => {
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-  });
 
   it('should display empty message', async () => {
     await processInstanceDetailsDiagramStore.fetchProcessXml('processId');
@@ -39,7 +36,7 @@ describe('Input Mappings', () => {
       flowNodeId: 'Event_0bonl61',
     });
     const {rerender} = render(<InputOutputMappings type="Input" />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
@@ -54,7 +51,7 @@ describe('Input Mappings', () => {
       flowNodeId: 'Activity_0qtp1k6',
     });
 
-    render(<InputOutputMappings type="Input" />, {wrapper: ThemeProvider});
+    render(<InputOutputMappings type="Input" />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
     );
@@ -73,7 +70,7 @@ describe('Input Mappings', () => {
       flowNodeId: 'Activity_0qtp1k6',
     });
 
-    render(<InputOutputMappings type="Output" />, {wrapper: ThemeProvider});
+    render(<InputOutputMappings type="Output" />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched')
     );
@@ -106,7 +103,7 @@ describe('Input Mappings', () => {
       const {user, rerender} = render(
         <InputOutputMappings type={type as 'Input' | 'Output'} />,
         {
-          wrapper: ThemeProvider,
+          wrapper: Wrapper,
         }
       );
       expect(screen.getByText(message)).toBeInTheDocument();

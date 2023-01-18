@@ -20,29 +20,24 @@ import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetai
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {InputsAndOutputs} from './index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {useEffect} from 'react';
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    return decisionInstanceDetailsStore.reset;
+  }, []);
+
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
 
 describe('<InputsAndOutputs />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    decisionInstanceDetailsStore.reset();
-  });
-
   it('should have section panels', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
     render(<InputsAndOutputs />, {
-      wrapper: ThemeProvider,
+      wrapper: Wrapper,
     });
 
     await waitForElementToBeRemoved(() =>
@@ -58,7 +53,7 @@ describe('<InputsAndOutputs />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+    render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     expect(screen.getByTestId('inputs-skeleton')).toBeInTheDocument();
     expect(screen.getByTestId('outputs-skeleton')).toBeInTheDocument();
@@ -76,7 +71,7 @@ describe('<InputsAndOutputs />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+    render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText(
@@ -96,7 +91,7 @@ describe('<InputsAndOutputs />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+    render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText(
@@ -114,7 +109,7 @@ describe('<InputsAndOutputs />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+    render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('inputs-skeleton')
@@ -161,7 +156,7 @@ describe('<InputsAndOutputs />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('1');
 
-    render(<InputsAndOutputs />, {wrapper: ThemeProvider});
+    render(<InputsAndOutputs />, {wrapper: Wrapper});
 
     expect(
       await screen.findAllByText(/data could not be fetched/i)

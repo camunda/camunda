@@ -18,26 +18,22 @@ import {DecisionPanel} from '.';
 import {decisionXmlStore} from 'modules/stores/decisionXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {useEffect} from 'react';
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    decisionXmlStore.init();
+    return () => {
+      decisionXmlStore.reset();
+      decisionInstanceDetailsStore.reset();
+    };
+  }, []);
+  return <ThemeProvider>{children}</ThemeProvider>;
+};
 
 describe('<DecisionPanel />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchDecisionXML().withSuccess(mockDmnXml);
-    decisionXmlStore.init();
-  });
-
-  afterEach(() => {
-    decisionXmlStore.reset();
-    decisionInstanceDetailsStore.reset();
   });
 
   it('should render decision table', async () => {
@@ -45,7 +41,7 @@ describe('<DecisionPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
-    render(<DecisionPanel />, {wrapper: ThemeProvider});
+    render(<DecisionPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('DecisionTable view mock')
@@ -58,7 +54,7 @@ describe('<DecisionPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
-    render(<DecisionPanel />, {wrapper: ThemeProvider});
+    render(<DecisionPanel />, {wrapper: Wrapper});
 
     expect(
       await screen.findByText('LiteralExpression view mock')
@@ -70,7 +66,7 @@ describe('<DecisionPanel />', () => {
 
     decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
 
-    render(<DecisionPanel />, {wrapper: ThemeProvider});
+    render(<DecisionPanel />, {wrapper: Wrapper});
 
     expect(await screen.findByText('An error occurred')).toBeInTheDocument();
   });

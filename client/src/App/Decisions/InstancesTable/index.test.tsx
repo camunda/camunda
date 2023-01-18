@@ -23,9 +23,18 @@ import {groupedDecisions as mockGroupedDecisions} from 'modules/mocks/groupedDec
 import {AppHeader} from 'App/Layout/AppHeader';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {mockFetchDecisionInstances} from 'modules/mocks/api/decisionInstances/fetchDecisionInstances';
+import {useEffect} from 'react';
 
 const createWrapper = (initialPath: string = '/decisions') => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      groupedDecisionsStore.fetchDecisions();
+      return () => {
+        decisionInstancesStore.reset();
+        groupedDecisionsStore.reset();
+      };
+    }, []);
+
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>
@@ -44,23 +53,8 @@ const createWrapper = (initialPath: string = '/decisions') => {
 };
 
 describe('<InstancesTable />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(mockGroupedDecisions);
-    groupedDecisionsStore.fetchDecisions();
-  });
-  afterEach(() => {
-    decisionInstancesStore.reset();
-    groupedDecisionsStore.reset();
   });
 
   it('should initially render skeleton', async () => {

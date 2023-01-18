@@ -6,14 +6,11 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {act, render, screen} from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Layout} from '.';
+import {useEffect} from 'react';
 
 type Props = {
   children?: React.ReactNode;
@@ -21,6 +18,12 @@ type Props = {
 
 function getWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<Props> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+      };
+    }, []);
+
     return (
       <ThemeProvider>
         <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
@@ -32,30 +35,16 @@ function getWrapper(initialPath: string = '/') {
 }
 
 describe('Layout', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    modificationsStore.reset();
-  });
-
   it('should not display footer when modification mode is enabled', async () => {
     render(<Layout />, {wrapper: getWrapper('/processes/1')});
 
     expect(screen.getByText(/All rights reserved/)).toBeInTheDocument();
 
-    modificationsStore.enableModificationMode();
+    act(() => {
+      modificationsStore.enableModificationMode();
+    });
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByText(/All rights reserved/)
-    );
+    expect(screen.queryByText(/All rights reserved/)).not.toBeInTheDocument();
   });
 
   it('should not display footer in processes page', async () => {

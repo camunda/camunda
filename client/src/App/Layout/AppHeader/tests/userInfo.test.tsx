@@ -15,7 +15,15 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogout} from 'modules/mocks/api/logout';
 import {mockGetUser} from 'modules/mocks/api/getUser';
 import {createUser} from 'modules/testUtils';
-import {Wrapper} from './mocks';
+import {Wrapper as BaseWrapper} from './mocks';
+import {useEffect} from 'react';
+
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    return authenticationStore.reset;
+  }, []);
+  return <BaseWrapper>{children}</BaseWrapper>;
+};
 
 const mockUser = createUser({
   displayName: 'Franz Kafka',
@@ -28,20 +36,6 @@ const mockSsoUser = createUser({
 });
 
 describe('User info', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    authenticationStore.reset();
-  });
-
   it('should render user display name', async () => {
     mockGetUser().withSuccess(mockUser);
 
