@@ -11,6 +11,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -34,23 +35,20 @@ final class SegmentsManager {
   private static final long FIRST_SEGMENT_ID = 1;
   private static final long INITIAL_INDEX = 1;
   private static final long INITIAL_ASQN = SegmentedJournal.ASQN_IGNORE;
-
   private static final Logger LOG = LoggerFactory.getLogger(SegmentsManager.class);
+  private static final int SEGMENT_POOL_SIZE =
+      new Environment().getInt("ZEEBE_BROKER_EXPERIMENTAL_RAFT_SEGMENTPOOLSIZE").orElse(32);
 
   private final JournalMetrics journalMetrics;
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private volatile Segment currentSegment;
-
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
-
   private final File directory;
-
   private final SegmentLoader segmentLoader;
-
   private final long lastWrittenIndex;
-
   private final String name;
+  private final SegmentFilePool segmentFilePool;
 
   SegmentsManager(
       final JournalIndex journalIndex,
@@ -66,6 +64,8 @@ final class SegmentsManager {
     this.directory = directory;
     this.lastWrittenIndex = lastWrittenIndex;
     this.segmentLoader = segmentLoader;
+
+    segmentFilePool = new SegmentFilePool(name, SEGMENT_POOL_SIZE, segments::size);
   }
 
   void close() {
@@ -76,6 +76,7 @@ final class SegmentsManager {
               LOG.debug("Closing segment: {}", segment);
               segment.close();
             });
+    segmentFilePool.cleanup(directory.toPath());
     currentSegment = null;
   }
 
@@ -263,12 +264,18 @@ final class SegmentsManager {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+    segmentFilePool.cleanup(directory.toPath());
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile.toPath(),
+        descriptor,
+        lastWrittenIndex,
+        lastWrittenAsqn,
+        journalIndex,
+        segmentFilePool);
   }
 
   /**
@@ -293,7 +300,8 @@ final class SegmentsManager {
                 file.toPath(),
                 lastWrittenIndex,
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
-                journalIndex);
+                journalIndex,
+                segmentFilePool);
 
         if (i > 0) {
           checkForIndexGaps(segments.get(i - 1), segment);

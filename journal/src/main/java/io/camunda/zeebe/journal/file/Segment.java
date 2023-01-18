@@ -50,6 +50,7 @@ final class Segment implements AutoCloseable {
   private final MappedByteBuffer buffer;
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
+  private final SegmentFilePool segmentFilePool;
 
   public Segment(
       final SegmentFile file,
@@ -57,11 +58,13 @@ final class Segment implements AutoCloseable {
       final MappedByteBuffer buffer,
       final long lastWrittenIndex,
       final long lastWrittenAsqn,
-      final JournalIndex index) {
+      final JournalIndex index,
+      final SegmentFilePool segmentFilePool) {
     this.file = file;
     this.descriptor = descriptor;
     this.buffer = buffer;
     this.index = index;
+    this.segmentFilePool = segmentFilePool;
 
     writer = createWriter(lastWrittenIndex, lastWrittenAsqn);
   }
@@ -218,9 +221,12 @@ final class Segment implements AutoCloseable {
               "Cannot delete segment file. There are %d readers referring to this segment.",
               readers.size()));
     }
+
     try {
       IoUtil.unmap(buffer);
-      Files.deleteIfExists(file.getFileMarkedForDeletion());
+      if (!segmentFilePool.free(file, descriptor)) {
+        Files.deleteIfExists(file.getFileMarkedForDeletion());
+      }
     } catch (final IOException e) {
       LOG.warn(
           "Could not delete segment {}. File to delete {}. This can lead to increased disk usage.",

@@ -128,6 +128,24 @@ class SegmentsManagerTest {
     assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
   }
 
+  @Test
+  void shouldReuseSegmentsFromPool() {
+    // given
+    final var journal = openJournal(1);
+    journal.append(recordDataWriter);
+    journal.append(recordDataWriter);
+    final var index = journal.append(recordDataWriter).index();
+    journal.close();
+
+    final var segments = createSegmentsManager(0);
+    segments.open();
+
+    // when - open a segment and hold a reader so we only mark it for deletion
+    final Segment firstSegment = segments.getFirstSegment();
+    segments.deleteUntil(index);
+    final Segment secondSegment = segments.getNextSegment();
+  }
+
   private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentsManager(

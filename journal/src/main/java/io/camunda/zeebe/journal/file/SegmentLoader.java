@@ -19,7 +19,9 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +29,6 @@ import org.slf4j.LoggerFactory;
 final class SegmentLoader {
   private static final Logger LOGGER = LoggerFactory.getLogger(SegmentLoader.class);
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
-
   private final SegmentAllocator allocator;
 
   SegmentLoader() {
@@ -43,11 +44,12 @@ final class SegmentLoader {
       final SegmentDescriptor descriptor,
       final long lastWrittenIndex,
       final long lastWrittenAsqn,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex,
+      final SegmentFilePool segmentFilePool) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex);
+      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex, segmentFilePool);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -76,14 +78,21 @@ final class SegmentLoader {
     }
 
     return loadSegment(
-        segmentFile, mappedSegment, descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile,
+        mappedSegment,
+        descriptor,
+        lastWrittenIndex,
+        lastWrittenAsqn,
+        journalIndex,
+        segmentFilePool);
   }
 
   Segment loadExistingSegment(
       final Path segmentFile,
       final long lastWrittenIndex,
       final long lastWrittenAsqn,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex,
+      final SegmentFilePool segmentFilePool) {
     final var descriptor = readDescriptor(segmentFile);
     final MappedByteBuffer mappedSegment;
 
@@ -96,7 +105,13 @@ final class SegmentLoader {
     }
 
     return loadSegment(
-        segmentFile, mappedSegment, descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile,
+        mappedSegment,
+        descriptor,
+        lastWrittenIndex,
+        lastWrittenAsqn,
+        journalIndex,
+        segmentFilePool);
   }
 
   /* ---- Internal methods ------ */
@@ -106,10 +121,17 @@ final class SegmentLoader {
       final SegmentDescriptor descriptor,
       final long lastWrittenIndex,
       final long lastWrittenAsqn,
-      final JournalIndex journalIndex) {
+      final JournalIndex journalIndex,
+      final SegmentFilePool segmentFilePool) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
     return new Segment(
-        segmentFile, descriptor, buffer, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile,
+        descriptor,
+        buffer,
+        lastWrittenIndex,
+        lastWrittenAsqn,
+        journalIndex,
+        segmentFilePool);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -179,7 +201,10 @@ final class SegmentLoader {
   }
 
   private MappedByteBuffer mapNewSegment(
-      final Path segmentPath, final SegmentDescriptor descriptor, final long lastWrittenIndex)
+      final Path segmentPath,
+      final SegmentDescriptor descriptor,
+      final long lastWrittenIndex,
+      final SegmentFilePool segmentFilePool)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
     try (final var channel =
@@ -188,8 +213,22 @@ final class SegmentLoader {
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
             StandardOpenOption.CREATE_NEW)) {
-      allocator.allocate(channel, maxSegmentSize);
-      return mapSegment(channel, maxSegmentSize);
+      final Optional<SegmentFile> reusableFile = segmentFilePool.acquire();
+      if (reusableFile.isPresent()) {
+        Files.move(reusableFile.get().file().toPath(), segmentPath, StandardCopyOption.ATOMIC_MOVE);
+      }
+
+      if (reusableFile.isEmpty()) {
+        allocator.allocate(channel, maxSegmentSize);
+      }
+
+      final var mappedSegment = mapSegment(channel, maxSegmentSize);
+
+      if (reusableFile.isPresent()) {
+        FrameUtil.markAsIgnored(mappedSegment, descriptor.length());
+      }
+
+      return mappedSegment;
     } catch (final FileAlreadyExistsException e) {
       // do not reuse a segment into which we've already written!
       if (lastWrittenIndex >= descriptor.index()) {
@@ -206,7 +245,7 @@ final class SegmentLoader {
           segmentPath,
           e);
       Files.delete(segmentPath);
-      return mapNewSegment(segmentPath, descriptor, lastWrittenIndex);
+      return mapNewSegment(segmentPath, descriptor, lastWrittenIndex, segmentFilePool);
     }
   }
 }
