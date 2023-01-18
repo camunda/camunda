@@ -142,6 +142,7 @@ public class Engine implements RecordProcessor {
             sideEffects.forEach(
                 sideEffectProducer ->
                     processingResultBuilder.appendPostCommitTask(sideEffectProducer::flush));
+            sideEffectQueue.clear();
           } else {
             processingResultBuilder.appendPostCommitTask(sep::flush);
           }
