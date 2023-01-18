@@ -412,7 +412,7 @@ jobs:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
     steps:
       - uses: actions/checkout@v3
-      - uses: hadolint/hadolint-action@v3.0.0
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./Dockerfile
