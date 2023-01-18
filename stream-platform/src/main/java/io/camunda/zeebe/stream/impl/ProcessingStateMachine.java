@@ -277,7 +277,7 @@ public final class ProcessingStateMachine {
               //////////////////////////////////////////////////////
               ///////// PROCESSING
               //////////////////////////////////////////////////////
-              final var nextToProcessedCommand = toProcessCmds.pop();
+              final var nextToProcessedCommand = toProcessCmds.pollFirst();
               final var valueType = nextToProcessedCommand.getValueType();
               currentProcessor =
                   recordProcessors.stream()
@@ -306,7 +306,7 @@ public final class ProcessingStateMachine {
                       new MinimalLoggedEvent(entry, lastCommandPosition),
                       entry.recordMetadata(),
                       entry.recordValue());
-                  toProcessCmds.push(typedRecord);
+                  toProcessCmds.add(typedRecord);
                 }
 
                 toWriteEntries.add(entry);
