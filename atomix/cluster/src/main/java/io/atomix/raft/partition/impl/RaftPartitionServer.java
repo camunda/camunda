@@ -43,15 +43,11 @@ import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
@@ -189,16 +185,12 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .build();
   }
 
-  public CompletableFuture<Void> goInactive() {
-    return server.goInactive();
-  }
-
   /**
-   * Takes a snapshot of the partition server.
+   * Compacts the log to the latest known compactable index. Compaction occurs asynchronously.
    *
-   * @return a future to be completed once the snapshot has been taken
+   * @return a future to be completed once the log has been compacted
    */
-  public CompletableFuture<Void> snapshot() {
+  public CompletableFuture<Void> compact() {
     return server.compact();
   }
 
@@ -294,23 +286,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   /** Deletes the server. */
   public void delete() {
     try {
-      Files.walkFileTree(
-          partition.dataDirectory().toPath(),
-          new SimpleFileVisitor<>() {
-            @Override
-            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                throws IOException {
-              Files.delete(file);
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(final Path dir, final IOException exc)
-                throws IOException {
-              Files.delete(dir);
-              return FileVisitResult.CONTINUE;
-            }
-          });
+      FileUtil.deleteFolderIfExists(partition.dataDirectory().toPath());
     } catch (final IOException e) {
       log.error("Failed to delete partition: {}", partition, e);
     }

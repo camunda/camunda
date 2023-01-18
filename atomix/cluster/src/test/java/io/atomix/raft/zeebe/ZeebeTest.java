@@ -129,7 +129,7 @@ public class ZeebeTest {
     for (int i = 1; i < ENTRIES_PER_SEGMENT; i++) {
       helper.awaitAllContain(partitionId, appenderWrapper.append(appender, i, i, getIntAsBytes(i)));
     }
-    server.snapshot().join();
+    server.compact().join();
 
     // then
     assertThat(helper.containsIndexed(server, firstAppended)).isTrue();
@@ -150,7 +150,7 @@ public class ZeebeTest {
       helper.awaitAllContain(partitionId, appended);
     }
     server.setCompactableIndex(appended.index());
-    server.snapshot().join();
+    server.compact().join();
 
     // then
     assertThat(helper.containsIndexed(server, firstAppended)).isFalse();
