@@ -121,7 +121,7 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
   public void getDashboard() {
     // given
     DashboardDefinitionRestDto definitionDto = generateDashboardDefinitionDto();
-    String id = dashboardClient.createDashboard(generateDashboardDefinitionDto());
+    String id = dashboardClient.createDashboard(definitionDto);
 
     // when
     DashboardDefinitionRestDto returnedDashboard = dashboardClient.getDashboard(id);

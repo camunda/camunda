@@ -30,6 +30,7 @@ import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
+import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -589,6 +590,10 @@ public class EmbeddedOptimizeExtension
 
   public ManagementDashboardService getManagementDashboardService() {
     return getApplicationContext().getBean(ManagementDashboardService.class);
+  }
+
+  public DashboardService getDashboardService() {
+    return getApplicationContext().getBean(DashboardService.class);
   }
 
   public CleanupScheduler getCleanupScheduler() {

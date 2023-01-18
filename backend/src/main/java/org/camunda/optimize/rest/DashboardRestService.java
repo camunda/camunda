@@ -116,6 +116,24 @@ public class DashboardRestService {
     return dashboardDefinition;
   }
 
+  /**
+   * Retrieve the instant dashboard for the specified process and template
+   */
+  @GET
+  @Path("/instant/{procDefKey}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(@Context ContainerRequestContext requestContext,
+                                                                      @PathParam("procDefKey") String processDefinitionKey,
+                                                                      @QueryParam("template") String dashboardJsonTemplateFilename) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
+    dashboardDefinition = dashboardService.getInstantPreviewDashboard(processDefinitionKey,
+                                                                      dashboardJsonTemplateFilename,
+                                                                      userId);
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    return dashboardDefinition;
+  }
+
   @GET
   @Path("/management")
   @Produces(MediaType.APPLICATION_JSON)

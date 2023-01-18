@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
@@ -34,8 +35,10 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionRespo
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.DashboardReader;
+import org.camunda.optimize.service.es.reader.InstantDashboardMetadataReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
+import org.camunda.optimize.service.es.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -66,6 +69,7 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 
 @Slf4j
 @AllArgsConstructor
@@ -81,6 +85,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final AbstractIdentityService identityService;
   private final ReportReader reportReader;
   private final DashboardRelationService dashboardRelationService;
+  private final InstantDashboardMetadataReader instantDashboardMetadataReader;
+  private final InstantDashboardMetadataWriter instantDashboardMetadataWriter;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
@@ -231,6 +237,46 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     newDashboardDefinitionDto.setReports(newDashboardReports);
     newDashboardDefinitionDto.setAvailableFilters(dashboardDefinition.getAvailableFilters());
     return dashboardWriter.createNewDashboard(userId, newDashboardDefinitionDto);
+  }
+
+  public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(final String processDefinitionKey,
+                                                                             final String dashboardJsonTemplateFilename,
+                                                                             final String userId) {
+
+    String processedTemplateName = StringUtils.isEmpty(dashboardJsonTemplateFilename)
+      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE
+      : dashboardJsonTemplateFilename;
+    processedTemplateName = processedTemplateName.replaceAll("\\.","");
+    Optional<String> dashboardIdMaybe = instantDashboardMetadataReader.getInstantDashboardIdFor(processDefinitionKey,
+                                                                                                processedTemplateName);
+    if (dashboardIdMaybe.isPresent()) {
+      return getDashboardDefinition(dashboardIdMaybe.get(), userId);
+    } else {
+      log.error("Instant preview dashboard for process definition [{}] and template [{}} does not exist",
+                processDefinitionKey, dashboardJsonTemplateFilename);
+      throw new NotFoundException(String.format("Dashboard does not exist! Tried to retrieve dashboard for process " +
+        "definition [%s] and template [%s]", processDefinitionKey, processedTemplateName));
+    }
+  }
+
+  public InstantDashboardDataDto createInstantPreviewDashboard(final String processDefinitionKey,
+                                                               final String dashboardJsonTemplateFilename,
+                                                               final String userId) {
+    final DashboardDefinitionRestDto dashboardDefinitionDto = assembleDashboardDto(dashboardJsonTemplateFilename);
+    IdResponseDto dashboardId = createNewDashboardAndReturnId(userId, dashboardDefinitionDto);
+    final InstantDashboardDataDto instantDashboardDataDto = new InstantDashboardDataDto();
+    instantDashboardDataDto.setTemplateName(dashboardJsonTemplateFilename);
+    instantDashboardDataDto.setDashboardId(dashboardId.getId());
+    instantDashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
+    instantDashboardMetadataWriter.saveInstantDashboard(instantDashboardDataDto);
+    return instantDashboardDataDto;
+  }
+
+  private DashboardDefinitionRestDto assembleDashboardDto(final String dashboardJsonTemplateFilename) {
+    // TODO to be done with OPT-6675
+    DashboardDefinitionRestDto dashboardDefinitionRestDto = new DashboardDefinitionRestDto();
+    dashboardDefinitionRestDto.setName("Default");
+    return dashboardDefinitionRestDto;
   }
 
   private void removeVariableFiltersFromDashboardsIfUnavailable(final List<ProcessVariableNameResponseDto> filters,

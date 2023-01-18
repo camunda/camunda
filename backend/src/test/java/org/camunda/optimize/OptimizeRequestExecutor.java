@@ -719,6 +719,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetInstantPreviewDashboardRequest(String processDefinitionKey, String template) {
+    this.path = "dashboard/instant/" + processDefinitionKey;
+    this.addSingleQueryParam("template", template);
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetManagementDashboardRequest() {
     this.path = "dashboard/management";
     this.method = GET;

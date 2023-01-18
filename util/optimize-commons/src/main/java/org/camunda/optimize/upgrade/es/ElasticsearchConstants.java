@@ -84,6 +84,7 @@ public class ElasticsearchConstants {
   public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
   public static final String VARIABLE_LABEL_INDEX_NAME = "variable-label";
   public static final String PROCESS_OVERVIEW_INDEX_NAME = "process-overview";
+  public static final String INSTANT_DASHBOARD_INDEX_NAME = "instant-dashboard";
 
   public static final String ZEEBE_PROCESS_DEFINITION_INDEX_NAME = "process";
   public static final String ZEEBE_PROCESS_INSTANCE_INDEX_NAME = "process-instance";
@@ -125,4 +126,5 @@ public class ElasticsearchConstants {
 
   // Aggregation constants
   public static final String FREQUENCY_AGGREGATION = "_frequency";
+
 }
