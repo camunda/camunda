@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -35,20 +34,16 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
-
-  private final SideEffectQueue sideEffects = new SideEffectQueue();
 
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
@@ -87,9 +82,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   @Override
   public void processRecord(
-      final TypedRecord<DeploymentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
-
-    sideEffect.accept(sideEffects);
+      final TypedRecord<DeploymentRecord> command, final SideEffects sideEffects) {
 
     final DeploymentRecord deploymentEvent = command.getValue();
 

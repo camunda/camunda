@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -57,7 +58,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   @Override
-  public void processRecord(final TypedRecord<JobBatchRecord> record) {
+  public void processRecord(
+      final TypedRecord<JobBatchRecord> record, final SideEffects sideEffects) {
     final JobBatchRecord value = record.getValue();
     if (isValid(value)) {
       activateJobs(record);

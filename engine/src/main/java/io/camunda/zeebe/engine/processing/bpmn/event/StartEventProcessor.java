@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehav
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 public class StartEventProcessor implements BpmnElementProcessor<ExecutableStartEvent> {
 
@@ -43,13 +44,19 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onActivate(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public void onActivate(
+      final ExecutableStartEvent element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     stateTransitionBehavior.completeElement(activated);
   }
 
   @Override
-  public void onComplete(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public void onComplete(
+      final ExecutableStartEvent element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
     final BpmnElementContextImpl flowScopeInstanceContext =
@@ -58,7 +65,9 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
-            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
+            ok ->
+                eventSubscriptionBehavior.subscribeToEvents(
+                    flowScope, flowScopeInstanceContext, sideEffects))
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .ifRightOrLeft(
             completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
@@ -66,7 +75,10 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableStartEvent element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
 
     incidentBehavior.resolveIncidents(terminated);

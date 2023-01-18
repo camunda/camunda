@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
@@ -47,9 +47,7 @@ public final class DeploymentDistributionBehavior {
   }
 
   public void distributeDeployment(
-      final DeploymentRecord deploymentEvent,
-      final long key,
-      final SideEffectQueue sideEffectQueue) {
+      final DeploymentRecord deploymentEvent, final long key, final SideEffects sideEffectQueue) {
     final var copiedDeploymentBuffer = BufferUtil.createCopy(deploymentEvent);
 
     otherPartitions.forEach(

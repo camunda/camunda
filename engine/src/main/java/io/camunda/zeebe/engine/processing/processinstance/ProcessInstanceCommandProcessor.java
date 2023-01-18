@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -30,7 +31,8 @@ public final class ProcessInstanceCommandProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
+  public void processRecord(
+      final TypedRecord<ProcessInstanceRecord> record, final SideEffects sideEffects) {
     populateCommandContext(record);
     commandHandlers.handle(context);
   }

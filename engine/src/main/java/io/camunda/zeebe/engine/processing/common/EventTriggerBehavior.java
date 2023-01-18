@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -59,19 +59,21 @@ public class EventTriggerBehavior {
         new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
   }
 
-  private void unsubscribeEventSubprocesses(final BpmnElementContext context) {
-    final var sideEffectQueue = new SideEffectQueue();
-    catchEventBehavior.unsubscribeEventSubprocesses(context, sideEffectQueue);
+  private void unsubscribeEventSubprocesses(
+      final BpmnElementContext context, final SideEffects sideEffects) {
+    catchEventBehavior.unsubscribeEventSubprocesses(context, sideEffects);
 
     // side effect can immediately executed, since on restart we not reprocess anymore the commands
-    sideEffectQueue.flush();
+    // FIXME(os): Check if we truly needed to flush here
+    // sideEffectQueue.flush();
   }
 
   public void triggerEventSubProcess(
       final ExecutableStartEvent startEvent,
       final long flowScopeElementInstanceKey,
       final ProcessInstanceRecord recordValue,
-      final DirectBuffer variables) {
+      final DirectBuffer variables,
+      final SideEffects sideEffects) {
 
     final var flowScopeElementInstance =
         elementInstanceState.getInstance(flowScopeElementInstanceKey);
@@ -98,7 +100,7 @@ public class EventTriggerBehavior {
     }
 
     if (startEvent.interrupting()) {
-      unsubscribeEventSubprocesses(flowScopeContext);
+      unsubscribeEventSubprocesses(flowScopeContext, sideEffects);
 
       final var noActiveChildInstances = terminateChildInstances(flowScopeContext);
       if (!noActiveChildInstances) {

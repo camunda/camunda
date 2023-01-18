@@ -20,6 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -112,7 +113,9 @@ public final class EngineErrorHandlingTest {
                     DeploymentIntent.CREATE,
                     new TypedRecordProcessor<DeploymentRecord>() {
                       @Override
-                      public void processRecord(final TypedRecord<DeploymentRecord> record) {
+                      public void processRecord(
+                          final TypedRecord<DeploymentRecord> record,
+                          final SideEffects sideEffects) {
                         if (record.getKey() == 0) {
                           throw new RuntimeException("expected");
                         }
@@ -236,7 +239,9 @@ public final class EngineErrorHandlingTest {
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
                   new TypedRecordProcessor<>() {
                     @Override
-                    public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                    public void processRecord(
+                        final TypedRecord<UnifiedRecordValue> record,
+                        final SideEffects sideEffects) {
                       throw new NullPointerException();
                     }
                   });
@@ -395,7 +400,8 @@ public final class EngineErrorHandlingTest {
     final TypedRecordProcessor<JobRecord> errorProneProcessor =
         new TypedRecordProcessor<>() {
           @Override
-          public void processRecord(final TypedRecord<JobRecord> record) {
+          public void processRecord(
+              final TypedRecord<JobRecord> record, final SideEffects sideEffects) {
             throw new RuntimeException("expected");
           }
         };
@@ -409,7 +415,8 @@ public final class EngineErrorHandlingTest {
               spy(
                   new TypedRecordProcessor<>() {
                     @Override
-                    public void processRecord(final TypedRecord<JobRecord> record) {
+                    public void processRecord(
+                        final TypedRecord<JobRecord> record, final SideEffects sideEffects) {
                       processedInstances.add(record.getValue().getProcessInstanceKey());
                       final var processInstanceKey =
                           (int) record.getValue().getProcessInstanceKey();
@@ -501,7 +508,8 @@ public final class EngineErrorHandlingTest {
                   DeploymentIntent.CREATE,
                   new TypedRecordProcessor<DeploymentRecord>() {
                     @Override
-                    public void processRecord(final TypedRecord<DeploymentRecord> record) {
+                    public void processRecord(
+                        final TypedRecord<DeploymentRecord> record, final SideEffects sideEffects) {
                       if (record.getKey() == 0) {
                         throw new RuntimeException("expected");
                       }
@@ -556,7 +564,8 @@ public final class EngineErrorHandlingTest {
     public final AtomicLong processCount = new AtomicLong(0);
 
     @Override
-    public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
+    public void processRecord(
+        final TypedRecord<ProcessInstanceRecord> record, final SideEffects sideEffects) {
       processCount.incrementAndGet();
       throw new RuntimeException("expected");
     }
@@ -575,7 +584,8 @@ public final class EngineErrorHandlingTest {
     }
 
     @Override
-    public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
+    public void processRecord(
+        final TypedRecord<ProcessInstanceRecord> record, final SideEffects sideEffects) {
       processedInstances.add(record.getValue().getProcessInstanceKey());
       stateWriter.appendFollowUpEvent(
           record.getKey(), ProcessInstanceIntent.ELEMENT_COMPLETED, record.getValue());

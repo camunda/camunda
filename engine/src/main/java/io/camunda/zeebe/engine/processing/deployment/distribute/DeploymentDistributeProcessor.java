@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -35,7 +36,8 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<DeploymentRecord> event) {
+  public void processRecord(
+      final TypedRecord<DeploymentRecord> event, final SideEffects sideEffects) {
     final var deploymentEvent = event.getValue();
     final var deploymentKey = event.getKey();
 

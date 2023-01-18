@@ -27,19 +27,15 @@ public final class BpmnEventSubscriptionBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
-  private final SideEffects sideEffects;
-
   private final ProcessState processState;
   private final EventTriggerBehavior eventTriggerBehavior;
 
   public BpmnEventSubscriptionBehavior(
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final SideEffects sideEffects,
       final ZeebeState zeebeState) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
@@ -49,11 +45,12 @@ public final class BpmnEventSubscriptionBehavior {
    * @return either a failure or nothing
    */
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
-      final T element, final BpmnElementContext context) {
+      final T element, final BpmnElementContext context, final SideEffects sideEffects) {
     return catchEventBehavior.subscribeToEvents(context, element, sideEffects);
   }
 
-  public void unsubscribeFromEvents(final BpmnElementContext context) {
+  public void unsubscribeFromEvents(
+      final BpmnElementContext context, final SideEffects sideEffects) {
     catchEventBehavior.unsubscribeFromEvents(context.getElementInstanceKey(), sideEffects);
   }
 

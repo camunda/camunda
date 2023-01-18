@@ -20,7 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -69,8 +69,6 @@ public final class CreateProcessInstanceProcessor
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
-
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
@@ -101,16 +99,15 @@ public final class CreateProcessInstanceProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller) {
-    // cleanup side effects from previous command
-    sideEffectQueue.clear();
+      final CommandControl<ProcessInstanceCreationRecord> controller,
+      final SideEffects sideEffects) {
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
     getProcess(record)
         .flatMap(process -> validateCommand(command.getValue(), process))
         .ifRightOrLeft(
-            process -> createProcessInstance(controller, record, process),
+            process -> createProcessInstance(controller, record, process, sideEffects),
             rejection -> controller.reject(rejection.type, rejection.reason));
 
     return true;
@@ -133,7 +130,8 @@ public final class CreateProcessInstanceProcessor
   private void createProcessInstance(
       final CommandControl<ProcessInstanceCreationRecord> controller,
       final ProcessInstanceCreationRecord record,
-      final DeployedProcess process) {
+      final DeployedProcess process,
+      final SideEffects sideEffects) {
     final long processInstanceKey = keyGenerator.nextKey();
 
     setVariablesFromDocument(
@@ -144,7 +142,8 @@ public final class CreateProcessInstanceProcessor
       commandWriter.appendFollowUpCommand(
           processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, processInstance);
     } else {
-      activateElementsForStartInstructions(record.startInstructions(), process, processInstance);
+      activateElementsForStartInstructions(
+          record.startInstructions(), process, processInstance, sideEffects);
     }
 
     record
@@ -388,12 +387,13 @@ public final class CreateProcessInstanceProcessor
   private void activateElementsForStartInstructions(
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions,
       final DeployedProcess process,
-      final ProcessInstanceRecord processInstance) {
+      final ProcessInstanceRecord processInstance,
+      final SideEffects sideEffects) {
 
     startInstructions.forEach(
         instruction -> {
           final var element = process.getProcess().getElementById(instruction.getElementId());
-          elementActivationBehavior.activateElement(processInstance, element);
+          elementActivationBehavior.activateElement(processInstance, element, sideEffects);
         });
   }
 

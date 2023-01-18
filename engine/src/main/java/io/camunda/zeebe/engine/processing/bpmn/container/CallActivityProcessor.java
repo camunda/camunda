@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -58,10 +59,13 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onActivate(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public void onActivate(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context, sideEffects))
         .flatMap(ok -> evaluateProcessId(context, element))
         .flatMap(this::getProcessForProcessId)
         .flatMap(this::checkProcessHasNoneStartEvent)
@@ -80,12 +84,15 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onComplete(final ExecutableCallActivity element, final BpmnElementContext context) {
+  public void onComplete(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(
@@ -94,8 +101,11 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void onTerminate(final ExecutableCallActivity element, final BpmnElementContext context) {
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+  public void onTerminate(
+      final ExecutableCallActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.terminateChildProcessInstance(this, element, context);
   }

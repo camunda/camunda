@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
 import java.util.function.Consumer;
@@ -54,16 +55,20 @@ public final class ProcessProcessor
 
   @Override
   public void onActivate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var activatedContext = stateTransitionBehavior.transitionToActivated(context);
     activateStartEvent(element, activatedContext);
   }
 
   @Override
   public void onComplete(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance
@@ -77,9 +82,11 @@ public final class ProcessProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+      final ExecutableFlowElementContainer element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
     incidentBehavior.resolveIncidents(context);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);

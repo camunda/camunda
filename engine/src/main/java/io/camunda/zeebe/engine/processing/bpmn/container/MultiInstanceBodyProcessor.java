@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputColle
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -81,13 +82,15 @@ public final class MultiInstanceBodyProcessor
 
   @Override
   public void onActivate(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     // verify that the input collection variable is present and valid
     readInputCollectionVariable(element, context)
         .flatMap(
             inputCollection ->
                 eventSubscriptionBehavior
-                    .subscribeToEvents(element, context)
+                    .subscribeToEvents(element, context, sideEffects)
                     .map(ok -> inputCollection))
         .ifRightOrLeft(
             inputCollection -> activate(element, context, inputCollection),
@@ -96,9 +99,11 @@ public final class MultiInstanceBodyProcessor
 
   @Override
   public void onComplete(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
 
     element
         .getLoopCharacteristics()
@@ -114,9 +119,11 @@ public final class MultiInstanceBodyProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableMultiInstanceBody element, final BpmnElementContext context) {
+      final ExecutableMultiInstanceBody element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
 
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
     if (noActiveChildInstances) {

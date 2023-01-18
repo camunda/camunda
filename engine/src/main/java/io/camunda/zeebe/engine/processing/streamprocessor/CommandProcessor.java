@@ -8,14 +8,13 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.function.Consumer;
 
 /**
  * High-level record processor abstraction that implements the common behavior of most
@@ -23,15 +22,11 @@ import java.util.function.Consumer;
  */
 public interface CommandProcessor<T extends UnifiedRecordValue> {
 
-  default boolean onCommand(final TypedRecord<T> command, final CommandControl<T> commandControl) {
-    return true;
-  }
-
   default boolean onCommand(
       final TypedRecord<T> command,
       final CommandControl<T> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
-    return onCommand(command, commandControl);
+      final SideEffects sideEffects) {
+    return true;
   }
 
   // TODO (#8003): clean up after refactoring; this is just a simple hook to be able to append
@@ -41,7 +36,8 @@ public interface CommandProcessor<T extends UnifiedRecordValue> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final T value) {}
+      final T value,
+      final SideEffects sideEffects) {}
 
   /**
    * Try to handle an error that occurred during processing.

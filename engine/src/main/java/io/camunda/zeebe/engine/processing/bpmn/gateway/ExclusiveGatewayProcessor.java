@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -46,7 +47,9 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onActivate(
-      final ExecutableExclusiveGateway element, final BpmnElementContext activating) {
+      final ExecutableExclusiveGateway element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     findSequenceFlowToTake(element, activating)
         .ifRightOrLeft(
@@ -66,7 +69,9 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onComplete(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+      final ExecutableExclusiveGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     throw new UnsupportedOperationException(
         String.format(
             "Expected to explicitly process complete, but gateway %s has no wait state",
@@ -75,7 +80,9 @@ public final class ExclusiveGatewayProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+      final ExecutableExclusiveGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     incidentBehavior.resolveIncidents(context);
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);

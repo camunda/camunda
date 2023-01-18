@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableReceiveTask;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 public final class ReceiveTaskProcessor implements BpmnElementProcessor<ExecutableReceiveTask> {
 
@@ -40,24 +41,30 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onActivate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public void onActivate(
+      final ExecutableReceiveTask element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
     variableMappingBehavior
         .applyInputMappings(context, element)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context, sideEffects))
         .ifRightOrLeft(
             ok -> stateTransitionBehavior.transitionToActivated(context),
             failure -> incidentBehavior.createIncident(failure, context));
   }
 
   @Override
-  public void onComplete(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public void onComplete(
+      final ExecutableReceiveTask element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
     variableMappingBehavior
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(
@@ -66,10 +73,13 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   }
 
   @Override
-  public void onTerminate(final ExecutableReceiveTask element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableReceiveTask element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
     incidentBehavior.resolveIncidents(context);
 
     eventSubscriptionBehavior

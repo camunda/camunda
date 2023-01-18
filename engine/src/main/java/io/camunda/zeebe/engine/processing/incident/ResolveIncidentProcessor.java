@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.incident;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -22,10 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
-import java.util.function.Consumer;
 
 public final class ResolveIncidentProcessor implements TypedRecordProcessor<IncidentRecord> {
 
@@ -35,7 +33,6 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       "Expected incident to refer to element in state ELEMENT_ACTIVATING or ELEMENT_COMPLETING, but element is in state %s";
 
   private final ProcessInstanceRecord failedRecord = new ProcessInstanceRecord();
-  private final SideEffectQueue sideEffects = new SideEffectQueue();
 
   private final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor;
   private final StateWriter stateWriter;
@@ -59,7 +56,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   @Override
   public void processRecord(
-      final TypedRecord<IncidentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<IncidentRecord> command, final SideEffects sideEffect) {
     final long key = command.getKey();
 
     final var incident = incidentState.getIncidentRecord(key);
@@ -87,7 +84,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command,
-      final Consumer<SideEffectProducer> sideEffect,
+      final SideEffects sideEffects,
       final IncidentRecord incident) {
     final long jobKey = incident.getJobKey();
     final boolean isJobIncident = jobKey > 0;
@@ -99,11 +96,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     getFailedCommand(incident)
         .ifRightOrLeft(
             failedCommand -> {
-              sideEffects.clear();
-
-              bpmnStreamProcessor.processRecord(failedCommand, sideEffects::add);
-
-              sideEffect.accept(sideEffects);
+              bpmnStreamProcessor.processRecord(failedCommand, sideEffects);
             },
             failure -> {
               final var message =

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.dmn;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -48,7 +49,8 @@ public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionE
   }
 
   @Override
-  public void processRecord(final TypedRecord<DecisionEvaluationRecord> command) {
+  public void processRecord(
+      final TypedRecord<DecisionEvaluationRecord> command, final SideEffects sideEffects) {
 
     final DecisionEvaluationRecord record = command.getValue();
     final Either<Failure, PersistedDecision> decisionOrFailure = getDecision(record);

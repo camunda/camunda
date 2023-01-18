@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import java.util.List;
 
 public class IntermediateCatchEventProcessor
@@ -45,18 +46,22 @@ public class IntermediateCatchEventProcessor
 
   @Override
   public void onActivate(
-      final ExecutableCatchEventElement element, final BpmnElementContext activating) {
-    eventBehaviorOf(element).onActivate(element, activating);
+      final ExecutableCatchEventElement element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects) {
+    eventBehaviorOf(element).onActivate(element, activating, sideEffects);
   }
 
   @Override
   public void onComplete(
-      final ExecutableCatchEventElement element, final BpmnElementContext completing) {
+      final ExecutableCatchEventElement element,
+      final BpmnElementContext completing,
+      final SideEffects sideEffects) {
     variableMappingBehavior
         .applyOutputMappings(completing, element)
         .flatMap(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
+              eventSubscriptionBehavior.unsubscribeFromEvents(completing, sideEffects);
               return stateTransitionBehavior.transitionToCompleted(element, completing);
             })
         .ifRightOrLeft(
@@ -66,8 +71,10 @@ public class IntermediateCatchEventProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableCatchEventElement element, final BpmnElementContext terminating) {
-    eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
+      final ExecutableCatchEventElement element,
+      final BpmnElementContext terminating,
+      final SideEffects sideEffects) {
+    eventSubscriptionBehavior.unsubscribeFromEvents(terminating, sideEffects);
     incidentBehavior.resolveIncidents(terminating);
 
     final var terminated = stateTransitionBehavior.transitionToTerminated(terminating);
@@ -89,7 +96,10 @@ public class IntermediateCatchEventProcessor
 
     boolean isSuitableForEvent(final ExecutableCatchEventElement element);
 
-    void onActivate(final ExecutableCatchEventElement element, final BpmnElementContext activating);
+    void onActivate(
+        final ExecutableCatchEventElement element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects);
   }
 
   private class DefaultIntermediateCatchEventBehavior implements IntermediateCatchEventBehavior {
@@ -101,10 +111,13 @@ public class IntermediateCatchEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+        final ExecutableCatchEventElement element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects) {
       variableMappingBehavior
           .applyInputMappings(activating, element)
-          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
+          .flatMap(
+              ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating, sideEffects))
           .ifRightOrLeft(
               ok -> stateTransitionBehavior.transitionToActivated(activating),
               failure -> incidentBehavior.createIncident(failure, activating));
@@ -120,7 +133,9 @@ public class IntermediateCatchEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+        final ExecutableCatchEventElement element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       stateTransitionBehavior.completeElement(activated);
     }

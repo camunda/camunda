@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
@@ -40,7 +41,8 @@ public final class UpdateVariableDocumentProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<VariableDocumentRecord> record) {
+  public void processRecord(
+      final TypedRecord<VariableDocumentRecord> record, final SideEffects sideEffects) {
     final VariableDocumentRecord value = record.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(value.getScopeKey());

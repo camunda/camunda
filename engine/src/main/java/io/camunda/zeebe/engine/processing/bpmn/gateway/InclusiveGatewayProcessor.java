@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableInclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -47,7 +48,9 @@ public final class InclusiveGatewayProcessor
 
   @Override
   public void onActivate(
-      final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
+      final ExecutableInclusiveGateway element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     findSequenceFlowsToTake(element, activating)
         .ifRightOrLeft(
@@ -70,7 +73,9 @@ public final class InclusiveGatewayProcessor
 
   @Override
   public void onComplete(
-      final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+      final ExecutableInclusiveGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     throw new UnsupportedOperationException(
         String.format(
             "Expected to explicitly process complete, but gateway %s has no wait state",
@@ -79,7 +84,9 @@ public final class InclusiveGatewayProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+      final ExecutableInclusiveGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     incidentBehavior.resolveIncidents(context);
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);

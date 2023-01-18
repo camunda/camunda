@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata;
@@ -17,9 +18,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.function.Consumer;
 
 public final class CreateProcessInstanceWithResultProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
@@ -45,9 +44,9 @@ public final class CreateProcessInstanceWithResultProcessor
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final SideEffects sideEffects) {
     wrappedController.setCommand(command).setController(controller);
-    createProcessor.onCommand(command, wrappedController, sideEffect);
+    createProcessor.onCommand(command, wrappedController, sideEffects);
     return shouldRespond;
   }
 
@@ -57,8 +56,9 @@ public final class CreateProcessInstanceWithResultProcessor
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final ProcessInstanceCreationRecord value) {
-    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value);
+      final ProcessInstanceCreationRecord value,
+      final SideEffects sideEffects) {
+    createProcessor.afterAccept(commandWriter, stateWriter, key, intent, value, sideEffects);
   }
 
   private class CommandControlWithAwaitResult

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableActivity> {
 
@@ -32,13 +33,19 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public void onActivate(final ExecutableActivity element, final BpmnElementContext context) {
+  public void onActivate(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var activated = stateTransitionBehavior.transitionToActivated(context);
     stateTransitionBehavior.completeElement(activated);
   }
 
   @Override
-  public void onComplete(final ExecutableActivity element, final BpmnElementContext context) {
+  public void onComplete(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     stateTransitionBehavior
         .transitionToCompleted(element, context)
         .ifRightOrLeft(
@@ -47,7 +54,10 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
   }
 
   @Override
-  public void onTerminate(final ExecutableActivity element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableActivity element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);

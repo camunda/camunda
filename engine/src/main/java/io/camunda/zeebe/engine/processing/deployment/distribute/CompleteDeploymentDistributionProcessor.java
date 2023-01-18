@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -38,7 +39,8 @@ public class CompleteDeploymentDistributionProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<DeploymentDistributionRecord> record) {
+  public void processRecord(
+      final TypedRecord<DeploymentDistributionRecord> record, final SideEffects sideEffects) {
 
     final var deploymentKey = record.getKey();
     final var partitionId = record.getValue().getPartitionId();

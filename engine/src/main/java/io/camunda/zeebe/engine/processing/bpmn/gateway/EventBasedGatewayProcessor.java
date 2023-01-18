@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEventBasedGateway;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 
 public final class EventBasedGatewayProcessor
     implements BpmnElementProcessor<ExecutableEventBasedGateway> {
@@ -38,10 +39,12 @@ public final class EventBasedGatewayProcessor
 
   @Override
   public void onActivate(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
     eventSubscriptionBehavior
-        .subscribeToEvents(element, context)
+        .subscribeToEvents(element, context, sideEffects)
         .ifRightOrLeft(
             ok -> stateTransitionBehavior.transitionToActivated(context),
             failure -> incidentBehavior.createIncident(failure, context));
@@ -49,9 +52,11 @@ public final class EventBasedGatewayProcessor
 
   @Override
   public void onComplete(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
 
     final var eventTrigger =
         eventSubscriptionBehavior
@@ -78,9 +83,11 @@ public final class EventBasedGatewayProcessor
 
   @Override
   public void onTerminate(
-      final ExecutableEventBasedGateway element, final BpmnElementContext context) {
+      final ExecutableEventBasedGateway element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    eventSubscriptionBehavior.unsubscribeFromEvents(context, sideEffects);
     incidentBehavior.resolveIncidents(context);
 
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);

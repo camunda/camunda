@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -28,7 +29,9 @@ public class JobRecurProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final SideEffects sideEffects) {
     final long jobKey = command.getKey();
     final JobState.State state = jobState.getState(jobKey);
 

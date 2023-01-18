@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableIntermediateThrowEvent;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -59,19 +60,25 @@ public class IntermediateThrowEventProcessor
 
   @Override
   public void onActivate(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
-    eventBehaviorOf(element).onActivate(element, activating);
+      final ExecutableIntermediateThrowEvent element,
+      final BpmnElementContext activating,
+      final SideEffects sideEffects) {
+    eventBehaviorOf(element).onActivate(element, activating, sideEffects);
   }
 
   @Override
   public void onComplete(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {
+      final ExecutableIntermediateThrowEvent element,
+      final BpmnElementContext completing,
+      final SideEffects sideEffects) {
     eventBehaviorOf(element).onComplete(element, completing);
   }
 
   @Override
   public void onTerminate(
-      final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
+      final ExecutableIntermediateThrowEvent element,
+      final BpmnElementContext terminating,
+      final SideEffects sideEffects) {
     eventBehaviorOf(element).onTerminate(element, terminating);
 
     // common behavior for all intermediate throw events
@@ -96,7 +103,9 @@ public class IntermediateThrowEventProcessor
     boolean isSuitableForEvent(final ExecutableIntermediateThrowEvent element);
 
     void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating);
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects);
 
     default void onComplete(
         final ExecutableIntermediateThrowEvent element, final BpmnElementContext completing) {}
@@ -114,7 +123,9 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       stateTransitionBehavior.completeElement(activated);
     }
@@ -140,7 +151,9 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects) {
       if (element.getJobWorkerProperties() != null) {
         variableMappingBehavior
             .applyInputMappings(activating, element)
@@ -179,7 +192,9 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects) {
       final var activated = stateTransitionBehavior.transitionToActivated(activating);
       stateTransitionBehavior.completeElement(activated);
     }
@@ -207,14 +222,16 @@ public class IntermediateThrowEventProcessor
 
     @Override
     public void onActivate(
-        final ExecutableIntermediateThrowEvent element, final BpmnElementContext activating) {
+        final ExecutableIntermediateThrowEvent element,
+        final BpmnElementContext activating,
+        final SideEffects sideEffects) {
       evaluateEscalationCode(element, activating)
           .ifRightOrLeft(
               escalationCode -> {
                 final var activated = stateTransitionBehavior.transitionToActivated(activating);
                 final boolean canBeCompleted =
                     eventPublicationBehavior.throwEscalationEvent(
-                        element.getId(), escalationCode, activated);
+                        element.getId(), escalationCode, activated, sideEffects);
 
                 if (canBeCompleted) {
                   stateTransitionBehavior.completeElement(activated);

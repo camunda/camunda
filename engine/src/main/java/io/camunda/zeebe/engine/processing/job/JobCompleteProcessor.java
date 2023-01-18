@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -45,7 +46,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   @Override
   public boolean onCommand(
-      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command,
+      final CommandControl<JobRecord> commandControl,
+      final SideEffects sideEffects) {
     return defaultProcessor.onCommand(command, commandControl);
   }
 
@@ -55,7 +58,8 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final JobRecord value) {
+      final JobRecord value,
+      final SideEffects sideEffects) {
 
     final var serviceTaskKey = value.getElementInstanceKey();
 

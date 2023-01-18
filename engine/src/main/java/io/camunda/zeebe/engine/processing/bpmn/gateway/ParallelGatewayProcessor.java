@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public final class ParallelGatewayProcessor implements BpmnElementProcessor<ExecutableFlowNode> {
@@ -32,7 +33,10 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onActivate(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public void onActivate(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     // the joining of the incoming sequence flows into the parallel gateway happens in the
     // sequence flow processor. The activating event of the parallel gateway is written when all
     // incoming sequence flows are taken
@@ -49,7 +53,10 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onComplete(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public void onComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     throw new UnsupportedOperationException(
         String.format(
             "Expected to explicitly process complete, but gateway %s has already been completed on processing activate",
@@ -57,7 +64,10 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   }
 
   @Override
-  public void onTerminate(final ExecutableFlowNode element, final BpmnElementContext context) {
+  public void onTerminate(
+      final ExecutableFlowNode element,
+      final BpmnElementContext context,
+      final SideEffects sideEffects) {
     final var terminated = stateTransitionBehavior.transitionToTerminated(context);
     stateTransitionBehavior.onElementTerminated(element, terminated);
   }

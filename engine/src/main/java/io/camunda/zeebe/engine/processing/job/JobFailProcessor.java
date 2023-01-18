@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -22,10 +23,8 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class JobFailProcessor implements CommandProcessor<JobRecord> {
@@ -59,8 +58,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   public boolean onCommand(
       final TypedRecord<JobRecord> command,
       final CommandControl<JobRecord> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
-    return defaultProcessor.onCommand(command, commandControl, sideEffect);
+      final SideEffects sideEffects) {
+    return defaultProcessor.onCommand(command, commandControl, sideEffects);
   }
 
   @Override
@@ -69,7 +68,8 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
       final StateWriter stateWriter,
       final long key,
       final Intent intent,
-      final JobRecord value) {
+      final JobRecord value,
+      final SideEffects sideEffects) {
 
     // set fail job variables locally
     final DirectBuffer variables = value.getVariablesBuffer();
@@ -109,7 +109,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private void acceptCommand(
       final TypedRecord<JobRecord> command,
       final CommandControl<JobRecord> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final SideEffects sideEffect) {
     final long key = command.getKey();
     final JobRecord failedJob = jobState.getJob(key);
     final var retries = command.getValue().getRetries();
@@ -122,7 +122,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     if (retries > 0 && retryBackOff > 0) {
       final long receivedTime = command.getTimestamp();
       failedJob.setRecurringTime(receivedTime + retryBackOff);
-      sideEffect.accept(
+      sideEffect.add(
           () -> {
             jobBackoffChecker.scheduleBackOff(retryBackOff + receivedTime);
             return true;
