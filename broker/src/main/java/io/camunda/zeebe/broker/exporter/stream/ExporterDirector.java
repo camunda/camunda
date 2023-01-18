@@ -362,12 +362,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void distributeExporterState() {
-    final var distributeMessage = new ExporterStateDistributeMessage();
+    final var exporterStateMessage = new ExporterStateDistributeMessage();
     state.visitExporterState(
         (exporterId, exporterStateEntry) ->
-            distributeMessage.putExporter(
+            exporterStateMessage.putExporter(
                 exporterId, exporterStateEntry.getPosition(), exporterStateEntry.getMetadata()));
-    exporterDistributionService.distributeExporterState(distributeMessage);
+    exporterDistributionService.distributeExporterState(exporterStateMessage);
   }
 
   private void skipRecord(final LoggedEvent currentEvent) {
