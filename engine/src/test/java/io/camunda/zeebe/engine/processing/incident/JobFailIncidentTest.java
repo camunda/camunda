@@ -356,11 +356,12 @@ public final class JobFailIncidentTest {
 
     assertThat(resolvedIncidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
 
-    // ZPA shouldn't care about the positions/source record positions any more, they make no use of it
-//    assertThat(resolvedIncidentEvent.getSourceRecordPosition())
-//        .isEqualTo(terminateTaskCommand.getPosition());
-//    assertThat(jobCancelled.getSourceRecordPosition())
-//        .isEqualTo(terminateTaskCommand.getPosition());
+    // ZPA shouldn't care about the positions/source record positions any more, they make no use of
+    // it
+    //    assertThat(resolvedIncidentEvent.getSourceRecordPosition())
+    //        .isEqualTo(terminateTaskCommand.getPosition());
+    //    assertThat(jobCancelled.getSourceRecordPosition())
+    //        .isEqualTo(terminateTaskCommand.getPosition());
 
     assertThat(resolvedIncidentEvent.getValue())
         .hasErrorType(ErrorType.JOB_NO_RETRIES)

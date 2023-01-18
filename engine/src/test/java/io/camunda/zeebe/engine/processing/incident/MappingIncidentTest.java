@@ -89,7 +89,8 @@ public final class MappingIncidentTest {
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
 
-    // ZPA shouldn't care about the positions/source record positions any more, they make no use of it
+    // ZPA shouldn't care about the positions/source record positions any more, they make no use of
+    // it
     // assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureCommand.getKey());
 
@@ -464,9 +465,10 @@ public final class MappingIncidentTest {
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
 
-    // ZPA shouldn't care about the positions/source record positions any more, they make no use of it
-//    assertThat(terminateActivity.getPosition())
-//        .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
+    // ZPA shouldn't care about the positions/source record positions any more, they make no use of
+    // it
+    //    assertThat(terminateActivity.getPosition())
+    //        .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
