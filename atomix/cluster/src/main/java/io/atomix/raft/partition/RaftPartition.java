@@ -26,6 +26,7 @@ import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -231,19 +232,27 @@ public class RaftPartition implements Partition, HealthMonitorable {
    */
   public CompletableFuture<Void> stepDownIfNotPrimary() {
     if (shouldStepDown()) {
+      LOG.atInfo()
+          .setMessage(
+              "Decided that {} should step down as {} from partition {} because {} is primary")
+          .addArgument(server.getRole())
+          .addArgument(partitionMetadata.id())
+          .addArgument(partitionMetadata.getPrimary().orElse(null))
+          .log();
       return stepDown();
     } else {
       return CompletableFuture.completedFuture(null);
     }
   }
 
-  private boolean shouldStepDown() {
+  @VisibleForTesting
+  public boolean shouldStepDown() {
     final var primary = partitionMetadata.getPrimary();
     final var partitionConfig = config.getPartitionConfig();
     return server != null
         && partitionConfig.isPriorityElectionEnabled()
         && primary.isPresent()
-        && primary.get() != server.getMemberId();
+        && !primary.get().equals(server.getMemberId());
   }
 
   public CompletableFuture<Void> stop() {
