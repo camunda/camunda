@@ -100,4 +100,31 @@ final class StepDownIfNotPrimaryTest {
     // then -- current member should not step down
     Assertions.assertThat(partition.shouldStepDown()).isFalse();
   }
+
+  @Test
+  void shouldNotStepDownIfPartitionHasNoPrimary(@TempDir Path tempDir)
+      throws IllegalAccessException {
+    // given
+    final var partitionId = new PartitionId("group", 1);
+    final var raftPartitionConfig = new RaftPartitionConfig();
+    final var partition =
+        new RaftPartition(
+            partitionId,
+            new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
+            tempDir.toFile());
+    final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
+    Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
+
+    // To avoid having to start a server, just mock one.
+    FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
+
+    // when -- no primary known for this partition
+    final MemberId primaryMemberId = null;
+    raftPartitionConfig.setPriorityElectionEnabled(true);
+    partition.setMetadata(
+        new PartitionMetadata(partitionId, Set.of(), Map.of(), 1, primaryMemberId));
+
+    // then -- current member should not step down
+    Assertions.assertThat(partition.shouldStepDown()).isFalse();
+  }
 }
