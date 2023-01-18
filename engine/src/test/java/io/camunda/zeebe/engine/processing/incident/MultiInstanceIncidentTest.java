@@ -403,7 +403,8 @@ public final class MultiInstanceIncidentTest {
    * incidents on each of the children's activations, which can be resolved individually.
    */
   @Test
-  @Ignore("batch processing works different, we not process commands with source events and concurrent execution is not comparable than before ")
+  @Ignore(
+      "batch processing works different, we not process commands with source events and concurrent execution is not comparable than before ")
   public void shouldCreateIncidentWhenInputCollectionModifiedConcurrently() {
     // given
     final var process =
