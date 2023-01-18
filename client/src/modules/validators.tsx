@@ -12,6 +12,7 @@ import {
   parseFilterDate,
   ProcessInstanceFilters,
   DecisionInstanceFilters,
+  parseFilterTime,
 } from 'modules/utils/filter';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {isValid} from 'date-fns';
@@ -22,6 +23,7 @@ const ERRORS = {
   ids: 'Key has to be a 16 to 19 digit number, separated by space or comma',
   parentInstanceId: 'Key has to be a 16 to 19 digit number',
   date: 'Date has to be in format YYYY-MM-DD hh:mm:ss',
+  time: 'Time has to be in format hh:mm:ss',
   operationId: 'Id has to be a UUID',
   variables: {
     nameUnfilled: 'Name has to be filled',
@@ -148,6 +150,18 @@ const validateDateCharacters: FieldValidator<
   }
 };
 
+const validateTimeComplete = promisifyValidator((value = '') => {
+  if (value !== '' && !isValid(parseFilterTime(value.trim()))) {
+    return ERRORS.time;
+  }
+}, VALIDATION_TIMEOUT);
+
+const validateTimeCharacters = (value = '') => {
+  if (value !== '' && value.replace(/[0-9]|:/g, '') !== '') {
+    return ERRORS.time;
+  }
+};
+
 const validateVariableNameCharacters: FieldValidator<string | undefined> = (
   variableName = ''
 ) => {
@@ -228,6 +242,8 @@ export {
   validateParentInstanceIdNotTooLong,
   validateDateCharacters,
   validateDateComplete,
+  validateTimeComplete,
+  validateTimeCharacters,
   validateOperationIdCharacters,
   validateOperationIdComplete,
   validateVariableNameCharacters,

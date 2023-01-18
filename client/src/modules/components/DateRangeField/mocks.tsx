@@ -5,7 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
+import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {useEffect} from 'react';
 import {Form} from 'react-final-form';
 import {DateRangeField} from '.';
 
@@ -21,6 +23,12 @@ const MockDateRangeField: React.FC = () => (
 
 const getWrapper = (initialValues?: {[key: string]: string}) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        dateRangePopoverStore.reset();
+      };
+    }, []);
+
     return (
       <ThemeProvider>
         <Form onSubmit={() => {}} initialValues={initialValues}>

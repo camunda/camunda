@@ -6,7 +6,7 @@
  */
 
 import {formatISODate} from 'modules/components/DateRangeField/formatDate';
-import {UserEvent, Screen} from 'modules/testing-library';
+import {UserEvent, Screen, waitFor} from 'modules/testing-library';
 
 const pad = (value: String | Number) => {
   return String(value).padStart(2, '0');
@@ -65,4 +65,13 @@ const pickDateTimeRange = async ({
   };
 };
 
-export {pickDateTimeRange};
+const applyDateRange = async (user: UserEvent, screen: Screen) => {
+  const applyButton = screen.getByText('Apply');
+  expect(applyButton).not.toBeDisabled();
+  await user.click(applyButton);
+  await waitFor(() => {
+    expect(screen.queryByTestId('popover')).not.toBeInTheDocument();
+  });
+};
+
+export {pickDateTimeRange, applyDateRange};

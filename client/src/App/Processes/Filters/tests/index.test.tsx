@@ -19,7 +19,7 @@ import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
+import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 
 describe('Filters', () => {
   beforeAll(() => {

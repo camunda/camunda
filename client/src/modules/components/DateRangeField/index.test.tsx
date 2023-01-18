@@ -5,16 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
-import {render, screen} from 'modules/testing-library';
-import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
+import {render, screen, waitFor} from 'modules/testing-library';
+import {
+  applyDateRange,
+  pickDateTimeRange,
+} from 'modules/testUtils/dateTimeRange';
 import {getWrapper, MockDateRangeField} from './mocks';
 
 describe('Date Range', () => {
-  afterEach(() => {
-    dateRangePopoverStore.reset();
-  });
-
   beforeAll(() => {
     //@ts-ignore
     IS_REACT_ACT_ENVIRONMENT = false;
@@ -83,8 +81,8 @@ describe('Date Range', () => {
       fromTime,
       toTime,
     });
+    await applyDateRange(user, screen);
 
-    await user.click(screen.getByText('Apply'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
       `${year}-${month}-${fromDay} ${fromTime} - ${year}-${month}-${toDay} ${toTime}`
     );
@@ -102,8 +100,7 @@ describe('Date Range', () => {
       fromDay: '10',
       toDay: '20',
     });
-
-    await user.click(screen.getByText('Apply'));
+    await applyDateRange(user, screen);
 
     const expectedValue = `${year}-${month}-${fromDay} 00:00:00 - ${year}-${month}-${toDay} 23:59:59`;
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
@@ -159,10 +156,69 @@ describe('Date Range', () => {
     await user.click(screen.getByTestId('toTime'));
     await user.clear(screen.getByTestId('toTime'));
     await user.type(screen.getByTestId('toTime'), '17:15:00');
+    await applyDateRange(user, screen);
 
-    await user.click(screen.getByText('Apply'));
     expect(screen.getByLabelText('Start Date Range')).toHaveValue(
       '2022-01-01 12:30:00 - 2022-12-01 17:15:00'
     );
+  });
+
+  it('should show validation error on invalid character', async () => {
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
+    const TIME_ERROR = 'Time has to be in format hh:mm:ss';
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+
+    await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '10',
+      toDay: '20',
+    });
+
+    expect(screen.queryByTestId('fromTime')).not.toBeInvalid();
+    expect(screen.queryByText(TIME_ERROR)).not.toBeInTheDocument();
+    expect(screen.queryByText('Apply')).not.toBeDisabled();
+
+    await user.click(screen.getByTestId('fromTime'));
+    await user.clear(screen.getByTestId('fromTime'));
+    await user.type(screen.getByTestId('fromTime'), '12:30:xx');
+
+    expect(screen.getByTestId('fromTime')).toBeInvalid();
+    expect(screen.getByText(TIME_ERROR)).toBeInTheDocument();
+    expect(screen.getByText('Apply')).toBeDisabled();
+  });
+
+  it('should show validation error on invalid time format', async () => {
+    jest.useFakeTimers();
+
+    const {user} = render(<MockDateRangeField />, {wrapper: getWrapper()});
+    const TIME_ERROR = 'Time has to be in format hh:mm:ss';
+
+    await user.click(screen.getByLabelText('Start Date Range'));
+
+    await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '10',
+      toDay: '20',
+    });
+
+    await user.click(screen.getByTestId('fromTime'));
+    await user.clear(screen.getByTestId('fromTime'));
+    await user.type(screen.getByTestId('fromTime'), '1111');
+
+    expect(screen.queryByTestId('fromTime')).not.toBeInvalid();
+    expect(screen.queryByText(TIME_ERROR)).not.toBeInTheDocument();
+    expect(screen.queryByText('Apply')).not.toBeDisabled();
+
+    jest.runOnlyPendingTimers();
+
+    expect(await screen.findByText(TIME_ERROR)).toBeInTheDocument();
+    expect(screen.getByTestId('fromTime')).toBeInvalid();
+    expect(screen.getByText('Apply')).toBeDisabled();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

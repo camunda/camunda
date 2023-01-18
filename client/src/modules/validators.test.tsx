@@ -23,7 +23,11 @@ import {
   validateDecisionIdsCharacters,
   validateDecisionIdsLength,
   validatesDecisionIdsComplete,
+  validateTimeComplete,
+  validateTimeCharacters,
 } from './validators';
+
+const TIME_ERROR = 'Time has to be in format hh:mm:ss';
 
 describe('validators', () => {
   let setTimeoutSpy: jest.SpyInstance;
@@ -488,5 +492,27 @@ describe('validators', () => {
     });
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(7);
+  });
+
+  // more fine grained tests for parseFilterTime in utils/filter/index.test.ts
+  it('should validate time with delay', async () => {
+    const validate = validateTimeComplete('99:99:99');
+    jest.runOnlyPendingTimers();
+    await expect(validate).resolves.toBe(TIME_ERROR);
+  });
+
+  it('should pass validating time', () => {
+    expect(validateTimeComplete('17:30')).toBeUndefined();
+    expect(validateTimeComplete('12:34:56')).toBeUndefined();
+  });
+
+  it('should validate invalid characters without delay', () => {
+    expect(validateTimeCharacters('a')).toBe(TIME_ERROR);
+    expect(validateTimeCharacters(' ')).toBe(TIME_ERROR);
+    expect(validateTimeCharacters('xx:xx:xx')).toBe(TIME_ERROR);
+    expect(validateTimeCharacters('--')).toBe(TIME_ERROR);
+
+    expect(validateTimeCharacters(':')).toBeUndefined();
+    expect(validateTimeCharacters('')).toBeUndefined();
   });
 });

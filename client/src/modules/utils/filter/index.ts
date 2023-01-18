@@ -5,7 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {addDays, startOfDay, addMinutes, format, parse} from 'date-fns';
+import {
+  addDays,
+  startOfDay,
+  addMinutes,
+  format,
+  parse,
+  isValid,
+} from 'date-fns';
 import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
@@ -257,6 +264,21 @@ function parseIds(value: string) {
     .replace(/\s{1,}/g, '|')
     .replace(/,{1,}/g, '|')
     .split('|');
+}
+
+function parseFilterTime(value: string) {
+  const HOUR_MINUTES_PATTERN = /^[0-9]{2}:[0-9]{2}$/;
+  const HOUR_MINUTES_SECONDS_PATTERN = /^[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
+
+  if (HOUR_MINUTES_PATTERN.test(value)) {
+    const parsedDate = parse(value, 'HH:mm', new Date());
+    return isValid(parsedDate) ? parsedDate : undefined;
+  }
+
+  if (HOUR_MINUTES_SECONDS_PATTERN.test(value)) {
+    const parsedDate = parse(value, 'HH:mm:ss', new Date());
+    return isValid(parsedDate) ? parsedDate : undefined;
+  }
 }
 
 function parseFilterDate(value: string) {
@@ -580,6 +602,7 @@ export {
   getProcessInstanceFilters,
   parseIds,
   parseFilterDate,
+  parseFilterTime,
   getProcessInstancesRequestFilters,
   getDecisionInstancesRequestFilters,
   updateProcessFiltersSearchString,

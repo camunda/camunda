@@ -235,10 +235,11 @@ const DateRangePopover: React.FC<Props> = ({
                 size="medium"
                 title="Apply"
                 disabled={
-                  form.getFieldState('fromDate')?.value === '' ||
-                  form.getFieldState('fromTime')?.value === '' ||
-                  form.getFieldState('toDate')?.value === '' ||
-                  form.getFieldState('toTime')?.value === ''
+                  !form.getFieldState('fromDate')?.value ||
+                  !form.getFieldState('fromTime')?.value ||
+                  !form.getFieldState('toDate')?.value ||
+                  !form.getFieldState('toTime')?.value ||
+                  form.getState().invalid
                 }
               >
                 Apply

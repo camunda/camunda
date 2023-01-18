@@ -5,9 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {deleteSearchParams} from './index';
+import {deleteSearchParams, parseFilterTime} from './index';
 
-describe('deleteSearchParams', () => {
+describe('utils/filter', () => {
   it('should delete search params', () => {
     const locationMock = {
       hash: '',
@@ -26,5 +26,23 @@ describe('deleteSearchParams', () => {
     expect(deleteSearchParams(locationMock, ['test4']).search).toBe(
       'test=1&test2=2&test3=3'
     );
+  });
+
+  it('should validate time', () => {
+    expect(parseFilterTime('23:59:59')).not.toBeUndefined();
+    expect(parseFilterTime('00:00:00')).not.toBeUndefined();
+    expect(parseFilterTime('12:34:56')).not.toBeUndefined();
+    expect(parseFilterTime('00:00')).not.toBeUndefined();
+    expect(parseFilterTime('23:59')).not.toBeUndefined();
+
+    expect(parseFilterTime('aa')).toBeUndefined();
+    expect(parseFilterTime('123456')).toBeUndefined();
+    expect(parseFilterTime('0')).toBeUndefined();
+    expect(parseFilterTime('99:99:99')).toBeUndefined();
+    expect(parseFilterTime('66:66')).toBeUndefined();
+    expect(parseFilterTime('')).toBeUndefined();
+    expect(parseFilterTime('   ')).toBeUndefined();
+    expect(parseFilterTime(':::')).toBeUndefined();
+    expect(parseFilterTime('-')).toBeUndefined();
   });
 });

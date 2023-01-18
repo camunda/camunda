@@ -7,6 +7,8 @@
 
 import {Field} from 'react-final-form';
 import {TextInput} from '@carbon/react';
+import {validateTimeCharacters, validateTimeComplete} from 'modules/validators';
+import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 
 type Props = {
   type: 'from' | 'to';
@@ -16,11 +18,13 @@ type Props = {
 
 const TimeInput: React.FC<Props> = ({type, labelText}) => {
   return (
-    <Field name={`${type}Time`}>
-      {({input, onChange}) => {
+    <Field
+      name={`${type}Time`}
+      validate={mergeValidators(validateTimeComplete, validateTimeCharacters)}
+    >
+      {({input, onChange, meta}) => {
         return (
           <TextInput
-            pattern={'\\d{1,2}:\\d{1,2}:\\d{1,2}'}
             defaultValue={input.value}
             id="time-picker"
             labelText={labelText}
@@ -33,6 +37,8 @@ const TimeInput: React.FC<Props> = ({type, labelText}) => {
             data-testid={`${type}Time`}
             maxLength={8}
             autoComplete="off"
+            invalid={meta.invalid}
+            invalidText={meta.error}
           />
         );
       }}

@@ -6,7 +6,10 @@
  */
 
 import {render, screen, UserEvent} from 'modules/testing-library';
-import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
+import {
+  applyDateRange,
+  pickDateTimeRange,
+} from 'modules/testUtils/dateTimeRange';
 import {getWrapper, MockDateRangeField} from './mocks';
 import {tracking} from 'modules/tracking';
 
@@ -43,8 +46,7 @@ describe('Date Range - tracking', () => {
     await user.type(screen.getByLabelText('From date'), '2022-01-01');
     await user.clear(screen.getByLabelText('To date'));
     await user.type(screen.getByLabelText('To date'), '2022-12-01');
-
-    await user.click(screen.getByText('Apply'));
+    await applyDateRange(user, screen);
 
     expect(trackSpy).toHaveBeenNthCalledWith(2, {
       eventName: 'date-range-applied',
@@ -71,8 +73,7 @@ describe('Date Range - tracking', () => {
       fromDay: '10',
       toDay: '20',
     });
-
-    await user.click(screen.getByText('Apply'));
+    await applyDateRange(user, screen);
 
     expect(trackSpy).toHaveBeenNthCalledWith(2, {
       eventName: 'date-range-applied',
@@ -99,7 +100,7 @@ describe('Date Range - tracking', () => {
     await user.type(screen.getByLabelText('To date'), '2022-12-01');
     await user.clear(screen.getByTestId('toTime'));
     await user.type(screen.getByTestId('toTime'), '17:15:00');
-    await user.click(screen.getByText('Apply'));
+    await applyDateRange(user, screen);
 
     expect(trackSpy).toHaveBeenNthCalledWith(2, {
       eventName: 'date-range-applied',
@@ -128,8 +129,7 @@ describe('Date Range - tracking', () => {
       fromTime: '11:22:33',
       toTime: '08:59:59',
     });
-    await user.click(screen.getByText('Apply'));
-
+    await applyDateRange(user, screen);
     expect(trackSpy).toHaveBeenNthCalledWith(2, {
       eventName: 'date-range-applied',
       filterName: 'startDateRange',

@@ -22,7 +22,7 @@ import {Filters} from './index';
 import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {omit} from 'lodash';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {pickDateTimeRange} from 'modules/testUtils/pickDateTimeRange';
+import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 
 function reset() {
   jest.clearAllTimers();
