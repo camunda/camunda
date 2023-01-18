@@ -81,7 +81,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final String exporterPositionsTopic;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
-  private ExporterPositionsDistributionService exporterDistributionService;
+  private ExporterStateDistributionService exporterDistributionService;
   private final int partitionId;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
@@ -191,8 +191,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       LOG.debug("Recovering exporter from snapshot");
       recoverFromSnapshot();
       exporterDistributionService =
-          new ExporterPositionsDistributionService(
-              this::consumeExporterPositionFromLeader,
+          new ExporterStateDistributionService(
+              this::consumeExporterStateFromLeader,
               partitionMessagingService,
               exporterPositionsTopic);
 
@@ -263,10 +263,12 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
   }
 
-  private void consumeExporterPositionFromLeader(
-      final String exporterId, final long receivedPosition) {
-    if (state.getPosition(exporterId) < receivedPosition) {
-      state.setPosition(exporterId, receivedPosition);
+  private void consumeExporterStateFromLeader(
+      final String exporterId,
+      final ExporterStateDistributeMessage.ExporterStateEntry exporterState) {
+
+    if (state.getPosition(exporterId) < exporterState.position()) {
+      state.setExporterState(exporterId, exporterState.position(), exporterState.metadata());
     }
   }
 
@@ -339,7 +341,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         exporterPhase = ExporterPhase.PAUSED;
       }
 
-      actor.runAtFixedRate(distributionInterval, this::distributeExporterPositions);
+      actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
 
     } else {
       actor.close();
@@ -353,18 +355,19 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     }
 
     if (state.hasExporters()) {
-      exporterDistributionService.subscribeForExporterPositions(actor::run);
+      exporterDistributionService.subscribeForExporterState(actor::run);
     } else {
       actor.close();
     }
   }
 
-  private void distributeExporterPositions() {
-    final var exportPositionsMessage = new ExporterPositionsMessage();
+  private void distributeExporterState() {
+    final var exporterStateMessage = new ExporterStateDistributeMessage();
     state.visitExporterState(
         (exporterId, exporterStateEntry) ->
-            exportPositionsMessage.putExporter(exporterId, exporterStateEntry.getPosition()));
-    exporterDistributionService.distributeExporterPositions(exportPositionsMessage);
+            exporterStateMessage.putExporter(
+                exporterId, exporterStateEntry.getPosition(), exporterStateEntry.getMetadata()));
+    exporterDistributionService.distributeExporterState(exporterStateMessage);
   }
 
   private void skipRecord(final LoggedEvent currentEvent) {

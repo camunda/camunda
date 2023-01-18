@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -36,7 +37,8 @@ public class ExporterStateEntry extends UnpackedObject implements DbValue {
   }
 
   public DirectBuffer getMetadata() {
-    return metadataProp.getValue();
+    // Clone the buffer to avoid misuse. The buffer is reused by the state.
+    return BufferUtil.cloneBuffer(metadataProp.getValue());
   }
 
   public ExporterStateEntry setMetadata(final DirectBuffer metadata) {
