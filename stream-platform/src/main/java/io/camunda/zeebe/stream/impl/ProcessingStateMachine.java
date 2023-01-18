@@ -377,6 +377,7 @@ public final class ProcessingStateMachine {
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
 
+          toWriteEntries.clear();
           currentProcessingResult.getRecordBatch().forEach(toWriteEntries::add);
         });
   }
