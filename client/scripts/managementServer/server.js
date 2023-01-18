@@ -46,7 +46,7 @@ module.exports = function createServer(
       return;
     }
 
-    var filePath = __dirname + request.url;
+    var filePath = __dirname + path.parse(request.url).base;
     if (request.url === '/') {
       filePath += 'index.html';
     }
@@ -88,7 +88,7 @@ module.exports = function createServer(
   process.on('SIGINT', () => socketServer.close(() => server.close()));
   process.on('SIGTERM', () => socketServer.close(() => server.close()));
 
-  server.listen(8100);
+  server.listen(8100, 'localhost');
 
   opn('http://localhost:8100');
 
