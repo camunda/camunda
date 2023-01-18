@@ -222,6 +222,14 @@ public class RaftPartition implements Partition, HealthMonitorable {
     return server.stepDown();
   }
 
+  public PartitionMetadata getMetadata() {
+    return partitionMetadata;
+  }
+
+  public void setMetadata(final PartitionMetadata partitionMetadata) {
+    this.partitionMetadata = partitionMetadata;
+  }
+
   /**
    * Tries to step down if the following conditions are met:
    *
@@ -233,19 +241,25 @@ public class RaftPartition implements Partition, HealthMonitorable {
    */
   public CompletableFuture<Void> stepDownIfNotPrimary() {
     if (shouldStepDown()) {
+      LOG.info(
+          "Decided that {} should step down as {} from partition {} because {} is primary",
+          server.getMemberId(),
+          server.getRole(),
+          partitionMetadata.id(),
+          partitionMetadata.getPrimary().orElse(null));
       return stepDown();
     } else {
       return CompletableFuture.completedFuture(null);
     }
   }
 
-  private boolean shouldStepDown() {
+  public boolean shouldStepDown() {
     final var primary = partitionMetadata.getPrimary();
     final var partitionConfig = config.getPartitionConfig();
     return server != null
         && partitionConfig.isPriorityElectionEnabled()
         && primary.isPresent()
-        && primary.get() != server.getMemberId();
+        && !primary.get().equals(server.getMemberId());
   }
 
   public CompletableFuture<Void> stop() {
