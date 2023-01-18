@@ -130,24 +130,22 @@ public class Engine implements RecordProcessor {
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
-        currentProcessor.processRecord(
-            record,
-            producers::add);
+        currentProcessor.processRecord(record, producers::add);
       }
     }
 
-
     // todo here side effect collection to add to the post commit
-    producers.forEach((sep) -> {
-        if (sep instanceof SideEffectQueue sideEffectQueue) {
-          final List<SideEffectProducer> sideEffects = sideEffectQueue.getSideEffects();
-          sideEffects.forEach(sideEffectProducer -> processingResultBuilder.appendPostCommitTask(
-              sideEffectProducer::flush));
-        }
-        else {
-          processingResultBuilder.appendPostCommitTask(sep::flush);
-        }
-    });
+    producers.forEach(
+        (sep) -> {
+          if (sep instanceof SideEffectQueue sideEffectQueue) {
+            final List<SideEffectProducer> sideEffects = sideEffectQueue.getSideEffects();
+            sideEffects.forEach(
+                sideEffectProducer ->
+                    processingResultBuilder.appendPostCommitTask(sideEffectProducer::flush));
+          } else {
+            processingResultBuilder.appendPostCommitTask(sep::flush);
+          }
+        });
     return processingResultBuilder.build();
   }
 

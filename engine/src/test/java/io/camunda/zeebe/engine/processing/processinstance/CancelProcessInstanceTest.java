@@ -329,9 +329,10 @@ public final class CancelProcessInstanceTest {
 
     assertThat(jobCanceledEvent.getKey()).isEqualTo(jobCreatedEvent.getKey());
 
-    // ZPA shouldn't care about the positions/source record positions any more, they make no use of it
-//    assertThat(jobCanceledEvent.getSourceRecordPosition())
-//        .isEqualTo(terminateActivity.getPosition());
+    // ZPA shouldn't care about the positions/source record positions any more, they make no use of
+    // it
+    //    assertThat(jobCanceledEvent.getSourceRecordPosition())
+    //        .isEqualTo(terminateActivity.getPosition());
 
     final JobRecordValue jobCanceledEventValue = jobCanceledEvent.getValue();
     assertThat(jobCanceledEventValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);

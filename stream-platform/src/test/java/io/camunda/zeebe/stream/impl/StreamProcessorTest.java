@@ -340,8 +340,7 @@ public final class StreamProcessorTest {
         "",
         Records.processInstance(1));
 
-    when(defaultRecordProcessor.process(any(), any()))
-        .thenReturn(resultBuilder.build());
+    when(defaultRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 

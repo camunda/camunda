@@ -312,7 +312,6 @@ public final class ProcessingStateMachine {
                 toWriteEntries.add(entry);
               }
             }
-
           });
 
       metrics.commandsProcessed();
@@ -418,7 +417,8 @@ public final class ProcessingStateMachine {
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.commit();
-              lastSuccessfulProcessedRecordPosition = lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
+              lastSuccessfulProcessedRecordPosition =
+                  lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
               metrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
               return true;
