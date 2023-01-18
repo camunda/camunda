@@ -94,7 +94,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
           String.format(
               "Elements of type '%s' are currently not supported. Please refer "
                   + "to the documentation for a list of supported elements: "
-                  + "https://docs.camunda.io/docs/reference/bpmn-processes/bpmn-coverage",
+                  + "https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-coverage/",
               elementType.getSimpleName()));
     }
   }
