@@ -32,11 +32,11 @@ final class StepDownIfNotPrimaryTest {
             partitionId,
             new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
             tempDir.toFile());
-    final var raftPartitionServer = Mockito.mock(RaftPartitionServer.class);
-    Mockito.when(raftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
+    final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
+    Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
     // To avoid having to start a server, just mock one.
-    FieldUtils.writeField(partition, "server", raftPartitionServer, true);
+    FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when -- enabling priority election and marking a different member as primary
     raftPartitionConfig.setPriorityElectionEnabled(true);
@@ -58,11 +58,11 @@ final class StepDownIfNotPrimaryTest {
             new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
             tempDir.toFile());
 
-    final var raftPartitionServer = Mockito.mock(RaftPartitionServer.class);
-    Mockito.when(raftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
+    final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
+    Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
     // To avoid having to start a server, just mock one.
-    FieldUtils.writeField(partition, "server", raftPartitionServer, true);
+    FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when -- enabling priority election and marking the current member as primary
     final var primaryMemberId = new MemberId("1");
@@ -85,11 +85,11 @@ final class StepDownIfNotPrimaryTest {
             partitionId,
             new RaftPartitionGroupConfig().setPartitionConfig(raftPartitionConfig),
             tempDir.toFile());
-    final var raftPartitionServer = Mockito.mock(RaftPartitionServer.class);
-    Mockito.when(raftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
+    final var mockRaftPartitionServer = Mockito.mock(RaftPartitionServer.class);
+    Mockito.when(mockRaftPartitionServer.getMemberId()).thenReturn(new MemberId("1"));
 
     // To avoid having to start a server, just mock one.
-    FieldUtils.writeField(partition, "server", raftPartitionServer, true);
+    FieldUtils.writeField(partition, "server", mockRaftPartitionServer, true);
 
     // when -- disabling priority election
     final var primaryMemberId = new MemberId("2");
