@@ -186,12 +186,10 @@
 
         # freeSpace:
           # When the free space available is less than this value, this broker rejects all client commands and pause processing.
-          # The value can be absolute data size or a percentage such as 10%.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING
           # processing: 2GB
 
           # When the free space available is less than this value, broker stops receiving replicated events.
-          # The value can be absolute data size or a percentage such as 10%.
           # This value must be less than freeSpace.processing. It is recommended to configure free space
           # large enough for at least one log segment and one snapshot. This is because a partition needs
           # enough space to take a new snapshot to be able to compact the log segments to make disk space available again.
