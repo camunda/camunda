@@ -19,10 +19,6 @@ public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
-  private static final boolean DEFAULT_DISK_USAGE_MONITORING_ENABLED = true;
-  private static final double DEFAULT_DISK_USAGE_REPLICATION_WATERMARK = 0.99;
-  private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.97;
-  private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
 
   private String directory = DEFAULT_DIRECTORY;
 
@@ -33,10 +29,10 @@ public final class DataCfg implements ConfigurationEntry {
   private int logIndexDensity = 100;
 
   // diskUsageMonitoring and watermark configs are deprecated and replaced by DiskCfg
-  private boolean diskUsageMonitoringEnabled = DEFAULT_DISK_USAGE_MONITORING_ENABLED;
-  private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
-  private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
-  private Duration diskUsageMonitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
+  private Boolean diskUsageMonitoringEnabled;
+  private Double diskUsageReplicationWatermark;
+  private Double diskUsageCommandWatermark;
+  private Duration diskUsageMonitoringInterval;
   private DiskCfg disk = new DiskCfg();
   private BackupStoreCfg backup = new BackupStoreCfg();
 
@@ -53,22 +49,22 @@ public final class DataCfg implements ConfigurationEntry {
   private void overrideDiskConfig() {
     // For backward compatibility, if the old disk watermarks are configured use those values
     // instead of the new ones
-    if (diskUsageMonitoringEnabled != DEFAULT_DISK_USAGE_MONITORING_ENABLED) {
+    if (diskUsageMonitoringEnabled != null) {
       LOG.warn(
           "Configuration parameter data.diskUsageMonitoringEnabled is deprecated. Use data.disk.enableMonitoring instead.");
       disk.setEnableMonitoring(diskUsageMonitoringEnabled);
     }
-    if (!diskUsageMonitoringInterval.equals(DEFAULT_DISK_USAGE_MONITORING_DELAY)) {
+    if (diskUsageMonitoringInterval != null) {
       LOG.warn(
           "Configuration parameter data.diskUsageMonitoringInterval is deprecated. Use data.disk.monitoringInterval instead.");
       disk.setMonitoringInterval(diskUsageMonitoringInterval);
     }
-    if (diskUsageCommandWatermark != DEFAULT_DISK_USAGE_COMMAND_WATERMARK) {
+    if (diskUsageCommandWatermark != null) {
       LOG.warn(
           "Configuration parameter data.diskUsageCommandWatermark is deprecated. Use data.disk.freeSpace.processing instead.");
       disk.getFreeSpace().setProcessing((1 - diskUsageCommandWatermark) * 100 + "%");
     }
-    if (diskUsageReplicationWatermark != DEFAULT_DISK_USAGE_REPLICATION_WATERMARK) {
+    if (diskUsageReplicationWatermark != null) {
       LOG.warn(
           "Configuration parameter data.diskUsageReplicationWatermark is deprecated. Use data.disk.freeSpace.replication instead.");
       disk.getFreeSpace().setReplication((1 - diskUsageReplicationWatermark) * 100 + "%");
