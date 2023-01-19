@@ -14,13 +14,21 @@ import {FlowNodeInstance} from 'modules/stores/flowNodeInstance';
 type Props = {
   flowNodeInstance: Pick<
     FlowNodeInstance,
-    'flowNodeId' | 'isPlaceholder' | 'endDate'
+    'flowNodeId' | 'isPlaceholder' | 'endDate' | 'treePath'
   >;
 };
 
 const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
-  const modification =
-    modificationsStore.modificationsByFlowNode[flowNodeInstance.flowNodeId];
+  const instanceKeyHierarchy = flowNodeInstance.treePath.split('/');
+
+  const hasCancelModification =
+    modificationsStore.modificationsByFlowNode[flowNodeInstance.flowNodeId]
+      ?.areAllTokensCanceled ||
+    instanceKeyHierarchy.some((instanceKey) =>
+      modificationsStore.isCancelModificationAppliedOnFlowNodeInstanceKey(
+        instanceKey
+      )
+    );
 
   return (
     <Container>
@@ -31,8 +39,7 @@ const ModificationIcons: React.FC<Props> = observer(({flowNodeInstance}) => {
             <PlusIcon title="This flow node instance is planned to be added" />
           </>
         )}
-        {modification !== undefined &&
-          modification?.cancelledTokens > 0 &&
+        {hasCancelModification &&
           !flowNodeInstance.isPlaceholder &&
           flowNodeInstance.endDate === null && (
             <StopIcon title="This flow node instance is planned to be canceled" />

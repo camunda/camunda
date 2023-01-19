@@ -496,60 +496,70 @@ describe('stores/modifications', () => {
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'service-task-1': {
+        areAllTokensCanceled: false,
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 0,
       },
       'service-task-2': {
+        areAllTokensCanceled: true,
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 3,
       },
       'service-task-3': {
+        areAllTokensCanceled: true,
         cancelledTokens: 3,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 3,
       },
       'service-task-4': {
+        areAllTokensCanceled: false,
         cancelledTokens: 0,
         newTokens: 3,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 0,
       },
       'service-task-5': {
+        areAllTokensCanceled: true,
         cancelledTokens: 2,
         newTokens: 1,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 2,
       },
       'service-task-6': {
+        areAllTokensCanceled: false,
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 0,
       },
       'multi-instance-subprocess': {
+        areAllTokensCanceled: true,
         cancelledChildTokens: 3,
         cancelledTokens: 0,
         newTokens: 0,
         visibleCancelledTokens: 0,
       },
       'subprocess-end-task': {
+        areAllTokensCanceled: true,
         cancelledChildTokens: 0,
         cancelledTokens: 0,
         newTokens: 0,
         visibleCancelledTokens: 0,
       },
       'subprocess-service-task': {
+        areAllTokensCanceled: true,
         cancelledChildTokens: 0,
         cancelledTokens: 3,
         newTokens: 0,
         visibleCancelledTokens: 3,
       },
       'subprocess-start-1': {
+        areAllTokensCanceled: true,
         cancelledChildTokens: 0,
         cancelledTokens: 0,
         newTokens: 0,
@@ -638,12 +648,14 @@ describe('stores/modifications', () => {
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       StartEvent_1: {
+        areAllTokensCanceled: true,
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 2,
       },
       'end-event': {
+        areAllTokensCanceled: false,
         cancelledTokens: 0,
         newTokens: 2,
         cancelledChildTokens: 0,
@@ -669,12 +681,14 @@ describe('stores/modifications', () => {
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'multi-instance-service-task': {
+        areAllTokensCanceled: true,
         cancelledTokens: 2,
         newTokens: 0,
         cancelledChildTokens: 0,
         visibleCancelledTokens: 2,
       },
       'service-task-7': {
+        areAllTokensCanceled: false,
         cancelledTokens: 0,
         newTokens: 1,
         cancelledChildTokens: 0,

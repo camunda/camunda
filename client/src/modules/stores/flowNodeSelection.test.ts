@@ -19,6 +19,7 @@ import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsSta
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
@@ -588,5 +589,91 @@ describe('stores/flowNodeSelection', () => {
     });
 
     expect(flowNodeSelectionStore.selectedRunningInstanceCount).toBe(3);
+  });
+
+  it('should get has pending cancel modification', async () => {
+    mockFetchProcessXML().withSuccess(mockProcessXml);
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'userTask',
+        active: 2,
+        incidents: 1,
+        completed: 1,
+        canceled: 0,
+      },
+    ]);
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml('some-process-id');
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      'instance_id'
+    );
+
+    // cancel all tokens
+    modificationsStore.cancelAllTokens('userTask');
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689409',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+    flowNodeSelectionStore.clearSelection();
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+
+    modificationsStore.removeLastModification();
+
+    // cancel all tokens one by one
+    modificationsStore.cancelToken('userTask', '2251799813689409');
+    modificationsStore.cancelToken('userTask', '2251799813689410');
+    modificationsStore.cancelToken('userTask', '2251799813689411');
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689409',
+    });
+
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+    flowNodeSelectionStore.clearSelection();
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+
+    modificationsStore.removeLastModification();
+    modificationsStore.removeLastModification();
+    modificationsStore.removeLastModification();
+
+    // cancel one token
+    modificationsStore.cancelToken('userTask', '2251799813689409');
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689409',
+    });
+
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(true);
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689410',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(false);
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689411',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(false);
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(false);
+    flowNodeSelectionStore.clearSelection();
+    expect(flowNodeSelectionStore.hasPendingCancelModification).toBe(false);
   });
 });

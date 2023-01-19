@@ -225,16 +225,24 @@ class FlowNodeSelection {
       return false;
     }
 
-    const {flowNodeId} = currentSelection;
+    const {flowNodeId, flowNodeInstanceId} = currentSelection;
 
     if (this.isRootNodeSelected || flowNodeId === undefined) {
       return processInstanceDetailsStatisticsStore.willAllFlowNodesBeCanceled;
     }
 
-    return modificationsStore.flowNodeModifications.some(
-      (modification) =>
-        modification.operation === 'CANCEL_TOKEN' &&
-        modification.flowNode.id === flowNodeId
+    if (
+      modificationsStore.modificationsByFlowNode[flowNodeId]
+        ?.areAllTokensCanceled
+    ) {
+      return true;
+    }
+
+    return (
+      flowNodeInstanceId !== undefined &&
+      modificationsStore.isCancelModificationAppliedOnFlowNodeInstanceKey(
+        flowNodeInstanceId
+      )
     );
   }
 

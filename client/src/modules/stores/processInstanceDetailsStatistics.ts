@@ -224,7 +224,8 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
     return this.state.statistics.every(
       ({activityId, active, incidents}) =>
         (active === 0 && incidents === 0) ||
-        modificationsStore.isCancelModificationAppliedOnFlowNode(activityId)
+        modificationsStore.modificationsByFlowNode[activityId]
+          ?.areAllTokensCanceled
     );
   }
 
