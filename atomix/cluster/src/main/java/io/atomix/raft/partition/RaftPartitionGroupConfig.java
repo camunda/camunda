@@ -135,4 +135,20 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
     this.partitionConfig = partitionConfig;
     return this;
   }
+
+  @Override
+  public String toString() {
+    return "RaftPartitionGroupConfig{"
+        + "members="
+        + members
+        + ", replicationFactor="
+        + replicationFactor
+        + ", storageConfig="
+        + storageConfig
+        + ", partitionConfig="
+        + partitionConfig
+        + ", entryValidator="
+        + entryValidator
+        + '}';
+  }
 }
