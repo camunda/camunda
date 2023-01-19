@@ -16,7 +16,6 @@
  */
 package io.atomix.raft.partition;
 
-import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -25,16 +24,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
-import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.memory.MemorySize;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
@@ -53,26 +49,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Raft partition group. */
-public class RaftPartitionGroup implements ManagedPartitionGroup {
+public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
   public static final Type TYPE = new Type();
   private static final Logger LOGGER = LoggerFactory.getLogger(RaftPartitionGroup.class);
-  private static final Duration SNAPSHOT_TIMEOUT = Duration.ofSeconds(15);
   private final String name;
   private final RaftPartitionGroupConfig config;
   private final int replicationFactor;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
   private final List<PartitionId> sortedPartitionIds = Lists.newCopyOnWriteArrayList();
-  private final String snapshotSubject;
   private final Collection<PartitionMetadata> metadata;
-  private ClusterCommunicationService communicationService;
 
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
     this.config = config;
 
     name = config.getName();
     replicationFactor = config.getReplicationFactor();
-    snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
     buildPartitions(config)
         .forEach(
@@ -142,7 +134,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
   @Override
   public Collection<Partition> getPartitions() {
-    return (Collection) partitions.values();
+    return Collections.unmodifiableCollection(partitions.values());
   }
 
   @Override
@@ -151,62 +143,40 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   }
 
   @Override
-  public PartitionGroupConfig config() {
+  public RaftPartitionGroupConfig config() {
     return config;
-  }
-
-  /**
-   * Takes snapshots of all Raft partitions.
-   *
-   * @return a future to be completed once snapshots have been taken
-   */
-  public CompletableFuture<Void> snapshot() {
-    return Futures.allOf(
-            config.getMembers().stream()
-                .map(MemberId::from)
-                .map(id -> communicationService.send(snapshotSubject, null, id, SNAPSHOT_TIMEOUT))
-                .collect(Collectors.toList()))
-        .thenApply(v -> null);
   }
 
   @Override
   public String toString() {
-    return toStringHelper(this).add("name", name).add("partitions", partitions).toString();
-  }
-
-  /**
-   * Handles a snapshot request from a peer.
-   *
-   * @return a future to be completed once the snapshot is complete
-   */
-  private CompletableFuture<Void> handleSnapshot() {
-    return Futures.allOf(
-            partitions.values().stream()
-                .map(partition -> partition.snapshot())
-                .collect(Collectors.toList()))
-        .thenApply(v -> null);
+    return "RaftPartitionGroup{"
+        + "name='"
+        + name
+        + '\''
+        + ", config="
+        + config
+        + ", replicationFactor="
+        + replicationFactor
+        + ", partitions="
+        + partitions
+        + ", sortedPartitionIds="
+        + sortedPartitionIds
+        + ", metadata="
+        + metadata
+        + '}';
   }
 
   @Override
   public CompletableFuture<ManagedPartitionGroup> join(
       final PartitionManagementService managementService) {
-
-    communicationService = managementService.getMessagingService();
-    communicationService.<Void, Void>subscribe(snapshotSubject, m -> handleSnapshot());
-    final List<CompletableFuture<Partition>> futures =
+    final var futures =
         metadata.stream()
-            .map(
-                partitionMetadata -> {
-                  final RaftPartition partition = partitions.get(partitionMetadata.id());
-                  return partition.open(managementService);
-                })
-            .toList();
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
-        .thenApply(
-            v -> {
-              LOGGER.info("Started");
-              return this;
-            });
+            .map(meta -> partitions.get(meta.id()).open(managementService))
+            .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(futures)
+        .thenRun(() -> LOGGER.info("Started RaftPartitionGroup {}", name))
+        .thenApply(ok -> this);
   }
 
   @Override
@@ -217,17 +187,10 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
   @Override
   public CompletableFuture<Void> close() {
-    final List<CompletableFuture<Void>> futures =
-        partitions.values().stream().map(RaftPartition::close).collect(Collectors.toList());
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
-        .thenRun(
-            () -> {
-              if (communicationService != null) {
-                communicationService.unsubscribe(snapshotSubject);
-              }
-
-              LOGGER.info("Stopped");
-            });
+    final var futures =
+        partitions.values().stream().map(RaftPartition::close).toArray(CompletableFuture[]::new);
+    return CompletableFuture.allOf(futures)
+        .thenRun(() -> LOGGER.info("Stopped RaftPartitionGroup {}", name));
   }
 
   /** Raft partition group type. */

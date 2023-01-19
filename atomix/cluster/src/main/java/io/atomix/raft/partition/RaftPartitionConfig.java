@@ -167,4 +167,30 @@ public class RaftPartitionConfig {
   public void setPreferSnapshotReplicationThreshold(final int preferSnapshotReplicationThreshold) {
     this.preferSnapshotReplicationThreshold = preferSnapshotReplicationThreshold;
   }
+
+  @Override
+  public String toString() {
+    return "RaftPartitionConfig{"
+        + "electionTimeout="
+        + electionTimeout
+        + ", heartbeatInterval="
+        + heartbeatInterval
+        + ", maxAppendsPerFollower="
+        + maxAppendsPerFollower
+        + ", maxAppendBatchSize="
+        + maxAppendBatchSize
+        + ", priorityElectionEnabled="
+        + priorityElectionEnabled
+        + ", requestTimeout="
+        + requestTimeout
+        + ", minStepDownFailureCount="
+        + minStepDownFailureCount
+        + ", maxQuorumResponseTimeout="
+        + maxQuorumResponseTimeout
+        + ", partitionDistributor="
+        + partitionDistributor
+        + ", preferSnapshotReplicationThreshold="
+        + preferSnapshotReplicationThreshold
+        + '}';
+  }
 }
