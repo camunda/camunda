@@ -5,7 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {ZBClient, IProcessVariables, ZBWorkerTaskHandler} from 'zeebe-node';
+import {
+  ZBClient,
+  IProcessVariables,
+  ZBWorkerTaskHandler,
+  CreateProcessInstanceResponse,
+} from 'zeebe-node';
 import * as path from 'path';
 import {config} from './config';
 
@@ -30,14 +35,16 @@ function deployProcess(filenames: string[]) {
   return zbc.deployProcess(filenames.map(getFullFilePath));
 }
 
-function createInstances<Variables = IProcessVariables>(
+async function createInstances<Variables = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
   variables?: Variables
-) {
-  return Promise.all(
-    [...new Array(numberOfInstances)].map(() =>
+): Promise<CreateProcessInstanceResponse[]> {
+  const batchSize = Math.min(numberOfInstances, 50);
+
+  const responses = await Promise.all(
+    [...new Array(batchSize)].map(() =>
       zbc.createProcessInstance<typeof variables>({
         bpmnProcessId,
         version,
@@ -45,6 +52,20 @@ function createInstances<Variables = IProcessVariables>(
       })
     )
   );
+
+  if (batchSize < 50) {
+    return responses;
+  }
+
+  return [
+    ...responses,
+    ...(await createInstances(
+      bpmnProcessId,
+      version,
+      numberOfInstances - batchSize,
+      variables
+    )),
+  ];
 }
 
 function createSingleInstance<Variables = IProcessVariables>(
