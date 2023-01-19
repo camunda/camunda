@@ -163,9 +163,7 @@ spec:
     secret: 
       secretName: ci-service-account
   - name: ssd-storage
-    hostPath:
-      path: /mnt/disks/array0
-      type: Directory
+    emptyDir: {}
 """ as String
 }
 

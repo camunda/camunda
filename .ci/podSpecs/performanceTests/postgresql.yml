@@ -29,9 +29,7 @@ spec:
         configMap:
           name: postgres-config
       - name: ssd-storage
-        hostPath:
-          path: /mnt/disks/array0
-          type: Directory
+        emptyDir: {}
       initContainers:
       - name: init-cleanup
         image: busybox
