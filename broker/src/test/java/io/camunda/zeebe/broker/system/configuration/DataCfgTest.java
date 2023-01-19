@@ -8,11 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import java.time.Duration;
 import org.junit.Test;
 import org.springframework.util.unit.DataSize;
@@ -26,28 +22,21 @@ public class DataCfgTest {
     dataCfg.init(new BrokerCfg(), "/base");
 
     // then
-    assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing("ignore"))
-        .isEqualTo(DataSize.ofGigabytes(2).toBytes());
-    assertThat(dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForReplication("ignore"))
-        .isEqualTo(DataSize.ofGigabytes(1).toBytes());
+    assertThat(dataCfg.getDisk().getFreeSpace().getProcessing()).isEqualTo(DataSize.ofGigabytes(2));
+    assertThat(dataCfg.getDisk().getFreeSpace().getReplication())
+        .isEqualTo(DataSize.ofGigabytes(1));
   }
 
   @Test
   public void shouldOverrideWhenOldWatermarksConfigProvided() {
     // when
     final DataCfg dataCfg = new DataCfg();
-    final FreeSpaceCfg mockFreeSpaceCfg = mock(FreeSpaceCfg.class);
-    dataCfg.getDisk().setFreeSpace(mockFreeSpaceCfg);
     dataCfg.setDiskUsageMonitoringInterval(Duration.ofMinutes(5));
     dataCfg.setDiskUsageMonitoringEnabled(false);
-    dataCfg.setDiskUsageCommandWatermark(0.1);
-    dataCfg.setDiskUsageReplicationWatermark(0.2);
     dataCfg.init(new BrokerCfg(), "/base");
 
     // then
-    verify(mockFreeSpaceCfg, times(1)).setProcessing("90.0%");
-    verify(mockFreeSpaceCfg, times(1)).setReplication("80.0%");
-    assertThat(dataCfg.getDisk().isEnableMonitoring()).isFalse();
     assertThat(dataCfg.getDisk().getMonitoringInterval()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(dataCfg.getDisk().isEnableMonitoring()).isFalse();
   }
 }

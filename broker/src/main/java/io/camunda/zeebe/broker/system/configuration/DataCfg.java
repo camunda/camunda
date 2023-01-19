@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import java.io.File;
 import java.time.Duration;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -62,13 +63,20 @@ public final class DataCfg implements ConfigurationEntry {
     if (diskUsageCommandWatermark != null) {
       LOG.warn(
           "Configuration parameter data.diskUsageCommandWatermark is deprecated. Use data.disk.freeSpace.processing instead.");
-      disk.getFreeSpace().setProcessing((1 - diskUsageCommandWatermark) * 100 + "%");
+      final DataSize requiredFreeSpace = convertWatermarkToFreeSpace(diskUsageCommandWatermark);
+      disk.getFreeSpace().setProcessing(requiredFreeSpace);
     }
     if (diskUsageReplicationWatermark != null) {
       LOG.warn(
           "Configuration parameter data.diskUsageReplicationWatermark is deprecated. Use data.disk.freeSpace.replication instead.");
-      disk.getFreeSpace().setReplication((1 - diskUsageReplicationWatermark) * 100 + "%");
+      final DataSize requiredFreeSpace = convertWatermarkToFreeSpace(diskUsageReplicationWatermark);
+      disk.getFreeSpace().setReplication(requiredFreeSpace);
     }
+  }
+
+  private DataSize convertWatermarkToFreeSpace(final Double watermark) {
+    final var directoryFile = new File(getDirectory());
+    return DataSize.ofBytes(Math.round(directoryFile.getTotalSpace() * (1 - watermark)));
   }
 
   public String getDirectory() {

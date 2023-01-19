@@ -34,8 +34,7 @@ public class DiskSpaceUsageMonitorActor extends Actor implements DiskSpaceUsageM
     if (!directory.exists()) {
       throw new UncheckedIOException(new IOException("Folder '" + directory + "' does not exist."));
     }
-    minFreeDiskSpaceRequired =
-        diskCfg.getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
+    minFreeDiskSpaceRequired = diskCfg.getFreeSpace().getProcessing().toBytes();
     freeDiskSpaceSupplier = directory::getUsableSpace;
   }
 

@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
+import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -147,15 +148,13 @@ public final class SystemContext {
 
     if (dataCfg.getDisk().isEnableMonitoring()) {
       try {
-        final long processingFreeSpace =
-            dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForProcessing(dataCfg.getDirectory());
-        final long replicationFreeSpace =
-            dataCfg.getDisk().getFreeSpace().getMinFreeSpaceForReplication(dataCfg.getDirectory());
+        final FreeSpaceCfg freeSpaceCfg = dataCfg.getDisk().getFreeSpace();
+        final var processingFreeSpace = freeSpaceCfg.getProcessing().toBytes();
+        final var replicationFreeSpace = freeSpaceCfg.getReplication().toBytes();
         if (processingFreeSpace <= replicationFreeSpace) {
           throw new IllegalArgumentException(
               "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d). Configured values are %s"
-                  .formatted(
-                      processingFreeSpace, replicationFreeSpace, dataCfg.getDisk().getFreeSpace()));
+                  .formatted(processingFreeSpace, replicationFreeSpace, freeSpaceCfg));
         }
       } catch (final Exception e) {
         throw new InvalidConfigurationException("Failed to parse disk monitoring configuration", e);

@@ -8,9 +8,6 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.Loggers;
-import java.io.File;
-import java.text.NumberFormat;
-import java.text.ParseException;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.springframework.util.unit.DataSize;
@@ -20,7 +17,7 @@ public class DiskCfg implements ConfigurationEntry {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private static final boolean DEFAULT_DISK_MONITORING_ENABLED = true;
-  private static final String DISABLED_DISK_FREESPACE = "0%";
+  private static final DataSize DISABLED_DISK_FREESPACE = DataSize.ofBytes(0);
   private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
   private boolean enableMonitoring = DEFAULT_DISK_MONITORING_ENABLED;
   private Duration monitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
@@ -70,48 +67,25 @@ public class DiskCfg implements ConfigurationEntry {
 
   public static class FreeSpaceCfg implements ConfigurationEntry {
 
-    private static final String DEFAULT_PROCESSING_FREESPACE = "2GB";
-    private static final String DEFAULT_REPLICATION_FREESPACE = "1GB";
-    private String processing = DEFAULT_PROCESSING_FREESPACE;
-    private String replication = DEFAULT_REPLICATION_FREESPACE;
+    private static final DataSize DEFAULT_PROCESSING_FREESPACE = DataSize.ofGigabytes(2);
+    private static final DataSize DEFAULT_REPLICATION_FREESPACE = DataSize.ofGigabytes(1);
+    private DataSize processing = DEFAULT_PROCESSING_FREESPACE;
+    private DataSize replication = DEFAULT_REPLICATION_FREESPACE;
 
-    public String getProcessing() {
+    public DataSize getProcessing() {
       return processing;
     }
 
-    public void setProcessing(final String processing) {
+    public void setProcessing(final DataSize processing) {
       this.processing = processing;
     }
 
-    public String getReplication() {
+    public DataSize getReplication() {
       return replication;
     }
 
-    public void setReplication(final String replication) {
+    public void setReplication(final DataSize replication) {
       this.replication = replication;
-    }
-
-    public long getMinFreeSpaceForProcessing(final String dataDirectory) {
-      return parse(dataDirectory, processing);
-    }
-
-    public long getMinFreeSpaceForReplication(final String dataDirectory) {
-      return parse(dataDirectory, replication);
-    }
-
-    private long parse(final String dataDirectory, final String watermark) {
-      if (watermark.endsWith("%")) {
-        final NumberFormat defaultFormat = NumberFormat.getPercentInstance();
-        try {
-          final Number minFreeRatio = defaultFormat.parse(watermark);
-          final var directoryFile = new File(dataDirectory);
-          return Math.round(minFreeRatio.doubleValue() * directoryFile.getTotalSpace());
-        } catch (final ParseException e) {
-          throw new IllegalArgumentException(e);
-        }
-      } else {
-        return DataSize.parse(watermark).toBytes();
-      }
     }
 
     @Override
