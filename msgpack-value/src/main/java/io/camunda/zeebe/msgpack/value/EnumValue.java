@@ -9,26 +9,20 @@ package io.camunda.zeebe.msgpack.value;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 public final class EnumValue<E extends Enum<E>> extends BaseValue {
   private final StringValue decodedValue = new StringValue();
-
-  private final StringValue[] binaryEnumValues;
-  private final E[] enumConstants;
-
   private E value;
+  private final Class<E> klass;
 
   public EnumValue(final Class<E> e, final E defaultValue) {
-    enumConstants = e.getEnumConstants();
-    binaryEnumValues = new StringValue[enumConstants.length];
-
-    for (int i = 0; i < enumConstants.length; i++) {
-      final E constant = enumConstants[i];
-      binaryEnumValues[i] = new StringValue(constant.toString());
-    }
-
+    klass = e;
     value = defaultValue;
+    if (value != null) {
+      decodedValue.wrap(value.toString().getBytes(StandardCharsets.UTF_8));
+    }
   }
 
   public EnumValue(final Class<E> e) {
@@ -40,43 +34,35 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   public void setValue(final E val) {
+    decodedValue.wrap(val.toString().getBytes(StandardCharsets.UTF_8));
     value = val;
   }
 
   @Override
   public void reset() {
+    decodedValue.reset();
     value = null;
   }
 
   @Override
   public void writeJSON(final StringBuilder builder) {
-    binaryEnumValues[value.ordinal()].writeJSON(builder);
+    decodedValue.writeJSON(builder);
   }
 
   @Override
   public void write(final MsgPackWriter writer) {
-    binaryEnumValues[value.ordinal()].write(writer);
+    decodedValue.write(writer);
   }
 
   @Override
   public void read(final MsgPackReader reader) {
     decodedValue.read(reader);
-
-    for (int i = 0; i < binaryEnumValues.length; i++) {
-      final StringValue val = binaryEnumValues[i];
-
-      if (val.equals(decodedValue)) {
-        value = enumConstants[i];
-        return;
-      }
-    }
-
-    throw new RuntimeException(String.format("Illegal enum value: %s.", decodedValue.toString()));
+    value = Enum.valueOf(klass, decodedValue.toString());
   }
 
   @Override
   public int getEncodedLength() {
-    return binaryEnumValues[value.ordinal()].getEncodedLength();
+    return decodedValue.getEncodedLength();
   }
 
   @Override
@@ -90,11 +76,10 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
       return true;
     }
 
-    if (!(o instanceof EnumValue)) {
-      return false;
+    if (o instanceof final EnumValue<?> enumValue) {
+      return Objects.equals(getValue(), enumValue.getValue());
     }
 
-    final EnumValue<?> enumValue = (EnumValue<?>) o;
-    return Objects.equals(getValue(), enumValue.getValue());
+    return false;
   }
 }
