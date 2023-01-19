@@ -16,6 +16,8 @@ public class ExecutableError extends AbstractFlowElement {
 
   private DirectBuffer errorCode;
   private Expression errorCodeExpression;
+  private String errorCodeVariable;
+  private String errorMessageVariable;
 
   public ExecutableError(final String id) {
     super(id);
@@ -43,5 +45,21 @@ public class ExecutableError extends AbstractFlowElement {
 
   public void setErrorCodeExpression(final Expression errorCodeExpression) {
     this.errorCodeExpression = errorCodeExpression;
+  }
+
+  public Optional<String> getErrorCodeVariable() {
+    return Optional.ofNullable(errorCodeVariable);
+  }
+
+  public void setErrorCodeVariable(final String errorCodeVariable) {
+    this.errorCodeVariable = errorCodeVariable;
+  }
+
+  public Optional<String> getErrorMessageVariable() {
+    return Optional.ofNullable(errorMessageVariable);
+  }
+
+  public void setErrorMessageVariable(final String errorMessageVariable) {
+    this.errorMessageVariable = errorMessageVariable;
   }
 }
