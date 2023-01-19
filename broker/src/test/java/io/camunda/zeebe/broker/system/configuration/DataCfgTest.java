@@ -9,24 +9,34 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Duration;
 import org.junit.Test;
+import org.springframework.util.unit.DataSize;
 
 public class DataCfgTest {
 
   @Test
-  public void shouldSetWatermarksTo1IfDisabled() {
-    // given
-    final DataCfg dataCfg = new DataCfg();
-    dataCfg.setDiskUsageCommandWatermark(0.1);
-    dataCfg.setDiskUsageReplicationWatermark(0.2);
-    dataCfg.setDiskUsageMonitoringEnabled(false);
-
+  public void shouldUseDefaultFreeSpaceConfig() {
     // when
+    final DataCfg dataCfg = new DataCfg();
     dataCfg.init(new BrokerCfg(), "/base");
 
     // then
-    assertThat(dataCfg.isDiskUsageMonitoringEnabled()).isFalse();
-    assertThat(dataCfg.getDiskUsageCommandWatermark()).isEqualTo(1.0);
-    assertThat(dataCfg.getDiskUsageReplicationWatermark()).isEqualTo(1.0);
+    assertThat(dataCfg.getDisk().getFreeSpace().getProcessing()).isEqualTo(DataSize.ofGigabytes(2));
+    assertThat(dataCfg.getDisk().getFreeSpace().getReplication())
+        .isEqualTo(DataSize.ofGigabytes(1));
+  }
+
+  @Test
+  public void shouldOverrideWhenOldWatermarksConfigProvided() {
+    // when
+    final DataCfg dataCfg = new DataCfg();
+    dataCfg.setDiskUsageMonitoringInterval(Duration.ofMinutes(5));
+    dataCfg.setDiskUsageMonitoringEnabled(false);
+    dataCfg.init(new BrokerCfg(), "/base");
+
+    // then
+    assertThat(dataCfg.getDisk().getMonitoringInterval()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(dataCfg.getDisk().isEnableMonitoring()).isFalse();
   }
 }

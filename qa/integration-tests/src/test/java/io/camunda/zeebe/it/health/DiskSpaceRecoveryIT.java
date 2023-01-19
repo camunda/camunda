@@ -47,7 +47,8 @@ final class DiskSpaceRecoveryIT {
           .withZeebeData(volume)
           .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
           .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
-          .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.5");
+          .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "10MB")
+          .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "1MB");
 
   private ZeebeClient client;
 
@@ -127,7 +128,9 @@ final class DiskSpaceRecoveryIT {
         ContainerEngine.builder()
             .withDebugReceiverPort(SocketUtil.getNextAddress().getPort())
             .withContainer(
-                container.withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.0001"))
+                container
+                    .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_PROCESSING", "16MB")
+                    .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "10MB"))
             .build();
 
     @BeforeEach

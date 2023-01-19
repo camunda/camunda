@@ -18,15 +18,8 @@ import org.springframework.util.unit.DataSize;
 public final class DataCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_DIRECTORY = "data";
-
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
-
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
-  private static final boolean DEFAULT_DISK_USAGE_MONITORING_ENABLED = true;
-  private static final double DEFAULT_DISK_USAGE_REPLICATION_WATERMARK = 0.99;
-  private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.97;
-  private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
-  private static final double DISABLED_DISK_USAGE_WATERMARK = 1.0;
 
   private String directory = DEFAULT_DIRECTORY;
 
@@ -36,26 +29,54 @@ public final class DataCfg implements ConfigurationEntry {
 
   private int logIndexDensity = 100;
 
-  private boolean diskUsageMonitoringEnabled = DEFAULT_DISK_USAGE_MONITORING_ENABLED;
-  private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
-  private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
-  private Duration diskUsageMonitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
-
+  // diskUsageMonitoring and watermark configs are deprecated and replaced by DiskCfg
+  private Boolean diskUsageMonitoringEnabled;
+  private Double diskUsageReplicationWatermark;
+  private Double diskUsageCommandWatermark;
+  private Duration diskUsageMonitoringInterval;
+  private DiskCfg disk = new DiskCfg();
   private BackupStoreCfg backup = new BackupStoreCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
 
-    if (!diskUsageMonitoringEnabled) {
-      LOG.info(
-          "Disk usage watermarks are disabled, setting all watermarks to {}",
-          DISABLED_DISK_USAGE_WATERMARK);
-      diskUsageReplicationWatermark = DISABLED_DISK_USAGE_WATERMARK;
-      diskUsageCommandWatermark = DISABLED_DISK_USAGE_WATERMARK;
-    }
-
     backup.init(globalConfig, brokerBase);
+
+    overrideDiskConfig();
+    disk.init(globalConfig, brokerBase);
+  }
+
+  private void overrideDiskConfig() {
+    // For backward compatibility, if the old disk watermarks are configured use those values
+    // instead of the new ones
+    if (diskUsageMonitoringEnabled != null) {
+      LOG.warn(
+          "Configuration parameter data.diskUsageMonitoringEnabled is deprecated. Use data.disk.enableMonitoring instead.");
+      disk.setEnableMonitoring(diskUsageMonitoringEnabled);
+    }
+    if (diskUsageMonitoringInterval != null) {
+      LOG.warn(
+          "Configuration parameter data.diskUsageMonitoringInterval is deprecated. Use data.disk.monitoringInterval instead.");
+      disk.setMonitoringInterval(diskUsageMonitoringInterval);
+    }
+    if (diskUsageCommandWatermark != null) {
+      LOG.warn(
+          "Configuration parameter data.diskUsageCommandWatermark is deprecated. Use data.disk.freeSpace.processing instead.");
+      final DataSize requiredFreeSpace = convertWatermarkToFreeSpace(diskUsageCommandWatermark);
+      disk.getFreeSpace().setProcessing(requiredFreeSpace);
+    }
+    if (diskUsageReplicationWatermark != null) {
+      LOG.warn(
+          "Configuration parameter data.diskUsageReplicationWatermark is deprecated. Use data.disk.freeSpace.replication instead.");
+      final DataSize requiredFreeSpace = convertWatermarkToFreeSpace(diskUsageReplicationWatermark);
+      disk.getFreeSpace().setReplication(requiredFreeSpace);
+    }
+  }
+
+  private DataSize convertWatermarkToFreeSpace(final Double watermark) {
+    final var directoryFile = new File(getDirectory());
+    return DataSize.ofBytes(Math.round(directoryFile.getTotalSpace() * (1 - watermark)));
   }
 
   public String getDirectory() {
@@ -94,46 +115,28 @@ public final class DataCfg implements ConfigurationEntry {
     this.logIndexDensity = logIndexDensity;
   }
 
-  public boolean isDiskUsageMonitoringEnabled() {
-    return diskUsageMonitoringEnabled;
-  }
-
   public void setDiskUsageMonitoringEnabled(final boolean diskUsageMonitoringEnabled) {
     this.diskUsageMonitoringEnabled = diskUsageMonitoringEnabled;
-  }
-
-  public double getDiskUsageCommandWatermark() {
-    return diskUsageCommandWatermark;
   }
 
   public void setDiskUsageCommandWatermark(final double diskUsageCommandWatermark) {
     this.diskUsageCommandWatermark = diskUsageCommandWatermark;
   }
 
-  public long getFreeDiskSpaceCommandWatermark() {
-    final var directoryFile = new File(getDirectory());
-    return Math.round(directoryFile.getTotalSpace() * (1 - diskUsageCommandWatermark));
-  }
-
-  public double getDiskUsageReplicationWatermark() {
-    return diskUsageReplicationWatermark;
-  }
-
   public void setDiskUsageReplicationWatermark(final double diskUsageReplicationWatermark) {
     this.diskUsageReplicationWatermark = diskUsageReplicationWatermark;
   }
 
-  public long getFreeDiskSpaceReplicationWatermark() {
-    final var directoryFile = new File(getDirectory());
-    return Math.round(directoryFile.getTotalSpace() * (1 - diskUsageReplicationWatermark));
-  }
-
-  public Duration getDiskUsageMonitoringInterval() {
-    return diskUsageMonitoringInterval;
-  }
-
   public void setDiskUsageMonitoringInterval(final Duration diskUsageMonitoringInterval) {
     this.diskUsageMonitoringInterval = diskUsageMonitoringInterval;
+  }
+
+  public DiskCfg getDisk() {
+    return disk;
+  }
+
+  public void setDisk(final DiskCfg disk) {
+    this.disk = disk;
   }
 
   public BackupStoreCfg getBackup() {
@@ -164,6 +167,8 @@ public final class DataCfg implements ConfigurationEntry {
         + diskUsageCommandWatermark
         + ", diskUsageMonitoringInterval="
         + diskUsageMonitoringInterval
+        + ", disk="
+        + disk
         + ", backup="
         + backup
         + '}';

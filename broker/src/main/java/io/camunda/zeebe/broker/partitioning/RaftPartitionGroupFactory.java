@@ -67,7 +67,7 @@ public final class RaftPartitionGroupFactory {
             .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
             .withEntryValidator(new ZeebeEntryValidator())
             .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
-            .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark())
+            .withFreeDiskSpace(dataCfg.getDisk().getFreeSpace().getReplication().toBytes())
             .withJournalIndexDensity(dataCfg.getLogIndexDensity())
             .withPriorityElection(clusterCfg.getRaft().isEnablePriorityElection())
             .withPartitionDistributor(partitionDistributor)
