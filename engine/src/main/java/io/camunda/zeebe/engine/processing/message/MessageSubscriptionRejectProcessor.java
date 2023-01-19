@@ -96,8 +96,7 @@ public final class MessageSubscriptionRejectProcessor
                 subscription.getKey(),
                 MessageSubscriptionIntent.CORRELATING,
                 correlatingSubscription);
-
-            sideEffect.accept(() -> sendCorrelateCommand(correlatingSubscription));
+            sendCorrelateCommand(correlatingSubscription);
           }
           return !canBeCorrelated;
         });

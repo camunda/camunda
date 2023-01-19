@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message.command;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -42,6 +43,7 @@ public class SubscriptionCommandSender {
   private final InterPartitionCommandSender interPartitionCommandSender;
   private final int senderPartition;
   private Writers writers;
+  private SideEffectQueue sideEffectQueue;
 
   public SubscriptionCommandSender(
       final int senderPartition, final InterPartitionCommandSender interPartitionCommandSender) {
@@ -72,6 +74,7 @@ public class SubscriptionCommandSender {
                   .setCorrelationKey(correlationKey)
                   .setInterrupting(closeOnCorrelate));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           subscriptionPartitionId,
           ValueType.MESSAGE_SUBSCRIPTION,
@@ -84,6 +87,8 @@ public class SubscriptionCommandSender {
               .setMessageName(messageName)
               .setCorrelationKey(correlationKey)
               .setInterrupting(closeOnCorrelate));
+        return true;
+      });
     }
     return true;
   }
@@ -107,6 +112,7 @@ public class SubscriptionCommandSender {
                   .setMessageName(messageName)
                   .setInterrupting(closeOnCorrelate));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           receiverPartitionId,
           ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -118,6 +124,8 @@ public class SubscriptionCommandSender {
               .setMessageKey(-1)
               .setMessageName(messageName)
               .setInterrupting(closeOnCorrelate));
+      return true;
+      });
     }
     return true;
   }
@@ -146,6 +154,7 @@ public class SubscriptionCommandSender {
                   .setVariables(variables)
                   .setCorrelationKey(correlationKey));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           receiverPartitionId,
           ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -159,6 +168,8 @@ public class SubscriptionCommandSender {
               .setMessageName(messageName)
               .setVariables(variables)
               .setCorrelationKey(correlationKey));
+      return true;
+      });
     }
     return true;
   }
@@ -181,6 +192,7 @@ public class SubscriptionCommandSender {
                   .setMessageKey(-1)
                   .setMessageName(messageName));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           subscriptionPartitionId,
           ValueType.MESSAGE_SUBSCRIPTION,
@@ -191,6 +203,7 @@ public class SubscriptionCommandSender {
               .setBpmnProcessId(bpmnProcessId)
               .setMessageKey(-1)
               .setMessageName(messageName));
+      return true;});
     }
     return true;
   }
@@ -211,6 +224,7 @@ public class SubscriptionCommandSender {
                   .setMessageKey(-1L)
                   .setMessageName(messageName));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           subscriptionPartitionId,
           ValueType.MESSAGE_SUBSCRIPTION,
@@ -220,6 +234,8 @@ public class SubscriptionCommandSender {
               .setElementInstanceKey(elementInstanceKey)
               .setMessageKey(-1L)
               .setMessageName(messageName));
+      return true;
+    });
     }
     return true;
   }
@@ -242,6 +258,7 @@ public class SubscriptionCommandSender {
                   .setMessageKey(-1)
                   .setMessageName(messageName));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           receiverPartitionId,
           ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -252,6 +269,8 @@ public class SubscriptionCommandSender {
               .setElementInstanceKey(elementInstanceKey)
               .setMessageKey(-1)
               .setMessageName(messageName));
+        return true;
+      });
     }
 
     return true;
@@ -279,6 +298,7 @@ public class SubscriptionCommandSender {
                   .setMessageKey(messageKey)
                   .setInterrupting(false));
     } else {
+      sideEffectQueue.add(() -> {
       interPartitionCommandSender.sendCommand(
           receiverPartitionId,
           ValueType.MESSAGE_SUBSCRIPTION,
@@ -291,11 +311,21 @@ public class SubscriptionCommandSender {
               .setCorrelationKey(correlationKey)
               .setMessageKey(messageKey)
               .setInterrupting(false));
+        return true;
+        });
     }
     return true;
   }
 
   public void setWriters(final Writers writers) {
     this.writers = writers;
+  }
+
+  public SideEffectQueue getSideEffectQueue() {
+    return sideEffectQueue;
+  }
+
+  public void setSideEffectQueue(final SideEffectQueue sideEffectQueue) {
+    this.sideEffectQueue = sideEffectQueue;
   }
 }

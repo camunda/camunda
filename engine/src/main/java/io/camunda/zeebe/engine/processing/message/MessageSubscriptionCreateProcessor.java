@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -66,7 +65,7 @@ public final class MessageSubscriptionCreateProcessor
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sideEffect.accept(this::sendAcknowledgeCommand);
+     sendAcknowledgeCommand();
 
       rejectionWriter.appendRejection(
           record,
@@ -91,13 +90,7 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
 
     if (!isMessageCorrelated) {
-      final int receiverPartitionId =
-          Protocol.decodePartitionId(subscriptionRecord.getProcessInstanceKey());
-      if (receiverPartitionId == currentPartitionId) {
         sendAcknowledgeCommand();
-      } else {
-        sideEffect.accept(this::sendAcknowledgeCommand);
-      }
     }
   }
 

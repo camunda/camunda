@@ -45,6 +45,7 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
             record.getMessageKey(),
             record.getVariablesBuffer(),
             record.getCorrelationKeyBuffer());
+    commandSender.getSideEffectQueue().flush();
 
     if (success) {
       // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)

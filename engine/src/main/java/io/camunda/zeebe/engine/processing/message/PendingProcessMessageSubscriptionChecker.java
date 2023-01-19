@@ -82,7 +82,7 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private boolean sendPendingCommand(final ProcessMessageSubscription subscription) {
-    final boolean success;
+    boolean success;
 
     // can only be opening/closing as an opened subscription is not indexed in the sent time column
     if (subscription.isOpening()) {
@@ -91,6 +91,7 @@ public final class PendingProcessMessageSubscriptionChecker
       success = sendCloseCommand(subscription);
     }
 
+    success = commandSender.getSideEffectQueue().flush();
     if (success) {
       final var sentTime = ActorClock.currentTimeMillis();
       pendingState.updateSentTime(subscription.getRecord(), sentTime);

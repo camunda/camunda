@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionStat
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -123,24 +122,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
 
-    correlatingSubscriptions.visitSubscriptions(
-        subscription -> {
-          final int receiverPartitionId =
-              Protocol.decodePartitionId(subscription.getProcessInstanceKey());
-          if (receiverPartitionId == currentPartitionId) {
-            return commandSender.correlateProcessMessageSubscription(
-                subscription.getProcessInstanceKey(),
-                subscription.getElementInstanceKey(),
-                subscription.getBpmnProcessId(),
-                messageRecord.getNameBuffer(),
-                messageKey,
-                messageRecord.getVariablesBuffer(),
-                messageRecord.getCorrelationKeyBuffer());
-          }
-          return true;
-        });
-
-    sideEffect.accept(this::sendCorrelateCommand);
+    sendCorrelateCommand();
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up

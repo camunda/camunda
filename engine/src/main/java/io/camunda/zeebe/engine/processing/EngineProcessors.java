@@ -74,6 +74,7 @@ public final class EngineProcessors {
     final var sideEffectQueue = new SideEffectQueue();
 
     subscriptionCommandSender.setWriters(writers);
+    subscriptionCommandSender.setSideEffectQueue(sideEffectQueue);
 
     final var decisionBehavior =
         new DecisionBehavior(

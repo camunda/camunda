@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.message.StoredMessage;
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -80,13 +79,7 @@ public final class MessageCorrelator {
       stateWriter.appendFollowUpEvent(
           subscriptionKey, MessageSubscriptionIntent.CORRELATING, subscriptionRecord);
 
-      final int receiverPartitionId =
-          Protocol.decodePartitionId(subscriptionRecord.getProcessInstanceKey());
-      if (receiverPartitionId == currentPartitionId) {
-        sendCorrelateCommand(subscriptionRecord);
-      } else {
-        sideEffect.accept(() -> sendCorrelateCommand(subscriptionRecord));
-      }
+      sendCorrelateCommand(subscriptionRecord);
     }
 
     return correlateMessage;
