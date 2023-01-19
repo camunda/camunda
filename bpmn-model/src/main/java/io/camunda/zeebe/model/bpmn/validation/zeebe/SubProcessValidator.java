@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.EventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
@@ -44,7 +45,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
       final SubProcess element, final ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> startEvents = element.getChildElementsByType(StartEvent.class);
 
-    if (startEvents.size() != 1) {
+    if (startEvents.size() != 1 && !(element instanceof AdHocSubProcess)) {
       validationResultCollector.addError(0, "Must have exactly one start event");
     }
 
