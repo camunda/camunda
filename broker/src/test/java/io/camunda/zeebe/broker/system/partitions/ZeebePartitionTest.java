@@ -14,6 +14,7 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -251,12 +252,7 @@ public class ZeebePartitionTest {
             });
     when(raft.getRole()).thenReturn(Role.FOLLOWER);
     when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
-    when(raft.stop())
-        .then(
-            invocation -> {
-              partition.onNewRole(Role.INACTIVE, 2);
-              return CompletableFuture.completedFuture(null);
-            });
+    when(raft.stop()).then(invocation -> CompletableFuture.completedFuture(null));
 
     // when
     schedulerRule.submitActor(partition);
@@ -267,8 +263,37 @@ public class ZeebePartitionTest {
     // then
     final InOrder order = inOrder(transition, raft);
     order.verify(transition).toFollower(0L);
-    order.verify(raft).stop();
     order.verify(transition).toInactive(anyLong());
+    order.verify(raft).stop();
+  }
+
+  @Test
+  public void shouldStopRaftOnlyAfterTransitioningToInactive() throws InterruptedException {
+    // given
+    final CompletableActorFuture<Void> inactiveTransitionCompleted = new CompletableActorFuture<>();
+
+    when(transition.toFollower(anyLong()))
+        .thenReturn(CompletableActorFuture.completedExceptionally(new Exception("expected")));
+    when(transition.toInactive(anyLong())).then(invocation -> inactiveTransitionCompleted);
+    when(raft.getRole()).thenReturn(Role.FOLLOWER);
+    when(ctx.getCurrentRole()).thenReturn(Role.FOLLOWER);
+
+    // when
+    schedulerRule.submitActor(partition);
+    partition.onNewRole(Role.FOLLOWER, 1);
+    schedulerRule.workUntilDone();
+
+    // then
+    final InOrder order = inOrder(transition, raft);
+    order.verify(transition).toFollower(0L);
+    order.verify(raft).removeRoleChangeListener(partition);
+    order.verify(transition).toInactive(anyLong());
+    // raft must be stopped only after inactive transition is completed
+    verify(raft, never()).stop();
+
+    inactiveTransitionCompleted.complete(null);
+    schedulerRule.workUntilDone();
+    verify(raft).stop();
   }
 
   @Test
