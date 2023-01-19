@@ -8,13 +8,13 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.util.CollectionUtil.map;
 import static io.camunda.operate.util.CollectionUtil.throwAwayNullElements;
-import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static java.util.Arrays.asList;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES_VALUE;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.schema.templates.AbstractTemplateDescriptor;
@@ -22,15 +22,8 @@ import io.camunda.operate.schema.templates.EventTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
@@ -39,21 +32,26 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.util.EntityUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.FeaturesClient;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
@@ -61,8 +59,6 @@ import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.SearchHit;
@@ -72,6 +68,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class ElasticsearchUtil {
 
@@ -84,67 +81,99 @@ public abstract class ElasticsearchUtil {
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
   public static final int UPDATE_RETRY_COUNT = 3;
-  public static final String TASKS_INDEX_NAME = ".tasks";
 
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;
 
-  public static long reindex(final ReindexRequest reindexRequest, String sourceIndexName,
-      RestHighLevelClient esClient)
-      throws IOException {
-    final String taskId = esClient
-        .submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
-    logger.debug("Reindexing started for index {}. Task id: {}", sourceIndexName, taskId);
-    //wait till task is completed
-    return waitAndCheckTaskResult(taskId, sourceIndexName, "reindex", esClient);
-  }
-
-  public static CompletableFuture<BulkByScrollResponse> reindexAsync(final ReindexRequest reindexRequest, final Executor executor, final RestHighLevelClient esClient) {
-    final var reindexFuture = new CompletableFuture<BulkByScrollResponse>();
-    esClient.reindexAsync(reindexRequest, RequestOptions.DEFAULT, new DelegatingActionListener<>(reindexFuture, executor));
-    return reindexFuture;
-  }
-
-  public static CompletableFuture<BulkByScrollResponse> deleteByQueryAsync(final DeleteByQueryRequest deleteRequest, final Executor executor, final RestHighLevelClient esClient) {
-    final var deleteFuture = new CompletableFuture<BulkByScrollResponse>();
-    esClient.deleteByQueryAsync(deleteRequest, RequestOptions.DEFAULT, new DelegatingActionListener<>(deleteFuture, executor));
-    return deleteFuture;
-  }
-
-  public static CompletableFuture<SearchResponse> searchAsync(final SearchRequest searchRequest, final Executor executor, final RestHighLevelClient esClient) {
+  public static CompletableFuture<SearchResponse> searchAsync(final SearchRequest searchRequest,
+      final Executor executor, final RestHighLevelClient esClient) {
     final var searchFuture = new CompletableFuture<SearchResponse>();
     esClient.searchAsync(searchRequest, RequestOptions.DEFAULT, new DelegatingActionListener<>(searchFuture, executor));
     return searchFuture;
   }
 
-  public static long waitAndCheckTaskResult(String taskId, String sourceIndexName, String operation,
-      RestHighLevelClient esClient)
-      throws IOException {
-    //extract nodeId and taskId
-    final String[] taskIdParts = taskId.split(":");
-    String nodeId = taskIdParts[0];
-    long smallTaskId = Long.parseLong(taskIdParts[1]);
-
-    //wait till task is completed
-    boolean finished = false;
-    RawTaskStatus status = null;
-    while (!finished) {
-      final GetTaskRequest getTaskRequest = new GetTaskRequest(nodeId, smallTaskId);
-      final Optional<GetTaskResponse> getTaskResponseOptional = esClient.tasks()
-          .get(getTaskRequest, RequestOptions.DEFAULT);
-      if (getTaskResponseOptional.isEmpty()) {
-        throw new OperateRuntimeException("Task was not found: " + taskId);
-      } else if (!getTaskResponseOptional.get().isCompleted()) {
-        //retry
-        sleepFor(2000);
-      } else {
-        final GetTaskResponse getTaskResponse = getTaskResponseOptional.get();
-        status = (RawTaskStatus) getTaskResponse.getTaskInfo().getStatus();
-
-        finished = true;
-      }
+  public static CompletableFuture<Long> reindexAsyncWithConnectionRelease(final ThreadPoolTaskScheduler executor,
+      final ReindexRequest reindexRequest, final String sourceIndexName, final RestHighLevelClient esClient) {
+    CompletableFuture<String> reindexFuture = new CompletableFuture<>();
+    try {
+      final String taskId = esClient.submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
+      logger.debug("Reindexing started for index {}. Task id: {}", sourceIndexName, taskId);
+      reindexFuture.complete(taskId);
+    } catch (IOException ex) {
+      reindexFuture.completeExceptionally(ex);
     }
+    return reindexFuture.thenCompose((tId) -> checkTaskResult(executor, tId, sourceIndexName, "reindex", esClient));
+  }
 
+  public static CompletableFuture<Long> deleteAsyncWithConnectionRelease(final ThreadPoolTaskScheduler executor,
+      final String sourceIndexName, final String idFieldName, final List<Object> idValues,
+      final ObjectMapper objectMapper, final RestHighLevelClient esClient) {
+    CompletableFuture<String> deleteRequestFuture = new CompletableFuture<>();
+    try {
+      final String query = termsQuery(idFieldName, idValues).toString();
+      final Request deleteWithTaskRequest = new Request(HttpPost.METHOD_NAME,
+          String.format("/%s/_delete_by_query", sourceIndexName));
+      deleteWithTaskRequest.setJsonEntity(String.format("{\"query\": %s }", query));
+      deleteWithTaskRequest.addParameter("wait_for_completion", "false");
+      deleteWithTaskRequest.addParameter("slices", AUTO_SLICES_VALUE);
+      deleteWithTaskRequest.addParameter("conflicts", "proceed");
+
+      final Response response = esClient.getLowLevelClient().performRequest(deleteWithTaskRequest);
+
+      if (!(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK)) {
+        final HttpEntity entity = response.getEntity();
+        String errorMsg = String.format("Exception occurred when performing deletion. Status code: %s, error: %s",
+            response.getStatusLine().getStatusCode(), entity == null ? "" : EntityUtils.toString(entity));
+        deleteRequestFuture.completeExceptionally(new ArchiverException(errorMsg));
+      }
+
+      Map<String, Object> bodyMap = objectMapper.readValue(response.getEntity().getContent(), Map.class);
+      String taskId = (String) bodyMap.get("task");
+      logger.debug("Deletion started for index {}. Task id {}", sourceIndexName, taskId);
+      deleteRequestFuture.complete(taskId);
+    } catch (IOException ex) {
+      deleteRequestFuture.completeExceptionally(ex);
+    }
+    return deleteRequestFuture.thenCompose(
+        (tId) -> checkTaskResult(executor, tId, sourceIndexName, "delete", esClient));
+  }
+
+  public static CompletableFuture<Long> checkTaskResult(ThreadPoolTaskScheduler executor, String taskId,
+      String sourceIndexName, String operation, RestHighLevelClient esClient) {
+
+    CompletableFuture<Long> checkTaskResult = new CompletableFuture<>();
+
+    final BackoffIdleStrategy idleStrategy = new BackoffIdleStrategy(1_000, 1.2f, 5_000);
+    final Runnable checkTaskResultRunnable = new Runnable() {
+      @Override
+      public void run() {
+        try {
+          //extract nodeId and taskId
+          final String[] taskIdParts = taskId.split(":");
+          final GetTaskRequest getTaskRequest = new GetTaskRequest(taskIdParts[0], Long.parseLong(taskIdParts[1]));
+          final Optional<GetTaskResponse> getTaskResponseOptional = esClient.tasks().get(getTaskRequest, RequestOptions.DEFAULT);
+
+          final GetTaskResponse getTaskResponse = getTaskResponseOptional.orElseThrow(
+              ()-> new OperateRuntimeException("Task was not found: " + taskId));
+
+          if (getTaskResponse.isCompleted()) {
+            RawTaskStatus status = (RawTaskStatus) getTaskResponse.getTaskInfo().getStatus();
+            long total = getTotalAffectedFromTask(sourceIndexName, operation, status);
+            checkTaskResult.complete(total);
+          } else {
+            idleStrategy.idle();
+            executor.schedule(this, Date.from(Instant.now().plusMillis(idleStrategy.idleTime())));
+          }
+        } catch (Exception e) {
+          checkTaskResult.completeExceptionally(e);
+        }
+      }
+    };
+    executor.submit(checkTaskResultRunnable);
+    return checkTaskResult;
+  }
+
+  private static long getTotalAffectedFromTask(String sourceIndexName, String operation, RawTaskStatus status) {
     //parse and check task status
     final Map<String, Object> statusMap = status.toMap();
     final long total = (Integer) statusMap.get("total");
@@ -154,8 +183,8 @@ public abstract class ElasticsearchUtil {
     if (created + updated + deleted < total) {
       //there were some failures
       final String errorMsg = String.format(
-          "Failures occurred when performing operation %s on source index %s. Check Elasticsearch logs.",
-          operation, sourceIndexName);
+          "Failures occurred when performing operation %s on source index %s. Check Elasticsearch logs.", operation,
+          sourceIndexName);
       throw new OperateRuntimeException(errorMsg);
     }
     logger.debug("Operation {} succeeded on source index {}.", operation, sourceIndexName);

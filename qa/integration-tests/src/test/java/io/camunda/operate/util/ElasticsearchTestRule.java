@@ -256,7 +256,7 @@ public class ElasticsearchTestRule extends TestWatcher {
           && waitForImports < 60) {
         waitForImports++;
         try {
-          sleepFor(500);
+          sleepFor(2000);
           zeebeImporter.performOneRoundOfImportFor(readers);
           refreshOperateESIndices();
           runPostImportActions();
@@ -272,7 +272,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       refreshOperateESIndices();
       found = predicate.test(arguments);
       if (!found) {
-        sleepFor(500);
+        sleepFor(2000);
         waitingRound++;
       }
     }
