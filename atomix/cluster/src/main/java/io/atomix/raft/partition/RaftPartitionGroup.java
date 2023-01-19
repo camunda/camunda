@@ -45,7 +45,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,7 +149,21 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
 
   @Override
   public String toString() {
-    return ToStringBuilder.reflectionToString(this);
+    return "RaftPartitionGroup{"
+        + "name='"
+        + name
+        + '\''
+        + ", config="
+        + config
+        + ", replicationFactor="
+        + replicationFactor
+        + ", partitions="
+        + partitions
+        + ", sortedPartitionIds="
+        + sortedPartitionIds
+        + ", metadata="
+        + metadata
+        + '}';
   }
 
   @Override
