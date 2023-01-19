@@ -39,8 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Abstract partition. */
-public class RaftPartition implements Partition, HealthMonitorable {
-
+public final class RaftPartition implements Partition, HealthMonitorable {
   private static final Logger LOG = LoggerFactory.getLogger(RaftPartition.class);
   private static final String PARTITION_NAME_FORMAT = "%s-partition-%d";
   private final PartitionId partitionId;
@@ -80,19 +79,6 @@ public class RaftPartition implements Partition, HealthMonitorable {
    */
   public File dataDirectory() {
     return dataDirectory;
-  }
-
-  /**
-   * Takes a snapshot of the partition.
-   *
-   * @return a future to be completed once the snapshot is complete
-   */
-  public CompletableFuture<Void> snapshot() {
-    final RaftPartitionServer server = this.server;
-    if (server != null) {
-      return server.snapshot();
-    }
-    return CompletableFuture.completedFuture(null);
   }
 
   /** Opens the partition. */

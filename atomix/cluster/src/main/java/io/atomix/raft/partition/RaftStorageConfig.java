@@ -172,4 +172,25 @@ public class RaftStorageConfig {
   public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
     this.preallocateSegmentFiles = preallocateSegmentFiles;
   }
+
+  @Override
+  public String toString() {
+    return "RaftStorageConfig{"
+        + "directory='"
+        + directory
+        + '\''
+        + ", segmentSize="
+        + segmentSize
+        + ", flushExplicitly="
+        + flushExplicitly
+        + ", freeDiskSpace="
+        + freeDiskSpace
+        + ", journalIndexDensity="
+        + journalIndexDensity
+        + ", preallocateSegmentFiles="
+        + preallocateSegmentFiles
+        + ", persistedSnapshotStoreFactory="
+        + persistedSnapshotStoreFactory
+        + '}';
+  }
 }
