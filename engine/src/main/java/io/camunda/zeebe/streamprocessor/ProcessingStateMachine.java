@@ -268,7 +268,6 @@ public final class ProcessingStateMachine {
 
             var index = 0;
             toProcessCmds.push(transientCommand);
-            var lastCommandPosition = commandPosition;
             while (!toProcessCmds.isEmpty()) {
 
               //////////////////////////////////////////////////////
@@ -286,7 +285,6 @@ public final class ProcessingStateMachine {
                 currentProcessingResult =
                     currentProcessor.process(nextToProcessedCommand, processingResultBuilder);
               }
-              lastProcessedPositionState.markAsProcessed(lastCommandPosition);
 
               ///////////////////////////
               ///////// Post - prepare for next
@@ -298,17 +296,16 @@ public final class ProcessingStateMachine {
                 final var entry = entries.get(index);
                 if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
                   final TypedRecordImpl typedRecord = new TypedRecordImpl(partitionId);
-                  lastCommandPosition = commandPosition + index + 1;
                   typedRecord.wrap(
-                      new MinimalLoggedEvent(entry, lastCommandPosition),
-                      entry.recordMetadata(),
-                      entry.recordValue());
+                      new MinimalLoggedEvent(entry), entry.recordMetadata(), entry.recordValue());
                   toProcessCmds.add(typedRecord);
                 }
 
                 toWriteEntries.add(entry);
               }
             }
+
+            lastProcessedPositionState.markAsProcessed(commandPosition);
           });
 
       metrics.commandsProcessed();
@@ -426,8 +423,7 @@ public final class ProcessingStateMachine {
         updateStateRetryStrategy.runWithRetry(
             () -> {
               zeebeDbTransaction.commit();
-              lastSuccessfulProcessedRecordPosition =
-                  lastProcessedPositionState.getLastSuccessfulProcessedRecordPosition();
+              lastSuccessfulProcessedRecordPosition = currentRecord.getPosition();
               metrics.setLastProcessedPosition(lastSuccessfulProcessedRecordPosition);
               lastWrittenPosition = writtenPosition;
               return true;
@@ -550,13 +546,10 @@ public final class ProcessingStateMachine {
   }
 
   private static final class MinimalLoggedEvent implements LoggedEvent {
-
     private final ImmutableRecordBatchEntry entry;
-    private final long position;
 
-    private MinimalLoggedEvent(final ImmutableRecordBatchEntry entry, final long position) {
+    private MinimalLoggedEvent(final ImmutableRecordBatchEntry entry) {
       this.entry = entry;
-      this.position = position;
     }
 
     @Override
