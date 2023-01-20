@@ -97,7 +97,13 @@ final class ClusteredSnapshotTest {
     final var adminService =
         clusteringRule.getBroker(leaderId).getBrokerContext().getBrokerAdminService();
     ControllableExporter.updatePosition(true);
-    clusteringRule.fillSegment();
+    clusteringRule.fillSegments(
+        2,
+        clusteringRule
+            .getBrokerCfg(0)
+            .getExperimental()
+            .getRaft()
+            .getPreferSnapshotReplicationThreshold());
 
     Awaitility.await("Wait until all events are exported before taking snapshot")
         .until(

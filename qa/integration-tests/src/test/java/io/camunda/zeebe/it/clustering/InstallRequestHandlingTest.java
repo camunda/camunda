@@ -44,7 +44,13 @@ public class InstallRequestHandlingTest {
     // given
     final var followerId = clusteringRule.stopAnyFollower();
     final var jobKey = clientRule.createSingleJob("type");
-    clusteringRule.fillSegment();
+    clusteringRule.fillSegments(
+        2,
+        clusteringRule
+            .getBrokerCfg(0)
+            .getExperimental()
+            .getRaft()
+            .getPreferSnapshotReplicationThreshold());
     clusteringRule.triggerAndWaitForSnapshots();
 
     // when
@@ -70,7 +76,13 @@ public class InstallRequestHandlingTest {
                 .serviceTask("task", task -> task.zeebeJobType("type"))
                 .endEvent()
                 .done());
-    clusteringRule.fillSegment();
+    clusteringRule.fillSegments(
+        2,
+        clusteringRule
+            .getBrokerCfg(0)
+            .getExperimental()
+            .getRaft()
+            .getPreferSnapshotReplicationThreshold());
     clusteringRule.triggerAndWaitForSnapshots();
     clusteringRule.startBroker(followerId);
     clusteringRule.waitForSnapshotAtBroker(followerId);
