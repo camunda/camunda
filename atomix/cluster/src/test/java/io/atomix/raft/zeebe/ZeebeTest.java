@@ -141,14 +141,25 @@ public class ZeebeTest {
     final int partitionId = 1;
     final RaftPartitionServer server = helper.awaitLeaderServer(1);
     final ZeebeLogAppender appender = helper.awaitLeaderAppender(partitionId);
-
+    final var preferSnapshotReplicationThreshold =
+        nodes.stream()
+            .findFirst()
+            .orElseThrow()
+            .getPartitionGroup()
+            .config()
+            .getPartitionConfig()
+            .getPreferSnapshotReplicationThreshold();
     // when
     IndexedRaftLogEntry appended = appenderWrapper.append(appender, 0L, 0L, getIntAsBytes(0));
     final IndexedRaftLogEntry firstAppended = appended;
-    for (int i = 1; i < ENTRIES_PER_SEGMENT; i++) {
+
+    // write enough entries to fill a segment + the offset applied based on
+    // `preferSnapshotReplicationThreshold`
+    for (int i = 1; i < ENTRIES_PER_SEGMENT + preferSnapshotReplicationThreshold; i++) {
       appended = appenderWrapper.append(appender, i, i, getIntAsBytes(i));
       helper.awaitAllContain(partitionId, appended);
     }
+
     server.setCompactableIndex(appended.index());
     server.compact().join();
 
