@@ -144,7 +144,7 @@ public class RecordsReader implements Runnable {
       ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
       ImportBatch importBatch = readNextBatch(latestPosition.getPosition(), null);
       Integer nextRunDelay = null;
-      if (importBatch.getHits().size() == 0) {
+      if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().size() == 0) {
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);

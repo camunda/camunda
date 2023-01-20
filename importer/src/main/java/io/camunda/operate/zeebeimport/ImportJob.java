@@ -13,6 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
@@ -104,7 +105,12 @@ public class ImportJob implements Callable<Boolean> {
       RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
       if (recordsReader != null) {
         try {
-          importBatch = recordsReader.readNextBatch(previousPosition.getPosition(), importBatch.getLastProcessedPosition(objectMapper));
+          ImportBatch newImportBatch = recordsReader.readNextBatch(previousPosition.getPosition(),
+              importBatch.getLastProcessedPosition(objectMapper));
+          if (newImportBatch == null || newImportBatch.getHits() == null || newImportBatch.getHits().size() < importBatch.getHits().size()) {
+            throw new OperateRuntimeException("Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
+          }
+          importBatch = newImportBatch;
         } catch (NoSuchIndexException ex) {
           logger.warn("Indices are not found" + importBatch.toString());
         }

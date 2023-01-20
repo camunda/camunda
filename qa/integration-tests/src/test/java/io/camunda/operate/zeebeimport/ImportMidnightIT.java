@@ -10,9 +10,11 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import io.camunda.operate.entities.FlowNodeInstanceEntity;
 import io.camunda.operate.entities.FlowNodeState;
+import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
@@ -20,17 +22,20 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+
+import static io.camunda.operate.zeebe.ImportValueType.PROCESS_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(
     classes = { TestApplication.class},
@@ -43,8 +48,8 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
   @Autowired
   private ProcessInstanceReader processInstanceReader;
 
-  @Autowired
-  private ListViewReader listViewReader;
+  @SpyBean
+  private RecordsReaderHolder recordsReaderHolder;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule  = new ElasticsearchTestRule() {
@@ -69,6 +74,7 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
           .serviceTask("task2").zeebeJobType("task2")
         .endEvent().done();
     deployProcess(process, "demoProcess_v_1.bpmn");
+    mockRecordsReaderToImitateNPE();    //#3861
 
     //disable automatic index refreshes
     zeebeRule.updateRefreshInterval("-1");
@@ -113,6 +119,26 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getEndDate()).isAfterOrEqualTo(OffsetDateTime.ofInstant(secondDate, ZoneOffset.systemDefault()));
 
+  }
+
+  /**
+   * We don't know the root cause of this behaviour, but customer faced the situation, when index reread returned empty batch
+   */
+  private void mockRecordsReaderToImitateNPE() {
+    RecordsReader processInstanceRecordsReader = recordsReaderHolder.getRecordsReader(1, PROCESS_INSTANCE);
+    when(recordsReaderHolder.getRecordsReader(eq(1), eq(PROCESS_INSTANCE))).thenReturn(new RecordsReader(1, PROCESS_INSTANCE, 5) {
+      boolean calledOnce = false;
+
+      @Override
+      public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
+        if (calledOnce) {
+          return processInstanceRecordsReader.readNextBatch(positionFrom, positionTo);
+        } else {
+          calledOnce = true;
+          return new ImportBatch(1, PROCESS_INSTANCE, new ArrayList<>(), null);
+        }
+      }
+    });
   }
 
   public void fillIndicesWithData(String processId, Instant firstDate) {
