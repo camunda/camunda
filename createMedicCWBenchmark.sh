@@ -35,7 +35,7 @@ cd benchmarks/setup/
 cw=$(date +%V)
 if [ $cw -gt 4 ]
 then
-  nameOfOldestBenchmark=$(ls | grep medic-cw- | sort | head -n 1)
+  nameOfOldestBenchmark=$(ls | grep medic-y- | sort | head -n 1)
   ./deleteBenchmark.sh $nameOfOldestBenchmark
 
   # commit that change
@@ -52,5 +52,5 @@ fi
 
 
 # print out the name of the new benchmark so it can be easily copied
-nameOfNewestBenchmark=$(ls | grep medic-cw- | sort | tail -n 1)
+nameOfNewestBenchmark=$(ls | grep medic-y- | sort | tail -n 1)
 echo "Finished creating new medic benchmark: $nameOfNewestBenchmark"

@@ -24,7 +24,7 @@ jobs:
         id: data
         run: |
           # Get all namespaces, filter for medic benchmarks and select the oldest one
-          echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
+          echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
       - name: Delete benchmarks
         run: |
           kubectl delete ${{ steps.data.outputs.normal }}
@@ -35,16 +35,14 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       full-ref: ${{ steps.data.outputs.full-ref }}
-      ref: ${{ steps.data.outputs.ref }}
-      cw: ${{ steps.data.outputs.cw }}
+      benchmark: ${{ steps.data.outputs.benchmark }}
     steps:
       - uses: actions/checkout@v3
       - name: Collect benchmark data
         id: data
         run: |
           echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
-          echo "ref=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "cw=$(date +%V)" >> $GITHUB_OUTPUT
+          echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
 
   setup-normal-benchmark:
     name: Setup normal benchmark
@@ -54,7 +52,7 @@ jobs:
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
-      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark
+      name: ${{ needs.benchmark-data.outputs.benchmark }}
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -66,7 +64,7 @@ jobs:
       - benchmark-data
       - delete-old-benchmarks
     with:
-      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-mixed
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-mixed
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
@@ -84,7 +82,7 @@ jobs:
       - benchmark-data
       - delete-old-benchmarks
     with:
-      name: medic-cw-${{ needs.benchmark-data.outputs.cw }}-${{ needs.benchmark-data.outputs.ref }}-benchmark-latency
+      name: ${{ needs.benchmark-data.outputs.benchmark }}-latency
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
