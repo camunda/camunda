@@ -46,10 +46,8 @@ module.exports = function createServer(
       return;
     }
 
-    var filePath = __dirname + path.parse(request.url).base;
-    if (request.url === '/') {
-      filePath += 'index.html';
-    }
+    var filename = path.parse(request.url).base || 'index.html';
+    var filePath = path.join(__dirname, filename);
 
     var extname = String(path.extname(filePath)).toLowerCase();
     var mimeTypes = {
