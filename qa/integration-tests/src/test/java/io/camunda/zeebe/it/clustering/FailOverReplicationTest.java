@@ -80,7 +80,8 @@ public class FailOverReplicationTest {
     final var brokerInfo = clusteringRule.awaitOtherLeader(1, oldLeaderId);
     assertThat(brokerInfo.getNodeId()).isNotEqualTo(oldLeaderId);
     final List<Broker> others = clusteringRule.getOtherBrokerObjects(oldLeaderId);
-    awaitFilledSegmentsOnBrokers(others, segmentCount);
+
+    clusteringRule.fillSegments(others, segmentCount);
 
     // then
     assertThat(getSegmentsCount(oldLeader)).isLessThan(segmentCount);
@@ -95,7 +96,7 @@ public class FailOverReplicationTest {
     clusteringRule.disconnect(oldLeader);
     clusteringRule.awaitOtherLeader(1, oldLeaderId);
     final List<Broker> followers = clusteringRule.getOtherBrokerObjects(oldLeaderId);
-    awaitFilledSegmentsOnBrokers(followers, segmentCount);
+    clusteringRule.fillSegments(followers, segmentCount);
 
     // when
     clusteringRule.connect(oldLeader);
@@ -118,7 +119,8 @@ public class FailOverReplicationTest {
     final var newLeaderInfo = clusteringRule.awaitOtherLeader(1, previousLeaderId);
     final var newLeader = clusteringRule.getBroker(newLeaderInfo.getNodeId());
     final List<Broker> followers = clusteringRule.getOtherBrokerObjects(previousLeaderId);
-    awaitFilledSegmentsOnBrokers(followers, segmentCount);
+
+    clusteringRule.fillSegments(followers, segmentCount);
     final var snapshotMetadata = awaitSnapshot(newLeader);
 
     // when
@@ -163,7 +165,7 @@ public class FailOverReplicationTest {
 
     // Leader and Follower A have new entries
     // which Follower B - old leader hasn't
-    awaitFilledSegmentsOnBrokers(List.of(newLeader, followerA), 2);
+    clusteringRule.fillSegments(List.of(newLeader, followerA), 2);
     awaitSnapshot(newLeader);
     clusteringRule.takeSnapshot(followerA);
     clusteringRule.waitForSnapshotAtBroker(followerA);
@@ -269,24 +271,6 @@ public class FailOverReplicationTest {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
-  }
-
-  private void awaitFilledSegmentsOnBrokers(final List<Broker> brokers, final int segmentCount) {
-
-    while (brokers.stream().map(this::getSegmentsCount).allMatch(count -> count <= segmentCount)) {
-
-      writeRecord();
-    }
-  }
-
-  private void writeRecord() {
-    clusteringRule
-        .getClient()
-        .newPublishMessageCommand()
-        .messageName("msg")
-        .correlationKey("key")
-        .send()
-        .join();
   }
 
   private void triggerSnapshotCreation() {
