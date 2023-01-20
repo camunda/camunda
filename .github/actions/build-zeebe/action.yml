@@ -23,7 +23,7 @@ inputs:
 outputs:
   distball:
     description: "The path to the Zeebe distribution TAR ball"
-    value: ${{ steps.build-java.outputs.result }}
+    value: ${{ steps.build-java.outputs.distball }}
 
 runs:
   using: composite
@@ -44,4 +44,4 @@ runs:
         mvn -B -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
         export BUILD_DIR=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
         export ARTIFACT=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
-        echo "::set-output name=result::${BUILD_DIR}/${ARTIFACT}.tar.gz"
+        echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
