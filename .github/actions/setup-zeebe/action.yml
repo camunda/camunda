@@ -45,7 +45,7 @@ runs:
         # see https://docs.github.com/en/actions/learn-github-actions/contexts#runner-context
         architecture: ${{ runner.arch == 'ARM64' && 'aarch64' || 'x64' }}
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
-      uses: stCarolas/setup-maven@v4
+      uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: '3.8.6'
     - if: ${{ inputs.maven-cache == 'true' }}
