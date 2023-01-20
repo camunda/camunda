@@ -46,7 +46,7 @@ organizationFolder('zeebe-io') {
 
     orphanedItemStrategy {
         discardOldItems {
-            numToKeep 10
+            numToKeep 0
         }
     }
 
