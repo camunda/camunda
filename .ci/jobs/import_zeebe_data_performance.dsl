@@ -8,10 +8,8 @@ pipelineJob('import-zeebe-data-performance') {
   displayName 'Import performance test on Zeebe dataset'
   description 'Test Optimize Import performance against a Zeebe dataset.'
 
-  // By default, this job is disabled in non-prod envs.
-  if (ENVIRONMENT != "prod") {
-    disabled()
-  }
+  // Disable this job as this will be taken care of with our 2023 term goal to improve Optimize performance
+  disabled()
 
   definition {
     cps {
