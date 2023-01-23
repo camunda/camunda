@@ -43,7 +43,7 @@
     "test:ci": "cross-env CI=true react-scripts test --env=jsdom --resetMocks=false --ci --testTimeout 7000 --clearMocks=true",
     "eject": "react-scripts eject",
     "ts-check": "tsc && tsc --noEmit --project e2e/tsconfig.json",
-    "eslint": "eslint src/ e2e/",
+    "eslint": "eslint src/ e2e/ --max-warnings=0",
     "lint": "yarn ts-check && yarn eslint",
     "fix:prettier": "prettier --write \"**/*.ts\"",
     "test:e2e": "cross-env ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
