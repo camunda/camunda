@@ -13,12 +13,12 @@ import {
   mockCallActivityProcessXML,
 } from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {modificationsStore} from './modifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {open} from 'modules/mocks/diagrams';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
@@ -270,7 +270,7 @@ describe('stores/processInstanceDiagram', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -297,6 +297,8 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-6',
       'intermediate-throw',
       'multi-instance-service-task',
+      'Gateway_0uhrn1w',
+      'Gateway_1qjpson',
     ]);
 
     expect(processInstanceDetailsDiagramStore.cancellableFlowNodes).toEqual([
@@ -324,6 +326,8 @@ describe('stores/processInstanceDiagram', () => {
       'service-task-6',
       'intermediate-throw',
       'multi-instance-service-task',
+      'Gateway_0uhrn1w',
+      'Gateway_1qjpson',
       'subprocess-service-task',
       'message-boundary',
     ]);
@@ -337,6 +341,8 @@ describe('stores/processInstanceDiagram', () => {
       'non-interrupt-message-boundary',
       'timer-boundary',
       'boundary-event',
+      'eventAttachedToEventbasedGateway1',
+      'eventAttachedToEventbasedGateway2',
     ]);
 
     modificationsStore.startMovingToken('service-task-1');
@@ -353,6 +359,8 @@ describe('stores/processInstanceDiagram', () => {
       'non-interrupt-message-boundary',
       'timer-boundary',
       'boundary-event',
+      'eventAttachedToEventbasedGateway1',
+      'eventAttachedToEventbasedGateway2',
     ]);
   });
 

@@ -10,10 +10,10 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ModificationIcons} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {useEffect} from 'react';
+import {open} from 'modules/mocks/diagrams';
 
 type Props = {
   children?: React.ReactNode;
@@ -53,7 +53,7 @@ describe('<ModificationIcons />', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
   });
 
   it('should show correct icons for modifications planning to be added', () => {

@@ -33,7 +33,7 @@ import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenc
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
+import {open} from 'modules/mocks/diagrams';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -82,7 +82,7 @@ describe('TopPanel', () => {
   });
 
   beforeEach(() => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     mockFetchProcessInstance().withSuccess(
       createInstance({id: 'instance_id', state: 'INCIDENT'})

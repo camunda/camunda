@@ -6,7 +6,6 @@
  */
 
 import {createAddVariableModification} from 'modules/mocks/modifications';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
@@ -23,6 +22,7 @@ import {ModificationSummaryModal} from './index';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockModify} from 'modules/mocks/api/processInstances/modify';
+import {open} from 'modules/mocks/diagrams';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -331,7 +331,7 @@ describe('Modification Summary Modal', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'

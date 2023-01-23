@@ -18,9 +18,9 @@ import {
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
+import {open} from 'modules/mocks/diagrams';
 
 const PROCESS_INSTANCE_ID = '2251799813689404';
 
@@ -530,7 +530,7 @@ describe('stores/flowNodeSelection', () => {
   });
 
   it('should get selected running instance count', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
         activityId: 'StartEvent_1',

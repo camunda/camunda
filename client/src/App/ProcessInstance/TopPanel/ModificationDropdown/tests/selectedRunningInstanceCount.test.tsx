@@ -7,13 +7,13 @@
 
 import {act, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {open} from 'modules/mocks/diagrams';
 
 describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
@@ -69,7 +69,7 @@ describe('selectedRunningInstanceCount', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
   });
 
   (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(

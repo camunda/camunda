@@ -16,10 +16,10 @@ import {
   createEditVariableModification,
 } from 'modules/mocks/modifications';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
+import {open} from 'modules/mocks/diagrams';
 
 type Props = {
   children?: React.ReactNode;
@@ -93,7 +93,7 @@ describe('LastModification', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'

@@ -11,7 +11,6 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -22,6 +21,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
 import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
+import {open} from 'modules/mocks/diagrams';
 
 describe('Modification Dropdown', () => {
   beforeAll(() => {
@@ -94,7 +94,7 @@ describe('Modification Dropdown', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
   });
 
   it('should not render dropdown when no flow node is selected', async () => {
@@ -347,7 +347,7 @@ describe('Modification Dropdown', () => {
       },
     ]);
 
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     renderPopover();
 
@@ -375,9 +375,9 @@ describe('Modification Dropdown', () => {
       isMultiInstance: false,
     });
 
-    expect(
-      await screen.findByText(/Unsupported flow node type/)
-    ).toBeInTheDocument();
+    await waitForElementToBeRemoved(() => expect(screen.getByText(/Add/)));
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
   });
 
   (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(

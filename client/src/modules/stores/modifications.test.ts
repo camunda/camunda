@@ -7,7 +7,6 @@
 
 import {FlowNodeModification, modificationsStore} from './modifications';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {mockProcessForModifications} from 'modules/mocks/mockProcessForModifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {
@@ -17,6 +16,7 @@ import {
 import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {open} from 'modules/mocks/diagrams';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -140,7 +140,7 @@ describe('stores/modifications', () => {
   });
 
   it('should add/remove flow node modifications', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -367,7 +367,7 @@ describe('stores/modifications', () => {
   });
 
   it('should remove last modification', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -421,7 +421,7 @@ describe('stores/modifications', () => {
   });
 
   it('should get modifications by flow node', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -569,7 +569,7 @@ describe('stores/modifications', () => {
   });
 
   it('should check if tokens on a flow node is cancelled', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -626,7 +626,7 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'
@@ -670,7 +670,7 @@ describe('stores/modifications', () => {
   });
 
   it('should move tokens from multi instance process', async () => {
-    mockFetchProcessXML().withSuccess(mockProcessForModifications);
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
       'processInstanceId'

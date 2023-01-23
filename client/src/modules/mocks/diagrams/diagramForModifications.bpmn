@@ -1,12 +1,5 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
- */
-
-const mockProcessForModifications = `<?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.10.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0" camunda:diagramRelationId="3f3ff7ed-2627-4879-8a42-3c97e9375d4c">
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.11.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.0.0" camunda:diagramRelationId="3f3ff7ed-2627-4879-8a42-3c97e9375d4c">
   <bpmn:process id="Process_aca2bbb8-dfb2-451e-80f2-f25e1965dfd0" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_1o35afl</bpmn:outgoing>
@@ -93,9 +86,11 @@ const mockProcessForModifications = `<?xml version="1.0" encoding="UTF-8"?>
     <bpmn:userTask id="user-task-1">
       <bpmn:incoming>Flow_1ixd1ey</bpmn:incoming>
       <bpmn:outgoing>Flow_0trcez0</bpmn:outgoing>
+      <bpmn:outgoing>Flow_02sgrzu</bpmn:outgoing>
     </bpmn:userTask>
     <bpmn:endEvent id="end-event">
       <bpmn:incoming>Flow_1j8hu8u</bpmn:incoming>
+      <bpmn:incoming>Flow_0p15v6o</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:serviceTask id="service-task-2">
       <bpmn:incoming>Flow_001fza4</bpmn:incoming>
@@ -131,6 +126,32 @@ const mockProcessForModifications = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmn:outgoing>Flow_1j8hu8u</bpmn:outgoing>
       <bpmn:multiInstanceLoopCharacteristics />
     </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_02sgrzu" sourceRef="user-task-1" targetRef="Gateway_0uhrn1w" />
+    <bpmn:eventBasedGateway id="Gateway_0uhrn1w">
+      <bpmn:incoming>Flow_02sgrzu</bpmn:incoming>
+      <bpmn:outgoing>Flow_1b2gnm0</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1p11dgh</bpmn:outgoing>
+    </bpmn:eventBasedGateway>
+    <bpmn:intermediateCatchEvent id="eventAttachedToEventbasedGateway1">
+      <bpmn:incoming>Flow_1b2gnm0</bpmn:incoming>
+      <bpmn:outgoing>Flow_1vscxlv</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1ftsx3t" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_1b2gnm0" sourceRef="Gateway_0uhrn1w" targetRef="eventAttachedToEventbasedGateway1" />
+    <bpmn:intermediateCatchEvent id="eventAttachedToEventbasedGateway2">
+      <bpmn:incoming>Flow_1p11dgh</bpmn:incoming>
+      <bpmn:outgoing>Flow_1py16m7</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="TimerEventDefinition_1kul38i" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_1p11dgh" sourceRef="Gateway_0uhrn1w" targetRef="eventAttachedToEventbasedGateway2" />
+    <bpmn:exclusiveGateway id="Gateway_1qjpson">
+      <bpmn:incoming>Flow_1py16m7</bpmn:incoming>
+      <bpmn:incoming>Flow_1vscxlv</bpmn:incoming>
+      <bpmn:outgoing>Flow_0p15v6o</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_1py16m7" sourceRef="eventAttachedToEventbasedGateway2" targetRef="Gateway_1qjpson" />
+    <bpmn:sequenceFlow id="Flow_1vscxlv" sourceRef="eventAttachedToEventbasedGateway1" targetRef="Gateway_1qjpson" />
+    <bpmn:sequenceFlow id="Flow_0p15v6o" sourceRef="Gateway_1qjpson" targetRef="end-event" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_aca2bbb8-dfb2-451e-80f2-f25e1965dfd0">
@@ -201,13 +222,33 @@ const mockProcessForModifications = `<?xml version="1.0" encoding="UTF-8"?>
         <di:waypoint x="186" y="240" />
         <di:waypoint x="240" y="240" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0trcez0_di" bpmnElement="Flow_0trcez0">
+      <bpmndi:BPMNEdge id="Flow_02sgrzu_di" bpmnElement="Flow_02sgrzu">
         <di:waypoint x="1780" y="280" />
-        <di:waypoint x="1840" y="280" />
+        <di:waypoint x="1835" y="280" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1j8hu8u_di" bpmnElement="Flow_1j8hu8u">
-        <di:waypoint x="1940" y="280" />
-        <di:waypoint x="1992" y="280" />
+      <bpmndi:BPMNEdge id="Flow_1b2gnm0_di" bpmnElement="Flow_1b2gnm0">
+        <di:waypoint x="1860" y="255" />
+        <di:waypoint x="1860" y="200" />
+        <di:waypoint x="1922" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1p11dgh_di" bpmnElement="Flow_1p11dgh">
+        <di:waypoint x="1860" y="305" />
+        <di:waypoint x="1860" y="350" />
+        <di:waypoint x="1922" y="350" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1py16m7_di" bpmnElement="Flow_1py16m7">
+        <di:waypoint x="1958" y="350" />
+        <di:waypoint x="2000" y="350" />
+        <di:waypoint x="2000" y="305" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1vscxlv_di" bpmnElement="Flow_1vscxlv">
+        <di:waypoint x="1958" y="200" />
+        <di:waypoint x="2000" y="200" />
+        <di:waypoint x="2000" y="255" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0p15v6o_di" bpmnElement="Flow_0p15v6o">
+        <di:waypoint x="2025" y="280" />
+        <di:waypoint x="2072" y="280" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
         <dc:Bounds x="150" y="222" width="36" height="36" />
@@ -215,11 +256,20 @@ const mockProcessForModifications = `<?xml version="1.0" encoding="UTF-8"?>
       <bpmndi:BPMNShape id="Activity_1abfuim_di" bpmnElement="service-task-1">
         <dc:Bounds x="240" y="200" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_02sp0wf_di" bpmnElement="end-event">
-        <dc:Bounds x="1992" y="262" width="36" height="36" />
+      <bpmndi:BPMNShape id="Gateway_0lpf4zw_di" bpmnElement="Gateway_0uhrn1w">
+        <dc:Bounds x="1835" y="255" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_01u0yed_di" bpmnElement="smulti-instance-service-task">
-        <dc:Bounds x="1840" y="240" width="100" height="80" />
+      <bpmndi:BPMNShape id="Event_037f5bc_di" bpmnElement="eventAttachedToEventbasedGateway1">
+        <dc:Bounds x="1922" y="182" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1qjpson_di" bpmnElement="Gateway_1qjpson" isMarkerVisible="true">
+        <dc:Bounds x="1975" y="255" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0fuhlmh_di" bpmnElement="eventAttachedToEventbasedGateway2">
+        <dc:Bounds x="1922" y="332" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_02sp0wf_di" bpmnElement="end-event">
+        <dc:Bounds x="2072" y="262" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ipkk5y_di" bpmnElement="multi-instance-subprocess" isExpanded="true">
         <dc:Bounds x="410" y="140" width="350" height="200" />
@@ -301,6 +351,3 @@ const mockProcessForModifications = `<?xml version="1.0" encoding="UTF-8"?>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
-`;
-
-export {mockProcessForModifications};

@@ -35,15 +35,8 @@ class ModificationRules {
       return false;
     }
 
-    return (
-      !processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
-        this.selectedFlowNodeId
-      ) &&
-      !(
-        processInstanceDetailsDiagramStore.isMultiInstance(
-          this.selectedFlowNodeId
-        ) && !flowNodeSelectionStore.state.selection?.isMultiInstance
-      )
+    return !processInstanceDetailsDiagramStore.nonModifiableFlowNodes.includes(
+      this.selectedFlowNodeId
     );
   }
 
@@ -75,6 +68,11 @@ class ModificationRules {
     if (
       processInstanceDetailsDiagramStore.appendableFlowNodes.includes(
         this.selectedFlowNodeId
+      ) &&
+      !(
+        processInstanceDetailsDiagramStore.isMultiInstance(
+          this.selectedFlowNodeId
+        ) && !flowNodeSelectionStore.state.selection?.isMultiInstance
       )
     ) {
       options.push('add');
