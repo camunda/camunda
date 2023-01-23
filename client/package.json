@@ -42,7 +42,9 @@
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci",
     "postinstall": "cd .. && husky install",
-    "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'"
+    "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
+    "test:visual-regression": "playwright test",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.29.1-focal /bin/bash"
   },
   "browserslist": [
     ">0.2%",
@@ -51,6 +53,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "@playwright/test": "1.29.2",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "11.2.7",
     "@testing-library/testcafe": "5.0.0",
