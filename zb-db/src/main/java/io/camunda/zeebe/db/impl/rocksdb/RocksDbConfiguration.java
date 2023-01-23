@@ -16,7 +16,22 @@ public final class RocksDbConfiguration {
   public static final int DEFAULT_MAX_WRITE_BUFFER_NUMBER = 6;
   public static final int DEFAULT_MIN_WRITE_BUFFER_NUMBER_TO_MERGE = 3;
   public static final boolean DEFAULT_STATISTICS_ENABLED = false;
-  public static final boolean DEFAULT_WAL_DISABLED = false;
+
+  /**
+   * WARN: It is safe to disable wal as long as there is only one column family. With more than one
+   * column family, consistency across multiple column family is ensured by WAL while taking a
+   * checkpoint.
+   *
+   * <p>http://rocksdb.org/blog/2015/11/10/use-checkpoints-for-efficient-snapshots.html >>> The
+   * Checkpoint feature enables RocksDB to create a consistent snapshot of a given RocksDB database
+   * in the specified directory. If the snapshot is on the same filesystem as the original database,
+   * the SST files will be hard-linked, otherwise SST files will be copied. The manifest and CURRENT
+   * files will be copied. In addition, if there are multiple column families, log files will be
+   * copied for the period covering the start and end of the checkpoint, in order to provide a
+   * consistent snapshot across column families. <<<
+   */
+  public static final boolean DEFAULT_WAL_DISABLED = true;
+
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
 
   private Properties columnFamilyOptions = new Properties();
