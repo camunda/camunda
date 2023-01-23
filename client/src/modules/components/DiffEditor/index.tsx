@@ -18,10 +18,6 @@ type Props = {
 
 const DiffEditor: React.FC<Props> = observer(
   ({originalValue, modifiedValue}) => {
-    const {
-      state: {selectedTheme},
-    } = currentTheme;
-
     return (
       <>
         <EditorStyles />
@@ -29,7 +25,7 @@ const DiffEditor: React.FC<Props> = observer(
           height="90vh"
           original={originalValue}
           modified={modifiedValue}
-          theme={selectedTheme === 'dark' ? 'vs-dark' : 'light'}
+          theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
           language="json"
           options={{...options, readOnly: true, renderOverviewRuler: false}}
         />

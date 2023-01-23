@@ -31,9 +31,6 @@ const JSONEditor: React.FC<Props> = observer(
     onValidate = () => {},
     onMount = () => {},
   }) => {
-    const {
-      state: {selectedTheme},
-    } = currentTheme;
     const monaco = useMonaco();
 
     useLayoutEffect(() => {
@@ -50,7 +47,7 @@ const JSONEditor: React.FC<Props> = observer(
           options={{...options, readOnly}}
           language="json"
           value={value}
-          theme={selectedTheme === 'dark' ? 'vs-dark' : 'light'}
+          theme={currentTheme.theme === 'dark' ? 'vs-dark' : 'light'}
           onChange={(value) => {
             onChange?.(value ?? '');
           }}
