@@ -46,12 +46,13 @@ services:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe
       - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
       - 8000:8000
-    volumes:
-      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
     depends_on:
       - elasticsearch
     networks:
@@ -105,12 +106,13 @@ services:
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
       - ZEEBE_BROKER_GATEWAY_NETWORK_PORT=26503
       - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX=e2e
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200
+      - ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE=1
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26503:26503
       - 8001:8000
-    volumes:
-      - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
     networks:
       - zeebe_network
     restart: always

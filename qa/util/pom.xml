@@ -28,6 +28,12 @@
       <version>${project.version}</version>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>tasklist-webapp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
     <!-- ELASTICSEARCH -->
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
@@ -49,6 +55,18 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.retry</groupId>
+      <artifactId>spring-retry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aspects</artifactId>
+    </dependency>
 
     <!-- TEST CONTAINERS -->
     <dependency>
@@ -60,6 +78,7 @@
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
     </dependency>
+
   </dependencies>
 
   <build>

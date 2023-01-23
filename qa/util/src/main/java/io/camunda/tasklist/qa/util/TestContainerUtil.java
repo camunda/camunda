@@ -6,6 +6,7 @@
  */
 package io.camunda.tasklist.qa.util;
 
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import java.io.FileWriter;
@@ -16,9 +17,21 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Properties;
 import javax.annotation.PreDestroy;
+import org.apache.http.HttpHost;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.ElasticsearchClient;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -29,16 +42,16 @@ import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @Component
+@Configuration
+@EnableRetry
 public class TestContainerUtil {
 
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String PROPERTIES_PREFIX = "camunda.tasklist.";
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
-  private static final String ZEEBE_CFG_YAML_FILE = "/zeebe-config/zeebe.cfg.yaml";
   private static final String DOCKER_TASKLIST_IMAGE_NAME = "camunda/tasklist";
   private static final Integer TASKLIST_HTTP_PORT = 8080;
-  private static final String ZEEBE_PREFIX = "migration-test";
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
   private Network network;
@@ -56,6 +69,7 @@ public class TestContainerUtil {
                     ElasticsearchClient.class.getPackage().getImplementationVersion()))
             .withNetwork(getNetwork())
             .withEnv("xpack.security.enabled", "false")
+            .withEnv("path.repo", "~/")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
             .withExposedPorts(ELS_PORT);
     elsContainer.setWaitStrategy(
@@ -72,6 +86,25 @@ public class TestContainerUtil {
         "************ Elasticsearch started on {}:{} ************",
         testContext.getExternalElsHost(),
         testContext.getExternalElsPort());
+  }
+
+  @Retryable(
+      value = TasklistRuntimeException.class,
+      maxAttempts = 5,
+      backoff = @Backoff(delay = 3000))
+  public boolean checkElasctisearchHealth(TestContext testContext) {
+    try {
+      final RestHighLevelClient esClient =
+          new RestHighLevelClient(
+              RestClient.builder(
+                  new HttpHost(
+                      testContext.getExternalElsHost(), testContext.getExternalElsPort())));
+      final ClusterHealthResponse clusterHealthResponse =
+          esClient.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
+      return clusterHealthResponse.getStatus().equals(ClusterHealthStatus.GREEN);
+    } catch (IOException | ElasticsearchException ex) {
+      throw new TasklistRuntimeException();
+    }
   }
 
   public GenericContainer startTasklist(String version, TestContext testContext) {
@@ -101,11 +134,7 @@ public class TestContainerUtil {
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
-    applyConfiguration(
-        tasklistContainer,
-        testContext.getInternalElsHost(),
-        testContext.getInternalElsPort(),
-        testContext.getInternalZeebeContactPoint());
+    applyConfiguration(tasklistContainer, testContext);
     return tasklistContainer;
   }
 
@@ -122,10 +151,9 @@ public class TestContainerUtil {
 
   // for newer versions
   private void applyConfiguration(
-      final GenericContainer<?> tasklistContainer,
-      String elsHost,
-      Integer elsPort,
-      String zeebeContactPoint) {
+      final GenericContainer<?> tasklistContainer, TestContext testContext) {
+    final String elsHost = testContext.getInternalElsHost();
+    final Integer elsPort = testContext.getInternalElsPort();
     tasklistContainer
         .withEnv(
             "CAMUNDA_TASKLIST_ELASTICSEARCH_URL", String.format("http://%s:%s", elsHost, elsPort))
@@ -137,10 +165,13 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_UHOST", elsHost)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
 
+    final String zeebeContactPoint = testContext.getInternalZeebeContactPoint();
     if (zeebeContactPoint != null) {
-      tasklistContainer
-          .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebeContactPoint)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", ZEEBE_PREFIX);
+      tasklistContainer.withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebeContactPoint);
+    }
+    if (testContext.getZeebeIndexPrefix() != null) {
+      tasklistContainer.withEnv(
+          "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
     }
   }
 
@@ -150,7 +181,8 @@ public class TestContainerUtil {
           getTasklistElsProperties(
               testContext.getInternalElsHost(),
               testContext.getInternalElsPort(),
-              testContext.getInternalZeebeContactPoint());
+              testContext.getInternalZeebeContactPoint(),
+              testContext.getZeebeIndexPrefix());
       final Path tempFile = Files.createTempFile(getClass().getPackage().getName(), ".tmp");
       properties.store(new FileWriter(tempFile.toFile()), null);
       return tempFile;
@@ -161,7 +193,7 @@ public class TestContainerUtil {
 
   // for older versions
   protected Properties getTasklistElsProperties(
-      String elsHost, Integer elsPort, String zeebeContactPoint) {
+      String elsHost, Integer elsPort, String zeebeContactPoint, String zeebeIndexPrefix) {
     final Properties properties = new Properties();
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
@@ -169,7 +201,7 @@ public class TestContainerUtil {
     properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.port", String.valueOf(elsPort));
     if (zeebeContactPoint != null) {
       properties.setProperty(PROPERTIES_PREFIX + "zeebe.brokerContactPoint", zeebeContactPoint);
-      properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.prefix", ZEEBE_PREFIX);
+      properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.prefix", zeebeIndexPrefix);
     }
     properties.setProperty(PROPERTIES_PREFIX + "archiver.waitPeriodBeforeArchiving", "2m");
     return properties;
@@ -188,7 +220,7 @@ public class TestContainerUtil {
       }
       broker.setWaitStrategy(
           new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(240L)));
-      addConfig(broker);
+      addConfig(broker, testContext);
       broker.start();
       LOGGER.info("************ Zeebe started  ************");
 
@@ -202,10 +234,17 @@ public class TestContainerUtil {
     return broker;
   }
 
-  protected void addConfig(ZeebeContainer zeebeBroker) {
-    zeebeBroker.withCopyFileToContainer(
-        MountableFile.forClasspathResource(ZEEBE_CFG_YAML_FILE),
-        "/usr/local/zeebe/config/application.yaml");
+  protected void addConfig(ZeebeContainer zeebeBroker, TestContext testContext) {
+    zeebeBroker
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.ElasticsearchExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", "http://elasticsearch:9200");
+    if (testContext.getZeebeIndexPrefix() != null) {
+      zeebeBroker.withEnv(
+          "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
+          testContext.getZeebeIndexPrefix());
+    }
   }
 
   public void stopZeebeAndTasklist(TestContext testContext) {

@@ -22,6 +22,7 @@
     <module>util</module>
     <module>integration-tests</module>
     <module>migration-tests</module>
+    <module>backup-restore-tests</module>
   </modules>
 
 </project>

@@ -8,7 +8,8 @@ package io.camunda.tasklist.property;
 
 public class ZeebeElasticsearchProperties extends ElasticsearchProperties {
 
-  private String prefix = "zeebe-record";
+  public static final String ZEEBE_INDEX_PREFIX_DEFAULT = "zeebe-record";
+  private String prefix = ZEEBE_INDEX_PREFIX_DEFAULT;
 
   public ZeebeElasticsearchProperties() {
     this.setDateFormat("yyyy-MM-dd"); // hard-coded, as not configurable on Zeebe side
