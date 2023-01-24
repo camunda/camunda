@@ -28,10 +28,12 @@ import io.camunda.zeebe.stream.api.MetadataFilter;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.ImmutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
+import io.camunda.zeebe.stream.impl.records.RecordBatchEntry;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.util.buffer.BufferReader;
@@ -152,6 +154,8 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
   private List<LogAppendEntry> toWriteEntries;
   private final int partitionId;
+  private int batchCommandLimit = -1;
+  private int batchCommandCount = 0;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -269,13 +273,16 @@ public final class ProcessingStateMachine {
             transientCommand.wrap(loggedEvent, metadata, value);
             final var commandPosition = typedCommand.getPosition();
 
+            batchCommandCount = 0;
             var index = 0;
             toProcessCmds.push(transientCommand);
-            while (!toProcessCmds.isEmpty()) {
+            while (!toProcessCmds.isEmpty()
+                && (batchCommandLimit < 0 || batchCommandCount < batchCommandLimit)) {
 
               //////////////////////////////////////////////////////
               ///////// PROCESSING
               //////////////////////////////////////////////////////
+              batchCommandCount += 1;
               final var nextToProcessedCommand = toProcessCmds.pollFirst();
               final var valueType = nextToProcessedCommand.getValueType();
               currentProcessor =
@@ -297,16 +304,40 @@ public final class ProcessingStateMachine {
               final List<LogAppendEntry> entries = recordBatch.entries();
               for (; index < entries.size(); index++) {
                 final var entry = entries.get(index);
+
                 if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
+
                   final TypedRecordImpl typedRecord = new TypedRecordImpl(partitionId);
                   typedRecord.wrap(
                       new MinimalLoggedEvent(entry), entry.recordMetadata(), entry.recordValue());
-                  toProcessCmds.add(typedRecord);
+                  if (batchCommandLimit < 0
+                      || batchCommandCount + toProcessCmds.size() < batchCommandLimit) {
+                    // There's no limit, or we haven't reached it yet. Command will be written and
+                    // processed.
+                    toProcessCmds.add(typedRecord);
+                    toWriteEntries.add(entry);
+                  } else {
+                    // Command will not be processed because it'd exceed the limit. Set a magic
+                    // source index and don't add it to the command queue.
+                    final var unprocessedEntry =
+                        RecordBatchEntry.createEntry(
+                            entry.key(),
+                            -2,
+                            entry.recordMetadata().getRecordType(),
+                            entry.recordMetadata().getIntent(),
+                            entry.recordMetadata().getRejectionType(),
+                            entry.recordMetadata().getRejectionReason(),
+                            entry.recordMetadata().getValueType(),
+                            entry.recordValue());
+                    toWriteEntries.add(unprocessedEntry);
+                  }
+                } else {
+                  toWriteEntries.add(entry);
                 }
-
-                toWriteEntries.add(entry);
               }
             }
+
+            toProcessCmds.forEach(cmd -> cmd.getSourceRecordPosition());
 
             lastProcessedPositionState.markAsProcessed(commandPosition);
           });
@@ -318,6 +349,7 @@ public final class ProcessingStateMachine {
         return;
       }
 
+      batchCommandLimit = -1;
       writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
@@ -329,6 +361,14 @@ public final class ProcessingStateMachine {
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
+    } catch (ExceededBatchRecordSizeException batchSizeException) {
+      if (batchCommandLimit < 0 && batchCommandCount > 1) {
+        // Not processing with limit and more than one command was processed.
+        // Let `onError` deal with setting a limit and then retry processing from the start.
+        onError(batchSizeException, () -> processCommand(currentRecord));
+      } else {
+        onError(batchSizeException, this::writeRecords);
+      }
     } catch (final Exception e) {
       onError(e, this::writeRecords);
     }
@@ -354,12 +394,32 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
           try {
-            errorHandlingInTransaction(processingException);
+            if (processingException instanceof ExceededBatchRecordSizeException
+                && batchCommandLimit < 0 // Already tried limiting, no sense trying again
+                && batchCommandCount > 1 // If first command failed we can't retry
+            ) {
+              retryInTransaction();
+            } else {
+              errorHandlingInTransaction(processingException);
+            }
 
             nextStep.run();
           } catch (final Exception ex) {
             onError(ex, nextStep);
           }
+        });
+  }
+
+  private void retryInTransaction() throws Exception {
+
+    zeebeDbTransaction = transactionContext.getCurrentTransaction();
+    zeebeDbTransaction.run(
+        () -> {
+          toWriteEntries.clear();
+          batchCommandLimit = batchCommandCount - 1;
+          LOG.warn(
+              "Batch processing exceeded maximum size, retrying by processing only {} commands",
+              batchCommandLimit);
         });
   }
 

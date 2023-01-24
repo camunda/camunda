@@ -60,6 +60,8 @@ public final class SequencedBatchSerializer {
     final long sourcePosition;
     if (entry.sourceIndex() >= 0 && entry.sourceIndex() < i) {
       sourcePosition = batch.firstPosition() + entry.sourceIndex();
+    } else if (entry.sourceIndex() == -2) {
+      sourcePosition = -1;
     } else {
       sourcePosition = batch.sourcePosition();
     }
