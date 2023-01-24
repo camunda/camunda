@@ -28,7 +28,9 @@ import java.time.Duration;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BooleanSupplier;
+import java.util.TreeMap;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
@@ -53,19 +55,14 @@ public final class AsyncSnapshotDirector extends Actor
   private final String actorName;
   private final StreamProcessorMode streamProcessorMode;
   private final Set<FailureListener> listeners = new HashSet<>();
-  private final BooleanSupplier isLastWrittenPositionCommitted;
-
-  private Long lastWrittenPosition;
-  private TransientSnapshot pendingSnapshot;
-  private long lowerBoundSnapshotPosition;
-  private CompletableActorFuture<PersistedSnapshot> snapshotFuture;
-  private boolean persistingSnapshot;
+  private final int partitionId;
+  private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
+  private CompletableActorFuture<PersistedSnapshot> ongoingSnapshotFuture;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
   private volatile HealthReport healthReport = HealthReport.healthy(this);
 
   private long commitPosition;
-  private final int partitionId;
 
   private AsyncSnapshotDirector(
       final int nodeId,
@@ -81,11 +78,6 @@ public final class AsyncSnapshotDirector extends Actor
     this.partitionId = partitionId;
     actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
     this.streamProcessorMode = streamProcessorMode;
-    if (streamProcessorMode == StreamProcessorMode.REPLAY) {
-      isLastWrittenPositionCommitted = () -> true;
-    } else {
-      isLastWrittenPositionCommitted = () -> lastWrittenPosition <= commitPosition;
-    }
   }
 
   @Override
@@ -105,8 +97,6 @@ public final class AsyncSnapshotDirector extends Actor
     final var firstSnapshotTime =
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
     actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
-
-    lastWrittenPosition = null;
   }
 
   @Override
@@ -187,8 +177,8 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private void scheduleSnapshotOnRate() {
-    actor.runAtFixedRate(snapshotRate, () -> prepareTakingSnapshot(new CompletableActorFuture<>()));
-    prepareTakingSnapshot(new CompletableActorFuture<>());
+    actor.runAtFixedRate(snapshotRate, this::trySnapshot);
+    trySnapshot();
   }
 
   /**
@@ -199,7 +189,7 @@ public final class AsyncSnapshotDirector extends Actor
    */
   public CompletableActorFuture<PersistedSnapshot> forceSnapshot() {
     final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
-    actor.call(() -> prepareTakingSnapshot(newSnapshotFuture));
+    actor.call(() -> trySnapshot().onComplete(newSnapshotFuture));
     return newSnapshotFuture;
   }
 
@@ -218,55 +208,151 @@ public final class AsyncSnapshotDirector extends Actor
     actor.run(() -> listeners.remove(failureListener));
   }
 
-  private void prepareTakingSnapshot(
-      final CompletableActorFuture<PersistedSnapshot> newSnapshotFuture) {
-    if (snapshotFuture != null) {
+  // Try taking a snapshot. Snapshot may be skipped if there is already an ongoing snapshot or if
+  // there is nothing to snapshot. Future is completed with null if the snapshot is skipped.
+  // Otherwise, future is completed with the committed snapshot, or completed exceptionally if
+  // snapshotting fails.
+  private ActorFuture<PersistedSnapshot> trySnapshot() {
+    if (ongoingSnapshotFuture != null) {
       LOG.debug("Already taking snapshot, skipping this request for a new snapshot");
-      newSnapshotFuture.complete(null);
-      return;
+      return CompletableActorFuture.completed(null);
     }
 
-    snapshotFuture = newSnapshotFuture;
-    final var futureLastProcessedPosition = streamProcessor.getLastProcessedPositionAsync();
-    actor.runOnCompletion(
-        futureLastProcessedPosition,
-        (lastProcessedPosition, error) -> {
-          if (error == null) {
-            if (lastProcessedPosition == StreamProcessor.UNSET_POSITION) {
-              LOG.debug(
-                  "We will skip taking this snapshot, because we haven't processed something yet.");
-              snapshotFuture.complete(null);
-              snapshotFuture = null;
-              return;
+    final CompletableActorFuture<PersistedSnapshot> snapshotFuture = new CompletableActorFuture<>();
+    ongoingSnapshotFuture = snapshotFuture;
+    final InProgressSnapshot inProgressSnapshot = new InProgressSnapshot();
+
+    streamProcessor
+        .getLastProcessedPositionAsync()
+        .onComplete(
+            (position, error) -> {
+              if (error != null) {
+                LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
+                snapshotFuture.completeExceptionally(error);
+              } else if (position == StreamProcessor.UNSET_POSITION) {
+                LOG.debug(
+                    "We will skip taking this snapshot, because we haven't processed anything yet.");
+                snapshotFuture.complete(null);
+              } else {
+                inProgressSnapshot.lowerBoundSnapshotPosition = position;
+                snapshot(inProgressSnapshot).onComplete(snapshotFuture);
+              }
+            });
+
+    snapshotFuture.onComplete(
+        (snapshot, snapshotError) -> {
+          if (snapshotError != null && inProgressSnapshot.pendingSnapshot != null) {
+            inProgressSnapshot.pendingSnapshot.abort();
+          }
+          // We allow only one ongoing snapshot. Reset the future to indicate there is
+          // no ongoing snapshot.
+          ongoingSnapshotFuture = null;
+        });
+    return snapshotFuture;
+  }
+
+  private ActorFuture<PersistedSnapshot> snapshot(final InProgressSnapshot inProgressSnapshot) {
+    final ActorFuture<Void> takeTransientSnapshotFuture = actor.createFuture();
+    final ActorFuture<Void> getLastWrittenPositionFuture = actor.createFuture();
+    final ActorFuture<Void> lastWrittenPositionCommittedFuture = actor.createFuture();
+    final ActorFuture<PersistedSnapshot> snapshotPersistedFuture = actor.createFuture();
+
+    takeTransientSnapshot(inProgressSnapshot).onComplete(takeTransientSnapshotFuture);
+
+    takeTransientSnapshotFuture.onComplete(
+        proceed(
+            getLastWrittenPositionFuture::completeExceptionally,
+            () ->
+                getLastWrittenPosition(inProgressSnapshot)
+                    .onComplete(getLastWrittenPositionFuture)));
+
+    getLastWrittenPositionFuture.onComplete(
+        proceed(
+            lastWrittenPositionCommittedFuture::completeExceptionally,
+            () ->
+                waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot)
+                    .onComplete(lastWrittenPositionCommittedFuture)));
+
+    lastWrittenPositionCommittedFuture.onComplete(
+        proceed(
+            snapshotPersistedFuture::completeExceptionally,
+            () -> persistSnapshot(inProgressSnapshot).onComplete(snapshotPersistedFuture)));
+
+    return snapshotPersistedFuture;
+  }
+
+  private ActorFuture<PersistedSnapshot> persistSnapshot(
+      final InProgressSnapshot inProgressSnapshot) {
+    final var snapshotPersisted =
+        inProgressSnapshot
+            .pendingSnapshot
+            .withLastFollowupEventPosition(inProgressSnapshot.lastWrittenPosition)
+            .persist();
+    snapshotPersisted.onComplete(
+        (snapshot, persistError) -> {
+          if (persistError != null) {
+            if (persistError instanceof SnapshotNotFoundException) {
+              LOG.warn(
+                  "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
+                  inProgressSnapshot.pendingSnapshot,
+                  persistError);
+            } else {
+              LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
             }
-
-            lowerBoundSnapshotPosition = lastProcessedPosition;
-            takeSnapshot();
-
-          } else {
-            LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
-            snapshotFuture.completeExceptionally(error);
-            snapshotFuture = null;
           }
         });
+    return snapshotPersisted;
   }
 
-  private void takeSnapshot() {
-    final var transientSnapshotFuture =
-        stateController.takeTransientSnapshot(lowerBoundSnapshotPosition);
-    transientSnapshotFuture.onComplete(
-        (transientSnapshot, snapshotTakenError) -> {
-          if (snapshotTakenError != null) {
-            logSnapshotTakenError(snapshotTakenError);
-            resetStateOnFailure(snapshotTakenError);
-            return;
-          }
-
-          onTransientSnapshotTaken(transientSnapshot);
-        });
+  private ActorFuture<Void> getLastWrittenPosition(final InProgressSnapshot inProgressSnapshot) {
+    final ActorFuture<Void> lastWrittenPositionReceived = new CompletableActorFuture<>();
+    streamProcessor
+        .getLastWrittenPositionAsync()
+        .onComplete(
+            (position, error) -> {
+              if (error != null) {
+                LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
+                lastWrittenPositionReceived.completeExceptionally(error);
+              } else {
+                inProgressSnapshot.lastWrittenPosition = position;
+                lastWrittenPositionReceived.complete(null);
+              }
+            });
+    return lastWrittenPositionReceived;
   }
 
-  private void logSnapshotTakenError(final Throwable snapshotTakenError) {
+  private ActorFuture<Void> waitUntilLastWrittenPositionIsCommitted(
+      final InProgressSnapshot inProgressSnapshot) {
+    if (streamProcessorMode == StreamProcessorMode.REPLAY
+        || commitPosition >= inProgressSnapshot.lastWrittenPosition) {
+      return CompletableActorFuture.completed(null);
+    } else {
+      LOG.info(
+          LOG_MSG_WAIT_UNTIL_COMMITTED, inProgressSnapshot.lastWrittenPosition, commitPosition);
+      return commitAwaiters.computeIfAbsent(
+          inProgressSnapshot.lastWrittenPosition, k -> new CompletableActorFuture<>());
+    }
+  }
+
+  private ActorFuture<Void> takeTransientSnapshot(final InProgressSnapshot inProgressSnapshot) {
+    final ActorFuture<Void> snapshotTaken = new CompletableActorFuture<>();
+    stateController
+        .takeTransientSnapshot(inProgressSnapshot.lowerBoundSnapshotPosition)
+        .onComplete(
+            (snapshot, error) -> {
+              if (error != null) {
+                logSnapshotTakenError(error);
+                snapshotTaken.completeExceptionally(error);
+              } else {
+                inProgressSnapshot.pendingSnapshot = snapshot;
+                snapshotTaken.complete(null);
+                onRecovered();
+              }
+            });
+    return snapshotTaken;
+  }
+
+  void logSnapshotTakenError(final Throwable snapshotTakenError) {
     if (snapshotTakenError instanceof SnapshotException.SnapshotAlreadyExistsException) {
       LOG.debug("Did not take a snapshot. {}", snapshotTakenError.getMessage());
     } else if (snapshotTakenError instanceof NoEntryAtSnapshotPosition
@@ -277,27 +363,6 @@ public final class AsyncSnapshotDirector extends Actor
           snapshotRate);
     } else {
       LOG.error("Failed to take a snapshot for {}", processorName, snapshotTakenError);
-    }
-  }
-
-  private void onTransientSnapshotTaken(final TransientSnapshot transientSnapshot) {
-
-    pendingSnapshot = transientSnapshot;
-    onRecovered();
-
-    final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
-    actor.runOnCompletion(lastWrittenPosition, this::onLastWrittenPositionReceived);
-  }
-
-  private void onLastWrittenPositionReceived(final Long endPosition, final Throwable error) {
-    if (error == null) {
-      LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
-      lastWrittenPosition = endPosition;
-      persistingSnapshot = false;
-      persistSnapshotIfLastWrittenPositionCommitted();
-    } else {
-      resetStateOnFailure(error);
-      LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
     }
   }
 
@@ -322,58 +387,34 @@ public final class AsyncSnapshotDirector extends Actor
     actor.run(
         () -> {
           commitPosition = currentCommitPosition;
-          persistSnapshotIfLastWrittenPositionCommitted();
+          final var futuresToComplete = commitAwaiters.headMap(commitPosition, true);
+          futuresToComplete.forEach((k, f) -> f.complete(null));
+          futuresToComplete.clear();
         });
   }
 
-  private void persistSnapshotIfLastWrittenPositionCommitted() {
-    if (pendingSnapshot != null
-        && lastWrittenPosition != null
-        && isLastWrittenPositionCommitted.getAsBoolean()
-        && !persistingSnapshot) {
-      persistingSnapshot = true;
-
-      LOG.debug(
-          "Current commit position {} >= {}, committing snapshot {}.",
-          commitPosition,
-          lastWrittenPosition,
-          pendingSnapshot);
-      final var snapshotPersistFuture =
-          pendingSnapshot.withLastFollowupEventPosition(lastWrittenPosition).persist();
-
-      snapshotPersistFuture.onComplete(
-          (snapshot, persistError) -> {
-            if (persistError != null) {
-              snapshotFuture.completeExceptionally(persistError);
-              if (persistError instanceof SnapshotNotFoundException) {
-                LOG.warn(
-                    "Failed to persist transient snapshot {}. Nothing to worry if a newer snapshot exists.",
-                    pendingSnapshot,
-                    persistError);
-              } else {
-                LOG.error(ERROR_MSG_MOVE_SNAPSHOT, persistError);
-              }
-            } else {
-              snapshotFuture.complete(snapshot);
-            }
-            lastWrittenPosition = null;
-            snapshotFuture = null;
-            pendingSnapshot = null;
-            persistingSnapshot = false;
-          });
+  private void resetStateOnFailure(final Throwable failure) {
+    if (ongoingSnapshotFuture != null && !ongoingSnapshotFuture.isDone()) {
+      ongoingSnapshotFuture.completeExceptionally(failure);
     }
+
+    ongoingSnapshotFuture = null;
   }
 
-  private void resetStateOnFailure(final Throwable failure) {
-    if (snapshotFuture != null && !snapshotFuture.isDone()) {
-      snapshotFuture.completeExceptionally(failure);
-    }
+  private BiConsumer<Void, Throwable> proceed(
+      final Consumer<Throwable> onError, final Runnable nextStep) {
+    return (ignore, error) -> {
+      if (error != null) {
+        onError.accept(error);
+      } else {
+        nextStep.run();
+      }
+    };
+  }
 
-    lastWrittenPosition = null;
-    snapshotFuture = null;
-    if (pendingSnapshot != null) {
-      pendingSnapshot.abort();
-      pendingSnapshot = null;
-    }
+  private static class InProgressSnapshot {
+    private long lastWrittenPosition;
+    private TransientSnapshot pendingSnapshot;
+    private long lowerBoundSnapshotPosition;
   }
 }
