@@ -132,12 +132,17 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                   {
                     cellContent: 'Flow Node',
                     isBold: true,
-                    width: '35%',
+                    width: '25%',
+                  },
+                  {
+                    cellContent: 'Instance Key',
+                    isBold: true,
+                    width: '25%',
                   },
                   {
                     cellContent: 'Affected Tokens',
                     isBold: true,
-                    width: '35%',
+                    width: '20%',
                   },
                   {
                     cellContent: '',
@@ -164,11 +169,11 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                             <TruncatedValueContainer>
                               {modification.operation === 'MOVE_TOKEN' ? (
                                 <>
-                                  <TruncatedValue>
+                                  <TruncatedValue $hasMultipleTruncatedValue>
                                     {modification.flowNode.name}
                                   </TruncatedValue>
                                   &nbsp;→&nbsp;
-                                  <TruncatedValue>
+                                  <TruncatedValue $hasMultipleTruncatedValue>
                                     {modification.targetFlowNode.name}
                                   </TruncatedValue>
                                 </>
@@ -176,6 +181,21 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                                 <TruncatedValue>
                                   {modification.flowNode.name}
                                 </TruncatedValue>
+                              )}
+                            </TruncatedValueContainer>
+                          ),
+                        },
+                        {
+                          id: 'instanceKey',
+                          cellContent: (
+                            <TruncatedValueContainer>
+                              {modification.operation === 'CANCEL_TOKEN' &&
+                              modification.flowNodeInstanceKey !== undefined ? (
+                                <TruncatedValue>
+                                  {modification.flowNodeInstanceKey}
+                                </TruncatedValue>
+                              ) : (
+                                <>--</>
                               )}
                             </TruncatedValueContainer>
                           ),

@@ -40,6 +40,7 @@ type FlowNodeModificationPayload =
   | {
       operation: 'MOVE_TOKEN';
       flowNode: {id: string; name: string};
+      flowNodeInstanceKey?: string;
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
@@ -246,7 +247,9 @@ class Modifications {
           !(
             type === 'token' &&
             payload.flowNode.id === flowNodeModification.flowNode.id &&
-            payload.operation === flowNodeModification.operation
+            payload.operation === flowNodeModification.operation &&
+            payload.flowNodeInstanceKey ===
+              flowNodeModification.flowNodeInstanceKey
           )
       );
     }

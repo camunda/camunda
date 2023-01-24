@@ -183,14 +183,41 @@ describe('Modification Summary Modal', () => {
     ).toBeInTheDocument();
 
     expect(
+      screen.getByRole('columnheader', {
+        name: /instance key/i,
+      })
+    ).toBeInTheDocument();
+
+    expect(
       screen.getByRole('cell', {
         name: /flow node 1 → flow node 2/i,
       })
     ).toBeInTheDocument();
 
     expect(
+      screen.getByRole('cell', {
+        name: /--/i,
+      })
+    ).toBeInTheDocument();
+
+    expect(
       screen.getByRole('columnheader', {
         name: /affected tokens/i,
+      })
+    ).toBeInTheDocument();
+
+    modificationsStore.removeLastModification();
+
+    modificationsStore.cancelToken('flow-node-1', 'some-instance-key');
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByRole('cell', {
+        name: /--/i,
+      })
+    );
+    expect(
+      screen.getByRole('cell', {
+        name: /some-instance-key/i,
       })
     ).toBeInTheDocument();
   });
@@ -229,6 +256,40 @@ describe('Modification Summary Modal', () => {
     ).toBeInTheDocument();
     expect(modificationsStore.flowNodeModifications).toEqual([]);
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
+  });
+
+  it('should delete cancel token modification applied on a single flow node instance key', async () => {
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={() => {}} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1');
+    modificationsStore.cancelToken('flow-node-1', 'some-instance-key-2');
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled()
+    );
+
+    const [deleteFirstModification] = screen.getAllByRole('button', {
+      name: 'Delete flow node modification',
+    });
+
+    await user.click(deleteFirstModification!);
+
+    expect(screen.queryByText('some-instance-key-1')).not.toBeInTheDocument();
+    expect(screen.getByText('some-instance-key-2')).toBeInTheDocument();
+
+    await user.click(
+      screen.getByRole('button', {name: 'Delete flow node modification'})
+    );
+    expect(screen.queryByText('some-instance-key-2')).not.toBeInTheDocument();
+
+    expect(
+      screen.getByText('No planned flow node modifications')
+    ).toBeInTheDocument();
   });
 
   it('should handle modal close', async () => {

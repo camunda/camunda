@@ -62,15 +62,29 @@ const TruncatedValueContainer = styled.div`
   display: flex;
 `;
 
-const TruncatedValue = styled.div`
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  overflow: hidden;
-  word-break: break-all;
-  &:first-child {
-    max-width: calc(50% - 6px);
-  }
+type TruncatedValueProps = {
+  $hasMultipleTruncatedValue?: boolean;
+};
+
+const TruncatedValue = styled.div<TruncatedValueProps>`
+  ${({$hasMultipleTruncatedValue}) => {
+    return css`
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
+      overflow: hidden;
+      word-break: break-all;
+      ${$hasMultipleTruncatedValue
+        ? css`
+            &:first-child {
+              max-width: calc(50% - 6px);
+            }
+          `
+        : css`
+            max-width: 80%;
+          `}
+    `;
+  }}
 `;
 
 const EmptyMessage = styled.div`
