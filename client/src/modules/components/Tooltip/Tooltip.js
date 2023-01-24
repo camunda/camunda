@@ -97,6 +97,7 @@ export default function Tooltip({
             ref={tooltip}
             onMouseEnter={() => window.clearTimeout(timeout.current)}
             onMouseLeave={() => setHovering(false)}
+            onClick={(e) => e.stopPropagation()}
           >
             {content}
           </div>,
