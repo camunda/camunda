@@ -45,6 +45,7 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -255,6 +256,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  @Disabled("Does not apply when batch processing")
   public void shouldWriteFollowUpEventsAndCommands() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
