@@ -10,14 +10,13 @@ import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 
 import {Button, Icon, Tooltip} from 'components';
-import {getRandomId} from 'services';
+import {getRandomId, getScreenBounds} from 'services';
 
 import './Popover.scss';
 
 export default class Popover extends React.Component {
   constructor(props) {
     super(props);
-    this.initilizeFooterRef();
 
     this.el = document.createElement('div');
     this.id = getRandomId();
@@ -90,23 +89,12 @@ export default class Popover extends React.Component {
     // in which case we do not want to close the popover
     setTimeout(() => {
       if (!(evt.popoverChain || []).includes(this.id) && this.mounted && !evt.insideClick) {
-        this.setState({
-          open: false,
-        });
+        this.setState({open: false});
       }
       this.calculateDialogStyle();
       evt.insideClick = false;
     });
   };
-
-  initilizeFooterRef() {
-    if (!this.footerRef) {
-      this.footerRef = document.body.querySelector('.Footer');
-    }
-    if (!this.headerRef) {
-      this.headerRef = document.body.querySelector('.Header');
-    }
-  }
 
   calculateDialogStyle = () => {
     const style = {};
@@ -116,9 +104,7 @@ export default class Popover extends React.Component {
       const overlayHeight = this.popoverDialogRef.clientHeight;
       const contentHeight = this.popoverContentRef.clientHeight;
       const buttonRect = this.buttonRef.getBoundingClientRect();
-      this.initilizeFooterRef();
-      const footerTop = this.footerRef?.getBoundingClientRect().top ?? window.innerHeight;
-      const headerBottom = this.headerRef?.getBoundingClientRect().bottom ?? 0;
+      const screenBounds = getScreenBounds();
 
       const bodyWidth = document.body.clientWidth;
       const margin = 10;
@@ -129,13 +115,16 @@ export default class Popover extends React.Component {
         style.left = 0;
       }
 
-      if (overlayHeight + buttonRect.bottom > footerTop - margin || contentHeight > overlayHeight) {
-        style.height = footerTop - buttonRect.bottom - 2 * margin + 'px';
+      if (
+        overlayHeight + buttonRect.bottom > screenBounds.bottom - margin ||
+        contentHeight > overlayHeight
+      ) {
+        style.height = screenBounds.bottom - buttonRect.bottom - 2 * margin + 'px';
         scrollable = true;
       }
 
-      const topSpace = buttonRect.bottom - headerBottom;
-      const bottomSpace = footerTop - buttonRect.bottom;
+      const topSpace = buttonRect.bottom - screenBounds.top;
+      const bottomSpace = screenBounds.bottom - buttonRect.bottom;
 
       if (this.props.renderInPortal && bottomSpace < overlayHeight && topSpace > bottomSpace) {
         // flip vertically

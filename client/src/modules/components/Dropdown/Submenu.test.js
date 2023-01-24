@@ -9,6 +9,7 @@ import React from 'react';
 import {shallow, mount} from 'enzyme';
 
 import {Icon} from 'components';
+import {getScreenBounds} from 'services';
 
 import Submenu from './Submenu';
 import DropdownOption from './DropdownOption';
@@ -25,6 +26,11 @@ jest.mock('./DropdownOption', () => {
 });
 
 jest.mock('./service', () => ({findLetterOption: jest.fn()}));
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  getScreenBounds: jest.fn().mockReturnValue({top: 0, bottom: 100}),
+}));
 
 console.error = jest.fn();
 
@@ -107,6 +113,7 @@ it('should open the submenu when right arrow is pressed', () => {
 });
 
 it('should shift the submenu up when there is no space available', () => {
+  getScreenBounds.mockReturnValueOnce({top: 10, bottom: 100});
   const node = mount(<Submenu />);
 
   node.instance().containerRef = {
@@ -120,16 +127,6 @@ it('should shift the submenu up when there is no space available', () => {
       getBoundingClientRect: () => ({top: 50}),
     },
   };
-
-  const footer = document.createElement('div');
-  footer.getBoundingClientRect = () => ({top: 100});
-  document.body.appendChild(footer);
-  node.instance().footerRef = footer;
-
-  const header = document.createElement('div');
-  header.getBoundingClientRect = () => ({bottom: 10});
-  document.body.appendChild(header);
-  node.instance().headerRef = header;
 
   node.instance().calculatePlacement();
   node.update();
