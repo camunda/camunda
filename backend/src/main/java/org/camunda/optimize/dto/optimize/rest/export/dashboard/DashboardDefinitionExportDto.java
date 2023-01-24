@@ -35,6 +35,7 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   @NotNull
   private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
+  private boolean isInstantPreviewDashboard = false;
 
   public DashboardDefinitionExportDto(final DashboardDefinitionRestDto dashboardDefinition) {
     super(

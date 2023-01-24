@@ -30,7 +30,7 @@ import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.archive.ProcessInstanceArchivingService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
-import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -38,6 +38,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.writer.AbstractProcessInstanceDataWriter;
+import org.camunda.optimize.service.es.writer.InstantDashboardMetadataWriter;
 import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.EventIndexRolloverService;
@@ -592,8 +593,12 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(ManagementDashboardService.class);
   }
 
-  public DashboardService getDashboardService() {
-    return getApplicationContext().getBean(DashboardService.class);
+  public InstantPreviewDashboardService getInstantPreviewDashboardService() {
+    return getApplicationContext().getBean(InstantPreviewDashboardService.class);
+  }
+
+  public InstantDashboardMetadataWriter getInstantPreviewDashboardWriter() {
+    return getApplicationContext().getBean(InstantDashboardMetadataWriter.class);
   }
 
   public CleanupScheduler getCleanupScheduler() {

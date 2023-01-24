@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate390To310.indices;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -25,9 +25,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWOR
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
-public class DashboardIndex extends DefaultIndexMappingCreator {
+public class DashboardIndex390 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 7;
+  public static final int VERSION = 6;
 
   public static final String ID = BaseDashboardDefinitionDto.Fields.id;
   public static final String NAME = BaseDashboardDefinitionDto.Fields.name;
@@ -39,7 +39,6 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String REPORTS = DashboardDefinitionRestDto.Fields.reports;
   public static final String COLLECTION_ID = BaseDashboardDefinitionDto.Fields.collectionId;
   public static final String MANAGEMENT_DASHBOARD = BaseDashboardDefinitionDto.Fields.managementDashboard;
-  public static final String INSTANT_PREVIEW_DASHBOARD = BaseDashboardDefinitionDto.Fields.instantPreviewDashboard;
   public static final String AVAILABLE_FILTERS = BaseDashboardDefinitionDto.Fields.availableFilters;
 
   public static final String POSITION = ReportLocationDto.Fields.position;
@@ -69,55 +68,52 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-     XContentBuilder newBuilder = xContentBuilder
+    XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(NAME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(LAST_MODIFIED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(CREATED)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(OWNER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(LAST_MODIFIER)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(REFRESH_RATE_SECONDS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(REPORTS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-          addNestedReportsField(newBuilder)
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+    addNestedReportsField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(COLLECTION_ID)
-        .field(MAPPING_PROPERTY_TYPE,TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE,TYPE_KEYWORD)
       .endObject()
       .startObject(MANAGEMENT_DASHBOARD)
-        .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
-      .endObject()
-      .startObject(INSTANT_PREVIEW_DASHBOARD)
-        .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
+      .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
       .endObject()
       .startObject(AVAILABLE_FILTERS)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
-        .startObject("properties")
-          .startObject(FILTER_TYPE)
-            .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
-          .endObject()
-          .startObject(FILTER_DATA)
-            .field("enabled", false)
-          .endObject()
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+      .startObject("properties")
+      .startObject(FILTER_TYPE)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(FILTER_DATA)
+      .field("enabled", false)
+      .endObject()
+      .endObject()
       .endObject();
     // @formatter:on
     return newBuilder;
@@ -127,22 +123,22 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-          addNestedPositionField(newBuilder)
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+    addNestedPositionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(DIMENSION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
-        .startObject("properties");
-          addNestedDimensionField(newBuilder)
-        .endObject()
+      .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
+      .startObject("properties");
+    addNestedDimensionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(CONFIGURATION)
-        .field("enabled", false)
+      .field("enabled", false)
       .endObject();
     // @formatter:on
     return newBuilder;
@@ -152,10 +148,10 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(X_POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(Y_POSITION)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }
@@ -164,10 +160,10 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(WIDTH)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(HEIGHT)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject();
     // @formatter:on
   }

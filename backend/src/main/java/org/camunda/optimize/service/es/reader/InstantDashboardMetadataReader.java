@@ -35,7 +35,7 @@ public class InstantDashboardMetadataReader {
     dashboardDataDto.setTemplateName(template);
     dashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
 
-    final String instantDashboardKey = dashboardDataDto.getId();
+    final String instantDashboardKey = dashboardDataDto.getInstantDashboardId();
     GetRequest getRequest = new GetRequest(INSTANT_DASHBOARD_INDEX_NAME).id(instantDashboardKey);
 
     GetResponse getResponse;

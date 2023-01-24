@@ -12,12 +12,20 @@ import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.xcontent.XContentType;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INSTANT_DASHBOARD_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -32,7 +40,7 @@ public class InstantDashboardMetadataWriter {
 
   public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {
     log.debug("Writing new instant dashboard to Elasticsearch");
-    String id = dashboardDataDto.getId();
+    String id = dashboardDataDto.getInstantDashboardId();
     try {
       IndexRequest request = new IndexRequest(INSTANT_DASHBOARD_INDEX_NAME)
         .id(id)
@@ -54,5 +62,29 @@ public class InstantDashboardMetadataWriter {
       throw new OptimizeRuntimeException(errorMessage, e);
     }
     log.debug("Instant dashboard information with id [{}] has been created", id);
+  }
+
+  public List<String> deleteOutdatedTemplateEntries(List<Long> hashesAllowed) throws IOException {
+
+    List<String> dashboardIdsToBeDeleted = new ArrayList<>();
+    SearchRequest searchRequest = new SearchRequest(INSTANT_DASHBOARD_INDEX_NAME);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery()
+    .mustNot(QueryBuilders.termsQuery(InstantDashboardDataDto.Fields.templateHash, hashesAllowed));
+    searchSourceBuilder.query(boolQueryBuilder);
+    searchRequest.source(searchSourceBuilder);
+
+    SearchResponse searchResponse = esClient.search(searchRequest);
+    searchResponse.getHits().forEach(hit -> {
+      dashboardIdsToBeDeleted.add((String)hit.getSourceAsMap().get(InstantDashboardDataDto.Fields.dashboardId));
+      DeleteRequest deleteRequest = new DeleteRequest(INSTANT_DASHBOARD_INDEX_NAME, hit.getId());
+      try {
+        esClient.delete(deleteRequest);
+      } catch (IOException e) {
+        log.error(String.format("There was an error deleting data from an outdated instant preview dashboard: %s",
+                                hit.getId()), e);
+      }
+    });
+    return dashboardIdsToBeDeleted;
   }
 }

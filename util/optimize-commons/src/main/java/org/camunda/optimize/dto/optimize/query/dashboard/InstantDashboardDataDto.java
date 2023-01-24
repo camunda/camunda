@@ -7,23 +7,27 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
+@FieldNameConstants
 public class InstantDashboardDataDto {
-  private String id;
+  private String instantDashboardId;
   private String processDefinitionKey;
   private String templateName = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-  private String templateHash;
+  private long templateHash;
   private String dashboardId;
 
-  public static final String INSTANT_DASHBOARD_DEFAULT_TEMPLATE = "default.json";
+  public static final String INSTANT_DASHBOARD_DEFAULT_TEMPLATE = "template1.json";
 
-  public String getId() {
-    if(templateName == null || templateName.isEmpty()) {
-      templateName = INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-    }
-    // remove any dots from the name
-    return processDefinitionKey + "_" + templateName.replaceAll("\\.","");
+  public String getInstantDashboardId() {
+    return processDefinitionKey + "_" + templateName.replace(".","");
+  }
+
+  public void setTemplateName(String templateName) {
+    this.templateName = StringUtils.isEmpty(templateName)
+      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : templateName;
   }
 }

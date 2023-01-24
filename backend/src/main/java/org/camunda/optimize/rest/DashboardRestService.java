@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -48,6 +49,7 @@ import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullS
 public class DashboardRestService {
 
   private final DashboardService dashboardService;
+  private final InstantPreviewDashboardService instantPreviewDashboardService;
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
@@ -127,7 +129,7 @@ public class DashboardRestService {
                                                                       @QueryParam("template") String dashboardJsonTemplateFilename) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
-    dashboardDefinition = dashboardService.getInstantPreviewDashboard(processDefinitionKey,
+    dashboardDefinition = instantPreviewDashboardService.getInstantPreviewDashboard(processDefinitionKey,
                                                                       dashboardJsonTemplateFilename,
                                                                       userId);
     dashboardRestMapper.prepareRestResponse(dashboardDefinition);
