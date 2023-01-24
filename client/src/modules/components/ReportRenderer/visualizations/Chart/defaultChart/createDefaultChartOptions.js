@@ -293,7 +293,8 @@ function createPieOptions(isDark, isGroupedByDuration, precision) {
     // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
     // we also need it to render the legends based on the hovered dataset in order to fade out only non hovered legends
     // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
-    const data = chart.data;
+    const {data, legend} = chart;
+    const {color} = legend.options.labels;
     let labels = data.labels;
 
     if (data.labels.length && data.datasets.length) {
@@ -309,7 +310,7 @@ function createPieOptions(isDark, isGroupedByDuration, precision) {
           strokeStyle: style.borderColor,
           lineWidth: style.borderWidth,
           hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
-
+          fontColor: color,
           // Extra data used for toggling the correct item
           index: i,
         };
