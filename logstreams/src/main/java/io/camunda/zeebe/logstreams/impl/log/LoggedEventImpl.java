@@ -59,6 +59,11 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   @Override
+  public boolean isProcessed() {
+    return LogEntryDescriptor.getProcessedMarker(buffer, messageOffset) != 0;
+  }
+
+  @Override
   public DirectBuffer getMetadata() {
     return buffer;
   }

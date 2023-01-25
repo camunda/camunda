@@ -624,6 +624,11 @@ public final class ProcessingStateMachine {
     }
 
     @Override
+    public boolean isProcessed() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public DirectBuffer getMetadata() {
       throw new UnsupportedOperationException();
     }

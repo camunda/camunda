@@ -38,7 +38,7 @@ import org.agrona.MutableDirectBuffer;
  *  |                           TIMESTAMP                           |
  *  |                                                               |
  *  +---------------------------------------------------------------+
- *  |        METADATA LENGTH         |       unused                 |
+ *  |        METADATA LENGTH         |       PROCESSED MARKER       |
  *  +---------------------------------------------------------------+
  *  |                         ...METADATA...                        |
  *  +---------------------------------------------------------------+
@@ -61,6 +61,7 @@ public final class LogEntryDescriptor {
   public static final int TIMESTAMP_OFFSET;
 
   public static final int METADATA_LENGTH_OFFSET;
+  public static final int PROCESSED_MARKER_OFFSET;
 
   public static final int HEADER_BLOCK_LENGTH;
 
@@ -90,7 +91,7 @@ public final class LogEntryDescriptor {
     METADATA_LENGTH_OFFSET = offset;
     offset += SIZE_OF_SHORT;
 
-    // UNUSED BLOCK
+    PROCESSED_MARKER_OFFSET = offset;
     offset += SIZE_OF_SHORT;
 
     HEADER_BLOCK_LENGTH = offset;
@@ -155,6 +156,19 @@ public final class LogEntryDescriptor {
   public static void setTimestamp(
       final MutableDirectBuffer buffer, final int offset, final long timestamp) {
     buffer.putLong(timestampOffset(offset), timestamp, Protocol.ENDIANNESS);
+  }
+
+  public static int processedMarkerOffset(final int offset) {
+    return PROCESSED_MARKER_OFFSET + offset;
+  }
+
+  public static short getProcessedMarker(final DirectBuffer buffer, final int offset) {
+    return buffer.getShort(processedMarkerOffset(offset), Protocol.ENDIANNESS);
+  }
+
+  public static void setProcessedMarker(
+      final MutableDirectBuffer buffer, final int offset, final short processedMarker) {
+    buffer.putShort(processedMarkerOffset(offset), processedMarker);
   }
 
   public static int metadataLengthOffset(final int offset) {

@@ -42,7 +42,8 @@ public final class SequencedBatchSerializer {
               entry,
               batch.firstPosition() + i,
               getSourcePosition(batch, i, entry),
-              batch.timestamp());
+              batch.timestamp(),
+              false);
       currentOffset += DataFrameDescriptor.alignedLength(framedLength);
     }
   }

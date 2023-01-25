@@ -11,6 +11,7 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOf
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setProcessedMarker;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
@@ -42,7 +43,8 @@ final class LogAppendEntrySerializer {
       final LogAppendEntry entry,
       final long position,
       final long sourcePosition,
-      final long entryTimestamp) {
+      final long entryTimestamp,
+      final boolean isProcessed) {
     Objects.requireNonNull(writeBuffer, "must specify a destination buffer");
     Objects.requireNonNull(entry, "must specify an entry");
 
@@ -92,6 +94,7 @@ final class LogAppendEntrySerializer {
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
     setTimestamp(writeBuffer, entryOffset, entryTimestamp);
+    setProcessedMarker(writeBuffer, entryOffset, (short) (isProcessed ? 1 : 0));
     setMetadataLength(writeBuffer, entryOffset, (short) metadataLength);
     metadata.write(writeBuffer, metadataOffset(entryOffset));
     value.write(writeBuffer, valueOffset(entryOffset, metadataLength));

@@ -28,7 +28,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = TestEntry.ofKey(1);
 
     // when
-    serializer.serialize(writeBuffer, 0, entry, 2, 3, 4);
+    serializer.serialize(writeBuffer, 0, entry, 2, 3, 4, false);
 
     // then
     event.wrap(writeBuffer, 0);
@@ -46,7 +46,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = TestEntry.builder().withRecordMetadata(null).build();
 
     // then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4, false))
         .isInstanceOf(NullPointerException.class);
   }
 
@@ -57,7 +57,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = TestEntry.builder().withRecordValue(null).build();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, 4, false))
         .isInstanceOf(NullPointerException.class);
   }
 
@@ -68,7 +68,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = TestEntry.ofDefaults();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, -1))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, 2, 3, -1, false))
         .isInstanceOf(IllegalArgumentException.class);
   }
 
@@ -79,7 +79,7 @@ final class LogAppendEntrySerializerTest {
     final var entry = TestEntry.ofDefaults();
 
     // when - then
-    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, -1, 3, 4))
+    assertThatCode(() -> serializer.serialize(writeBuffer, 0, entry, -1, 3, 4, false))
         .isInstanceOf(IllegalArgumentException.class);
   }
 }
