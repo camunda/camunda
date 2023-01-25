@@ -337,8 +337,6 @@ public final class ProcessingStateMachine {
               }
             }
 
-            toProcessCmds.forEach(cmd -> cmd.getSourceRecordPosition());
-
             lastProcessedPositionState.markAsProcessed(commandPosition);
           });
 
