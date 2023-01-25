@@ -2,7 +2,7 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 ARG BASE_DIGEST_AMD64="sha256:e0835d0b51dfc2bd8f3b97ff7d819d1e7d09ab906309ae8d2b3e9395a6c60a2f"
-ARG BASE_DIGEST_ARM64="sha256:b10a9774578bd45ab68cd48f850cc09f49690606e4e9ead0babdee522f4fa5c7"
+ARG BASE_DIGEST_ARM64="sha256:dac99a547dae7b46de7f0c34f57002094e054724058e8c9f51243d53286bf89e"
 
 #### Builder image ####
 FROM ubuntu:jammy as builder
