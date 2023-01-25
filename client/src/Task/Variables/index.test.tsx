@@ -329,7 +329,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable value/i),
-      ).toHaveAccessibleDescription(/value has to be json/i),
+      ).toHaveAccessibleDescription(/value has to be json or a literal/i),
     );
   });
 
@@ -367,7 +367,7 @@ describe('<Variables />', () => {
     );
     expect(
       screen.getByLabelText(/1st variable value/i),
-    ).toHaveAccessibleDescription(/value has to be json/i);
+    ).toHaveAccessibleDescription(/value has to be json or a literal/i);
   });
 
   it('should not validate valid variables', async () => {
@@ -402,13 +402,15 @@ describe('<Variables />', () => {
     );
 
     expect(
-      screen.queryByTitle(/name has to filled and value has to be json/i),
+      screen.queryByTitle(
+        /name has to filled and value has to be json or a literal/i,
+      ),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByTitle(/name has to be filled/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByTitle(/value has to be json/i),
+      screen.queryByTitle(/value has to be json or a literal/i),
     ).not.toBeInTheDocument();
   });
 
@@ -654,7 +656,7 @@ describe('<Variables />', () => {
 
     await waitFor(() =>
       expect(screen.getByLabelText('myVar')).toHaveAccessibleDescription(
-        /value has to be json/i,
+        /value has to be json or a literal/i,
       ),
     );
 
@@ -690,7 +692,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(
         screen.getByLabelText(/1st variable value/i),
-      ).toHaveAccessibleDescription(/value has to be json/i),
+      ).toHaveAccessibleDescription(/value has to be json or a literal/i),
     );
 
     expect(screen.getByText(/complete task/i)).toBeDisabled();
@@ -860,7 +862,7 @@ describe('<Variables />', () => {
       await waitFor(() =>
         expect(
           screen.getByLabelText(/1st variable value/i),
-        ).toHaveAccessibleDescription(/value has to be json/i),
+        ).toHaveAccessibleDescription(/value has to be json or a literal/i),
       );
       expect(
         screen.getByLabelText(/1st variable name/i),

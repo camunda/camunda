@@ -240,7 +240,7 @@ describe('Validators', () => {
                 name: `newVariables[0].value`,
               },
             ),
-          ).resolves.toBe('Value has to be JSON');
+          ).resolves.toBe('Value has to be JSON or a literal');
         },
       );
     });
@@ -280,7 +280,7 @@ describe('Validators', () => {
                 name: 'newVariables[0].value',
               },
             ),
-          ).resolves.toBe('Value has to be JSON');
+          ).resolves.toBe('Value has to be JSON or a literal');
         },
       );
     });

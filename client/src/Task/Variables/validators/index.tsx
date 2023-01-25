@@ -17,7 +17,7 @@ const ERROR_MESSAGES = {
   invalidName: 'Name is invalid',
   emptyName: 'Name has to be filled',
   duplicateName: 'Name must be unique',
-  invalidValue: 'Value has to be JSON',
+  invalidValue: 'Value has to be JSON or a literal',
 } as const;
 
 const VALIDATION_DELAY = 1000;
