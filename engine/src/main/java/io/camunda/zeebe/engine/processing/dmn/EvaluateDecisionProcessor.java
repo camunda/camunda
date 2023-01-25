@@ -27,7 +27,7 @@ import io.camunda.zeebe.util.collection.Tuple;
 public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionEvaluationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =
-      "Expected either a decision id or a valid decision key, but none or both provided";
+      "Expected either a decision id or a valid decision key, but none provided";
 
   private final DecisionBehavior decisionBehavior;
   private final TypedRejectionWriter rejectionWriter;
@@ -91,19 +91,14 @@ public class EvaluateDecisionProcessor implements TypedRecordProcessor<DecisionE
     final String decisionId = record.getDecisionId();
     final long decisionKey = record.getDecisionKey();
 
-    final var decisionIdProvided = !decisionId.isEmpty();
-    final var decisionKeyProvided = decisionKey != -1L;
-
-    if (decisionIdProvided == decisionKeyProvided) {
-      // XNOR if both ID and KEY are provided/missing
-      return Either.left(new Failure(ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
-    }
-
-    if (decisionIdProvided) {
+    if (!decisionId.isEmpty()) {
       return decisionBehavior.findDecisionById(decisionId);
       // TODO: expand DecisionState API to find decisions by ID AND VERSION (#11230)
-    } else {
+    } else if (decisionKey > -1L) {
       return decisionBehavior.findDecisionByKey(decisionKey);
+    } else {
+      // if both ID and KEY are missing
+      return Either.left(new Failure(ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED));
     }
   }
 }
