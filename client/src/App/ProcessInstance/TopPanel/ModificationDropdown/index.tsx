@@ -15,6 +15,7 @@ import {
   CancelIcon,
   Unsupported,
   SelectedInstanceCount,
+  Spinner,
 } from './styled';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {observer} from 'mobx-react';
@@ -65,6 +66,9 @@ const ModificationDropdown: React.FC<Props> = observer(
         <Title>Flow Node Modifications</Title>
         <Options>
           {(() => {
+            if (flowNodeMetaDataStore.state.status === 'fetching') {
+              return <Spinner data-testid="dropdown-spinner" />;
+            }
             if (!canBeModified) {
               return <Unsupported>Unsupported flow node type</Unsupported>;
             }

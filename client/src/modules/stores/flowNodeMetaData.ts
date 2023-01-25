@@ -28,10 +28,12 @@ import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsSta
 
 type State = {
   metaData: MetaDataDto | null;
+  status: 'initial' | 'fetching' | 'fetched' | 'error';
 };
 
 const DEFAULT_STATE: State = {
   metaData: null,
+  status: 'initial',
 };
 
 class FlowNodeMetaData extends NetworkReconnectionHandler {
@@ -46,6 +48,9 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
       hasMultipleInstances: computed,
       isSelectedInstanceRunning: computed,
       reset: override,
+      startFetching: action,
+      handleSuccess: action,
+      handleError: action,
     });
   }
 
@@ -59,6 +64,18 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
         }
       }
     );
+  };
+  startFetching = () => {
+    this.state.status = 'fetching';
+  };
+
+  handleSuccess = (metaData: MetaDataDto | null) => {
+    this.state.status = 'fetched';
+    this.setMetaData(metaData);
+  };
+
+  handleError = () => {
+    this.state.status = 'error';
   };
 
   setMetaData = (metaData: MetaDataDto | null) => {
@@ -111,6 +128,8 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
         return;
       }
 
+      this.startFetching();
+
       const response = await fetchFlowNodeMetaData({
         flowNodeId,
         processInstanceId,
@@ -132,7 +151,9 @@ class FlowNodeMetaData extends NetworkReconnectionHandler {
           };
         }
 
-        this.setMetaData(metaData);
+        this.handleSuccess(metaData);
+      } else {
+        this.handleError();
       }
     }
   );

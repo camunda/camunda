@@ -12,6 +12,7 @@ import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as Plus} from 'modules/components/Icon/plus.svg';
 import {styles} from '@carbon/elements';
 import {Popover as DefaultPopover} from 'modules/components/Popover';
+import {Spinner as BaseSpinner} from 'modules/components/Spinner';
 
 const iconStyle = css`
   margin-right: 8px;
@@ -81,6 +82,13 @@ const SelectedInstanceCount = styled.div`
   font-style: italic;
 `;
 
+const Spinner = styled(BaseSpinner)`
+  margin: 10px 0 15px 0;
+  align-self: center;
+  height: 16px;
+  width: 16px;
+`;
+
 export {
   Popover,
   Title,
@@ -91,4 +99,5 @@ export {
   CancelIcon,
   Unsupported,
   SelectedInstanceCount,
+  Spinner,
 };

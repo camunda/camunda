@@ -97,6 +97,10 @@ describe('Modification Dropdown', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
   });
 
+  afterEach(() => {
+    flowNodeMetaDataStore.reset();
+  });
+
   it('should not render dropdown when no flow node is selected', async () => {
     renderPopover();
 
@@ -378,6 +382,37 @@ describe('Modification Dropdown', () => {
     await waitForElementToBeRemoved(() => expect(screen.getByText(/Add/)));
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+  });
+
+  it('should display spinner when loading meta data', async () => {
+    flowNodeMetaDataStore.init();
+
+    renderPopover();
+
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
+
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: 'some-instance-key',
+    });
+
+    expect(await screen.findByTestId('dropdown-spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('dropdown-spinner')
+    );
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(screen.getByText(/Move all/)).toBeInTheDocument();
+    if (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED) {
+      expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
+    } else {
+      expect(screen.getByText(/Cancel all/)).toBeInTheDocument();
+    }
   });
 
   (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
