@@ -75,7 +75,7 @@
     "jest-environment-jsdom-fifteen": "1.0.2",
     "lint-staged": "13.1.0",
     "monaco-editor": "0.34.1",
-    "msw": "0.49.2",
+    "msw": "1.0.0",
     "prettier": "2.8.2",
     "react-scripts": "4.0.3",
     "source-map-explorer": "2.5.3",
