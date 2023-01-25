@@ -103,6 +103,8 @@ public class ElasticsearchExporterConfiguration {
         return index.signal;
       case SIGNAL_SUBSCRIPTION:
         return index.signalSubscription;
+      case RESOURCE_DELETION:
+        return index.resourceDeletion;
       default:
         return false;
     }
@@ -160,6 +162,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean escalation = true;
     public boolean signal = true;
     public boolean signalSubscription = true;
+    public boolean resourceDeletion = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -243,6 +246,8 @@ public class ElasticsearchExporterConfiguration {
           + signal
           + ", signalSubscription="
           + signalSubscription
+          + ", resourceDeletion="
+          + resourceDeletion
           + '}';
     }
   }
