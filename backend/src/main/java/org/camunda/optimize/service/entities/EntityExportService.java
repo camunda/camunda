@@ -14,7 +14,6 @@ import org.camunda.optimize.service.entities.report.ReportExportService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
 import java.util.List;
 import java.util.Set;
 
@@ -33,7 +32,6 @@ public class EntityExportService {
 
   public List<ReportDefinitionExportDto> getReportExportDtosAsUser(final String userId,
                                                                    final Set<String> reportIds) {
-    validateUserAuthorizedToExportOrFail(userId);
     return reportExportService.getReportExportDtosAsUser(userId, reportIds);
   }
 
@@ -42,19 +40,8 @@ public class EntityExportService {
   }
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExportAsUser(final String userId,
-                                                                        final Set<String> dashboardIds) {
-    validateUserAuthorizedToExportOrFail(userId);
-    return dashboardExportService.getCompleteDashboardExport(userId, dashboardIds);
+                                                                        final String dashboardId) {
+    return dashboardExportService.getCompleteDashboardExport(userId, dashboardId);
   }
 
-  private void validateUserAuthorizedToExportOrFail(final String userId) {
-    if (!identityService.isSuperUserIdentity(userId)) {
-      throw new ForbiddenException(
-        String.format(
-          "User with ID [%s] is not authorized to export reports. Only superusers are authorized to export entities.",
-          userId
-        )
-      );
-    }
-  }
 }
