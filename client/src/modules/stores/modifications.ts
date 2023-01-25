@@ -571,7 +571,9 @@ class Modifications {
           ...modifications,
           {
             modification: payload.operation,
-            fromFlowNodeId: payload.flowNode.id,
+            ...(payload.flowNodeInstanceKey === undefined
+              ? {fromFlowNodeId: payload.flowNode.id}
+              : {fromFlowNodeInstanceKey: payload.flowNodeInstanceKey}),
           },
         ];
       }

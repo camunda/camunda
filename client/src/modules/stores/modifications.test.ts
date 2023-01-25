@@ -1281,6 +1281,8 @@ describe('stores/modifications', () => {
       },
     });
 
+    modificationsStore.cancelToken('flow_node_5', 'some_instance_key');
+
     expect(modificationsStore.generateModificationsPayload()).toEqual([
       {
         modification: 'ADD_TOKEN',
@@ -1319,6 +1321,10 @@ describe('stores/modifications', () => {
             },
           ],
         },
+      },
+      {
+        fromFlowNodeInstanceKey: 'some_instance_key',
+        modification: 'CANCEL_TOKEN',
       },
       {
         modification: 'ADD_VARIABLE',
