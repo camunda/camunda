@@ -25,6 +25,8 @@ public interface LogAppendEntry {
    */
   int sourceIndex();
 
+  boolean needsProcessing();
+
   /**
    * @return metadata of the record, like ValueType, Intent, RecordType etc.
    */
@@ -62,6 +64,7 @@ public interface LogAppendEntry {
     return new LogAppendEntryImpl(
         LogEntryDescriptor.KEY_NULL_VALUE,
         -1,
+        true,
         Objects.requireNonNull(recordMetadata, "must specify metadata"),
         Objects.requireNonNull(recordValue, "must specify value"));
   }
@@ -81,6 +84,7 @@ public interface LogAppendEntry {
     return new LogAppendEntryImpl(
         key,
         -1,
+        true,
         Objects.requireNonNull(recordMetadata, "must specify metadata"),
         Objects.requireNonNull(recordValue, "must specify value"));
   }

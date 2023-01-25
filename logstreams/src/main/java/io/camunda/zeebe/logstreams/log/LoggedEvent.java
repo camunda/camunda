@@ -37,7 +37,7 @@ public interface LoggedEvent extends BufferWriter {
   /**
    * @return true if event is already processed, false otherwise.
    */
-  boolean isProcessed();
+  boolean needsProcessing();
 
   /**
    * @return a buffer containing the event's metadata at offset {@link #getMetadataOffset()} and

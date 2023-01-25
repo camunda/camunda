@@ -219,7 +219,7 @@ public final class ProcessingStateMachine {
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
-      if (currentRecord.getSourceEventPosition() <= 0 && eventFilter.applies(currentRecord)) {
+      if (currentRecord.needsProcessing() && eventFilter.applies(currentRecord)) {
         processCommand(currentRecord);
       } else {
         skipRecord();
@@ -303,36 +303,39 @@ public final class ProcessingStateMachine {
 
               final List<LogAppendEntry> entries = recordBatch.entries();
               for (; index < entries.size(); index++) {
-                final var entry = entries.get(index);
+                final var entryThatNeedsProcessing = entries.get(index);
+                final var entryThatIsProcessed =
+                    RecordBatchEntry.createEntry(
+                        entryThatNeedsProcessing.key(),
+                        entryThatNeedsProcessing.sourceIndex(),
+                        false,
+                        entryThatNeedsProcessing.recordMetadata().getRecordType(),
+                        entryThatNeedsProcessing.recordMetadata().getIntent(),
+                        entryThatNeedsProcessing.recordMetadata().getRejectionType(),
+                        entryThatNeedsProcessing.recordMetadata().getRejectionReason(),
+                        entryThatNeedsProcessing.recordMetadata().getValueType(),
+                        entryThatNeedsProcessing.recordValue());
 
-                if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
+                if (entryThatIsProcessed.recordMetadata().getRecordType() == RecordType.COMMAND) {
 
                   final TypedRecordImpl typedRecord = new TypedRecordImpl(partitionId);
                   typedRecord.wrap(
-                      new MinimalLoggedEvent(entry), entry.recordMetadata(), entry.recordValue());
+                      new MinimalLoggedEvent(entryThatIsProcessed),
+                      entryThatIsProcessed.recordMetadata(),
+                      entryThatIsProcessed.recordValue());
                   if (batchCommandLimit < 0
                       || batchCommandCount + toProcessCmds.size() < batchCommandLimit) {
                     // There's no limit, or we haven't reached it yet. Command will be written and
                     // processed.
                     toProcessCmds.add(typedRecord);
-                    toWriteEntries.add(entry);
+                    toWriteEntries.add(entryThatIsProcessed);
                   } else {
-                    // Command will not be processed because it'd exceed the limit. Set a magic
-                    // source index and don't add it to the command queue.
-                    final var unprocessedEntry =
-                        RecordBatchEntry.createEntry(
-                            entry.key(),
-                            -2,
-                            entry.recordMetadata().getRecordType(),
-                            entry.recordMetadata().getIntent(),
-                            entry.recordMetadata().getRejectionType(),
-                            entry.recordMetadata().getRejectionReason(),
-                            entry.recordMetadata().getValueType(),
-                            entry.recordValue());
-                    toWriteEntries.add(unprocessedEntry);
+                    // Command will not be processed because it'd exceed the limit. Set's
+                    // `needsProcessing` to false which should enable processing.
+                    toWriteEntries.add(entryThatNeedsProcessing);
                   }
                 } else {
-                  toWriteEntries.add(entry);
+                  toWriteEntries.add(entryThatIsProcessed);
                 }
               }
             }
@@ -624,7 +627,7 @@ public final class ProcessingStateMachine {
     }
 
     @Override
-    public boolean isProcessed() {
+    public boolean needsProcessing() {
       throw new UnsupportedOperationException();
     }
 

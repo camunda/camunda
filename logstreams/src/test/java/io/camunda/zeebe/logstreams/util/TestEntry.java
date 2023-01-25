@@ -31,6 +31,11 @@ public record TestEntry(
     return new TestLogAppendEntryBuilder().withKey(key).build();
   }
 
+  @Override
+  public boolean needsProcessing() {
+    return true;
+  }
+
   public static final class TestEntryAssert
       extends AbstractObjectAssert<TestEntryAssert, LogAppendEntry> {
 

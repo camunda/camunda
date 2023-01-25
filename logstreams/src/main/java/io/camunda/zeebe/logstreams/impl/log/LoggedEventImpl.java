@@ -59,7 +59,7 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   @Override
-  public boolean isProcessed() {
+  public boolean needsProcessing() {
     return LogEntryDescriptor.getProcessedMarker(buffer, messageOffset) != 0;
   }
 

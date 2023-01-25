@@ -11,5 +11,9 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
 record LogAppendEntryImpl(
-    long key, int sourceIndex, RecordMetadata recordMetadata, UnifiedRecordValue recordValue)
+    long key,
+    int sourceIndex,
+    boolean needsProcessing,
+    RecordMetadata recordMetadata,
+    UnifiedRecordValue recordValue)
     implements LogAppendEntry {}

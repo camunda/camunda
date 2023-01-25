@@ -178,6 +178,11 @@ public final class RecordToWrite implements LogAppendEntry {
   }
 
   @Override
+  public boolean needsProcessing() {
+    return true;
+  }
+
+  @Override
   public RecordMetadata recordMetadata() {
     return recordMetadata;
   }
