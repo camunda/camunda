@@ -34,9 +34,10 @@ final class ProcessInstanceModifiedEventApplier
 
   @Override
   public void applyState(final long key, final ProcessInstanceModificationRecord value) {
-    if (value.hasActivateInstructions()) {
+    final var processInstance = elementInstanceState.getInstance(value.getProcessInstanceKey());
+    if (processInstance != null && value.hasActivateInstructions()) {
       clearInterruptedState(value);
-      incrementNumberOfTakenSequenceFlows(value);
+      incrementNumberOfTakenSequenceFlows(value, processInstance);
     }
   }
 
@@ -53,9 +54,8 @@ final class ProcessInstanceModifiedEventApplier
                     instance.getKey(), ElementInstance::clearInterruptedState));
   }
 
-  private void incrementNumberOfTakenSequenceFlows(final ProcessInstanceModificationRecord value) {
-    final ElementInstance processInstance =
-        elementInstanceState.getInstance(value.getProcessInstanceKey());
+  private void incrementNumberOfTakenSequenceFlows(
+      final ProcessInstanceModificationRecord value, final ElementInstance processInstance) {
     final var process =
         processState
             .getProcessByKey(processInstance.getValue().getProcessDefinitionKey())
