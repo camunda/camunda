@@ -1,7 +1,7 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-ARG BASE_DIGEST_AMD64="sha256:e0835d0b51dfc2bd8f3b97ff7d819d1e7d09ab906309ae8d2b3e9395a6c60a2f"
+ARG BASE_DIGEST_AMD64="sha256:d1c582c712e8ae049014a3e81296c522360949cbac7ade7e50a0d4d310706066"
 ARG BASE_DIGEST_ARM64="sha256:dac99a547dae7b46de7f0c34f57002094e054724058e8c9f51243d53286bf89e"
 
 #### Builder image ####
