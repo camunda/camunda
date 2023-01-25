@@ -35,7 +35,7 @@ jobs:
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@77bab83f42b86821dde147c13046e13536178143
+      uses: hashicorp/vault-action@8fa61e909919a3f94952e9e07ace6b5a1114440b
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -121,7 +121,7 @@ jobs:
     # Setup: import secrets from vault
     - name: Import secrets
       id: secrets
-      uses: hashicorp/vault-action@77bab83f42b86821dde147c13046e13536178143
+      uses: hashicorp/vault-action@8fa61e909919a3f94952e9e07ace6b5a1114440b
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
