@@ -67,6 +67,7 @@ public class ModifyProcessInstanceRequestDto {
     private String fromFlowNodeInstanceKey;
     private String toFlowNodeId;
     private Long scopeKey;
+    private Long ancestorElementInstanceKey;
     private Integer newTokensCount;
     private Map<String,Object> variables;
 
@@ -143,6 +144,15 @@ public class ModifyProcessInstanceRequestDto {
       return this;
     }
 
+    public Long getAncestorElementInstanceKey() {
+      return ancestorElementInstanceKey;
+    }
+
+    public Modification setAncestorElementInstanceKey(Long ancestorElementInstanceKey) {
+      this.ancestorElementInstanceKey = ancestorElementInstanceKey;
+      return this;
+    }
+
     @Override public boolean equals(Object o) {
       if (this == o)
         return true;
@@ -152,18 +162,20 @@ public class ModifyProcessInstanceRequestDto {
       return modification == that.modification && Objects.equals(fromFlowNodeId, that.fromFlowNodeId) && Objects.equals(
           toFlowNodeId, that.toFlowNodeId) && Objects.equals(scopeKey, that.scopeKey) && Objects.equals(newTokensCount,
           that.newTokensCount) && Objects.equals(variables, that.variables)
-          && Objects.equals(fromFlowNodeInstanceKey, that.fromFlowNodeInstanceKey);
+          && Objects.equals(fromFlowNodeInstanceKey, that.fromFlowNodeInstanceKey)
+          && Objects.equals(ancestorElementInstanceKey, that.ancestorElementInstanceKey);
     }
 
     @Override public int hashCode() {
       return Objects.hash(modification, fromFlowNodeId, toFlowNodeId, scopeKey, newTokensCount, variables,
-          fromFlowNodeInstanceKey);
+          fromFlowNodeInstanceKey, ancestorElementInstanceKey);
     }
 
     @Override public String toString() {
       return "Modification{" + "modification=" + modification + ", fromFlowNodeId='" + fromFlowNodeId + '\''
           + ", toFlowNodeId='" + toFlowNodeId + '\'' + ", scopeKey=" + scopeKey + ", newTokensCount=" + newTokensCount
-          + ", variables=" + variables + ", fromFlowNodeInstanceKey=" + fromFlowNodeInstanceKey + "}";
+          + ", variables=" + variables + ", fromFlowNodeInstanceKey=" + fromFlowNodeInstanceKey + "}"
+          + ", ancestorElementInstanceKey=" + ancestorElementInstanceKey + "}";
     }
   }
 }

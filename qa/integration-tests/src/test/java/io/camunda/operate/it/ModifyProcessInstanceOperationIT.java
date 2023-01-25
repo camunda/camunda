@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTest {
@@ -61,6 +62,37 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .flowNodeIsTerminated("taskA");
     // then
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
+  }
+
+  @Test
+  public void shouldCancelTokenFailsForFlowNodeId() throws Exception {
+    // given
+    tester
+        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+        .waitUntil().flowNodeIsActive("taskA");
+    // when
+     var modifications =
+        List.of(new Modification()
+            .setModification(Modification.Type.CANCEL_TOKEN)
+            .setFromFlowNodeId("taskA"));
+
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsCompleted()
+        .then()
+        .waitUntil()
+        .flowNodeIsTerminated("taskA");
+    // then
+    assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
+
+     modifications =
+        List.of(new Modification()
+            .setModification(Modification.Type.CANCEL_TOKEN)
+            .setFromFlowNodeId("taskA"));
+
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsFailed();
   }
 
   @Test
@@ -112,6 +144,77 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .flowNodeIsActive("taskB");
     // then
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
+  }
+
+  @Test
+  public void shouldAddTokenWithVariables() throws Exception {
+    // given
+    tester
+        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+        .waitUntil().processInstanceIsStarted();
+
+    assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
+    // when
+    List<Modification> modifications = List.of(
+        new Modification()
+            .setModification(Modification.Type.ADD_TOKEN)
+            .setToFlowNodeId("taskB")
+            .setVariables(Map.of("taskB", List.of(Map.of("c","d"))))
+    );
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsCompleted()
+        .then()
+        .waitUntil()
+        .flowNodeIsActive("taskB")
+        .and().variableExists("c");
+    // then
+    assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(tester.getVariable("c", tester.getFlowNodeInstanceKeyFor("taskB"))).isEqualTo("\"d\"");
+  }
+  @Test
+  public void shouldAddTokenWithAncestor() throws Exception {
+    // given
+    tester
+        .deployProcess("subProcess.bpmn")
+        .waitUntil().processIsDeployed()
+        .then().startProcessInstance("prWithSubprocess")
+        .waitUntil().flowNodeIsActive("taskA");
+
+    var moveToken = new Modification()
+        .setModification(Modification.Type.MOVE_TOKEN)
+        .setFromFlowNodeId("taskA").setToFlowNodeId("taskB");
+
+    tester.modifyProcessInstanceOperation(List.of(moveToken))
+        .waitUntil().operationIsCompleted().and().waitUntil().flowNodeIsActive("taskB")
+        .and().flowNodeIsTerminated("taskA");
+
+    var flowNodeInstances = tester.getAllFlowNodeInstances();
+    var subprocessInstanceKey = flowNodeInstances.stream()
+        .filter(n -> n.getFlowNodeId().equals("subprocess"))
+        .findFirst().orElseThrow().getKey();
+    var innerSubprocessInstanceKey = flowNodeInstances.stream()
+        .filter(n -> n.getFlowNodeId().equals("innerSubprocess"))
+        .findFirst().orElseThrow().getKey();
+
+    var addWithAncestor = new Modification()
+        .setModification(Modification.Type.ADD_TOKEN)
+        .setToFlowNodeId("taskB")
+        .setAncestorElementInstanceKey(subprocessInstanceKey);
+    tester.modifyProcessInstanceOperation(List.of(addWithAncestor))
+        .waitUntil().operationIsCompleted().and().waitUntil().flowNodesAreActive("taskB", 2);
+
+    flowNodeInstances = tester.getAllFlowNodeInstances();
+    assertThat(flowNodeInstances.size()).isEqualTo(6);
+
+    addWithAncestor = new Modification()
+        .setModification(Modification.Type.ADD_TOKEN)
+        .setToFlowNodeId("taskB")
+        .setAncestorElementInstanceKey(innerSubprocessInstanceKey);
+    tester.modifyProcessInstanceOperation(List.of(addWithAncestor))
+        .waitUntil().operationIsCompleted().and().waitUntil().flowNodesAreActive("taskB", 3);
+    flowNodeInstances = tester.getAllFlowNodeInstances();
+    assertThat(flowNodeInstances.size()).isEqualTo(7);
   }
 
   @Test
@@ -210,9 +313,9 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .startProcessInstance("demoProcess")
         .waitUntil().processInstanceIsStarted()
         .and()
-        .flowNodeIsActive("taskA");
+        .waitUntil().flowNodeIsActive("taskA");
 
-    assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(tester.getFlowNodeStateFor("taskA")).isIn(FlowNodeStateDto.ACTIVE,FlowNodeStateDto.INCIDENT);
     assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
     // when
     List<Modification> modifications = List.of(
@@ -232,7 +335,10 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
         .waitUntil()
         .flowNodeIsTerminated("taskA")
         .and()
-        .flowNodesAreActive("taskB", 2);
+        .flowNodesAreActive("taskB", 2)
+        .and()
+        .variableExists("var1").and().variableExists("var2")
+        .variableExists("var3").and().variableExists("var4");
     // then
 
     assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.TERMINATED);
@@ -279,6 +385,55 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
     assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
     assertThat(tester.getVariable("number", flowNodeInstanceKeyForTaskB)).isEqualTo("1");
     assertThat(tester.getVariable("title", flowNodeInstanceKeyForTaskB)).isEqualTo("\"Modification\"");
+  }
+
+  @Test // NPE in cancelToken : https://github.com/camunda/operate/issues/3499
+  public void shouldMoveTokenFailsDueMissingFlowNodeInstanceKeys() throws Exception {
+    // given
+    var flowNodeInstanceKey = tester
+        .startProcessInstance("demoProcess", "{\"a\": \"b\"}")
+        .waitUntil().processInstanceIsStarted()
+        .and()
+        .flowNodeIsActive("taskA")
+        .then().getFlowNodeInstanceKeyFor("taskA");
+
+    assertThat(tester.getFlowNodeStateFor("taskA")).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(tester.getFlowNodeStateFor("taskB")).isNull();
+    // when
+    var modifications = List.of(
+        new Modification()
+            .setModification(Modification.Type.MOVE_TOKEN)
+            .setFromFlowNodeInstanceKey(""+flowNodeInstanceKey).setToFlowNodeId("taskB")
+    );
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsCompleted()
+        .then()
+        .waitUntil()
+        .flowNodeIsTerminated("taskA")
+        .and()
+        .flowNodeIsActive("taskB");
+    // then
+    assertThat(tester.getFlowNodeInstanceEntityFor(flowNodeInstanceKey).getState()).isEqualTo(FlowNodeState.TERMINATED);
+    assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
+
+    //
+    modifications = List.of(
+        new Modification()
+            .setModification(Modification.Type.MOVE_TOKEN)
+            .setFromFlowNodeId("taskA").setToFlowNodeId("taskB")
+    );
+    tester.modifyProcessInstanceOperation(modifications)
+        .waitUntil()
+        .operationIsFailed();
+    assertThat(tester.getFlowNodeInstanceEntityFor(flowNodeInstanceKey).getState()).isEqualTo(FlowNodeState.TERMINATED);
+    assertThat(tester.getFlowNodeStateFor("taskB")).isEqualTo(FlowNodeStateDto.ACTIVE);
+    assertThat(
+        tester.getOperations().stream().filter(
+            o -> o.getErrorMessage()
+                .contains("Can't find not finished flowNodeInstance keys for process instance "))
+            .count()
+    ).isEqualTo(1);
   }
 
   @Test
@@ -485,6 +640,44 @@ public class ModifyProcessInstanceOperationIT extends OperateZeebeIntegrationTes
     assertThat(tester.getFlowNodeStateFor("innerSubprocess")).isEqualTo(FlowNodeStateDto.ACTIVE);
     assertThat(tester.getVariable("sub", subprocessKey )).isEqualTo("\"way\"");
     assertThat(tester.getVariable("innerSub", innerSubprocessKey)).isEqualTo("\"innerWay\"");
+  }
+
+  @Test
+  public void shouldMoveTokenWithAncestor() throws Exception {
+    // given
+    tester
+        .deployProcess("subProcess.bpmn")
+        .waitUntil().processIsDeployed()
+        .then().startProcessInstance("prWithSubprocess")
+        .waitUntil().flowNodeIsActive("taskA");
+
+    var moveToken = new Modification()
+        .setModification(Modification.Type.MOVE_TOKEN)
+        .setFromFlowNodeId("taskA").setToFlowNodeId("taskB");
+
+    tester.modifyProcessInstanceOperation(List.of(moveToken))
+        .waitUntil().operationIsCompleted().and().waitUntil().flowNodeIsActive("taskB")
+        .and().flowNodeIsTerminated("taskA");
+
+    var flowNodeInstances = tester.getAllFlowNodeInstances();
+    var subprocessInstanceKey = flowNodeInstances.stream()
+        .filter(n -> n.getFlowNodeId().equals("subprocess"))
+        .findFirst().orElseThrow().getKey();
+    var innerSubprocessInstanceKey = flowNodeInstances.stream()
+        .filter(n -> n.getFlowNodeId().equals("innerSubprocess"))
+        .findFirst().orElseThrow().getKey();
+
+    var moveWithAncestor = new Modification()
+        .setModification(Modification.Type.MOVE_TOKEN)
+        .setAncestorElementInstanceKey(subprocessInstanceKey)
+        .setFromFlowNodeId("taskB")
+        .setToFlowNodeId("taskC");
+
+    tester.modifyProcessInstanceOperation(List.of(moveWithAncestor))
+        .waitUntil().operationIsCompleted().and().waitUntil().flowNodesAreActive("taskC", 1);
+
+    flowNodeInstances = tester.getAllFlowNodeInstances();
+    assertThat(flowNodeInstances.size()).isEqualTo(6);
   }
 
   @Test

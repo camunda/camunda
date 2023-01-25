@@ -61,13 +61,13 @@ public class ModifyProcessInstanceRequestValidator {
   }
 
   private void validateCancelToken(final Modification modification, final Long processInstanceKey) {
-    if(!StringUtils.hasText(modification.getFromFlowNodeId()) && !StringUtils.hasText(modification.getFromFlowNodeInstanceKey())) {
+    if (!StringUtils.hasText(modification.getFromFlowNodeId()) && !StringUtils.hasText(modification.getFromFlowNodeInstanceKey())) {
       throw new InvalidRequestException(String.format("Neither fromFlowNodeId nor fromFlowNodeInstanceKey is given for process instance with key %s", processInstanceKey));
     }
-    if(StringUtils.hasText(modification.getFromFlowNodeId()) && StringUtils.hasText(modification.getFromFlowNodeInstanceKey())){
+    if (StringUtils.hasText(modification.getFromFlowNodeId()) && StringUtils.hasText(modification.getFromFlowNodeInstanceKey())){
       throw new InvalidRequestException(String.format("Either fromFlowNodeId or fromFlowNodeInstanceKey for process instance with key %s should be given, not both.", processInstanceKey));
     }
-    if(modification.getFromFlowNodeInstanceKey() != null) {
+    if (modification.getFromFlowNodeInstanceKey() != null) {
       try{
         Long.parseLong(modification.getFromFlowNodeInstanceKey());
       } catch (NumberFormatException nfe){

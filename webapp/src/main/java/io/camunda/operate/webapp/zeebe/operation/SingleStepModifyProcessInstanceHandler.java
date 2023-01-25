@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
@@ -148,8 +149,8 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
         logger.debug("Add token to flowNodeId {} with variables: {}", flowNodeId, flowNodeId2variables);
         ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3 nextStep;
         // 1. Activate
-        if(modification.getScopeKey() != null){
-            nextStep = currentStep.activateElement(flowNodeId, modification.getScopeKey());
+        if(modification.getAncestorElementInstanceKey() != null){
+            nextStep = currentStep.activateElement(flowNodeId, modification.getAncestorElementInstanceKey());
         }else{
             nextStep = currentStep.activateElement(flowNodeId);
         }
@@ -170,11 +171,17 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
         final String flowNodeInstanceKeyAsString = modification.getFromFlowNodeInstanceKey();
         if(StringUtils.hasText(flowNodeInstanceKeyAsString)) {
            final Long  flowNodeInstanceKey =  Long.parseLong(flowNodeInstanceKeyAsString);
-            logger.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
+           logger.debug("Cancel token from flowNodeInstanceKey {} ", flowNodeInstanceKey);
            return cancelFlowNodeInstances(currentStep, List.of(flowNodeInstanceKey));
         } else {
            final List<Long> flowNodeInstanceKeys = getNotFinishedFlowNodeInstanceKeysFor(processInstanceKey, flowNodeId);
-            logger.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
+           if(flowNodeInstanceKeys.isEmpty()){
+              throw new OperateRuntimeException(
+                 String.format(
+                    "Abort CANCEL_TOKEN: Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s"
+                    , processInstanceKey, flowNodeId));
+           }
+           logger.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
            return cancelFlowNodeInstances(currentStep, flowNodeInstanceKeys);
         }
     }
@@ -184,13 +191,13 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
         final String toFlowNodeId = modification.getToFlowNodeId();
         Integer newTokensCount = modification.getNewTokensCount();
         // Add least one token will be added
-        if(newTokensCount == null || newTokensCount < 1){
+        if (newTokensCount == null || newTokensCount < 1) {
             newTokensCount = 1;
         }
         // flowNodeId => List of variables (Map)
         //  flowNodeId => [ { "key": "value" }, {"key for another flowNode with the same id": "value"} ]
         Map<String,List<Map<String,Object>>> flowNodeId2variables = modification.variablesForAddToken();
-        if(flowNodeId2variables == null){
+        if (flowNodeId2variables == null){
             flowNodeId2variables = new HashMap<>();
         }
 
@@ -201,9 +208,17 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
         logger.debug("Move [Add token to flowNodeId: {} with variables: {} ]", toFlowNodeId, toFlowNodeIdVariables);
         for(int i = 0;i < newTokensCount; i++){
             if(nextStep == null){
-                nextStep = currentStep.activateElement(toFlowNodeId);
+                if (modification.getAncestorElementInstanceKey() != null ){
+                    nextStep = currentStep.activateElement(toFlowNodeId, modification.getAncestorElementInstanceKey());
+                } else {
+                    nextStep = currentStep.activateElement(toFlowNodeId);
+                }
             }else{
-                nextStep = nextStep.and().activateElement(toFlowNodeId);
+                if (modification.getAncestorElementInstanceKey() != null ) {
+                    nextStep.and().activateElement(toFlowNodeId, modification.getAncestorElementInstanceKey());
+                } else {
+                    nextStep = nextStep.and().activateElement(toFlowNodeId);
+                }
             }
             if(i < toFlowNodeIdVariables.size()){
                 nextStep = nextStep.withVariables(toFlowNodeIdVariables.get(i), toFlowNodeId);
@@ -226,6 +241,12 @@ public class SingleStepModifyProcessInstanceHandler extends AbstractOperationHan
             flowNodeInstanceKeysToCancel = List.of(flowNodeInstanceKey);
         }else {
             flowNodeInstanceKeysToCancel = getNotFinishedFlowNodeInstanceKeysFor(processInstanceKey, fromFlowNodeId);
+            if(flowNodeInstanceKeysToCancel.isEmpty()){
+                throw new OperateRuntimeException(
+                    String.format(
+                        "Abort MOVE_TOKEN (CANCEL step): Can't find not finished flowNodeInstance keys for process instance %s and flowNode id %s"
+                        , processInstanceKey, fromFlowNodeId));
+            }
         }
         logger.debug("Move [Cancel token from flowNodeInstanceKeys: {} ]", flowNodeInstanceKeysToCancel);
         return cancelFlowNodeInstances(nextStep.and(), flowNodeInstanceKeysToCancel);
