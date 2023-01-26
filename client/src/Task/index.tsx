@@ -100,10 +100,13 @@ const Task: React.FC = () => {
         variables,
       },
     });
+    const hasRemainingTasks = (dataFromCache?.tasks?.length ?? 0) > 1;
 
     tracking.track({
       eventName: 'task-completed',
       isCamundaForm: formKey ? isCamundaForms(formKey) : false,
+      hasRemainingTasks,
+      filter,
     });
 
     notificationsStore.displayNotification({

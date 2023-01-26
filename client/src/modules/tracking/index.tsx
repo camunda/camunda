@@ -17,6 +17,8 @@ type Events =
   | {
       eventName: 'task-completed';
       isCamundaForm: boolean;
+      hasRemainingTasks: boolean;
+      filter: string;
     }
   | {eventName: 'tasks-filtered'; filter: string}
   | {eventName: 'navigation'; link: 'header-logo'}
