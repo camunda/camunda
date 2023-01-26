@@ -37,7 +37,7 @@ runs:
   using: composite
   steps:
     - if: ${{ inputs.java == 'true' }}
-      uses: actions/setup-java@v3.4.1
+      uses: actions/setup-java@v3
       with:
         distribution: 'temurin'
         java-version: ${{ inputs.java-version }}
@@ -45,7 +45,7 @@ runs:
         # see https://docs.github.com/en/actions/learn-github-actions/contexts#runner-context
         architecture: ${{ runner.arch == 'ARM64' && 'aarch64' || 'x64' }}
     - if: ${{ inputs.java == 'true' && inputs.maven == 'true' }}
-      uses: stCarolas/setup-maven@v4.4
+      uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: '3.8.6'
     - if: ${{ inputs.maven-cache == 'true' }}
