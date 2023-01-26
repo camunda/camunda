@@ -48,7 +48,8 @@ public interface Intent {
           CheckpointIntent.class,
           ProcessInstanceModificationIntent.class,
           SignalIntent.class,
-          SignalSubscriptionIntent.class);
+          SignalSubscriptionIntent.class,
+          ResourceDeletionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {

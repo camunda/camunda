@@ -15,33 +15,33 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-public enum ProcessIntent implements Intent {
-  CREATED((short) 0),
-  DELETED((short) 1);
+public enum ResourceDeletionIntent implements Intent {
+  DELETE(0),
+  DELETED(1);
 
   private final short value;
 
-  ProcessIntent(final short value) {
-    this.value = value;
+  ResourceDeletionIntent(final int value) {
+    this.value = (short) value;
   }
 
   public short getIntent() {
     return value;
   }
 
-  public static Intent from(final short value) {
-    switch (value) {
-      case 0:
-        return CREATED;
-      case 1:
-        return DELETED;
-      default:
-        return UNKNOWN;
-    }
-  }
-
   @Override
   public short value() {
     return value;
+  }
+
+  public static Intent from(final short value) {
+    switch (value) {
+      case 0:
+        return DELETE;
+      case 1:
+        return DELETED;
+      default:
+        return Intent.UNKNOWN;
+    }
   }
 }

@@ -16,7 +16,8 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 public enum DecisionRequirementsIntent implements Intent {
-  CREATED(0);
+  CREATED(0),
+  DELETED(1);
 
   private final short value;
 
@@ -32,6 +33,8 @@ public enum DecisionRequirementsIntent implements Intent {
     switch (value) {
       case 0:
         return CREATED;
+      case 1:
+        return DELETED;
       default:
         return UNKNOWN;
     }
