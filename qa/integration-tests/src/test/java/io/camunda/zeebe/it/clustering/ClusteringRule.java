@@ -721,20 +721,46 @@ public class ClusteringRule extends ExternalResource {
   }
 
   /**
-   * Fills one segment with messages. Use {@link #runUntilSegmentsFilled} if you need more control
-   * over the content or count of segments.
+   * Writes entries until at least the given count of segments exist on all brokers. Automatically
+   * accounts for offset log compaction to ensure that at least one segment will be deleted after
+   * taking a snapshot.
    */
-  public void fillSegment() {
-    runUntilSegmentsFilled(
-        getBrokers(),
-        1,
-        () ->
-            client
-                .newPublishMessageCommand()
-                .messageName("msg")
-                .correlationKey("key")
-                .send()
-                .join());
+  public void fillSegments(final int minimumSegmentCount) {
+    fillSegments(getBrokers(), minimumSegmentCount);
+  }
+  /**
+   * Writes entries until at least the given count of segments exist on the given brokers.
+   * Automatically accounts for offset log compaction to ensure that at least one segment will be
+   * deleted after taking a snapshot.
+   */
+  public void fillSegments(final Collection<Broker> brokers, final int minimumSegmentCount) {
+    final var logCompactionOffset =
+        getBrokerCfg(0).getExperimental().getRaft().getPreferSnapshotReplicationThreshold();
+    fillSegments(brokers, minimumSegmentCount, logCompactionOffset);
+  }
+  /**
+   * Writes entries until at least the given count of segments exist on all brokers and at least the
+   * given count of entries are written.
+   */
+  public void fillSegments(final int minimumSegmentCount, final int minimumWrittenEntries) {
+    fillSegments(getBrokers(), minimumSegmentCount, minimumWrittenEntries);
+  }
+  /**
+   * Writes entries until at least the given count of segments exist on the given brokers and at
+   * least the given count of entries are written.
+   */
+  public void fillSegments(
+      final Collection<Broker> brokers,
+      final int minimumSegmentCount,
+      final int minimumWrittenEntries) {
+    var currentSegments = 0;
+    var writtenEntries = 0;
+    while (currentSegments < minimumSegmentCount || writtenEntries < minimumWrittenEntries) {
+      client.newPublishMessageCommand().messageName("msg").correlationKey("key").send().join();
+      currentSegments =
+          brokers.stream().map(this::getSegmentsCount).min(Integer::compareTo).orElse(0);
+      writtenEntries += 1;
+    }
   }
 
   /**
