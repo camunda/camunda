@@ -195,7 +195,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
   }
 
   public void setCompactableIndex(final long index) {
-    server.getContext().getLogCompactor().setCompactableIndex(index);
+    // Don't compact everything, leave enough entries so that slow followers are not forced into
+    // snapshot replication immediately.
+    final var offset = config.getPartitionConfig().getPreferSnapshotReplicationThreshold();
+    server.getContext().getLogCompactor().setCompactableIndex(index - offset);
   }
 
   public RaftLogReader openReader() {

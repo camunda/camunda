@@ -90,6 +90,10 @@ public class ZeebeTestNode {
         .build();
   }
 
+  public RaftPartitionGroup getPartitionGroup() {
+    return this.dataPartitionGroup;
+  }
+
   public MemberId getMemberId() {
     return member.id();
   }

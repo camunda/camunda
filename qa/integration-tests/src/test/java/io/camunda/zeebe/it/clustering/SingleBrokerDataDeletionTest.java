@@ -30,13 +30,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.stream.impl.records.CopiedRecords;
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.After;
@@ -49,9 +47,6 @@ public class SingleBrokerDataDeletionTest {
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
   private static final DataSize LOG_SEGMENT_SIZE = DataSize.ofKilobytes(8);
   private static final DataSize MAX_MESSAGE_SIZE = DataSize.ofKilobytes(4);
-  // variable has to be a bit smaller than max message size otherwise it will be rejected
-  private static final int LARGE_VARIABLE_SIZE = (int) MAX_MESSAGE_SIZE.toBytes() / 2;
-  private static final String MAX_MESSAGE_SIZE_VARIABLE = "x".repeat(LARGE_VARIABLE_SIZE);
   private static final int PARTITION_ID = 1;
 
   @Rule
@@ -247,19 +242,7 @@ public class SingleBrokerDataDeletionTest {
   }
 
   private void publishEnoughMessagesForCompaction() {
-    final int requiredMessageCount = (int) LOG_SEGMENT_SIZE.toBytes() / LARGE_VARIABLE_SIZE;
-    IntStream.range(0, requiredMessageCount + 1).forEach(this::publishMaxMessageSizeMessage);
-  }
-
-  private void publishMaxMessageSizeMessage(final int key) {
-    clusteringRule
-        .getClient()
-        .newPublishMessageCommand()
-        .messageName("msg")
-        .correlationKey("msg-" + key)
-        .variables(Map.of("foo", MAX_MESSAGE_SIZE_VARIABLE))
-        .send()
-        .join();
+    clusteringRule.fillSegments(2);
   }
 
   private Stream<Record<?>> newRecordStream(final LogStreamReader reader) {
