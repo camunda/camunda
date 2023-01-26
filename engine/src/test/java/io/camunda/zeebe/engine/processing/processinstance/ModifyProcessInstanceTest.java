@@ -1210,6 +1210,44 @@ public class ModifyProcessInstanceTest {
         .isTrue();
   }
 
+  @Test
+  public void shouldTerminateProcessIfProcessInstanceKeyIsPassedAsTerminateInstruction() {
+    // regression test for https://github.com/camunda/zeebe/issues/11413
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .userTask("A")
+                .userTask("B")
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    getElementInstanceKeyOfElement(processInstanceKey, "A");
+
+    // when
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .activateElement("B")
+        .terminateElement(processInstanceKey)
+        .modify();
+
+    // then
+    assertThatElementIsTerminated(processInstanceKey, PROCESS_ID);
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .onlyCommandRejections()
+                .limit("B", ProcessInstanceIntent.ACTIVATE_ELEMENT))
+        .describedAs("Activation of User Task B should be rejected")
+        .isNotEmpty();
+  }
+
   private static void verifyThatRootElementIsActivated(
       final long processInstanceKey, final String elementId, final BpmnElementType elementType) {
     verifyThatElementIsActivated(processInstanceKey, elementId, elementType, processInstanceKey);
@@ -1377,5 +1415,37 @@ public class ModifyProcessInstanceTest {
         .limit(numberOfJobs)
         .map(Record::getKey)
         .forEach(jobKey -> ENGINE.job().withKey(jobKey).complete());
+  }
+
+  private static long getElementInstanceKeyOfElement(
+      final long processInstanceKey, final String elementId) {
+    return RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId(elementId)
+        .getFirst()
+        .getKey();
+  }
+
+  private void assertThatElementIsTerminated(
+      final long processInstanceKey, final String elementId) {
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .onlyEvents()
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .limit(elementId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .toList())
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
+  }
+
+  private void assertThatJobIsCancelled(final long processInstanceKey, final String elementId) {
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CANCELED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(elementId)
+                .exists())
+        .isTrue();
   }
 }
