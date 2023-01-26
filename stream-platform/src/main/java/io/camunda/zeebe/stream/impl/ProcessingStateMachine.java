@@ -110,6 +110,8 @@ public final class ProcessingStateMachine {
 
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
+  private static final int DEFAULT_BATCH_COMMAND_LIMIT = 100;
+
   private static final MetadataFilter PROCESSING_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
 
@@ -154,7 +156,7 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
   private List<LogAppendEntry> toWriteEntries;
   private final int partitionId;
-  private int batchCommandLimit = -1;
+  private int batchCommandLimit = DEFAULT_BATCH_COMMAND_LIMIT;
   private int batchCommandCount = 0;
 
   public ProcessingStateMachine(
@@ -323,9 +325,8 @@ public final class ProcessingStateMachine {
                       new MinimalLoggedEvent(entryThatIsProcessed),
                       entryThatIsProcessed.recordMetadata(),
                       entryThatIsProcessed.recordValue());
-                  if (batchCommandLimit < 0
-                      || batchCommandCount + toProcessCmds.size() < batchCommandLimit) {
-                    // There's no limit, or we haven't reached it yet. Command will be written and
+                  if (batchCommandCount + toProcessCmds.size() < batchCommandLimit) {
+                    // Haven't reached the limit yet. Command will be written and
                     // processed.
                     toProcessCmds.add(typedRecord);
                     toWriteEntries.add(entryThatIsProcessed);
@@ -350,7 +351,7 @@ public final class ProcessingStateMachine {
         return;
       }
 
-      batchCommandLimit = -1;
+      batchCommandLimit = DEFAULT_BATCH_COMMAND_LIMIT;
       writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
@@ -363,8 +364,8 @@ public final class ProcessingStateMachine {
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
     } catch (ExceededBatchRecordSizeException batchSizeException) {
-      if (batchCommandLimit < 0 && batchCommandCount > 1) {
-        // Not processing with limit and more than one command was processed.
+      if (batchCommandCount > 1) {
+        // More than one command was processed.
         // Let `onError` deal with setting a limit and then retry processing from the start.
         onError(batchSizeException, () -> processCommand(currentRecord));
       } else {
@@ -396,7 +397,7 @@ public final class ProcessingStateMachine {
           }
           try {
             if (processingException instanceof ExceededBatchRecordSizeException
-                && batchCommandLimit < 0 // Already tried limiting, no sense trying again
+                && batchCommandLimit > 0 // Can reduce limit
                 && batchCommandCount > 1 // If first command failed we can't retry
             ) {
               retryInTransaction();
