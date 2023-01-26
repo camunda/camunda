@@ -79,6 +79,34 @@ final class SegmentLoader {
         segmentFile, mappedSegment, descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
   }
 
+  UninitializedSegment createUninitializedSegment(
+      final Path segmentFile,
+      final SegmentDescriptor descriptor,
+      final long lastWrittenIndex,
+      final JournalIndex journalIndex) {
+    final MappedByteBuffer mappedSegment;
+
+    try {
+      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex);
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to create new segment file %s", segmentFile), e);
+    }
+
+    // while flushing the file's contents ensures its data is present on disk on recovery, it's also
+    // necessary to flush the directory to ensure that the file itself is visible as an entry of
+    // that directory after recovery
+    try {
+      FileUtil.flushDirectory(segmentFile.getParent());
+    } catch (final IOException e) {
+      throw new JournalException(
+          String.format("Failed to flush journal directory after creating segment %s", segmentFile),
+          e);
+    }
+    return new UninitializedSegment(
+        new SegmentFile(segmentFile.toFile()), descriptor, mappedSegment, journalIndex);
+  }
+
   Segment loadExistingSegment(
       final Path segmentFile,
       final long lastWrittenIndex,
