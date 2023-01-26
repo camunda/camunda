@@ -31,6 +31,7 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.Before;
@@ -102,14 +103,24 @@ public final class AsyncSnapshottingTest {
   private void createAsyncSnapshotDirectorOfProcessingMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofProcessingMode(
-            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+            0,
+            1,
+            mockStreamProcessor,
+            snapshotController,
+            Duration.ofMinutes(1),
+            () -> CompletableFuture.completedFuture(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
   private void createAsyncSnapshotDirectorOfReplayMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofReplayMode(
-            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+            0,
+            1,
+            mockStreamProcessor,
+            snapshotController,
+            Duration.ofMinutes(1),
+            () -> CompletableFuture.completedFuture(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
