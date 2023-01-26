@@ -123,20 +123,6 @@ public class StandaloneDecisionEvaluationTest {
   }
 
   @Test
-  public void shouldRejectDecisionUsingIdAndKey() {
-    // when
-    final Record<DecisionEvaluationRecordValue> record =
-        ENGINE.decision().ofDecisionId("falseId").ofDecisionKey(123L).expectRejection().evaluate();
-
-    // then
-    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
-    assertThat(record.getRejectionReason())
-        .isEqualTo(
-            "Expected either a decision id or a valid decision key, but none or both provided");
-  }
-
-  @Test
   public void shouldRejectDecisionWithoutIdAndKey() {
     // when
     final Record<DecisionEvaluationRecordValue> record =
@@ -146,8 +132,7 @@ public class StandaloneDecisionEvaluationTest {
     assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
     assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATE);
     assertThat(record.getRejectionReason())
-        .isEqualTo(
-            "Expected either a decision id or a valid decision key, but none or both provided");
+        .isEqualTo("Expected either a decision id or a valid decision key, but none provided");
   }
 
   @Test
