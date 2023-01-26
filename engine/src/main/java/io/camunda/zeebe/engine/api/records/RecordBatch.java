@@ -54,7 +54,10 @@ public final class RecordBatch implements MutableRecordBatch {
             rejectionReason,
             valueType,
             valueWriter);
-    final var entryLength = recordBatchEntry.getLength();
+    // Can't use RecordBatchEntry.getLength here, as it includes the key and source index length
+    // The to be called recordBatchSizePredicate expects only metadata and value length to be passed
+    final var entryLength =
+        recordBatchEntry.getMetadataLength() + recordBatchEntry.getValueLength();
 
     if (!recordBatchSizePredicate.test(recordBatchEntries.size() + 1, batchSize + entryLength)) {
       return Either.left(
