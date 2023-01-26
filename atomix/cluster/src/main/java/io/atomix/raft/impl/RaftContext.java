@@ -512,6 +512,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     return future;
   }
 
+  /**
+   * Ensures everything written to the log until this point, is flushed to disk.
+   *
+   * @return a future to be completed once the log is flushed to disk
+   */
+  public CompletableFuture<Void> flushLog() {
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    threadContext.execute(
+        () -> {
+          // Only flush if explicit flush is disabled
+          if (!raftLog.shouldFlushExplicitly()) {
+            raftLog.flush();
+          }
+          future.complete(null);
+        });
+    return future;
+  }
+
   /** Attempts to become the leader. */
   public CompletableFuture<Void> anoint() {
     if (role.role() == Role.LEADER) {
