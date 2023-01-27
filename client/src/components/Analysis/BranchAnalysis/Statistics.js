@@ -274,7 +274,7 @@ export default class Statistics extends React.Component {
           },
         },
         scales: {
-          xAxes: [
+          x: [
             {
               ticks: {
                 beginAtZero: true,

@@ -76,7 +76,7 @@ function DurationChart({data, colors}) {
           },
         },
         scales: {
-          xAxis: {
+          x: {
             title: {
               display: true,
               text: t('analysis.outlier.detailsModal.axisLabels.duration'),
@@ -86,7 +86,7 @@ function DurationChart({data, colors}) {
               ...createDurationFormattingOptions(null, maxDuration),
             },
           },
-          yAxis: {
+          y: {
             title: {
               display: true,
               text: t('analysis.outlier.detailsModal.axisLabels.instanceCount'),

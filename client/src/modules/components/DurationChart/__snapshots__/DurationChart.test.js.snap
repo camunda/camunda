@@ -20,7 +20,7 @@ Object {
   },
   "responsive": true,
   "scales": Object {
-    "xAxis": Object {
+    "x": Object {
       "ticks": Object {},
       "title": Object {
         "display": true,
@@ -30,7 +30,7 @@ Object {
         "text": "Duration",
       },
     },
-    "yAxis": Object {
+    "y": Object {
       "title": Object {
         "display": true,
         "font": Object {
