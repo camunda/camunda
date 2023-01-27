@@ -421,6 +421,7 @@ jobs:
           no-color: true
           verbose: true
       - name: Upload Hadolint Results
+        if: always()
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: ./hadolint.sarif
