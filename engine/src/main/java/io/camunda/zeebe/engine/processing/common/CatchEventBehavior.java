@@ -253,15 +253,14 @@ public final class CatchEventBehavior {
     stateWriter.appendFollowUpEvent(
         subscriptionKey, ProcessMessageSubscriptionIntent.CREATING, subscription);
 
-
-              sendOpenMessageSubscription(
-                  subscriptionPartitionId,
-                  processInstanceKey,
-                  elementInstanceKey,
-                  bpmnProcessId,
-                  messageName,
-                  correlationKey,
-                  event.isInterrupting());
+    sendOpenMessageSubscription(
+        subscriptionPartitionId,
+        processInstanceKey,
+        elementInstanceKey,
+        bpmnProcessId,
+        messageName,
+        correlationKey,
+        event.isInterrupting());
   }
 
   private void subscribeToTimerEvents(
@@ -362,7 +361,7 @@ public final class CatchEventBehavior {
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
     sendCloseMessageSubscriptionCommand(
-                subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
+        subscriptionPartitionId, processInstanceKey, elementInstanceKey, messageName);
   }
 
   private boolean sendCloseMessageSubscriptionCommand(

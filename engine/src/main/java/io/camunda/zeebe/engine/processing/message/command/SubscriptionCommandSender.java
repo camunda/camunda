@@ -74,21 +74,22 @@ public class SubscriptionCommandSender {
                   .setCorrelationKey(correlationKey)
                   .setInterrupting(closeOnCorrelate));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          subscriptionPartitionId,
-          ValueType.MESSAGE_SUBSCRIPTION,
-          MessageSubscriptionIntent.CREATE,
-          new MessageSubscriptionRecord()
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(elementInstanceKey)
-              .setBpmnProcessId(bpmnProcessId)
-              .setMessageKey(-1)
-              .setMessageName(messageName)
-              .setCorrelationKey(correlationKey)
-              .setInterrupting(closeOnCorrelate));
-        return true;
-      });
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                subscriptionPartitionId,
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.CREATE,
+                new MessageSubscriptionRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setBpmnProcessId(bpmnProcessId)
+                    .setMessageKey(-1)
+                    .setMessageName(messageName)
+                    .setCorrelationKey(correlationKey)
+                    .setInterrupting(closeOnCorrelate));
+            return true;
+          });
     }
     return true;
   }
@@ -112,20 +113,21 @@ public class SubscriptionCommandSender {
                   .setMessageName(messageName)
                   .setInterrupting(closeOnCorrelate));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          receiverPartitionId,
-          ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-          ProcessMessageSubscriptionIntent.CREATE,
-          new ProcessMessageSubscriptionRecord()
-              .setSubscriptionPartitionId(senderPartition)
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(elementInstanceKey)
-              .setMessageKey(-1)
-              .setMessageName(messageName)
-              .setInterrupting(closeOnCorrelate));
-      return true;
-      });
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                receiverPartitionId,
+                ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+                ProcessMessageSubscriptionIntent.CREATE,
+                new ProcessMessageSubscriptionRecord()
+                    .setSubscriptionPartitionId(senderPartition)
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setMessageKey(-1)
+                    .setMessageName(messageName)
+                    .setInterrupting(closeOnCorrelate));
+            return true;
+          });
     }
     return true;
   }
@@ -154,22 +156,23 @@ public class SubscriptionCommandSender {
                   .setVariables(variables)
                   .setCorrelationKey(correlationKey));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          receiverPartitionId,
-          ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-          ProcessMessageSubscriptionIntent.CORRELATE,
-          new ProcessMessageSubscriptionRecord()
-              .setSubscriptionPartitionId(senderPartition)
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(elementInstanceKey)
-              .setBpmnProcessId(bpmnProcessId)
-              .setMessageKey(messageKey)
-              .setMessageName(messageName)
-              .setVariables(variables)
-              .setCorrelationKey(correlationKey));
-      return true;
-      });
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                receiverPartitionId,
+                ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+                ProcessMessageSubscriptionIntent.CORRELATE,
+                new ProcessMessageSubscriptionRecord()
+                    .setSubscriptionPartitionId(senderPartition)
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setBpmnProcessId(bpmnProcessId)
+                    .setMessageKey(messageKey)
+                    .setMessageName(messageName)
+                    .setVariables(variables)
+                    .setCorrelationKey(correlationKey));
+            return true;
+          });
     }
     return true;
   }
@@ -192,18 +195,20 @@ public class SubscriptionCommandSender {
                   .setMessageKey(-1)
                   .setMessageName(messageName));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          subscriptionPartitionId,
-          ValueType.MESSAGE_SUBSCRIPTION,
-          MessageSubscriptionIntent.CORRELATE,
-          new MessageSubscriptionRecord()
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(elementInstanceKey)
-              .setBpmnProcessId(bpmnProcessId)
-              .setMessageKey(-1)
-              .setMessageName(messageName));
-      return true;});
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                subscriptionPartitionId,
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.CORRELATE,
+                new MessageSubscriptionRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setBpmnProcessId(bpmnProcessId)
+                    .setMessageKey(-1)
+                    .setMessageName(messageName));
+            return true;
+          });
     }
     return true;
   }
@@ -224,18 +229,19 @@ public class SubscriptionCommandSender {
                   .setMessageKey(-1L)
                   .setMessageName(messageName));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          subscriptionPartitionId,
-          ValueType.MESSAGE_SUBSCRIPTION,
-          MessageSubscriptionIntent.DELETE,
-          new MessageSubscriptionRecord()
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(elementInstanceKey)
-              .setMessageKey(-1L)
-              .setMessageName(messageName));
-      return true;
-    });
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                subscriptionPartitionId,
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.DELETE,
+                new MessageSubscriptionRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setMessageKey(-1L)
+                    .setMessageName(messageName));
+            return true;
+          });
     }
     return true;
   }
@@ -258,19 +264,20 @@ public class SubscriptionCommandSender {
                   .setMessageKey(-1)
                   .setMessageName(messageName));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          receiverPartitionId,
-          ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-          ProcessMessageSubscriptionIntent.DELETE,
-          new ProcessMessageSubscriptionRecord()
-              .setSubscriptionPartitionId(senderPartition)
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(elementInstanceKey)
-              .setMessageKey(-1)
-              .setMessageName(messageName));
-        return true;
-      });
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                receiverPartitionId,
+                ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+                ProcessMessageSubscriptionIntent.DELETE,
+                new ProcessMessageSubscriptionRecord()
+                    .setSubscriptionPartitionId(senderPartition)
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(elementInstanceKey)
+                    .setMessageKey(-1)
+                    .setMessageName(messageName));
+            return true;
+          });
     }
 
     return true;
@@ -298,21 +305,22 @@ public class SubscriptionCommandSender {
                   .setMessageKey(messageKey)
                   .setInterrupting(false));
     } else {
-      sideEffectQueue.add(() -> {
-      interPartitionCommandSender.sendCommand(
-          receiverPartitionId,
-          ValueType.MESSAGE_SUBSCRIPTION,
-          MessageSubscriptionIntent.REJECT,
-          new MessageSubscriptionRecord()
-              .setProcessInstanceKey(processInstanceKey)
-              .setElementInstanceKey(-1L)
-              .setBpmnProcessId(bpmnProcessId)
-              .setMessageName(messageName)
-              .setCorrelationKey(correlationKey)
-              .setMessageKey(messageKey)
-              .setInterrupting(false));
-        return true;
-        });
+      sideEffectQueue.add(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                receiverPartitionId,
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.REJECT,
+                new MessageSubscriptionRecord()
+                    .setProcessInstanceKey(processInstanceKey)
+                    .setElementInstanceKey(-1L)
+                    .setBpmnProcessId(bpmnProcessId)
+                    .setMessageName(messageName)
+                    .setCorrelationKey(correlationKey)
+                    .setMessageKey(messageKey)
+                    .setInterrupting(false));
+            return true;
+          });
     }
     return true;
   }

@@ -65,7 +65,7 @@ public final class MessageSubscriptionCreateProcessor
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-     sendAcknowledgeCommand();
+      sendAcknowledgeCommand();
 
       rejectionWriter.appendRejection(
           record,
@@ -90,7 +90,7 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
 
     if (!isMessageCorrelated) {
-        sendAcknowledgeCommand();
+      sendAcknowledgeCommand();
     }
   }
 
