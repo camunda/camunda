@@ -42,6 +42,7 @@ type RenderOptions = {
   overlaysData?: OverlayData[];
   highlightedSequenceFlows?: string[];
   nonSelectableNodeTooltipText?: string;
+  hasOuterBorderOnSelection: boolean;
 };
 
 class BpmnJS {
@@ -57,6 +58,7 @@ class BpmnJS {
   onFlowNodeSelection?: OnFlowNodeSelection;
   onViewboxChange?: (isChanging: boolean) => void;
   #overlaysData: OverlayData[] = [];
+  #hasOuterBorderOnSelection = false;
 
   import = async (xml: string) => {
     // Cleanup before importing
@@ -70,6 +72,7 @@ class BpmnJS {
     this.#overlaysData = [];
     this.#selectableFlowNodes = [];
     this.#selectedFlowNodeId = undefined;
+    this.#hasOuterBorderOnSelection = false;
 
     await this.#navigatedViewer!.importXML(xml);
 
@@ -93,6 +96,7 @@ class BpmnJS {
       overlaysData = [],
       highlightedSequenceFlows = [],
       nonSelectableNodeTooltipText,
+      hasOuterBorderOnSelection,
     } = options;
 
     if (this.#navigatedViewer === null) {
@@ -149,19 +153,34 @@ class BpmnJS {
     if (this.#selectedFlowNodeId !== selectedFlowNodeId) {
       if (this.#selectedFlowNodeId !== undefined) {
         this.#removeMarker(this.#selectedFlowNodeId, 'op-selected');
+        this.#removeMarker(this.#selectedFlowNodeId, 'op-selected-frame');
 
         this.selectedFlowNode = undefined;
       }
 
       if (selectedFlowNodeId !== undefined) {
         this.#addMarker(selectedFlowNodeId, 'op-selected');
-
+        if (hasOuterBorderOnSelection) {
+          this.#addMarker(selectedFlowNodeId, 'op-selected-frame');
+        }
         const elementRegistry = this.#navigatedViewer?.get('elementRegistry');
         this.selectedFlowNode =
           elementRegistry?.getGraphics(selectedFlowNodeId);
       }
 
       this.#selectedFlowNodeId = selectedFlowNodeId;
+    }
+
+    if (
+      selectedFlowNodeId !== undefined &&
+      this.#hasOuterBorderOnSelection !== hasOuterBorderOnSelection
+    ) {
+      this.#removeMarker(selectedFlowNodeId, 'op-selected-frame');
+      if (hasOuterBorderOnSelection) {
+        this.#addMarker(selectedFlowNodeId, 'op-selected-frame');
+      }
+
+      this.#hasOuterBorderOnSelection = hasOuterBorderOnSelection;
     }
 
     // handle overlays

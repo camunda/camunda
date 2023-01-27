@@ -28,7 +28,7 @@ const DiagramCanvas = styled.div`
       }
 
       .op-selectable:hover .djs-outline,
-      .op-selected .djs-outline {
+      .op-selected-frame .djs-outline {
         stroke-width: 2px;
         stroke: ${elementColors.outline};
       }

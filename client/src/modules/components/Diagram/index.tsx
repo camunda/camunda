@@ -11,6 +11,7 @@ import DiagramControls from './DiagramControls';
 import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -46,6 +47,7 @@ const Diagram: React.FC<Props> = observer(
     const viewerRef = useRef<BpmnJS | null>(null);
     const [isViewboxChanging, setIsViewboxChanging] = useState(false);
     const {isModificationModeEnabled} = modificationsStore;
+    const {selectedRunningInstanceCount} = flowNodeSelectionStore;
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -69,6 +71,8 @@ const Diagram: React.FC<Props> = observer(
             nonSelectableNodeTooltipText: isModificationModeEnabled
               ? 'Modification is not supported for this flow node.'
               : undefined,
+            hasOuterBorderOnSelection:
+              !isModificationModeEnabled || selectedRunningInstanceCount > 1,
           });
           setIsDiagramRendered(true);
         }
@@ -83,6 +87,7 @@ const Diagram: React.FC<Props> = observer(
       viewer,
       highlightedSequenceFlows,
       isModificationModeEnabled,
+      selectedRunningInstanceCount,
     ]);
 
     useEffect(() => {
