@@ -12,5 +12,6 @@ query getTasks($query: TaskQuery!){
         isFirst
         formKey
         processDefinitionId
+        processInstanceId
     }
 }

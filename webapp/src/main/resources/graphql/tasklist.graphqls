@@ -26,6 +26,8 @@ type Task {
     formKey: String
     #Reference to process definition
     processDefinitionId: String
+    #Reference to processInstance definition
+    processInstanceId: String
     #Candidate groups
     candidateGroups: [String!]
 }
@@ -50,6 +52,10 @@ input TaskQuery {
     assignee: String
     # given group is in candidate groups list
     candidateGroup: String
+    # process definition id
+    processDefinitionId: String
+    # process instance id
+    processInstanceId: String
     #Size of tasks page (default: 50).
     pageSize: Int
     # Task definition ID - what's the BPMN flow node?

@@ -107,6 +107,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertNull(response.get(taskJsonPath + ".completionTime"));
       assertEquals(TaskState.CREATED.name(), response.get(taskJsonPath + ".taskState"));
       assertNull(response.get(taskJsonPath + ".assignee"));
+      assertNotNull(response.get(taskJsonPath + ".processDefinitionId"));
+      assertNotNull(response.get(taskJsonPath + ".processInstanceId"));
       assertEquals("0", response.get(taskJsonPath + ".variables.length()"));
     }
     assertSorting(response);
@@ -455,6 +457,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals(bpmnProcessId, response.get("$.data.tasks[0].processName"));
     assertNotNull(response.get("$.data.tasks[0].creationTime"));
     assertNotNull(response.get("$.data.tasks[0].completionTime"));
+    assertNotNull(response.get("$.data.tasks[0].processInstanceId"));
+    assertNotNull(response.get("$.data.tasks[0].processDefinitionId"));
     assertEquals(TaskState.COMPLETED.name(), response.get("$.data.tasks[0].taskState"));
     assertNotNull(response.get("$.data.tasks[0].assignee"));
     assertEquals("0", response.get("$.data.tasks[0].variables.length()"));
@@ -538,6 +542,80 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         tester.getTasksByQuery("{tasks(query: {taskDefinitionId: \"taskB\"}) {id}}");
 
     assertEquals(3, tasksByQuery.size());
+  }
+
+  @Test
+  public void shouldReturnTaskBasedOnProcessDefinitionId() throws IOException {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+
+    final GraphQLResponse response =
+        tester
+            .having()
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstances(bpmnProcessId, 3)
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
+
+    final String responseProcessDefinitionId = response.get("$.data.tasks[0].processDefinitionId");
+
+    assertTrue(response.isOk());
+    assertNotNull(responseProcessDefinitionId);
+
+    final List<TaskDTO> tasks =
+        tester.getTasksByQuery(
+            "{tasks(query: {processDefinitionId: \""
+                + responseProcessDefinitionId
+                + "\"}) {processDefinitionId}}");
+
+    assertEquals(3, tasks.size());
+    for (TaskDTO taskDto : tasks) {
+      assertEquals(taskDto.getProcessDefinitionId(), responseProcessDefinitionId);
+    }
+  }
+
+  @Test
+  public void shouldReturnTaskBasedOnProcessInstanceId() throws IOException {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+
+    final GraphQLResponse response =
+        tester
+            .having()
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .waitUntil()
+            .processIsDeployed()
+            .and()
+            .startProcessInstances(bpmnProcessId, 3)
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
+
+    assertTrue(response.isOk());
+    assertEquals("3", response.get("$.data.tasks.length()"));
+    for (int i = 0; i < 3; i++) {
+      final String responseProcessInstanceId =
+          response.get("$.data.tasks[" + i + "].processInstanceId");
+      assertNotNull(responseProcessInstanceId);
+
+      final List<TaskDTO> tasks =
+          tester.getTasksByQuery(
+              "{tasks(query: {processInstanceId: \""
+                  + responseProcessInstanceId
+                  + "\"}) {processInstanceId}}");
+
+      assertEquals(1, tasks.size());
+
+      for (TaskDTO taskDto : tasks) {
+        assertEquals(taskDto.getProcessInstanceId(), responseProcessInstanceId);
+      }
+    }
   }
 
   @Test
@@ -737,6 +815,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertNull(taskResponse.get("$.data.task.completionTime"));
     assertEquals(TaskState.CREATED.name(), taskResponse.get("$.data.task.taskState"));
     assertNull(taskResponse.get("$.data.task.assignee"));
+    assertNotNull(taskResponse.get("$.data.task.processDefinitionId"));
+    assertNotNull(taskResponse.get("$.data.task.processInstanceId"));
     assertEquals("0", taskResponse.get("$.data.task.variables.length()"));
   }
 

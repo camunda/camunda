@@ -17,7 +17,8 @@ public class TaskQueryDTO {
   private String assignee;
   private String taskDefinitionId;
   private String candidateGroup;
-
+  private String processDefinitionId;
+  private String processInstanceId;
   private int pageSize = DEFAULT_PAGE_SIZE;
   private String[] searchAfter;
   private String[] searchAfterOrEqual;
@@ -111,6 +112,24 @@ public class TaskQueryDTO {
 
   public TaskQueryDTO setCandidateGroup(final String candidateGroup) {
     this.candidateGroup = candidateGroup;
+    return this;
+  }
+
+  public String getProcessDefinitionId() {
+    return processDefinitionId;
+  }
+
+  public TaskQueryDTO setProcessDefinitionId(String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+    return this;
+  }
+
+  public String getProcessInstanceId() {
+    return processInstanceId;
+  }
+
+  public TaskQueryDTO setProcessInstanceId(String processInstanceId) {
+    this.processInstanceId = processInstanceId;
     return this;
   }
 
