@@ -10,6 +10,7 @@ ARG DIST="distball"
 
 ### Init image containing tini and the startup script ###
 FROM ubuntu:jammy as init
+WORKDIR /
 RUN --mount=type=cache,target=/var/apt/cache,rw \
     apt-get -qq update && \
     apt-get install -y --no-install-recommends tini=0.19.0-1 && \
@@ -17,7 +18,8 @@ RUN --mount=type=cache,target=/var/apt/cache,rw \
 COPY --link --chown=1000:0 docker/utils/startup.sh .
 
 ### Build zeebe from scratch ###
-FROM maven as build
+FROM maven:3-eclipse-temurin-17 as build
+WORKDIR /
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw mvn -B -am -pl dist package -T1C -D skipChecks -D skipTests
@@ -25,11 +27,13 @@ RUN mv dist/target/camunda-zeebe .
 
 ### Extract zeebe from distball ###
 FROM ubuntu:jammy as distball
+WORKDIR /
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 RUN mkdir camunda-zeebe && tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
 
 ### Image containing the zeebe distribution ###
+# hadolint ignore=DL3006
 FROM ${DIST} as dist
 
 ### AMD64 base image ###
