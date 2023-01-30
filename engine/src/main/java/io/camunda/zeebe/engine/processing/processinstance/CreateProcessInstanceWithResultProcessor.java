@@ -17,9 +17,7 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.function.Consumer;
 
 public final class CreateProcessInstanceWithResultProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
@@ -44,10 +42,9 @@ public final class CreateProcessInstanceWithResultProcessor
   @Override
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
-      final CommandControl<ProcessInstanceCreationRecord> controller,
-      final Consumer<SideEffectProducer> sideEffect) {
+      final CommandControl<ProcessInstanceCreationRecord> controller) {
     wrappedController.setCommand(command).setController(controller);
-    createProcessor.onCommand(command, wrappedController, sideEffect);
+    createProcessor.onCommand(command, wrappedController);
     return shouldRespond;
   }
 

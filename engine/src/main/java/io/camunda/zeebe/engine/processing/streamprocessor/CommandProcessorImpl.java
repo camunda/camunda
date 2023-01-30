@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -17,10 +16,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.function.Consumer;
 
 /**
  * Decorates a command processor with simple accept and reject logic.
@@ -35,8 +32,6 @@ import java.util.function.Consumer;
  */
 public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
-
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final CommandProcessor<T> wrappedProcessor;
 
@@ -68,15 +63,11 @@ public final class CommandProcessorImpl<T extends UnifiedRecordValue>
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<T> command, final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(final TypedRecord<T> command) {
 
     entityKey = command.getKey();
 
-    sideEffect.accept(sideEffectQueue);
-    sideEffectQueue.clear();
-
-    final boolean shouldRespond = wrappedProcessor.onCommand(command, this, sideEffectQueue::add);
+    final boolean shouldRespond = wrappedProcessor.onCommand(command, this);
 
     final boolean respond = shouldRespond && command.hasRequestMetadata();
 

@@ -53,6 +53,7 @@ public final class JobEventProcessors {
             JobIntent.FAIL,
             new JobFailProcessor(
                 zeebeState,
+                writers,
                 zeebeState.getKeyGenerator(),
                 jobMetrics,
                 jobBackoffChecker,

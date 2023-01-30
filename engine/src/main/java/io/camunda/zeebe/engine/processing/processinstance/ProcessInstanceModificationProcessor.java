@@ -22,8 +22,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -44,7 +42,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -55,7 +52,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.agrona.Strings;
 
@@ -164,9 +160,7 @@ public final class ProcessInstanceModificationProcessor
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessInstanceModificationRecord> command,
-      final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(final TypedRecord<ProcessInstanceModificationRecord> command) {
     final long commandKey = command.getKey();
     final var value = command.getValue();
 
@@ -227,9 +221,6 @@ public final class ProcessInstanceModificationProcessor
                 })
             .collect(Collectors.toSet());
 
-    final var sideEffectQueue = new SideEffectQueue();
-    sideEffect.accept(sideEffectQueue);
-
     value
         .getTerminateInstructions()
         .forEach(
@@ -245,8 +236,8 @@ public final class ProcessInstanceModificationProcessor
               }
               final var flowScopeKey = elementInstance.getValue().getFlowScopeKey();
 
-              terminateElement(elementInstance, sideEffectQueue);
-              terminateFlowScopes(flowScopeKey, sideEffectQueue, requiredKeysForActivation);
+              terminateElement(elementInstance);
+              terminateFlowScopes(flowScopeKey, requiredKeysForActivation);
             });
 
     stateWriter.appendFollowUpEvent(
@@ -674,8 +665,7 @@ public final class ProcessInstanceModificationProcessor
                     variableDocument));
   }
 
-  private void terminateElement(
-      final ElementInstance elementInstance, final SideEffects sideEffects) {
+  private void terminateElement(final ElementInstance elementInstance) {
     final var elementInstanceKey = elementInstance.getKey();
     final var elementInstanceRecord = elementInstance.getValue();
     final BpmnElementType elementType = elementInstance.getValue().getBpmnElementType();
@@ -686,7 +676,7 @@ public final class ProcessInstanceModificationProcessor
     jobBehavior.cancelJob(elementInstance);
     incidentBehavior.resolveIncidents(elementInstanceKey);
 
-    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey, sideEffects);
+    catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
 
     // terminate all child instances if the element is an event subprocess
     if (elementType == BpmnElementType.EVENT_SUB_PROCESS
@@ -695,12 +685,12 @@ public final class ProcessInstanceModificationProcessor
         || elementType == BpmnElementType.MULTI_INSTANCE_BODY) {
       elementInstanceState.getChildren(elementInstanceKey).stream()
           .filter(ElementInstance::canTerminate)
-          .forEach(childInstance -> terminateElement(childInstance, sideEffects));
+          .forEach(this::terminateElement);
     } else if (elementType == BpmnElementType.CALL_ACTIVITY) {
       final var calledActivityElementInstance =
           elementInstanceState.getInstance(elementInstance.getCalledChildInstanceKey());
       if (calledActivityElementInstance != null && calledActivityElementInstance.canTerminate()) {
-        terminateElement(calledActivityElementInstance, sideEffects);
+        terminateElement(calledActivityElementInstance);
       }
     }
 
@@ -709,9 +699,7 @@ public final class ProcessInstanceModificationProcessor
   }
 
   private void terminateFlowScopes(
-      final long elementInstanceKey,
-      final SideEffects sideEffects,
-      final Set<Long> requiredKeysForActivation) {
+      final long elementInstanceKey, final Set<Long> requiredKeysForActivation) {
     var currentElementInstance = elementInstanceState.getInstance(elementInstanceKey);
 
     while (canTerminateElementInstance(currentElementInstance, requiredKeysForActivation)) {
@@ -728,7 +716,7 @@ public final class ProcessInstanceModificationProcessor
 
       final var flowScopeKey = currentElementInstance.getValue().getFlowScopeKey();
 
-      terminateElement(currentElementInstance, sideEffects);
+      terminateElement(currentElementInstance);
 
       currentElementInstance = elementInstanceState.getInstance(flowScopeKey);
     }

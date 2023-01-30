@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
@@ -27,19 +26,15 @@ public final class BpmnEventSubscriptionBehavior {
   private final EventScopeInstanceState eventScopeInstanceState;
   private final CatchEventBehavior catchEventBehavior;
 
-  private final SideEffects sideEffects;
-
   private final ProcessState processState;
   private final EventTriggerBehavior eventTriggerBehavior;
 
   public BpmnEventSubscriptionBehavior(
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final SideEffects sideEffects,
       final ZeebeState zeebeState) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
-    this.sideEffects = sideEffects;
 
     processState = zeebeState.getProcessState();
     eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
@@ -50,11 +45,11 @@ public final class BpmnEventSubscriptionBehavior {
    */
   public <T extends ExecutableCatchEventSupplier> Either<Failure, Void> subscribeToEvents(
       final T element, final BpmnElementContext context) {
-    return catchEventBehavior.subscribeToEvents(context, element, sideEffects);
+    return catchEventBehavior.subscribeToEvents(context, element);
   }
 
   public void unsubscribeFromEvents(final BpmnElementContext context) {
-    catchEventBehavior.unsubscribeFromEvents(context.getElementInstanceKey(), sideEffects);
+    catchEventBehavior.unsubscribeFromEvents(context.getElementInstanceKey());
   }
 
   /**
