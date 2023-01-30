@@ -16,6 +16,7 @@ Available Commands:
   completion  Generate the autocompletion script for the specified shell
   create      Create resources
   deploy      Deploys new resources for each file provided
+  evaluate    Evaluate resources
   fail        Fail a resource
   generate    Generate documentation
   help        Help about any command

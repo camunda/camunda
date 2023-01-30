@@ -1,0 +1,41 @@
+{
+  "decisionKey": "2251799813685270",
+  "decisionId": "jedi_or_sith",
+  "decisionName": "Jedi or Sith",
+  "decisionVersion": 2,
+  "decisionRequirementsId": "force_users",
+  "decisionRequirementsKey": "2251799813685269",
+  "decisionOutput": "\"Jedi\"",
+  "evaluatedDecisions": [
+      {
+      	"decisionKey": "2251799813685270",
+      	"decisionId": "jedi_or_sith",
+      	"decisionName": "Jedi or Sith",
+      	"decisionVersion": 2,
+      	"decisionType": "DECISION_TABLE",
+      	"decisionOutput": "\"Jedi\"",
+      	"matchedRules": [
+      	  {
+      	    "ruleId": "DecisionRule_0zumznl",
+      		"ruleIndex": 1,
+      		"evaluatedOutputs": [
+      		  {
+      		    "outputId": "Output_1",
+      			"outputName": "Jedi or Sith",
+      			"outputValue": "\"Jedi\""
+      		  }
+      		]
+      	  }
+      	],
+      	"evaluatedInputs": [
+      	  {
+      	    "inputId": "Input_1",
+      		"inputName": "Lightsaber color",
+      		"inputValue": "\"blue\""
+      	  }
+      	]
+      }
+    ],
+    "failedDecisionId": "",
+    "failureMessage": ""
+}

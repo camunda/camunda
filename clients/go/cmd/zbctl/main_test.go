@@ -127,6 +127,20 @@ var tests = []testCase{
 		jsonOutput: true,
 	},
 	{
+		name:       "evaluate decision with decision id",
+		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/drg-force-user.dmn")},
+		cmd:        strings.Fields("--insecure evaluate decision jedi_or_sith --variables testdata/decision_variables.json"),
+		goldenFile: "testdata/evaluate_decision.golden",
+		jsonOutput: true,
+	},
+	{
+		name:       "evaluate decision with decision key",
+		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/drg-force-user.dmn")},
+		cmd:        strings.Fields("--insecure evaluate decision 2251799813685270 --variables {\"lightsaberColor\":\"blue\"}"),
+		goldenFile: "testdata/evaluate_decision.golden",
+		jsonOutput: true,
+	},
+	{
 		name: "create worker",
 		setupCmds: [][]string{
 			strings.Fields("--insecure deploy testdata/job_model.bpmn"),
