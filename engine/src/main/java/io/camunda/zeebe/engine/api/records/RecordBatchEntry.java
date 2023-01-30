@@ -38,6 +38,14 @@ public record RecordBatchEntry(
         + unifiedRecordValue.getLength();
   }
 
+  public int getMetadataLength() {
+    return recordMetadata.getLength();
+  }
+
+  public int getValueLength() {
+    return unifiedRecordValue.getLength();
+  }
+
   public static RecordBatchEntry createEntry(
       final long key,
       final int sourceIndex,
