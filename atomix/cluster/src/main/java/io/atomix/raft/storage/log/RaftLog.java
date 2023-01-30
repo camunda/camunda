@@ -169,9 +169,7 @@ public final class RaftLog implements Closeable {
   }
 
   public void flush() {
-    if (flushExplicitly) {
-      journal.flush();
-    }
+    journal.flush();
   }
 
   @Override

@@ -302,6 +302,13 @@ public interface RaftServer {
   CompletableFuture<Void> compact();
 
   /**
+   * Ensures that all records written to the log are flushed to disk
+   *
+   * @return a future which will be completed after the log is flushed to disk
+   */
+  CompletableFuture<Void> flushLog();
+
+  /**
    * Shuts down the server without leaving the Raft cluster.
    *
    * @return A completable future to be completed once the server has been shutdown.

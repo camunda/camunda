@@ -18,7 +18,6 @@ package io.atomix.raft.storage.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.atomix.cluster.MemberId;
@@ -225,19 +224,6 @@ class RaftLogTest {
 
     // then
     verify(journal).flush();
-  }
-
-  @Test
-  void shouldNotFlushWhenFlushExplicitlyFalse() {
-    // given
-    final Journal journal = mock(Journal.class);
-    final var log = new RaftLog(journal, false);
-
-    // when
-    log.flush();
-
-    // then
-    verify(journal, timeout(1).times(0)).flush();
   }
 
   private ApplicationEntry createApplicationEntryAfter(final ApplicationEntry applicationEntry) {

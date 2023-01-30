@@ -194,6 +194,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     return server.compact();
   }
 
+  public CompletableFuture<Void> flushLog() {
+    return server.flushLog();
+  }
+
   public void setCompactableIndex(final long index) {
     // Don't compact everything, leave enough entries so that slow followers are not forced into
     // snapshot replication immediately.

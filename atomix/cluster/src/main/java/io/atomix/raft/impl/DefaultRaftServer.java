@@ -110,6 +110,11 @@ public class DefaultRaftServer implements RaftServer {
     return context.compact();
   }
 
+  @Override
+  public CompletableFuture<Void> flushLog() {
+    return context.flushLog();
+  }
+
   /**
    * Shuts down the server without leaving the Raft cluster.
    *
