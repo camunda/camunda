@@ -27,7 +27,7 @@ public class ResponseHeadersConfiguration {
   @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("HSTS")
   private void unpackHsts(final Map<String, Object> hsts) {
-    this.httpStrictTransportSecurityMaxAge = ((Number) hsts.get("max-age")).longValue();
+    this.httpStrictTransportSecurityMaxAge = Long.valueOf((String) hsts.get("max-age"));
     this.httpStrictTransportSecurityIncludeSubdomains = (Boolean) hsts.get("includeSubDomains");
   }
 }
