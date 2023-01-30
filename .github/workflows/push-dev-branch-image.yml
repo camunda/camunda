@@ -62,7 +62,7 @@ jobs:
               "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
               "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
             }]
-          mirrors: '[{"url": "https://camunda.jfrog.io/artifactory/internal", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
 
       # CREATE JAR FILE
       - name: Build a package
