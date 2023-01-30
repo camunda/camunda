@@ -20,7 +20,6 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {open} from 'modules/mocks/diagrams';
 
 describe('Modification Dropdown', () => {
@@ -408,66 +407,59 @@ describe('Modification Dropdown', () => {
     );
     expect(screen.getByText(/Add/)).toBeInTheDocument();
     expect(screen.getByText(/Move all/)).toBeInTheDocument();
-    if (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED) {
-      expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
-    } else {
-      expect(screen.getByText(/Cancel all/)).toBeInTheDocument();
-    }
+    expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
   });
 
-  (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
-    'should support cancel instance when flow node has 1 running instance',
-    async () => {
-      renderPopover();
+  it('should support cancel instance when flow node has 1 running instance', async () => {
+    renderPopover();
 
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
-      );
-      modificationsStore.enableModificationMode();
-
-      // select a flow node that has 1 running instance
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-7',
-      });
-
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-      flowNodeMetaDataStore.fetchMetaData({flowNodeId: 'service-task-7'});
-
+    await waitFor(() =>
       expect(
-        await screen.findByText(/Flow Node Modifications/)
-      ).toBeInTheDocument();
-      expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
-      expect(screen.getByText(/Move/)).toBeInTheDocument();
-      expect(screen.getByText(/Add/)).toBeInTheDocument();
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
+    modificationsStore.enableModificationMode();
 
-      // select a flow node that has more than 1 running instances
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-1',
-      });
+    // select a flow node that has 1 running instance
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-7',
+    });
 
-      expect(
-        await screen.findByText(/Flow Node Modifications/)
-      ).toBeInTheDocument();
-      expect(await screen.findByText(/Cancel all/)).toBeInTheDocument();
-      expect(screen.getByText(/Move/)).toBeInTheDocument();
-      expect(screen.getByText(/Add/)).toBeInTheDocument();
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    flowNodeMetaDataStore.fetchMetaData({flowNodeId: 'service-task-7'});
 
-      // select a flow node instance
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-1',
-        flowNodeInstanceId: 'some-instance-id',
-      });
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
 
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-      flowNodeMetaDataStore.fetchMetaData({
-        flowNodeId: 'service-task-1',
-        flowNodeInstanceId: 'some-instance-id',
-      });
-      expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
-      expect(screen.getByText(/Move/)).toBeInTheDocument();
-      expect(screen.getByText(/Add/)).toBeInTheDocument();
-    }
-  );
+    // select a flow node that has more than 1 running instances
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+    });
+
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel all/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
+
+    // select a flow node instance
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: 'some-instance-id',
+    });
+
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    flowNodeMetaDataStore.fetchMetaData({
+      flowNodeId: 'service-task-1',
+      flowNodeInstanceId: 'some-instance-id',
+    });
+    expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
+    expect(screen.getByText(/Move/)).toBeInTheDocument();
+    expect(screen.getByText(/Add/)).toBeInTheDocument();
+  });
 });

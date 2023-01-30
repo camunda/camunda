@@ -24,7 +24,6 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {tracking} from 'modules/tracking';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {modificationRulesStore} from 'modules/stores/modificationRules';
 import {isNil} from 'lodash';
 
@@ -79,12 +78,11 @@ const ModificationDropdown: React.FC<Props> = observer(
 
             return (
               <>
-                {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
-                  selectedRunningInstanceCount > 0 && (
-                    <SelectedInstanceCount>
-                      Selected running instances: {selectedRunningInstanceCount}
-                    </SelectedInstanceCount>
-                  )}
+                {selectedRunningInstanceCount > 0 && (
+                  <SelectedInstanceCount>
+                    Selected running instances: {selectedRunningInstanceCount}
+                  </SelectedInstanceCount>
+                )}
                 {availableModifications.includes('add') && (
                   <Option
                     title="Add single flow node instance"

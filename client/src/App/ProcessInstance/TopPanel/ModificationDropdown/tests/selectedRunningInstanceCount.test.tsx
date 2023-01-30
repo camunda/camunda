@@ -12,7 +12,6 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {open} from 'modules/mocks/diagrams';
 
 describe('selectedRunningInstanceCount', () => {
@@ -72,61 +71,53 @@ describe('selectedRunningInstanceCount', () => {
     mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
   });
 
-  (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
-    'should not render when there are no running instances selected',
-    async () => {
-      modificationsStore.enableModificationMode();
+  it('should not render when there are no running instances selected', async () => {
+    modificationsStore.enableModificationMode();
 
-      renderPopover();
+    renderPopover();
 
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
-      );
+    await waitFor(() =>
+      expect(
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
 
-      act(() => {
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'StartEvent_1',
-        });
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'StartEvent_1',
       });
+    });
 
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/Selected running instances/)
+    ).not.toBeInTheDocument();
+  });
+
+  it('should render when there are running instances selected', async () => {
+    modificationsStore.enableModificationMode();
+
+    renderPopover();
+
+    await waitFor(() =>
       expect(
-        await screen.findByText(/Flow Node Modifications/)
-      ).toBeInTheDocument();
+        processInstanceDetailsDiagramStore.state.diagramModel
+      ).not.toBeNull()
+    );
 
-      expect(
-        screen.queryByText(/Selected running instances/)
-      ).not.toBeInTheDocument();
-    }
-  );
-
-  (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
-    'should render when there are running instances selected',
-    async () => {
-      modificationsStore.enableModificationMode();
-
-      renderPopover();
-
-      await waitFor(() =>
-        expect(
-          processInstanceDetailsDiagramStore.state.diagramModel
-        ).not.toBeNull()
-      );
-
-      act(() => {
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'service-task-7',
-        });
+    act(() => {
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'service-task-7',
       });
+    });
 
-      expect(
-        await screen.findByText(/Flow Node Modifications/)
-      ).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Flow Node Modifications/)
+    ).toBeInTheDocument();
 
-      expect(
-        screen.getByText(/Selected running instances/)
-      ).toBeInTheDocument();
-    }
-  );
+    expect(screen.getByText(/Selected running instances/)).toBeInTheDocument();
+  });
 });

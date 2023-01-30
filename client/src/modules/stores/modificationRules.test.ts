@@ -19,7 +19,6 @@ import {
   singleInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {open} from 'modules/mocks/diagrams';
 
 describe('stores/modificationRules', () => {
@@ -125,17 +124,10 @@ describe('stores/modificationRules', () => {
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(true);
 
-    if (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED) {
-      expect(modificationRulesStore.availableModifications).toEqual([
-        'cancel-instance',
-        'move-all',
-      ]);
-    } else {
-      expect(modificationRulesStore.availableModifications).toEqual([
-        'cancel-all',
-        'move-all',
-      ]);
-    }
+    expect(modificationRulesStore.availableModifications).toEqual([
+      'cancel-instance',
+      'move-all',
+    ]);
   });
 
   it('should get modification rules for a flow node with running instances', () => {
@@ -204,19 +196,11 @@ describe('stores/modificationRules', () => {
 
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(true);
-    if (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED) {
-      expect(modificationRulesStore.availableModifications).toEqual([
-        'add',
-        'cancel-instance',
-        'move-all',
-      ]);
-    } else {
-      expect(modificationRulesStore.availableModifications).toEqual([
-        'add',
-        'cancel-all',
-        'move-all',
-      ]);
-    }
+    expect(modificationRulesStore.availableModifications).toEqual([
+      'add',
+      'cancel-instance',
+      'move-all',
+    ]);
 
     // cancel the other instance
     modificationsStore.cancelToken('service-task-2', 'some-instance-key-2');

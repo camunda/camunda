@@ -36,7 +36,6 @@ import {
   COMPLETED_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
@@ -185,8 +184,7 @@ const TopPanel: React.FC = observer(() => {
                 }}
               />
             )}
-            {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
-              modificationsStore.isModificationModeEnabled &&
+            {modificationsStore.isModificationModeEnabled &&
               flowNodeSelectionStore.selectedRunningInstanceCount > 1 && (
                 <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
               )}

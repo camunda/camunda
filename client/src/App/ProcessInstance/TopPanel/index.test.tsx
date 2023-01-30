@@ -32,7 +32,6 @@ import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenceFlows';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {open} from 'modules/mocks/diagrams';
 
 jest.mock('react-transition-group', () => {
@@ -241,17 +240,9 @@ describe('TopPanel', () => {
     expect(
       screen.getByTitle(/Add single flow node instance/)
     ).toBeInTheDocument();
-    if (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED) {
-      expect(
-        screen.getByTitle(/Cancel selected instance in this flow node/)
-      ).toBeInTheDocument();
-    } else {
-      expect(
-        screen.getByTitle(
-          /Cancel all running flow node instances in this flow node/
-        )
-      ).toBeInTheDocument();
-    }
+    expect(
+      screen.getByTitle(/Cancel selected instance in this flow node/)
+    ).toBeInTheDocument();
 
     expect(
       screen.getByTitle(
@@ -303,64 +294,61 @@ describe('TopPanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  (IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED ? it : it.skip)(
-    'should display multiple instances banner when a flow node with multiple running instances is selected',
-    async () => {
-      processInstanceDetailsStore.init({id: 'active_instance'});
-      processInstanceDetailsDiagramStore.init();
+  it('should display multiple instances banner when a flow node with multiple running instances is selected', async () => {
+    processInstanceDetailsStore.init({id: 'active_instance'});
+    processInstanceDetailsDiagramStore.init();
 
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-      render(<TopPanel />, {
-        wrapper: Wrapper,
-      });
+    render(<TopPanel />, {
+      wrapper: Wrapper,
+    });
 
-      modificationsStore.enableModificationMode();
+    modificationsStore.enableModificationMode();
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-7',
-      });
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-7',
+    });
 
-      expect(
-        await screen.findByText(
-          /Flow node has multiple instances. To select one, use the instance history tree below./i
-        )
-      ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /Flow node has multiple instances. To select one, use the instance history tree below./i
+      )
+    ).toBeInTheDocument();
 
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-1',
-      });
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+    });
 
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText(
-          /Flow node has multiple instances. To select one, use the instance history tree below./i
-        )
-      );
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText(
+        /Flow node has multiple instances. To select one, use the instance history tree below./i
+      )
+    );
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-7',
-      });
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-7',
+    });
 
-      expect(
-        await screen.findByText(
-          /Flow node has multiple instances. To select one, use the instance history tree below./i
-        )
-      ).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /Flow node has multiple instances. To select one, use the instance history tree below./i
+      )
+    ).toBeInTheDocument();
 
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
 
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'service-task-7',
-        flowNodeInstanceId: 'some-instance-id',
-      });
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-7',
+      flowNodeInstanceId: 'some-instance-id',
+    });
 
-      expect(
-        await screen.findByText(
-          /Flow node has multiple instances. To select one, use the instance history tree below./i
-        )
-      ).toBeInTheDocument();
-    }
-  );
+    expect(
+      await screen.findByText(
+        /Flow node has multiple instances. To select one, use the instance history tree below./i
+      )
+    ).toBeInTheDocument();
+  });
 });

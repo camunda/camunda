@@ -7,7 +7,6 @@
 
 import {isNil} from 'lodash';
 import {makeAutoObservable} from 'mobx';
-import {IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED} from 'modules/feature-flags';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
@@ -83,7 +82,6 @@ class ModificationRules {
     }
 
     const isSingleOperationAllowed =
-      IS_CANCEL_ONE_TOKEN_MODIFICATION_ENABLED &&
       !isNil(this.selectedFlowNodeInstanceId) &&
       selectedRunningInstanceCount === 1 &&
       !processInstanceDetailsDiagramStore.isSubProcess(this.selectedFlowNodeId);
