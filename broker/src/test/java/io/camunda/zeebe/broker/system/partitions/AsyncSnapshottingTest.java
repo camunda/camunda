@@ -31,6 +31,8 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.Before;
@@ -102,14 +104,24 @@ public final class AsyncSnapshottingTest {
   private void createAsyncSnapshotDirectorOfProcessingMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofProcessingMode(
-            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+            0,
+            1,
+            mockStreamProcessor,
+            snapshotController,
+            Duration.ofMinutes(1),
+            () -> CompletableFuture.completedFuture(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
   private void createAsyncSnapshotDirectorOfReplayMode() {
     asyncSnapshotDirector =
         AsyncSnapshotDirector.ofReplayMode(
-            0, 1, mockStreamProcessor, snapshotController, Duration.ofMinutes(1));
+            0,
+            1,
+            mockStreamProcessor,
+            snapshotController,
+            Duration.ofMinutes(1),
+            () -> CompletableFuture.completedFuture(null));
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
@@ -214,5 +226,58 @@ public final class AsyncSnapshottingTest {
     // then
     assertThat(snapshot.join()).isNotNull();
     assertThat(persistedSnapshotStore.getLatestSnapshot()).hasValue(snapshot.join());
+  }
+
+  @Test
+  public void shouldNotCommitSnapshotIfFlushFailedInProcessingMode() {
+    // given
+    final CompletableFuture<Void> flushFuture = new CompletableFuture<>();
+
+    asyncSnapshotDirector =
+        AsyncSnapshotDirector.ofProcessingMode(
+            0,
+            1,
+            mockStreamProcessor,
+            snapshotController,
+            Duration.ofMinutes(1),
+            () -> flushFuture);
+    actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
+    setCommitPosition(100L);
+
+    // when
+    final var result = asyncSnapshotDirector.forceSnapshot();
+    flushFuture.completeExceptionally(new RuntimeException("Flush failed"));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(1000))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Flush failed");
+  }
+
+  @Test
+  public void shouldNotCommitSnapshotIfFlushFailedInReplayMode() {
+    // given
+    final CompletableFuture<Void> flushFuture = new CompletableFuture<>();
+
+    asyncSnapshotDirector =
+        AsyncSnapshotDirector.ofReplayMode(
+            0,
+            1,
+            mockStreamProcessor,
+            snapshotController,
+            Duration.ofMinutes(1),
+            () -> flushFuture);
+    actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
+
+    // when
+    final var result = asyncSnapshotDirector.forceSnapshot();
+    flushFuture.completeExceptionally(new RuntimeException("Flush failed"));
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(1000))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Flush failed");
   }
 }

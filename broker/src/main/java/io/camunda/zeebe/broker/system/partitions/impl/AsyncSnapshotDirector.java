@@ -29,6 +29,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -54,6 +56,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final StreamProcessor streamProcessor;
   private final String actorName;
   private final StreamProcessorMode streamProcessorMode;
+  private final Callable<CompletableFuture<Void>> flushLog;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final int partitionId;
   private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
@@ -70,7 +73,8 @@ public final class AsyncSnapshotDirector extends Actor
       final StreamProcessor streamProcessor,
       final StateController stateController,
       final Duration snapshotRate,
-      final StreamProcessorMode streamProcessorMode) {
+      final StreamProcessorMode streamProcessorMode,
+      final Callable<CompletableFuture<Void>> flushLog) {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
@@ -78,6 +82,7 @@ public final class AsyncSnapshotDirector extends Actor
     this.partitionId = partitionId;
     actorName = buildActorName(nodeId, "SnapshotDirector", this.partitionId);
     this.streamProcessorMode = streamProcessorMode;
+    this.flushLog = flushLog;
   }
 
   @Override
@@ -140,14 +145,16 @@ public final class AsyncSnapshotDirector extends Actor
       final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
-      final Duration snapshotRate) {
+      final Duration snapshotRate,
+      final Callable<CompletableFuture<Void>> flushLog) {
     return new AsyncSnapshotDirector(
         nodeId,
         partitionId,
         streamProcessor,
         stateController,
         snapshotRate,
-        StreamProcessorMode.REPLAY);
+        StreamProcessorMode.REPLAY,
+        flushLog);
   }
 
   /**
@@ -166,14 +173,16 @@ public final class AsyncSnapshotDirector extends Actor
       final int partitionId,
       final StreamProcessor streamProcessor,
       final StateController stateController,
-      final Duration snapshotRate) {
+      final Duration snapshotRate,
+      final Callable<CompletableFuture<Void>> flushLog) {
     return new AsyncSnapshotDirector(
         nodeId,
         partitionId,
         streamProcessor,
         stateController,
         snapshotRate,
-        StreamProcessorMode.PROCESSING);
+        StreamProcessorMode.PROCESSING,
+        flushLog);
   }
 
   private void scheduleSnapshotOnRate() {
@@ -255,6 +264,7 @@ public final class AsyncSnapshotDirector extends Actor
     final ActorFuture<Void> takeTransientSnapshotFuture = actor.createFuture();
     final ActorFuture<Void> getLastWrittenPositionFuture = actor.createFuture();
     final ActorFuture<Void> lastWrittenPositionCommittedFuture = actor.createFuture();
+    final ActorFuture<Void> journalFlushFuture = actor.createFuture();
     final ActorFuture<PersistedSnapshot> snapshotPersistedFuture = actor.createFuture();
 
     takeTransientSnapshot(inProgressSnapshot).onComplete(takeTransientSnapshotFuture);
@@ -275,10 +285,36 @@ public final class AsyncSnapshotDirector extends Actor
 
     lastWrittenPositionCommittedFuture.onComplete(
         proceed(
+            journalFlushFuture::completeExceptionally,
+            () -> flushJournal().onComplete(journalFlushFuture)));
+
+    journalFlushFuture.onComplete(
+        proceed(
             snapshotPersistedFuture::completeExceptionally,
             () -> persistSnapshot(inProgressSnapshot).onComplete(snapshotPersistedFuture)));
 
     return snapshotPersistedFuture;
+  }
+
+  private ActorFuture<Void> flushJournal() {
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    try {
+      flushLog
+          .call()
+          .whenComplete(
+              (ignore, error) -> {
+                if (error != null) {
+                  LOG.warn("Failed to flush journal before committing snapshot", error);
+                  future.completeExceptionally(error);
+                } else {
+                  future.complete(null);
+                }
+              });
+    } catch (final Exception e) {
+      LOG.warn("Failed to flush journal before committing snapshot", e);
+      future.completeExceptionally(e);
+    }
+    return future;
   }
 
   private ActorFuture<PersistedSnapshot> persistSnapshot(
