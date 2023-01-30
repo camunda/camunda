@@ -15,8 +15,8 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 public final class SnapshotDirectorPartitionTransitionStep implements PartitionTransitionStep {
 
@@ -49,7 +49,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
     if ((context.getSnapshotDirector() == null && targetRole != Role.INACTIVE)
         || shouldInstallOnTransition(targetRole, context.getCurrentRole())) {
       final var server = context.getRaftPartition().getServer();
-      final Supplier<CompletableFuture<Void>> flushLog = server::flushLog;
+      final Callable<CompletableFuture<Void>> flushLog = server::flushLog;
 
       final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
       final AsyncSnapshotDirector director;
