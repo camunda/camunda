@@ -513,20 +513,27 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   }
 
   /**
-   * Ensures everything written to the log until this point, is flushed to disk.
+   * Ensures everything written to the log until this point, is flushed to disk. If default raft
+   * flush is enabled, then this will not flush because the logs are flushed when necessary to
+   * achieve expected consistency guarantees.
    *
    * @return a future to be completed once the log is flushed to disk
    */
   public CompletableFuture<Void> flushLog() {
     final CompletableFuture<Void> future = new CompletableFuture<>();
-    threadContext.execute(
-        () -> {
-          // Only flush if explicit flush is disabled
-          if (!raftLog.shouldFlushExplicitly()) {
+    if (raftLog.shouldFlushExplicitly()) {
+      // If default explicit flush is enabled, then the log is flushed by default before committing.
+      // Hence, there is no need to flush them again here. This is an optimization to ensure we are
+      // not unnecessarily blocking raft thread to do an i/o.
+      future.complete(null);
+    } else {
+      threadContext.execute(
+          () -> {
             raftLog.flush();
-          }
-          future.complete(null);
-        });
+            future.complete(null);
+          });
+    }
+
     return future;
   }
 
