@@ -8,21 +8,11 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import java.util.function.Consumer;
 
 public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
 
   default void processRecord(final TypedRecord<T> record) {}
-
-  /**
-   * @see #processRecord(TypedRecord, Consumer)
-   */
-  default void processRecord(
-      final TypedRecord<T> record, final Consumer<SideEffectProducer> sideEffect) {
-    processRecord(record);
-  }
 
   /**
    * Try to handle an error that occurred during processing.

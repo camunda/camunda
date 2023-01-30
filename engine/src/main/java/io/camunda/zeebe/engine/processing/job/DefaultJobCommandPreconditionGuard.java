@@ -9,12 +9,10 @@ package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor.CommandControl;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import java.util.function.Consumer;
 
 /**
  * Default implementation to process JobCommands to reduce duplication in CommandProcessor
@@ -40,18 +38,11 @@ final class DefaultJobCommandPreconditionGuard {
 
   public boolean onCommand(
       final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
-    return onCommand(command, commandControl, sideEffectProducer -> {});
-  }
-
-  public boolean onCommand(
-      final TypedRecord<JobRecord> command,
-      final CommandControl<JobRecord> commandControl,
-      final Consumer<SideEffectProducer> sideEffect) {
     final long jobKey = command.getKey();
     final State jobState = state.getState(jobKey);
 
     if (jobState == State.ACTIVATABLE || jobState == State.ACTIVATED) {
-      acceptCommand.accept(command, commandControl, sideEffect);
+      acceptCommand.accept(command, commandControl);
 
     } else if (jobState == State.NOT_FOUND) {
       final String message = String.format(NO_JOB_FOUND_MESSAGE, intent, jobKey);

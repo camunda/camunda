@@ -21,9 +21,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -40,15 +37,12 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public final class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private static final String COULD_NOT_CREATE_TIMER_MESSAGE =
       "Expected to create timer for start event, but encountered the following error: %s";
-
-  private final SideEffectQueue sideEffects = new SideEffectQueue();
 
   private final DeploymentTransformer deploymentTransformer;
   private final ProcessState processState;
@@ -88,10 +82,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<DeploymentRecord> command, final Consumer<SideEffectProducer> sideEffect) {
-
-    sideEffect.accept(sideEffects);
+  public void processRecord(final TypedRecord<DeploymentRecord> command) {
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
@@ -100,7 +91,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final long key = keyGenerator.nextKey();
 
       try {
-        createTimerIfTimerStartEvent(command, sideEffects);
+        createTimerIfTimerStartEvent(command);
       } catch (final RuntimeException e) {
         final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
         responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
@@ -112,7 +103,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
       stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
-      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key, sideEffects);
+      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
       messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
           deploymentEvent, stateWriter);
 
@@ -128,23 +119,20 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     }
   }
 
-  private void createTimerIfTimerStartEvent(
-      final TypedRecord<DeploymentRecord> record, final SideEffects sideEffects) {
+  private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {
     for (final ProcessMetadata processMetadata : record.getValue().processesMetadata()) {
       if (!processMetadata.isDuplicate()) {
         final List<ExecutableStartEvent> startEvents =
             processState.getProcessByKey(processMetadata.getKey()).getProcess().getStartEvents();
 
         unsubscribeFromPreviousTimers(processMetadata);
-        subscribeToTimerStartEventIfExists(sideEffects, processMetadata, startEvents);
+        subscribeToTimerStartEventIfExists(processMetadata, startEvents);
       }
     }
   }
 
   private void subscribeToTimerStartEventIfExists(
-      final SideEffects sideEffects,
-      final ProcessMetadata processMetadata,
-      final List<ExecutableStartEvent> startEvents) {
+      final ProcessMetadata processMetadata, final List<ExecutableStartEvent> startEvents) {
     for (final ExecutableCatchEventElement startEvent : startEvents) {
       if (startEvent.isTimer()) {
         // There are no variables when there is no process instance yet,
@@ -162,8 +150,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             NO_ELEMENT_INSTANCE,
             processMetadata.getKey(),
             startEvent.getId(),
-            timerOrError.get(),
-            sideEffects);
+            timerOrError.get());
       }
     }
   }

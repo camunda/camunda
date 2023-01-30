@@ -19,19 +19,19 @@ public final class Writers {
   private final StateWriter stateWriter;
 
   private final TypedResponseWriter responseWriter;
-  private final Supplier<ProcessingResultBuilder> resultBuilderSupplier;
+  private final SideEffectWriter sideEffectWriter;
 
   public Writers(
       final Supplier<ProcessingResultBuilder> resultBuilderSupplier,
       final EventApplier eventApplier) {
 
-    this.resultBuilderSupplier = resultBuilderSupplier;
     commandWriter = new ResultBuilderBackedTypedCommandWriter(resultBuilderSupplier);
     rejectionWriter = new ResultBuilderBackedRejectionWriter(resultBuilderSupplier);
     stateWriter =
         new ResultBuilderBackedEventApplyingStateWriter(resultBuilderSupplier, eventApplier);
 
     responseWriter = new ResultBuilderBackedTypedResponseWriter(resultBuilderSupplier);
+    sideEffectWriter = new ResultBuilderBackedSideEffectWriter(resultBuilderSupplier);
   }
 
   /**
@@ -46,6 +46,10 @@ public final class Writers {
    */
   public TypedRejectionWriter rejection() {
     return rejectionWriter;
+  }
+
+  public SideEffectWriter sideEffect() {
+    return sideEffectWriter;
   }
 
   /**
