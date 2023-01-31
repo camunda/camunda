@@ -46,10 +46,10 @@ final class Sequencer implements LogStreamWriter, Closeable {
 
   Sequencer(final int partitionId, final long initialPosition, final int maxFragmentSize) {
     LOG.trace("Starting new sequencer at position {}", initialPosition);
-    this.position = initialPosition;
+    position = initialPosition;
     this.partitionId = partitionId;
     this.maxFragmentSize = maxFragmentSize;
-    this.metrics = new SequencerMetrics(partitionId);
+    metrics = new SequencerMetrics(partitionId);
   }
 
   /** {@inheritDoc} */
@@ -86,11 +86,12 @@ final class Sequencer implements LogStreamWriter, Closeable {
     lock.lock();
     try {
       currentPosition = position;
-      isEnqueued =
-          queue.offer(
-              new SequencedBatch(
-                  ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries));
+      final var sequencedBatch =
+          new SequencedBatch(
+              ActorClock.currentTimeMillis(), currentPosition, sourcePosition, appendEntries);
+      isEnqueued = queue.offer(sequencedBatch);
       if (isEnqueued) {
+        metrics.observeBatchLengthBytes(sequencedBatch.length());
         position = currentPosition + batchSize;
       }
     } finally {
