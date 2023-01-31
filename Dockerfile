@@ -3,7 +3,7 @@
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 ARG BASE_DIGEST_AMD64="sha256:d1c582c712e8ae049014a3e81296c522360949cbac7ade7e50a0d4d310706066"
-ARG BASE_DIGEST_ARM64="sha256:dac99a547dae7b46de7f0c34f57002094e054724058e8c9f51243d53286bf89e"
+ARG BASE_DIGEST_ARM64="sha256:41666b47c3c4d2bff0feda5717f005d43d565a3a0a0d0a61531f94ba79cd3b94"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
