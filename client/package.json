@@ -44,7 +44,8 @@
     "postinstall": "cd .. && husky install",
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
     "test:visual-regression": "playwright test",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.29.1-focal /bin/bash"
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.30.0-focal /bin/bash",
+    "start:visual-regression": "http-server build/ -s -p 8080 -P http://localhost:8080?"
   },
   "browserslist": [
     ">0.2%",
@@ -71,6 +72,7 @@
     "eslint-plugin-camunda-licensed": "0.4.6",
     "eslint-plugin-prettier": "4.2.1",
     "http-proxy-middleware": "2.0.6",
+    "http-server": "14.1.1",
     "husky": "8.0.3",
     "jest-environment-jsdom-fifteen": "1.0.2",
     "lint-staged": "13.1.0",

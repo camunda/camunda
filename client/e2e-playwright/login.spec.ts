@@ -9,13 +9,13 @@ import {test, expect} from '@playwright/test';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await expect(page).toHaveScreenshot();
   });
 
   test('field level error', async ({page}) => {
-    await page.goto('/');
+    await page.goto('/login');
 
     await page.getByRole('button', {name: 'Login'}).click();
 
@@ -23,7 +23,18 @@ test.describe('login page', () => {
   });
 
   test('form level error', async ({page}) => {
-    await page.goto('/');
+    await page.route('**/api/login', (route) =>
+      route.fulfill({
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json;charset=UTF-8',
+        },
+        body: JSON.stringify({
+          message: '',
+        }),
+      }),
+    );
+    await page.goto('/login');
 
     await page.getByPlaceholder('Username').type('demo');
     await page.getByPlaceholder('Password').type('wrongpassword');
