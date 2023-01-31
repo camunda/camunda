@@ -93,8 +93,8 @@ public interface LogAppendEntry {
   }
 
   /**
-   * Creates a new {@link LogAppendEntry} which wraps the given {@link LogAppendEntry} and
-   * marks the entry as processed.
+   * Creates a new {@link LogAppendEntry} which wraps the given {@link LogAppendEntry} and marks the
+   * entry as processed.
    *
    * @param entry the entry which should be written to the log
    * @return a simple value class implementation of a {@link LogAppendEntry} with the parameters

@@ -10,8 +10,7 @@ package io.camunda.zeebe.logstreams.log;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 
-record ProcessedLogAppendEntryImpl(LogAppendEntry entry)
-    implements LogAppendEntry {
+record ProcessedLogAppendEntryImpl(LogAppendEntry entry) implements LogAppendEntry {
 
   @Override
   public long key() {
