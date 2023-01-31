@@ -29,8 +29,8 @@ pipeline {
       steps {
         build job: '/deploy-branch-to-k8s-gha',
           parameters: [
-          string(name: 'BRANCH', value: "persistent"),
-          string(name: 'DOCKER_TAG', value: params.OPTIMIZE_VERSION),
+          string(name: 'BRANCH', value: params.OPTIMIZE_VERSION),
+          string(name: 'DOCKER_TAG', value: params.OPTIMIZE_DOCKER_TAG),
           string(name: 'CAMBPM_VERSION', value: params.CAMBPM_VERSION),
           string(name: 'ES_VERSION', value: params.ES_VERSION),
           string(name: 'REF', value: "master"),

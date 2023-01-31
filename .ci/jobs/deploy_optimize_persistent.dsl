@@ -16,7 +16,8 @@ pipelineJob('deploy-optimize-persistent') {
   }
 
   parameters {
-      stringParam('OPTIMIZE_VERSION', 'latest', 'Optimize Docker tag to deploy.')
+      stringParam('OPTIMIZE_VERSION', 'master', 'Optimize Version to deploy, i.e. 3.10.0.')
+      stringParam('OPTIMIZE_DOCKER_TAG', 'latest', 'Optimize Docker tag to deploy.')
       stringParam('ES_VERSION', 'latest', 'ES Docker tag to deploy.')
       stringParam('CAMBPM_VERSION', 'latest', 'CAMBPM Docker tag to deploy.')
     }
