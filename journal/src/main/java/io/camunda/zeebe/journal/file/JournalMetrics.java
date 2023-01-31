@@ -61,33 +61,41 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
-  private final String logName;
+  private final Histogram.Child segmentCreationTime;
+  private final Histogram.Child segmentTruncateTime;
+  private final Histogram.Child segmentFlushTime;
+  private final Gauge.Child segmentCount;
+  private final Gauge.Child journalOpenTime;
 
   JournalMetrics(final String logName) {
-    this.logName = logName;
+    segmentCreationTime = SEGMENT_CREATION_TIME.labels(logName);
+    segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(logName);
+    segmentFlushTime = SEGMENT_FLUSH_TIME.labels(logName);
+    segmentCount = SEGMENT_COUNT.labels(logName);
+    journalOpenTime = JOURNAL_OPEN_DURATION.labels(logName);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {
-    SEGMENT_CREATION_TIME.labels(logName).time(segmentCreation);
+    segmentCreationTime.time(segmentCreation);
   }
 
   void observeSegmentFlush(final Runnable segmentFlush) {
-    SEGMENT_FLUSH_TIME.labels(logName).time(segmentFlush);
+    segmentFlushTime.time(segmentFlush);
   }
 
   void observeSegmentTruncation(final Runnable segmentTruncation) {
-    SEGMENT_TRUNCATE_TIME.labels(logName).time(segmentTruncation);
+    segmentTruncateTime.time(segmentTruncation);
   }
 
   Timer startJournalOpenDurationTimer() {
-    return JOURNAL_OPEN_DURATION.labels(logName).startTimer();
+    return journalOpenTime.startTimer();
   }
 
   void incSegmentCount() {
-    SEGMENT_COUNT.labels(logName).inc();
+    segmentCount.inc();
   }
 
   void decSegmentCount() {
-    SEGMENT_COUNT.labels(logName).dec();
+    segmentCount.dec();
   }
 }
