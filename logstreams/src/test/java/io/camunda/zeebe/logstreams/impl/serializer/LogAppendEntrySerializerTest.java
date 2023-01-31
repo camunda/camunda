@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -37,6 +38,28 @@ final class LogAppendEntrySerializerTest {
     assertThat(event.getPosition()).isEqualTo(2);
     assertThat(event.getSourceEventPosition()).isEqualTo(3);
     assertThat(event.getTimestamp()).isEqualTo(4);
+    assertThat(event.isProcessed()).isFalse();
+  }
+
+  @Test
+  void shouldMarkEntryAsProcessed() {
+    // given
+    final var serializer = new LogAppendEntrySerializer();
+    final var event = new LoggedEventImpl();
+    final var entry = TestEntry.ofKey(1);
+    final var processedEntry = LogAppendEntry.ofProcessed(entry);
+
+    // when
+    serializer.serialize(writeBuffer, 0, processedEntry, 2, 3, 4);
+
+    // then
+    event.wrap(writeBuffer, 0);
+    assertThatEntry(entry).matchesLoggedEvent(event);
+    assertThat(event.getKey()).isEqualTo(1);
+    assertThat(event.getPosition()).isEqualTo(2);
+    assertThat(event.getSourceEventPosition()).isEqualTo(3);
+    assertThat(event.getTimestamp()).isEqualTo(4);
+    assertThat(event.isProcessed()).isTrue();
   }
 
   @Test

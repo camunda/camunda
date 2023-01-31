@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.markAsProcessed;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
@@ -88,6 +89,9 @@ final class LogAppendEntrySerializer {
     final var entryOffset = writeBufferOffset + DataFrameDescriptor.HEADER_LENGTH;
 
     // Write the entry
+    if (entry.isProcessed()) {
+      markAsProcessed(writeBuffer, entryOffset);
+    }
     setPosition(writeBuffer, entryOffset, position);
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
