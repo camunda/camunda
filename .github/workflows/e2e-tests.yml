@@ -57,10 +57,22 @@ jobs:
           distribution: "adopt"
           java-version: "11"
           cache: "maven"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+               "id": "camunda-nexus",
+               "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+             }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -s "./maven-settings.xml" -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B -s "./maven-settings.xml" spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true
+        run: mvn -q -B spring-boot:start -f webapp/pom.xml -Dspring-boot.run.fork=true
       - name: Run tests
         working-directory: ./client
         env:
