@@ -10,7 +10,7 @@ ARG DIST="distball"
 
 ### Init image containing tini and the startup script ###
 FROM ubuntu:jammy as init
-WORKDIR /
+WORKDIR /zeebe
 RUN --mount=type=cache,target=/var/apt/cache,rw \
     apt-get -qq update && \
     apt-get install -y --no-install-recommends tini=0.19.0-1 && \
@@ -19,7 +19,7 @@ COPY --link --chown=1000:0 docker/utils/startup.sh .
 
 ### Build zeebe from scratch ###
 FROM maven:3-eclipse-temurin-17 as build
-WORKDIR /
+WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw mvn -B -am -pl dist package -T1C -D skipChecks -D skipTests
@@ -27,7 +27,7 @@ RUN mv dist/target/camunda-zeebe .
 
 ### Extract zeebe from distball ###
 FROM ubuntu:jammy as distball
-WORKDIR /
+WORKDIR /zeebe
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 RUN mkdir camunda-zeebe && tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
@@ -101,8 +101,8 @@ RUN groupadd -g 1000 zeebe && \
     mkdir ${ZB_HOME}/data && \
     chmod 0775 ${ZB_HOME}/data
 
-COPY --from=init --chown=1000:0 tini ${ZB_HOME}/bin/
-COPY --from=init --chown=1000:0 startup.sh /usr/local/bin/startup.sh
-COPY --from=dist --chown=1000:0 camunda-zeebe ${ZB_HOME}
+COPY --from=init --chown=1000:0 /zeebe/tini ${ZB_HOME}/bin/
+COPY --from=init --chown=1000:0 /zeebe/startup.sh /usr/local/bin/startup.sh
+COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
