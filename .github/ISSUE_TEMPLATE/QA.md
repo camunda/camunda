@@ -1,5 +1,5 @@
 ---
-name: QA 
+name: QA issue
 about: collect information about the feature.
 title: ''
 labels: kind/QA
