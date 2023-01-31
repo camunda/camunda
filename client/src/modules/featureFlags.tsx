@@ -5,18 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-/* istanbul ignore file */
+const hasStartProcess = false;
 
-import {Outlet} from 'react-router-dom';
-import {Header} from './Header';
-
-const Layout: React.FC = () => {
-  return (
-    <>
-      <Header />
-      <Outlet />
-    </>
-  );
-};
-
-export {Layout};
+export {hasStartProcess};

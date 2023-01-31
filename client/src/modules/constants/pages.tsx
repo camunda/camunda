@@ -14,9 +14,11 @@ const Pages = {
     return `/${useIdParam ? `${ID_PARAM}?` : ''}`;
   },
   Login: '/login',
+  Tasks: '/:id',
   TaskDetails(id: string = ID_PARAM) {
     return `/${id}`;
   },
+  Processes: 'processes',
 } as const;
 
 export {Pages};

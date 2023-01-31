@@ -54,7 +54,7 @@ import {OnNewVariableAdded} from './OnNewVariableAdded';
 import {JSONEditorModal} from './JSONEditorModal';
 import {TextInput} from './TextInput';
 import {IconButton} from './IconButton';
-import {DelayedErrorField} from 'Task/DelayedErrorField';
+import {DelayedErrorField} from 'Tasks/Task/DelayedErrorField';
 import {Button, InlineLoadingStatus, Layer} from '@carbon/react';
 import {Information, Close, Popup, Add} from '@carbon/react/icons';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';

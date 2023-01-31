@@ -5,18 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-/* istanbul ignore file */
-
-import {Outlet} from 'react-router-dom';
-import {Header} from './Header';
-
-const Layout: React.FC = () => {
-  return (
-    <>
-      <Header />
-      <Outlet />
-    </>
-  );
+const Processes: React.FC = () => {
+  return null;
 };
 
-export {Layout};
+export {Processes};

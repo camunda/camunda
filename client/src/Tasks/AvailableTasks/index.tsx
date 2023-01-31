@@ -23,7 +23,7 @@ import {FilterValues} from 'modules/constants/filterValues';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 
-const Tasks: React.FC = () => {
+const AvailableTasks: React.FC = () => {
   const {
     fetchPreviousTasks,
     fetchNextTasks,
@@ -99,4 +99,4 @@ const Tasks: React.FC = () => {
   );
 };
 
-export {Tasks};
+export {AvailableTasks};

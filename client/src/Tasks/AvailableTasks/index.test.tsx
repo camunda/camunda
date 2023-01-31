@@ -11,7 +11,7 @@ import {
   waitForElementToBeRemoved,
   within,
 } from '@testing-library/react';
-import {Tasks} from './index';
+import {AvailableTasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {
@@ -58,7 +58,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {wrapper: getWrapper()});
+    render(<AvailableTasks />, {wrapper: getWrapper()});
 
     expect(screen.queryByTestId('task-0')).not.toBeInTheDocument();
     await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
@@ -72,7 +72,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {wrapper: getWrapper()});
+    render(<AvailableTasks />, {wrapper: getWrapper()});
 
     const [firstTask, secondTask] = mockGetAllOpenTasks().result.data.tasks;
 
@@ -109,7 +109,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {wrapper: getWrapper()});
+    render(<AvailableTasks />, {wrapper: getWrapper()});
 
     expect(await screen.findByText('No tasks found')).toBeInTheDocument();
     expect(
@@ -127,7 +127,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {
+    render(<AvailableTasks />, {
       wrapper: getWrapper([`/?filter=${FilterValues.ClaimedByMe}`]),
     });
 
@@ -145,7 +145,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {
+    render(<AvailableTasks />, {
       wrapper: getWrapper([`/?filter=${FilterValues.Unclaimed}`]),
     });
 
@@ -163,7 +163,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {
+    render(<AvailableTasks />, {
       wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
     });
 
@@ -184,7 +184,7 @@ describe('<Tasks />', () => {
       }),
     );
 
-    render(<Tasks />, {
+    render(<AvailableTasks />, {
       wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
     });
 

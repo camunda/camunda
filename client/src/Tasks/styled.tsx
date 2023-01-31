@@ -5,22 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-/* istanbul ignore file */
-
-import styled from 'styled-components';
-import {Panel} from 'modules/components/Panel';
-import {CollapsablePanel} from 'modules/components/CollapsablePanel';
 import {rem} from '@carbon/elements';
-
-const TasksPanel = styled(CollapsablePanel)`
-  height: 100%;
-`;
+import styled from 'styled-components';
+import {CollapsablePanel} from 'modules/components/CollapsablePanel';
+import {Panel} from 'modules/components/Panel';
 
 const Container = styled.main`
   display: flex;
   height: 100%;
   padding-top: ${rem(48)};
   box-sizing: border-box;
+`;
+
+const TasksPanel = styled(CollapsablePanel)`
+  height: 100%;
 `;
 
 const DetailsPanel = styled(Panel)`

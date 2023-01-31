@@ -15,7 +15,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {Layout} from './index';
+import {Tasks} from './index';
 import {ApolloProvider} from '@apollo/client';
 import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
@@ -73,7 +73,7 @@ describe('<Layout />', () => {
       }),
     );
 
-    render(<Layout />, {
+    render(<Tasks />, {
       wrapper: Wrapper,
     });
 

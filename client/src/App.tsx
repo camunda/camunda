@@ -18,9 +18,9 @@ import {Pages} from 'modules/constants/pages';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {client} from './modules/apollo-client';
 import {SessionWatcher} from './SessionWatcher';
-import {EmptyPage} from './EmptyPage';
-import {Task} from './Task';
+import {Tasks} from './Tasks';
 import {TrackPagination} from 'modules/tracking/TrackPagination';
+import {Processes} from 'Processes';
 
 const App: React.FC = () => {
   return (
@@ -34,15 +34,15 @@ const App: React.FC = () => {
           <Routes>
             <Route path={Pages.Login} element={<Login />} />
             <Route
-              path={Pages.Initial()}
+              path="*"
               element={
                 <AuthenticationCheck redirectPath={Pages.Login}>
                   <Layout />
                 </AuthenticationCheck>
               }
             >
-              <Route index element={<EmptyPage />} />
-              <Route path={Pages.TaskDetails()} element={<Task />} />
+              <Route path="*" element={<Tasks />} />
+              <Route path={Pages.Processes} element={<Processes />} />
             </Route>
           </Routes>
         </BrowserRouter>

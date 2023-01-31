@@ -10,7 +10,7 @@ import {Pages} from 'modules/constants/pages';
 import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
 import {C3Navigation} from '@camunda/camunda-composite-components';
-import {Link} from 'react-router-dom';
+import {Link, matchPath, useLocation} from 'react-router-dom';
 import {useEffect} from 'react';
 import {useQuery} from '@apollo/client';
 import {
@@ -21,6 +21,7 @@ import {capitalize} from 'lodash';
 import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
 import {observer} from 'mobx-react-lite';
+import {hasStartProcess} from 'modules/featureFlags';
 
 const orderedApps = [
   'console',
@@ -35,6 +36,9 @@ type AppSwitcherElementType = NonNullable<
 >[number];
 
 const Header: React.FC = observer(() => {
+  const location = useLocation();
+  const isProcessesPage =
+    matchPath(Pages.Processes, location.pathname) !== null;
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const {selectedTheme, changeTheme} = themeStore;
   const {displayName, salesPlanType, c8Links} = data?.currentUser ?? {
@@ -88,7 +92,26 @@ const Header: React.FC = observer(() => {
       }}
       forwardRef={Link}
       navbar={{
-        elements: [],
+        elements: hasStartProcess
+          ? [
+              {
+                isCurrentPage: isProcessesPage,
+                key: 'processes',
+                label: 'Processes',
+                routeProps: {
+                  to: Pages.Processes,
+                },
+              },
+              {
+                isCurrentPage: !isProcessesPage,
+                key: 'tasks',
+                label: 'Tasks',
+                routeProps: {
+                  to: Pages.Initial(),
+                },
+              },
+            ]
+          : [],
         tags:
           window.clientConfig?.isEnterprise === true ||
           window.clientConfig?.organizationId

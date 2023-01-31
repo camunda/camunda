@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, within} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {mockServer} from 'modules/mockServer';
 import {mockGetCurrentUserWithC8Links} from 'modules/queries/get-current-user';
 import {graphql} from 'msw';
@@ -42,29 +42,26 @@ describe('App switcher', () => {
       }),
     );
 
-    const withinAppPanel = within(
-      screen.getByRole('navigation', {
-        name: /app panel/i,
-      }),
+    expect(await screen.findByRole('link', {name: 'Console'})).toHaveAttribute(
+      'href',
+      'https://link-to-console',
     );
-
-    expect(
-      await withinAppPanel.findByRole('link', {name: 'Console'}),
-    ).toHaveAttribute('href', 'https://link-to-console');
-    expect(withinAppPanel.getByRole('link', {name: 'Modeler'})).toHaveAttribute(
+    expect(screen.getByRole('link', {name: 'Modeler'})).toHaveAttribute(
       'href',
       'https://link-to-modeler',
     );
-    expect(withinAppPanel.getByRole('link', {name: 'Operate'})).toHaveAttribute(
+    expect(screen.getByRole('link', {name: 'Operate'})).toHaveAttribute(
       'href',
       'https://link-to-operate',
     );
-    expect(
-      withinAppPanel.getByRole('link', {name: 'Tasklist'}),
-    ).toHaveAttribute('href', '/');
-    expect(
-      withinAppPanel.getByRole('link', {name: 'Optimize'}),
-    ).toHaveAttribute('href', 'https://link-to-optimize');
+    expect(screen.getByRole('link', {name: 'Tasklist'})).toHaveAttribute(
+      'href',
+      '/',
+    );
+    expect(screen.getByRole('link', {name: 'Optimize'})).toHaveAttribute(
+      'href',
+      'https://link-to-optimize',
+    );
   });
 
   it('should not render links for CCSM', async () => {
@@ -85,9 +82,19 @@ describe('App switcher', () => {
     });
 
     expect(
-      screen.queryByRole('button', {
-        name: /app switcher/i,
-      }),
+      screen.queryByRole('link', {name: 'Console'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Modeler'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Operate'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Tasklist'}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', {name: 'Optimize'}),
     ).not.toBeInTheDocument();
   });
 });
