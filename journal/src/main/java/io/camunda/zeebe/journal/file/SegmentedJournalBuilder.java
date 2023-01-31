@@ -20,6 +20,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
 
 /** Raft log builder. */
 @SuppressWarnings("UnusedReturnValue")
@@ -147,15 +149,27 @@ public class SegmentedJournalBuilder {
 
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var journalMetrics = new JournalMetrics(name);
     final var segmentAllocator =
         preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
-    final var segmentLoader = new SegmentLoader(segmentAllocator, freeDiskSpace);
+    final var segmentLoader =
+        new SegmentLoader(
+            new InstrumentedAllocator(journalMetrics, segmentAllocator), freeDiskSpace);
     final var segmentsManager =
         new SegmentsManager(
             journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
-    final var journalMetrics = new JournalMetrics(name);
 
     return new SegmentedJournal(
         directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics);
+  }
+
+  private record InstrumentedAllocator(JournalMetrics metrics, SegmentAllocator allocator)
+      implements SegmentAllocator {
+    @Override
+    public void allocate(final FileChannel channel, final long segmentSize) throws IOException {
+      try (final var ignored = metrics.observeSegmentAllocation()) {
+        allocator.allocate(channel, segmentSize);
+      }
+    }
   }
 }

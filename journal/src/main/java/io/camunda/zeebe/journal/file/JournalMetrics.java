@@ -61,11 +61,20 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Histogram SEGMENT_ALLOCATION_TIME =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("segment_allocation_time")
+          .help("Time spent to allocate a new segment")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
   private final Histogram.Child segmentCreationTime;
   private final Histogram.Child segmentTruncateTime;
   private final Histogram.Child segmentFlushTime;
   private final Gauge.Child segmentCount;
   private final Gauge.Child journalOpenTime;
+  private final Histogram.Child segmentAllocationTime;
 
   JournalMetrics(final String logName) {
     segmentCreationTime = SEGMENT_CREATION_TIME.labels(logName);
@@ -73,6 +82,7 @@ final class JournalMetrics {
     segmentFlushTime = SEGMENT_FLUSH_TIME.labels(logName);
     segmentCount = SEGMENT_COUNT.labels(logName);
     journalOpenTime = JOURNAL_OPEN_DURATION.labels(logName);
+    segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(logName);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {
@@ -97,5 +107,9 @@ final class JournalMetrics {
 
   void decSegmentCount() {
     segmentCount.dec();
+  }
+
+  Histogram.Timer observeSegmentAllocation() {
+    return segmentAllocationTime.startTimer();
   }
 }

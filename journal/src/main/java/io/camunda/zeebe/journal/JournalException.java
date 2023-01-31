@@ -55,8 +55,8 @@ public class JournalException extends RuntimeException {
   /**
    * Exception thrown when an entry's application sequence number lower than the previous record.
    */
-  public static class InvalidASqn extends JournalException {
-    public InvalidASqn(final String message) {
+  public static class InvalidAsqn extends JournalException {
+    public InvalidAsqn(final String message) {
       super(message);
     }
   }

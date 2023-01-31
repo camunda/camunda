@@ -19,7 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.camunda.zeebe.journal.CorruptedJournalException;
-import io.camunda.zeebe.journal.JournalException.InvalidASqn;
+import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.JournalException.SegmentFull;
@@ -121,7 +121,7 @@ final class SegmentWriter {
     }
 
     if (asqn != SegmentedJournal.ASQN_IGNORE && asqn <= lastAsqn) {
-      throw new InvalidASqn(
+      throw new InvalidAsqn(
           String.format(
               "The records asqn is not big enough. Expected it to be bigger than %d but was %d",
               lastAsqn, asqn));
