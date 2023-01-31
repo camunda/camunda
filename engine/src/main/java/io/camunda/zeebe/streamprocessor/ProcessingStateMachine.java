@@ -238,80 +238,26 @@ public final class ProcessingStateMachine {
     metadata.reset();
     loggedEvent.readMetadata(metadata);
 
-    // Here we need to get the current time, since we want to calculate
-    // how long it took between writing to the dispatcher and processing.
-    // In all other cases we should prefer to use the Prometheus Timer API.
-    final var processingStartTime = ActorClock.currentTimeMillis();
-    processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
     try {
+      // Here we need to get the current time, since we want to calculate
+      // how long it took between writing to the dispatcher and processing.
+      // In all other cases we should prefer to use the Prometheus Timer API.
+      final var processingStartTime = ActorClock.currentTimeMillis();
+      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
+      processingTimer = metrics.startProcessingDurationTimer(metadata.getRecordType());
+
       final var value = recordValues.readRecordValue(loggedEvent, metadata.getValueType());
       typedCommand.wrap(loggedEvent, metadata, value);
 
-      final long position = typedCommand.getPosition();
-      final ProcessingResultBuilder processingResultBuilder =
-          new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
-
-      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
-
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
-
-      zeebeDbTransaction.run(
-          () -> {
-            var resultIndex = 0;
-            var processedCommands = 0;
-            pendingWrites = new ArrayList<>();
-            final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
-            pendingCommands.addLast(typedCommand);
-
-            while (!pendingCommands.isEmpty() && processedCommands++ < COMMAND_LIMIT) {
-              final var command = pendingCommands.removeFirst();
-
-              currentProcessor =
-                  recordProcessors.stream()
-                      .filter(p -> p.accepts(command.getValueType()))
-                      .findFirst()
-                      .orElse(null);
-              if (currentProcessor != null) {
-                currentProcessingResult =
-                    currentProcessor.process(command, processingResultBuilder);
-
-                final int finalProcessedCommands = processedCommands;
-                currentProcessingResult.getRecordBatch().entries().stream()
-                    .skip(resultIndex)
-                    .forEachOrdered(
-                        entry -> {
-                          var logAppendEntry = entry;
-                          if (entry.recordMetadata().getRecordType() == RecordType.COMMAND) {
-                            if (finalProcessedCommands + pendingCommands.size() < COMMAND_LIMIT) {
-                              pendingCommands.addLast(
-                                  new UnwrittenRecord(
-                                      entry.key(),
-                                      context.getPartitionId(),
-                                      entry.recordValue(),
-                                      entry.recordMetadata()));
-                              logAppendEntry =
-                                  new ProcessedRecordBatchEntry(
-                                      entry.key(),
-                                      entry.sourceIndex(),
-                                      entry.recordMetadata(),
-                                      entry.recordValue());
-                            }
-                          }
-                          pendingWrites.add(logAppendEntry);
-                        });
-
-                resultIndex = currentProcessingResult.getRecordBatch().entries().size();
-              }
-              metrics.commandsProcessed();
-            }
-          });
+      zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
 
       if (EmptyProcessingResult.INSTANCE == currentProcessingResult) {
         skipRecord();
         return;
       }
 
-      lastProcessedPositionState.markAsProcessed(position);
+      lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
       writeRecords();
     } catch (final RecoverableException recoverableException) {
       // recoverable
@@ -326,6 +272,96 @@ public final class ProcessingStateMachine {
     } catch (final Exception e) {
       onError(e, this::writeRecords);
     }
+  }
+
+  /**
+   * Starts the batch processing with the given initial command and iterates over ProcessingResult
+   * and applies all follow-up commands until the command limit is reached or no more follow-up
+   * commands are created.
+   */
+  private void batchProcessing(final TypedRecord<?> initialCommand) {
+    final ProcessingResultBuilder processingResultBuilder =
+        new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
+    var lastProcessingResultSize = 0;
+    var processedCommandsCount = 0;
+    pendingWrites = new ArrayList<>();
+    final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
+    pendingCommands.addLast(initialCommand);
+
+    while (!pendingCommands.isEmpty() && processedCommandsCount < COMMAND_LIMIT) {
+
+      final var command = pendingCommands.removeFirst();
+
+      currentProcessor =
+          recordProcessors.stream()
+              .filter(p -> p.accepts(command.getValueType()))
+              .findFirst()
+              .orElse(null);
+      if (currentProcessor != null) {
+        currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
+
+        final BatchProcessingStepResult batchProcessingStepResult =
+            collectBatchProcessingStepResult(
+                currentProcessingResult,
+                lastProcessingResultSize,
+                // +1 since we already need include the current command in the calculation
+                pendingCommands.size() + processedCommandsCount + 1);
+
+        pendingCommands.addAll(batchProcessingStepResult.toProcess());
+        pendingWrites.addAll(batchProcessingStepResult.toWrite());
+      }
+
+      lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
+      processedCommandsCount++;
+      metrics.commandsProcessed();
+    }
+  }
+
+  /**
+   * Collects from the given processing result the commands which should be processed further, and
+   * the records which should be written to the log.
+   *
+   * @param processingResult the processing result of the last processed command
+   * @param lastProcessingResultSize the size of the processing result before processing the last
+   *     command
+   * @param currentBatchSize the current batch size (only commands counted), includes already
+   *     processed and pending commands
+   * @return the result of the current batch processing step, which contains the next to processed
+   *     commands and the records which should be written to the log
+   */
+  private BatchProcessingStepResult collectBatchProcessingStepResult(
+      final ProcessingResult processingResult,
+      final int lastProcessingResultSize,
+      final int currentBatchSize) {
+
+    final var commandsToProcess = new ArrayList<TypedRecord<?>>();
+    final var toWriteEntries = new ArrayList<ImmutableRecordBatchEntry>();
+
+    processingResult.getRecordBatch().entries().stream()
+        .skip(lastProcessingResultSize) // because the result builder is reused
+        .forEachOrdered(
+            entry -> {
+              var toWriteEntry = entry;
+              final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
+              if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
+                  && potentialBatchSize < COMMAND_LIMIT) {
+                commandsToProcess.add(
+                    new UnwrittenRecord(
+                        entry.key(),
+                        context.getPartitionId(),
+                        entry.recordValue(),
+                        entry.recordMetadata()));
+                toWriteEntry =
+                    new ProcessedRecordBatchEntry(
+                        entry.key(),
+                        entry.sourceIndex(),
+                        entry.recordMetadata(),
+                        entry.recordValue());
+              }
+              toWriteEntries.add(toWriteEntry);
+            });
+
+    return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -540,4 +576,7 @@ public final class ProcessingStateMachine {
 
     actor.submit(this::readNextRecord);
   }
+
+  private record BatchProcessingStepResult(
+      List<TypedRecord<?>> toProcess, List<ImmutableRecordBatchEntry> toWrite) {}
 }
