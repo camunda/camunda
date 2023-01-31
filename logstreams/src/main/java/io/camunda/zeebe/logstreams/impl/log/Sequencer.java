@@ -16,6 +16,7 @@ import io.camunda.zeebe.scheduler.ActorCondition;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.Closeable;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
@@ -34,7 +35,6 @@ import org.slf4j.LoggerFactory;
  */
 final class Sequencer implements LogStreamWriter, Closeable {
   private static final Logger LOG = LoggerFactory.getLogger(Sequencer.class);
-  private final int partitionId;
   private final int maxFragmentSize;
 
   private volatile long position;
@@ -44,12 +44,11 @@ final class Sequencer implements LogStreamWriter, Closeable {
   private final ReentrantLock lock = new ReentrantLock();
   private final SequencerMetrics metrics;
 
-  Sequencer(final int partitionId, final long initialPosition, final int maxFragmentSize) {
+  Sequencer(final long initialPosition, final int maxFragmentSize, final SequencerMetrics metrics) {
     LOG.trace("Starting new sequencer at position {}", initialPosition);
     position = initialPosition;
-    this.partitionId = partitionId;
     this.maxFragmentSize = maxFragmentSize;
-    metrics = new SequencerMetrics(partitionId);
+    this.metrics = Objects.requireNonNull(metrics, "must specify metrics");
   }
 
   /** {@inheritDoc} */
