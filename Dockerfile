@@ -1,29 +1,40 @@
+# syntax=docker/dockerfile:1.4
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
 ARG BASE_DIGEST_AMD64="sha256:d1c582c712e8ae049014a3e81296c522360949cbac7ade7e50a0d4d310706066"
 ARG BASE_DIGEST_ARM64="sha256:dac99a547dae7b46de7f0c34f57002094e054724058e8c9f51243d53286bf89e"
 
-#### Builder image ####
-FROM ubuntu:jammy as builder
-ARG DISTBALL
+# set to "build" to build zeebe from scratch instead of using a distball
+ARG DIST="distball"
 
-ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
-    TMP_DIR=/tmp/zeebe
-
-COPY ${DISTBALL} ${TMP_ARCHIVE}
-
-RUN mkdir -p ${TMP_DIR} && \
-    tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR} && \
-    # already create volume dir to later have correct rights
-    mkdir ${TMP_DIR}/data && \
+### Init image containing tini and the startup script ###
+FROM ubuntu:jammy as init
+WORKDIR /zeebe
+RUN --mount=type=cache,target=/var/apt/cache,rw \
     apt-get -qq update && \
     apt-get install -y --no-install-recommends tini=0.19.0-1 && \
-    cp /usr/bin/tini ${TMP_DIR}/bin/tini
+    cp /usr/bin/tini .
+COPY --link --chown=1000:0 docker/utils/startup.sh .
 
-COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
-RUN chmod +x -R ${TMP_DIR}/bin/ && \
-    chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
+### Build zeebe from scratch ###
+FROM maven:3-eclipse-temurin-17 as build
+WORKDIR /zeebe
+ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
+COPY --link . ./
+RUN --mount=type=cache,target=/root/.m2,rw mvn -B -am -pl dist package -T1C -D skipChecks -D skipTests
+RUN mv dist/target/camunda-zeebe .
+
+### Extract zeebe from distball ###
+FROM ubuntu:jammy as distball
+WORKDIR /zeebe
+ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
+COPY --link ${DISTBALL} zeebe.tar.gz
+RUN mkdir camunda-zeebe && tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
+
+### Image containing the zeebe distribution ###
+# hadolint ignore=DL3006
+FROM ${DIST} as dist
 
 ### AMD64 base image ###
 # BASE_DIGEST_AMD64 is defined at the top of the Dockerfile
@@ -86,9 +97,12 @@ RUN groupadd -g 1000 zeebe && \
     adduser -u 1000 zeebe --system --ingroup zeebe && \
     chmod g=u /etc/passwd && \
     chown 1000:0 ${ZB_HOME} && \
-    chmod 0775 ${ZB_HOME}
+    chmod 0775 ${ZB_HOME} && \
+    mkdir ${ZB_HOME}/data && \
+    chmod 0775 ${ZB_HOME}/data
 
-COPY --from=builder --chown=1000:0 /tmp/zeebe/bin/startup.sh /usr/local/bin/startup.sh
-COPY --from=builder --chown=1000:0 /tmp/zeebe ${ZB_HOME}
+COPY --from=init --chown=1000:0 /zeebe/tini ${ZB_HOME}/bin/
+COPY --from=init --chown=1000:0 /zeebe/startup.sh /usr/local/bin/startup.sh
+COPY --from=dist --chown=1000:0 /zeebe/camunda-zeebe ${ZB_HOME}
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
