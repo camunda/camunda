@@ -1,3 +1,13 @@
+---
+name: QA 
+about: collect information about the feature.
+title: ''
+labels: kind/QA
+assignees: ''
+
+---
+
+
 > Note: Remember to link this QA issue to the parent Epic 
 
 ### Description
