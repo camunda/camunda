@@ -205,7 +205,7 @@ public final class ProcessingStateMachine {
     if (shouldProcessNext.getAsBoolean() && hasNext && !inProcessing) {
       currentRecord = logStreamReader.next();
 
-      if (eventFilter.applies(currentRecord)) {
+      if (eventFilter.applies(currentRecord) && !currentRecord.shouldSkipProcessing()) {
         processCommand(currentRecord);
       } else {
         skipRecord();
