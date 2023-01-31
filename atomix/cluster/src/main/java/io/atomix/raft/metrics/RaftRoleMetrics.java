@@ -19,62 +19,83 @@ package io.atomix.raft.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Timer;
 
 public class RaftRoleMetrics extends RaftMetrics {
 
   private static final Gauge ROLE =
       Gauge.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("role")
           .help("Shows current role")
-          .labelNames("partitionGroupName", "partition")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
   private static final Counter HEARTBEAT_MISS =
       Counter.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("heartbeat_miss_count")
           .help("Count of missing heartbeats")
-          .labelNames("partitionGroupName", "partition")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
   private static final Histogram HEARTBEAT_TIME =
       Histogram.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("heartbeat_time_in_s")
           .help("Time between heartbeats")
-          .labelNames("partitionGroupName", "partition")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
   private static final Gauge ELECTION_LATENCY =
       Gauge.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("election_latency_in_ms")
           .help("Duration for election")
-          .labelNames("partitionGroupName", "partition")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
+
+  private static final Histogram LAST_WRITTEN_INDEX_UPDATE =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("last_written_index_update")
+          .help("Time it takes to update the last written index")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .register();
+
+  private final Gauge.Child role;
+  private final Counter.Child heartbeatMiss;
+  private final Histogram.Child heartbeatTime;
+  private final Gauge.Child electionLatency;
+  private final Histogram.Child lastWrittenIndexUpdate;
 
   public RaftRoleMetrics(final String partitionName) {
     super(partitionName);
+
+    role = ROLE.labels(partitionGroupName, partition);
+    heartbeatMiss = HEARTBEAT_MISS.labels(partitionGroupName, partition);
+    heartbeatTime = HEARTBEAT_TIME.labels(partitionGroupName, partition);
+    electionLatency = ELECTION_LATENCY.labels(partitionGroupName, partition);
+    lastWrittenIndexUpdate = LAST_WRITTEN_INDEX_UPDATE.labels(partitionGroupName, partition);
   }
 
   public void becomingFollower() {
-    ROLE.labels(partitionGroupName, partition).set(1);
+    role.set(1);
   }
 
   public void becomingCandidate() {
-    ROLE.labels(partitionGroupName, partition).set(2);
+    role.set(2);
   }
 
   public void becomingLeader() {
-    ROLE.labels(partitionGroupName, partition).set(3);
+    role.set(3);
   }
 
   public void countHeartbeatMiss() {
-    HEARTBEAT_MISS.labels(partitionGroupName, partition).inc();
+    heartbeatMiss.inc();
   }
 
   public void observeHeartbeatInterval(final long milliseconds) {
-    HEARTBEAT_TIME.labels(partitionGroupName, partition).observe(milliseconds / 1000f);
+    heartbeatTime.observe(milliseconds / 1000f);
   }
 
   public static double getHeartbeatMissCount(final String partition) {
@@ -82,6 +103,10 @@ public class RaftRoleMetrics extends RaftMetrics {
   }
 
   public void setElectionLatency(final long latencyMs) {
-    ELECTION_LATENCY.labels(partitionGroupName, partition).set(latencyMs);
+    electionLatency.set(latencyMs);
+  }
+
+  public Timer observeLastWrittenIndexUpdate() {
+    return lastWrittenIndexUpdate.startTimer();
   }
 }

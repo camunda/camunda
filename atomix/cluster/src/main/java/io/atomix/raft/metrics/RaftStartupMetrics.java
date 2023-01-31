@@ -18,10 +18,6 @@ package io.atomix.raft.metrics;
 import io.prometheus.client.Gauge;
 
 public class RaftStartupMetrics extends RaftMetrics {
-  private static final String NAMESPACE = "atomix";
-  private static final String PARTITION_GROUP_NAME_LABEL = "partitionGroupName";
-  private static final String PARTITION_LABEL = "partition";
-
   private static final Gauge START_DURATION =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -39,15 +35,20 @@ public class RaftStartupMetrics extends RaftMetrics {
           .name("partition_server_bootstrap_time")
           .register();
 
+  private final Gauge.Child startDuration;
+  private final Gauge.Child bootstrapDuration;
+
   public RaftStartupMetrics(final String partitionName) {
     super(partitionName);
+    startDuration = START_DURATION.labels(partitionGroupName, partition);
+    bootstrapDuration = BOOTSTRAP_DURATION.labels(partitionGroupName, partition);
   }
 
   public void observeStartupDuration(final long durationMillis) {
-    START_DURATION.labels(partitionGroupName, partition).set(durationMillis);
+    startDuration.set(durationMillis);
   }
 
   public void observeBootstrapDuration(final long durationMillis) {
-    BOOTSTRAP_DURATION.labels(partitionGroupName, partition).set(durationMillis);
+    bootstrapDuration.set(durationMillis);
   }
 }

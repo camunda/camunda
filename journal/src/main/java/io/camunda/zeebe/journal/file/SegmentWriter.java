@@ -154,7 +154,7 @@ final class SegmentWriter {
     }
 
     writeMetadata(startPosition, frameLength, recordLength, checksum);
-    updateLastWrittenEntry(startPosition, frameLength, metadataLength);
+    updateLastWrittenEntry(startPosition, frameLength, metadataLength, recordLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
     buffer.position(startPosition + frameLength + metadataLength + recordLength);
@@ -162,10 +162,14 @@ final class SegmentWriter {
   }
 
   private void updateLastWrittenEntry(
-      final int startPosition, final int frameLength, final int metadataLength) {
+      final int startPosition,
+      final int frameLength,
+      final int metadataLength,
+      final int dataLength) {
     final var metadata = serializer.readMetadata(writeBuffer, startPosition + frameLength);
     final var data = serializer.readData(writeBuffer, startPosition + frameLength + metadataLength);
-    lastEntry = new PersistedJournalRecord(metadata, data);
+    lastEntry =
+        new PersistedJournalRecord(metadata, data, frameLength + metadataLength + dataLength);
     updateLastAsqn(lastEntry.asqn());
     index.index(lastEntry, startPosition);
   }

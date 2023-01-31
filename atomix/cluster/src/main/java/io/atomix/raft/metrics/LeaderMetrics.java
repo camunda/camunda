@@ -16,23 +16,62 @@
  */
 package io.atomix.raft.metrics;
 
+import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 
 public class LeaderMetrics extends RaftMetrics {
+  private static final String FOLLOWER_LABEL = "follower";
 
   private static final Histogram APPEND_LATENCY =
       Histogram.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("append_entries_latency")
           .help("Latency to append an entry to a follower")
-          .labelNames("follower", "partitionGroupName", "partition")
+          .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
+
+  private static final Counter APPEND_RATE =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("append_entries_rate")
+          .help("The rate of entries appended (counting entries, not their size)")
+          .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .register();
+
+  private static final Counter APPEND_DATA_RATE =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("append_entries_data_rate")
+          .help("The rate of data replication in KiB")
+          .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .register();
+
+  private static final Counter COMMIT_RATE =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("commit_entries_rate")
+          .help("The rate of entries committed (counting entries, not their size)")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .register();
+
+  private final Counter.Child commitRate;
 
   public LeaderMetrics(final String partitionName) {
     super(partitionName);
+    commitRate = COMMIT_RATE.labels(partitionGroupName, partition);
   }
 
   public void appendComplete(final long latencyms, final String memberId) {
     APPEND_LATENCY.labels(memberId, partitionGroupName, partition).observe(latencyms / 1000f);
+  }
+
+  public void observeAppend(
+      final String memberId, final int appendedEntries, final int appendedBytes) {
+    APPEND_RATE.labels(memberId, partitionGroupName, partition).inc(appendedEntries);
+    APPEND_DATA_RATE.labels(memberId, partitionGroupName, partition).inc(appendedBytes / 1024f);
+  }
+
+  public void observeCommit() {
+    commitRate.inc();
   }
 }

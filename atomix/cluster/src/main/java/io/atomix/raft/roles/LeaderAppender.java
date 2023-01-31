@@ -556,6 +556,7 @@ final class LeaderAppender {
     for (long i = previousCommitIndex + 1; i <= commitIndex; i++) {
       final CompletableFuture<Long> future = appendFutures.remove(i);
       if (future != null) {
+        metrics.observeCommit();
         future.complete(i);
       }
     }
@@ -610,7 +611,7 @@ final class LeaderAppender {
       final AppendResponse response,
       final long timestamp) {
     if (response.status() == RaftResponse.Status.OK) {
-      handleAppendResponseOk(member, response);
+      handleAppendResponseOk(member, request, response);
     } else {
       handleAppendResponseError(member, request, response);
     }
@@ -618,7 +619,7 @@ final class LeaderAppender {
   }
 
   private void handleAppendResponseOk(
-      final RaftMemberContext member, final AppendResponse response) {
+      final RaftMemberContext member, final AppendRequest request, final AppendResponse response) {
     // Reset the member failure count and update the member's availability status if necessary.
     succeedAttempt(member);
 
@@ -626,6 +627,10 @@ final class LeaderAppender {
     if (response.succeeded()) {
       member.appendSucceeded();
       updateMatchIndex(member, response);
+      metrics.observeAppend(
+          member.getMember().memberId().id(),
+          request.entries().size(),
+          request.entries().stream().mapToInt(PersistedRaftRecord::approximateSize).sum());
 
       commitEntries();
 

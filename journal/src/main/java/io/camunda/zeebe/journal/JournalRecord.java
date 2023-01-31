@@ -46,4 +46,10 @@ public interface JournalRecord {
    * @return data
    */
   DirectBuffer data();
+
+  /**
+   * Returns the size in bytes of the record. It may be an approximate size. Primarily used for
+   * serialization and metrics.
+   */
+  int length();
 }
