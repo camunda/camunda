@@ -33,12 +33,24 @@ jobs:
           distribution: "adopt"
           java-version: "11"
           cache: "maven"
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -s "./maven-settings.xml" -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: mvn clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Build Docker and push to local registry
-        run: mvn -pl webapp -s "./maven-settings.xml" jib:build -Dimage=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} -Djib.allowInsecureRegistries=true
+        run: mvn -pl webapp jib:build -Dimage=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} -Djib.allowInsecureRegistries=true
       - name: Run Docker tests
-        run: mvn -f qa/integration-tests -s "./maven-settings.xml" -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: mvn -f qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
