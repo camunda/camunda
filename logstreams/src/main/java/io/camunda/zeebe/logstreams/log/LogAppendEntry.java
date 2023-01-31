@@ -49,6 +49,13 @@ public interface LogAppendEntry {
   }
 
   /**
+   * @return true if the entry was already processed, defaults to false
+   */
+  default boolean isProcessed() {
+    return false;
+  }
+
+  /**
    * Creates a default representation of a {@link LogAppendEntry} using default null values for the
    * key and source index.
    *
@@ -83,5 +90,16 @@ public interface LogAppendEntry {
         -1,
         Objects.requireNonNull(recordMetadata, "must specify metadata"),
         Objects.requireNonNull(recordValue, "must specify value"));
+  }
+
+  /**
+   * Creates a new {@link LogAppendEntry} which wraps the given {@link LogAppendEntry} and
+   * marks the entry as processed.
+   *
+   * @param entry the entry which should be written to the log
+   * @return a simple value class implementation of a {@link LogAppendEntry} with the parameters
+   */
+  static LogAppendEntry ofProcessed(final LogAppendEntry entry) {
+    return new ProcessedLogAppendEntryImpl(entry);
   }
 }
