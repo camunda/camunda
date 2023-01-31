@@ -24,7 +24,7 @@ import org.agrona.MutableDirectBuffer;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |            VERSION             |              R               |
+ *  |            VERSION             |     BOOL_FLAGS    |     R    |
  *  +---------------------------------------------------------------+
  *  |                            POSITION                           |
  *  |                                                               |
@@ -52,6 +52,9 @@ public final class LogEntryDescriptor {
 
   public static final int VERSION_OFFSET;
 
+  // Contains the processed marker flag, can be extended with further boolean flags
+  public static final int BOOL_FLAGS_OFFSET;
+
   public static final int POSITION_OFFSET;
 
   public static final int SOURCE_EVENT_POSITION_OFFSET;
@@ -72,8 +75,11 @@ public final class LogEntryDescriptor {
     VERSION_OFFSET = offset;
     offset += SIZE_OF_SHORT;
 
-    // reserved offset
-    offset += SIZE_OF_SHORT;
+    BOOL_FLAGS_OFFSET = offset;
+    offset += Byte.BYTES;
+
+    // reserved
+    offset += Byte.BYTES;
 
     POSITION_OFFSET = offset;
     offset += SIZE_OF_LONG;
@@ -142,6 +148,18 @@ public final class LogEntryDescriptor {
 
   public static void setKey(final MutableDirectBuffer buffer, final int offset, final long key) {
     buffer.putLong(keyOffset(offset), key, Protocol.ENDIANNESS);
+  }
+
+  public static int boolFlagsOffset(final int offset) {
+    return BOOL_FLAGS_OFFSET + offset;
+  }
+
+  public static boolean isProcessed(final DirectBuffer buffer, final int offset) {
+    return (buffer.getByte(boolFlagsOffset(offset)) & 0x01) > 0;
+  }
+
+  public static void markAsProcessed(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putByte(boolFlagsOffset(offset), (byte) 1);
   }
 
   public static int timestampOffset(final int offset) {

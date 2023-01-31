@@ -13,6 +13,12 @@ import org.agrona.DirectBuffer;
 
 /** Represents an event on the log stream. */
 public interface LoggedEvent extends BufferWriter {
+
+  /**
+   * @return returns true if record is already processed
+   */
+  boolean isProcessed();
+
   /**
    * @return the event's position in the log.
    */

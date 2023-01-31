@@ -39,6 +39,11 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   @Override
+  public boolean isProcessed() {
+    return LogEntryDescriptor.isProcessed(buffer, messageOffset);
+  }
+
+  @Override
   public long getPosition() {
     return LogEntryDescriptor.getPosition(buffer, fragmentOffset);
   }
