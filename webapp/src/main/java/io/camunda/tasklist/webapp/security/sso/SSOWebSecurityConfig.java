@@ -15,7 +15,6 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
 
 import com.auth0.AuthenticationController;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
@@ -40,8 +39,6 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOWebSecurityConfig.class);
 
-  @Autowired private TasklistProperties tasklistProperties;
-
   @Autowired private OAuth2WebConfigurer oAuth2WebConfigurer;
 
   @Bean
@@ -54,7 +51,12 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
   }
 
   @Override
-  protected void configure(HttpSecurity http) throws Exception {
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
+    oAuth2WebConfigurer.configure(http);
+  }
+
+  @Override
+  protected void configureCsrf(HttpSecurity http) throws Exception {
     http.csrf()
         .disable()
         .authorizeRequests()
@@ -65,12 +67,6 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::authenticationEntry);
-    configureOAuth2(http);
-  }
-
-  @Override
-  protected void configureOAuth2(HttpSecurity http) throws Exception {
-    oAuth2WebConfigurer.configure(http);
   }
 
   protected void authenticationEntry(

@@ -43,6 +43,20 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
+    configureContentPolicySecurityHeader(http);
+    configureCsrf(http);
+    configureOAuth2(http);
+  }
+
+  protected abstract void configureOAuth2(HttpSecurity http) throws Exception;
+
+  protected void configureContentPolicySecurityHeader(HttpSecurity http) throws Exception {
+    http.headers()
+        .contentSecurityPolicy(
+            tasklistProperties.getSecurityProperties().getContentSecurityPolicy());
+  }
+
+  protected void configureCsrf(HttpSecurity http) throws Exception {
     http.csrf()
         .disable()
         .authorizeRequests()
@@ -66,10 +80,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::failureHandler);
-    configureOAuth2(http);
   }
-
-  protected abstract void configureOAuth2(HttpSecurity http) throws Exception;
 
   private void logoutSuccessHandler(
       HttpServletRequest request, HttpServletResponse response, Authentication authentication) {

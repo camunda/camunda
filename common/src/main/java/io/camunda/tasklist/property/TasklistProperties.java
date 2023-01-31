@@ -50,6 +50,9 @@ public class TasklistProperties {
   private String version = UNKNOWN_VERSION;
 
   @NestedConfigurationProperty
+  private SecurityProperties securityProperties = new SecurityProperties();
+
+  @NestedConfigurationProperty
   private TasklistElasticsearchProperties elasticsearch = new TasklistElasticsearchProperties();
 
   @NestedConfigurationProperty
@@ -270,5 +273,14 @@ public class TasklistProperties {
 
   public void setFixUsernames(boolean fixUsernames) {
     this.fixUsernames = fixUsernames;
+  }
+
+  public SecurityProperties getSecurityProperties() {
+    return securityProperties;
+  }
+
+  public TasklistProperties setSecurityProperties(SecurityProperties securityProperties) {
+    this.securityProperties = securityProperties;
+    return this;
   }
 }

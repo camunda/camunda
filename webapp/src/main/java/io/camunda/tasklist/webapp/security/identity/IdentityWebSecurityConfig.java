@@ -14,7 +14,6 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT_URL;
 
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer;
 import java.io.IOException;
@@ -38,10 +37,13 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
   @Autowired protected IdentityOAuth2WebConfigurer oAuth2WebConfigurer;
 
-  @Autowired private TasklistProperties tasklistProperties;
+  @Override
+  protected void configureOAuth2(HttpSecurity http) throws Exception {
+    oAuth2WebConfigurer.configure(http);
+  }
 
   @Override
-  protected void configure(HttpSecurity http) throws Exception {
+  protected void configureCsrf(HttpSecurity http) throws Exception {
     http.csrf()
         .disable()
         .authorizeRequests()
@@ -52,12 +54,6 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
         .and()
         .exceptionHandling()
         .authenticationEntryPoint(this::authenticationEntry);
-    configureOAuth2(http);
-  }
-
-  @Override
-  protected void configureOAuth2(HttpSecurity http) throws Exception {
-    oAuth2WebConfigurer.configure(http);
   }
 
   protected void authenticationEntry(

@@ -31,6 +31,8 @@ public interface AuthenticationTestable {
 
   String SET_COOKIE_HEADER = "Set-Cookie";
 
+  String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
+
   String CURRENT_USER_QUERY =
       "{currentUser{ userId \n displayName roles salesPlanType c8Links { name link } }}";
 
@@ -86,6 +88,8 @@ public interface AuthenticationTestable {
     final String sessionCookie = getSessionCookie(headers).orElse("");
     assertThat(sessionCookie).contains(COOKIE_JSESSIONID);
     assertThat(sessionCookie).contains("SameSite=Lax");
+    assertThat(headers).containsKey(CONTENT_SECURITY_POLICY_HEADER);
+    assertThat(headers.get(CONTENT_SECURITY_POLICY_HEADER)).isNotNull().isNotEmpty();
   }
 
   default void assertThatCookiesAreDeleted(ResponseEntity<?> response) {
