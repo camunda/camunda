@@ -99,6 +99,7 @@ exporters:
         processInstanceCreation: false
         processInstanceModification: false
         processMessageSubscription: false
+        resourceDeletion: false
         signal: false
         signalSubscription: false
         variable: false
@@ -149,6 +150,7 @@ More specifically, each option configures the following:
   be exported; if false, ignored.
 * `processMessageSubscription` (`boolean`): if true, records related to process message
   subscriptions will be exported; if false, ignored.
+* `resourceDeletion` (`boolean`): if true, records related to resource deletions will be exported; if false, ignored.
 * `signal` (`boolean`): if true, records related to signals will be exported; if false, ignored.
 * `signalSubscription` (`boolean`): if true, records related to signal subscription will be exported; if false, ignored.
 * `timer` (`boolean`): if true, records related to timers will be exported; if false, ignored.
@@ -212,6 +214,7 @@ exporters:
         processInstanceCreation: true
         processInstanceModification: true
         processMessageSubscription: true
+        resourceDeletion: true
         signal: true
         signalSubscription: true
         timer: true

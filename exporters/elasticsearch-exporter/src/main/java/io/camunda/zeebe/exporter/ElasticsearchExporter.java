@@ -269,6 +269,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.signalSubscription) {
         createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION);
       }
+      if (index.resourceDeletion) {
+        createValueIndexTemplate(ValueType.RESOURCE_DELETION);
+      }
     }
 
     indexTemplatesCreated = true;

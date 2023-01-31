@@ -584,6 +584,7 @@
         #     processInstanceCreation: true
         #     processInstanceModification: true
         #     processMessageSubscription: true
+        #     resourceDeletion: true
         #     signal: true
         #     signalSubscription: true
         #     timer: true

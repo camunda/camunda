@@ -74,6 +74,7 @@ final class TestSupport {
       case ESCALATION -> config.escalation = value;
       case SIGNAL -> config.signal = value;
       case SIGNAL_SUBSCRIPTION -> config.signalSubscription = value;
+      case RESOURCE_DELETION -> config.resourceDeletion = value;
       default -> throw new IllegalArgumentException(
           "No known indexing configuration option for value type " + valueType);
     }

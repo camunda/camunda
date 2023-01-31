@@ -123,6 +123,8 @@ public interface Intent {
         return SignalIntent.from(intent);
       case SIGNAL_SUBSCRIPTION:
         return SignalSubscriptionIntent.from(intent);
+      case RESOURCE_DELETION:
+        return ResourceDeletionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -186,6 +188,8 @@ public interface Intent {
         return SignalIntent.valueOf(intent);
       case SIGNAL_SUBSCRIPTION:
         return SignalSubscriptionIntent.valueOf(intent);
+      case RESOURCE_DELETION:
+        return ResourceDeletionIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

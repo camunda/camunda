@@ -40,6 +40,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -1171,6 +1172,23 @@ final class JsonSerializableToJsonTest {
           }
           """
       },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////////// ResourceDeletionRecord ///////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "ResourceDeletionRecord",
+        (Supplier<UnifiedRecordValue>)
+            () -> {
+              final var resourceKey = 1L;
+
+              return new ResourceDeletionRecord().setResourceKey(resourceKey);
+            },
+        """
+          {
+            "resourceKey":1
+          }
+          """
+      }
     };
   }
 
