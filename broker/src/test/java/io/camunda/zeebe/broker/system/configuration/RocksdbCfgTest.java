@@ -76,7 +76,7 @@ public final class RocksdbCfgTest {
     assertThat(rocksDbConfiguration.getMaxWriteBufferNumber()).isEqualTo(6);
     assertThat(rocksDbConfiguration.getMinWriteBufferNumberToMerge()).isEqualTo(3);
     assertThat(rocksDbConfiguration.getIoRateBytesPerSecond()).isZero();
-    assertThat(rocksDbConfiguration.isWalDisabled()).isFalse();
+    assertThat(rocksDbConfiguration.isWalDisabled()).isTrue();
   }
 
   @Test
