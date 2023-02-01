@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
@@ -28,13 +27,11 @@ import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Instant;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -52,9 +49,9 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   private final MutableTimerInstanceState timerInstanceState;
   private final ExpressionProcessor expressionProcessor;
   private final KeyGenerator keyGenerator;
-  private final EventScopeInstanceState eventScopeInstanceState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+
   private final EventHandle eventHandle;
 
   public TriggerTimerProcessor(
@@ -70,7 +67,6 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     elementInstanceState = zeebeState.getElementInstanceState();
     timerInstanceState = zeebeState.getTimerState();
     keyGenerator = zeebeState.getKeyGenerator();
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
     eventHandle =
         new EventHandle(
             keyGenerator,
@@ -82,8 +78,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<TimerRecord> record, final Consumer<SideEffectProducer> sideEffects) {
+  public void processRecord(final TypedRecord<TimerRecord> record) {
     final var timer = record.getValue();
     final var elementInstanceKey = timer.getElementInstanceKey();
     final var processDefinitionKey = timer.getProcessDefinitionKey();
@@ -115,7 +110,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     }
 
     if (shouldReschedule(timer)) {
-      rescheduleTimer(timer, catchEvent, sideEffects);
+      rescheduleTimer(timer, catchEvent);
     }
   }
 
@@ -134,10 +129,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     return timer.getRepetitions() == RepeatingInterval.INFINITE || timer.getRepetitions() > 1;
   }
 
-  private void rescheduleTimer(
-      final TimerRecord record,
-      final ExecutableCatchEvent event,
-      final Consumer<SideEffectProducer> sideEffects) {
+  private void rescheduleTimer(final TimerRecord record, final ExecutableCatchEvent event) {
     final Either<Failure, Timer> timer =
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
     if (timer.isLeft()) {
@@ -155,8 +147,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
         record.getProcessInstanceKey(),
         record.getProcessDefinitionKey(),
         event.getId(),
-        refreshedTimer,
-        sideEffects::accept);
+        refreshedTimer);
   }
 
   private Timer refreshTimer(final Timer timer, final TimerRecord record) {

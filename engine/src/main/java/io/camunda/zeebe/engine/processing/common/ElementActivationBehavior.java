@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -36,8 +35,6 @@ import org.agrona.DirectBuffer;
 public final class ElementActivationBehavior {
 
   public static final long NO_ANCESTOR_SCOPE_KEY = -1L;
-
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
 
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
@@ -118,9 +115,6 @@ public final class ElementActivationBehavior {
         activateElementByCommand(processInstanceRecord, elementToActivate, flowScopeKey);
     createVariablesCallback.accept(elementToActivate.getId(), elementInstanceKey);
     activatedElementKeys.setElementInstanceKey(elementInstanceKey);
-
-    // applying the side effects is part of creating the event subscriptions
-    sideEffectQueue.flush();
 
     return activatedElementKeys;
   }
@@ -439,8 +433,7 @@ public final class ElementActivationBehavior {
           elementInstanceKey, elementRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
       final Either<Failure, ?> subscribedOrFailure =
-          catchEventBehavior.subscribeToEvents(
-              bpmnElementContext, catchEventSupplier, sideEffectQueue);
+          catchEventBehavior.subscribeToEvents(bpmnElementContext, catchEventSupplier);
 
       if (subscribedOrFailure.isLeft()) {
         final var message =

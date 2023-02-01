@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffects;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -44,7 +43,6 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final ElementActivationBehavior elementActivationBehavior;
 
   public BpmnBehaviorsImpl(
-      final SideEffects sideEffects,
       final MutableZeebeState zeebeState,
       final Writers writers,
       final JobMetrics jobMetrics,
@@ -68,6 +66,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionBehavior,
             subscriptionCommandSender,
             writers.state(),
+            writers.sideEffect(),
             timerChecker,
             partitionsCount);
 
@@ -92,8 +91,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
         new BpmnVariableMappingBehavior(expressionBehavior, zeebeState, variableBehavior);
 
     eventSubscriptionBehavior =
-        new BpmnEventSubscriptionBehavior(
-            catchEventBehavior, eventTriggerBehavior, sideEffects, zeebeState);
+        new BpmnEventSubscriptionBehavior(catchEventBehavior, eventTriggerBehavior, zeebeState);
 
     incidentBehavior =
         new BpmnIncidentBehavior(zeebeState, zeebeState.getKeyGenerator(), writers.state());

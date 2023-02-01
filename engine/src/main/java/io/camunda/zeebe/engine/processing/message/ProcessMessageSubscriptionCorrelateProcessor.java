@@ -48,6 +48,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   private final ElementInstanceState elementInstanceState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+
   private final EventHandle eventHandle;
 
   public ProcessMessageSubscriptionCorrelateProcessor(
@@ -62,7 +63,6 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
     elementInstanceState = zeebeState.getElementInstanceState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-
     eventHandle =
         new EventHandle(
             zeebeState.getKeyGenerator(),

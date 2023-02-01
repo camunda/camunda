@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -17,11 +18,9 @@ import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
-import io.camunda.zeebe.stream.api.SideEffectProducer;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.function.Consumer;
 
 public final class MessageSubscriptionCreateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -38,6 +37,7 @@ public final class MessageSubscriptionCreateProcessor
 
   private MessageSubscriptionRecord subscriptionRecord;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
 
   public MessageSubscriptionCreateProcessor(
       final MessageState messageState,
@@ -49,19 +49,19 @@ public final class MessageSubscriptionCreateProcessor
     this.commandSender = commandSender;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
     this.keyGenerator = keyGenerator;
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator =
+        new MessageCorrelator(messageState, commandSender, stateWriter, sideEffectWriter);
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sideEffect.accept(this::sendAcknowledgeCommand);
+      sideEffectWriter.appendSideEffect(this::sendAcknowledgeCommand);
 
       rejectionWriter.appendRejection(
           record,
@@ -73,20 +73,20 @@ public final class MessageSubscriptionCreateProcessor
       return;
     }
 
-    handleNewSubscription(sideEffect);
+    handleNewSubscription(sideEffectWriter);
   }
 
-  private void handleNewSubscription(final Consumer<SideEffectProducer> sideEffect) {
+  private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
         subscriptionKey, MessageSubscriptionIntent.CREATED, subscriptionRecord);
 
     final var isMessageCorrelated =
-        messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord, sideEffect);
+        messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord);
 
     if (!isMessageCorrelated) {
-      sideEffect.accept(this::sendAcknowledgeCommand);
+      sideEffectWriter.appendSideEffect(this::sendAcknowledgeCommand);
     }
   }
 

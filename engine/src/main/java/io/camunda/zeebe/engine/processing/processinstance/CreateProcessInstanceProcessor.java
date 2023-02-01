@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor.ProcessingError;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -69,8 +68,6 @@ public final class CreateProcessInstanceProcessor
 
   private final ProcessInstanceRecord newProcessInstance = new ProcessInstanceRecord();
 
-  private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
-
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
@@ -78,6 +75,7 @@ public final class CreateProcessInstanceProcessor
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+
   private final ProcessEngineMetrics metrics;
 
   private final ElementActivationBehavior elementActivationBehavior;
@@ -102,8 +100,6 @@ public final class CreateProcessInstanceProcessor
   public boolean onCommand(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final CommandControl<ProcessInstanceCreationRecord> controller) {
-    // cleanup side effects from previous command
-    sideEffectQueue.clear();
 
     final ProcessInstanceCreationRecord record = command.getValue();
 
