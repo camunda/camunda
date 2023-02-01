@@ -1,0 +1,57 @@
+name: QA Testbench run
+
+on:
+  workflow_call:
+    inputs:
+      variables:
+        description: 'Process instance variables'
+        required: true
+        type: string
+      processId:
+        description: 'Id of process to start in testbench (eg:- e2e-testbench-protocol)'
+        required: true
+        type: string
+
+jobs:
+  testbench:
+    name: Start a test in testbench
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: "${{ github.ref_name || 'main' }}"
+
+      - name: Build and push docker
+        id: build-docker
+        uses: ./.github/actions/build-push-docker-gcr
+        with:
+          branch: ${{ github.event.inputs.branch }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v2.4.3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
+            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
+        # Start e2e test instance, do not wait for the result
+      - name: Start Test
+        shell: bash
+        run: |
+          chmod +x clients/go/cmd/zbctl/dist/zbctl
+          variables=$(echo "${{ inputs.variables }}" | envsubst)
+          clients/go/cmd/zbctl/dist/zbctl create instance ${{ inputs.processId }} --variables "$variables"
+        env:
+          IMAGE: ${{ steps.build-docker.outputs.image }}
+          ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
+          ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
+          ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
+          ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'

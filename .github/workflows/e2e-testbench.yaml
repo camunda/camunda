@@ -5,64 +5,45 @@ on:
     inputs:
       maxTestDuration:
         description: 'Test duration (Eg: PT2H, P3D)'
-        required: true
-        default: 'PT1D'
+        required: false
+        default: 'P5D'
         type: string
       generation:
         description: 'Specifies the generation template which should be used by the testbench run'
         required: false
         default: 'Zeebe SNAPSHOT'
         type: string
+      branch:
+        description: 'Specifies the branch, for which the E2E run should be executed'
+        default: 'main'
+        required: false
+        type: string
   schedule:
     # Run at 7:00 on every monday
     - cron:  '0 7 * * 1'
-env:
-  BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  e2e-testbench:
-    name: E2E Testbench run
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: "${{ github.ref_name || 'main' }}"
-
-      - name: Build and push docker
-        id: build-docker
-        uses: ./.github/actions/build-push-docker-gcr
-        with:
-          branch: ${{ github.event.inputs.branch }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v2.4.3
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CLIENT_SECRET;
-            secret/data/products/zeebe/ci/zeebe TESTBENCH_PROD_CONTACT_POINT;
-        # Start e2e test instance, do not wait for the result
-      - name: Run E2E Tests
-        run: |
-          chmod +x clients/go/cmd/zbctl/dist/zbctl
-          clients/go/cmd/zbctl/dist/zbctl create instance e2e_testbench_protocol --variables "{\"zeebeImage\":\"$ZEEBE_IMAGE\", \"generationTemplate\":\"$GENERATION_TEMPLATE\", \"channel\":\"Internal Dev\", \"clusterPlan\":\"Production - M\", \"region\":\"new chaos\", \"properties\":[\"allInstancesAreCompleted\"], \"testProcessId\": \"e2e-test\", \"branch\": \"$BRANCH_NAME\", \"build\": \"$BUILD_URL\", \"testParams\": { \"maxTestDuration\": \"$MAX_TEST_DURATION\", \"starter\": [ {\"rate\": 50, \"processId\": \"one-task-one-timer\" } ], \"verifier\" : { \"maxInstanceDuration\" : \"15m\" } } }"
-
-        env:
-          ZEEBE_CLIENT_SECRET: ${{ steps.secrets.outputs.TESTBENCH_PROD_CLIENT_SECRET }}
-          ZEEBE_ADDRESS: ${{ steps.secrets.outputs.TESTBENCH_PROD_CONTACT_POINT }}
-          ZEEBE_IMAGE: ${{ steps.build-docker.outputs.image }}
-          GENERATION_TEMPLATE: "${{ github.event.inputs.generation || 'Zeebe SNAPSHOT'}}"
-          # Weekly e2e test run for 5 days.
-          MAX_TEST_DURATION: "${{ github.event.inputs.maxTestDuration || 'P5D'}}"
-          BRANCH_NAME: "${{ github.ref_name }}"
-          ZEEBE_AUTHORIZATION_SERVER_URL: 'https://login.cloud.ultrawombat.com/oauth/token'
-          ZEEBE_CLIENT_ID: 'S7GNoVCE6J-8L~OdFiI59kWM19P.wvKo'
+  e2e:
+    name: Run e2e testbench process
+    uses: ./.github/workflows/testbench.yaml
+    with:
+      processId: e2e_testbench_protocol
+      variables: >
+        {
+        \"zeebeImage\":\"$IMAGE\",
+        \"generationTemplate\":\"${{ inputs.generation || 'Zeebe SNAPSHOT' }}\",
+        \"channel\": \"Internal Dev\",
+        \"branch\": \"${{ inputs.branch || 'main' }}\",
+        \"build\":  \"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",
+        \"clusterPlan\":\"Production - M\",
+        \"region\":\"new chaos\",
+        \"properties\":[\"allInstancesAreCompleted\"],
+        \"testProcessId\": \"e2e-test\",
+        \"testParams\":
+        {
+        \"maxTestDuration\": \"${{ inputs.maxTestDuration || 'P5D' }}\",
+        \"starter\": [ {\"rate\": 50, \"processId\": \"one-task-one-timer\" } ],
+        \"verifier\" : { \"maxInstanceDuration\" : \"15m\" }
+        }
+        }
+    secrets: inherit
