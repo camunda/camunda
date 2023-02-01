@@ -22,7 +22,6 @@ import com.google.common.collect.Sets;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingService;
-import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.net.Address;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -138,8 +137,18 @@ public class TestMessagingService implements ManagedMessagingService {
     if (isPartitioned(address)) {
       return CompletableFuture.failedFuture(new ConnectException());
     }
-    final ComposableFuture<byte[]> future = new ComposableFuture<>();
-    sendAndReceive(address, type, payload).whenCompleteAsync(future, executor);
+    final CompletableFuture<byte[]> future = new CompletableFuture<>();
+    sendAndReceive(address, type, payload)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error == null) {
+                future.complete(response);
+              } else {
+                future.completeExceptionally(error);
+              }
+            },
+            executor);
+
     return future;
   }
 
@@ -167,8 +176,17 @@ public class TestMessagingService implements ManagedMessagingService {
     if (isPartitioned(address)) {
       return CompletableFuture.failedFuture(new ConnectException());
     }
-    final ComposableFuture<byte[]> future = new ComposableFuture<>();
-    sendAndReceive(address, type, payload).whenCompleteAsync(future, executor);
+    final CompletableFuture<byte[]> future = new CompletableFuture<>();
+    sendAndReceive(address, type, payload)
+        .whenCompleteAsync(
+            (response, error) -> {
+              if (error == null) {
+                future.complete(response);
+              } else {
+                future.completeExceptionally(error);
+              }
+            },
+            executor);
     return future;
   }
 
