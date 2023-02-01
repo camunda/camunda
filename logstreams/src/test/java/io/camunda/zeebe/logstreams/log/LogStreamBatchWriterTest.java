@@ -165,6 +165,35 @@ public final class LogStreamBatchWriterTest {
   }
 
   @Test
+  public void canSetSkipProcessingFlag() {
+    final long position =
+        write(
+            w ->
+                w.event()
+                    .skipProcessing()
+                    .value(EVENT_VALUE_1)
+                    .metadata(EVENT_METADATA_1)
+                    .done()
+                    .event()
+                    .value(EVENT_VALUE_2)
+                    .metadata(EVENT_METADATA_2)
+                    .done());
+    // then
+    final List<LoggedEvent> events = getWrittenEvents(position);
+    assertThat(events.get(0).shouldSkipProcessing()).isTrue();
+    assertThat(events.get(1).shouldSkipProcessing()).isFalse();
+  }
+
+  @Test
+  public void shouldNotSkipProcessingByDefault() {
+    final long position =
+        write(w -> w.event().value(EVENT_VALUE_1).metadata(EVENT_METADATA_1).done());
+    // then
+    final List<LoggedEvent> events = getWrittenEvents(position);
+    assertThat(events.get(0).shouldSkipProcessing()).isFalse();
+  }
+
+  @Test
   public void shouldWriteEventWithValueBufferPartially() {
     // when
     final long position =

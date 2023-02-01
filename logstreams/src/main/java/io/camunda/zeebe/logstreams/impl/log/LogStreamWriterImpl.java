@@ -34,6 +34,7 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   private final Dispatcher logWriteBuffer;
   private final int partitionId;
+  private boolean skipProcessing;
   private long key;
   private long sourceRecordPosition = -1L;
   private BufferWriter metadataWriter;
@@ -44,6 +45,12 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
     this.partitionId = partitionId;
 
     reset();
+  }
+
+  @Override
+  public LogStreamRecordWriter skipProcessing() {
+    this.skipProcessing = true;
+    return this;
   }
 
   @Override
@@ -100,6 +107,7 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public void reset() {
+    skipProcessing = false;
     key = LogEntryDescriptor.KEY_NULL_VALUE;
     metadataWriter = metadataWriterInstance;
     valueWriter = null;
@@ -130,6 +138,9 @@ final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
         // write log entry header
         setPosition(writeBuffer, bufferOffset, claimedPosition);
+        if (skipProcessing) {
+          LogEntryDescriptor.skipProcessing(writeBuffer, bufferOffset);
+        }
         setSourceEventPosition(writeBuffer, bufferOffset, sourceRecordPosition);
         setKey(writeBuffer, bufferOffset, key);
         setTimestamp(writeBuffer, bufferOffset, ActorClock.currentTimeMillis());

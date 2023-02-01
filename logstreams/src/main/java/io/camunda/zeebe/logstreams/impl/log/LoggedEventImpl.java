@@ -73,6 +73,11 @@ public final class LoggedEventImpl implements ReadableFragment, LoggedEvent {
   }
 
   @Override
+  public boolean shouldSkipProcessing() {
+    return LogEntryDescriptor.shouldSkipProcessing(buffer, messageOffset);
+  }
+
+  @Override
   public long getPosition() {
     return LogEntryDescriptor.getPosition(buffer, fragmentOffset);
   }

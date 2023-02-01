@@ -18,6 +18,7 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceE
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 import static io.camunda.zeebe.util.EnsureUtil.ensureNotNull;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -36,6 +37,8 @@ import org.agrona.MutableDirectBuffer;
 
 final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBuilder {
   private static final int INITIAL_BUFFER_CAPACITY = 1024 * 32;
+  private static final byte SKIP_PROCESSING_ENABLED = (byte) 1;
+  private static final byte SKIP_PROCESSING_DISABLED = (byte) 0;
 
   private final ClaimedFragmentBatch claimedBatch = new ClaimedFragmentBatch();
 
@@ -51,6 +54,7 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
 
   private final Dispatcher logWriteBuffer;
   private final int logId;
+  private boolean skipProcessing;
 
   private long key;
 
@@ -110,6 +114,12 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
   @Override
   public LogEntryBuilder keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);
+  }
+
+  @Override
+  public LogEntryBuilder skipProcessing() {
+    this.skipProcessing = true;
+    return this;
   }
 
   @Override
@@ -175,6 +185,10 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
     // copy event to buffer
     final int metadataLength = metadataWriter.getLength();
     final int valueLength = valueWriter.getLength();
+
+    eventBuffer.putByte(
+        eventBufferOffset, skipProcessing ? SKIP_PROCESSING_ENABLED : SKIP_PROCESSING_DISABLED);
+    eventBufferOffset += SIZE_OF_BYTE;
 
     eventBuffer.putLong(eventBufferOffset, key, Protocol.ENDIANNESS);
     eventBufferOffset += SIZE_OF_LONG;
@@ -244,6 +258,9 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
     eventBufferOffset = 0;
 
     for (int i = 0; i < eventCount; i++) {
+      final byte skipProcessing = eventBuffer.getByte(eventBufferOffset);
+      eventBufferOffset += SIZE_OF_BYTE;
+
       final long key = eventBuffer.getLong(eventBufferOffset, Protocol.ENDIANNESS);
       eventBufferOffset += SIZE_OF_LONG;
 
@@ -263,6 +280,9 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
       final int bufferOffset = claimedBatch.getFragmentOffset();
 
       // write log entry header
+      if (skipProcessing == SKIP_PROCESSING_ENABLED) {
+        LogEntryDescriptor.skipProcessing(writeBuffer, bufferOffset);
+      }
       setPosition(writeBuffer, bufferOffset, firstPosition + i);
 
       if (sourceIndex >= 0 && sourceIndex < i) {
@@ -289,6 +309,7 @@ final class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryBu
   }
 
   private void resetEvent() {
+    skipProcessing = false;
     key = LogEntryDescriptor.KEY_NULL_VALUE;
     sourceIndex = -1;
 

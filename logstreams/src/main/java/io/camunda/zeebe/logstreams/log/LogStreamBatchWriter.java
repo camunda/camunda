@@ -50,6 +50,13 @@ public interface LogStreamBatchWriter extends LogStreamWriter {
 
   /** Builder to add a log entry to the batch. */
   interface LogEntryBuilder {
+
+    /**
+     * Log entry should be skipped during processing, for example because it was part of batch
+     * processing.
+     */
+    LogEntryBuilder skipProcessing();
+
     /** Use the default values as key. */
     LogEntryBuilder keyNull();
 
