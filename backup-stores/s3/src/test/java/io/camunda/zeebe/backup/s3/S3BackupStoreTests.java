@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
@@ -165,14 +166,22 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
     getStore().delete(backup.id()).join();
 
     // then
-    final var listed =
-        getClient()
-            .listObjectsV2(
-                req ->
-                    req.bucket(getConfig().bucketName())
-                        .prefix(getStore().objectPrefix(backup.id())))
-            .join();
-    Assertions.assertThat(listed.contents()).isEmpty();
+
+    // Retry a couple of times because LocalStack takes a moment to actually delete every object.
+    Awaitility.await("Finds no objects after deleting")
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var listed =
+                  getClient()
+                      .listObjectsV2(
+                          req ->
+                              req.bucket(getConfig().bucketName())
+                                  .prefix(getStore().objectPrefix(backup.id())))
+                      .join();
+              Assertions.assertThat(listed.contents()).isEmpty();
+            });
   }
 
   @ParameterizedTest
