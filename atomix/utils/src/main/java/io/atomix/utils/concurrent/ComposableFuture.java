@@ -18,7 +18,6 @@ package io.atomix.utils.concurrent;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * Special implementation of {@link CompletableFuture} with missing utility methods.
@@ -34,20 +33,5 @@ public class ComposableFuture<T> extends CompletableFuture<T> implements BiConsu
     } else {
       completeExceptionally(error);
     }
-  }
-
-  /**
-   * Sets a consumer to be called when the future is failed.
-   *
-   * @param consumer The consumer to call.
-   * @return A new future.
-   */
-  public CompletableFuture<T> except(final Consumer<Throwable> consumer) {
-    return whenComplete(
-        (result, error) -> {
-          if (error != null) {
-            consumer.accept(error);
-          }
-        });
   }
 }

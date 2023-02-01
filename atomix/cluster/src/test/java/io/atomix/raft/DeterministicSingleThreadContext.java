@@ -86,28 +86,8 @@ public final class DeterministicSingleThreadContext implements ThreadContext {
   }
 
   @Override
-  public boolean isCurrentContext() {
-    return true;
-  }
-
-  @Override
   public void checkThread() {
     // always assume running on the right context
-  }
-
-  @Override
-  public boolean isBlocked() {
-    return false;
-  }
-
-  @Override
-  public void block() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void unblock() {
-    throw new UnsupportedOperationException();
   }
 
   @Override

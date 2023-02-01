@@ -18,12 +18,13 @@ package io.atomix.utils.concurrent;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import io.camunda.zeebe.util.CloseableSilently;
 import java.util.concurrent.Executor;
 
 /**
  * Thread context.
  *
- * <p>The thread context is used by Catalyst to determine the correct thread on which to execute
+ * <p>The thread context is used by Atomix to determine the correct thread on which to execute
  * asynchronous callbacks. All threads created within Catalyst must be instances of {@link
  * AtomixThread}. Once a thread has been created, the context is stored in the thread object via
  * {@link AtomixThread#setContext(ThreadContext)}. This means there is a one-to-one relationship
@@ -35,7 +36,7 @@ import java.util.concurrent.Executor;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-public interface ThreadContext extends AutoCloseable, Executor, Scheduler {
+public interface ThreadContext extends CloseableSilently, Executor, Scheduler {
 
   /**
    * Returns the current thread context.
@@ -47,34 +48,8 @@ public interface ThreadContext extends AutoCloseable, Executor, Scheduler {
     return thread instanceof AtomixThread ? ((AtomixThread) thread).getContext() : null;
   }
 
-  /**
-   * Returns a boolean indicating whether the current thread is in this context.
-   *
-   * @return Indicates whether the current thread is in this context.
-   */
-  default boolean isCurrentContext() {
-    return currentContext() == this;
-  }
-
   /** Checks that the current thread is the correct context thread. */
   default void checkThread() {
-    checkState(currentContext() == this, "not on a Catalyst thread");
+    checkState(currentContext() == this, "not on the expected thread");
   }
-
-  /**
-   * Returns whether the thread context is currently marked blocked.
-   *
-   * @return whether the thread context is currently marked blocked
-   */
-  boolean isBlocked();
-
-  /** Marks the thread context as blocked. */
-  void block();
-
-  /** Marks the thread context as unblocked. */
-  void unblock();
-
-  /** Closes the context. */
-  @Override
-  void close();
 }

@@ -32,17 +32,6 @@ public class NullThreadContext implements ThreadContext {
   }
 
   @Override
-  public boolean isBlocked() {
-    return false;
-  }
-
-  @Override
-  public void block() {}
-
-  @Override
-  public void unblock() {}
-
-  @Override
   public void close() {}
 
   @Override
