@@ -46,6 +46,10 @@ runs:
         ref: "${{ github.event.inputs.branch }}"
     # Also setup java
     - uses: ./.github/actions/setup-zeebe
+      with:
+        secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secret_vault_address: ${{ secrets.VAULT_ADDR }}
+        secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
     # Set further environment variables, which are needed for the QA Testbench run
     - id: generate-tag
       name: Generate image tag

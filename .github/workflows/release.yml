@@ -92,6 +92,10 @@ jobs:
           && sudo apt install gh -y
       - name: Setup Zeebe Build Tooling
         uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: Additional Go tooling setup
         run: |
           go install github.com/go-bindata/go-bindata/...@v3
@@ -128,6 +132,13 @@ jobs:
                 "id": "central",
                 "username": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_USR }}",
                 "password": "${{ steps.secrets.outputs.MAVEN_CENTRAL_DEPLOYMENT_PSW }}"
+            }]
+          mirrors: |
+            [{
+                "id": "camunda-nexus",
+                "name": "Camunda Nexus",
+                "mirrorOf": "camunda-nexus",
+                "url": "https://repository.nexus.camunda.cloud/content/groups/internal/"
             }]
       - name: Maven Release
         id: maven-release
