@@ -23,16 +23,7 @@ on:
     - cron:  '0 7 * * 1'
 
 jobs:
-  checkout:
-    name: checkout
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: "${{ github.ref_name || 'main' }}"
-
   e2e:
-    needs: [checkout]
     name: Run e2e testbench process
     uses: ./.github/workflows/testbench.yaml
     with:

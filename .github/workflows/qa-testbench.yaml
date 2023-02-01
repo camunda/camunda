@@ -27,13 +27,6 @@ on:
         type: string
 
 jobs:
-  checkout:
-    name: checkout
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          ref: "${{ github.ref_name || 'main' }}"
 
   prepare:
     # variables in qa job cannot read env variable. So we are building buildUrl here as output so it can be re-used in both qa, wait and notify jobs
@@ -47,7 +40,7 @@ jobs:
         run: exit 0
 
   qa:
-    needs: [checkout, prepare]
+    needs: prepare
     name: Run testbench process
     uses: ./.github/workflows/testbench.yaml
     with:
