@@ -5,6 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+import {Mixpanel} from 'mixpanel-browser';
+
 /* istanbul ignore file */
 
 type Appcues = {
@@ -41,6 +43,7 @@ export declare global {
       };
     };
     Appcues?: Appcues;
+    mixpanel?: Mixpanel;
   }
 
   type SortOrder = 'asc' | 'desc';
