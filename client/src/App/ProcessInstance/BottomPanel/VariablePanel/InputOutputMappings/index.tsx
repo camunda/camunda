@@ -12,6 +12,7 @@ import {observer} from 'mobx-react';
 import {DataTable} from 'modules/components/DataTable';
 import {IOMappingInfoBanner} from './IOMappingInfoBanner';
 import {getMappings} from 'modules/bpmn-js/utils/getInputOutputMappings';
+import {Content} from './styled';
 
 const INFORMATION_TEXT = {
   Input:
@@ -38,7 +39,7 @@ const InputOutputMappings: React.FC<Props> = observer(({type}) => {
     businessObject === undefined ? [] : getMappings(businessObject, type);
 
   return (
-    <div>
+    <Content>
       <IOMappingInfoBanner type={type} text={INFORMATION_TEXT[type]} />
       {mappings.length === 0 ? (
         <EmptyPanel type="info" label={`No ${type} Mappings defined`} />
@@ -71,7 +72,7 @@ const InputOutputMappings: React.FC<Props> = observer(({type}) => {
           })}
         />
       )}
-    </div>
+    </Content>
   );
 });
 
