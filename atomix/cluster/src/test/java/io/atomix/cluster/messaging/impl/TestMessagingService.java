@@ -23,7 +23,6 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.concurrent.ComposableFuture;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.net.Address;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -65,12 +64,18 @@ public class TestMessagingService implements ManagedMessagingService {
       final Address address, final String type) {
     final TestMessagingService service = getService(address);
     if (service == null) {
-      return (e, p) -> Futures.exceptionalFuture(new NoRemoteHandler(type));
+      return (e, p) -> {
+        final Throwable t = new NoRemoteHandler(type);
+        return CompletableFuture.failedFuture(t);
+      };
     }
     final BiFunction<Address, byte[], CompletableFuture<byte[]>> handler =
         service.handlers.get(checkNotNull(type));
     if (handler == null) {
-      return (e, p) -> Futures.exceptionalFuture(new NoRemoteHandler(type));
+      return (e, p) -> {
+        final Throwable t = new NoRemoteHandler(type);
+        return CompletableFuture.failedFuture(t);
+      };
     }
     return handler;
   }
@@ -109,7 +114,7 @@ public class TestMessagingService implements ManagedMessagingService {
   public CompletableFuture<Void> sendAsync(
       final Address address, final String type, final byte[] payload, final boolean keepAlive) {
     if (isPartitioned(address)) {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
     return getHandler(address, type).apply(this.address, payload).thenApply(v -> null);
   }
@@ -118,7 +123,7 @@ public class TestMessagingService implements ManagedMessagingService {
   public CompletableFuture<byte[]> sendAndReceive(
       final Address address, final String type, final byte[] payload, final boolean keepAlive) {
     if (isPartitioned(address)) {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
     return getHandler(address, type).apply(this.address, payload);
   }
@@ -131,7 +136,7 @@ public class TestMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Executor executor) {
     if (isPartitioned(address)) {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
     final ComposableFuture<byte[]> future = new ComposableFuture<>();
     sendAndReceive(address, type, payload).whenCompleteAsync(future, executor);
@@ -146,7 +151,7 @@ public class TestMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Duration timeout) {
     if (isPartitioned(address)) {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
     return getHandler(address, type).apply(this.address, payload);
   }
@@ -160,7 +165,7 @@ public class TestMessagingService implements ManagedMessagingService {
       final Duration timeout,
       final Executor executor) {
     if (isPartitioned(address)) {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
     final ComposableFuture<byte[]> future = new ComposableFuture<>();
     sendAndReceive(address, type, payload).whenCompleteAsync(future, executor);
@@ -179,7 +184,7 @@ public class TestMessagingService implements ManagedMessagingService {
             executor.execute(() -> handler.accept(e, p));
             return CompletableFuture.completedFuture(new byte[0]);
           } catch (final RejectedExecutionException e2) {
-            return Futures.exceptionalFuture(e2);
+            return CompletableFuture.failedFuture(e2);
           }
         });
   }
@@ -218,15 +223,15 @@ public class TestMessagingService implements ManagedMessagingService {
   }
 
   @Override
+  public boolean isRunning() {
+    return started.get();
+  }
+
+  @Override
   public CompletableFuture<MessagingService> start() {
     services.put(address, this);
     started.set(true);
     return CompletableFuture.completedFuture(this);
-  }
-
-  @Override
-  public boolean isRunning() {
-    return started.get();
   }
 
   @Override

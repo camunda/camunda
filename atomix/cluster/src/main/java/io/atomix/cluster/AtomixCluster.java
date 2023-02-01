@@ -38,7 +38,6 @@ import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
 import io.atomix.utils.Managed;
 import io.atomix.utils.Version;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.net.Address;
@@ -212,9 +211,10 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   @SuppressWarnings("unchecked")
   public synchronized CompletableFuture<Void> start() {
     if (closeFuture != null) {
-      return Futures.exceptionalFuture(
+      final Throwable t =
           new IllegalStateException(
-              "AtomixCluster instance " + (closeFuture.isDone() ? "shutdown" : "shutting down")));
+              "AtomixCluster instance " + (closeFuture.isDone() ? "shutdown" : "shutting down"));
+      return CompletableFuture.failedFuture(t);
     }
 
     if (openFuture != null) {

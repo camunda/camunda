@@ -26,7 +26,6 @@ import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.utils.concurrent.AtomixFuture;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -123,11 +122,11 @@ public class DefaultRaftServer implements RaftServer {
   @Override
   public CompletableFuture<Void> shutdown() {
     if (!started && !stopped) {
-      return Futures.exceptionalFuture(new IllegalStateException("Server not running"));
+      return CompletableFuture.failedFuture(new IllegalStateException("Server not running"));
     }
 
     if (stopped) {
-      return Futures.completedFuture(null);
+      return CompletableFuture.completedFuture(null);
     }
 
     final CompletableFuture<Void> future = new AtomixFuture<>();

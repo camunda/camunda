@@ -17,7 +17,6 @@
 package io.atomix.raft.protocol;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.utils.concurrent.Futures;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -317,9 +316,9 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
   private CompletableFuture<ControllableRaftServerProtocol> getServer(final MemberId memberId) {
     final ControllableRaftServerProtocol server = server(memberId);
     if (server != null) {
-      return Futures.completedFuture(server);
+      return CompletableFuture.completedFuture(server);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -327,7 +326,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (appendHandler != null) {
       return appendHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -335,7 +334,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (voteHandler != null) {
       return voteHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -343,7 +342,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (pollHandler != null) {
       return pollHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -351,7 +350,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (transferHandler != null) {
       return transferHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -359,7 +358,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (installHandler != null) {
       return installHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -367,7 +366,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (reconfigureHandler != null) {
       return reconfigureHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 
@@ -375,7 +374,7 @@ public class ControllableRaftServerProtocol implements RaftServerProtocol {
     if (configureHandler != null) {
       return configureHandler.apply(request);
     } else {
-      return Futures.exceptionalFuture(new ConnectException());
+      return CompletableFuture.failedFuture(new ConnectException());
     }
   }
 }

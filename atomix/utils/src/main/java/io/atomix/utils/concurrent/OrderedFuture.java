@@ -349,7 +349,7 @@ public class OrderedFuture<T> extends CompletableFuture<T> {
     if (error == null) {
       return CompletableFuture.completedFuture(result);
     } else {
-      return Futures.exceptionalFuture(error);
+      return failedFuture(error);
     }
   }
 

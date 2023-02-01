@@ -36,7 +36,6 @@ import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.system.Configuration;
-import io.atomix.utils.concurrent.Futures;
 import java.util.concurrent.CompletableFuture;
 
 /** Inactive state. */
@@ -78,66 +77,72 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<InstallResponse> onInstall(final InstallRequest request) {
     logRequest(request);
-    return Futures.completedFuture(
+    final io.atomix.raft.protocol.InstallResponse result =
         logResponse(
             InstallResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override
   public CompletableFuture<ReconfigureResponse> onReconfigure(final ReconfigureRequest request) {
     logRequest(request);
-    return Futures.completedFuture(
+    final io.atomix.raft.protocol.ReconfigureResponse result =
         logResponse(
             ReconfigureResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override
   public CompletableFuture<TransferResponse> onTransfer(final TransferRequest request) {
     logRequest(request);
-    return Futures.completedFuture(
+    final io.atomix.raft.protocol.TransferResponse result =
         logResponse(
             TransferResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override
   public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
     logRequest(request);
-    return Futures.completedFuture(
+    final io.atomix.raft.protocol.AppendResponse result =
         logResponse(
             AppendResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     logRequest(request);
-    return Futures.completedFuture(
+    final io.atomix.raft.protocol.PollResponse result =
         logResponse(
             PollResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 
   @Override
   public CompletableFuture<VoteResponse> onVote(final VoteRequest request) {
     logRequest(request);
-    return Futures.completedFuture(
+    final io.atomix.raft.protocol.VoteResponse result =
         logResponse(
             VoteResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
+                .build());
+    return CompletableFuture.completedFuture(result);
   }
 }
