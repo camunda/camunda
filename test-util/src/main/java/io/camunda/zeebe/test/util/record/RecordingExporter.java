@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
@@ -318,6 +320,16 @@ public final class RecordingExporter implements Exporter {
 
   public static SignalRecordStream signalRecords(final SignalIntent intent) {
     return signalRecords().withIntent(intent);
+  }
+
+  public static ResourceDeletionRecordStream resourceDeletionRecords() {
+    return new ResourceDeletionRecordStream(
+        records(ValueType.RESOURCE_DELETION, ResourceDeletionRecordValue.class));
+  }
+
+  public static ResourceDeletionRecordStream resourceDeletionRecords(
+      final ResourceDeletionIntent intent) {
+    return resourceDeletionRecords().withIntent(intent);
   }
 
   public static class AwaitingRecordIterator implements Iterator<Record<?>> {

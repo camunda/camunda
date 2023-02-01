@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
+import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
@@ -316,6 +317,10 @@ public final class EngineRule extends ExternalResource {
 
   public IncidentClient incident() {
     return new IncidentClient(environmentRule);
+  }
+
+  public ResourceDeletionClient resourceDeletion() {
+    return new ResourceDeletionClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
