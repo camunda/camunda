@@ -15,7 +15,8 @@ import java.nio.MappedByteBuffer;
  */
 public record UninitializedSegment(
     SegmentFile file,
-    SegmentDescriptor initialDescriptor,
+    long segmentId,
+    int maxSegmentSize,
     MappedByteBuffer buffer,
     JournalIndex journalIndex) {
 
@@ -27,9 +28,9 @@ public record UninitializedSegment(
       final long index, final long lastWrittenAsqn, final long lastWrittenIndex) {
     final var updatedDescriptor =
         SegmentDescriptor.builder()
-            .withId(initialDescriptor.id())
+            .withId(segmentId)
             .withIndex(index)
-            .withMaxSegmentSize(initialDescriptor.maxSegmentSize())
+            .withMaxSegmentSize(maxSegmentSize)
             .build();
     updatedDescriptor.copyTo(buffer);
     return new Segment(
