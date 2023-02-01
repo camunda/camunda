@@ -46,10 +46,6 @@ on:
         required: false
         type: string
 
-  schedule:
-    # Run at 7:00 on every monday
-    - cron:  '0 7 * * 1'
-
 jobs:
   e2e:
     name: Run e2e testbench process
