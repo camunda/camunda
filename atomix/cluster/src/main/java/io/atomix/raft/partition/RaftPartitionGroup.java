@@ -31,7 +31,6 @@ import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.utils.memory.MemorySize;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
@@ -338,21 +337,11 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
     /**
      * Sets the segment size.
      *
-     * @param segmentSizeBytes the segment size in bytes
+     * @param segmentSizeBytes the segment size
      * @return the Raft partition group builder
      */
     public Builder withSegmentSize(final long segmentSizeBytes) {
-      return withSegmentSize(new MemorySize(segmentSizeBytes));
-    }
-
-    /**
-     * Sets the segment size.
-     *
-     * @param segmentSize the segment size
-     * @return the Raft partition group builder
-     */
-    public Builder withSegmentSize(final MemorySize segmentSize) {
-      config.getStorageConfig().setSegmentSize(segmentSize);
+      config.getStorageConfig().setSegmentSize(segmentSizeBytes);
       return this;
     }
 
