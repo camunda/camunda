@@ -46,7 +46,7 @@ class SegmentedJournalWriter {
   }
 
   public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
-    final var appendResult = currentWriter.append(asqn, recordDataWriter, journalMetrics);
+    final var appendResult = currentWriter.append(asqn, recordDataWriter);
     if (appendResult.isRight()) {
       return appendResult.get();
     }
