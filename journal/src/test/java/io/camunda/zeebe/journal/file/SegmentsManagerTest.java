@@ -130,13 +130,14 @@ class SegmentsManagerTest {
 
   private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
+    final var maxSegmentSize = entrySize + SegmentDescriptor.getEncodingLength();
     return new SegmentsManager(
         journalIndex,
-        entrySize + SegmentDescriptor.getEncodingLength(),
+        maxSegmentSize,
         directory.resolve("data").toFile(),
         lastWrittenIndex,
         JOURNAL_NAME,
-        new SegmentLoader());
+        new SegmentLoader(2 * maxSegmentSize));
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {

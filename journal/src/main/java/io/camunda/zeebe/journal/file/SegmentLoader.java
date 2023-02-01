@@ -29,13 +29,15 @@ final class SegmentLoader {
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
 
   private final SegmentAllocator allocator;
+  private final long minFreeDiskSpace;
 
-  SegmentLoader() {
-    this(SegmentAllocator.fill());
+  SegmentLoader(final int minFreeDiskSpace) {
+    this(SegmentAllocator.fill(), minFreeDiskSpace);
   }
 
-  SegmentLoader(final SegmentAllocator allocator) {
+  SegmentLoader(final SegmentAllocator allocator, final long minFreeDiskSpace) {
     this.allocator = allocator;
+    this.minFreeDiskSpace = minFreeDiskSpace;
   }
 
   Segment createSegment(
@@ -210,6 +212,9 @@ final class SegmentLoader {
       final Path segmentPath, final SegmentDescriptor descriptor, final long lastWrittenIndex)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
+
+    checkDiskSpace(segmentPath, maxSegmentSize);
+
     try (final var channel =
         FileChannel.open(
             segmentPath,
@@ -235,6 +240,16 @@ final class SegmentLoader {
           e);
       Files.delete(segmentPath);
       return mapNewSegment(segmentPath, descriptor, lastWrittenIndex);
+    }
+  }
+
+  private void checkDiskSpace(final Path segmentPath, final int maxSegmentSize) {
+    final var available = segmentPath.getParent().toFile().getUsableSpace();
+    final var required = Math.max(maxSegmentSize, minFreeDiskSpace);
+    if (available < required) {
+      throw new JournalException.OutOfDiskSpace(
+          "Not enough space to allocate a new journal segment. Required: %s, Available: %s"
+              .formatted(required, available));
     }
   }
 }
