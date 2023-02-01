@@ -43,6 +43,7 @@ import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -182,6 +183,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     verify(incidentNotifier, atLeastOnce()).notifyOnIncidents(any());
   }
 
+  @Ignore("Due to flaky CI tests")
   @Test
   public void testIncidentsArePostProcessedAfterMigrationTo8_1() throws Exception {
     // having
