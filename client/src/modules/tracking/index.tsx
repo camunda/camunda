@@ -129,6 +129,7 @@ class Tracking {
       );
       mixpanel.register(this.#baseProperties);
       this.#mixpanel = mixpanel;
+      window.mixpanel = mixpanel;
     });
   };
 

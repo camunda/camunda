@@ -5,6 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
+import {Mixpanel} from 'mixpanel-browser';
+
 type Appcues = {
   debug: () => void;
   page: () => void;
@@ -38,6 +40,7 @@ export declare global {
       };
     };
     Appcues?: Appcues;
+    mixpanel?: Mixpanel;
   }
 
   namespace NodeJS {
