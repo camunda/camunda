@@ -42,8 +42,6 @@
   min-width: 30px;
   cursor: pointer;
   top: 2px;
-  left: 0;
-  right: 0;
   bottom: 0;
   background-color: var(--silver-darken-80);
   -webkit-transition: 0.4s;
@@ -51,6 +49,14 @@
 
   &.disabled {
     cursor: not-allowed;
+  }
+
+  &.left {
+    right: 0;
+  }
+
+  &.right {
+    left: 0;
   }
 }
 

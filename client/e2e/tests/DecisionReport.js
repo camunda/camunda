@@ -33,6 +33,8 @@ test('create a dmn js table report', async (t) => {
 
   await t.click(Homepage.submenuOption('Decision Report'));
 
+  await u.toggleReportAutoPreviewUpdate(t);
+
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
   await u.selectGroupby(t, 'Rules');
@@ -53,9 +55,7 @@ test('create a dmn js table report', async (t) => {
 });
 
 test('create raw data report', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
@@ -73,9 +73,7 @@ test('create raw data report', async (t) => {
 });
 
 test('save the report', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Raw Data');
@@ -91,9 +89,7 @@ test('save the report', async (t) => {
 });
 
 test('create a single number report', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
@@ -114,9 +110,7 @@ test('create a single number report', async (t) => {
 });
 
 test('create a report grouped by evaluation date', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Assign Approver Group');
   await u.selectView(t, 'Evaluation Count');
@@ -141,9 +135,7 @@ test('create a report grouped by evaluation date', async (t) => {
 });
 
 test('create a report grouped by Input variable', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
@@ -169,9 +161,7 @@ test('create a report grouped by Input variable', async (t) => {
 });
 
 test('filters', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Assign Approver Group');
   await u.selectView(t, 'Evaluation Count');
@@ -191,9 +181,7 @@ test('filters', async (t) => {
 });
 
 test('show raw data and decision table', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');

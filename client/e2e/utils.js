@@ -49,6 +49,21 @@ export async function createNewReport(t) {
   await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
   await t.click(Selector('.Button').withText('Blank report'));
   await t.click(Selector('.Modal .primary.confirm.Button'));
+  await toggleReportAutoPreviewUpdate(t);
+}
+
+export async function createNewDecisionReport(t) {
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('Report'));
+  await t.click(Homepage.submenuOption('Decision Report'));
+  await toggleReportAutoPreviewUpdate(t);
+}
+
+export async function createNewCombinedReport(t) {
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('Report'));
+  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await toggleReportAutoPreviewUpdate(t);
 }
 
 export async function selectVersion(t, selector, version) {
@@ -156,4 +171,8 @@ export async function bulkDeleteAllItems(t) {
   await t.click(Homepage.bulkMenu);
   await t.click(Homepage.del(Homepage.bulkMenu));
   await t.click(Homepage.modalConfirmbutton);
+}
+
+export async function toggleReportAutoPreviewUpdate(t) {
+  await t.click('.updatePreview .Switch');
 }

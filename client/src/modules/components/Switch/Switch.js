@@ -11,7 +11,7 @@ import classnames from 'classnames';
 import {Input, Tooltip} from 'components';
 import './Switch.scss';
 
-export default function Switch({label, ...props}) {
+export default function Switch({label, labelPosition = 'right', ...props}) {
   return (
     <Tooltip content={props.title}>
       <label
@@ -21,9 +21,12 @@ export default function Switch({label, ...props}) {
           props.className
         )}
       >
+        {label && labelPosition === 'left' && <span className="label">{label}</span>}
         <Input type="checkbox" {...props} className="Switch__Input" />
-        <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />
-        {label && <span className="label">{label}</span>}
+        <span
+          className={classnames('Switch__Slider--round', {disabled: props.disabled}, labelPosition)}
+        />
+        {label && labelPosition === 'right' && <span className="label">{label}</span>}
       </label>
     </Tooltip>
   );

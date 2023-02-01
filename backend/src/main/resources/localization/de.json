@@ -465,6 +465,11 @@
       "exceededInstances": "Uberschrittene-Instanzen-{name}",
       "noValueAvailable": "Kein aktueller Wert verfügbar.<br/>Soll- und Istwert können nicht verglichen werden."
     },
+    "updateReportPreview": {
+      "switchLabel": "Vorschau Automatisch Aktualisieren",
+      "buttonLabel": "Lauf",
+      "cannotUpdate": "Diese Funktion funktioniert nur, wenn die automatische Vorschauaktualisierung aktiviert ist"
+    },
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
     "noDataNotice": "Keine Daten zur Ansicht vorhanden",
     "errorNotice": "Fehler beim Laden von Daten",

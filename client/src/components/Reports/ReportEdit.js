@@ -12,7 +12,14 @@ import {Redirect, withRouter} from 'react-router-dom';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {ReportRenderer, LoadingIndicator, EntityNameForm, InstanceCount} from 'components';
+import {
+  ReportRenderer,
+  LoadingIndicator,
+  EntityNameForm,
+  InstanceCount,
+  Switch,
+  Button,
+} from 'components';
 import {updateEntity, createEntity, evaluateReport, getCollection} from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -36,6 +43,8 @@ export class ReportEdit extends React.Component {
     optimizeVersion: 'latest',
     report: this.props.report,
     serverError: this.props.error,
+    shouldAutoReloadPreview: false,
+    frozenReport: this.props.report,
   };
 
   componentDidMount() {
@@ -103,6 +112,11 @@ export class ReportEdit extends React.Component {
       this.state.updatePromise(id);
       this.setState({updatePromise: null});
     }
+
+    if (this.isReportDirty() || !this.state.shouldAutoReloadPreview) {
+      await this.reEvaluateReport(this.state.report.data);
+    }
+
     if (id) {
       nowPristine();
       this.props.updateOverview(
@@ -150,14 +164,18 @@ export class ReportEdit extends React.Component {
       this.dirtyCheck
     );
 
-    if (needsReevaluation) {
-      const query = {
-        ...this.state.report,
-        data: newReport,
-      };
-      delete query.result;
-      await this.loadUpdatedReport(query);
+    if (needsReevaluation && this.state.shouldAutoReloadPreview) {
+      this.reEvaluateReport(newReport);
     }
+  };
+
+  reEvaluateReport = async (newReport) => {
+    const query = {
+      ...this.state.report,
+      data: newReport,
+    };
+    delete query.result;
+    await this.loadUpdatedReport(query);
   };
 
   updateName = ({target: {value}}) => {
@@ -170,12 +188,14 @@ export class ReportEdit extends React.Component {
   };
 
   dirtyCheck = () => {
-    if (deepEqual(this.state.report, this.state.originalData)) {
-      nowPristine();
-    } else {
+    if (this.isReportDirty()) {
       nowDirty(t('report.label'), this.save);
+    } else {
+      nowPristine();
     }
   };
+
+  isReportDirty = () => !deepEqual(this.state.report, this.state.originalData);
 
   isReportComplete = ({data: {view, groupBy, visualization}, combined}) =>
     (view && groupBy && visualization) || combined;
@@ -205,6 +225,7 @@ export class ReportEdit extends React.Component {
           this.setState(
             {
               report: response,
+              frozenReport: response,
               serverError: null,
             },
             resolve
@@ -225,8 +246,23 @@ export class ReportEdit extends React.Component {
       )
     );
 
+  toggleAutoPreviewUpdate = async ({target: {checked: shouldReload}}) => {
+    if (this.isReportDirty() && shouldReload) {
+      await this.reEvaluateReport(this.state.report.data);
+    }
+    this.setState({shouldAutoReloadPreview: shouldReload});
+  };
+
   render() {
-    const {report, serverError, loadingReportData, conflict, redirect} = this.state;
+    const {
+      report,
+      serverError,
+      loadingReportData,
+      conflict,
+      redirect,
+      shouldAutoReloadPreview,
+      frozenReport,
+    } = this.state;
     const {name, data, combined, reportType} = report;
 
     if (redirect) {
@@ -236,15 +272,40 @@ export class ReportEdit extends React.Component {
     return (
       <div className="ReportEdit Report">
         <div className="Report__header">
-          <EntityNameForm
-            name={name}
-            entity="Report"
-            isNew={this.props.isNew}
-            onChange={this.updateName}
-            onSave={this.saveAndGoBack}
-            onCancel={this.cancel}
-          />
-          <InstanceCount noInfo report={report} />
+          <div className="headerTopLine">
+            <EntityNameForm
+              name={name}
+              entity="Report"
+              isNew={this.props.isNew}
+              onChange={this.updateName}
+              onSave={this.saveAndGoBack}
+              onCancel={this.cancel}
+            />
+            {!shouldAutoReloadPreview && (
+              <Button
+                main
+                primary
+                className="RunPreviewButton"
+                disabled={this.state.loadingReportData || !this.isReportComplete(report)}
+                onClick={() => this.reEvaluateReport(report.data)}
+              >
+                {t('report.updateReportPreview.buttonLabel')}
+              </Button>
+            )}
+          </div>
+          <div className="headerBottomLine">
+            <InstanceCount noInfo report={report} />
+            <div className="updatePreview">
+              <div className="switch">
+                <Switch
+                  checked={shouldAutoReloadPreview}
+                  onChange={this.toggleAutoPreviewUpdate}
+                  label={t('report.updateReportPreview.switchLabel')}
+                  labelPosition="left"
+                />
+              </div>
+            </div>
+          </div>
         </div>
         <div className="Report__view">
           <div className="Report__content">
@@ -263,6 +324,7 @@ export class ReportEdit extends React.Component {
                   onChange={this.updateReport}
                   disabled={loadingReportData}
                   report={report}
+                  autoPreviewDisabled={!shouldAutoReloadPreview}
                 />
               </div>
             )}
@@ -274,7 +336,7 @@ export class ReportEdit extends React.Component {
             ) : (
               <ReportRenderer
                 error={serverError}
-                report={report}
+                report={shouldAutoReloadPreview ? report : frozenReport}
                 updateReport={this.updateReport}
                 loadReport={this.loadReport}
               />

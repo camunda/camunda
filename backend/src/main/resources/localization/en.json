@@ -465,6 +465,11 @@
       "exceededInstances": "Exceeded-instances-{name}",
       "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."
     },
+    "updateReportPreview": {
+      "switchLabel": "Update Preview Automatically",
+      "buttonLabel": "Run",
+      "cannotUpdate": "This function only works with automatic preview update turned on"
+    },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data",
     "errorNotice": "Error loading data",

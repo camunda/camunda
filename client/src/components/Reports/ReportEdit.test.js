@@ -180,7 +180,6 @@ it('should use original data as result data if report cant be evaluated on cance
     },
   });
 
-  evaluateReport.mockReturnValueOnce(null);
   node.instance().cancel();
 
   expect(node.state().report.data.definitions[0].key).toEqual('123');
@@ -330,4 +329,50 @@ it('should pass the error to reportRenderer if evaluation fails', async () => {
   await node.instance().loadReport(undefined, report);
 
   expect(node.find(ReportRenderer).prop('error')).toEqual(testError);
+});
+
+it('should show update preview switch disabled by default', () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  const updateSwicth = node.find('.updatePreview Switch');
+
+  expect(node.state().shouldAutoReloadPreview).toBe(false);
+  expect(updateSwicth.prop('label')).toBe('Update Preview Automatically');
+  expect(updateSwicth.prop('checked')).toBe(false);
+  expect(node.find('.RunPreviewButton')).toExist();
+});
+
+it('should turn off automatic update when switch is toggled', () => {
+  const node = shallow(<ReportEdit {...props} />);
+  node.setState({shouldAutoReloadPreview: true});
+
+  const updateSwicth = node.find('.updatePreview Switch');
+
+  updateSwicth.prop('onChange')({target: {checked: false}});
+
+  expect(node.state().shouldAutoReloadPreview).toBe(false);
+  expect(node.find('.RunPreviewButton')).toExist();
+});
+
+it('should re-evalueate report on reload button click', () => {
+  const node = shallow(<ReportEdit {...props} />);
+  const spy = jest.spyOn(node.instance(), 'reEvaluateReport');
+
+  node.setState({shouldAutoReloadPreview: false});
+
+  const reloadButton = node.find('.RunPreviewButton');
+  reloadButton.simulate('click');
+
+  expect(spy).toHaveBeenCalledWith(props.report.data);
+  expect(evaluateReport).toHaveBeenCalled();
+});
+
+it('should not call evaluateReport when auto update is off', () => {
+  evaluateReport.mockClear();
+  const node = shallow(<ReportEdit {...props} />);
+  node.setState({shouldAutoReloadPreview: false});
+
+  node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}}, true);
+
+  expect(evaluateReport).not.toHaveBeenCalled();
 });

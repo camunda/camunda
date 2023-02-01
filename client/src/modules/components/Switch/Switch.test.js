@@ -41,3 +41,23 @@ it('executes an on-change handler as provided as a property', () => {
   node.find(Input).simulate('change', {target: {checked: false}});
   expect(handler).toHaveBeenCalled();
 });
+
+it('should show the label on the right side', () => {
+  const node = shallow(<Switch label="some label" />);
+
+  const rightlabel = node.find('label').childAt(2);
+  const slider = node.find('.Switch__Slider--round');
+
+  expect(rightlabel.text()).toBe('some label');
+  expect(slider.hasClass('right')).toBe(true);
+});
+
+it('should show the label on the left side', () => {
+  const node = shallow(<Switch label="some label" labelPosition="left" />);
+
+  const rightlabel = node.find('label').childAt(0);
+  const slider = node.find('.Switch__Slider--round');
+
+  expect(rightlabel.text()).toBe('some label');
+  expect(slider.hasClass('left')).toBe(true);
+});

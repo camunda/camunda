@@ -65,6 +65,7 @@ test('combine two single number reports', async (t) => {
   });
 
   await t.click(Homepage.submenuOption('Combined Process Report'));
+  await u.toggleReportAutoPreviewUpdate(t);
   await t.typeText(Report.nameEditField, 'Combined Report', {replace: true});
 
   await t
@@ -90,9 +91,7 @@ test('combine two single table reports and reorder them', async (t) => {
   await createReport(t, 'Another Table Report', 'Lead Qualification', 'Table');
   await createReport(t, 'Table Report', 'Lead Qualification', 'Table', true);
 
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await u.createNewCombinedReport(t);
 
   await t.click(Combined.singleReport('Table Report'));
   await t.click(Combined.singleReport('Another Table Report'));
@@ -115,9 +114,7 @@ test('combine two single chart reports and change their colors', async (t) => {
   await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line Chart');
   await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', true);
 
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await u.createNewCombinedReport(t);
 
   await t.click(Combined.singleReport('Line Report - 1'));
   await t.click(Combined.singleReport('Line Report - 2'));
@@ -141,9 +138,7 @@ test('open the configuration popover and add a goal line', async (t) => {
   await createReport(t, 'Bar Report - 1', 'Lead Qualification', 'Bar Chart');
   await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', true);
 
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await u.createNewCombinedReport(t);
 
   await t.click(Combined.singleReport('Bar Report - 1'));
   await t.click(Combined.singleReport('Bar Report - 2'));
