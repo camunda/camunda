@@ -22,7 +22,7 @@ import {
   Title,
 } from './styled';
 import {tracking} from 'modules/tracking';
-import {hide, shift} from '@floating-ui/react-dom';
+import {hide, offset, shift} from '@floating-ui/react-dom';
 
 const defaultTime = {
   from: '00:00:00',
@@ -132,11 +132,10 @@ const DateRangePopover: React.FC<Props> = ({
   return (
     <Popover
       referenceElement={referenceElement}
-      offsetOptions={[10]}
       placement="right-start"
       onOutsideClick={handleOutsideClick}
       variant="arrow"
-      middlewareOptions={[shift(), hide()]}
+      middlewareOptions={[offset(10), shift(), hide()]}
       autoUpdatePosition
     >
       <Form onSubmit={handleApply} initialValues={defaultValues}>

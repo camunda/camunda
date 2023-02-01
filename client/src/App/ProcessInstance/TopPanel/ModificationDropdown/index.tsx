@@ -26,6 +26,7 @@ import {tracking} from 'modules/tracking';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {modificationRulesStore} from 'modules/stores/modificationRules';
 import {isNil} from 'lodash';
+import {flip, offset} from '@floating-ui/react-dom';
 
 type Props = {
   selectedFlowNodeRef?: SVGSVGElement;
@@ -53,12 +54,12 @@ const ModificationDropdown: React.FC<Props> = observer(
       <Popover
         key={flowNodeInstanceId}
         referenceElement={selectedFlowNodeRef}
-        offsetOptions={[10]}
-        flipOptions={[
-          {
+        middlewareOptions={[
+          offset(10),
+          flip({
             fallbackPlacements: ['top', 'left', 'right'],
             boundary: diagramCanvasRef?.current ?? undefined,
-          },
+          }),
         ]}
         variant="arrow"
       >

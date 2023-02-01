@@ -8,8 +8,6 @@
 import {
   Side,
   useFloating,
-  offset,
-  flip,
   arrow,
   Placement,
   autoUpdate,
@@ -39,8 +37,6 @@ type Props = {
   referenceElement?: Element | null;
   children: React.ReactNode;
   placement?: Placement;
-  flipOptions?: Parameters<typeof flip>;
-  offsetOptions?: Parameters<typeof offset>;
   className?: string;
   onOutsideClick?: (event: MouseEvent) => void;
   middlewareOptions?: Middleware[];
@@ -51,8 +47,6 @@ const ArrowPopover: React.FC<Props> = ({
   referenceElement,
   children,
   placement = 'bottom',
-  flipOptions = [],
-  offsetOptions = [],
   className,
   onOutsideClick,
   middlewareOptions = [],
@@ -70,12 +64,7 @@ const ArrowPopover: React.FC<Props> = ({
     refs: {floating: popoverElementRef},
   } = useFloating({
     placement,
-    middleware: [
-      offset(...offsetOptions),
-      flip(...flipOptions),
-      arrow({element: arrowElementRef}),
-      ...middlewareOptions,
-    ],
+    middleware: [...middlewareOptions, arrow({element: arrowElementRef})],
     whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,
   });
 

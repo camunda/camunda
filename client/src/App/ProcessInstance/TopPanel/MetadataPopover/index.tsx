@@ -34,6 +34,7 @@ import {tracking} from 'modules/tracking';
 import {getExecutionDuration} from './getExecutionDuration';
 import {isNil} from 'lodash';
 import {Anchor} from 'modules/components/Anchor/styled';
+import {flip, offset} from '@floating-ui/react-dom';
 
 const NULL_METADATA = {
   flowNodeInstanceId: null,
@@ -82,11 +83,11 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   return (
     <Popover
       referenceElement={selectedFlowNodeRef}
-      offsetOptions={[10]}
-      flipOptions={[
-        {
+      middlewareOptions={[
+        offset(10),
+        flip({
           fallbackPlacements: ['top', 'right', 'left'],
-        },
+        }),
       ]}
       variant="arrow"
     >
