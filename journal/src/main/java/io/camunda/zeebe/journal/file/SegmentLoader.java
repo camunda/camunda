@@ -106,7 +106,11 @@ final class SegmentLoader {
           e);
     }
     return new UninitializedSegment(
-        new SegmentFile(segmentFile.toFile()), descriptor, mappedSegment, journalIndex);
+        new SegmentFile(segmentFile.toFile()),
+        descriptor.id(),
+        descriptor.maxSegmentSize(),
+        mappedSegment,
+        journalIndex);
   }
 
   Segment loadExistingSegment(
