@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {ZBClient, IProcessVariables} from 'zeebe-node';
+import {ZBClient, IProcessVariables, JSONDoc} from 'zeebe-node';
 const zbc = new ZBClient({
   onReady: () => console.log(`Connected!`),
   onConnectionError: () => console.log(`Disconnected!`),
@@ -15,7 +15,7 @@ const deploy: typeof zbc.deployProcess = (processNames) => {
   return zbc.deployProcess(processNames);
 };
 
-const createInstances = <Variables = IProcessVariables>(
+const createInstances = <Variables extends JSONDoc = IProcessVariables>(
   bpmnProcessId: string,
   version: number,
   numberOfInstances: number,
@@ -23,10 +23,10 @@ const createInstances = <Variables = IProcessVariables>(
 ) => {
   return Promise.all(
     [...new Array(numberOfInstances)].map(() =>
-      zbc.createProcessInstance<typeof variables>({
+      zbc.createProcessInstance<Variables>({
         bpmnProcessId,
         version,
-        variables,
+        variables: variables || ({} as Variables),
       }),
     ),
   );
