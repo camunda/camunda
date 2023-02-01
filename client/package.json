@@ -24,7 +24,7 @@
     "react-router-dom": "6.8.0",
     "react-textarea-autosize": "8.4.0",
     "react-transition-group": "4.4.5",
-    "sass": "1.57.1",
+    "sass": "1.58.0",
     "styled-components": "5.3.6"
   },
   "scripts": {
