@@ -11,6 +11,7 @@
   "org.opencontainers.image.description": "Workflow engine for microservice orchestration",
   "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/zeebe-deployment/",
   "org.opencontainers.image.licenses": "(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)",
+  "org.opencontainers.image.ref.name": "eclipse-temurin:17-jre-focal",
   "org.opencontainers.image.revision": $REVISION,
   "org.opencontainers.image.source": "https://github.com/camunda/zeebe",
   "org.opencontainers.image.title": "Zeebe",
