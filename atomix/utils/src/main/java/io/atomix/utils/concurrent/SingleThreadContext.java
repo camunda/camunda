@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-public class SingleThreadContext extends AbstractThreadContext {
+public class SingleThreadContext implements ThreadContext {
   protected static final Logger LOGGER = LoggerFactory.getLogger(SingleThreadContext.class);
   private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOGGER);
   private static final Consumer<Throwable> DEFAULT_UNCAUGHT_EXCEPTION_OBSERVER =

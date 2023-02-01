@@ -20,10 +20,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -37,7 +34,6 @@ import java.util.function.Function;
  */
 public class OrderedFuture<T> extends CompletableFuture<T> {
 
-  private static final ThreadContext NULL_CONTEXT = new NullThreadContext();
   private final Queue<CompletableFuture<T>> orderedFutures = new LinkedList<>();
   private volatile boolean complete;
   private volatile T result;
@@ -65,45 +61,6 @@ public class OrderedFuture<T> extends CompletableFuture<T> {
           }
         });
     return newFuture;
-  }
-
-  private ThreadContext getThreadContext() {
-    final ThreadContext context = ThreadContext.currentContext();
-    return context != null ? context : NULL_CONTEXT;
-  }
-
-  @Override
-  public T get() throws InterruptedException, ExecutionException {
-    final ThreadContext context = getThreadContext();
-    context.block();
-    try {
-      return super.get();
-    } finally {
-      context.unblock();
-    }
-  }
-
-  @Override
-  public T get(final long timeout, final TimeUnit unit)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    final ThreadContext context = getThreadContext();
-    context.block();
-    try {
-      return super.get(timeout, unit);
-    } finally {
-      context.unblock();
-    }
-  }
-
-  @Override
-  public synchronized T join() {
-    final ThreadContext context = getThreadContext();
-    context.block();
-    try {
-      return super.join();
-    } finally {
-      context.unblock();
-    }
   }
 
   @Override
