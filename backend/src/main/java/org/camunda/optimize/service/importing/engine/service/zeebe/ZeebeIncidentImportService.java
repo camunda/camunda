@@ -25,10 +25,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImportService<ZeebeIncidentRecordDto> {
+
+  private static final Set<IncidentIntent> INTENTS_TO_IMPORT = Set.of(
+    IncidentIntent.CREATED,
+    IncidentIntent.RESOLVED
+  );
 
   public ZeebeIncidentImportService(final ConfigurationService configurationService,
                                     final ZeebeProcessInstanceWriter processInstanceWriter,
@@ -38,13 +44,20 @@ public class ZeebeIncidentImportService extends ZeebeProcessInstanceSubEntityImp
   }
 
   @Override
-  protected List<ProcessInstanceDto> mapZeebeRecordsToOptimizeEntities(
+  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
     List<ZeebeIncidentRecordDto> zeebeRecords) {
-    return zeebeRecords.stream()
+    final List<ProcessInstanceDto> optimizeDtos = zeebeRecords.stream()
+      .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
       .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
       .values().stream()
       .map(this::createProcessInstanceForData)
       .collect(Collectors.toList());
+    log.debug(
+      "Processing {} fetched zeebe incident records, of which {} are relevant to Optimize and will be imported.",
+      zeebeRecords.size(),
+      optimizeDtos.size()
+    );
+    return optimizeDtos;
   }
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeIncidentRecordDto> recordsForInstance) {

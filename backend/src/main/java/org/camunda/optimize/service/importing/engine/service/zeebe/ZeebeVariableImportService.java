@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,11 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
     SERIALIZATION_DATA_FORMAT, MediaType.APPLICATION_JSON
   );
 
+  private static final Set<VariableIntent> INTENTS_TO_IMPORT = Set.of(
+    VariableIntent.CREATED,
+    VariableIntent.UPDATED
+  );
+
   private final ObjectMapper objectMapper;
   private final ObjectVariableService objectVariableService;
 
@@ -61,13 +68,20 @@ public class ZeebeVariableImportService extends ZeebeProcessInstanceSubEntityImp
   }
 
   @Override
-  protected List<ProcessInstanceDto> mapZeebeRecordsToOptimizeEntities(
+  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
     List<ZeebeVariableRecordDto> zeebeRecords) {
-    return zeebeRecords.stream()
+    final List<ProcessInstanceDto> optimizeDtos = zeebeRecords.stream()
+      .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
       .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
       .values().stream()
       .map(this::createProcessInstanceForData)
       .collect(toList());
+    log.debug(
+      "Processing {} fetched zeebe variable records, of which {} are relevant to Optimize and will be imported.",
+      zeebeRecords.size(),
+      optimizeDtos.size()
+    );
+    return optimizeDtos;
   }
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeVariableRecordDto> recordsForInstance) {

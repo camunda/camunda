@@ -9,7 +9,9 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 
+@FieldNameConstants
 @EqualsAndHashCode
 @Data
 public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {

@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.plan.factories;
 
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.InstantPreviewDashboardMetadataIndex;
+import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -19,9 +20,14 @@ public class Upgrade39To310PlanFactory implements UpgradePlanFactory {
     return UpgradePlanBuilder.createUpgradePlan()
       .fromVersion("3.9")
       .toVersion("3.10.0")
+      .addUpgradeStep(addZeebeRecordSequenceFieldToPositionBasedImportIndex())
       .addUpgradeStep(updateDashboardIndexWithNewField())
       .addUpgradeStep(new CreateIndexStep(new InstantPreviewDashboardMetadataIndex()))
       .build();
+  }
+
+  private UpdateIndexStep addZeebeRecordSequenceFieldToPositionBasedImportIndex() {
+    return new UpdateIndexStep(new PositionBasedImportIndex(), "ctx._source.sequenceOfLastEntity = 0;");
   }
 
   private UpdateIndexStep updateDashboardIndexWithNewField() {

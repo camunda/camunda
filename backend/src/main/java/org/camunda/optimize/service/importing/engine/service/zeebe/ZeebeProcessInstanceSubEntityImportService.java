@@ -40,7 +40,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     this.processDefinitionReader = processDefinitionReader;
   }
 
-  abstract List<ProcessInstanceDto> mapZeebeRecordsToOptimizeEntities(List<T> records);
+  abstract List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(List<T> records);
 
   @Override
   public void executeImport(final List<T> zeebeRecords,
@@ -48,7 +48,7 @@ public abstract class ZeebeProcessInstanceSubEntityImportService<T> implements I
     boolean newDataIsAvailable = !zeebeRecords.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessInstanceDto> newOptimizeEntities =
-        mapZeebeRecordsToOptimizeEntities(zeebeRecords);
+        filterAndMapZeebeRecordsToOptimizeEntities(zeebeRecords);
       final ElasticsearchImportJob<ProcessInstanceDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);

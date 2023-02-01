@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
@@ -42,6 +43,12 @@ public class ZeebeProcessInstanceImportService
     BpmnElementType.UNSPECIFIED, BpmnElementType.SEQUENCE_FLOW
   );
 
+  private static final Set<ProcessInstanceIntent> INTENTS_TO_IMPORT = Set.of(
+    ProcessInstanceIntent.ELEMENT_COMPLETED,
+    ProcessInstanceIntent.ELEMENT_TERMINATED,
+    ProcessInstanceIntent.ELEMENT_ACTIVATING
+  );
+
   public ZeebeProcessInstanceImportService(final ConfigurationService configurationService,
                                            final ZeebeProcessInstanceWriter processInstanceWriter,
                                            final int partitionId,
@@ -50,13 +57,25 @@ public class ZeebeProcessInstanceImportService
   }
 
   @Override
-  protected List<ProcessInstanceDto> mapZeebeRecordsToOptimizeEntities(
+  protected List<ProcessInstanceDto> filterAndMapZeebeRecordsToOptimizeEntities(
     List<ZeebeProcessInstanceRecordDto> zeebeRecords) {
-    return zeebeRecords.stream()
-      .collect(Collectors.groupingBy(zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey()))
-      .values().stream()
-      .map(this::createProcessInstanceForData)
-      .collect(Collectors.toList());
+    final List<ProcessInstanceDto> optimizeDtos = new ArrayList<>(
+      zeebeRecords.stream()
+        .filter(zeebeRecord -> !TYPES_TO_IGNORE.contains(zeebeRecord.getValue().getBpmnElementType()))
+        .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
+        .collect(Collectors.groupingBy(
+          zeebeRecord -> zeebeRecord.getValue().getProcessInstanceKey(),
+          Collectors.mapping(
+            Function.identity(),
+            Collectors.collectingAndThen(Collectors.toList(), this::createProcessInstanceForData)
+          )
+        )).values());
+    log.debug(
+      "Processing {} fetched zeebe process instance records, of which {} are relevant to Optimize and will be imported.",
+      zeebeRecords.size(),
+      optimizeDtos.size()
+    );
+    return optimizeDtos;
   }
 
   private ProcessInstanceDto createProcessInstanceForData(final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
@@ -106,8 +125,7 @@ public class ZeebeProcessInstanceImportService
                                               final List<ZeebeProcessInstanceRecordDto> recordsForInstance) {
     Map<Long, FlowNodeInstanceDto> flowNodeInstancesByRecordKey = new HashMap<>();
     recordsForInstance.stream()
-      .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType())
-        && !TYPES_TO_IGNORE.contains(zeebeRecord.getValue().getBpmnElementType()))
+      .filter(zeebeRecord -> !BpmnElementType.PROCESS.equals(zeebeRecord.getValue().getBpmnElementType()))
       .filter(zeebeRecord -> zeebeRecord.getValue().getBpmnElementType().getElementTypeName().isPresent())
       .forEach(processFlowNodeInstance -> {
         final long recordKey = processFlowNodeInstance.getKey();

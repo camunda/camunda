@@ -30,7 +30,9 @@ public abstract class PositionBasedImportIndexHandler
   private OffsetDateTime lastImportExecutionTimestamp = BEGINNING_OF_TIME;
   private OffsetDateTime timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
   private long persistedPositionOfLastEntity = 0;
+  private long persistedSequenceOfLastEntity = 0;
   private long pendingPositionOfLastEntity = 0;
+  private long pendingSequenceOfLastEntity = 0;
   protected ZeebeDataSourceDto dataSource;
 
   @Autowired
@@ -42,6 +44,7 @@ public abstract class PositionBasedImportIndexHandler
     indexToStore.setDataSource(dataSource);
     indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
     indexToStore.setPositionOfLastEntity(persistedPositionOfLastEntity);
+    indexToStore.setSequenceOfLastEntity(persistedSequenceOfLastEntity);
     indexToStore.setTimestampOfLastEntity(timestampOfLastPersistedEntity);
     indexToStore.setEsTypeIndexRefersTo(getElasticsearchDocID());
     return indexToStore;
@@ -53,8 +56,8 @@ public abstract class PositionBasedImportIndexHandler
       .getImportIndex(getElasticsearchDocID(), dataSource);
     if (dto.isPresent()) {
       PositionBasedImportIndexDto loadedImportIndex = dto.get();
-      updateLastPersistedEntityPosition(loadedImportIndex.getPositionOfLastEntity());
-      updatePendingLastEntityPosition(loadedImportIndex.getPositionOfLastEntity());
+      updateLastPersistedEntityPositionAndSequence(loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
+      updatePendingLastEntityPositionAndSequence(loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
       updateTimestampOfLastPersistedEntity(loadedImportIndex.getTimestampOfLastEntity());
     }
@@ -65,13 +68,16 @@ public abstract class PositionBasedImportIndexHandler
     lastImportExecutionTimestamp = BEGINNING_OF_TIME;
     timestampOfLastPersistedEntity = BEGINNING_OF_TIME;
     persistedPositionOfLastEntity = 0;
+    persistedSequenceOfLastEntity = 0;
     pendingPositionOfLastEntity = 0;
+    pendingSequenceOfLastEntity = 0;
   }
 
   @Override
   public PositionBasedImportPage getNextPage() {
     PositionBasedImportPage page = new PositionBasedImportPage();
     page.setPosition(pendingPositionOfLastEntity);
+    page.setSequence(pendingSequenceOfLastEntity);
     return page;
   }
 
@@ -80,12 +86,14 @@ public abstract class PositionBasedImportIndexHandler
    */
   protected abstract String getElasticsearchDocID();
 
-  public void updateLastPersistedEntityPosition(final long position) {
+  public void updateLastPersistedEntityPositionAndSequence(final long position, final long sequence) {
     this.persistedPositionOfLastEntity = position;
+    this.persistedSequenceOfLastEntity = sequence;
   }
 
-  public void updatePendingLastEntityPosition(final long position) {
+  public void updatePendingLastEntityPositionAndSequence(final long position, final long sequence) {
     this.pendingPositionOfLastEntity = position;
+    this.pendingSequenceOfLastEntity = sequence;
   }
 
   public void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {

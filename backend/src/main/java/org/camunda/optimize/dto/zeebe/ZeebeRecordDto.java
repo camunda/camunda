@@ -25,6 +25,7 @@ import lombok.experimental.FieldNameConstants;
 public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends Intent> implements Record<VALUE> {
 
   private long position;
+  private Long sequence; // this field was introduced with 8.2.0, it will not be present in records of prior versions
   private long sourceRecordPosition;
   private long key;
   private long timestamp;

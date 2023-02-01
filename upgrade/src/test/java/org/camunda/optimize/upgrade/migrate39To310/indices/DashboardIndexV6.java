@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.migrate390To310.indices;
+package org.camunda.optimize.upgrade.migrate39To310.indices;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
@@ -25,7 +25,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWOR
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_NESTED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
-public class DashboardIndex390 extends DefaultIndexMappingCreator {
+public class DashboardIndexV6 extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 6;
 

@@ -62,9 +62,11 @@ import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -657,6 +659,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     getOptimizeElasticClient().getHighLevelClient()
       .indices()
       .delete(new DeleteIndexRequest(zeebeRecordPrefix + "*"), getOptimizeElasticClient().requestOptions());
+  }
+
+  @SneakyThrows
+  public void updateZeebeRecordsForPrefix(final String zeebeRecordPrefix, final String indexName,
+                                          final BoolQueryBuilder updateQuery, final String updateScript) {
+    final UpdateByQueryRequest update = new UpdateByQueryRequest(zeebeRecordPrefix + "_" + indexName + "*")
+      .setQuery(updateQuery)
+      .setScript(new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, updateScript, Collections.emptyMap()))
+      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .setRefresh(true);;
+    getOptimizeElasticClient().getHighLevelClient().updateByQuery(update, getOptimizeElasticClient().requestOptions());
   }
 
   @SneakyThrows

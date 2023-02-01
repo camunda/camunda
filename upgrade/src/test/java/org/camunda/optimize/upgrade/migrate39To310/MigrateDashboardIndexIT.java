@@ -3,9 +3,9 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.upgrade.migrate390To310;
+package org.camunda.optimize.upgrade.migrate39To310;
 
-import org.camunda.optimize.upgrade.migrate390To310.indices.DashboardIndex390;
+import org.camunda.optimize.upgrade.migrate39To310.indices.DashboardIndexV6;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +22,7 @@ public class MigrateDashboardIndexIT extends AbstractUpgrade310IT {
     performUpgrade();
 
     // then
-    final SearchHit[] dashboards = getAllDocumentsOfIndex(new DashboardIndex390().getIndexName());
+    final SearchHit[] dashboards = getAllDocumentsOfIndex(new DashboardIndexV6().getIndexName());
     assertThat(dashboards)
       .hasSize(2)
       .allSatisfy(doc -> assertThat(doc.getSourceAsMap())

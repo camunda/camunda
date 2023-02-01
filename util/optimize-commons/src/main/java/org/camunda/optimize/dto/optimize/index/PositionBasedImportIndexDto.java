@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
 
   protected long positionOfLastEntity = 0;
+  protected long sequenceOfLastEntity = 0;
   protected String esTypeIndexRefersTo;
 
 }
