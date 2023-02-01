@@ -30,12 +30,32 @@ inputs:
     description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
     default: "default"
     required: false
+  secret_vault_address:
+    description: 'secret vault url'
+    required: true
+  secret_vault_roleId:
+    description: 'secret vault roleId'
+    required: true
+  secret_vault_secretId:
+    description: 'secret valut secret id'
+    required: true
 
 outputs: {}
 
 runs:
   using: composite
   steps:
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v2.4.3
+      with:
+        url: ${{ inputs.secret_vault_address }}
+        method: approle
+        roleId: ${{ inputs.secret_vault_roleId }}
+        secretId: ${{ inputs.secret_vault_secretId }}
+        secrets: |
+          secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
+          secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
     - if: ${{ inputs.java == 'true' }}
       uses: actions/setup-java@v3
       with:
@@ -48,6 +68,18 @@ runs:
       uses: stCarolas/setup-maven@v4.5
       with:
         maven-version: '3.8.6'
+    # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+    - name: 'Create settings.xml'
+      uses: s4u/maven-settings-action@v2.8.0
+      with:
+        githubServer: false
+        servers: |
+          [{
+            "id": "camunda-nexus",
+            "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+            "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+          }]
+        mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
     - if: ${{ inputs.maven-cache == 'true' }}
       name: Cache local Maven repository
       uses: actions/cache@v3

@@ -41,6 +41,9 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           maven-cache: 'true'
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -99,6 +102,9 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           maven-cache: 'true'
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -147,6 +153,9 @@ jobs:
         with:
           go: false
           maven-cache: 'true'
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -202,6 +211,9 @@ jobs:
           go: false
           # setting up maven often times out on macOS
           maven: ${{ runner.os != 'macOS' }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -242,6 +254,9 @@ jobs:
         with:
           go: false
           maven-cache: 'true'
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -272,6 +287,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       # Once we're on Go 1.18, use the official gorelease to do this
@@ -306,6 +325,9 @@ jobs:
           go: false
           maven-cache: 'true'
           maven-cache-key-modifier: java-client
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
@@ -349,6 +371,9 @@ jobs:
         with:
           go: false
           maven-cache: 'true'
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
@@ -383,6 +408,9 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           java: false
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
@@ -398,6 +426,9 @@ jobs:
           go: false
           maven-cache: 'true'
           maven-cache-key-modifier: java-checks
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
@@ -426,6 +457,10 @@ jobs:
         with:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker
@@ -512,9 +547,18 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-          server-id: camunda-nexus
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_PASSWORD
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          githubServer: false
+          servers: |
+            [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.ARTIFACTS_USR }}",
+              "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
@@ -549,6 +593,10 @@ jobs:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
       - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
       - uses: ./.github/actions/build-docker
