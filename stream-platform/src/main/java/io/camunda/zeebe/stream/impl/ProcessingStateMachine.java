@@ -28,6 +28,7 @@ import io.camunda.zeebe.stream.api.MetadataFilter;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
@@ -148,6 +149,7 @@ public final class ProcessingStateMachine {
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
   private final int processingBatchLimit;
+  private int processedCommandsCount;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -254,7 +256,6 @@ public final class ProcessingStateMachine {
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
-
       if (EmptyProcessingResult.INSTANCE == currentProcessingResult) {
         skipRecord();
         return;
@@ -262,6 +263,7 @@ public final class ProcessingStateMachine {
 
       lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
       writeRecords();
+      processedCommandsCount = 0;
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -272,11 +274,24 @@ public final class ProcessingStateMachine {
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
+    } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
+      if (processedCommandsCount > 0) {
+        onError(() -> processCommand(loggedEvent));
+      } else {
+        onError(
+            () -> {
+              errorHandlingInTransaction(exceededBatchRecordSizeException);
+              writeRecords();
+            });
+      }
     } catch (final Exception e) {
-      onError(e, this::writeRecords);
+      onError(
+          () -> {
+            errorHandlingInTransaction(e);
+            writeRecords();
+          });
     }
   }
-
   /**
    * Starts the batch processing with the given initial command and iterates over ProcessingResult
    * and applies all follow-up commands until the command limit is reached or no more follow-up
@@ -286,12 +301,19 @@ public final class ProcessingStateMachine {
     final ProcessingResultBuilder processingResultBuilder =
         new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
     var lastProcessingResultSize = 0;
-    var processedCommandsCount = 0;
+
+    // It might be that we reached the batch size limit during processing a command.
+    // We rolled back the transaction and processing result and retried the processing.
+    // We know that we can process until the last processed commands count, which is why we set it
+    // as our processing batch limit, in order to handle the commands afterwards as own batch.
+    final var currentProcessingBatchLimit =
+        processedCommandsCount > 0 ? processedCommandsCount : processingBatchLimit;
+    processedCommandsCount = 0;
     pendingWrites = new ArrayList<>();
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);
 
-    while (!pendingCommands.isEmpty() && processedCommandsCount < processingBatchLimit) {
+    while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
 
@@ -308,7 +330,8 @@ public final class ProcessingStateMachine {
                 currentProcessingResult,
                 lastProcessingResultSize,
                 // +1 since we already need include the current command in the calculation
-                pendingCommands.size() + processedCommandsCount + 1);
+                pendingCommands.size() + processedCommandsCount + 1,
+                currentProcessingBatchLimit);
 
         pendingCommands.addAll(batchProcessingStepResult.toProcess());
         pendingWrites.addAll(batchProcessingStepResult.toWrite());
@@ -335,7 +358,8 @@ public final class ProcessingStateMachine {
   private BatchProcessingStepResult collectBatchProcessingStepResult(
       final ProcessingResult processingResult,
       final int lastProcessingResultSize,
-      final int currentBatchSize) {
+      final int currentBatchSize,
+      final int currentProcessingBatchLimit) {
 
     final var commandsToProcess = new ArrayList<TypedRecord<?>>();
     final var toWriteEntries = new ArrayList<LogAppendEntry>();
@@ -347,7 +371,7 @@ public final class ProcessingStateMachine {
               var toWriteEntry = entry;
               final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
-                  && potentialBatchSize < processingBatchLimit) {
+                  && potentialBatchSize < currentProcessingBatchLimit) {
                 commandsToProcess.add(
                     new UnwrittenRecord(
                         entry.key(),
@@ -362,7 +386,7 @@ public final class ProcessingStateMachine {
     return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
   }
 
-  private void onError(final Throwable processingException, final Runnable nextStep) {
+  private void onError(final NextProcessingStep nextStep) {
     onErrorRetries++;
     if (onErrorRetries > 1) {
       onErrorHandlingLoop = true;
@@ -382,11 +406,9 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
           try {
-            errorHandlingInTransaction(processingException);
-
             nextStep.run();
           } catch (final Exception ex) {
-            onError(ex, nextStep);
+            onError(nextStep);
           }
         });
   }
@@ -423,7 +445,11 @@ public final class ProcessingStateMachine {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, this::writeRecords);
+            onError(
+                () -> {
+                  errorHandlingInTransaction(t);
+                  writeRecords();
+                });
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
@@ -452,7 +478,11 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, this::updateState);
+            onError(
+                () -> {
+                  errorHandlingInTransaction(throwable);
+                  updateState();
+                });
           } else {
             executeSideEffects();
           }
@@ -564,4 +594,9 @@ public final class ProcessingStateMachine {
 
   private record BatchProcessingStepResult(
       List<TypedRecord<?>> toProcess, List<LogAppendEntry> toWrite) {}
+
+  @FunctionalInterface
+  private interface NextProcessingStep {
+    void run() throws Exception;
+  }
 }
