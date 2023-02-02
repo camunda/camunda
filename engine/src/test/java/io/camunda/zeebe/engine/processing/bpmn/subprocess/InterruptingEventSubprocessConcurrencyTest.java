@@ -31,7 +31,12 @@ public class InterruptingEventSubprocessConcurrencyTest {
   private static final String PROCESS_ID = "proc";
   private static final String MSG_NAME = "messageName";
 
-  @Rule public final EngineRule engineRule = EngineRule.singlePartition();
+  @Rule
+  public final EngineRule engineRule =
+      EngineRule.singlePartition()
+          // Disable batch processing. Interrupting behaviour is only reproducible if
+          // process instance is not completed in one batch.
+          .processingBatchLimit(1);
 
   @Test
   // https://github.com/camunda/zeebe/issues/6552
