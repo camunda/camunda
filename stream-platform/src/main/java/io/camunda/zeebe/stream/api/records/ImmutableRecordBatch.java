@@ -17,5 +17,12 @@ import java.util.List;
  */
 public interface ImmutableRecordBatch extends Iterable<RecordBatchEntry> {
 
+  /**
+   * @return true if no records to append
+   */
+  default boolean isEmpty() {
+    return entries().isEmpty();
+  }
+
   List<LogAppendEntry> entries();
 }
