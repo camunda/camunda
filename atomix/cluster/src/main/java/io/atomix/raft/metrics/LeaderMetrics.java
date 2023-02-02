@@ -17,6 +17,7 @@
 package io.atomix.raft.metrics;
 
 import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
 public class LeaderMetrics extends RaftMetrics {
@@ -46,6 +47,13 @@ public class LeaderMetrics extends RaftMetrics {
           .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
+  private static final Gauge NON_REPLICATED_ENTRIES =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("non_replicated_entries")
+          .help("The number of non-replicated entries for a given followers")
+          .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .register();
   private static final Counter COMMIT_RATE =
       Counter.build()
           .namespace(NAMESPACE)
@@ -53,12 +61,21 @@ public class LeaderMetrics extends RaftMetrics {
           .help("The rate of entries committed (counting entries, not their size)")
           .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
+  private static final Gauge NON_COMMITTED_ENTRIES =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .name("non_committed_entries")
+          .help("The number of non-committed entries on the leader")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
+          .register();
 
   private final Counter.Child commitRate;
+  private final Gauge.Child nonCommittedEntries;
 
   public LeaderMetrics(final String partitionName) {
     super(partitionName);
     commitRate = COMMIT_RATE.labels(partitionGroupName, partition);
+    nonCommittedEntries = NON_COMMITTED_ENTRIES.labels(partitionGroupName, partition);
   }
 
   public void appendComplete(final long latencyms, final String memberId) {
@@ -73,5 +90,13 @@ public class LeaderMetrics extends RaftMetrics {
 
   public void observeCommit() {
     commitRate.inc();
+  }
+
+  public void observeNonCommittedEntries(final long remainingEntries) {
+    nonCommittedEntries.set(remainingEntries);
+  }
+
+  public void observeRemainingEntries(final String memberId, final long remainingEntries) {
+    NON_REPLICATED_ENTRIES.labels(memberId, partitionGroupName, partition).set(remainingEntries);
   }
 }

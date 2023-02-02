@@ -243,14 +243,21 @@ final class LeaderAppender {
   private void updateMatchIndex(final RaftMemberContext member, final AppendResponse response) {
     // If the replica returned a valid match index then update the existing match index.
     member.setMatchIndex(response.lastLogIndex());
+    observeRemainingMemberEntries(member);
   }
 
   /** Resets the match index when a response fails. */
   private void resetMatchIndex(final RaftMemberContext member, final AppendResponse response) {
     if (response.lastLogIndex() < member.getMatchIndex()) {
-      member.setMatchIndex(response.lastLogIndex());
       log.trace("Reset match index for {} to {}", member, member.getMatchIndex());
+      member.setMatchIndex(response.lastLogIndex());
+      observeRemainingMemberEntries(member);
     }
+  }
+
+  void observeRemainingMemberEntries(final RaftMemberContext member) {
+    metrics.observeRemainingEntries(
+        member.getMember().memberId().id(), raft.getLog().getLastIndex() - member.getMatchIndex());
   }
 
   /** Resets the next index when a response fails. */
@@ -560,6 +567,8 @@ final class LeaderAppender {
         future.complete(i);
       }
     }
+
+    metrics.observeNonCommittedEntries(raft.getLog().getLastIndex() - commitIndex);
   }
 
   private void handleAppendResponseFailure(
