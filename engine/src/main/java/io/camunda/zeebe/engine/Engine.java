@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
-import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
@@ -120,7 +119,7 @@ public class Engine implements RecordProcessor {
       }
 
       if (currentProcessor == null) {
-        return EmptyProcessingResult.INSTANCE;
+        return processingResultBuilder.build();
       }
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
