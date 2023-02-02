@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -142,6 +143,7 @@ public final class ProcessingStateMachine {
   private final LogStreamBatchWriter logStreamBatchWriter;
   private boolean inProcessing;
   private final int processingBatchLimit;
+  private int processedCommandsCount;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -248,7 +250,6 @@ public final class ProcessingStateMachine {
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
-
       if (EmptyProcessingResult.INSTANCE == currentProcessingResult) {
         skipRecord();
         return;
@@ -256,6 +257,7 @@ public final class ProcessingStateMachine {
 
       lastProcessedPositionState.markAsProcessed(typedCommand.getPosition());
       writeRecords();
+      processedCommandsCount = 0;
     } catch (final RecoverableException recoverableException) {
       // recoverable
       LOG.error(
@@ -266,6 +268,8 @@ public final class ProcessingStateMachine {
       actor.runDelayed(PROCESSING_RETRY_DELAY, () -> processCommand(currentRecord));
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
+    } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
+      onError(exceededBatchRecordSizeException, () -> processCommand(loggedEvent));
     } catch (final Exception e) {
       onError(e, this::writeRecords);
     }
@@ -280,11 +284,18 @@ public final class ProcessingStateMachine {
     final ProcessingResultBuilder processingResultBuilder =
         new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
     var lastProcessingResultSize = 0;
-    var processedCommandsCount = 0;
+
+    // It might be that we reached the batch size limit during processing a command.
+    // We rolled back the transaction and processing result and retried the processing.
+    // We know that we can process until the last processed commands count, which is why we set it
+    // as our processing batch limit, in order to handle the commands afterwards as own batch.
+    final var currentProcessingBatchLimit =
+        processedCommandsCount > 0 ? processedCommandsCount : processingBatchLimit;
+    processedCommandsCount = 0;
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);
 
-    while (!pendingCommands.isEmpty() && processedCommandsCount < processingBatchLimit) {
+    while (!pendingCommands.isEmpty() && processedCommandsCount < currentProcessingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
 
@@ -301,7 +312,8 @@ public final class ProcessingStateMachine {
                 currentProcessingResult,
                 lastProcessingResultSize,
                 // +1 since we already need include the current command in the calculation
-                pendingCommands.size() + processedCommandsCount + 1);
+                pendingCommands.size() + processedCommandsCount + 1,
+                currentProcessingBatchLimit);
 
         pendingCommands.addAll(nextToProcessCommands);
       }
@@ -327,7 +339,8 @@ public final class ProcessingStateMachine {
   private List<TypedRecord<?>> collectBatchProcessingStepResult(
       final ProcessingResult processingResult,
       final int lastProcessingResultSize,
-      final int currentBatchSize) {
+      final int currentBatchSize,
+      final int currentProcessingBatchLimit) {
 
     final var commandsToProcess = new ArrayList<TypedRecord<?>>();
 
@@ -345,7 +358,7 @@ public final class ProcessingStateMachine {
 
               final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
-                  && potentialBatchSize < processingBatchLimit) {
+                  && potentialBatchSize < currentProcessingBatchLimit) {
                 commandsToProcess.add(
                     new UnwrittenRecord(
                         entry.key(),
@@ -381,9 +394,13 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
           try {
-            errorHandlingInTransaction(processingException);
-
-            nextStep.run();
+            if (processingException instanceof ExceededBatchRecordSizeException
+                && processedCommandsCount > 0) {
+              nextStep.run();
+            } else {
+              errorHandlingInTransaction(processingException);
+              nextStep.run();
+            }
           } catch (final Exception ex) {
             onError(ex, nextStep);
           }
