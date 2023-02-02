@@ -2,6 +2,9 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
+ARG JVM="eclipse-temurin"
+ARG JAVA_VERSION="17"
+ARG BASE_IMAGE="${JVM}:${JAVA_VERSION}-jre-focal"
 ARG BASE_DIGEST_AMD64="sha256:b10df4660e02cf944260b13182e4815fc3e577ba510de7f4abccc797e93d9106"
 ARG BASE_DIGEST_ARM64="sha256:3cf5c05a6a7e7c387d5ce7bc00842b4788513cebfaf687034e0876153990be0f"
 
@@ -18,7 +21,7 @@ RUN --mount=type=cache,target=/var/apt/cache,rw \
 COPY --link --chown=1000:0 docker/utils/startup.sh .
 
 ### Build zeebe from scratch ###
-FROM maven:3-eclipse-temurin-17 as build
+FROM maven:3-${JVM}-${JAVA_VERSION} as build
 WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
@@ -39,14 +42,14 @@ FROM ${DIST} as dist
 ### AMD64 base image ###
 # BASE_DIGEST_AMD64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@${BASE_DIGEST_AMD64} as base-amd64
+FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
 ARG BASE_DIGEST_AMD64
 ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
 
 ### ARM64 base image ##
 # BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@${BASE_DIGEST_ARM64} as base-arm64
+FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
 ARG BASE_DIGEST_ARM64
 ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
 
@@ -56,6 +59,7 @@ ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
 # hadolint ignore=DL3006
 FROM base-${TARGETARCH} as app
 # leave unset to use the default value at the top of the file
+ARG BASE_IMAGE
 ARG BASE_DIGEST
 ARG VERSION=""
 ARG DATE=""
@@ -63,7 +67,7 @@ ARG REVISION=""
 
 # OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
-LABEL org.opencontainers.image.base.name="docker.io/library/eclipse-temurin:17-jre-focal"
+LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
 LABEL org.opencontainers.image.created="${DATE}"
 LABEL org.opencontainers.image.authors="zeebe@camunda.com"
 LABEL org.opencontainers.image.url="https://zeebe.io"
@@ -72,7 +76,7 @@ LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
 LABEL org.opencontainers.image.version="${VERSION}"
 # According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
 # and given we set the base.name and base.digest, we reference the manifest of the base image here
-LABEL org.opencontainers.image.ref.name="eclipse-temurin:17-jre-focal"
+LABEL org.opencontainers.image.ref.name="${BASE_IMAGE}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
 LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)"
