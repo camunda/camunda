@@ -19,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -773,6 +774,127 @@ public class InterruptingEventSubprocessTest {
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.SERVICE_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  // https://github.com/camunda/zeebe/issues/6565
+  public void shouldEndProcessWithParallelFlow() {
+    // given
+    final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);
+
+    process
+        .eventSubProcess("event_sub_proc")
+        .startEvent("event_sub_start")
+        .interrupting(true)
+        .message(b -> b.name(messageName).zeebeCorrelationKeyExpression("key"))
+        .endEvent("event_sub_end");
+
+    final BpmnModelInstance model =
+        process
+            .startEvent("start_proc")
+            .sequenceFlowId("toParallel")
+            .parallelGateway("parallel")
+            .intermediateCatchEvent("catch")
+            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+            .endEvent("end_proc")
+            .moveToLastGateway()
+            .intermediateCatchEvent("catch1")
+            .message(m -> m.name("msg1").zeebeCorrelationKeyExpression("key1"))
+            .endEvent("end_proc1")
+            .done();
+
+    ENGINE.deployment().withXmlResource(model).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("key", 123, "key1", 123))
+            .create();
+
+    // when
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withMessageName(messageName)
+        .await();
+    RecordingExporter.processInstanceRecords()
+        .withElementType(BpmnElementType.START_EVENT)
+        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+        .withElementId("start_proc")
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE
+        .message()
+        .withName(messageName)
+        .withCorrelationKey("123")
+        .withVariables(Map.of("key", "123"))
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTerminateXorWithIncident() {
+    // given
+    final ProcessBuilder process = Bpmn.createExecutableProcess(PROCESS_ID);
+
+    process
+        .eventSubProcess("event_sub_proc")
+        .startEvent("event_sub_start")
+        .interrupting(true)
+        .message(b -> b.name(messageName).zeebeCorrelationKeyExpression("key"))
+        .endEvent("event_sub_end");
+
+    final BpmnModelInstance model =
+        process
+            .startEvent("start_proc")
+            .sequenceFlowId("toXor")
+            .exclusiveGateway("xor")
+            .condition("=yolo")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(model).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("key", 123, "key1", 123))
+            .create();
+
+    // when
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    ENGINE
+        .message()
+        .withName(messageName)
+        .withCorrelationKey("123")
+        .withVariables(Map.of("key", "123"))
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
             tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.EVENT_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
