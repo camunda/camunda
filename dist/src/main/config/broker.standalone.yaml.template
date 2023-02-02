@@ -819,10 +819,10 @@
 
         # Configures if the RocksDB write-ahead-log is used or not. By default, every write in RocksDB goes to the active write buffer and the WAL; this
         # helps recover a RocksDB instance should it crash before the write buffer is flushed. Zeebe however only recovers from specific point-in-time snapshot,
-        # and never from a previously active RocksDB instance, which makes it a good candidate to disable the WAL. It's currently disabled by default as
-        # performance is a bit less predictable when disabling the WAL.
+        # and never from a previously active RocksDB instance, which makes it a good candidate to disable the WAL.
+        # WAL is disabled by default as it can improve performance of Zeebe.
         # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_DISABLEWAL
-        # disableWal: false
+        # disableWal: true
 
       # consistencyChecks:
         # Configures if the basic operations on RocksDB, such as inserting or deleting key-value pairs, should check preconditions,

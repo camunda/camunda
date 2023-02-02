@@ -19,6 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.impl.instance.CollaborationImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.ProcessImpl;
+import io.camunda.zeebe.model.bpmn.impl.instance.bpmndi.BpmnDiagramImpl;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
@@ -204,5 +207,30 @@ public class ModelWalkerTest {
         .anyMatch(EndEvent.class::isInstance)
         .anyMatch(BpmnDiagram.class::isInstance)
         .anyMatch(BpmnPlane.class::isInstance);
+  }
+
+  @Test
+  public void shouldIgnoreNonExecutableProceses() {
+    // given
+    // a BPMN model containing one executable and one non-executable process
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(
+            ModelWalkerTest.class.getResourceAsStream("CollaborationModelWalkerTest.bpmn"));
+
+    final List<BpmnModelElementInstance> visitedElements = new ArrayList<>();
+
+    final ModelWalker walker = new ModelWalker(modelInstance);
+
+    // when
+    walker.walk(visitedElements::add);
+
+    // then
+    // assert that all the direct executable child elements of DefinitionImpl have been
+    // walked through, including only the executable process
+    assertThat(visitedElements)
+        .extracting("class")
+        .containsOnlyOnce(ProcessImpl.class)
+        .containsOnlyOnce(BpmnDiagramImpl.class)
+        .containsOnlyOnce(CollaborationImpl.class);
   }
 }
