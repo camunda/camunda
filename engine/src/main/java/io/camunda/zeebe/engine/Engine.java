@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine;
 
-import io.camunda.zeebe.engine.api.EmptyProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
@@ -120,7 +119,7 @@ public class Engine implements RecordProcessor {
       }
 
       if (currentProcessor == null) {
-        return EmptyProcessingResult.INSTANCE;
+        return processingResultBuilder.build();
       }
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
