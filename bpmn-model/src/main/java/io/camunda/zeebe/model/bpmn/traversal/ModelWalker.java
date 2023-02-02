@@ -67,7 +67,7 @@ public class ModelWalker {
 
       // add a new check here for ignore non-executable processes
       if (isNonExecutableProcess(currentElement)) {
-        return;
+        continue;
       }
 
       visitor.visit(currentElement);
