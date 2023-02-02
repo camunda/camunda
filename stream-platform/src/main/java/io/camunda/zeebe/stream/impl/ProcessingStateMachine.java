@@ -103,8 +103,6 @@ public final class ProcessingStateMachine {
 
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
 
-  private static final int COMMAND_LIMIT = 1;
-
   private static final MetadataFilter PROCESSING_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
 
@@ -149,6 +147,7 @@ public final class ProcessingStateMachine {
   private RecordProcessor currentProcessor;
   private final LogStreamWriter logStreamWriter;
   private boolean inProcessing;
+  private final int processingBatchLimit;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -163,6 +162,7 @@ public final class ProcessingStateMachine {
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
+    processingBatchLimit = context.getProcessingBatchLimit();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
@@ -291,7 +291,7 @@ public final class ProcessingStateMachine {
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);
 
-    while (!pendingCommands.isEmpty() && processedCommandsCount < COMMAND_LIMIT) {
+    while (!pendingCommands.isEmpty() && processedCommandsCount < processingBatchLimit) {
 
       final var command = pendingCommands.removeFirst();
 
@@ -347,7 +347,7 @@ public final class ProcessingStateMachine {
               var toWriteEntry = entry;
               final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
-                  && potentialBatchSize < COMMAND_LIMIT) {
+                  && potentialBatchSize < processingBatchLimit) {
                 commandsToProcess.add(
                     new UnwrittenRecord(
                         entry.key(),
