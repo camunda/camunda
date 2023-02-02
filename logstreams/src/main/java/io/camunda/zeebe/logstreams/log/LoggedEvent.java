@@ -15,9 +15,9 @@ import org.agrona.DirectBuffer;
 public interface LoggedEvent extends BufferWriter {
 
   /**
-   * @return returns true if record is already processed
+   * @return returns true if record has already been processed, and should be skipped
    */
-  boolean isProcessed();
+  boolean shouldSkipProcessing();
 
   /**
    * @return the event's position in the log.

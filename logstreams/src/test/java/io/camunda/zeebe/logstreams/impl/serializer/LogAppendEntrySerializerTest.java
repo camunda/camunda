@@ -38,7 +38,7 @@ final class LogAppendEntrySerializerTest {
     assertThat(event.getPosition()).isEqualTo(2);
     assertThat(event.getSourceEventPosition()).isEqualTo(3);
     assertThat(event.getTimestamp()).isEqualTo(4);
-    assertThat(event.isProcessed()).isFalse();
+    assertThat(event.shouldSkipProcessing()).isFalse();
   }
 
   @Test
@@ -59,7 +59,7 @@ final class LogAppendEntrySerializerTest {
     assertThat(event.getPosition()).isEqualTo(2);
     assertThat(event.getSourceEventPosition()).isEqualTo(3);
     assertThat(event.getTimestamp()).isEqualTo(4);
-    assertThat(event.isProcessed()).isTrue();
+    assertThat(event.shouldSkipProcessing()).isTrue();
   }
 
   @Test

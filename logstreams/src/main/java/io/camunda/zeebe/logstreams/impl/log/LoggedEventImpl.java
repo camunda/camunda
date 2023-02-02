@@ -39,8 +39,8 @@ public final class LoggedEventImpl implements LoggedEvent {
   }
 
   @Override
-  public boolean isProcessed() {
-    return LogEntryDescriptor.isProcessed(buffer, messageOffset);
+  public boolean shouldSkipProcessing() {
+    return LogEntryDescriptor.shouldSkipProcessing(buffer, messageOffset);
   }
 
   @Override

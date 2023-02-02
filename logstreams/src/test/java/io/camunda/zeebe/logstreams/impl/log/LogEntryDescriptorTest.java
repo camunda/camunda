@@ -19,7 +19,7 @@ public class LogEntryDescriptorTest {
     final var buffer = new UnsafeBuffer(new byte[128]);
 
     // when
-    final boolean processed = LogEntryDescriptor.isProcessed(buffer, 0);
+    final boolean processed = LogEntryDescriptor.shouldSkipProcessing(buffer, 0);
 
     // then
     Assertions.assertThat(processed).isFalse();
@@ -31,9 +31,9 @@ public class LogEntryDescriptorTest {
     final var buffer = new UnsafeBuffer(new byte[128]);
 
     // when
-    LogEntryDescriptor.markAsProcessed(buffer, 0);
+    LogEntryDescriptor.skipProcessing(buffer, 0);
 
     // then
-    Assertions.assertThat(LogEntryDescriptor.isProcessed(buffer, 0)).isTrue();
+    Assertions.assertThat(LogEntryDescriptor.shouldSkipProcessing(buffer, 0)).isTrue();
   }
 }
