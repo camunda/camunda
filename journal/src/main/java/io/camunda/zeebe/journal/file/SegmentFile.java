@@ -73,7 +73,12 @@ public final class SegmentFile {
     return fileName.startsWith(journalName);
   }
 
-  /** Returns the segment's id or -1 if the log segment name was not correctly formatted. */
+  /**
+   * Returns the segment's file id or -1 if the log segment name was not correctly formatted. Please
+   * note that this is not the same as the actual id of the segment that can be found in the {@link
+   * SegmentDescriptor}. Due to async preparation of the next segment before use, the file id can be
+   * larger than the actual id.
+   */
   static int getSegmentIdFromPath(final String name) {
     checkNotNull(name, "name cannot be null");
 
