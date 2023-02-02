@@ -303,8 +303,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
 
     // when
-    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    // Each instance generates 6 events
+    waitUntilMinimumProcessInstanceEventsExportedCount(12);
     importAllZeebeEntitiesFromScratch();
 
     // then
