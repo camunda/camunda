@@ -1,5 +1,5 @@
 linters:
-  enable:  
+  enable:
   - gofmt
   - golint
   - misspell
