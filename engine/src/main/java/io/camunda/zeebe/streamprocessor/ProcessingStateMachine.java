@@ -412,18 +412,20 @@ public final class ProcessingStateMachine {
             () -> {
               logStreamBatchWriter.reset();
               logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
-
-              currentProcessingResult
-                  .getRecordBatch()
-                  .forEach(
-                      entry ->
-                          logStreamBatchWriter
-                              .event()
-                              .key(entry.key())
-                              .metadataWriter(entry.recordMetadata())
-                              .sourceIndex(entry.sourceIndex())
-                              .valueWriter(entry.recordValue())
-                              .done());
+              pendingWrites.forEach(
+                  entry -> {
+                    final var logEntryBuilder =
+                        logStreamBatchWriter
+                            .event()
+                            .key(entry.key())
+                            .metadataWriter(entry.recordMetadata())
+                            .sourceIndex(entry.sourceIndex())
+                            .valueWriter(entry.recordValue());
+                    if (entry.shouldSkipProcessing()) {
+                      logEntryBuilder.skipProcessing();
+                    }
+                    logEntryBuilder.done();
+                  });
 
               final long position = logStreamBatchWriter.tryWrite();
               if (position > 0) {
