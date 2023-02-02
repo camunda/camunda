@@ -70,6 +70,15 @@ public final class StreamProcessorMetrics {
           .help("Time taken for startup and recovery of stream processor (in ms)")
           .labelNames(LABEL_NAME_PARTITION)
           .register();
+
+  private static final Histogram MESSAGE_CHECKER_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("message_checker_duration")
+          .help("Time for checking expired message (in seconds)")
+          .labelNames(LABEL_NAME_PARTITION)
+          .register();
+
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(final int partitionId) {
@@ -89,6 +98,10 @@ public final class StreamProcessorMetrics {
     return PROCESSING_DURATION
         .labels(recordType.name(), partitionIdLabel, valueType.name(), intent.name())
         .startTimer();
+  }
+
+  public Histogram.Timer startMessageCheckerDurationTimer() {
+    return MESSAGE_CHECKER_DURATION.labels(partitionIdLabel).startTimer();
   }
 
   /** We only process commands. */

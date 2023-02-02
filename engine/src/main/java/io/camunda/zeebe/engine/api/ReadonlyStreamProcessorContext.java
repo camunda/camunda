@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
+
 public interface ReadonlyStreamProcessorContext {
 
   ProcessingScheduleService getScheduleService();
@@ -17,4 +19,6 @@ public interface ReadonlyStreamProcessorContext {
    * @return partition ID
    */
   int getPartitionId();
+
+  StreamProcessorMetrics getMetrics();
 }

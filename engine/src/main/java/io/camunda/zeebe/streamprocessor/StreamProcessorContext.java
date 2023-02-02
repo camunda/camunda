@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.KeyGeneratorControls;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -55,6 +56,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
+  private StreamProcessorMetrics metrics;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -66,9 +68,19 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
+  public StreamProcessorContext metrics(final StreamProcessorMetrics metrics) {
+    this.metrics = metrics;
+    return this;
+  }
+
   @Override
   public ProcessingScheduleService getScheduleService() {
     return processingScheduleService;
+  }
+
+  @Override
+  public StreamProcessorMetrics getMetrics() {
+    return metrics;
   }
 
   @Override

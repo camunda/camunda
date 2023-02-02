@@ -175,6 +175,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamBatchWriter);
       streamProcessorContext.scheduleService(scheduleService);
+      streamProcessorContext.metrics(metrics);
 
       initRecordProcessors();
 
