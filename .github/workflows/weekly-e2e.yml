@@ -1,0 +1,34 @@
+# This workflow runs e2e tests weekly. It runs each test suite against the
+# development head (e.g. main).
+
+# As this is meant to be run via scheduling, the workflow itself only runs on the default branch
+# (e.g. main), so any changes you make will affect any other branches we test via this workflow.
+name: Weekly E2E tests
+
+on:
+  workflow_dispatch: { }
+  schedule:
+    # Run at 7:00 on every monday
+    - cron: '0 7 * * 1'
+
+jobs:
+  e2e:
+    name: Weekly E2E
+    uses: ./.github/workflows/e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: P5D
+      clusterPlan: Production - M
+    secrets: inherit
+
+  e2e-multiregion-failover:
+    name: Multi-region failover with data loss
+    uses: ./.github/workflows/e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: P1D
+      clusterPlan: Multiregion test simulation
+      fault: \"2-region-dataloss-failover\"
+    secrets: inherit

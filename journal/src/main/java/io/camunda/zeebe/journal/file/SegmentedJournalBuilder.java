@@ -149,13 +149,13 @@ public class SegmentedJournalBuilder {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var segmentAllocator =
         preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
-    final var segmentLoader = new SegmentLoader(segmentAllocator);
+    final var segmentLoader = new SegmentLoader(segmentAllocator, freeDiskSpace);
     final var segmentsManager =
         new SegmentsManager(
             journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
     final var journalMetrics = new JournalMetrics(name);
 
     return new SegmentedJournal(
-        directory, maxSegmentSize, freeDiskSpace, journalIndex, segmentsManager, journalMetrics);
+        directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics);
   }
 }

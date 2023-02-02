@@ -20,7 +20,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.Journal;
-import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -32,13 +31,11 @@ import java.util.concurrent.locks.StampedLock;
 /** A file based journal. The journal is split into multiple segments files. */
 public final class SegmentedJournal implements Journal {
   public static final long ASQN_IGNORE = -1;
-  private static final int SEGMENT_BUFFER_FACTOR = 3;
   private final JournalMetrics journalMetrics;
   private final File directory;
   private final int maxSegmentSize;
   private final Collection<SegmentedJournalReader> readers = Sets.newConcurrentHashSet();
   private volatile boolean open = true;
-  private final long minFreeDiskSpace;
   private final JournalIndex journalIndex;
   private final SegmentedJournalWriter writer;
   private final StampedLock rwlock = new StampedLock();
@@ -47,13 +44,11 @@ public final class SegmentedJournal implements Journal {
   SegmentedJournal(
       final File directory,
       final int maxSegmentSize,
-      final long minFreeDiskSpace,
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics) {
     this.directory = Objects.requireNonNull(directory, "must specify a journal directory");
     this.maxSegmentSize = maxSegmentSize;
-    this.minFreeDiskSpace = minFreeDiskSpace;
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
@@ -175,15 +170,6 @@ public final class SegmentedJournal implements Journal {
     checkState(segments.getCurrentSegment() != null, "journal not open");
   }
 
-  /** Asserts that enough disk space is available to allocate a new segment. */
-  private void assertDiskSpace() {
-    if (directory().getUsableSpace()
-        < Math.max(maxSegmentSize() * SEGMENT_BUFFER_FACTOR, minFreeDiskSpace)) {
-      throw new JournalException.OutOfDiskSpace(
-          "Not enough space to allocate a new journal segment");
-    }
-  }
-
   private long maxSegmentSize() {
     return maxSegmentSize;
   }
@@ -214,7 +200,6 @@ public final class SegmentedJournal implements Journal {
 
   Segment getNextSegment() {
     assertOpen();
-    assertDiskSpace();
     return segments.getNextSegment();
   }
 

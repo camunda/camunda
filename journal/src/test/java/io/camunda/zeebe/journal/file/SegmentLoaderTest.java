@@ -27,7 +27,7 @@ final class SegmentLoaderTest {
     final var descriptor =
         SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
     final var lastWrittenIndex = descriptor.index() - 1;
-    final var segmentLoader = new SegmentLoader();
+    final var segmentLoader = new SegmentLoader(segmentSize * 2);
     final var segmentFile = tmpDir.resolve("segment.log");
 
     // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
