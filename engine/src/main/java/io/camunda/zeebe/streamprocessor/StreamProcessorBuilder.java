@@ -135,4 +135,9 @@ public final class StreamProcessorBuilder {
           "No partition command sender provided");
     }
   }
+
+  public StreamProcessorBuilder processingBatchLimit(final int processingBatchLimit) {
+    streamProcessorContext.processingBatchLimit(processingBatchLimit);
+    return this;
+  }
 }
