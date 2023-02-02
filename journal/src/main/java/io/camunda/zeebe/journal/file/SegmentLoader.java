@@ -30,14 +30,17 @@ final class SegmentLoader {
 
   private final SegmentAllocator allocator;
   private final long minFreeDiskSpace;
+  private final JournalMetrics metrics;
 
-  SegmentLoader(final int minFreeDiskSpace) {
-    this(SegmentAllocator.fill(), minFreeDiskSpace);
+  SegmentLoader(final int minFreeDiskSpace, final JournalMetrics metrics) {
+    this(minFreeDiskSpace, metrics, SegmentAllocator.fill());
   }
 
-  SegmentLoader(final SegmentAllocator allocator, final long minFreeDiskSpace) {
-    this.allocator = allocator;
+  SegmentLoader(
+      final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
     this.minFreeDiskSpace = minFreeDiskSpace;
+    this.metrics = metrics;
+    this.allocator = allocator;
   }
 
   Segment createSegment(
@@ -143,7 +146,7 @@ final class SegmentLoader {
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
     return new Segment(
-        segmentFile, descriptor, buffer, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile, descriptor, buffer, lastWrittenIndex, lastWrittenAsqn, journalIndex, metrics);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -225,7 +228,7 @@ final class SegmentLoader {
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
             StandardOpenOption.CREATE_NEW)) {
-      allocator.allocate(channel, maxSegmentSize);
+      allocateSegment(maxSegmentSize, channel);
       return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
       // do not reuse a segment into which we've already written!
@@ -254,6 +257,13 @@ final class SegmentLoader {
       throw new JournalException.OutOfDiskSpace(
           "Not enough space to allocate a new journal segment. Required: %s, Available: %s"
               .formatted(required, available));
+    }
+  }
+
+  private void allocateSegment(final int maxSegmentSize, final FileChannel channel)
+      throws IOException {
+    try (final var ignored = metrics.observeSegmentAllocation()) {
+      allocator.allocate(channel, maxSegmentSize);
     }
   }
 }

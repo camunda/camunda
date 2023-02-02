@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Gauge.Timer;
 import io.prometheus.client.Histogram;
@@ -69,12 +70,39 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Counter APPEND_DATA_RATE =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("journal_append_data_rate")
+          .help("The rate in KiB at which we append data to the journal")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
+  private static final Counter APPEND_RATE =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("journal_append_rate")
+          .help("The rate at which we append entries in the journal, by entry count")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
+  private static final Histogram APPEND_LATENCY =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("journal_append_latency")
+          .help("Distribution of time spent appending journal records, excluding flushing")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
   private final Histogram.Child segmentCreationTime;
   private final Histogram.Child segmentTruncateTime;
   private final Histogram.Child segmentFlushTime;
   private final Gauge.Child segmentCount;
   private final Gauge.Child journalOpenTime;
   private final Histogram.Child segmentAllocationTime;
+  private final Histogram.Child appendLatency;
+  private final Counter.Child appendRate;
+  private final Counter.Child appendDataRate;
 
   JournalMetrics(final String logName) {
     segmentCreationTime = SEGMENT_CREATION_TIME.labels(logName);
@@ -83,6 +111,9 @@ final class JournalMetrics {
     segmentCount = SEGMENT_COUNT.labels(logName);
     journalOpenTime = JOURNAL_OPEN_DURATION.labels(logName);
     segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(logName);
+    appendLatency = APPEND_LATENCY.labels(logName);
+    appendRate = APPEND_RATE.labels(logName);
+    appendDataRate = APPEND_DATA_RATE.labels(logName);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {
@@ -111,5 +142,14 @@ final class JournalMetrics {
 
   Histogram.Timer observeSegmentAllocation() {
     return segmentAllocationTime.startTimer();
+  }
+
+  void observeAppend(final long appendedBytes) {
+    appendRate.inc();
+    appendDataRate.inc(appendedBytes / 1024f);
+  }
+
+  Histogram.Timer observeAppendLatency() {
+    return appendLatency.startTimer();
   }
 }

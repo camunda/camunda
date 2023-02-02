@@ -118,7 +118,8 @@ final class SegmentsManager {
         currentSegment =
             nextSegment
                 .join()
-                .initializeForUse(nextSegmentIndex, lastWrittenAsqn, lastWrittenIndex);
+                .initializeForUse(
+                    nextSegmentIndex, lastWrittenAsqn, lastWrittenIndex, journalMetrics);
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         currentSegment = createSegment(descriptor, lastWrittenAsqn);

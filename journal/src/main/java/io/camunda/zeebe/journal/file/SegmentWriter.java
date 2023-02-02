@@ -54,13 +54,15 @@ final class SegmentWriter {
   private final JournalRecordSerializer serializer = new SBESerializer();
   private final MutableDirectBuffer writeBuffer = new UnsafeBuffer();
   private final int descriptorLength;
+  private final JournalMetrics metrics;
 
   SegmentWriter(
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
       final long lastWrittenIndex,
-      final long lastWrittenAsqn) {
+      final long lastWrittenAsqn,
+      final JournalMetrics metrics) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -70,6 +72,7 @@ final class SegmentWriter {
     writeBuffer.wrap(buffer);
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
+    this.metrics = metrics;
     reset(0, lastWrittenIndex);
   }
 
@@ -157,7 +160,9 @@ final class SegmentWriter {
     updateLastWrittenEntry(startPosition, frameLength, metadataLength);
     FrameUtil.writeVersion(buffer, startPosition);
 
-    buffer.position(startPosition + frameLength + metadataLength + recordLength);
+    final int appendedBytes = frameLength + metadataLength + recordLength;
+    buffer.position(startPosition + appendedBytes);
+    metrics.observeAppend(appendedBytes);
     return Either.right(lastEntry);
   }
 
