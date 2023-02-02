@@ -26,6 +26,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -44,9 +45,11 @@ import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.List;
 import java.util.function.Consumer;
+import org.assertj.core.api.Assertions;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
@@ -432,7 +435,10 @@ public final class StreamProcessorTest {
           keyGenerator.nextKey();
         };
     // in order to not mark the processing as skipped we need to return a result
-    testProcessor.processingResult = new BufferedProcessingResultBuilder((c, s) -> true).build();
+    testProcessor.processingResult =
+        new BufferedProcessingResultBuilder((c, s) -> true)
+            .appendPostCommitTask(() -> true)
+            .build();
     doCallRealMethod()
         .doReturn(EmptyProcessingResult.INSTANCE)
         .when(testProcessor)
@@ -723,6 +729,7 @@ public final class StreamProcessorTest {
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
 
     final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendPostCommitTask(() -> true);
     when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
@@ -742,6 +749,8 @@ public final class StreamProcessorTest {
     // given
     final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
     streamPlatform.startStreamProcessor();
 
     // when
@@ -752,6 +761,92 @@ public final class StreamProcessorTest {
     // then
     verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
     verify(mockStreamProcessorListener, TIMEOUT.times(2)).onSkipped(any());
+  }
+
+  @Test
+  public void shouldNotSkipWhenResultContainsTaskOnly() {
+    // given
+    final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendPostCommitTask(() -> true);
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(mockStreamProcessorListener, TIMEOUT.times(0)).onSkipped(any());
+  }
+
+  @Test
+  public void shouldNotSkipWhenResultContainsRecordOnly() {
+    // given
+    final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.appendRecordReturnEither(
+        1,
+        RecordType.EVENT,
+        ELEMENT_ACTIVATING,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    final var loggedEventArgumentCaptor = ArgumentCaptor.forClass(LoggedEvent.class);
+    verify(mockStreamProcessorListener, TIMEOUT.times(2))
+        .onSkipped(loggedEventArgumentCaptor.capture());
+
+    Assertions.assertThat(loggedEventArgumentCaptor.getAllValues())
+        .extracting(
+            loggedEvent -> {
+              final RecordMetadata recordMetadata = new RecordMetadata();
+              loggedEvent.readMetadata(recordMetadata);
+              return recordMetadata.getRecordType();
+            })
+        .containsOnly(RecordType.EVENT);
+  }
+
+  @Test
+  public void shouldNotSkipWhenResultContainsResponseOnly() {
+    // given
+    final var mockStreamProcessorListener = streamPlatform.getMockStreamProcessorListener();
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    resultBuilder.withResponse(
+        RecordType.EVENT,
+        1,
+        ELEMENT_ACTIVATING,
+        Records.processInstance(1),
+        ValueType.PROCESS_INSTANCE,
+        RejectionType.NULL_VAL,
+        "",
+        -1,
+        -1);
+    when(defaultMockedRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(mockStreamProcessorListener, TIMEOUT.times(0)).onSkipped(any());
   }
 
   @Test

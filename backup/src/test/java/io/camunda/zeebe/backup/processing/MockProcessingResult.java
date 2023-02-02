@@ -41,6 +41,11 @@ record MockProcessingResult(List<Event> records) implements ProcessingResult {
     return false;
   }
 
+  @Override
+  public boolean isEmpty() {
+    return records().isEmpty();
+  }
+
   record Event(
       Intent intent,
       RecordType type,

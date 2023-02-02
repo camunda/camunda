@@ -256,7 +256,7 @@ public final class ProcessingStateMachine {
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
-      if (currentProcessingResult.getRecordBatch().isEmpty()) {
+      if (currentProcessingResult.isEmpty()) {
         skipRecord();
         return;
       }
