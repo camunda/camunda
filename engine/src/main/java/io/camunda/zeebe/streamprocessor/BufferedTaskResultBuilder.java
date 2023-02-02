@@ -14,11 +14,13 @@ import io.camunda.zeebe.engine.api.TaskResultBuilder;
 import io.camunda.zeebe.engine.api.records.MutableRecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatch;
 import io.camunda.zeebe.engine.api.records.RecordBatchSizePredicate;
+import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import org.slf4j.Logger;
 
 /**
  * Implementation of {@code TaskResultBuilder} that buffers the task results. After being done with
@@ -26,6 +28,8 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
  * which allows to process the result further.
  */
 final class BufferedTaskResultBuilder implements TaskResultBuilder {
+
+  private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private final MutableRecordBatch mutableRecordBatch;
 
@@ -46,6 +50,11 @@ final class BufferedTaskResultBuilder implements TaskResultBuilder {
     final var either =
         mutableRecordBatch.appendRecord(
             key, -1, RecordType.COMMAND, intent, RejectionType.NULL_VAL, "", valueType, value);
+
+    if (either.isLeft()) {
+      final var exception = either.getLeft();
+      LOG.info(exception.getMessage());
+    }
 
     return either.isRight();
   }
