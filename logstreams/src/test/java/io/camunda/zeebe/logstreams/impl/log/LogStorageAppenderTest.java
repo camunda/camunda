@@ -55,7 +55,7 @@ final class LogStorageAppenderTest {
   @BeforeEach
   void beforeEach() {
     scheduler.start();
-    sequencer = new Sequencer(1, INITIAL_POSITION, 4 * 1024 * 1024);
+    sequencer = new Sequencer(INITIAL_POSITION, 4 * 1024 * 1024, new SequencerMetrics(1));
     appender = new LogStorageAppender("appender", PARTITION_ID, logStorage, sequencer);
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
