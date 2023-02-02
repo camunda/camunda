@@ -410,9 +410,7 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              final long position =
-                  logStreamWriter.tryWrite(
-                      currentProcessingResult.getRecordBatch().entries(), sourceRecordPosition);
+              final long position = logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
               if (position > 0) {
                 writtenPosition = position;
               }
