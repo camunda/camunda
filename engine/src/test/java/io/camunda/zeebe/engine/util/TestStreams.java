@@ -39,6 +39,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.stream.impl.TypedEventRegistry;
@@ -84,8 +85,8 @@ public final class TestStreams {
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
-
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private int processingBatchLimit = StreamProcessorContext.DEFAULT_PROCESSING_BATCH_LIMIT;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -259,6 +260,7 @@ public final class TestStreams {
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
             .recordProcessors(List.of(new Engine(wrappedFactory)))
             .streamProcessorMode(streamProcessorMode)
+            .processingBatchLimit(processingBatchLimit)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     final StreamProcessor streamProcessor = builder.build();
@@ -307,6 +309,10 @@ public final class TestStreams {
         .map(c -> c.streamProcessor)
         .orElseThrow(
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
+  }
+
+  public void processingBatchLimit(final int processingBatchLimit) {
+    this.processingBatchLimit = processingBatchLimit;
   }
 
   public static class FluentLogWriter {
