@@ -11,9 +11,9 @@ import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOf
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.skipProcessing;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.skipProcessing;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
 import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
