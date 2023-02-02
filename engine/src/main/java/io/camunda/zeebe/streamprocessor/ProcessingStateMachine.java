@@ -269,12 +269,23 @@ public final class ProcessingStateMachine {
     } catch (final UnrecoverableException unrecoverableException) {
       throw unrecoverableException;
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
-      onError(exceededBatchRecordSizeException, () -> processCommand(loggedEvent));
+      if (processedCommandsCount > 0) {
+        onError(() -> processCommand(loggedEvent));
+      } else {
+        onError(
+            () -> {
+              errorHandlingInTransaction(exceededBatchRecordSizeException);
+              writeRecords();
+            });
+      }
     } catch (final Exception e) {
-      onError(e, this::writeRecords);
+      onError(
+          () -> {
+            errorHandlingInTransaction(e);
+            writeRecords();
+          });
     }
   }
-
   /**
    * Starts the batch processing with the given initial command and iterates over ProcessingResult
    * and applies all follow-up commands until the command limit is reached or no more follow-up
@@ -374,7 +385,7 @@ public final class ProcessingStateMachine {
     return commandsToProcess;
   }
 
-  private void onError(final Throwable processingException, final Runnable nextStep) {
+  private void onError(final NextProcessingStep nextStep) {
     onErrorRetries++;
     if (onErrorRetries > 1) {
       onErrorHandlingLoop = true;
@@ -394,15 +405,9 @@ public final class ProcessingStateMachine {
             LOG.error(ERROR_MESSAGE_ROLLBACK_ABORTED, currentRecord, metadata, throwable);
           }
           try {
-            if (processingException instanceof ExceededBatchRecordSizeException
-                && processedCommandsCount > 0) {
-              nextStep.run();
-            } else {
-              errorHandlingInTransaction(processingException);
-              nextStep.run();
-            }
+            nextStep.run();
           } catch (final Exception ex) {
-            onError(ex, nextStep);
+            onError(nextStep);
           }
         });
   }
@@ -448,7 +453,11 @@ public final class ProcessingStateMachine {
         (bool, t) -> {
           if (t != null) {
             LOG.error(ERROR_MESSAGE_WRITE_RECORD_ABORTED, currentRecord, metadata, t);
-            onError(t, this::writeRecords);
+            onError(
+                () -> {
+                  errorHandlingInTransaction(t);
+                  writeRecords();
+                });
           } else {
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
@@ -477,7 +486,11 @@ public final class ProcessingStateMachine {
         (bool, throwable) -> {
           if (throwable != null) {
             LOG.error(ERROR_MESSAGE_UPDATE_STATE_FAILED, currentRecord, metadata, throwable);
-            onError(throwable, this::updateState);
+            onError(
+                () -> {
+                  errorHandlingInTransaction(throwable);
+                  updateState();
+                });
           } else {
             executeSideEffects();
           }
@@ -585,5 +598,10 @@ public final class ProcessingStateMachine {
     }
 
     actor.submit(this::readNextRecord);
+  }
+
+  @FunctionalInterface
+  private interface NextProcessingStep {
+    void run() throws Exception;
   }
 }
