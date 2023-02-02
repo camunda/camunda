@@ -17,7 +17,7 @@ public interface LoggedEvent extends BufferWriter {
   /**
    * @return returns true if record is already processed
    */
-  boolean isProcessed();
+  boolean shouldSkipProcessing();
 
   /**
    * @return the event's position in the log.

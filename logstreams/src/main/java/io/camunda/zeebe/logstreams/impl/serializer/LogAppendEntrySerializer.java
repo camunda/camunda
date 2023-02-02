@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.logstreams.impl.serializer;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.markAsProcessed;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
+import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.skipProcessing;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
 import static io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
@@ -90,7 +90,7 @@ final class LogAppendEntrySerializer {
 
     // Write the entry
     if (entry.isProcessed()) {
-      markAsProcessed(writeBuffer, entryOffset);
+      skipProcessing(writeBuffer, entryOffset);
     }
     setPosition(writeBuffer, entryOffset, position);
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
