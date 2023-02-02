@@ -2,8 +2,8 @@
 # This Dockerfile requires BuildKit to be enabled, by setting the environment variable
 # DOCKER_BUILDKIT=1
 # see https://docs.docker.com/build/buildkit/#getting-started
-ARG BASE_DIGEST_AMD64="sha256:d1c582c712e8ae049014a3e81296c522360949cbac7ade7e50a0d4d310706066"
-ARG BASE_DIGEST_ARM64="sha256:dac99a547dae7b46de7f0c34f57002094e054724058e8c9f51243d53286bf89e"
+ARG BASE_DIGEST_AMD64="sha256:9702b2b5cdba1aafb1544b5e2de58f6d2b3d6ed4f261b56f5cf479830d74aea4"
+ARG BASE_DIGEST_ARM64="sha256:41666b47c3c4d2bff0feda5717f005d43d565a3a0a0d0a61531f94ba79cd3b94"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
@@ -70,6 +70,9 @@ LABEL org.opencontainers.image.url="https://zeebe.io"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/zeebe-deployment/"
 LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
 LABEL org.opencontainers.image.version="${VERSION}"
+# According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+# and given we set the base.name and base.digest, we reference the manifest of the base image here
+LABEL org.opencontainers.image.ref.name="eclipse-temurin:17-jre-focal"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
 LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)"
