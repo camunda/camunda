@@ -34,4 +34,9 @@ public final class EmptyProcessingResult implements ProcessingResult {
   public boolean executePostCommitTasks() {
     return true;
   }
+
+  @Override
+  public boolean isEmpty() {
+    return true;
+  }
 }
