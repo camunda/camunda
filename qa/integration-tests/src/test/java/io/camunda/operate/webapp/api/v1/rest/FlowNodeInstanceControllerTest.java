@@ -92,6 +92,14 @@ public class FlowNodeInstanceControllerTest {
   }
 
   @Test
+  public void shouldAcceptQueryWithFilterByFlowNodeId() throws Exception {
+    final String flowNodeId =  "StartEvent_1";
+    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \""+ FlowNodeInstance.FLOW_NODE_ID +"\": \"" + flowNodeId + "\" } }");
+    verify(flowNodeInstanceDao).search(new Query<FlowNodeInstance>()
+        .setFilter(new FlowNodeInstance().setFlowNodeId(flowNodeId)));
+  }
+
+  @Test
   public void shouldAcceptQueryWithFullFilterAndSortingAndPaging() throws Exception {
     assertPostToWithSucceed(URI + SEARCH,
         "{\"filter\": "

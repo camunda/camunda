@@ -49,6 +49,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       queryBuilders.add(buildMatchDateQuery(FlowNodeInstance.END_DATE, filter.getEndDate()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.STATE, filter.getState()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.TYPE, filter.getType()));
+      queryBuilders.add(buildTermQuery(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.INCIDENT, filter.getIncident()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()));
     }
@@ -91,7 +92,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       if (searchHitArray != null && searchHitArray.length > 0) {
         final Object[] sortValues = searchHitArray[searchHitArray.length - 1].getSortValues();
         List<FlowNodeInstance> flowNodeInstances =
-            ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToIncident);
+            ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToFlowNodeInstance);
         return new Results<FlowNodeInstance>()
             .setTotal(searchHits.getTotalHits().value)
             .setItems(flowNodeInstances)
@@ -104,7 +105,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     }
   }
 
-  private FlowNodeInstance searchHitToIncident(final SearchHit searchHit) {
+  private FlowNodeInstance searchHitToFlowNodeInstance(final SearchHit searchHit) {
     final Map<String,Object> searchHitAsMap = searchHit.getSourceAsMap();
     return new FlowNodeInstance()
         .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
@@ -113,6 +114,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
         .setEndDate((String) searchHitAsMap.get(FlowNodeInstance.END_DATE))
         .setType((String) searchHitAsMap.get(FlowNodeInstance.TYPE))
         .setState((String) searchHitAsMap.get(FlowNodeInstance.STATE))
+        .setFlowNodeId((String) searchHitAsMap.get(FlowNodeInstance.FLOW_NODE_ID))
         .setIncident((Boolean) searchHitAsMap.get(FlowNodeInstance.INCIDENT))
         .setIncidentKey((Long) searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY));
   }
@@ -125,7 +127,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
       final SearchHits searchHits = searchResponse.getHits();
       final SearchHit[] searchHitArray = searchHits.getHits();
       if (searchHitArray != null && searchHitArray.length > 0) {
-        return ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToIncident);
+        return ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToFlowNodeInstance);
       } else {
         return List.of();
       }
