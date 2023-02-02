@@ -21,3 +21,14 @@ jobs:
       maxTestDuration: P5D
       clusterPlan: Production - M
     secrets: inherit
+
+  e2e-multiregion-failover:
+    name: Multi-region failover with data loss
+    uses: ./.github/workflows/e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: P1D
+      clusterPlan: Multiregion test simulation
+      fault: \"2-region-dataloss-failover\"
+    secrets: inherit
