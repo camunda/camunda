@@ -101,10 +101,10 @@ public final class SegmentedJournal implements Journal {
   }
 
   @Override
-  public void deleteUntil(final long index) {
+  public boolean deleteUntil(final long index) {
     final var stamp = rwlock.writeLock();
     try {
-      segments.deleteUntil(index);
+      return segments.deleteUntil(index);
     } finally {
       rwlock.unlockWrite(stamp);
     }
