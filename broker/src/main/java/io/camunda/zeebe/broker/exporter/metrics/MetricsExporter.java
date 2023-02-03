@@ -17,6 +17,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -33,6 +35,10 @@ public class MetricsExporter implements Exporter {
   private final ExecutionLatencyMetrics executionLatencyMetrics;
   private final Long2LongHashMap jobKeyToCreationTimeMap;
   private final Long2LongHashMap processInstanceKeyToCreationTimeMap;
+
+  private final Long2LongHashMap commandPositionToTimestampMap;
+  private final NavigableMap<Long, Long>
+      creationTimeToCommandPositionNavigableMap; // To clean up old entries
 
   // only used to keep track of how long the entries are existing and to clean up the corresponding
   // maps
@@ -51,6 +57,8 @@ public class MetricsExporter implements Exporter {
     processInstanceKeyToCreationTimeMap = new Long2LongHashMap(-1);
     creationTimeToJobKeyNavigableMap = new TreeMap<>();
     creationTimeToProcessInstanceKeyNavigableMap = new TreeMap<>();
+    commandPositionToTimestampMap = new Long2LongHashMap(-1);
+    creationTimeToCommandPositionNavigableMap = new TreeMap<>();
   }
 
   @Override
@@ -58,11 +66,16 @@ public class MetricsExporter implements Exporter {
     context.setFilter(
         new RecordFilter() {
           private static final Set<ValueType> ACCEPTED_VALUE_TYPES =
-              Set.of(ValueType.JOB, ValueType.JOB_BATCH, ValueType.PROCESS_INSTANCE);
+              Set.of(
+                  ValueType.JOB,
+                  ValueType.JOB_BATCH,
+                  ValueType.PROCESS_INSTANCE,
+                  ValueType.PROCESS_INSTANCE_CREATION,
+                  ValueType.MESSAGE);
 
           @Override
           public boolean acceptType(final RecordType recordType) {
-            return recordType == RecordType.EVENT;
+            return recordType == RecordType.EVENT || recordType == RecordType.COMMAND;
           }
 
           @Override
@@ -89,6 +102,11 @@ public class MetricsExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
+    if (record.getRecordType() == RecordType.COMMAND) {
+      if (isPublishMessage(record) || isCreateInstanceCommand(record)) {
+        storeCommandTimestamp(record.getPosition(), record.getTimestamp());
+      }
+    }
     if (record.getRecordType() != RecordType.EVENT) {
       controller.updateLastExportedRecordPosition(record.getPosition());
       return;
@@ -107,6 +125,29 @@ public class MetricsExporter implements Exporter {
     }
 
     controller.updateLastExportedRecordPosition(record.getPosition());
+  }
+
+  private static boolean isCreateInstanceCommand(final Record<?> record) {
+    return record.getValueType() == ValueType.PROCESS_INSTANCE_CREATION
+        && record.getIntent() == ProcessInstanceCreationIntent.CREATE;
+  }
+
+  private static boolean isPublishMessage(final Record<?> record) {
+    return record.getValueType() == ValueType.MESSAGE
+        && record.getIntent() == MessageIntent.PUBLISH;
+  }
+
+  private void storeCommandTimestamp(final long position, final long timestamp) {
+    commandPositionToTimestampMap.put(position, timestamp);
+    creationTimeToCommandPositionNavigableMap.put(timestamp, position);
+  }
+
+  private void storeFirstJobLatency(final long sourceRecordPosition, final int partitionId) {
+    final long commandTimestamp = commandPositionToTimestampMap.get(sourceRecordPosition);
+    if (commandTimestamp != commandPositionToTimestampMap.missingValue()) {
+      executionLatencyMetrics.observeFirstJobLatency(
+          partitionId, commandTimestamp, System.currentTimeMillis());
+    }
   }
 
   private void handleProcessInstanceRecord(
@@ -135,6 +176,7 @@ public class MetricsExporter implements Exporter {
 
     if (currentIntent == JobIntent.CREATED) {
       storeJobCreation(record.getTimestamp(), recordKey);
+      storeFirstJobLatency(record.getSourceRecordPosition(), partitionId);
     } else if (currentIntent == JobIntent.COMPLETED) {
       final var creationTime = jobKeyToCreationTimeMap.remove(recordKey);
       executionLatencyMetrics.observeJobLifeTime(partitionId, creationTime, record.getTimestamp());
@@ -168,6 +210,7 @@ public class MetricsExporter implements Exporter {
         deadTime,
         creationTimeToProcessInstanceKeyNavigableMap,
         processInstanceKeyToCreationTimeMap);
+    clearMaps(deadTime, creationTimeToCommandPositionNavigableMap, commandPositionToTimestampMap);
 
     controller.scheduleCancellableTask(TIME_TO_LIVE, this::cleanUp);
   }

@@ -35,6 +35,15 @@ public class ExecutionLatencyMetrics {
           .labelNames("partition")
           .register();
 
+  private static final Histogram FIRST_JOB_LATENCY =
+      Histogram.build()
+          .namespace("zeebe")
+          .name("first_job_latency")
+          .help(
+              "The time from create instance/publish start message command until first job is created and exported")
+          .labelNames("partition")
+          .register();
+
   public void observeProcessInstanceExecutionTime(
       final int partitionId, final long creationTimeMs, final long completionTimeMs) {
     PROCESS_INSTANCE_EXECUTION
@@ -52,6 +61,13 @@ public class ExecutionLatencyMetrics {
   public void observeJobActivationTime(
       final int partitionId, final long creationTimeMs, final long activationTimeMs) {
     JOB_ACTIVATION_TIME
+        .labels(Integer.toString(partitionId))
+        .observe(latencyInSeconds(creationTimeMs, activationTimeMs));
+  }
+
+  public void observeFirstJobLatency(
+      final int partitionId, final long creationTimeMs, final long activationTimeMs) {
+    FIRST_JOB_LATENCY
         .labels(Integer.toString(partitionId))
         .observe(latencyInSeconds(creationTimeMs, activationTimeMs));
   }
