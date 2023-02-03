@@ -503,9 +503,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   /**
    * Compacts the server logs.
    *
-   * <p>TODO: the resulting future is completed on the Raft thread, so make sure callbacks for it
-   * are very lightweight or are executed asynchronously on another thread
-   *
    * @return a future to be completed once the logs have been compacted
    */
   public CompletableFuture<Void> compact() {
