@@ -39,15 +39,17 @@ class SegmentsManagerTest {
   @Test
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
-    final var segments = createSegmentsManager(0);
-    segments.open();
-    segments.getFirstSegment().createReader();
-    segments.getFirstSegment().delete();
+    try (var segments = createSegmentsManager(0)) {
+      segments.open();
+      segments.getFirstSegment().createReader();
+      segments.getFirstSegment().delete();
+    }
 
     // when
     // if we close the current journal, it will delete the files on closing. So we cannot test this
     // scenario.
-    createSegmentsManager(0).open();
+    final var newSegments = createSegmentsManager(0);
+    newSegments.open();
 
     // then
     final File logDirectory = directory.resolve("data").toFile();
@@ -55,6 +57,7 @@ class SegmentsManagerTest {
         .isDirectoryNotContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+    newSegments.close();
   }
 
   @Test
