@@ -8,6 +8,7 @@
 package io.camunda.zeebe.streamprocessor;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.streamprocessor.StreamProcessor.Phase;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import java.util.function.BooleanSupplier;
@@ -58,6 +60,20 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private KeyGeneratorControls keyGeneratorControls;
   private StreamProcessorMetrics metrics;
 
+  private ZeebeDb zeebeDb;
+  private ActorSchedulingService actorSchedulingService;
+
+  public StreamProcessorContext zeebeDb(final ZeebeDb zeebeDb) {
+    this.zeebeDb = zeebeDb;
+    return this;
+  }
+
+  public StreamProcessorContext actorSchedulingService(
+      final ActorSchedulingService actorSchedulingService) {
+    this.actorSchedulingService = actorSchedulingService;
+    return this;
+  }
+
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
     return this;
@@ -71,6 +87,16 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   public StreamProcessorContext metrics(final StreamProcessorMetrics metrics) {
     this.metrics = metrics;
     return this;
+  }
+
+  @Override
+  public ActorSchedulingService getActorSchedulingService() {
+    return actorSchedulingService;
+  }
+
+  @Override
+  public ZeebeDb getZeebeDb() {
+    return zeebeDb;
   }
 
   @Override
