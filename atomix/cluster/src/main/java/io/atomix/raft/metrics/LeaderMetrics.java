@@ -35,7 +35,7 @@ public class LeaderMetrics extends RaftMetrics {
       Counter.build()
           .namespace(NAMESPACE)
           .name("append_entries_rate")
-          .help("The rate of entries appended (counting entries, not their size)")
+          .help("The count of entries appended (counting entries, not their size)")
           .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
@@ -43,7 +43,7 @@ public class LeaderMetrics extends RaftMetrics {
       Counter.build()
           .namespace(NAMESPACE)
           .name("append_entries_data_rate")
-          .help("The rate of data replication in KiB")
+          .help("The count of data replication in KiB")
           .labelNames(FOLLOWER_LABEL, PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
@@ -58,7 +58,7 @@ public class LeaderMetrics extends RaftMetrics {
       Counter.build()
           .namespace(NAMESPACE)
           .name("commit_entries_rate")
-          .help("The rate of entries committed (counting entries, not their size)")
+          .help("The count of entries committed (counting entries, not their size)")
           .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
   private static final Gauge NON_COMMITTED_ENTRIES =
