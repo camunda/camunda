@@ -491,10 +491,20 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       try {
         return append(entry);
       } catch (final JournalException.OutOfDiskSpace e) {
-        // if this happens then compact will also not help, since we need to create a snapshot
-        // before. Furthermore, we do snapshots on regular basis, which mean it had delete data
-        // if this were possible
-        throw e;
+        if (!raft.getLogCompactor().compact()) {
+          // no reason to retry if we failed to delete any data
+          throw e;
+        }
+
+        lastError = e;
+        retries++;
+
+        log.warn(
+            "Out of disk space while appending entry {}, compacted and retrying... (try {} out of {})",
+            entry,
+            retries,
+            MAX_APPEND_ATTEMPTS,
+            e);
       } catch (final JournalException
           | UncheckedIOException e) { // JournalException will wrap most IOException
         lastError = e;
