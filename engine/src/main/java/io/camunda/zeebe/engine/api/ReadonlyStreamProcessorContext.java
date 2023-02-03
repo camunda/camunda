@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.engine.api;
 
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.scheduler.ActorSchedulingService;
+
 public interface ReadonlyStreamProcessorContext {
 
   ProcessingScheduleService getScheduleService();
@@ -17,4 +20,8 @@ public interface ReadonlyStreamProcessorContext {
    * @return partition ID
    */
   int getPartitionId();
+
+  ZeebeDb getZeebeDb();
+
+  ActorSchedulingService getActorSchedulingService();
 }
