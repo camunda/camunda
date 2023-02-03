@@ -37,7 +37,6 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.utils.Managed;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
@@ -109,7 +108,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         try {
           initServer();
         } catch (final RuntimeException e) {
-          return Futures.exceptionalFuture(e);
+          return CompletableFuture.failedFuture(e);
         }
       }
       bootstrapStartTime = System.currentTimeMillis();
@@ -325,7 +324,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     return RaftStorage.builder()
         .withPrefix(partition.name())
         .withDirectory(partition.dataDirectory())
-        .withMaxSegmentSize((int) storageConfig.getSegmentSize().bytes())
+        .withMaxSegmentSize((int) storageConfig.getSegmentSize())
         .withFlushExplicitly(storageConfig.shouldFlushExplicitly())
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())
         .withSnapshotStore(persistedSnapshotStore)

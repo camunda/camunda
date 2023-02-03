@@ -50,10 +50,10 @@ import io.atomix.raft.storage.log.entry.UnserializedApplicationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.EntryValidator.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -86,11 +86,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     // Append initial entries to the log, including an initial no-op entry and the server's
     // configuration.
-    appendInitialEntries().join();
-
-    // Commit the initial leader entries.
+    appendInitialEntries();
     commitInitialEntriesFuture = commitInitialEntries();
-
     lastZbEntry = findLastZeebeEntry();
 
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
@@ -232,9 +229,9 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /** Appends initial entries to the log to take leadership. */
-  private CompletableFuture<Void> appendInitialEntries() {
+  private void appendInitialEntries() {
     final long term = raft.getTerm();
-    return append(new RaftLogEntry(term, new InitialEntry())).thenApply(index -> null);
+    appendEntry(new RaftLogEntry(term, new InitialEntry()));
   }
 
   /** Commits a no-op entry to the log, ensuring any entries from a previous term are committed. */
@@ -315,30 +312,27 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     final ConfigurationEntry configurationEntry =
         new ConfigurationEntry(System.currentTimeMillis(), members);
-    return append(new RaftLogEntry(term, configurationEntry))
-        .thenCompose(
-            entry -> {
-              // Store the index of the configuration entry in order to prevent other configurations
-              // from
-              // being logged and committed concurrently. This is an important safety property of
-              // Raft.
-              configuring = entry.index();
-              raft.getCluster()
-                  .configure(
-                      new Configuration(
-                          entry.index(),
-                          entry.term(),
-                          configurationEntry.timestamp(),
-                          configurationEntry.members()));
+    final IndexedRaftLogEntry entry;
+    try {
+      entry = appendEntry(new RaftLogEntry(term, configurationEntry));
+    } catch (final Exception e) {
+      return CompletableFuture.failedFuture(e);
+    }
 
-              return appender
-                  .appendEntries(entry.index())
-                  .whenComplete(
-                      (commitIndex, commitError) -> {
-                        raft.checkThread();
-                        configuring = 0;
-                      });
-            });
+    // Store the index of the configuration entry in order to prevent other configurations
+    // from being logged and committed concurrently. This is an important safety property of Raft.
+    configuring = entry.index();
+    raft.getCluster()
+        .configure(
+            new Configuration(
+                entry.index(),
+                entry.term(),
+                configurationEntry.timestamp(),
+                configurationEntry.members()));
+
+    return appender
+        .appendEntries(entry.index())
+        .whenCompleteAsync((index, error) -> configuring = 0, raft.getThreadContext());
   }
 
   @Override
@@ -475,63 +469,53 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     }
   }
 
-  /**
-   * Appends an entry to the Raft log.
-   *
-   * @param entry the entry to append
-   * @return a completable future to be completed once the entry has been appended
-   */
-  private CompletableFuture<IndexedRaftLogEntry> append(final RaftLogEntry entry) {
-    CompletableFuture<IndexedRaftLogEntry> resultingFuture = null;
-    int retries = 0;
-
-    do {
-      try {
-        resultingFuture = tryToAppend(entry);
-      } catch (final JournalException storageException) {
-
-        // storage exception wraps IOException's
-        retries++;
-        if (retries > MAX_APPEND_ATTEMPTS) {
-          // only solution is to step down now
-          log.info("Failed to append after {} retries, stepping down", retries, storageException);
-          raft.transition(Role.FOLLOWER);
-          resultingFuture = Futures.exceptionalFuture(storageException);
-        }
-
-        log.error("Error on appending entry {}, retry.", entry, storageException);
-
-      } catch (final Exception e) {
-        // on any other exception - we will fail the append attempt
-        log.error("Unexpected exception on appending entry {}.", entry, e);
-        resultingFuture = Futures.exceptionalFuture(e);
-      }
-    } while (resultingFuture == null);
-
-    return resultingFuture;
+  private IndexedRaftLogEntry appendEntry(final RaftLogEntry entry) {
+    try {
+      return appendWithRetry(entry);
+    } catch (final Exception e) {
+      log.error("Failed to append to local log, stepping down", e);
+      raft.transition(Role.FOLLOWER);
+      throw e;
+    }
   }
 
-  private CompletableFuture<IndexedRaftLogEntry> tryToAppend(final RaftLogEntry entry) {
-    CompletableFuture<IndexedRaftLogEntry> resultingFuture = null;
+  private IndexedRaftLogEntry appendWithRetry(final RaftLogEntry entry) {
+    int retries = 0;
 
-    try {
-      final IndexedRaftLogEntry indexedEntry = raft.getLog().append(entry);
-      raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
-      log.trace("Appended {}", indexedEntry);
-      resultingFuture = CompletableFuture.completedFuture(indexedEntry);
-    } catch (final JournalException.OutOfDiskSpace e) {
+    RuntimeException lastError = null;
+    // we retry in a blocking fashion to avoid interleaving append requests; this however blocks the
+    // raft thread.
+    while (retries <= MAX_APPEND_ATTEMPTS) {
+      try {
+        return append(entry);
+      } catch (final JournalException.OutOfDiskSpace e) {
+        // if this happens then compact will also not help, since we need to create a snapshot
+        // before. Furthermore, we do snapshots on regular basis, which mean it had delete data
+        // if this were possible
+        throw e;
+      } catch (final JournalException
+          | UncheckedIOException e) { // JournalException will wrap most IOException
+        lastError = e;
 
-      // if this happens then compact will also not help, since we need to create a snapshot
-      // before. Furthermore we do snapshot's on regular basis, which mean it had delete data
-      // if this were possible
-      log.warn("Out of disk space, stepping down", e);
-
-      // only solution is to step down now
-      raft.transition(Role.FOLLOWER);
-      resultingFuture = Futures.exceptionalFuture(e);
+        retries++;
+        log.warn(
+            "Error on appending entry {}, retrying... (try {} out of {})",
+            entry,
+            retries,
+            MAX_APPEND_ATTEMPTS,
+            e);
+      }
     }
 
-    return resultingFuture;
+    log.warn("Failed to append to local log after {} retries", retries, lastError);
+    throw lastError;
+  }
+
+  private IndexedRaftLogEntry append(final RaftLogEntry entry) {
+    final var indexedEntry = raft.getLog().append(entry);
+    raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
+    log.trace("Appended {}", indexedEntry);
+    return indexedEntry;
   }
 
   @Override
@@ -580,28 +564,23 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (result.failed()) {
       appendListener.onWriteError(new IllegalStateException(result.errorMessage()));
       raft.transition(Role.FOLLOWER);
-    } else {
-      append(new RaftLogEntry(raft.getTerm(), entry))
-          .whenComplete(
-              (indexed, error) -> {
-                if (error != null) {
-                  appendListener.onWriteError(Throwables.getRootCause(error));
-                  if (!(error instanceof JournalException)) {
-                    // step down. Otherwise the following event can get appended resulting in gaps
-                    log.info(
-                        "Unexpected error occurred while appending to local log, stepping down");
-                    raft.transition(Role.FOLLOWER);
-                  }
-                } else {
-                  if (indexed.isApplicationEntry()) {
-                    lastZbEntry = indexed.getApplicationEntry();
-                  }
-
-                  appendListener.onWrite(indexed);
-                  replicate(indexed, appendListener);
-                }
-              });
+      return;
     }
+
+    final IndexedRaftLogEntry indexed;
+    try {
+      indexed = appendEntry(new RaftLogEntry(raft.getTerm(), entry));
+    } catch (final Exception e) {
+      appendListener.onWriteError(Throwables.getRootCause(e));
+      return;
+    }
+
+    if (indexed.isApplicationEntry()) {
+      lastZbEntry = indexed.getApplicationEntry();
+    }
+
+    appendListener.onWrite(indexed);
+    replicate(indexed, appendListener);
   }
 
   private void replicate(final IndexedRaftLogEntry indexed, final AppendListener appendListener) {
@@ -615,7 +594,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               }
 
               // have the state machine apply the index which should do nothing but ensures it keeps
-              // up to date with the latest entries so it can handle configuration and initial
+              // up to date with the latest entries, so it can handle configuration and initial
               // entries properly on fail over
               if (commitError == null) {
                 appendListener.onCommit(indexed);

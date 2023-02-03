@@ -25,7 +25,6 @@ import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.util.concurrent.CompletableFuture;
@@ -95,7 +94,7 @@ public abstract class AbstractRole implements RaftRole {
     final CompletableFuture<U> future = new CompletableFuture<>();
     final DefaultRaftMember leader = raft.getLeader();
     if (leader == null) {
-      return Futures.exceptionalFuture(new RaftException.NoLeader("No leader found"));
+      return CompletableFuture.failedFuture(new RaftException.NoLeader("No leader found"));
     }
 
     function

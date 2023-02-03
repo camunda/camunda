@@ -17,7 +17,6 @@
 package io.atomix.raft.partition;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import io.atomix.utils.memory.MemorySize;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 
 /** Raft storage configuration. */
@@ -58,18 +57,18 @@ public class RaftStorageConfig {
    *
    * @return the Raft log segment size
    */
-  public MemorySize getSegmentSize() {
-    return MemorySize.from(segmentSize);
+  public long getSegmentSize() {
+    return segmentSize;
   }
 
   /**
    * Sets the Raft log segment size.
    *
-   * @param segmentSize the Raft log segment size
+   * @param segmentSizeBytes the Raft log segment size
    * @return the partition group configuration
    */
-  public RaftStorageConfig setSegmentSize(final MemorySize segmentSize) {
-    this.segmentSize = segmentSize.bytes();
+  public RaftStorageConfig setSegmentSize(final long segmentSizeBytes) {
+    segmentSize = segmentSizeBytes;
     return this;
   }
 

@@ -35,8 +35,6 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Namespace.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
-import io.atomix.utils.time.LogicalTimestamp;
-import io.atomix.utils.time.WallClockTimestamp;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashSet;
@@ -66,8 +64,8 @@ public class DefaultClusterEventService
           new Builder()
               .register(Namespaces.BASIC)
               .register(MemberId.class)
-              .register(LogicalTimestamp.class)
-              .register(WallClockTimestamp.class)
+              .register(Void.class) // placeholder for the deleted LogicalTimestamp class
+              .register(Void.class) // placeholder for the deleted WallClockTimestamp class
               .build());
 
   private static final String SUBSCRIPTION_PROPERTY_NAME = "event-service-topics-subscribed";

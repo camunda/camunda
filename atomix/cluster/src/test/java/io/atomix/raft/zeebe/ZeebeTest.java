@@ -24,7 +24,6 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.raft.zeebe.util.ZeebeTestHelper;
 import io.atomix.raft.zeebe.util.ZeebeTestNode;
-import io.atomix.utils.concurrent.Futures;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -263,11 +263,15 @@ public class ZeebeTest {
   }
 
   private void start() throws ExecutionException, InterruptedException, TimeoutException {
-    Futures.allOf(nodes.stream().map(n -> n.start(nodes))).get(30, TimeUnit.SECONDS);
+    CompletableFuture.allOf(
+            nodes.stream().map(n -> n.start(nodes)).toArray(CompletableFuture[]::new))
+        .get(30, TimeUnit.SECONDS);
   }
 
   private void stop() throws InterruptedException, ExecutionException, TimeoutException {
-    Futures.allOf(nodes.stream().map(ZeebeTestNode::stop)).get(30, TimeUnit.SECONDS);
+    CompletableFuture.allOf(
+            nodes.stream().map(ZeebeTestNode::stop).toArray(CompletableFuture[]::new))
+        .get(30, TimeUnit.SECONDS);
   }
 
   static class CommitListener implements RaftCommitListener {

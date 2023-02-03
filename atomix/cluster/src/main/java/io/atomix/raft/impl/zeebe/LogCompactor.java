@@ -12,7 +12,7 @@ import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
-import java.util.concurrent.CompletableFuture;
+import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
 public final class LogCompactor {
@@ -41,24 +41,18 @@ public final class LogCompactor {
   /**
    * Assumes our snapshots are being taken asynchronously and we regularly update the compactable
    * index. Compaction is performed asynchronously.
-   *
-   * @return a future which is completed when the log has been compacted
    */
-  public CompletableFuture<Void> compact() {
+  public void compact() {
     raft.checkThread();
 
-    final CompletableFuture<Void> result = new CompletableFuture<>();
     try {
       final var startTime = System.currentTimeMillis();
       raft.getLog().deleteUntil(compactableIndex);
       metrics.compactionTime(System.currentTimeMillis() - startTime);
-      result.complete(null);
     } catch (final Exception e) {
       logger.error("Failed to compact up to index {}", compactableIndex, e);
-      result.completeExceptionally(e);
+      LangUtil.rethrowUnchecked(e);
     }
-
-    return result;
   }
 
   public void close() {

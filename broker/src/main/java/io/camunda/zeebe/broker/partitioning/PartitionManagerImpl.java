@@ -11,7 +11,6 @@ import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.ManagedPartitionService;
 import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.partition.RaftPartitionGroup;
-import io.atomix.utils.concurrent.Futures;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
@@ -116,7 +115,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
 
   public CompletableFuture<Void> start() {
     if (closeFuture != null) {
-      return Futures.exceptionalFuture(new IllegalStateException("PartitionManager is closed"));
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("PartitionManager is closed"));
     }
 
     actorSchedulingService.submitActor(topologyManager);

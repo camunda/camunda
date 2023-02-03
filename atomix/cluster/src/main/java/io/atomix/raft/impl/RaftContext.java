@@ -60,7 +60,6 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.utils.StateUtil;
 import io.atomix.raft.zeebe.EntryValidator;
-import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
@@ -507,8 +506,17 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @return a future to be completed once the logs have been compacted
    */
   public CompletableFuture<Void> compact() {
-    final ComposableFuture<Void> future = new ComposableFuture<>();
-    threadContext.execute(() -> logCompactor.compact().whenComplete(future));
+    final CompletableFuture<Void> future = new CompletableFuture<>();
+    threadContext.execute(
+        () -> {
+          try {
+            logCompactor.compact();
+            future.complete(null);
+          } catch (final Exception e) {
+            future.completeExceptionally(e);
+          }
+        });
+
     return future;
   }
 

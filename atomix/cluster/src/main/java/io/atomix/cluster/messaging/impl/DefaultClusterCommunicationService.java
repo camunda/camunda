@@ -27,7 +27,6 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ManagedClusterCommunicationService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
-import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.net.Address;
 import java.net.ConnectException;
 import java.time.Duration;
@@ -114,7 +113,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       return sendAndReceive(subject, encoder.apply(message), toMemberId, timeout)
           .thenApply(decoder);
     } catch (final Exception e) {
-      return Futures.exceptionalFuture(e);
+      return CompletableFuture.failedFuture(e);
     }
   }
 
@@ -232,7 +231,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
         String.format(
             "Expected to send a message with subject '%s' to member '%s', but member is not known. Known members are '%s'.",
             subject, toMemberId, membershipService.getMembers());
-    return Futures.exceptionalFuture(new ConnectException(errorMessage));
+    return CompletableFuture.failedFuture(new ConnectException(errorMessage));
   }
 
   @Override
