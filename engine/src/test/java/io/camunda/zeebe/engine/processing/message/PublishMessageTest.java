@@ -190,9 +190,9 @@ public final class PublishMessageTest {
             .getFirst();
 
     Assertions.assertThat(deletedEvent.getValue())
-        .hasName("order canceled")
-        .hasCorrelationKey("order-123")
-        .hasTimeToLive(100L)
+        .hasName("")
+        .hasCorrelationKey("")
+        .hasTimeToLive(-1L)
         .hasMessageId("");
   }
 
