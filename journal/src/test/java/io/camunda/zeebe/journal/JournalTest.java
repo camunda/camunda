@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -39,50 +38,54 @@ final class JournalTest {
 
   @TempDir Path directory;
 
-  private byte[] entry;
-  private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
-  private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
-  private Journal journal;
-
-  @BeforeEach
-  void setup() {
-    entry = "TestData".getBytes();
-    recordDataWriter.wrap(new UnsafeBuffer(entry));
-
-    final var entryOther = "TestData".getBytes();
-    otherRecordDataWriter.wrap(new UnsafeBuffer(entryOther));
-
-    journal = openJournal();
-  }
+  private byte[] entry = "TestData".getBytes();
+  private final DirectBufferWriter recordDataWriter =
+      new DirectBufferWriter().wrap(new UnsafeBuffer(entry));
+  private final DirectBufferWriter otherRecordDataWriter =
+      new DirectBufferWriter().wrap(new UnsafeBuffer("TestData".getBytes()));
 
   @Test
   void shouldBeEmpty() {
+    // given
+    final var journal = openJournal();
+
     // when-then
     assertThat(journal.isEmpty()).isTrue();
+
+    journal.close();
   }
 
   @Test
   void shouldNotBeEmpty() {
     // given
+    final var journal = openJournal();
     journal.append(1, recordDataWriter);
 
     // when-then
     assertThat(journal.isEmpty()).isFalse();
+
+    journal.close();
   }
 
   @Test
   void shouldAppendData() {
+    // given
+    final var journal = openJournal();
+
     // when
     final var recordAppended = journal.append(1, recordDataWriter);
 
     // then
     assertThat(recordAppended.index()).isEqualTo(1);
     assertThat(recordAppended.asqn()).isEqualTo(1);
+
+    journal.close();
   }
 
   @Test
   void shouldReadRecord() {
     // given
+    final var journal = openJournal();
     final var recordAppended = journal.append(1, recordDataWriter);
 
     // when
@@ -91,10 +94,15 @@ final class JournalTest {
 
     // then
     assertThat(recordRead).isEqualTo(recordAppended);
+
+    journal.close();
   }
 
   @Test
   void shouldAppendMultipleData() {
+    // given
+    final var journal = openJournal();
+
     // when
     final var firstRecord = journal.append(10, recordDataWriter);
     final var secondRecord = journal.append(20, otherRecordDataWriter);
@@ -105,11 +113,14 @@ final class JournalTest {
 
     assertThat(secondRecord.index()).isEqualTo(2);
     assertThat(secondRecord.asqn()).isEqualTo(20);
+
+    journal.close();
   }
 
   @Test
   void shouldReadMultipleRecord() {
     // given
+    final var journal = openJournal();
     final var firstRecord = journal.append(1, recordDataWriter);
     final var secondRecord = journal.append(20, otherRecordDataWriter);
 
@@ -121,10 +132,15 @@ final class JournalTest {
     // then
     assertThat(firstRecordRead).isEqualTo(firstRecord);
     assertThat(secondRecordRead).isEqualTo(secondRecord);
+
+    journal.close();
   }
 
   @Test
   void shouldAppendAndReadMultipleRecordsInOrder() {
+    // given
+    final var journal = openJournal();
+
     // when
     for (int i = 0; i < 10; i++) {
       final var recordAppended = journal.append(i + 10, recordDataWriter);
@@ -142,13 +158,17 @@ final class JournalTest {
       assertThat(recordRead.asqn()).isEqualTo(i + 10);
       assertThat(data).containsExactly(entry);
     }
+
+    journal.close();
   }
 
   @Test
   void shouldAppendAndReadMultipleRecords() {
+    // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
+
     for (int i = 0; i < 10; i++) {
-      // given
       entry = ("TestData" + i).getBytes();
       recordDataWriter.wrap(new UnsafeBuffer(entry));
 
@@ -165,11 +185,14 @@ final class JournalTest {
       assertThat(recordRead.asqn()).isEqualTo(i + 10);
       assertThat(data).containsExactly(entry);
     }
+
+    journal.close();
   }
 
   @Test
   void shouldReset() {
     // given
+    final var journal = openJournal();
     long asqn = 1;
     assertThat(journal.getLastIndex()).isEqualTo(0);
     journal.append(asqn++, recordDataWriter);
@@ -183,11 +206,14 @@ final class JournalTest {
     assertThat(journal.getLastIndex()).isEqualTo(1);
     final var record = journal.append(asqn, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
+
+    journal.close();
   }
 
   @Test
   void shouldNotReadAfterJournalResetWithoutReaderReset() {
     // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
     long asqn = 1;
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -202,11 +228,14 @@ final class JournalTest {
 
     // then
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
   void shouldWriteToTruncatedIndex() {
     // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
     journal.append(1, recordDataWriter);
@@ -227,11 +256,14 @@ final class JournalTest {
 
     final var newRecord = reader.next();
     assertThat(newRecord).isEqualTo(record);
+
+    journal.close();
   }
 
   @Test
   void shouldTruncate() {
     // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
     journal.append(1, recordDataWriter);
@@ -246,11 +278,14 @@ final class JournalTest {
     // then
     assertThat(journal.getLastIndex()).isEqualTo(1);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
   void shouldNotReadTruncatedEntries() {
     // given
+    final var journal = openJournal();
     final int totalWrites = 10;
     final int truncateIndex = 5;
     int asqn = 1;
@@ -287,11 +322,14 @@ final class JournalTest {
       final var record = reader.next();
       assertThat(record).isEqualTo(written.get(readerIndex));
     }
+
+    journal.close();
   }
 
   @Test
   void shouldNotReadTruncatedEntriesWhenReaderPastTruncateIndex() {
     // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
     journal.append(1, recordDataWriter);
@@ -307,11 +345,14 @@ final class JournalTest {
     // then
     assertThat(journal.getLastIndex()).isEqualTo(1);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
   void shouldNotReadTruncatedEntriesWhenReaderAtTruncateIndex() {
     // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
     journal.append(1, recordDataWriter);
@@ -327,11 +368,14 @@ final class JournalTest {
     // then
     assertThat(journal.getLastIndex()).isEqualTo(2);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
   void shouldNotReadTruncatedEntriesWhenReaderBeforeTruncateIndex() {
     // given
+    final var journal = openJournal();
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
     journal.append(1, recordDataWriter);
@@ -347,11 +391,14 @@ final class JournalTest {
     assertThat(journal.getLastIndex()).isEqualTo(2);
     reader.next();
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
   void shouldAppendJournalRecord() {
     // given
+    final var journal = openJournal();
     final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
@@ -367,21 +414,27 @@ final class JournalTest {
     assertThat(reader.hasNext()).isTrue();
     final var actual = reader.next();
     assertThat(expected).isEqualTo(actual);
+
+    journal.close();
   }
 
   @Test
   void shouldNotAppendRecordWithAlreadyAppendedIndex() {
     // given
+    final var journal = openJournal();
     final var record = journal.append(1, recordDataWriter);
     journal.append(recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
+
+    journal.close();
   }
 
   @Test
   void shouldNotAppendRecordWithGapInIndex() {
     // given
+    final var journal = openJournal();
     final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
@@ -392,29 +445,38 @@ final class JournalTest {
 
     // when/then
     assertThatThrownBy(() -> receiverJournal.append(record)).isInstanceOf(InvalidIndex.class);
+
+    journal.close();
   }
 
   @Test
   void shouldNotAppendLastRecord() {
     // given
+    final var journal = openJournal();
     final var record = journal.append(1, recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> journal.append(record)).isInstanceOf(InvalidIndex.class);
+
+    journal.close();
   }
 
   @Test
   void shouldAppendRecordWithASqnToIgnore() {
     // given
+    final var journal = openJournal();
     journal.append(1, recordDataWriter);
 
     // when/then
     journal.append(ASQN_IGNORE, recordDataWriter);
+
+    journal.close();
   }
 
   @Test
   void shouldNotAppendRecordWithInvalidChecksum() {
     // given
+    final var journal = openJournal();
     final var receiverJournal =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
@@ -429,21 +491,27 @@ final class JournalTest {
     // then
     assertThatThrownBy(() -> receiverJournal.append(invalidChecksumRecord))
         .isInstanceOf(InvalidChecksum.class);
+
+    journal.close();
   }
 
   @Test
   void shouldNotAppendRecordWithTooLowASqn() {
     // given
+    final var journal = openJournal();
     journal.append(1, recordDataWriter);
 
     // when/then
     assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
     assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
+
+    journal.close();
   }
 
   @Test
   void shouldNotAppendRecordWithTooLowASqnIfPreviousRecordIsIgnoreASqn() {
     // given
+    final var journal = openJournal();
     journal.append(1, recordDataWriter);
 
     // when
@@ -452,30 +520,45 @@ final class JournalTest {
     // then
     assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
     assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
+
+    journal.close();
   }
 
   @Test
   void shouldReturnFirstIndex() {
+    // given
+    final var journal = openJournal();
+
     // when
     final long firstIndex = journal.append(recordDataWriter).index();
     journal.append(recordDataWriter);
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(firstIndex);
+
+    journal.close();
   }
 
   @Test
   void shouldReturnLastIndex() {
+    // given
+    final var journal = openJournal();
+
     // when
     journal.append(recordDataWriter);
     final long lastIndex = journal.append(recordDataWriter).index();
 
     // then
     assertThat(journal.getLastIndex()).isEqualTo(lastIndex);
+
+    journal.close();
   }
 
   @Test
-  void shouldOpenAndClose() throws Exception {
+  void shouldOpenAndClose() {
+    // given
+    final var journal = openJournal();
+
     // when/then
     assertThat(journal.isOpen()).isTrue();
     journal.close();
@@ -485,44 +568,56 @@ final class JournalTest {
   @Test
   void shouldReopenJournalWithExistingRecords() throws Exception {
     // given
-    journal.append(recordDataWriter);
-    journal.append(recordDataWriter);
-    final long lastIndexBeforeClose = journal.getLastIndex();
-    assertThat(lastIndexBeforeClose).isEqualTo(2);
-    journal.close();
+    final long lastIndexBeforeClose;
+    try (var journal = openJournal()) {
+      journal.append(recordDataWriter);
+      journal.append(recordDataWriter);
+      lastIndexBeforeClose = journal.getLastIndex();
+      assertThat(lastIndexBeforeClose).isEqualTo(2);
+    }
 
     // when
-    journal = openJournal();
+    final var journal = openJournal();
 
     // then
     assertThat(journal.isOpen()).isTrue();
     assertThat(journal.getLastIndex()).isEqualTo(lastIndexBeforeClose);
+
+    journal.close();
   }
 
   @Test
   void shouldReadReopenedJournal() throws Exception {
     // given
-    final var appendedRecord = copyRecord(journal.append(recordDataWriter));
-    journal.close();
+    final PersistedJournalRecord appendedRecord;
+    final JournalReader reader;
+    try (var journal = openJournal()) {
+      appendedRecord = copyRecord(journal.append(recordDataWriter));
+    }
 
     // when
-    journal = openJournal();
-    final JournalReader reader = journal.openReader();
+    final var journal = openJournal();
+    reader = journal.openReader();
 
     // then
     assertThat(journal.isOpen()).isTrue();
+
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(appendedRecord);
+
+    journal.close();
   }
 
   @Test
   void shouldWriteToReopenedJournalAtNextIndex() throws Exception {
     // given
-    final var firstRecord = copyRecord(journal.append(recordDataWriter));
-    journal.close();
+    final PersistedJournalRecord firstRecord;
+    try (var journal = openJournal()) {
+      firstRecord = copyRecord(journal.append(recordDataWriter));
+    }
 
     // when
-    journal = openJournal();
+    final var journal = openJournal();
     final var secondRecord = journal.append(recordDataWriter);
 
     // then
@@ -535,11 +630,14 @@ final class JournalTest {
 
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(secondRecord);
+
+    journal.close();
   }
 
   @Test
   void shouldNotReadDeletedEntries() {
     // given
+    final var journal = openJournal();
     final var firstRecord = journal.append(recordDataWriter);
     journal.append(recordDataWriter);
     journal.append(recordDataWriter);
@@ -559,11 +657,14 @@ final class JournalTest {
     assertThat(reader.next()).isEqualTo(newSecondRecord);
 
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
-  void shouldInvalidateAllEntries() throws Exception {
+  void shouldInvalidateAllEntries() {
     // given
+    final var journal = openJournal();
     recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
 
@@ -576,18 +677,20 @@ final class JournalTest {
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
 
     journal.close();
-    journal = openJournal();
+    final var newJournal = openJournal();
 
     // then
-    final var reader = journal.openReader();
+    final var reader = newJournal.openReader();
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.next()).isEqualTo(secondRecord);
     assertThat(reader.hasNext()).isFalse();
+    newJournal.close();
   }
 
   @Test
   void shouldDetectCorruptedEntry() throws Exception {
     // given
+    final var journal = openJournal();
     recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     journal.append(recordDataWriter);
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
@@ -599,14 +702,15 @@ final class JournalTest {
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
 
     // then
-    assertThatThrownBy(
-            () -> journal = openJournal(b -> b.withLastWrittenIndex(secondRecord.index())))
+    //noinspection resource
+    assertThatThrownBy(() -> openJournal(b -> b.withLastWrittenIndex(secondRecord.index())))
         .isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
   void shouldDeletePartiallyWrittenEntry() throws Exception {
     // given
+    final var journal = openJournal();
     recordDataWriter.wrap(new UnsafeBuffer("000".getBytes(StandardCharsets.UTF_8)));
     final var firstRecord = copyRecord(journal.append(recordDataWriter));
     final var secondRecord = copyRecord(journal.append(recordDataWriter));
@@ -616,14 +720,16 @@ final class JournalTest {
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
-    journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
+    final var newJournal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
     recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
-    final var lastRecord = journal.append(recordDataWriter);
-    final var reader = journal.openReader();
+    final var lastRecord = newJournal.append(recordDataWriter);
+    final var reader = newJournal.openReader();
 
     // then
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
+
+    newJournal.close();
   }
 
   // TODO: do not rely on implementation detail to compare records

@@ -42,7 +42,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-@SuppressWarnings("resource")
 class SegmentedJournalTest {
   private static final String JOURNAL_NAME = "journal";
 
@@ -71,6 +70,8 @@ class SegmentedJournalTest {
     // then
     assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNull();
     assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity)).isNull();
+
+    journal.close();
   }
 
   @Test
@@ -91,6 +92,8 @@ class SegmentedJournalTest {
     final IndexInfo lookup = journal.getJournalIndex().lookup(entriesPerSegment - 1);
     assertThat(lookup).isNull();
     assertThat(journal.getJournalIndex().lookup(3 * entriesPerSegment)).isNotNull();
+
+    journal.close();
   }
 
   @Test
@@ -114,6 +117,8 @@ class SegmentedJournalTest {
     assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNotNull();
     assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index())
         .isEqualTo(journalIndexDensity);
+
+    journal.close();
   }
 
   @Test
@@ -139,6 +144,8 @@ class SegmentedJournalTest {
       assertThat(entry.asqn()).isEqualTo(asqn + i);
       assertThat(entry.data()).isEqualTo(data);
     }
+
+    journal.close();
   }
 
   @Test
@@ -162,6 +169,8 @@ class SegmentedJournalTest {
       assertThat(entry.asqn()).isEqualTo(asqn + i);
       assertThat(entry.data()).isEqualTo(data);
     }
+
+    journal.close();
   }
 
   @Test
@@ -181,6 +190,8 @@ class SegmentedJournalTest {
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(secondRecord);
+
+    journal.close();
   }
 
   @Test
@@ -199,6 +210,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
@@ -217,6 +230,8 @@ class SegmentedJournalTest {
     // then
     assertThat(reader.hasNext()).isFalse();
     assertThat(journal.getLastIndex()).isEqualTo(0);
+
+    journal.close();
   }
 
   @Test
@@ -234,6 +249,8 @@ class SegmentedJournalTest {
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.hasNext()).isFalse();
     assertThat(journal.getLastIndex()).isEqualTo(firstRecord.index());
+
+    journal.close();
   }
 
   @Test
@@ -253,6 +270,8 @@ class SegmentedJournalTest {
     assertThat(reader.seek(lastIndex - 1)).isEqualTo(lastIndex - 1);
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
     assertThat(journal.getLastIndex()).isEqualTo(lastIndex - 1);
+
+    journal.close();
   }
 
   @Test
@@ -273,6 +292,8 @@ class SegmentedJournalTest {
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
     reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
+
+    journal.close();
   }
 
   @Test
@@ -293,6 +314,8 @@ class SegmentedJournalTest {
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
     reader.seekToFirst();
     assertThat(reader.next().index()).isEqualTo(lastIndex - 1);
+
+    journal.close();
   }
 
   @Test
@@ -309,6 +332,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getFirstIndex()).isEqualTo(lastIndex - 1);
+
+    journal.close();
   }
 
   @Test
@@ -330,6 +355,8 @@ class SegmentedJournalTest {
     assertThat(first).isEqualTo(lastRecord.index());
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next()).isEqualTo(lastRecord);
+
+    journal.close();
   }
 
   @Test
@@ -353,6 +380,8 @@ class SegmentedJournalTest {
     assertThat(reader.next()).isEqualTo(secondRecord);
     assertThat(reader.next()).isEqualTo(thirdRecord);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
@@ -383,6 +412,8 @@ class SegmentedJournalTest {
         .isEqualTo(indexBeforeClose.lookup(firstIndexedPosition).position());
     assertThat(indexAfterRestart.lookup(secondIndexedPosition).position())
         .isEqualTo(indexBeforeClose.lookup(secondIndexedPosition).position());
+
+    journal.close();
   }
 
   @Test
@@ -403,6 +434,8 @@ class SegmentedJournalTest {
     assertThat(journal.getLastIndex()).isEqualTo(record.index());
     assertThat(reader.next()).isEqualTo(record);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
@@ -425,6 +458,8 @@ class SegmentedJournalTest {
     assertThat(journal.getLastIndex()).isEqualTo(record.index());
     assertThat(reader.next()).isEqualTo(record);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
@@ -458,6 +493,8 @@ class SegmentedJournalTest {
     assertThat(reader.next()).isEqualTo(copiedFirstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
     assertThat(reader.hasNext()).isFalse();
+
+    journal.close();
   }
 
   @Test
@@ -478,6 +515,8 @@ class SegmentedJournalTest {
         .isDirectoryContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+
+    journal.close();
   }
 
   @Test
@@ -504,6 +543,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+
+    journal.close();
   }
 
   // Regression test for https://github.com/camunda/zeebe/issues/7962
@@ -533,6 +574,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+
+    journal.close();
   }
 
   @Test
@@ -552,6 +595,8 @@ class SegmentedJournalTest {
         .isDirectoryNotContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+
+    journal.close();
   }
 
   @Test
@@ -569,6 +614,8 @@ class SegmentedJournalTest {
         .isDirectoryNotContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+
+    journal.close();
   }
 
   @Test
@@ -594,6 +641,8 @@ class SegmentedJournalTest {
     assertThat(
             logDirectory.listFiles(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName())))
         .hasSize(1);
+
+    journal.close();
   }
 
   @Test
@@ -622,6 +671,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+
+    journal.close();
   }
 
   @Test
@@ -675,6 +726,8 @@ class SegmentedJournalTest {
     Assertions.assertThatThrownBy(() -> journal.append(1, recordDataWriter))
         .isInstanceOf(InvalidAsqn.class);
     assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
+
+    journal.close();
   }
 
   @Test
@@ -694,6 +747,8 @@ class SegmentedJournalTest {
         .isInstanceOf(InvalidAsqn.class);
 
     assertThat(journal.getFirstSegment()).isNotEqualTo(journal.getLastSegment());
+
+    journal.close();
   }
 
   @Test
@@ -715,6 +770,8 @@ class SegmentedJournalTest {
         .isInstanceOf(InvalidAsqn.class);
 
     assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
+
+    journal.close();
   }
 
   @Test
@@ -737,6 +794,8 @@ class SegmentedJournalTest {
         .isInstanceOf(InvalidAsqn.class);
 
     assertThat(reopenedJournal.getFirstSegment()).isNotEqualTo(reopenedJournal.getLastSegment());
+
+    journal.close();
   }
 
   @Test
@@ -752,6 +811,8 @@ class SegmentedJournalTest {
     // then
     assertThat(journal.getFirstSegment().lastAsqn()).isEqualTo(initalAsqn);
     assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
+
+    journal.close();
   }
 
   @Test
@@ -769,6 +830,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getLastSegment().lastAsqn()).isEqualTo(expectedLastAsqn);
+
+    journal.close();
   }
 
   @Test
@@ -782,6 +845,8 @@ class SegmentedJournalTest {
 
     // then
     journal.append(1, recordDataWriter);
+
+    journal.close();
   }
 
   @Test
@@ -796,6 +861,8 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getLastSegment().lastAsqn()).isEqualTo(firstJournalRecord.asqn());
+
+    journal.close();
   }
 
   @Test
@@ -810,6 +877,8 @@ class SegmentedJournalTest {
 
     // then
     journal.append(2, recordDataWriter);
+
+    journal.close();
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {
