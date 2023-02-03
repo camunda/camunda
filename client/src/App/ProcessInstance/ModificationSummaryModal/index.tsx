@@ -247,12 +247,16 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                   {
                     cellContent: 'Scope',
                     isBold: true,
-                    width: '35%',
+                    width: '25%',
                   },
                   {
                     cellContent: 'Name / Value',
                     isBold: true,
-                    width: '35%',
+                    width: '25%',
+                  },
+                  {
+                    cellContent: '',
+                    width: '20%',
                   },
                   {
                     cellContent: '',
@@ -292,6 +296,10 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                               newValue={newValue}
                             />
                           ),
+                        },
+                        {
+                          id: 'empty-cell',
+                          cellContent: '',
                         },
                         {
                           id: 'delete',
