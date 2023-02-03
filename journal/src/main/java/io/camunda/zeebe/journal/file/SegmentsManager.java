@@ -79,6 +79,16 @@ final class SegmentsManager {
               LOG.debug("Closing segment: {}", segment);
               segment.close();
             });
+
+    try {
+      nextSegment.join();
+    } catch (final Throwable throwable) {
+      LOG.warn(
+          "Next segment preparation failed during close, ignoring and proceeding to close",
+          throwable);
+    }
+
+    nextSegment = null;
     currentSegment = null;
   }
 
