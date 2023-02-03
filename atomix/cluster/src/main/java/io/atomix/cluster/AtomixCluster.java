@@ -208,13 +208,11 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public synchronized CompletableFuture<Void> start() {
     if (closeFuture != null) {
-      final Throwable t =
+      return CompletableFuture.failedFuture(
           new IllegalStateException(
-              "AtomixCluster instance " + (closeFuture.isDone() ? "shutdown" : "shutting down"));
-      return CompletableFuture.failedFuture(t);
+              "Cluster instance is " + (closeFuture.isDone() ? "shutdown" : "shutting down")));
     }
 
     if (openFuture != null) {

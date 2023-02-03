@@ -97,7 +97,7 @@ public class AtomixClusterTest {
     } catch (final ExecutionException ex) {
       // then
       assertTrue(ex.getCause() instanceof IllegalStateException);
-      assertEquals("AtomixCluster instance shutdown", ex.getCause().getMessage());
+      assertEquals("Cluster instance is shutdown", ex.getCause().getMessage());
     }
   }
 

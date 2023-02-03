@@ -94,8 +94,7 @@ public abstract class AbstractRole implements RaftRole {
     final CompletableFuture<U> future = new CompletableFuture<>();
     final DefaultRaftMember leader = raft.getLeader();
     if (leader == null) {
-      final Throwable t = new RaftException.NoLeader("No leader found");
-      return CompletableFuture.failedFuture(t);
+      return CompletableFuture.failedFuture(new RaftException.NoLeader("No leader found"));
     }
 
     function

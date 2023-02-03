@@ -77,7 +77,7 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<InstallResponse> onInstall(final InstallRequest request) {
     logRequest(request);
-    final io.atomix.raft.protocol.InstallResponse result =
+    final var result =
         logResponse(
             InstallResponse.builder()
                 .withStatus(Status.ERROR)
@@ -89,7 +89,7 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<ReconfigureResponse> onReconfigure(final ReconfigureRequest request) {
     logRequest(request);
-    final io.atomix.raft.protocol.ReconfigureResponse result =
+    final var result =
         logResponse(
             ReconfigureResponse.builder()
                 .withStatus(Status.ERROR)
@@ -101,7 +101,7 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<TransferResponse> onTransfer(final TransferRequest request) {
     logRequest(request);
-    final io.atomix.raft.protocol.TransferResponse result =
+    final var result =
         logResponse(
             TransferResponse.builder()
                 .withStatus(Status.ERROR)
@@ -113,7 +113,7 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<AppendResponse> onAppend(final AppendRequest request) {
     logRequest(request);
-    final io.atomix.raft.protocol.AppendResponse result =
+    final var result =
         logResponse(
             AppendResponse.builder()
                 .withStatus(Status.ERROR)
@@ -125,7 +125,7 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<PollResponse> onPoll(final PollRequest request) {
     logRequest(request);
-    final io.atomix.raft.protocol.PollResponse result =
+    final var result =
         logResponse(
             PollResponse.builder()
                 .withStatus(Status.ERROR)
@@ -137,7 +137,7 @@ public class InactiveRole extends AbstractRole {
   @Override
   public CompletableFuture<VoteResponse> onVote(final VoteRequest request) {
     logRequest(request);
-    final io.atomix.raft.protocol.VoteResponse result =
+    final var result =
         logResponse(
             VoteResponse.builder()
                 .withStatus(Status.ERROR)
