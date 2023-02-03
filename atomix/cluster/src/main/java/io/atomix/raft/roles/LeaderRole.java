@@ -227,11 +227,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     raft.setLeader(raft.getCluster().getLocalMember().memberId());
     raft.getCluster()
         .getRemoteMemberStates()
-        .forEach(
-            member -> {
-              member.openReplicationContext(raft.getLog());
-              appender.observeRemainingMemberEntries(member);
-            });
+        .forEach(member -> member.openReplicationContext(raft.getLog()));
   }
 
   /** Appends initial entries to the log to take leadership. */

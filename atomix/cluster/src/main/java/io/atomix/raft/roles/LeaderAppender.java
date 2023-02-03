@@ -255,7 +255,7 @@ final class LeaderAppender {
     }
   }
 
-  void observeRemainingMemberEntries(final RaftMemberContext member) {
+  private void observeRemainingMemberEntries(final RaftMemberContext member) {
     metrics.observeRemainingEntries(
         member.getMember().memberId().id(), raft.getLog().getLastIndex() - member.getMatchIndex());
   }
