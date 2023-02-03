@@ -11,7 +11,12 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
+import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.streamprocessor.ProcessingScheduleServiceImpl;
+import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import java.time.Duration;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
@@ -25,6 +30,9 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final MessageState messageState;
   private final MutablePendingMessageSubscriptionState pendingState;
 
+  private ProcessingScheduleServiceImpl processingSchedulingService;
+  private Actor actor;
+
   public MessageObserver(
       final MessageState messageState,
       final MutablePendingMessageSubscriptionState pendingState,
@@ -36,14 +44,52 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var scheduleService = context.getScheduleService();
-    // it is safe to reuse the write because we running in the same actor/thread
-    final MessageTimeToLiveChecker timeToLiveChecker = new MessageTimeToLiveChecker(messageState);
-    scheduleService.runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    final var actorSchedulingService = context.getActorSchedulingService();
+    actor =
+        Actor.wrap(
+            (c) -> {
+              startMessageTimeToLiveChecker(c, (StreamProcessorContext) context);
+            });
+    actorSchedulingService.submitActor(actor);
 
+    final var scheduleService = context.getScheduleService();
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
             subscriptionCommandSender, pendingState, SUBSCRIPTION_TIMEOUT.toMillis());
     scheduleService.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+  }
+
+  @Override
+  public void onFailed() {
+    actor.closeAsync();
+    processingSchedulingService.close();
+  }
+
+  @Override
+  public void onClose() {
+    actor.closeAsync();
+    processingSchedulingService.close();
+  }
+
+  private void startMessageTimeToLiveChecker(
+      final ActorControl actor, final StreamProcessorContext context) {
+    final var logStream = context.getLogStream();
+    final var zeebeDb = context.getZeebeDb();
+    final var transactionContext = zeebeDb.createContext();
+    final var messageState = new DbMessageState(zeebeDb, transactionContext);
+    final var timeToLiveChecker = new MessageTimeToLiveChecker(messageState);
+
+    processingSchedulingService =
+        new ProcessingScheduleServiceImpl(
+            context::getStreamProcessorPhase,
+            context.getAbortCondition(),
+            logStream::newLogStreamBatchWriter);
+    final var future = processingSchedulingService.open(actor);
+    actor.runOnCompletion(
+        future,
+        (v, t) -> {
+          processingSchedulingService.runAtFixedRate(
+              MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+        });
   }
 }
