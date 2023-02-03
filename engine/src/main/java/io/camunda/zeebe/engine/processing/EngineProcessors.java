@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.resource.ResourceDeletionProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.function.Consumer;
@@ -119,6 +121,7 @@ public final class EngineProcessors {
         jobMetrics);
 
     addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
+    addResourceDeletionProcessors(typedRecordProcessors, writers, zeebeState);
 
     return typedRecordProcessors;
   }
@@ -235,5 +238,16 @@ public final class EngineProcessors {
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
         evaluateDecisionProcessor);
+  }
+
+  private static void addResourceDeletionProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final MutableZeebeState zeebeState) {
+    final var resourceDeletionProcessor =
+        new ResourceDeletionProcessor(
+            writers, zeebeState.getKeyGenerator(), zeebeState.getDecisionState());
+    typedRecordProcessors.onCommand(
+        ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }
 }
