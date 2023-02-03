@@ -336,14 +336,14 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void visitMessagesWithDeadlineBefore(final long timestamp, final MessageVisitor visitor) {
+  public void visitMessagesWithDeadlineBefore(
+      final long timestamp, final ExpiredMessageVisitor visitor) {
     deadlineColumnFamily.whileTrue(
         ((compositeKey, zbNil) -> {
           final long deadline = compositeKey.first().getValue();
           if (deadline <= timestamp) {
             final long messageKey = compositeKey.second().inner().getValue();
-            final StoredMessage message = getMessage(messageKey);
-            return visitor.visit(message);
+            return visitor.visit(messageKey);
           }
           return false;
         }));
