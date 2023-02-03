@@ -191,7 +191,7 @@ public final class MessageStateTest {
     messageState.put(2L, message2);
 
     // then
-    final List<StoredMessage> readMessage = new ArrayList<>();
+    final List<Long> readMessage = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(1_000, readMessage::add);
 
     assertThat(readMessage).isEmpty();
@@ -207,11 +207,11 @@ public final class MessageStateTest {
     messageState.put(2L, message2);
 
     // then
-    final List<StoredMessage> readMessage = new ArrayList<>();
+    final List<Long> readMessage = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(1_999, readMessage::add);
 
     assertThat(readMessage.size()).isEqualTo(1);
-    assertThat(readMessage.get(0).getMessageKey()).isEqualTo(1L);
+    assertThat(readMessage.get(0)).isEqualTo(1L);
   }
 
   @Test
@@ -230,7 +230,7 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessage = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m.getMessageKey()));
+    messageState.visitMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m));
 
     assertThat(readMessage.size()).isEqualTo(2);
     assertThat(readMessage).containsExactly(1L, 2L);
@@ -249,7 +249,7 @@ public final class MessageStateTest {
     messageState.remove(1L);
 
     // then
-    final List<StoredMessage> readMessages = new ArrayList<>();
+    final List<Long> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
@@ -283,7 +283,7 @@ public final class MessageStateTest {
     messageState.remove(1L);
 
     // then
-    final List<StoredMessage> readMessages = new ArrayList<>();
+    final List<Long> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
@@ -308,7 +308,7 @@ public final class MessageStateTest {
     messageState.remove(1L);
 
     // then
-    final List<StoredMessage> readMessages = new ArrayList<>();
+    final List<Long> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
@@ -344,7 +344,7 @@ public final class MessageStateTest {
 
     // then
     final long deadline = ActorClock.currentTimeMillis() + 2_000L;
-    final List<StoredMessage> readMessages = new ArrayList<>();
+    final List<Long> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBefore(deadline, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(1);
