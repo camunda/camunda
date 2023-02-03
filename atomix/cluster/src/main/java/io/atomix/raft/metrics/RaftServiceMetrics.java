@@ -22,17 +22,21 @@ public class RaftServiceMetrics extends RaftMetrics {
 
   private static final Histogram COMPACTION_TIME =
       Histogram.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("compaction_time_ms")
           .help("Time spend to compact")
-          .labelNames("partitionGroupName", "partition")
+          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
+
+  private final Histogram.Child compactionTime;
 
   public RaftServiceMetrics(final String partitionName) {
     super(partitionName);
+
+    compactionTime = COMPACTION_TIME.labels(partitionGroupName, partition);
   }
 
   public void compactionTime(final long latencyms) {
-    COMPACTION_TIME.labels(partitionGroupName, partition).observe(latencyms / 1000f);
+    compactionTime.observe(latencyms / 1000f);
   }
 }

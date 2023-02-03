@@ -11,7 +11,7 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.JournalException.InvalidASqn;
+import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.journal.file.LogCorrupter;
@@ -437,8 +437,8 @@ final class JournalTest {
     journal.append(1, recordDataWriter);
 
     // when/then
-    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidASqn.class);
-    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
+    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
   }
 
   @Test
@@ -450,8 +450,8 @@ final class JournalTest {
     journal.append(ASQN_IGNORE, recordDataWriter);
 
     // then
-    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidASqn.class);
-    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidASqn.class);
+    assertThatThrownBy(() -> journal.append(0, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
+    assertThatThrownBy(() -> journal.append(1, recordDataWriter)).isInstanceOf(InvalidAsqn.class);
   }
 
   @Test

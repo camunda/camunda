@@ -22,18 +22,18 @@ public class RaftRequestMetrics extends RaftMetrics {
 
   private static final Counter RAFT_MESSAGES_RECEIVED =
       Counter.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("raft_messages_received")
           .help("Number of raft requests received")
-          .labelNames("type", "partitionGroupName", "partition")
+          .labelNames("type", PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
   private static final Counter RAFT_MESSAGES_SEND =
       Counter.build()
-          .namespace("atomix")
+          .namespace(NAMESPACE)
           .name("raft_messages_send")
           .help("Number of raft requests send")
-          .labelNames("to", "type", "partitionGroupName", "partition")
+          .labelNames("to", "type", PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
   public RaftRequestMetrics(final String partitionName) {

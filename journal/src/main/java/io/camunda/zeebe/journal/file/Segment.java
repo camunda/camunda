@@ -57,13 +57,14 @@ final class Segment implements AutoCloseable {
       final MappedByteBuffer buffer,
       final long lastWrittenIndex,
       final long lastWrittenAsqn,
-      final JournalIndex index) {
+      final JournalIndex index,
+      final JournalMetrics metrics) {
     this.file = file;
     this.descriptor = descriptor;
     this.buffer = buffer;
     this.index = index;
 
-    writer = createWriter(lastWrittenIndex, lastWrittenAsqn);
+    writer = createWriter(lastWrittenIndex, lastWrittenAsqn, metrics);
   }
 
   /**
@@ -161,8 +162,9 @@ final class Segment implements AutoCloseable {
     return reader;
   }
 
-  private SegmentWriter createWriter(final long lastWrittenIndex, final long lastWrittenAsqn) {
-    return new SegmentWriter(buffer, this, index, lastWrittenIndex, lastWrittenAsqn);
+  private SegmentWriter createWriter(
+      final long lastWrittenIndex, final long lastWrittenAsqn, final JournalMetrics metrics) {
+    return new SegmentWriter(buffer, this, index, lastWrittenIndex, lastWrittenAsqn, metrics);
   }
 
   /**

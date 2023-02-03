@@ -19,7 +19,7 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.JournalException.InvalidASqn;
+import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
@@ -673,7 +673,7 @@ class SegmentedJournalTest {
 
     // when/then
     Assertions.assertThatThrownBy(() -> journal.append(1, recordDataWriter))
-        .isInstanceOf(InvalidASqn.class);
+        .isInstanceOf(InvalidAsqn.class);
     assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
   }
 
@@ -691,7 +691,7 @@ class SegmentedJournalTest {
     // then
     // validation of the asqn should fail on the new segment as well
     Assertions.assertThatThrownBy(() -> journal.append(1, recordDataWriter))
-        .isInstanceOf(InvalidASqn.class);
+        .isInstanceOf(InvalidAsqn.class);
 
     assertThat(journal.getFirstSegment()).isNotEqualTo(journal.getLastSegment());
   }
@@ -712,7 +712,7 @@ class SegmentedJournalTest {
     // then
     final SegmentedJournal finalJournal = journal;
     Assertions.assertThatThrownBy(() -> finalJournal.append(1, recordDataWriter))
-        .isInstanceOf(InvalidASqn.class);
+        .isInstanceOf(InvalidAsqn.class);
 
     assertThat(journal.getFirstSegment()).isEqualTo(journal.getLastSegment());
   }
@@ -734,7 +734,7 @@ class SegmentedJournalTest {
 
     // then
     Assertions.assertThatThrownBy(() -> reopenedJournal.append(1, recordDataWriter))
-        .isInstanceOf(InvalidASqn.class);
+        .isInstanceOf(InvalidAsqn.class);
 
     assertThat(reopenedJournal.getFirstSegment()).isNotEqualTo(reopenedJournal.getLastSegment());
   }

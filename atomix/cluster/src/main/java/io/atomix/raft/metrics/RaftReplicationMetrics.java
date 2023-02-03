@@ -19,10 +19,6 @@ import io.prometheus.client.Gauge;
 
 public class RaftReplicationMetrics extends RaftMetrics {
 
-  private static final String NAMESPACE = "atomix";
-  private static final String PARTITION_GROUP_NAME_LABEL = "partitionGroupName";
-  private static final String PARTITION_LABEL = "partition";
-
   private static final Gauge COMMIT_INDEX =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -39,15 +35,21 @@ public class RaftReplicationMetrics extends RaftMetrics {
           .name("partition_raft_append_index")
           .register();
 
+  private final Gauge.Child commitIndex;
+  private final Gauge.Child appendIndex;
+
   public RaftReplicationMetrics(final String partitionName) {
     super(partitionName);
+
+    commitIndex = COMMIT_INDEX.labels(partitionGroupName, partition);
+    appendIndex = APPEND_INDEX.labels(partitionGroupName, partition);
   }
 
   public void setCommitIndex(final long value) {
-    COMMIT_INDEX.labels(partitionGroupName, partition).set(value);
+    commitIndex.set(value);
   }
 
   public void setAppendIndex(final long value) {
-    APPEND_INDEX.labels(partitionGroupName, partition).set(value);
+    appendIndex.set(value);
   }
 }
