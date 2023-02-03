@@ -29,7 +29,7 @@ public class ResourceDeletionTest {
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
 
-  @Rule public final EngineRule ENGINE = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
@@ -38,7 +38,7 @@ public class ResourceDeletionTest {
     final long drgKey = deployDrg(DRG_SINGLE_DECISION);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drgKey).delete();
+    engine.resourceDeletion().withResourceKey(drgKey).delete();
 
     // then
     verifyDecisionIsDeleted(drgKey, "jedi_or_sith", 1);
@@ -52,7 +52,7 @@ public class ResourceDeletionTest {
     final long drgKey = deployDrg(DRG_MULTIPLE_DECISIONS);
 
     // when
-    ENGINE.resourceDeletion().withResourceKey(drgKey).delete();
+    engine.resourceDeletion().withResourceKey(drgKey).delete();
 
     // then
     verifyDecisionIsDeleted(drgKey, "jedi_or_sith", 1);
@@ -62,7 +62,7 @@ public class ResourceDeletionTest {
   }
 
   private long deployDrg(final String drgResource) {
-    return ENGINE
+    return engine
         .deployment()
         .withXmlResource(readResource(drgResource), drgResource)
         .deploy()

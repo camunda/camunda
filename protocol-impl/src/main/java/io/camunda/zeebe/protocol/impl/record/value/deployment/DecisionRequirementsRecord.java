@@ -113,7 +113,8 @@ public final class DecisionRequirementsRecord extends UnifiedRecordValue
     return this;
   }
 
-  public DecisionRequirementsRecord setDecisionRequirementsName(final String decisionRequirementsName) {
+  public DecisionRequirementsRecord setDecisionRequirementsName(
+      final String decisionRequirementsName) {
     decisionRequirementsNameProp.setValue(decisionRequirementsName);
     return this;
   }
