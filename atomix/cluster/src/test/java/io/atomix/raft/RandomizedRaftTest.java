@@ -195,32 +195,23 @@ public class RandomizedRaftTest {
 
     // when - no more message loss
 
-    // hoping that 100 iterations are enough to elect a new leader, since there are no more failures
-    int maxStepsUntilLeader = 100;
-    while (!raftContexts.hasLeaderAtTheLatestTerm() && maxStepsUntilLeader-- > 0) {
-      raftContexts.runUntilDone();
-      raftContexts.processAllMessage();
-      raftContexts.tickHeartbeatTimeout();
-      raftContexts.processAllMessage();
-      raftContexts.runUntilDone();
-    }
-
-    // then - eventually a leader should be elected
-    assertThat(raftContexts.hasLeaderAtTheLatestTerm())
-        .describedAs("Leader election should be completed if there are no messages lost.")
-        .isTrue();
-
-    // then - eventually all entries are replicated to all followers and all entries are committed
     // hoping that 2000 iterations are enough to replicate all entries
     int maxStepsToReplicateEntries = 2000;
-    while (!(raftContexts.hasReplicatedAllEntries() && raftContexts.hasCommittedAllEntries())
+    while (!(raftContexts.hasLeaderAtTheLatestTerm()
+            && raftContexts.hasReplicatedAllEntries()
+            && raftContexts.hasCommittedAllEntries())
         && maxStepsToReplicateEntries-- > 0) {
       raftContexts.runUntilDone();
       raftContexts.processAllMessage();
       raftContexts.tickHeartbeatTimeout();
-      raftContexts.processAllMessage();
-      raftContexts.runUntilDone();
     }
+
+    // then - eventually all entries are replicated to all followers and all entries are committed
+
+    // eventually a leader should be elected
+    assertThat(raftContexts.hasLeaderAtTheLatestTerm())
+        .describedAs("Leader election should be completed if there are no messages lost.")
+        .isTrue();
 
     // All member are be ready
     raftContexts.assertAllMembersAreReady();
