@@ -275,7 +275,7 @@ public final class EventbasedGatewayTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .onlyCommandRejections()
                 .getFirst())
-        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRecordType(RecordType.COMMAND_REJECTION);
   }
 

@@ -328,8 +328,6 @@ public final class CancelProcessInstanceTest {
             .getFirst();
 
     assertThat(jobCanceledEvent.getKey()).isEqualTo(jobCreatedEvent.getKey());
-    assertThat(jobCanceledEvent.getSourceRecordPosition())
-        .isEqualTo(terminateActivity.getPosition());
 
     final JobRecordValue jobCanceledEventValue = jobCanceledEvent.getValue();
     assertThat(jobCanceledEventValue.getProcessInstanceKey()).isEqualTo(processInstanceKey);

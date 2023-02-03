@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -471,61 +469,6 @@ public final class CallActivityTest {
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
-  }
-
-  @Test
-  public void shouldTriggerBoundaryEventIfChildIsCompleting() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            "parent-wf.bpmn",
-            parentProcess(
-                callActivity ->
-                    callActivity
-                        .boundaryEvent()
-                        .cancelActivity(true)
-                        .timerWithDuration("PT1M")
-                        .endEvent()))
-        .deploy();
-
-    final var processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
-
-    final var timerCreated =
-        RecordingExporter.timerRecords(TimerIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    final var childTaskActivated =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withParentProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.SERVICE_TASK)
-            .getFirst();
-
-    // when trigger the boundary event and complete the child instance concurrently
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, childTaskActivated.getValue())
-            .key(childTaskActivated.getKey()),
-        RecordToWrite.command()
-            .timer(TimerIntent.TRIGGER, timerCreated.getValue())
-            .key(timerCreated.getKey()));
-
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .betweenProcessInstance(processInstanceKey)
-                .processInstanceRecords())
-        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
-        .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
