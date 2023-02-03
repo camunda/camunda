@@ -85,9 +85,10 @@ public final class RaftLog implements Closeable {
    * <p>The semantics of compaction are not specified by this interface.
    *
    * @param index The index up to which to compact the journal.
+   * @return true if anything was deleted, false otherwise
    */
-  public void deleteUntil(final long index) {
-    journal.deleteUntil(index);
+  public boolean deleteUntil(final long index) {
+    return journal.deleteUntil(index);
   }
 
   /**

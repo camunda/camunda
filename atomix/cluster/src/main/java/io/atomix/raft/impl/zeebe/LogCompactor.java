@@ -39,19 +39,25 @@ public final class LogCompactor {
   }
 
   /**
-   * Assumes our snapshots are being taken asynchronously and we regularly update the compactable
-   * index. Compaction is performed asynchronously.
+   * Assumes our snapshots are being taken asynchronously, and we regularly update the compactable
+   * index. It can happen that nothing is compacted (e.g. there are no snapshots since the last
+   * compaction).
+   *
+   * @return true if any data was deleted, false otherwise
    */
-  public void compact() {
+  public boolean compact() {
     raft.checkThread();
 
     try {
       final var startTime = System.currentTimeMillis();
-      raft.getLog().deleteUntil(compactableIndex);
+      final var compacted = raft.getLog().deleteUntil(compactableIndex);
+
       metrics.compactionTime(System.currentTimeMillis() - startTime);
+      return compacted;
     } catch (final Exception e) {
       logger.error("Failed to compact up to index {}", compactableIndex, e);
       LangUtil.rethrowUnchecked(e);
+      return false;
     }
   }
 
