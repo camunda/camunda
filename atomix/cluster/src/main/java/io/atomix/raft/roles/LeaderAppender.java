@@ -568,7 +568,7 @@ final class LeaderAppender {
       }
     }
 
-    metrics.observeNonCommittedEntries(raft.getLog().getLastIndex() - commitIndex);
+    observeNonCommittedEntries(commitIndex);
   }
 
   private void handleAppendResponseFailure(
@@ -1015,6 +1015,10 @@ final class LeaderAppender {
    */
   public long getTime() {
     return heartbeatTime;
+  }
+
+  void observeNonCommittedEntries(final long commitIndex) {
+    metrics.observeNonCommittedEntries(raft.getLog().getLastIndex() - commitIndex);
   }
 
   /** Timestamped completable future. */
