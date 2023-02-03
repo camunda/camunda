@@ -108,6 +108,7 @@ public class ProcessZeebeRecordProcessor {
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
     processEntity.setKey(process.getProcessDefinitionKey());
+    processEntity.setBpmnProcessId(process.getBpmnProcessId());
 
     final byte[] byteArray = process.getResource();
 

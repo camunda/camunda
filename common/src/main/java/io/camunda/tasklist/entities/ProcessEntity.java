@@ -12,6 +12,8 @@ import java.util.Objects;
 
 public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
 
+  private String bpmnProcessId;
+
   private String name;
 
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
@@ -25,6 +27,15 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     return this;
   }
 
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public ProcessEntity setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
+  }
+
   public List<ProcessFlowNodeEntity> getFlowNodes() {
     return flowNodes;
   }
@@ -35,7 +46,7 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -45,13 +56,14 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     if (!super.equals(o)) {
       return false;
     }
-
     final ProcessEntity that = (ProcessEntity) o;
-    return Objects.equals(name, that.name) && Objects.equals(flowNodes, that.flowNodes);
+    return Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(flowNodes, that.flowNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), name, flowNodes);
+    return Objects.hash(super.hashCode(), bpmnProcessId, name, flowNodes);
   }
 }

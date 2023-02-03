@@ -129,6 +129,39 @@ public class TaskReaderWriter {
     return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
   }
 
+  public List<TaskDTO> getTaskByProcessInstanceId(String processInstanceId) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId)));
+    final SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+    return mapTasksFromEntity(response);
+  }
+
+  private List<TaskDTO> mapTasksFromEntity(SearchResponse response) {
+
+    final List<TaskDTO> tasks =
+        ElasticsearchUtil.mapSearchHits(
+            response.getHits().getHits(),
+            (sh) -> {
+              final TaskDTO entity =
+                  TaskDTO.createFrom(
+                      ElasticsearchUtil.fromSearchHit(
+                          sh.getSourceAsString(), objectMapper, TaskEntity.class),
+                      sh.getSortValues(),
+                      objectMapper);
+              return entity;
+            });
+
+    return tasks;
+  }
+
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
     final List<TaskDTO> response = queryTasks(query, fieldNames);
 
@@ -209,22 +242,11 @@ public class TaskReaderWriter {
                 sourceBuilder
                 //  .fetchSource(fieldNames.toArray(String[]::new), null)
                 );
-
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
-      final List<TaskDTO> tasks =
-          ElasticsearchUtil.mapSearchHits(
-              response.getHits().getHits(),
-              (sh) -> {
-                final TaskDTO entity =
-                    TaskDTO.createFrom(
-                        ElasticsearchUtil.fromSearchHit(
-                            sh.getSourceAsString(), objectMapper, TaskEntity.class),
-                        sh.getSortValues(),
-                        objectMapper);
-                return entity;
-              });
+      final List<TaskDTO> tasks = mapTasksFromEntity(response);
+
       if (tasks.size() > 0) {
         if (query.getSearchBefore() != null || query.getSearchBeforeOrEqual() != null) {
           if (tasks.size() <= query.getPageSize()) {

@@ -208,6 +208,16 @@ public class TasklistTester {
     return this.getTasksByQueryAsVariable(query, fragmentResource);
   }
 
+  public GraphQLResponse getAllProcesses(String search) throws IOException {
+    final ObjectNode query = objectMapper.createObjectNode().put("search", search);
+    return this.getProcessesByQuery(query);
+  }
+
+  public GraphQLResponse getProcessesByQuery(ObjectNode variables) throws IOException {
+    graphQLResponse = graphQLTestTemplate.perform("graphql/get-processes.graphql", variables);
+    return graphQLResponse;
+  }
+
   public GraphQLResponse getTasksByQueryAsVariable(ObjectNode variables) throws IOException {
     return getTasksByQueryAsVariable(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
   }
@@ -293,6 +303,13 @@ public class TasklistTester {
             "mutation { deleteProcessInstance(processInstanceId: \"%s\") }", processInstanceId);
     graphQLResponse = graphQLTestTemplate.postMultipart(mutation, "{}");
     return graphQLResponse.get("$.data.deleteProcessInstance", Boolean.class);
+  }
+
+  public GraphQLResponse startProcess(String processDefinitionId) {
+    final String mutation =
+        String.format(
+            "mutation { startProcess (processDefinitionId: \"%s\"){id}} ", processDefinitionId);
+    return graphQLTestTemplate.postMultipart(mutation, "{}");
   }
 
   public TasklistTester deployProcess(String... classpathResources) {

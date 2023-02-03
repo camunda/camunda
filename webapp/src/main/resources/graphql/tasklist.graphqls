@@ -42,6 +42,12 @@ type Form {
     schema: String!
 }
 
+type Process {
+    id:String!
+    name:String
+    processDefinitionId: String
+}
+
 #Task query - query to get one page of tasks.
 input TaskQuery {
     # State of the tasks
@@ -94,6 +100,10 @@ input VariableInput {
     value: String!
 }
 
+type ProcessInstance {
+    id: ID!
+}
+
 type C8AppLink {
     name: String!
     link: String!
@@ -121,6 +131,9 @@ type Query {
     variables(taskId: String!, variableNames: [String!]!): [Variable!]!
     # Get the variables by variable id
     variable(id: String!): Variable!
+    # Get the processes
+    processes(search:String): [Process!]!
+
 }
 # What can be changed.
 type Mutation {
@@ -141,4 +154,6 @@ type Mutation {
 	unclaimTask(taskId: String!): Task!
     # Delete process instance by given processInstanceId. Returns true if process instance could be deleted.
     deleteProcessInstance(processInstanceId: String!): Boolean!
+    # start a Process from tasklist
+    startProcess(processDefinitionId: String!): ProcessInstance!
 }

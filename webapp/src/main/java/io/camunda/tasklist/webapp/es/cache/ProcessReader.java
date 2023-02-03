@@ -11,11 +11,14 @@ import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import java.io.IOException;
+import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
@@ -27,6 +30,8 @@ import org.springframework.stereotype.Component;
 public class ProcessReader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessReader.class);
+
+  private static final Boolean CASE_INSENSITIVE = true;
 
   @Autowired private ProcessIndex processIndex;
 
@@ -62,5 +67,68 @@ public class ProcessReader {
 
   private ProcessEntity fromSearchHit(String processString) {
     return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
+  }
+
+  public List<ProcessDTO> getProcesses() {
+    final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias());
+    final SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return mapResponse(response);
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public List<ProcessDTO> getProcesses(String search) {
+
+    if (search.isBlank()) {
+      return getProcesses();
+    }
+
+    final String regexSearch = String.format(".*%s.*", search);
+
+    final QueryBuilder qb =
+        QueryBuilders.boolQuery()
+            .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
+            .should(
+                QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
+                    .caseInsensitive(CASE_INSENSITIVE))
+            .should(
+                QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
+                    .caseInsensitive(CASE_INSENSITIVE))
+            .minimumShouldMatch(1);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(processIndex.getAlias()).source(new SearchSourceBuilder().query(qb));
+
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+      return mapResponse(response);
+
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  private List<ProcessDTO> mapResponse(SearchResponse response) {
+    final List<ProcessDTO> processes =
+        ElasticsearchUtil.mapSearchHits(
+            response.getHits().getHits(),
+            (sh) -> {
+              final ProcessDTO entity =
+                  ProcessDTO.createFrom(
+                      ElasticsearchUtil.fromSearchHit(
+                          sh.getSourceAsString(), objectMapper, ProcessEntity.class),
+                      sh.getSortValues(),
+                      objectMapper);
+              return entity;
+            });
+    return processes;
   }
 }
