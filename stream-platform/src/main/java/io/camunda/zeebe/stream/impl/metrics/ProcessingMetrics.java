@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.impl.metrics;
 
 import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Child;
 
 public class ProcessingMetrics {
 
@@ -22,13 +23,13 @@ public class ProcessingMetrics {
           .labelNames(LABEL_NAME_PARTITION)
           .register();
 
-  private final String partitionIdLabel;
+  private final Child batchProcessingDuration;
 
   public ProcessingMetrics(final String partitionIdLabel) {
-    this.partitionIdLabel = partitionIdLabel;
+    batchProcessingDuration = BATCH_PROCESSING_DURATION.labels(partitionIdLabel);
   }
 
   public Histogram.Timer startBatchProcessingDurationTimer() {
-    return BATCH_PROCESSING_DURATION.labels(partitionIdLabel).startTimer();
+    return batchProcessingDuration.startTimer();
   }
 }
