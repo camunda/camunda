@@ -11,7 +11,9 @@ ARG DIST="distball"
 ### Init image containing tini and the startup script ###
 FROM ubuntu:jammy as init
 WORKDIR /zeebe
-RUN --mount=type=cache,target=/var/apt/cache,rw \
+RUN rm /etc/apt/apt.conf.d/docker-clean
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get -qq update && \
     apt-get install -y --no-install-recommends tini=0.19.0-1 && \
     cp /usr/bin/tini .
