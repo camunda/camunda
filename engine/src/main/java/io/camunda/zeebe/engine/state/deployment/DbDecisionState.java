@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
@@ -43,6 +44,11 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final ColumnFamily<DbLong, PersistedDecision> decisionsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
+
+  private final DbInt dbDecisionVersion;
+  private final DbCompositeKey<DbString, DbForeignKey<DbLong>> decisionKeyByDecisionId;
+  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbInt>
+      decisionVersionByDecisionIdAndDecisionKey;
 
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
@@ -92,6 +98,15 @@ public final class DbDecisionState implements MutableDecisionState {
             transactionContext,
             dbDecisionRequirementsKeyAndDecisionKey,
             DbNil.INSTANCE);
+
+    decisionKeyByDecisionId = new DbCompositeKey<>(dbDecisionId, fkDecision);
+    dbDecisionVersion = new DbInt();
+    decisionVersionByDecisionIdAndDecisionKey =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY,
+            transactionContext,
+            decisionKeyByDecisionId,
+            dbDecisionVersion);
   }
 
   @Override
