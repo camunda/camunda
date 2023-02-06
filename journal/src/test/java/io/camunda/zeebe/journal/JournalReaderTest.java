@@ -16,6 +16,7 @@ import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,7 +43,7 @@ final class JournalReaderTest {
 
   @AfterEach
   public void teardown() {
-    journal.close();
+    CloseHelper.quietClose(journal);
   }
 
   @Test

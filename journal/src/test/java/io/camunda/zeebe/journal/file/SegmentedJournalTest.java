@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
@@ -57,9 +58,7 @@ class SegmentedJournalTest {
 
   @AfterEach
   void teardown() {
-    if (journal != null) {
-      journal.close();
-    }
+    CloseHelper.quietClose(journal);
   }
 
   @Test

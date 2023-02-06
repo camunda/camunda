@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
+import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,8 +58,8 @@ final class JournalTest {
   }
 
   @AfterEach
-  void teardown() throws Exception {
-    journal.close();
+  void teardown() {
+    CloseHelper.quietClose(journal);
   }
 
   @Test
