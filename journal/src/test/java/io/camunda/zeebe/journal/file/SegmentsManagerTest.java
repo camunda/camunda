@@ -48,8 +48,9 @@ class SegmentsManagerTest {
     // when
     // if we close the current journal, it will delete the files on closing. So we cannot test this
     // scenario.
-    final var newSegments = createSegmentsManager(0);
-    newSegments.open();
+    try (var newSegments = createSegmentsManager(0)) {
+      newSegments.open();
+    }
 
     // then
     final File logDirectory = directory.resolve("data").toFile();
@@ -57,7 +58,6 @@ class SegmentsManagerTest {
         .isDirectoryNotContaining(
             file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
         .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
-    newSegments.close();
   }
 
   @Test
