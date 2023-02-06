@@ -95,19 +95,19 @@ const Header: React.FC = observer(() => {
         elements: hasStartProcess
           ? [
               {
-                isCurrentPage: isProcessesPage,
-                key: 'processes',
-                label: 'Processes',
-                routeProps: {
-                  to: Pages.Processes,
-                },
-              },
-              {
                 isCurrentPage: !isProcessesPage,
                 key: 'tasks',
                 label: 'Tasks',
                 routeProps: {
                   to: Pages.Initial(),
+                },
+              },
+              {
+                isCurrentPage: isProcessesPage,
+                key: 'processes',
+                label: 'Processes',
+                routeProps: {
+                  to: Pages.Processes,
                 },
               },
             ]
