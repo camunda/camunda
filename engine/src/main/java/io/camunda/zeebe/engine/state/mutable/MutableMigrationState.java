@@ -20,4 +20,6 @@ public interface MutableMigrationState {
   void migrateTemporaryVariables(
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableElementInstanceState elementInstanceState);
+
+  void migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey();
 }
