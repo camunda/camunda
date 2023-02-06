@@ -542,10 +542,10 @@ public final class ProcessingStateMachine {
                 if (!responseSent) {
                   return false;
                 } else {
-                  return currentProcessingResult.executePostCommitTasks();
+                  return executePostCommitTasks();
                 }
               }
-              return currentProcessingResult.executePostCommitTasks();
+              return executePostCommitTasks();
             },
             abortCondition);
 
@@ -566,6 +566,12 @@ public final class ProcessingStateMachine {
           inProcessing = false;
           actor.submit(this::readNextRecord);
         });
+  }
+
+  private boolean executePostCommitTasks() {
+    try (final var __ = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
+      return currentProcessingResult.executePostCommitTasks();
+    }
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
