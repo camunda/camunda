@@ -61,7 +61,7 @@ public final class StreamProcessorRule implements TestRule {
   private StreamProcessingComposite streamProcessingComposite;
   private ListLogStorage sharedStorage = null;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
-  private int processingBatchLimit = StreamProcessorContext.DEFAULT_PROCESSING_BATCH_LIMIT;
+  private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -220,8 +220,8 @@ public final class StreamProcessorRule implements TestRule {
     streamProcessingComposite.snapshot(partitionId);
   }
 
-  public void processingBatchLimit(final int processingBatchLimit) {
-    this.processingBatchLimit = processingBatchLimit;
+  public void maxCommandsInBatch(final int maxCommandsInBatch) {
+    this.maxCommandsInBatch = maxCommandsInBatch;
   }
 
   private class SetupRule extends ExternalResource {
@@ -238,7 +238,7 @@ public final class StreamProcessorRule implements TestRule {
     protected void before() {
       streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
       streams.withStreamProcessorMode(streamProcessorMode);
-      streams.processingBatchLimit(processingBatchLimit);
+      streams.maxCommandsInBatch(maxCommandsInBatch);
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {

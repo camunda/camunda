@@ -32,7 +32,7 @@ public class CallActivityInterruptionTest {
       EngineRule.singlePartition()
           // Disable batch processing. Interrupting behaviour is only reproducible if
           // termination of call activity does not finish within one batch.
-          .processingBatchLimit(1);
+          .maxCommandsInBatch(1);
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";

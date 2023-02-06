@@ -9,26 +9,26 @@ package io.camunda.zeebe.broker.system.configuration;
 
 public final class ProcessingCfg implements ConfigurationEntry {
   private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
-  private Integer processingBatchLimit = DEFAULT_PROCESSING_BATCH_LIMIT;
+  private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
-    if (processingBatchLimit < 1) {
+    if (maxCommandsInBatch < 1) {
       throw new IllegalArgumentException(
-          "processingBatchLimit must be >= 1 but was %s".formatted(processingBatchLimit));
+          "maxCommandsInBatch must be >= 1 but was %s".formatted(maxCommandsInBatch));
     }
   }
 
-  public int getProcessingBatchLimit() {
-    return processingBatchLimit;
+  public int getMaxCommandsInBatch() {
+    return maxCommandsInBatch;
   }
 
-  public void setProcessingBatchLimit(final int processingBatchLimit) {
-    this.processingBatchLimit = processingBatchLimit;
+  public void setMaxCommandsInBatch(final int maxCommandsInBatch) {
+    this.maxCommandsInBatch = maxCommandsInBatch;
   }
 
   @Override
   public String toString() {
-    return "ProcessingCfg{" + "processingBatchLimit=" + processingBatchLimit + '}';
+    return "ProcessingCfg{" + "maxCommandsInBatch=" + maxCommandsInBatch + '}';
   }
 }

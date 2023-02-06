@@ -31,7 +31,7 @@ public final class ProcessInstanceCommandRejectionTest {
 
   private static final String PROCESS_ID = "process";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition().processingBatchLimit(1);
+  @Rule public final EngineRule engine = EngineRule.singlePartition().maxCommandsInBatch(1);
 
   @Test
   public void shouldRejectActivateIfFlowScopeIsActivating() {
