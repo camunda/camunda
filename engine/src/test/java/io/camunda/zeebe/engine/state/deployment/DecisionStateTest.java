@@ -380,6 +380,126 @@ public final class DecisionStateTest {
         .contains(decision3.getDecisionKey());
   }
 
+  @DisplayName("should return empty if no decision is deployed")
+  @Test
+  void shouldReturnEmptyWhenFindingPreviousDecisionKeyIfNoDecisionIsDeployed() {
+    // when
+    final var decisionKey =
+        decisionState.findPreviousVersionDecisionKey(wrapString("decision-1"), 1);
+
+    // then
+    assertThat(decisionKey).isEmpty();
+  }
+
+  @DisplayName("should return empty if no other version is deployed")
+  @Test
+  void shouldReturnEmptyWhenFindingPreviousDecisionKeyIfNoOtherVersionExists() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord =
+        sampleDecisionRecord().setDecisionRequirementsKey(drg.getDecisionRequirementsKey());
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord);
+
+    // when
+    final var decisionKey =
+        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 1);
+
+    // then
+    assertThat(decisionKey).isEmpty();
+  }
+
+  @DisplayName("should return empty if no lower version is deployed")
+  @Test
+  void shouldReturnEmptyWhenFindingPreviousDecisionKeyIfNoLowerVersionExists() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1);
+    final var decisionRecord2 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(2)
+            .setDecisionKey(2);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
+
+    // when
+    final var decisionKey =
+        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 1);
+
+    // then
+    assertThat(decisionKey).isEmpty();
+  }
+
+  @DisplayName("should return previous decision key")
+  @Test
+  void shouldReturnPreviousDecisionKey() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1);
+    final var decisionRecord2 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(2)
+            .setDecisionKey(2);
+    final var decisionRecord3 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(3)
+            .setDecisionKey(3);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
+    decisionState.storeDecisionRecord(decisionRecord3);
+
+    // when
+    final var decisionKey =
+        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 3);
+
+    // then
+    assertThat(decisionKey).isNotEmpty();
+    assertThat(decisionKey.get()).isEqualTo(2);
+  }
+
+  @DisplayName(
+      "should return empty if no decision with lower version and same decision id is deployed")
+  @Test
+  void shouldReturnEmptyIfNotDecisionWithLowerVersionAndSameDecisionIdIsDeployed() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1)
+            .setDecisionId("decision-1");
+    final var decisionRecord2 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(2)
+            .setDecisionKey(2)
+            .setDecisionId("decision-2");
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
+
+    // when
+    final var decisionKey =
+        decisionState.findPreviousVersionDecisionKey(wrapString("decision-2"), 2);
+
+    // then
+    assertThat(decisionKey).isEmpty();
+  }
+
   private DecisionRecord sampleDecisionRecord() {
     return new DecisionRecord()
         .setDecisionId("decision-id")
