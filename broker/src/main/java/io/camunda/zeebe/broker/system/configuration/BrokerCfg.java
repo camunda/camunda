@@ -29,6 +29,8 @@ public final class BrokerCfg {
   private Map<String, ExporterCfg> exporters = new HashMap<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
+  private ProcessingCfg processingCfg = new ProcessingCfg();
+
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
   private boolean executionMetricsExporterEnabled;
@@ -51,6 +53,7 @@ public final class BrokerCfg {
     exporters.values().forEach(e -> e.init(this, brokerBase));
     gateway.init(this, brokerBase);
     backpressure.init(this, brokerBase);
+    processingCfg.init(this, brokerBase);
     experimental.init(this, brokerBase);
   }
 
@@ -126,6 +129,14 @@ public final class BrokerCfg {
     this.executionMetricsExporterEnabled = executionMetricsExporterEnabled;
   }
 
+  public ProcessingCfg getProcessing() {
+    return processingCfg;
+  }
+
+  public void setProcessingCfg(final ProcessingCfg cfg) {
+    this.processingCfg = cfg;
+  }
+
   public ExperimentalCfg getExperimental() {
     return experimental;
   }
@@ -151,6 +162,8 @@ public final class BrokerCfg {
         + gateway
         + ", backpressure="
         + backpressure
+        + ", processingCfg="
+        + processingCfg
         + ", experimental="
         + experimental
         + ", executionMetricsExporterEnabled="

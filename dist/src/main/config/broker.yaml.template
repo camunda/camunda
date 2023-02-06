@@ -536,7 +536,12 @@
         #     processMessageSubscription: true
         #     variable: true
         #     variableDocument: true
-
+    # processing:
+      # Limits the number of commands that are processed within one batch.
+      # By default, up to 100 commands are processed in one batch. Can be set to 1 to disable
+      # batch processing. Must be a positive integer number.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_PROCESSING_PROCESSINGBATCHLIMIT
+      # processingBatchLimit = 100
     # experimental
       # Be aware that all configuration's which are part of the experimental section
       # are subject to change and can be dropped at any time.
