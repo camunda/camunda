@@ -29,6 +29,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RecoverableRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
+import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.exception.RecoverableException;
@@ -144,6 +145,7 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
+  private final ProcessingMetrics processingMetrics;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -170,6 +172,8 @@ public final class ProcessingStateMachine {
 
     metrics = new StreamProcessorMetrics(partitionId);
     streamProcessorListener = context.getStreamProcessorListener();
+
+    processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));
   }
 
   private void skipRecord() {
@@ -249,7 +253,10 @@ public final class ProcessingStateMachine {
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
-      zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
+      try (final var __ = processingMetrics.startBatchProcessingDurationTimer()) {
+        zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
+      }
+
       if (currentProcessingResult.isEmpty()) {
         skipRecord();
         return;
