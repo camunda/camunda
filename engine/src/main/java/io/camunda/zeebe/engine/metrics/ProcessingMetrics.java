@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl.metrics;
 
+import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.Histogram.Child;
 
@@ -23,7 +24,6 @@ public class ProcessingMetrics {
           .buckets(.0001, .001, .01, 0.1, .250, 0.5, 1, 2)
           .labelNames(LABEL_NAME_PARTITION)
           .register();
-
   private static final Histogram BATCH_PROCESSING_COMMANDS =
       Histogram.build()
           .namespace(NAMESPACE)
@@ -33,12 +33,22 @@ public class ProcessingMetrics {
           .labelNames(LABEL_NAME_PARTITION)
           .register();
 
+  private static final Counter BATCH_PROCESSING_RETRIES =
+      Counter.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_batch_processing_retry")
+          .help(
+              "Number of times batch processing failed due to reaching batch limit and was retried")
+          .labelNames(LABEL_NAME_PARTITION)
+          .register();
   private final Child batchProcessingDuration;
   private final Child batchProcessingCommands;
+  private final Counter.Child batchProcessingRetries;
 
   public ProcessingMetrics(final String partitionIdLabel) {
     batchProcessingDuration = BATCH_PROCESSING_DURATION.labels(partitionIdLabel);
     batchProcessingCommands = BATCH_PROCESSING_COMMANDS.labels(partitionIdLabel);
+    batchProcessingRetries = BATCH_PROCESSING_RETRIES.labels(partitionIdLabel);
   }
 
   public Histogram.Timer startBatchProcessingDurationTimer() {
@@ -47,5 +57,9 @@ public class ProcessingMetrics {
 
   public void observeCommandCount(final int commandCount) {
     batchProcessingCommands.observe(commandCount);
+  }
+
+  public void countRetry() {
+    batchProcessingRetries.inc();
   }
 }

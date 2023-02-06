@@ -82,6 +82,9 @@ import org.slf4j.Logger;
  * </pre>
  */
 public final class ProcessingStateMachine {
+
+  public static final String WARN_MESSAGE_BATCH_PROCESSING_RETRY =
+      "Expected to process commands in a batch, but exceeded the resulting batch size after processing {} commands (maxCommandsInBatch: {}).";
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_WRITE_RECORD_ABORTED =
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
@@ -97,12 +100,9 @@ public final class ProcessingStateMachine {
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
-
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
-
   private static final MetadataFilter PROCESSING_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
-
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
 
@@ -278,6 +278,12 @@ public final class ProcessingStateMachine {
       throw unrecoverableException;
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
       if (processedCommandsCount > 0) {
+        LOG.warn(
+            WARN_MESSAGE_BATCH_PROCESSING_RETRY,
+            processedCommandsCount,
+            maxCommandsInBatch,
+            exceededBatchRecordSizeException);
+        processingMetrics.countRetry();
         onError(() -> processCommand(loggedEvent));
       } else {
         onError(
