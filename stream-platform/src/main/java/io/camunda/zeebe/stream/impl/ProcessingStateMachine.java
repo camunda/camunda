@@ -259,7 +259,7 @@ public final class ProcessingStateMachine {
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
-      try (final var __ = processingMetrics.startBatchProcessingDurationTimer()) {
+      try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
         zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
         processingMetrics.observeCommandCount(processedCommandsCount);
       }
@@ -561,7 +561,7 @@ public final class ProcessingStateMachine {
   }
 
   private boolean executePostCommitTasks() {
-    try (final var __ = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
+    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
       return currentProcessingResult.executePostCommitTasks();
     }
   }
