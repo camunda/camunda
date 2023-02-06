@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Create new segments. Load existing segments from the disk. Keep track of all segments. */
-final class SegmentsManager {
+final class SegmentsManager implements AutoCloseable {
 
   private static final int FIRST_SEGMENT_ID = 1;
   private static final int INITIAL_INDEX = 1;
@@ -65,7 +65,8 @@ final class SegmentsManager {
     this.segmentLoader = segmentLoader;
   }
 
-  void close() {
+  @Override
+  public void close() {
     segments
         .values()
         .forEach(
