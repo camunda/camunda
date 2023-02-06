@@ -1,4 +1,4 @@
-name: QA Testbench run
+name: Start a test in Testbench
 
 on:
   workflow_call:
