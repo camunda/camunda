@@ -15,6 +15,10 @@ inputs:
     description: If false, will not build the Java distribution; defaults to true
     default: "true"
     required: false
+  package:
+    description: Will build a distball if enabled; defaults to true
+    default: "true"
+    required: false
   maven-extra-args:
     description: Additional CLI arguments which will be passed to the maven install command as is, e.g. "-am -pl util/"
     default: ""
@@ -34,14 +38,18 @@ runs:
       id: build-go
       working-directory: clients/go/cmd/zbctl
       run: ./build.sh
-    - if: ${{ inputs.java == 'true' }}
-      name: Package Zeebe
+    - name: Package Zeebe
+      if: inputs.java == 'true' && inputs.package == 'true'
       shell: bash
       id: build-java
-      # we do not build in parallel to avoid memory and cache corruption issues, notably observed
-      # on macOS and Windows
       run: |
-        mvn -B -DskipTests -DskipChecks install ${{ inputs.maven-extra-args }}
+        mvn -B -T1C -DskipTests -DskipChecks package ${{ inputs.maven-extra-args }}
         export BUILD_DIR=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.directory -q -DforceStdout)
         export ARTIFACT=$(mvn -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
         echo "distball=${BUILD_DIR}/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
+    - name: Compile Zeebe
+      if: inputs.java == 'true' && inputs.package == 'false'
+      shell: bash
+      id: build-java
+      run: |
+        mvn -B -T1C -DskipTests -DskipChecks compile ${{ inputs.maven-extra-args }}

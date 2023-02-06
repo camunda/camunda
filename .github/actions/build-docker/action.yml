@@ -15,7 +15,7 @@ inputs:
     required: false
   distball:
     description: 'The path to the Zeebe distribution TAR ball'
-    required: true
+    required: false
   revision:
     description: 'The revision of the source the content of this image is based on.'
     required: false
@@ -72,6 +72,7 @@ runs:
       run: echo "result=${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}" >> $GITHUB_OUTPUT
     - name: Set DISTBALL path relative to the build context
       id: get-distball
+      if: inputs.distball != ''
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
     - name: Build Docker image
@@ -85,6 +86,7 @@ runs:
         cache-to: type=gha,mode=max
         platforms: ${{ inputs.platforms }}
         build-args: |
+          DIST=${{ inputs.distball != '' && 'distball' || 'build' }}
           DISTBALL=${{ steps.get-distball.outputs.result }}
           DATE=${{ steps.get-date.outputs.result }}
           REVISION=${{ inputs.revision != '' && inputs.revision || github.sha }}

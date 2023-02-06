@@ -74,16 +74,11 @@ jobs:
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: gcr.io/zeebe-io/zeebe
           version: ${{ steps.image-tag.outputs.image-tag }}
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
   deploy-benchmark-cluster:
     name: Deploy benchmark cluster
     needs:

@@ -44,16 +44,16 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          package: false
+          go: false
       - name: Prepare Testcontainers Cloud agent
         if: env.TC_CLOUD_TOKEN != ''
         run: |
@@ -105,16 +105,16 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: localhost:5000/camunda/zeebe
           version: current-test
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          package: false
+          go: false
       - name: Prepare Testcontainers Cloud agent
         if: env.TC_CLOUD_TOKEN != ''
         run: |
@@ -159,7 +159,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          package: false
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -218,14 +218,13 @@ jobs:
         id: build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          package: false
       - uses: ./.github/actions/build-docker
         id: build-docker
         # Currently only Linux runners support building docker images without further ado
         if: ${{ runner.os == 'Linux' }}
         with:
           version: current-test
-          distball: ${{ steps.build-zeebe.outputs.distball }}
           platforms: linux/${{ matrix.arch }}
           push: false
       - name: Run smoke test on ${{ matrix.arch }}
@@ -260,7 +259,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -T1C
+          package: false
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
@@ -291,8 +290,16 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - uses: ./.github/actions/build-docker
+        id: build-docker
+        with:
+          repository: camunda/zeebe
+          version: current-test
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
+        with:
+          java: false
+          package: false
       # Once we're on Go 1.18, use the official gorelease to do this
       - name: Check backwards compatibility
         working-directory: clients/go/
@@ -304,12 +311,6 @@ jobs:
             EXCLUDE="$EXCLUDE --exclude-package $PREFIX/$file"
           done
           gocompat compare --go1compat ${EXCLUDE} ./...
-      - uses: ./.github/actions/build-docker
-        id: build-docker
-        with:
-          repository: camunda/zeebe
-          version: current-test
-          distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Go tests
         working-directory: clients/go
         run: go test -mod=vendor -v ./...
@@ -331,7 +332,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         with:
           go: false
-          maven-extra-args: -am -pl clients/java -T1C
+          package: false
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
@@ -381,7 +382,8 @@ jobs:
           queries: +security-and-quality
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C
+          package: false
+          go: false
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
@@ -457,19 +459,11 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
           # we use a local registry for pushing
           repository: ${{ env.LOCAL_DOCKER_IMAGE }}
-          distball: ${{ steps.build-zeebe.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           # push is needed for multi-arch images as buildkit does not support loading them locally
           push: true
@@ -593,13 +587,6 @@ jobs:
         with:
           username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
       - uses: ./.github/actions/build-docker
         id: build-docker
         with:
@@ -607,7 +594,6 @@ jobs:
           version: SNAPSHOT
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
   notify-if-failed:
     name: Send slack notification on build failure
     runs-on: ubuntu-latest

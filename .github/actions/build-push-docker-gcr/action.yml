@@ -74,8 +74,6 @@ runs:
         registry: gcr.io
         username: _json_key
         password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
-    - uses: ./.github/actions/build-zeebe
-      id: build-zeebe
     - name: build-docker
       id: build-docker
       uses: ./.github/actions/build-docker
@@ -83,4 +81,3 @@ runs:
         repository: "gcr.io/zeebe-io/zeebe"
         version: ${{ env.TAG }}
         push: true
-        distball: ${{ steps.build-zeebe.outputs.distball }}

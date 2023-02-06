@@ -118,8 +118,6 @@ jobs:
           git commit -am "build(project): update go embedded version data"
       - name: Build Go Client & Zeebe
         uses: ./.github/actions/build-zeebe
-        with:
-          maven-extra-args: -T1C
       - uses: s4u/maven-settings-action@v2.8.0
         with:
           servers: |
@@ -144,7 +142,7 @@ jobs:
         id: maven-release
         env:
           SKIP_REPO_DEPLOY: ${{ inputs.dryRun }}
-        run : |
+        run: |
           # This var is used to include the previously built go artifacts into the final maven release build.
           # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
