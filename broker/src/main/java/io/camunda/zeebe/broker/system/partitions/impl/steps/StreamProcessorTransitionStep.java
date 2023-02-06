@@ -145,6 +145,7 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         .recordProcessors(recordProcessors)
         .nodeId(context.getNodeId())
         .commandResponseWriter(context.getCommandResponseWriter())
+        .processingBatchLimit(context.getBrokerCfg().getProcessing().getProcessingBatchLimit())
         .listener(
             new StreamProcessorListener() {
               @Override
