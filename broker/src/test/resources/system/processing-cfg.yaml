@@ -1,4 +1,4 @@
 zeebe:
   broker:
     processing:
-      processingBatchLimit: 125
+      maxCommandsInBatch: 125

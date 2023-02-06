@@ -16,66 +16,66 @@ import org.junit.jupiter.api.Test;
 final class ProcessingCfgTest {
 
   @Test
-  void shouldUseDefaultProcessingBatchLimit() {
+  void shouldUseDefaultMaxCommandsInBatch() {
     // given
     final var cfg = new ProcessingCfg();
 
     // when
-    final int limit = cfg.getProcessingBatchLimit();
+    final int limit = cfg.getMaxCommandsInBatch();
 
     // then
     assertThat(limit).isEqualTo(100);
   }
 
   @Test
-  void shouldSetProcessingBatchLimit() {
+  void shouldSetMaxCommandsInBatch() {
     // given
     final var cfg = new ProcessingCfg();
-    cfg.setProcessingBatchLimit(50);
+    cfg.setMaxCommandsInBatch(50);
 
     // when
-    final int limit = cfg.getProcessingBatchLimit();
+    final int limit = cfg.getMaxCommandsInBatch();
 
     // then
     assertThat(limit).isEqualTo(50);
   }
 
   @Test
-  void shouldSetProcessingBatchLimitFromConfig() {
+  void shouldSetMaxCommandsInBatchFromConfig() {
     // given
     final var cfg =
         TestConfigReader.readConfig("processing-cfg", Collections.emptyMap()).getProcessing();
 
     // when
-    final int limit = cfg.getProcessingBatchLimit();
+    final int limit = cfg.getMaxCommandsInBatch();
 
     // then
     assertThat(limit).isEqualTo(125);
   }
 
   @Test
-  void shouldSetProcessingBatchLimitFromEnvironment() {
+  void shouldSetMaxCommandsInBatchFromEnvironment() {
     // given
     final var environment =
-        Collections.singletonMap("zeebe.broker.processing.processingBatchLimit", "75");
+        Collections.singletonMap("zeebe.broker.processing.maxCommandsInBatch", "75");
     final var cfg = TestConfigReader.readConfig("processing-cfg", environment).getProcessing();
 
     // when
-    final var limit = cfg.getProcessingBatchLimit();
+    final var limit = cfg.getMaxCommandsInBatch();
 
     // then
     assertThat(limit).isEqualTo(75);
   }
 
   @Test
-  void shouldRejectInvalidProcessingBatchLimit() {
+  void shouldRejectInvalidMaxCommandsInBatch() {
     // given
     final var environment =
-        Collections.singletonMap("zeebe.broker.processing.processingBatchLimit", "-1");
+        Collections.singletonMap("zeebe.broker.processing.maxCommandsInBatch", "-1");
 
     // then
     assertThatThrownBy(() -> TestConfigReader.readConfig("processing-cfg", environment))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("processingBatchLimit must be >= 1");
+        .hasMessageContaining("maxCommandsInBatch must be >= 1");
   }
 }

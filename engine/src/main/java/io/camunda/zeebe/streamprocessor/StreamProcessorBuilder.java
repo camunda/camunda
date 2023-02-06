@@ -134,15 +134,15 @@ public final class StreamProcessorBuilder {
           streamProcessorContext.getPartitionCommandSender(),
           "No partition command sender provided");
     }
-    if (streamProcessorContext.getProcessingBatchLimit() < 1) {
+    if (streamProcessorContext.getMaxCommandsInBatch() < 1) {
       throw new IllegalArgumentException(
           "Batch processing limit must be >= 1 but was %s"
-              .formatted(streamProcessorContext.getProcessingBatchLimit()));
+              .formatted(streamProcessorContext.getMaxCommandsInBatch()));
     }
   }
 
-  public StreamProcessorBuilder processingBatchLimit(final int processingBatchLimit) {
-    streamProcessorContext.processingBatchLimit(processingBatchLimit);
+  public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
+    streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
     return this;
   }
 }

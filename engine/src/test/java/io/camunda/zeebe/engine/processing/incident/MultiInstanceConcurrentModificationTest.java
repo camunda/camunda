@@ -41,7 +41,7 @@ public class MultiInstanceConcurrentModificationTest {
       EngineRule.singlePartition()
           // Disable batch processing. Concurrent modification is only reproducible if
           // we do not process multi instance in batch.
-          .processingBatchLimit(1);
+          .maxCommandsInBatch(1);
 
   private static final String MULTI_TASK_PROCESS = "multi-task-process";
   private static final String ELEMENT_ID = "task";
