@@ -261,6 +261,7 @@ public final class ProcessingStateMachine {
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
       try (final var __ = processingMetrics.startBatchProcessingDurationTimer()) {
         zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
+        processingMetrics.observeCommandCount(processedCommandsCount);
       }
 
       if (currentProcessingResult.isEmpty()) {
