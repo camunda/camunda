@@ -118,6 +118,10 @@
         {
           "label": "Option 2",
           "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
         }
       ],
       "label": "I am a taglist",
@@ -135,6 +139,10 @@
         {
           "label": "Option 2",
           "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
         }
       ],
       "label": "I am a disabled taglist",
@@ -153,6 +161,10 @@
         {
           "label": "Option 2",
           "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
         }
       ],
       "label": "I am a radio",
@@ -173,6 +185,10 @@
         {
           "label": "Option 2",
           "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
         }
       ],
       "label": "I am a disabled radio",
@@ -194,6 +210,10 @@
         {
           "label": "Option 2",
           "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
         }
       ],
       "label": "I am a select",
@@ -215,6 +235,10 @@
         {
           "label": "Option 2",
           "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
         }
       ],
       "label": "I am a select",
@@ -224,6 +248,56 @@
       "description": "I am a select description",
       "disabled": true,
       "defaultValue": "option_2"
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
+        }
+      ],
+      "label": "I am a searcheable select",
+      "type": "select",
+      "id": "Field_0g90q9s",
+      "key": "searcheable_select",
+      "description": "I am a searcheable select description",
+      "searchable": true,
+      "defaultValue": "option_1",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        },
+        {
+          "label": "Option 3",
+          "value": "option_3"
+        }
+      ],
+      "label": "I am a disabled searcheable select",
+      "type": "select",
+      "id": "Field_06wzkll",
+      "key": "disabled_searcheable_select",
+      "description": "I am a disabled searcheable select description",
+      "searchable": true,
+      "defaultValue": "option_2",
+      "disabled": true
     },
     {
       "type": "image",
@@ -269,67 +343,34 @@
       "disabled": true
     },
     {
-      "subtype": "time",
-      "dateLabel": "Date",
-      "type": "datetime",
-      "id": "Field_0dal4g3",
-      "key": "time_field",
-      "timeLabel": "I am a time field",
-      "timeSerializingFormat": "utc_offset",
-      "timeInterval": 15,
-      "use24h": false,
-      "description": "I am time field description"
-    },
-    {
-      "subtype": "time",
-      "dateLabel": "Date",
-      "type": "datetime",
-      "id": "Field_16am9zx",
-      "key": "disabled_time",
-      "timeLabel": "I am a disabled time field",
-      "timeSerializingFormat": "utc_offset",
-      "timeInterval": 15,
-      "description": "I am a disabled time field description",
-      "disabled": true,
-      "validate": {
-        "required": true
-      }
-    },
-    {
-      "subtype": "datetime",
-      "dateLabel": "I am a datetime field date label",
-      "type": "datetime",
-      "id": "Field_0e4j7fb",
-      "key": "datetime_field",
-      "timeLabel": "I am a datetime field time label",
-      "timeSerializingFormat": "utc_offset",
-      "timeInterval": 15,
-      "description": "I am a datetime field description"
-    },
-    {
-      "subtype": "datetime",
-      "dateLabel": "I am a disabled datetime field date label",
-      "type": "datetime",
-      "id": "Field_0qupyln",
-      "key": "disabled_datetime",
-      "timeLabel": "I am a disabled datetime field time label",
-      "timeSerializingFormat": "utc_offset",
-      "timeInterval": 15,
-      "disabled": true,
-      "description": "I am a disabled datetime description",
-      "validate": {
-        "required": true
-      }
-    },
-    {
       "label": "I am an adorned field",
       "type": "textfield",
       "id": "Field_0k58wk0",
       "key": "adorned_field",
       "description": "I am an adorned field description",
       "appearance": {
-        "prefixAdorner": "prefix",
-        "suffixAdorner": "suffix"
+        "prefixAdorner": "camunda.com/"
+      }
+    },
+    {
+      "label": "I am an adorned field",
+      "type": "textfield",
+      "id": "Field_0k58wk01",
+      "key": "adorned_field1",
+      "description": "I am an adorned field description",
+      "appearance": {
+        "suffixAdorner": "@gmail.com"
+      }
+    },
+    {
+      "label": "I am an adorned field",
+      "type": "textfield",
+      "id": "Field_0k58wk02",
+      "key": "adorned_field2",
+      "description": "I am an adorned field description",
+      "appearance": {
+        "prefixAdorner": "✨",
+        "suffixAdorner": "🚀"
       }
     },
     {
@@ -343,10 +384,10 @@
   "type": "default",
   "id": "Form_1a82jj2",
   "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.1.0",
+  "executionPlatformVersion": "8.2.0",
   "exporter": {
     "name": "Camunda Modeler",
-    "version": "5.7.0-nightly.20230103"
+    "version": "5.8.0-nightly.20230201"
   },
   "schemaVersion": 6
 }

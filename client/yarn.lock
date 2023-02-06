@@ -1275,10 +1275,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/form-js-viewer@0.11.0":
-  version "0.11.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.11.0.tgz#2f7eea9cf6ec6a906660bc6ad7da2fe3a653aa52"
-  integrity sha512-iyJbwVIysqb3LMVBBhNtYr8x4N03X/uwI6VAoHrU6Wvc2x8NQ3BQGmHmCnKr6h385FyPUGNjRtyrt1fJihgIfA==
+"@bpmn-io/form-js-viewer@0.12.1":
+  version "0.12.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/form-js-viewer/-/form-js-viewer-0.12.1.tgz#244d3674d7dfcbeedaee08d1e5e46498d58b9744"
+  integrity sha512-2tZi9xfm1vDmmtSoXQitTkR8dH+9KbUHMq+GWga1VBS57sW+AoSVgcUqEdnYzalC3iYXucmQ+lBaUyt/CiPDjQ==
   dependencies:
     "@bpmn-io/snarkdown" "^2.1.0"
     big.js "^6.2.1"

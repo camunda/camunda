@@ -67,20 +67,16 @@ const getBaseInputStyles = ({height}: {height: string}) => css`
 
 const getSelectArrowStyles = ({
   arrowRightPosition,
+  color,
 }: {
   arrowRightPosition: string;
+  color: string;
 }) => css`
-  ${({theme}) => css`
-    cursor: pointer;
-    appearance: none;
-    background-image: ${getSelectArrowSvg(theme.iconPrimary)};
-    background-repeat: no-repeat;
-    background-position: right ${arrowRightPosition} bottom 50%;
-
-    &:disabled {
-      background-image: ${getSelectArrowSvg(theme.iconDisabled)};
-    }
-  `}
+  cursor: pointer;
+  appearance: none;
+  background-image: ${getSelectArrowSvg(color)};
+  background-repeat: no-repeat;
+  background-position: right ${arrowRightPosition} bottom 50%;
 `;
 
 const MARKDOWN_STYLES = css`
@@ -201,22 +197,25 @@ const DISABLED_STYLES = css`
       &.fjs-form-field-textfield .fjs-input,
       &.fjs-form-field-datetime .fjs-input,
       & .fjs-textarea:disabled,
-      & .fjs-taglist.disabled,
-      & .fjs-taglist.disabled .fjs-taglist-input,
-      & .fjs-select:disabled,
-      & .fjs-form-field-label,
+      & .fjs-taglist.fjs-disabled,
+      & .fjs-taglist.fjs-disabled .fjs-taglist-input,
+      &.fjs-form-field-select .fjs-input-group.disabled,
+      &.fjs-form-field-select .fjs-input-group.disabled .fjs-select-display,
+      &.fjs-form-field-select .fjs-input-group.disabled .fjs-input,
+      &.fjs-form-field .fjs-form-field-label,
       & .fjs-form-field-description {
         color: var(--cds-text-disabled);
-
         cursor: not-allowed;
       }
 
       &.fjs-form-field-textfield .fjs-input-group,
       &.fjs-form-field-datetime .fjs-input-group,
       & .fjs-textarea:disabled,
-      & .fjs-taglist.disabled,
-      & .fjs-taglist.disabled .fjs-taglist-input,
-      & .fjs-select:disabled {
+      & .fjs-taglist.fjs-disabled,
+      & .fjs-taglist.fjs-disabled .fjs-taglist-input,
+      &.fjs-form-field-select .fjs-input-group.disabled,
+      &.fjs-form-field-select .fjs-input-group.disabled .fjs-select-display,
+      &.fjs-form-field-select .fjs-input-group.disabled .fjs-input {
         background-color: var(--cds-field);
         border: none;
       }
@@ -610,8 +609,8 @@ const NUMBER_INPUTS = css`
         }
       }
 
-      &.disabled .fjs-number-arrow-container .fjs-number-arrow-up:hover,
-      &.disabled .fjs-number-arrow-container .fjs-number-arrow-down:hover {
+      &.fjs-disabled .fjs-number-arrow-container .fjs-number-arrow-up:hover,
+      &.fjs-disabled .fjs-number-arrow-container .fjs-number-arrow-down:hover {
         background-color: var(--cds-field);
         cursor: not-allowed;
       }
@@ -634,11 +633,11 @@ const NUMBER_INPUTS = css`
         background-position: right 50% bottom 50%;
       }
 
-      &.disabled .fjs-number-arrow-container .fjs-number-arrow-up {
+      &.fjs-disabled .fjs-number-arrow-container .fjs-number-arrow-up {
         background-image: ${getNumberInputPlusSvg(theme.iconDisabled)};
       }
 
-      &.disabled .fjs-number-arrow-container .fjs-number-arrow-down {
+      &.fjs-disabled .fjs-number-arrow-container .fjs-number-arrow-down {
         background-image: ${getNumberInputMinusSvg(theme.iconDisabled)};
       }
     }
@@ -646,86 +645,168 @@ const NUMBER_INPUTS = css`
 `;
 
 const DATETIME_INPUTS = css`
-  .fjs-container {
-    .fjs-form-field-datetime {
-      .fjs-input {
-        width: 100%;
-        height: 100%;
-        border: none;
+  ${({theme}) => css`
+    .fjs-container {
+      .fjs-form-field-datetime {
+        .fjs-input {
+          width: 100%;
+          height: 100%;
+          border: none;
+        }
+
+        select {
+          ${getBaseInputStyles({height: '1.5rem'})};
+          ${getSelectArrowStyles({
+            arrowRightPosition: 'var(--cds-spacing-03)',
+            color: theme.iconPrimary,
+          })};
+          border-bottom: none;
+          padding-right: 2rem;
+        }
+
+        .fjs-input-group {
+          display: flex;
+          flex-direction: row-reverse;
+          position: relative;
+        }
+
+        .fjs-input-group .fjs-input-adornment {
+          border: none;
+          background-color: var(--cds-field);
+          display: flex;
+          padding-right: var(--cds-spacing-05);
+        }
+
+        .fjs-input-group .fjs-input-adornment svg {
+          color: var(--cds-icon-primary);
+          cursor: pointer;
+        }
+
+        .flatpickr-wrapper {
+          height: 100%;
+        }
+
+        .fjs-timepicker.fjs-timepicker-anchor {
+          position: unset;
+        }
+
+        .flatpickr-calendar.static {
+          top: calc(100% + 3px);
+        }
+
+        .flatpickr-calendar .flatpickr-prev-month svg,
+        .flatpickr-calendar .flatpickr-next-month svg {
+          height: 16px;
+        }
+
+        .flatpickr-day.today {
+          position: relative;
+          color: var(--cds-link-primary);
+          font-weight: 600;
+          border-color: transparent;
+        }
+
+        .flatpickr-day.selected,
+        .flatpickr-day.today.selected,
+        .flatpickr-day.selected:hover,
+        .flatpickr-day.today.selected:hover {
+          background-color: var(--cds-button-primary);
+          color: var(--cds-text-on-color);
+        }
+
+        .flatpickr-day:focus {
+          outline: 2px solid var(--cds-focus);
+          outline-offset: -2px;
+        }
+
+        .flatpickr-day.selected:focus {
+          outline: 0.0625rem solid var(--cds-focus);
+          outline-offset: -0.1875rem;
+        }
+
+        .flatpickr-day:hover {
+          background: var(--cds-layer-hover);
+        }
+      }
+    }
+  `}
+`;
+
+const SELECT_STYLES = css`
+  ${({theme}) => css`
+    .fjs-container {
+      .fjs-form-field-select .fjs-input-group {
+        ${getBaseInputStyles({height: '2.5rem'})}
+        ${getSelectArrowStyles({
+          arrowRightPosition: 'var(--cds-spacing-05)',
+          color: theme.iconPrimary,
+        })}
+
+        .fjs-select-display {
+          display: flex;
+          align-items: center;
+        }
+
+        .fjs-select-arrow {
+          visibility: hidden;
+        }
+
+        .fjs-select-cross {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: var(--cds-spacing-04);
+          width: 2.5rem;
+          height: calc(2.5rem - 1px);
+
+          &:hover {
+            background-color: var(--cds-layer-hover);
+          }
+
+          svg {
+            color: var(--cds-icon-primary);
+          }
+        }
+
+        .fjs-input {
+          color: var(--cds-text-primary);
+          background-color: var(--cds-field);
+          border-radius: 0;
+          border: none;
+          border-bottom: 1px solid var(--cds-border-strong);
+          height: 2.5rem;
+          ${theme.bodyShort01};
+        }
       }
 
-      select {
-        ${getBaseInputStyles({height: '1.5rem'})};
-        ${getSelectArrowStyles({arrowRightPosition: 'var(--cds-spacing-03)'})};
-        border-bottom: none;
-        padding-right: 2rem;
+      .fjs-form-field-select .fjs-select-anchor .fjs-dropdownlist {
+        position: absolute;
+        top: 0;
       }
 
-      .fjs-input-group {
-        display: flex;
-        flex-direction: row-reverse;
-        position: relative;
-      }
-
-      .fjs-input-group .fjs-input-adornment {
-        border: none;
-        background-color: var(--cds-field);
-        display: flex;
-        padding-right: var(--cds-spacing-05);
-      }
-
-      .fjs-input-group .fjs-input-adornment svg {
-        color: var(--cds-icon-primary);
-        cursor: pointer;
-      }
-
-      .flatpickr-wrapper {
-        height: 100%;
-      }
-
-      .fjs-timepicker.fjs-timepicker-anchor {
-        position: unset;
-      }
-
-      .flatpickr-calendar.static {
-        top: calc(100% + 3px);
-      }
-
-      .flatpickr-calendar .flatpickr-prev-month svg,
-      .flatpickr-calendar .flatpickr-next-month svg {
-        height: 16px;
-      }
-
-      .flatpickr-day.today {
-        position: relative;
-        color: var(--cds-link-primary);
-        font-weight: 600;
-        border-color: transparent;
-      }
-
-      .flatpickr-day.selected,
-      .flatpickr-day.today.selected,
-      .flatpickr-day.selected:hover,
-      .flatpickr-day.today.selected:hover {
-        background-color: var(--cds-button-primary);
-        color: var(--cds-text-on-color);
-      }
-
-      .flatpickr-day:focus {
-        outline: 2px solid var(--cds-focus, #0f62fe);
+      .fjs-form-field-select .fjs-input-group:focus-within {
+        outline: 2px solid var(--cds-focus);
         outline-offset: -2px;
       }
 
-      .flatpickr-day.selected:focus {
-        outline: 0.0625rem solid var(--cds-focus);
-        outline-offset: -0.1875rem;
+      .fjs-form-field-select.fjs-disabled .fjs-input-group {
+        ${getSelectArrowStyles({
+          arrowRightPosition: 'var(--cds-spacing-05)',
+          color: theme.iconDisabled,
+        })}
       }
 
-      .flatpickr-day:hover {
-        background: var(--cds-layer-hover);
+      .fjs-has-errors.fjs-form-field-select .fjs-input-group:focus-within {
+        outline: 2px solid var(--cds-focus);
+        outline-offset: -2px;
+      }
+
+      .fjs-has-errors.fjs-form-field-select .fjs-input-group {
+        outline: 2px solid var(--cds-text-error);
+        outline-offset: -2px;
       }
     }
-  }
+  `}
 `;
 
 const REMAINING_INPUTS = css`
@@ -734,8 +815,7 @@ const REMAINING_INPUTS = css`
     .fjs-form-field-datetime .fjs-input-group,
     .fjs-textarea,
     .fjs-taglist,
-    .fjs-select,
-    .fjs-select:disabled {
+    .fjs-form-field-select.fjs-disabled .fjs-input-group {
       ${getBaseInputStyles({height: '2.5rem'})}
     }
 
@@ -752,12 +832,7 @@ const REMAINING_INPUTS = css`
       color: var(--cds-text-primary);
     }
 
-    .fjs-select {
-      ${getSelectArrowStyles({arrowRightPosition: 'var(--cds-spacing-05)'})}
-    }
-
     .fjs-has-errors.fjs-form-field-number .fjs-input-group:focus-within,
-    .fjs-has-errors.fjs-form-field-select .fjs-select:focus,
     .fjs-has-errors.fjs-form-field-textarea .fjs-textarea:focus,
     .fjs-form-field-textfield.fjs-has-errors .fjs-input-group:focus-within,
     .fjs-form-field-textfield.fjs-has-errors .fjs-input-group:focus,
@@ -768,7 +843,6 @@ const REMAINING_INPUTS = css`
     }
 
     .fjs-has-errors.fjs-form-field-number .fjs-input-group,
-    .fjs-has-errors.fjs-form-field-select .fjs-select,
     .fjs-has-errors.fjs-form-field-textarea .fjs-textarea,
     .fjs-form-field-textfield.fjs-has-errors .fjs-input-group,
     .fjs-form-field-textfield.fjs-has-errors .fjs-input-group,
@@ -785,7 +859,8 @@ const DROPDOWN_STYLES = css`
     css`
       .fjs-container {
         .fjs-form-field-taglist .fjs-taglist-anchor .fjs-dropdownlist,
-        .fjs-form-field-datetime .fjs-timepicker-anchor .fjs-dropdownlist {
+        .fjs-form-field-datetime .fjs-timepicker-anchor .fjs-dropdownlist,
+        .fjs-form-field-select .fjs-select-anchor .fjs-dropdownlist {
           margin: 0;
           max-height: ${rem(264)};
           border: none;
@@ -883,6 +958,7 @@ const FormCustomStyling = createGlobalStyle`
   ${REMAINING_INPUTS}
   ${ADORNMENTS_STYLES}
   ${DROPDOWN_STYLES}
+  ${SELECT_STYLES}
 
   .fjs-container {
     height: min-content;

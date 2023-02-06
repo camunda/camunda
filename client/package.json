@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "@apollo/client": "3.4.17",
-    "@bpmn-io/form-js-viewer": "0.11.0",
+    "@bpmn-io/form-js-viewer": "0.12.1",
     "@camunda/camunda-composite-components": "0.0.28",
     "@carbon/elements": "11.19.0",
     "@carbon/react": "1.22.0",
