@@ -57,7 +57,7 @@
     <mockserver.version>5.14.0</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.24.2</assertj.version>
-    <postgres.version>42.5.2</postgres.version>
+    <postgres.version>42.5.3</postgres.version>
 
     <lombok.version>1.18.26</lombok.version>
     <logback.version>1.2.11</logback.version>
