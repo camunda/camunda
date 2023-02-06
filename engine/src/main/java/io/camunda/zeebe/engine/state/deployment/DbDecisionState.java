@@ -21,7 +21,10 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -156,6 +159,28 @@ public final class DbDecisionState implements MutableDecisionState {
         }));
 
     return decisions;
+  }
+
+  @Override
+  public Optional<Long> findPreviousVersionDecisionKey(
+      final DirectBuffer decisionId, final int currentVersion) {
+    final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
+
+    dbDecisionId.wrapBuffer(decisionId);
+    decisionVersionByDecisionIdAndDecisionKey.whileEqualPrefix(
+        dbDecisionId,
+        ((key, version) -> {
+          if (version.getValue() < currentVersion) {
+            decisionKeysByVersion.put(version.getValue(), key.second().inner().getValue());
+          }
+        }));
+
+    if (decisionKeysByVersion.isEmpty()) {
+      return Optional.empty();
+    } else {
+      final Integer previousVersion = Collections.max(decisionKeysByVersion.keySet());
+      return Optional.of(decisionKeysByVersion.get(previousVersion));
+    }
   }
 
   @Override
