@@ -33,6 +33,15 @@ public class ProcessingMetrics {
           .labelNames(LABEL_NAME_PARTITION)
           .register();
 
+  private static final Histogram BATCH_PROCESSING_POST_COMMIT_TASKS =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("stream_processor_batch_processing_post_commit_tasks")
+          .help("Time spent in executing post commit tasks after batch processing (in seconds)")
+          .buckets(.0001, .001, .01, 0.1, .250, 0.5, 1, 2)
+          .labelNames(LABEL_NAME_PARTITION)
+          .register();
+
   private static final Counter BATCH_PROCESSING_RETRIES =
       Counter.build()
           .namespace(NAMESPACE)
@@ -44,11 +53,13 @@ public class ProcessingMetrics {
   private final Child batchProcessingDuration;
   private final Child batchProcessingCommands;
   private final Counter.Child batchProcessingRetries;
+  private final Child batchProcessingPostCommitTasks;
 
   public ProcessingMetrics(final String partitionIdLabel) {
     batchProcessingDuration = BATCH_PROCESSING_DURATION.labels(partitionIdLabel);
     batchProcessingCommands = BATCH_PROCESSING_COMMANDS.labels(partitionIdLabel);
     batchProcessingRetries = BATCH_PROCESSING_RETRIES.labels(partitionIdLabel);
+    batchProcessingPostCommitTasks = BATCH_PROCESSING_POST_COMMIT_TASKS.labels(partitionIdLabel);
   }
 
   public Histogram.Timer startBatchProcessingDurationTimer() {
@@ -61,5 +72,9 @@ public class ProcessingMetrics {
 
   public void countRetry() {
     batchProcessingRetries.inc();
+  }
+
+  public Histogram.Timer startBatchProcessingPostCommitTasksTimer() {
+    return batchProcessingPostCommitTasks.startTimer();
   }
 }
