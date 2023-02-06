@@ -6,7 +6,7 @@
  */
 
 import {render, screen} from '@testing-library/react';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {mockGetCurrentUserWithC8Links} from 'modules/queries/get-current-user';
 import {graphql} from 'msw';
 import {Header} from '..';
@@ -26,7 +26,7 @@ describe('App switcher', () => {
       organizationId: 'some-organization-id',
     };
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUserWithC8Links.result.data));
       }),
@@ -71,7 +71,7 @@ describe('App switcher', () => {
       organizationId: null,
     };
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUserWithC8Links.result.data));
       }),

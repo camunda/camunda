@@ -38,7 +38,7 @@ import {mockGetSelectedVariables} from 'modules/queries/get-selected-variables';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {graphql} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {notificationsStore} from 'modules/stores/notifications';
 
@@ -84,7 +84,7 @@ describe('<Task />', () => {
   });
 
   it('should render created task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
@@ -106,7 +106,7 @@ describe('<Task />', () => {
   });
 
   it('should render created task with embedded form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimedWithForm().result.data));
       }),
@@ -137,7 +137,7 @@ describe('<Task />', () => {
   });
 
   it('should render completed task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskCompleted().result.data));
       }),
@@ -159,7 +159,7 @@ describe('<Task />', () => {
   });
 
   it('should render completed task with embedded form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskCompletedWithForm().result.data));
       }),
@@ -184,7 +184,7 @@ describe('<Task />', () => {
   });
 
   it('should complete task without variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
@@ -234,7 +234,7 @@ describe('<Task />', () => {
   });
 
   it('should get error on complete task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
@@ -275,7 +275,7 @@ describe('<Task />', () => {
   });
 
   it('should show a skeleton while loading', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
@@ -299,7 +299,7 @@ describe('<Task />', () => {
   });
 
   it('should reset variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
@@ -351,7 +351,7 @@ describe('<Task />', () => {
   });
 
   it('should render created task with variables form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) =>
         res.once(ctx.data(mockGetCurrentUser.result.data)),
       ),

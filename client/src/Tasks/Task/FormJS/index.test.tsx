@@ -21,7 +21,7 @@ import {
 } from 'modules/queries/get-selected-variables';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import {noop} from 'lodash';
 
@@ -50,7 +50,7 @@ const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 
 describe('<FormJS />', () => {
   beforeEach(() => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetForm', (_, res, ctx) => {
         return res.once(ctx.data(mockGetForm.result.data));
       }),
@@ -67,7 +67,7 @@ describe('<FormJS />', () => {
   });
 
   it('should render form for unclaimed task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
           areArraysEqual(
@@ -119,7 +119,7 @@ describe('<FormJS />', () => {
   });
 
   it('should render form for claimed task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
           areArraysEqual(
@@ -170,7 +170,7 @@ describe('<FormJS />', () => {
   });
 
   it('should render a prefilled form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
           areArraysEqual(
@@ -218,7 +218,7 @@ describe('<FormJS />', () => {
   });
 
   it('should submit prefilled form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
           areArraysEqual(
@@ -282,7 +282,7 @@ describe('<FormJS />', () => {
   });
 
   it('should submit edited form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetSelectedVariables', (req, res, ctx) => {
         if (
           areArraysEqual(
@@ -351,7 +351,7 @@ describe('<FormJS />', () => {
   });
 
   it('should render a prefilled form', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetForm', (_, res, ctx) => {
         return res.once(ctx.data(mockGetDynamicForm.result.data));
       }),

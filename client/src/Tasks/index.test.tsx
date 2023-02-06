@@ -19,7 +19,7 @@ import {Tasks} from './index';
 import {ApolloProvider} from '@apollo/client';
 import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 
 const mockApolloClient = createApolloClient({maxTasksDisplayed: 5});
 
@@ -39,7 +39,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
 describe('<Layout />', () => {
   it('should load more tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({

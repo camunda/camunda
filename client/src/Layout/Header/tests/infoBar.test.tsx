@@ -7,7 +7,7 @@
 
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {
   mockGetCurrentUser,
   mockGetCurrentUserWithCustomSalesPlanType,
@@ -23,7 +23,7 @@ describe('Info bar', () => {
     const mockOpenFn = jest.fn();
     window.open = mockOpenFn;
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -71,7 +71,7 @@ describe('Info bar', () => {
   ])(
     'should render correct links for feedback and support - %p',
     async (salesPlanType, link) => {
-      mockServer.use(
+      nodeMockServer.use(
         graphql.query('GetCurrentUser', (_, res, ctx) => {
           return res(
             ctx.data(

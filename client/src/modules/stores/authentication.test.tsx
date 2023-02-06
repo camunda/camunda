@@ -7,7 +7,7 @@
 
 import {rest} from 'msw';
 import {authenticationStore} from './authentication';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {getStateLocally} from 'modules/utils/localStorage';
 
 describe('authentication store', () => {
@@ -20,7 +20,7 @@ describe('authentication store', () => {
   });
 
   it('should login', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
@@ -34,7 +34,7 @@ describe('authentication store', () => {
   });
 
   it('should handle login failure', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(401), ctx.text('')),
       ),
@@ -63,10 +63,10 @@ describe('authentication store', () => {
       },
     }));
 
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/logout', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
@@ -85,7 +85,7 @@ describe('authentication store', () => {
   });
 
   it('should throw an error on logout failure', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/logout', (_, res, ctx) =>
         res.once(ctx.status(500), ctx.text('')),
       ),
@@ -202,13 +202,13 @@ describe('authentication store', () => {
             },
           }));
 
-          mockServer.use(
+          nodeMockServer.use(
             rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
           );
-          mockServer.use(
+          nodeMockServer.use(
             rest.post('/api/logout', (_, res, ctx) => res.once(ctx.text(''))),
           );
-          mockServer.use(
+          nodeMockServer.use(
             rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
           );
 

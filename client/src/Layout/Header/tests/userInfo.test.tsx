@@ -8,7 +8,7 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {authenticationStore} from 'modules/stores/authentication';
 import {graphql, rest} from 'msw';
@@ -21,7 +21,7 @@ describe('User info', () => {
   });
 
   it('should render user display name', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -43,7 +43,7 @@ describe('User info', () => {
   it('should handle a SSO user', async () => {
     window.clientConfig = {...window.clientConfig, canLogout: false};
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -72,7 +72,7 @@ describe('User info', () => {
       .spyOn(authenticationStore, 'handleLogout')
       .mockImplementation();
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -108,7 +108,7 @@ describe('User info', () => {
     const mockOpenFn = jest.fn();
     window.open = mockOpenFn;
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -165,7 +165,7 @@ describe('User info', () => {
       },
     };
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),

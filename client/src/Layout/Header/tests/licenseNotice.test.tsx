@@ -8,7 +8,7 @@
 import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {graphql} from 'msw';
 import {Header} from '..';
@@ -23,7 +23,7 @@ describe('license note', () => {
     render(<Header />, {
       wrapper: Wrapper,
     });
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -60,7 +60,7 @@ describe('license note', () => {
       isEnterprise: false,
       organizationId: null,
     };
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -80,7 +80,7 @@ describe('license note', () => {
       isEnterprise: false,
       organizationId: '000000000-0000-0000-0000-000000000000',
     };
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -102,7 +102,7 @@ describe('license note', () => {
       organizationId: null,
     };
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res(ctx.data(mockGetCurrentUser.result.data));
       }),

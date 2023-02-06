@@ -29,7 +29,7 @@ import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
 import userEvent from '@testing-library/user-event';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import {noop} from 'lodash';
 
@@ -47,7 +47,7 @@ const Wrapper: React.FC<Props> = ({children}) => (
 
 describe('<Variables />', () => {
   beforeEach(() => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -62,7 +62,7 @@ describe('<Variables />', () => {
   });
 
   it('should show existing variables for unassigned tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -89,7 +89,7 @@ describe('<Variables />', () => {
   });
 
   it('should show a message when the tasks has no variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
       }),
@@ -117,7 +117,7 @@ describe('<Variables />', () => {
   });
 
   it('should edit variable', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -150,7 +150,7 @@ describe('<Variables />', () => {
   });
 
   it('should add two variables and remove one', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -197,7 +197,7 @@ describe('<Variables />', () => {
   });
 
   it('should add variable on task without variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -225,7 +225,7 @@ describe('<Variables />', () => {
   });
 
   it('should validate an empty variable name', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -258,7 +258,7 @@ describe('<Variables />', () => {
   });
 
   it('should validate an invalid variable name', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -304,7 +304,7 @@ describe('<Variables />', () => {
   });
 
   it('should validate an empty variable value', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -334,7 +334,7 @@ describe('<Variables />', () => {
   });
 
   it('should validate an invalid variable value', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -371,7 +371,7 @@ describe('<Variables />', () => {
   });
 
   it('should not validate valid variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -415,7 +415,7 @@ describe('<Variables />', () => {
   });
 
   it('should handle submission', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -502,7 +502,7 @@ describe('<Variables />', () => {
   });
 
   it('should change variable and complete task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -550,7 +550,7 @@ describe('<Variables />', () => {
 
     const restrictedUser = mockGetCurrentRestrictedUser.result.data;
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(restrictedUser));
       }),
@@ -586,7 +586,7 @@ describe('<Variables />', () => {
   });
 
   it('should add new variable and complete task', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -633,7 +633,7 @@ describe('<Variables />', () => {
   });
 
   it('should disable submit button on form errors for existing variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -664,7 +664,7 @@ describe('<Variables />', () => {
   });
 
   it('should disable submit button on form errors for new variables', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -699,7 +699,7 @@ describe('<Variables />', () => {
   });
 
   it('should disable completion button', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
       }),
@@ -724,7 +724,7 @@ describe('<Variables />', () => {
   });
 
   it('should complete a task with a truncated variable', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -783,7 +783,7 @@ describe('<Variables />', () => {
   it('should preserve full value', async () => {
     const mockVariable = {id: '1-myVar', value: '"1112"'};
     const mockNewValue = '"new-value"';
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -837,7 +837,7 @@ describe('<Variables />', () => {
 
   describe('Duplicate variable validations', () => {
     it('should display error if name is the same with one of the existing variables', async () => {
-      mockServer.use(
+      nodeMockServer.use(
         graphql.query('GetTaskVariables', (_, res, ctx) => {
           return res.once(ctx.data(mockGetTaskVariables().result.data));
         }),
@@ -870,7 +870,7 @@ describe('<Variables />', () => {
     });
 
     it('should display duplicate name error on last edited variable', async () => {
-      mockServer.use(
+      nodeMockServer.use(
         graphql.query('GetTaskVariables', (_, res, ctx) => {
           return res.once(ctx.data(mockGetTaskVariables().result.data));
         }),
@@ -924,7 +924,7 @@ describe('<Variables />', () => {
     });
 
     it('should display error if duplicate name is used and immediately started typing on to the value field', async () => {
-      mockServer.use(
+      nodeMockServer.use(
         graphql.query('GetTaskVariables', (_, res, ctx) => {
           return res.once(ctx.data(mockGetTaskVariables().result.data));
         }),
@@ -969,7 +969,7 @@ describe('<Variables />', () => {
     });
 
     it('should continue to display existing duplicate name error', async () => {
-      mockServer.use(
+      nodeMockServer.use(
         graphql.query('GetTaskVariables', (_, res, ctx) => {
           return res.once(ctx.data(mockGetTaskVariables().result.data));
         }),

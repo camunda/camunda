@@ -12,7 +12,7 @@ import {rest} from 'msw';
 import {Login} from './index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {LocationLog} from 'modules/utils/LocationLog';
 
 const getFullYearMock = jest.spyOn(Date.prototype, 'getFullYear');
@@ -60,7 +60,7 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the initial page on success', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
@@ -78,7 +78,7 @@ describe('<Login />', () => {
   });
 
   it('should redirect to the referrer page', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
     render(<Login />, {
@@ -98,7 +98,7 @@ describe('<Login />', () => {
   });
 
   it('should show an error for wrong credentials', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(401), ctx.text('')),
       ),
@@ -117,7 +117,7 @@ describe('<Login />', () => {
   });
 
   it('should show a generic error message', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) =>
         res.once(ctx.status(404), ctx.text('')),
       ),
@@ -134,7 +134,7 @@ describe('<Login />', () => {
       await screen.findByText('Credentials could not be verified'),
     ).toBeInTheDocument();
 
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res) => res.networkError('A network error')),
     );
 
@@ -148,7 +148,7 @@ describe('<Login />', () => {
   });
 
   it('should show a loading state while the login form is submitting', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
@@ -182,7 +182,7 @@ describe('<Login />', () => {
   });
 
   it('should not allow the form to be submitted with empty fields', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 

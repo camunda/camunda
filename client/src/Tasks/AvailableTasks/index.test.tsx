@@ -25,7 +25,7 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {FilterValues} from 'modules/constants/filterValues';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import userEvent from '@testing-library/user-event';
 
@@ -52,7 +52,7 @@ const getWrapper = (
 
 describe('<Tasks />', () => {
   it('should not render when loading', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks().result.data));
       }),
@@ -66,7 +66,7 @@ describe('<Tasks />', () => {
   });
 
   it('should render tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks().result.data));
       }),
@@ -103,7 +103,7 @@ describe('<Tasks />', () => {
   });
 
   it('should render empty message when there are no tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetEmptyTasks.result.data));
       }),
@@ -118,7 +118,7 @@ describe('<Tasks />', () => {
   });
 
   it('should show all tasks claimed by me', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetClaimedByMe.result.data));
       }),
@@ -139,7 +139,7 @@ describe('<Tasks />', () => {
   });
 
   it('should show all unclaimed tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetUnclaimed.result.data));
       }),
@@ -157,7 +157,7 @@ describe('<Tasks />', () => {
   });
 
   it('should show all completed tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCompleted.result.data));
       }),
@@ -175,7 +175,7 @@ describe('<Tasks />', () => {
   });
 
   it('should show a skeleton while changing filters', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks().result.data));
       }),

@@ -11,7 +11,7 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom/extend-expect';
 import {clearClientCache} from 'modules/apollo-client';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {configure} from '@testing-library/react';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 
@@ -38,7 +38,7 @@ beforeEach(() => {
 });
 
 beforeAll(() => {
-  mockServer.listen({
+  nodeMockServer.listen({
     onUnhandledRequest: 'error',
   });
 
@@ -49,11 +49,11 @@ beforeAll(() => {
 });
 
 afterEach(async () => {
-  mockServer.resetHandlers();
+  nodeMockServer.resetHandlers();
   await clearClientCache();
 });
 
-afterAll(() => mockServer.close());
+afterAll(() => nodeMockServer.close());
 
 // mock app version
 process.env.REACT_APP_VERSION = '1.2.3';

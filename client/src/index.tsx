@@ -13,7 +13,25 @@ import {App} from './App';
 import {tracking} from 'modules/tracking';
 import './index.scss';
 
-tracking.loadAnalyticsToWillingUsers().then(() => {
+function mock(): Promise<void> {
+  return new Promise((resolve) => {
+    if (
+      process.env.NODE_ENV === 'development' ||
+      window.location.host.match(/camunda\.cloud$/) !== null
+    ) {
+      import('modules/mockServer/startBrowserMocking').then(
+        ({startBrowserMocking}) => {
+          startBrowserMocking();
+          resolve();
+        },
+      );
+    } else {
+      resolve();
+    }
+  });
+}
+
+Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).then(() => {
   render(
     <StrictMode>
       <App />

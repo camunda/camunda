@@ -6,7 +6,7 @@
  */
 
 import {graphql} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {
   mockGetAllOpenTasks,
   mockGetEmptyTasks,
@@ -43,7 +43,7 @@ describe('<EmptyPage />', () => {
   });
 
   it('should hide part of the empty message for new users', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetEmptyTasks.result.data));
       }),
@@ -65,7 +65,7 @@ describe('<EmptyPage />', () => {
   });
 
   it('should show an empty page message for new users', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks().result.data));
       }),
@@ -100,7 +100,7 @@ describe('<EmptyPage />', () => {
 
   it('should show an empty page message for old users', async () => {
     storeStateLocally('hasCompletedTask', true);
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetAllOpenTasks().result.data));
       }),
@@ -119,7 +119,7 @@ describe('<EmptyPage />', () => {
 
   it('should not show an empty page message for old users', async () => {
     storeStateLocally('hasCompletedTask', true);
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(ctx.data(mockGetEmptyTasks.result.data));
       }),

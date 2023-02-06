@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {setupServer} from 'msw/node';
+import {RequestHandler} from 'msw';
 
-const mockServer = setupServer();
+const handlers: RequestHandler[] = [];
 
-export {mockServer};
+export {handlers};

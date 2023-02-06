@@ -22,7 +22,7 @@ import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import {
   GET_CURRENT_USER,
@@ -68,7 +68,7 @@ describe('<Details />', () => {
   });
 
   it('should render completed task details', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -101,7 +101,7 @@ describe('<Details />', () => {
   });
 
   it('should render unclaimed task details', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -133,7 +133,7 @@ describe('<Details />', () => {
   });
 
   it('should render unclaimed task and claim it', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -179,7 +179,7 @@ describe('<Details />', () => {
   });
 
   it('should render claimed task and unclaim it', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -227,7 +227,7 @@ describe('<Details />', () => {
   });
 
   it('should not render `unclaim task` for restricted users', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
       }),
@@ -257,7 +257,7 @@ describe('<Details />', () => {
   });
 
   it('should not render `claim task` for restricted users', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
       }),

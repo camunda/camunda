@@ -8,7 +8,7 @@
 import {Restricted} from './index';
 import {render, screen} from '@testing-library/react';
 import {graphql} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {
   GET_CURRENT_USER,
   GetCurrentUser,
@@ -49,7 +49,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
 describe('Restricted', () => {
   it('should not render content that user has no permission for', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
       }),
@@ -67,7 +67,7 @@ describe('Restricted', () => {
   });
 
   it('should render content that user has permission for at least one scope', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
       }),
@@ -85,7 +85,7 @@ describe('Restricted', () => {
   });
 
   it('should render content that user has permission for', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser.result.data));
       }),
@@ -103,7 +103,7 @@ describe('Restricted', () => {
   });
 
   it('should not render content when API returns an unknown permission', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(
           ctx.data(mockGetCurrentUserWithUnknownRole.result.data),
@@ -123,7 +123,7 @@ describe('Restricted', () => {
   });
 
   it('should not render content when API returns no permissions', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUserWithoutRole.result.data));
       }),

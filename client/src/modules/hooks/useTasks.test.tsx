@@ -16,7 +16,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {ApolloProvider} from '@apollo/client';
 import {createApolloClient} from 'modules/apollo-client';
 import {graphql} from 'msw';
-import {mockServer} from 'modules/mockServer';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {useTasks} from './useTasks';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';
@@ -74,7 +74,7 @@ const Wrapper: React.FC<Props> = ({children}) => {
 
 describe('useTasks', () => {
   it('should fetch prev and next tasks', async () => {
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
@@ -93,7 +93,7 @@ describe('useTasks', () => {
     expect(screen.getByText('TASK 1')).toBeInTheDocument();
     expect(screen.getByText('TASK 2')).toBeInTheDocument();
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
@@ -113,7 +113,7 @@ describe('useTasks', () => {
     expect(screen.getByText('TASK 3')).toBeInTheDocument();
     expect(screen.getByText('TASK 4')).toBeInTheDocument();
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
@@ -135,7 +135,7 @@ describe('useTasks', () => {
     expect(screen.getByText('TASK 5')).toBeInTheDocument();
     expect(screen.getByText('TASK 6')).toBeInTheDocument();
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
@@ -161,7 +161,7 @@ describe('useTasks', () => {
   it('should poll', async () => {
     jest.useFakeTimers();
 
-    mockServer.use(
+    nodeMockServer.use(
       graphql.query('GetTasks', (req, res, ctx) => {
         const variables = req?.body?.variables ?? {};
 
