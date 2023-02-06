@@ -134,6 +134,11 @@ public final class StreamProcessorBuilder {
           streamProcessorContext.getPartitionCommandSender(),
           "No partition command sender provided");
     }
+    if (streamProcessorContext.getProcessingBatchLimit() < 1) {
+      throw new IllegalArgumentException(
+          "Batch processing limit must be >= 1 but was %s"
+              .formatted(streamProcessorContext.getProcessingBatchLimit()));
+    }
   }
 
   public StreamProcessorBuilder processingBatchLimit(final int processingBatchLimit) {
