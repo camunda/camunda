@@ -67,7 +67,7 @@ class Tracking {
   #isTrackingSupported = () => {
     return (
       process.env.NODE_ENV !== 'development' &&
-      ['prod', 'int'].includes(STAGE_ENV) &&
+      ['prod', 'int', 'dev'].includes(STAGE_ENV) &&
       window.clientConfig?.organizationId
     );
   };
@@ -135,6 +135,12 @@ class Tracking {
 
   #loadOsano = (): Promise<void> => {
     return new Promise((resolve) => {
+      if (STAGE_ENV === 'dev') {
+        return injectScript(process.env.REACT_APP_OSANO_DEV_ENV_URL).then(
+          resolve,
+        );
+      }
+
       if (STAGE_ENV === 'int') {
         return injectScript(process.env.REACT_APP_OSANO_INT_ENV_URL).then(
           resolve,
