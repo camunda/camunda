@@ -70,7 +70,15 @@ public class ProcessReader {
   }
 
   public List<ProcessDTO> getProcesses() {
-    final SearchRequest searchRequest = new SearchRequest(processIndex.getAlias());
+
+    final QueryBuilder qb =
+        QueryBuilders.boolQuery()
+            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
+
+    final SearchRequest searchRequest =
+        new SearchRequest(processIndex.getAlias()).source(new SearchSourceBuilder().query(qb));
+
     final SearchResponse response;
     try {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -84,7 +92,7 @@ public class ProcessReader {
 
   public List<ProcessDTO> getProcesses(String search) {
 
-    if (search.isBlank()) {
+    if (search == null || search.isBlank()) {
       return getProcesses();
     }
 
@@ -99,6 +107,8 @@ public class ProcessReader {
             .should(
                 QueryBuilders.regexpQuery(ProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
                     .caseInsensitive(CASE_INSENSITIVE))
+            .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
+            .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
             .minimumShouldMatch(1);
 
     final SearchRequest searchRequest =
