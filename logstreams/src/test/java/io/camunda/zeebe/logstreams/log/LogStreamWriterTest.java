@@ -72,7 +72,19 @@ public final class LogStreamWriterTest {
   }
 
   @Test
-  public void shouldReturnPositionOfWrittenEvent() {
+  public void canSetSkipProcessingFlagToTrue() {
+    // when
+    final long position = writer.skipProcessing().value(EVENT_VALUE).tryWrite();
+
+    // then
+    assertThat(position).isGreaterThan(0);
+
+    final LoggedEvent event = getWrittenEvent(position);
+    assertThat(event.shouldSkipProcessing()).isTrue();
+  }
+
+  @Test
+  public void shouldNotSkipProcessingByDefault() {
     // when
     final long position = writer.value(EVENT_VALUE).tryWrite();
 
@@ -80,7 +92,7 @@ public final class LogStreamWriterTest {
     assertThat(position).isGreaterThan(0);
 
     final LoggedEvent event = getWrittenEvent(position);
-    assertThat(event.getPosition()).isEqualTo(position);
+    assertThat(event.shouldSkipProcessing()).isFalse();
   }
 
   @Test

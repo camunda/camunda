@@ -10,6 +10,7 @@ package io.camunda.zeebe.logstreams.impl.log;
 import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
 import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.camunda.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.agrona.BitUtil.SIZE_OF_BYTE;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
@@ -24,7 +25,7 @@ import org.agrona.MutableDirectBuffer;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |            VERSION             |              R               |
+ *  |            VERSION             |    FLAGS      |       R      |
  *  +---------------------------------------------------------------+
  *  |                            POSITION                           |
  *  |                                                               |
@@ -51,6 +52,7 @@ public final class LogEntryDescriptor {
   public static final long KEY_NULL_VALUE = -1;
 
   public static final int VERSION_OFFSET;
+  public static final int FLAGS_OFFSET;
 
   public static final int POSITION_OFFSET;
 
@@ -72,8 +74,11 @@ public final class LogEntryDescriptor {
     VERSION_OFFSET = offset;
     offset += SIZE_OF_SHORT;
 
+    FLAGS_OFFSET = offset;
+    offset += SIZE_OF_BYTE;
+
     // reserved offset
-    offset += SIZE_OF_SHORT;
+    offset += SIZE_OF_BYTE;
 
     POSITION_OFFSET = offset;
     offset += SIZE_OF_LONG;
@@ -104,6 +109,18 @@ public final class LogEntryDescriptor {
 
   public static int headerLength(final int metadataLength) {
     return HEADER_BLOCK_LENGTH + metadataLength;
+  }
+
+  public static int flagsOffset(final int offset) {
+    return FLAGS_OFFSET + offset;
+  }
+
+  public static boolean shouldSkipProcessing(final DirectBuffer buffer, final int offset) {
+    return buffer.getByte(flagsOffset(offset)) != 0;
+  }
+
+  public static void skipProcessing(final MutableDirectBuffer buffer, final int offset) {
+    buffer.putByte(flagsOffset(offset), (byte) 1);
   }
 
   public static int positionOffset(final int offset) {
