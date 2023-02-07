@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 
 public interface ReadonlyStreamProcessorContext {

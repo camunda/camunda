@@ -75,7 +75,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
       final ActorControl actor, final StreamProcessorContext context) {
     final var logStream = context.getLogStream();
     final var zeebeDb = context.getZeebeDb();
-    final var metrics = context.getMetrics(); 
+    final var metrics = context.getMetrics();
     final var transactionContext = zeebeDb.createContext();
     final var messageState = new DbMessageState(zeebeDb, transactionContext);
     final var timeToLiveChecker = new MessageTimeToLiveChecker(messageState, metrics);
