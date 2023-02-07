@@ -34,4 +34,12 @@ public class DecisionRecordStream
   public DecisionRecordStream withDecisionKey(final long decisionKey) {
     return valueFilter(v -> v.getDecisionKey() == decisionKey);
   }
+
+  public DecisionRecordStream withDecisionRequirementsKey(final long decisionRequirementsKey) {
+    return valueFilter(v -> v.getDecisionRequirementsKey() == decisionRequirementsKey);
+  }
+
+  public DecisionRecordStream withVersion(final int version) {
+    return valueFilter(v -> v.getVersion() == version);
+  }
 }
