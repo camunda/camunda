@@ -160,7 +160,8 @@ export default class Dropdown extends React.Component {
 
   render() {
     const {open, scrollable, menuStyle, listStyles} = this.state;
-    const {icon, id, active, disabled, label, children, className, primary, main} = this.props;
+    const {icon, id, active, disabled, label, children, className, primary, main, small} =
+      this.props;
 
     return (
       <div
@@ -176,6 +177,7 @@ export default class Dropdown extends React.Component {
           icon={icon}
           primary={primary}
           main={main}
+          small={small}
           className="activateButton"
           aria-haspopup="true"
           aria-expanded={open ? 'true' : 'false'}

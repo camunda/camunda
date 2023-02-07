@@ -749,8 +749,10 @@
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
       "externalUrl": "Externe URL",
-      "newReport": "Neuer Bericht aus einer Vorlage"
+      "newReport": "Neuer Bericht aus einer Vorlage",
+      "textReport": "Text Report"
     },
+    "textReportEditNotification": "Dies ist eine Funktion, die wir zu bauen planen",
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
@@ -1475,5 +1477,57 @@
     "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
     "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden.",
     "invalidAlertEmailAddresses": "Benutzer mit den folgenden Email-Addressen können keine Alarme empfange: {invalidAlertEmails}"
+  },
+  "textEditor": {
+    "toolbar": {
+      "history": {
+        "undo": "Widerrufen",
+        "redo": "Wiederholen"
+      },
+      "align": {
+        "left": "Links",
+        "center": "Mitte",
+        "right": "Rechts"
+      },
+      "styles": {
+        "bold": "Deutlich",
+        "italic": "Kursiv",
+        "underline": "Unterstreichen",
+        "strikethrough": "Durchgestrichen",
+        "code": "Code"
+      },
+      "blockStyles": {
+        "bullet": "Aufzählungsliste",
+        "code": "Code Block",
+        "h1": "Kopfzeile 1",
+        "h2": "Kopfzeile 2",
+        "h3": "Kopfzeile 3",
+        "number": "Nummerierte Liste",
+        "paragraph": "Normal",
+        "quote": "Anführungsblock"
+      },
+      "insert": {
+        "label": "Einfügung",
+        "horizontalRule": "Horizontale Regel",
+        "image": "Bild",
+        "link": "Link"
+      }
+    },
+    "plugins": {
+      "images": {
+        "title": "Einfügung Bild",
+        "urlLabel": "Bild URL",
+        "urlPlaceholder": "https://picture/some-picture.jpg",
+        "altTextLabel": "Bildname",
+        "altTextPlaceholder": "Etwas Bild"
+      },
+      "link": {
+        "title": "Einfügung Link",
+        "urlLabel": "Link URL",
+        "urlPlaceholder": "https://example.com",
+        "altTextLabel": "Text anzeigen",
+        "altTextPlaceholder": "Link zu example.com"
+      }
+    }
   }
 }

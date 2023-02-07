@@ -5,10 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Tabs} from 'components';
+import {Tabs, Typeahead} from 'components';
 import {loadReports} from 'services';
 
 import ReportModal from './ReportModal';
@@ -36,51 +36,56 @@ const props = {
 it('should load the available reports', () => {
   shallow(<ReportModal {...props} />);
 
+  runAllEffects();
+
   expect(loadReports).toHaveBeenCalled();
 });
 
 it('should load only reports in the same collection', () => {
   shallow(<ReportModal location={{pathname: '/collection/123/dashboard/1'}} />);
 
+  runAllEffects();
+
   expect(loadReports).toHaveBeenCalledWith('123');
 });
 
-it('should render a Typeahead element with the available reports as options', () => {
+it('should render a Typeahead element with the available reports as options', async () => {
+  loadReports.mockReturnValueOnce([
+    {
+      id: 'a',
+      name: 'Report A',
+    },
+    {
+      id: 'b',
+      name: 'Report B',
+    },
+  ]);
   const node = shallow(<ReportModal {...props} />);
 
-  node.setState({
-    availableReports: [
-      {
-        id: 'a',
-        name: 'Report A',
-      },
-      {
-        id: 'b',
-        name: 'Report B',
-      },
-    ],
-  });
+  runAllEffects();
+  await flushPromises();
 
   expect(node.find('Typeahead')).toMatchSnapshot();
 });
 
-it('should call the callback when adding a report', () => {
+it('should call the callback when adding a report', async () => {
+  loadReports.mockReturnValueOnce([
+    {
+      id: 'a',
+      name: 'Report A',
+    },
+    {
+      id: 'b',
+      name: 'Report B',
+    },
+  ]);
   const spy = jest.fn();
   const node = shallow(<ReportModal {...props} confirm={spy} />);
 
-  node.setState({
-    availableReports: [
-      {
-        id: 'a',
-        name: 'Report A',
-      },
-      {
-        id: 'b',
-        name: 'Report B',
-      },
-    ],
-    selectedReportId: 'a',
-  });
+  runAllEffects();
+  await flushPromises();
+
+  node.find(Typeahead).prop('onChange')('a');
 
   node.find('[primary]').simulate('click');
 
@@ -95,7 +100,7 @@ it('should show a loading message while loading available reports', () => {
   expect(node.find('LoadingIndicator')).toExist();
 });
 
-it('should contain an Add External Source field', () => {
+it('should contain an External URL field', () => {
   const node = shallow(<ReportModal {...props} />);
 
   expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External URL');
@@ -104,7 +109,7 @@ it('should contain an Add External Source field', () => {
 it('should hide the typeahead when external mode is enabled', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.setState({external: true});
+  node.find(Tabs).prop('onChange')('external');
 
   expect(node.find('Typeahead')).not.toExist();
 });
@@ -112,7 +117,7 @@ it('should hide the typeahead when external mode is enabled', () => {
 it('should contain a text input field if in external source mode', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.setState({external: true});
+  node.find(Tabs).prop('onChange')('external');
 
   expect(node.find('.externalInput')).toExist();
 });
@@ -120,7 +125,38 @@ it('should contain a text input field if in external source mode', () => {
 it('should  disable the submit button if the url does not start with http in external mode', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.setState({external: true, externalUrl: 'Dear computer, please show me a report. Thanks.'});
+  node.find(Tabs).prop('onChange')('external');
+  node.find('.externalInput').prop('onChange')({
+    target: {value: 'Dear computer, please show me a report. Thanks.'},
+  });
+
+  expect(node.find('[primary]')).toBeDisabled();
+});
+
+it('should contain an Text Report field', () => {
+  const node = shallow(<ReportModal {...props} />);
+
+  expect(node.find(Tabs.Tab).at(2).prop('title')).toBe('Text Report');
+});
+
+it('should contain text editor if in text report mode', () => {
+  const node = shallow(<ReportModal {...props} />);
+
+  node.find(Tabs).prop('onChange')('text');
+
+  expect(node.find('TextEditor')).toExist();
+});
+
+it('should  disable the submit button if the text in editor is empty or too long', () => {
+  const node = shallow(<ReportModal {...props} />);
+
+  node.find(Tabs).prop('onChange')('external');
+
+  expect(node.find('[primary]')).toBeDisabled();
+
+  node.find('.externalInput').prop('onChange')({
+    target: {value: new Array(3001).join('a')},
+  });
 
   expect(node.find('[primary]')).toBeDisabled();
 });

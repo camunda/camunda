@@ -9,6 +9,7 @@ import React from 'react';
 
 import ExternalReport from './ExternalReport';
 import OptimizeReport from './OptimizeReport';
+import TextReport from './TextReport';
 
 import './DashboardReport.scss';
 
@@ -21,7 +22,13 @@ export default function DashboardReport({
   tileDimensions,
   loadReport,
 }) {
-  const ReportComponent = isExternalReport(report) ? ExternalReport : OptimizeReport;
+  let ReportComponent = OptimizeReport;
+
+  if (ExternalReport.isExternalReport(report)) {
+    ReportComponent = ExternalReport;
+  } else if (TextReport.isTextReport(report)) {
+    ReportComponent = TextReport;
+  }
 
   return (
     <ReportComponent
@@ -44,8 +51,4 @@ export default function DashboardReport({
       }
     </ReportComponent>
   );
-}
-
-function isExternalReport(report) {
-  return report.configuration && report.configuration.external;
 }

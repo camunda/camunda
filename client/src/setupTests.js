@@ -24,7 +24,11 @@ beforeAll(async () => {
 });
 
 global.MutationObserver = class MutationObserver {
+  disconnect() {}
   observe() {}
+  takeRecords() {
+    return [];
+  }
 };
 
 // since jest does not offer an out of the box way to flush promises:
