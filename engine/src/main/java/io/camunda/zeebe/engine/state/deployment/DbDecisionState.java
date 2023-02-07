@@ -198,6 +198,28 @@ public final class DbDecisionState implements MutableDecisionState {
     }
   }
 
+  private Optional<Long> findPreviousVersionDecisionRequirementsKey(
+      final DirectBuffer decisionRequirementsId, final int currentVersion) {
+    final Map<Integer, Long> decisionRequirementsKeysByVersion = new HashMap<>();
+
+    dbDecisionRequirementsId.wrapBuffer(decisionRequirementsId);
+    decisionRequirementsKeyByIdAndVersion.whileEqualPrefix(
+        dbDecisionRequirementsId,
+        ((key, drgKey) -> {
+          if (key.second().getValue() < currentVersion) {
+            decisionRequirementsKeysByVersion.put(
+                key.second().getValue(), drgKey.inner().getValue());
+          }
+        }));
+
+    if (decisionRequirementsKeysByVersion.isEmpty()) {
+      return Optional.empty();
+    } else {
+      final Integer previousVersion = Collections.max(decisionRequirementsKeysByVersion.keySet());
+      return Optional.of(decisionRequirementsKeysByVersion.get(previousVersion));
+    }
+  }
+
   @Override
   public void storeDecisionRecord(final DecisionRecord record) {
     dbDecisionKey.wrapLong(record.getDecisionKey());
