@@ -38,14 +38,6 @@ public final class SystemContext {
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   private static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
-  private static final String REPLICATION_FACTOR_ERROR_MSG =
-      "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
-  private static final String REPLICATION_FACTOR_WARN_MSG =
-      "Expected to have odd replication factor, but was even ({}). Even replication factor has no benefit over "
-          + "the previous odd value and is weaker than next odd. Quorum is calculated as:"
-          + " quorum = floor(replication factor / 2) + 1. In this current case the quorum will be"
-          + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
-          + " make sure to use an odd replication factor.";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
@@ -76,8 +68,6 @@ public final class SystemContext {
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
 
-    validateClusterConfig(cluster);
-
     validateDataConfig(brokerCfg.getData());
 
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
@@ -85,46 +75,6 @@ public final class SystemContext {
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
-    }
-  }
-
-  private static void validateClusterConfig(final ClusterCfg cluster) {
-    final int partitionCount = cluster.getPartitionsCount();
-    if (partitionCount < 1) {
-      throw new IllegalArgumentException("Partition count must not be smaller then 1.");
-    }
-
-    final int clusterSize = cluster.getClusterSize();
-    final int nodeId = cluster.getNodeId();
-    if (nodeId < 0 || nodeId >= clusterSize) {
-      throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
-    }
-
-    final int replicationFactor = cluster.getReplicationFactor();
-    if (replicationFactor < 1 || replicationFactor > clusterSize) {
-      throw new IllegalArgumentException(
-          String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
-    }
-
-    if (replicationFactor % 2 == 0) {
-      LOG.warn(REPLICATION_FACTOR_WARN_MSG, replicationFactor, (replicationFactor / 2) + 1);
-    }
-
-    final var heartbeatInterval = cluster.getHeartbeatInterval();
-    final var electionTimeout = cluster.getElectionTimeout();
-    if (heartbeatInterval.toMillis() < 1) {
-      throw new IllegalArgumentException(
-          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
-    }
-    if (electionTimeout.toMillis() < 1) {
-      throw new IllegalArgumentException(
-          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
-    }
-    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
-      throw new IllegalArgumentException(
-          String.format(
-              "electionTimeout %s must be greater than heartbeatInterval %s",
-              electionTimeout, heartbeatInterval));
     }
   }
 
