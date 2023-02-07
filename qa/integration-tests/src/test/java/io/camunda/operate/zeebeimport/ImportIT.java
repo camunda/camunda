@@ -803,6 +803,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   private void assertStartFlowNodeCompleted(FlowNodeInstanceEntity startActivity) {
     assertThat(startActivity.getFlowNodeId()).isEqualTo("start");
+    assertThat(startActivity.getProcessDefinitionKey()).isNotNull();
     assertThat(startActivity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(startActivity.getType()).isEqualTo(FlowNodeType.START_EVENT);
     assertThat(startActivity.getStartDate()).isAfterOrEqualTo(testStartTime);
@@ -813,6 +814,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
 
   private void assertFlowNodeIsActive(FlowNodeInstanceEntity flowNodeEntity, String flowNodeId) {
     assertThat(flowNodeEntity.getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(flowNodeEntity.getProcessDefinitionKey()).isNotNull();
     assertThat(flowNodeEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(flowNodeEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(flowNodeEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());

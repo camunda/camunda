@@ -23,10 +23,12 @@ public class FlowNodeInstance {
       TYPE = FlowNodeInstanceTemplate.TYPE,
       STATE = FlowNodeInstanceTemplate.STATE,
       INCIDENT = FlowNodeInstanceTemplate.INCIDENT,
-      PROCESS_INSTANCE_KEY = FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
+      PROCESS_INSTANCE_KEY = FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY,
+      PROCESS_DEFINITION_KEY = FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
 
   private Long key;
   private Long processInstanceKey;
+  private Long processDefinitionKey;
   private String startDate;
   private String endDate;
   private String flowNodeId;
@@ -50,6 +52,15 @@ public class FlowNodeInstance {
 
   public FlowNodeInstance setProcessInstanceKey(final Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public FlowNodeInstance setProcessDefinitionKey(final Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
@@ -126,6 +137,7 @@ public class FlowNodeInstance {
     }
     final FlowNodeInstance that = (FlowNodeInstance) o;
     return Objects.equals(key, that.key) && Objects.equals(processInstanceKey, that.processInstanceKey) &&
+        Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
         Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) &&
         Objects.equals(flowNodeId, that.flowNodeId) && Objects.equals(incidentKey, that.incidentKey) &&
         Objects.equals(type, that.type) && Objects.equals(state, that.state) && Objects.equals(incident, that.incident);
@@ -133,7 +145,7 @@ public class FlowNodeInstance {
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processInstanceKey, startDate, endDate, flowNodeId, incidentKey, type, state, incident);
+    return Objects.hash(key, processInstanceKey, processDefinitionKey, startDate, endDate, flowNodeId, incidentKey, type, state, incident);
   }
 
   @Override
@@ -141,6 +153,7 @@ public class FlowNodeInstance {
     return "FlowNodeInstance{" +
         "key=" + key +
         ", processInstanceKey=" + processInstanceKey +
+        ", processDefinitionKey=" + processDefinitionKey +
         ", startDate='" + startDate + '\'' +
         ", endDate='" + endDate + '\'' +
         ", flowNodeId='" + flowNodeId + '\'' +

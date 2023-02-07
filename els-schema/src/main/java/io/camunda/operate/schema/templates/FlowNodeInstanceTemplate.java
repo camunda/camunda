@@ -21,6 +21,7 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String FLOW_NODE_ID = "flowNodeId";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String INCIDENT_KEY = "incidentKey";
   public static final String STATE = "state";
   public static final String TYPE = "type";
@@ -35,6 +36,6 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor impleme
 
   @Override
   public String getVersion() {
-    return "1.3.0";
+    return "8.1.7";
   }
 }

@@ -121,6 +121,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
 
     if (entity.getTreePath() == null) {
 
@@ -220,6 +221,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {
@@ -239,6 +241,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
       updateFields.put(FlowNodeInstanceTemplate.STATE, entity.getState());
       updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
       updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
+      updateFields.put(FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
       if (entity.getStartDate() != null) {
         updateFields.put(FlowNodeInstanceTemplate.START_DATE, entity.getStartDate());

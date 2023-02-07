@@ -86,6 +86,7 @@ public class ElasticsearchFlowNodeInstanceDaoIT extends OperateZeebeIntegrationT
               "START_EVENT",
               "COMPLETED"
           );
+      assertThat(flowNodeInstanceResults.getItems().get(0).getProcessDefinitionKey()).isNotNull();
     });
   }
 

@@ -751,6 +751,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   private void assertFlowNodeIsInIncidentState(FlowNodeInstanceEntity activity, String activityId) {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(activity.getProcessDefinitionKey()).isNotNull();
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getIncidentKey()).isNotNull();
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
@@ -759,6 +760,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   private void assertFlowNodeIsCompleted(FlowNodeInstanceEntity activity, String activityId) {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
+    assertThat(activity.getProcessDefinitionKey()).isNotNull();
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());

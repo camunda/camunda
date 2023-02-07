@@ -100,6 +100,14 @@ public class FlowNodeInstanceControllerTest {
   }
 
   @Test
+  public void shouldAcceptQueryWithFilterByProcessDefinitionKey() throws Exception {
+    final Long processDefinitionKey =  2251799813685251L;
+    assertPostToWithSucceed(URI + SEARCH, "{\"filter\": { \""+ FlowNodeInstance.PROCESS_DEFINITION_KEY +"\": \"" + processDefinitionKey + "\" } }");
+    verify(flowNodeInstanceDao).search(new Query<FlowNodeInstance>()
+        .setFilter(new FlowNodeInstance().setProcessDefinitionKey(processDefinitionKey)));
+  }
+
+  @Test
   public void shouldAcceptQueryWithFullFilterAndSortingAndPaging() throws Exception {
     assertPostToWithSucceed(URI + SEARCH,
         "{\"filter\": "

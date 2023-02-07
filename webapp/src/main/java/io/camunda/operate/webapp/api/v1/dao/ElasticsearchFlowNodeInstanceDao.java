@@ -45,6 +45,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     if (filter != null) {
       queryBuilders.add(buildTermQuery(FlowNodeInstance.KEY, filter.getKey()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()));
+      queryBuilders.add(buildTermQuery(FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
       queryBuilders.add(buildMatchDateQuery(FlowNodeInstance.START_DATE, filter.getStartDate()));
       queryBuilders.add(buildMatchDateQuery(FlowNodeInstance.END_DATE, filter.getEndDate()));
       queryBuilders.add(buildTermQuery(FlowNodeInstance.STATE, filter.getState()));
@@ -110,6 +111,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
     return new FlowNodeInstance()
         .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
         .setProcessInstanceKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY))
+        .setProcessDefinitionKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_DEFINITION_KEY))
         .setStartDate((String) searchHitAsMap.get(FlowNodeInstance.START_DATE))
         .setEndDate((String) searchHitAsMap.get(FlowNodeInstance.END_DATE))
         .setType((String) searchHitAsMap.get(FlowNodeInstance.TYPE))
