@@ -244,6 +244,11 @@ public final class DbDecisionState implements MutableDecisionState {
     dbPersistedDecisionRequirements.wrap(record);
     decisionRequirementsByKey.upsert(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
 
+    dbDecisionRequirementsId.wrapString(record.getDecisionRequirementsId());
+    dbDecisionRequirementsVersion.wrapInt(record.getDecisionRequirementsVersion());
+    decisionRequirementsKeyByIdAndVersion.upsert(
+        decisionRequirementsIdAndVersion, fkDecisionRequirements);
+
     updateLatestDecisionRequirementsVersion(record);
   }
 
