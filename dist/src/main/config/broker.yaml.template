@@ -321,7 +321,29 @@
         # As a result, it tries to distributed the leaders uniformly across the brokers. Note that it is only a best-effort strategy.
         # It is not guaranteed to be a strictly uniform distribution.
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_RAFT_ENABLEPRIORITYELECTION
-        # enablePriorityElection = true;
+        # enablePriorityElection = true
+
+        # Configures how often data is explicitly flushed to disk. By default, for a given
+        # partition, data is flushed on every leader commit, and every follower append. This is to
+        # ensure consistency across all replicas. Disabling this can cause inconsistencies, and at
+        # worst, data corruption or data loss scenarios.
+        #
+        # The default behavior is optimized for safety, and flushing occurs on every leader commit
+        # and follower append in a synchronous fashion. You can introduce a delay to reduce the
+        # performance penalty of flushing via `delayTime`.
+        flush:
+          # If false, explicit flushing of the Raft log is disabled, and flushing only occurs right
+          # before a snapshot is taken. You should only disable explicit flushing if you are willing
+          # to accept potential data loss at the expense of performance. Before disabling it, try
+          # the delayed options, which provide a trade-off between safety and performance.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_RAFT_FLUSH_ENABLED
+          # enabled: true
+          # If the delay is > 0, then flush requests are delayed by at least the given period. It is
+          # recommended that you find the smallest delay here with which you achieve your
+          # performance goals. It's also likely that anything above 30s is not useful, as this is
+          # the typical default flush interval for the Linux OS.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_RAFT_FLUSH_DELAYTIME
+          # delayTime: 0s
 
       # Configure parameters for SWIM protocol which is used to propagate cluster membership
       # information among brokers and gateways
