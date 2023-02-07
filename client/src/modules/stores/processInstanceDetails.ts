@@ -22,6 +22,7 @@ import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
 import {tracking} from 'modules/tracking';
+import {isEqual} from 'lodash';
 
 type State = {
   processInstance: null | ProcessInstanceEntity;
@@ -116,7 +117,9 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
   );
 
   setProcessInstance = (processInstance: ProcessInstanceEntity | null) => {
-    this.state.processInstance = processInstance;
+    if (!isEqual(this.state.processInstance, processInstance)) {
+      this.state.processInstance = processInstance;
+    }
   };
 
   activateOperation = (operationType: OperationEntityType) => {

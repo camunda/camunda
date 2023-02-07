@@ -20,6 +20,7 @@ import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {isEqual} from 'lodash';
 
 type State = {
   items: string[];
@@ -113,7 +114,9 @@ class SequenceFlows extends NetworkReconnectionHandler {
   };
 
   setItems(items: string[]) {
-    this.state.items = items;
+    if (!isEqual(this.state.items, items)) {
+      this.state.items = items;
+    }
   }
 
   reset() {

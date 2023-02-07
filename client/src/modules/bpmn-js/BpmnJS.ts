@@ -119,7 +119,7 @@ class BpmnJS {
       }
     );
 
-    if (this.#selectableFlowNodes !== selectableFlowNodes) {
+    if (!isEqual(this.#selectableFlowNodes, selectableFlowNodes)) {
       // handle op-selectable markers
       this.#selectableFlowNodes.forEach((flowNodeId) => {
         this.#removeMarker(flowNodeId, 'op-selectable');
@@ -219,6 +219,8 @@ class BpmnJS {
           theme[this.#themeType].colors.selections
         );
       });
+
+      this.#highlightedSequenceFlows = highlightedSequenceFlows;
     }
   };
 

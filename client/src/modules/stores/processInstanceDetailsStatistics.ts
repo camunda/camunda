@@ -23,6 +23,7 @@ import {
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
+import {isEqual} from 'lodash';
 
 type Statistic = ProcessInstanceDetailStatisticsDto & {filteredActive: number};
 
@@ -106,7 +107,9 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
   };
 
   handleFetchSuccess = (statistics: ProcessInstanceDetailStatisticsDto[]) => {
-    this.state.statistics = statistics;
+    if (!isEqual(this.state.statistics, statistics)) {
+      this.state.statistics = statistics;
+    }
     this.state.status = 'fetched';
   };
 
