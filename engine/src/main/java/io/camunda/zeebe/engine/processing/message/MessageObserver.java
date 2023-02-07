@@ -61,14 +61,17 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
 
   @Override
   public void onFailed() {
-    actor.closeAsync();
-    processingSchedulingService.close();
+    onClose();
   }
 
   @Override
   public void onClose() {
-    actor.closeAsync();
-    processingSchedulingService.close();
+    if (actor != null) {
+      actor.closeAsync();
+    }
+    if (processingSchedulingService != null) {
+      processingSchedulingService.close();
+    }
   }
 
   private void startMessageTimeToLiveChecker(
