@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /** Scheduler. */
+@FunctionalInterface
 public interface Scheduler {
 
   /**
@@ -41,7 +42,9 @@ public interface Scheduler {
    * @param callback the callback to run
    * @return the scheduled callback
    */
-  Scheduled schedule(Duration delay, Runnable callback);
+  default Scheduled schedule(final Duration delay, final Runnable callback) {
+    return schedule(Duration.ZERO, delay, callback);
+  }
 
   /**
    * Schedules a runnable at a fixed rate.

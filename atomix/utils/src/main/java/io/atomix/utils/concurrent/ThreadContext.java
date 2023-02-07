@@ -18,7 +18,9 @@ package io.atomix.utils.concurrent;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 /**
@@ -51,5 +53,32 @@ public interface ThreadContext extends CloseableSilently, Executor, Scheduler {
   /** Checks that the current thread is the correct context thread. */
   default void checkThread() {
     checkState(currentContext() == this, "not on the expected thread");
+  }
+
+  /** By default there are no resources to close. */
+  @Override
+  default void close() {}
+
+  /**
+   * Submits a new blocking task to the thread context, and returns a future which is completed only
+   * when the task finishes.
+   *
+   * @param task the task to await
+   * @return a future which is completed successfully when the task is finished, or with any thrown
+   *     exception
+   */
+  default CompletableFuture<Void> submit(final CheckedRunnable task) {
+    final CompletableFuture<Void> result = new CompletableFuture<>();
+    execute(
+        () -> {
+          try {
+            task.run();
+            result.complete(null);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+
+    return result;
   }
 }
