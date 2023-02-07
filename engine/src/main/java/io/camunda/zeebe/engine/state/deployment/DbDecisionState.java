@@ -56,6 +56,11 @@ public final class DbDecisionState implements MutableDecisionState {
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
 
+  private final DbInt dbDecisionRequirementsVersion;
+  private final DbCompositeKey<DbString, DbInt> decisionRequirementsIdAndVersion;
+  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      decisionRequirementsKeyByIdAndVersion;
+
   public DbDecisionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     dbDecisionKey = new DbLong();
@@ -110,6 +115,16 @@ public final class DbDecisionState implements MutableDecisionState {
             transactionContext,
             decisionIdAndVersion,
             fkDecision);
+
+    dbDecisionRequirementsVersion = new DbInt();
+    decisionRequirementsIdAndVersion =
+        new DbCompositeKey<>(dbDecisionRequirementsId, dbDecisionRequirementsVersion);
+    decisionRequirementsKeyByIdAndVersion =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION,
+            transactionContext,
+            decisionRequirementsIdAndVersion,
+            fkDecisionRequirements);
   }
 
   @Override
