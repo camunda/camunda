@@ -30,6 +30,10 @@ inputs:
     description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
     default: "default"
     required: false
+  maven-use-camunda-mirror:
+    description: Controls whether the camunda maven repo is configured as a mirror to download from.
+    default: "true"
+    required: false
   secret_vault_address:
     description: 'secret vault url'
     required: true
@@ -45,7 +49,8 @@ outputs: {}
 runs:
   using: composite
   steps:
-    - name: Import Secrets
+    - if: ${{ inputs.maven-use-camunda-mirror == 'true' }}
+      name: Import Secrets
       id: secrets
       uses: hashicorp/vault-action@v2.4.3
       with:
@@ -69,7 +74,8 @@ runs:
       with:
         maven-version: '3.8.6'
     # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-    - name: 'Create settings.xml'
+    - if: ${{ inputs.maven-use-camunda-mirror == 'true' }}
+      name: 'Create settings.xml'
       uses: s4u/maven-settings-action@v2.8.0
       with:
         githubServer: false
