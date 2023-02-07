@@ -104,13 +104,14 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     final ResponseEntity<String> response = get(NO_PERMISSION);
     assertThat(response.getBody()).contains(
         "No permission for Operate - Please check your operate configuration or cloud configuration.");
+    assertThatSecurityHeadersAreSet(response);
   }
 
   @Test
   public void testLoginSuccess() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -140,7 +141,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginFailedWithNoPermissions() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -167,7 +168,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
   public void testLoginFailedWithNoReadPermissions() throws Exception {
     // Step 1 try to access document root
     ResponseEntity<String> response = get(ROOT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));

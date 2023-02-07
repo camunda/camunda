@@ -30,6 +30,7 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
+    configureSecurityHeaders(http);
     http.csrf().disable()
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()

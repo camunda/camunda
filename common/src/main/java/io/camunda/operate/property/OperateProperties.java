@@ -103,6 +103,9 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private BackupProperties backup = new BackupProperties();
 
+  @NestedConfigurationProperty
+  private WebSecurityProperties webSecurity = new WebSecurityProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -242,6 +245,15 @@ public class OperateProperties {
 
   public OperateProperties setAuth0(final Auth0Properties auth0) {
     this.auth0 = auth0;
+    return this;
+  }
+
+  public WebSecurityProperties getWebSecurity(){
+    return webSecurity;
+  }
+
+  public OperateProperties setWebSecurity(final WebSecurityProperties webSecurity){
+    this.webSecurity = webSecurity;
     return this;
   }
 

@@ -41,6 +41,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
   @Override
   protected void configure(final HttpSecurity http) throws Exception {
+    configureSecurityHeaders(http);
     http.csrf().disable()
       .authorizeRequests()
       .antMatchers(AUTH_WHITELIST).permitAll()

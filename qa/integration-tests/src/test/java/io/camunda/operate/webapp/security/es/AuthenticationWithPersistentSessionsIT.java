@@ -121,7 +121,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
   }
 
   @Test
@@ -141,7 +141,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse);
+    assertThatCookiesAndSecurityHeadersAreSet(loginResponse);
     // when
     ResponseEntity<?> logoutResponse = logout(loginResponse);
 

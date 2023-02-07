@@ -198,6 +198,7 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     response = get(ROOT, cookies);
     // Check if access to url possible
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThatSecurityHeadersAreSet(response);
   }
 
   @Test

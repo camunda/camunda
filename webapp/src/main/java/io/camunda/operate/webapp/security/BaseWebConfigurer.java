@@ -17,6 +17,8 @@ import java.io.PrintWriter;
 import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import io.camunda.operate.property.WebSecurityProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +39,7 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
 
   @Override
   protected void configure(HttpSecurity http) throws Exception {
+    configureSecurityHeaders(http);
     http.csrf().disable()
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
@@ -58,6 +61,16 @@ public abstract class BaseWebConfigurer extends WebSecurityConfigurerAdapter {
         .and()
         .exceptionHandling().authenticationEntryPoint(this::failureHandler);
     configureOAuth2(http);
+  }
+
+  protected void configureSecurityHeaders(HttpSecurity http) throws Exception {
+    final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
+    http.headers()
+        .contentSecurityPolicy(webSecurityConfig.getContentSecurityPolicy())
+        .and()
+        .httpStrictTransportSecurity()
+          .maxAgeInSeconds(webSecurityConfig.getHttpStrictTransportSecurityMaxAgeInSeconds())
+          .includeSubDomains(webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
   }
 
   protected abstract void configureOAuth2(HttpSecurity http) throws Exception;

@@ -212,6 +212,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     response = get(ROOT, cookies);
     // Check if access to url possible
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThatSecurityHeadersAreSet(response);
   }
 
   @Test

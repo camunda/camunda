@@ -114,7 +114,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     // then
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(response);
+    assertThatCookiesAndSecurityHeadersAreSet(response);
   }
 
   @Test
@@ -134,7 +134,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
     // assume
     assertThat(loginResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-    assertThatCookiesAreSet(loginResponse);
+    assertThatCookiesAndSecurityHeadersAreSet(loginResponse);
     // when
     ResponseEntity<?> logoutResponse = logout(loginResponse);
 

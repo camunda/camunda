@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.operate.property.WebSecurityProperties;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import java.net.URI;
 import java.util.HashMap;
@@ -23,12 +24,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.server.header.ContentSecurityPolicyServerHttpHeadersWriter;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
@@ -58,12 +61,19 @@ public interface AuthenticationTestable {
         .collect(Collectors.toList());
   }
 
-  default void assertThatCookiesAreSet(ResponseEntity<?> response) {
+  default void assertThatCookiesAndSecurityHeadersAreSet(ResponseEntity<?> response) {
     List<String> cookies = getSessionCookies(response);
     assertThat(cookies).isNotEmpty();
     String lastSetCookie = cookies.get(cookies.size()-1);
     assertThat(lastSetCookie.split(";")[0]).matches(COOKIE_PATTERN);
     assertSameSiteIsSet(lastSetCookie);
+    assertThatSecurityHeadersAreSet(response);
+  }
+
+  default void assertThatSecurityHeadersAreSet(ResponseEntity<?> response) {
+    var cspHeaderValues = response.getHeaders().getOrEmpty(ContentSecurityPolicyServerHttpHeadersWriter.CONTENT_SECURITY_POLICY);
+    assertThat(cspHeaderValues).isNotEmpty();
+    assertThat(cspHeaderValues).first().isEqualTo(WebSecurityProperties.DEFAULT_SECURITY_POLICY);
   }
 
   default void assertSameSiteIsSet(String cookie)  {
