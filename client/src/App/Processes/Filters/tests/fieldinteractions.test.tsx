@@ -7,7 +7,6 @@
 
 import {render, screen} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 
 import {Filters} from '../index';
 
@@ -112,84 +111,6 @@ describe('Interaction with other fields during validation', () => {
       )
     ).toBeInTheDocument();
   });
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'validation for Start Date field should not affect other fields validation errors',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Process Instance Key(s)'));
-      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
-
-      expect(
-        await screen.findByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Start Date'));
-      await user.type(screen.getByLabelText(/start date/i), '2021');
-
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-    }
-  );
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'validation for End Date field should not affect other fields validation errors',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Process Instance Key(s)'));
-      await user.type(screen.getByLabelText(/process instance key\(s\)/i), '1');
-
-      expect(
-        await screen.findByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('End Date'));
-      await user.type(screen.getByLabelText(/end date/i), 'a');
-
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-
-      expect(
-        screen.getByText(
-          'Key has to be a 16 to 19 digit number, separated by space or comma'
-        )
-      ).toBeInTheDocument();
-    }
-  );
 
   it('validation for Variable Value field should not affect other fields validation errors', async () => {
     const {user} = render(<Filters />, {

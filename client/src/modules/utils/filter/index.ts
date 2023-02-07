@@ -5,14 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  addDays,
-  startOfDay,
-  addMinutes,
-  format,
-  parse,
-  isValid,
-} from 'date-fns';
+import {parse, isValid} from 'date-fns';
 import {processesStore} from 'modules/stores/processes';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {Location} from 'react-router-dom';
@@ -24,8 +17,6 @@ type ProcessInstanceFilterField =
   | 'ids'
   | 'parentInstanceId'
   | 'errorMessage'
-  | 'startDate'
-  | 'endDate'
   | 'flowNodeId'
   | 'variableName'
   | 'variableValue'
@@ -46,7 +37,6 @@ type DecisionInstanceFilterField =
   | 'failed'
   | 'decisionInstanceIds'
   | 'processInstanceId'
-  | 'evaluationDate'
   | 'evaluationDateBefore'
   | 'evaluationDateAfter';
 
@@ -56,8 +46,6 @@ type ProcessInstanceFilters = {
   ids?: string;
   parentInstanceId?: string;
   errorMessage?: string;
-  startDate?: string;
-  endDate?: string;
   flowNodeId?: string;
   variableName?: string;
   variableValue?: string;
@@ -79,7 +67,6 @@ type DecisionInstanceFilters = {
   failed?: boolean;
   decisionInstanceIds?: string;
   processInstanceId?: string;
-  evaluationDate?: string;
   evaluationDateBefore?: string;
   evaluationDateAfter?: string;
 };
@@ -123,8 +110,6 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'ids',
   'parentInstanceId',
   'errorMessage',
-  'startDate',
-  'endDate',
   'flowNodeId',
   'variableName',
   'variableValue',
@@ -145,7 +130,6 @@ const DECISION_INSTANCE_FILTER_FIELDS: DecisionInstanceFilterField[] = [
   'failed',
   'decisionInstanceIds',
   'processInstanceId',
-  'evaluationDate',
   'evaluationDateAfter',
   'evaluationDateBefore',
 ];
@@ -222,41 +206,6 @@ function deleteSearchParams(location: Location, paramsToDelete: string[]) {
   };
 }
 
-type GetRequestDatePairReturn =
-  | {
-      startDateBefore: string;
-      startDateAfter: string;
-    }
-  | {
-      endDateBefore: string;
-      endDateAfter: string;
-    }
-  | {
-      evaluationDateBefore: string;
-      evaluationDateAfter: string;
-    };
-
-function getRequestDatePair(
-  date: Date,
-  type: 'startDate' | 'endDate' | 'evaluationDate'
-): GetRequestDatePairReturn {
-  const DATE_REQUEST_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSxx";
-  const hasTime = date.getHours() + date.getMinutes() + date.getSeconds() !== 0;
-  const dateAfter = format(
-    hasTime ? date : startOfDay(date),
-    DATE_REQUEST_FORMAT
-  );
-  const dateBefore = format(
-    hasTime ? addMinutes(date, 1) : addDays(startOfDay(date), 1),
-    DATE_REQUEST_FORMAT
-  );
-
-  return {
-    [`${type}Before`]: dateBefore,
-    [`${type}After`]: dateAfter,
-  } as GetRequestDatePairReturn;
-}
-
 function parseIds(value: string) {
   return value
     .trim()
@@ -278,32 +227,6 @@ function parseFilterTime(value: string) {
   if (HOUR_MINUTES_SECONDS_PATTERN.test(value)) {
     const parsedDate = parse(value, 'HH:mm:ss', new Date());
     return isValid(parsedDate) ? parsedDate : undefined;
-  }
-}
-
-function parseFilterDate(value: string) {
-  const DATE_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
-  const DATE_HOUR_PATTERN = /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}$/;
-  const DATE_HOUR_MINUTES_PATTERN =
-    /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}$/;
-  const DATE_TIME_PATTERN_WITH =
-    /^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
-  const trimmedValue = value.trim();
-
-  if (DATE_PATTERN.test(trimmedValue)) {
-    return parse(trimmedValue, 'yyyy-MM-dd', new Date());
-  }
-
-  if (DATE_HOUR_PATTERN.test(trimmedValue)) {
-    return parse(trimmedValue, 'yyyy-MM-dd kk', new Date());
-  }
-
-  if (DATE_HOUR_MINUTES_PATTERN.test(trimmedValue)) {
-    return parse(trimmedValue, 'yyyy-MM-dd kk:mm', new Date());
-  }
-
-  if (DATE_TIME_PATTERN_WITH.test(trimmedValue)) {
-    return parse(trimmedValue, 'yyyy-MM-dd kk:mm:ss', new Date());
   }
 }
 
@@ -420,17 +343,6 @@ function getProcessInstancesRequestFilters(): RequestFilters {
           };
         }
 
-        const parsedDate = parseFilterDate(value);
-        if (
-          (key === 'startDate' || key === 'endDate') &&
-          parsedDate !== undefined
-        ) {
-          return {
-            ...accumulator,
-            ...getRequestDatePair(parsedDate, key),
-          };
-        }
-
         if (
           [
             'startDateAfter',
@@ -498,13 +410,6 @@ function getDecisionInstancesRequestFilters() {
               decisionDefinitionIds,
             };
           }
-        }
-        const parsedDate = parseFilterDate(value);
-        if (key === 'evaluationDate' && parsedDate !== undefined) {
-          return {
-            ...accumulator,
-            ...getRequestDatePair(parsedDate, key),
-          };
         }
 
         if (['evaluationDateAfter', 'evaluationDateBefore'].includes(key)) {
@@ -601,7 +506,6 @@ function getSortParams(search?: string): {
 export {
   getProcessInstanceFilters,
   parseIds,
-  parseFilterDate,
   parseFilterTime,
   getProcessInstancesRequestFilters,
   getDecisionInstancesRequestFilters,

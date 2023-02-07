@@ -11,7 +11,6 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -146,71 +145,6 @@ describe('Validations', () => {
       screen.getByText('Key has to be a 16 to 19 digit number')
     );
   });
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should validate start date',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Start Date'));
-      await user.type(screen.getByLabelText(/start date/i), 'a');
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-      await user.clear(screen.getByLabelText(/start date/i));
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      );
-
-      await user.type(screen.getByLabelText(/start date/i), '2021-05');
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-    }
-  );
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should validate end date',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('End Date'));
-      await user.type(screen.getByLabelText(/end date/i), 'a');
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-      await user.clear(screen.getByLabelText(/end date/i));
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      );
-
-      await user.type(screen.getByLabelText(/end date/i), '2021-05');
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-    }
-  );
 
   it('should validate variable name', async () => {
     const {user} = render(<Filters />, {

@@ -19,8 +19,6 @@ import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {MemoryRouter} from 'react-router-dom';
 import {Filters} from './index';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
-import {omit} from 'lodash';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {pickDateTimeRange} from 'modules/testUtils/dateTimeRange';
 
@@ -54,7 +52,6 @@ const MOCK_FILTERS_PARAMS = {
   failed: 'true',
   decisionInstanceIds: '2251799813689540-1',
   processInstanceId: '2251799813689549',
-  evaluationDate: '1111-11-11',
 } as const;
 
 describe('<Filters />', () => {
@@ -95,7 +92,9 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/evaluation date range/i)
+    ).not.toBeInTheDocument();
   });
 
   //TODO: will be fixed with https://github.com/camunda/operate/issues/3827
@@ -130,11 +129,6 @@ describe('<Filters />', () => {
 
     await user.click(screen.getByText(/^more filters$/i));
 
-    if (!IS_DATE_RANGE_FILTERS_ENABLED) {
-      await user.click(screen.getByText(/evaluation date/i));
-      await user.type(screen.getByText(/evaluation date/i), '1111-11-11');
-    }
-
     expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
     await waitFor(() =>
       expect(
@@ -143,11 +137,7 @@ describe('<Filters />', () => {
             screen.getByTestId('search').textContent ?? ''
           ).entries()
         )
-      ).toEqual(
-        IS_DATE_RANGE_FILTERS_ENABLED
-          ? omit(MOCK_FILTERS_PARAMS, 'evaluationDate')
-          : MOCK_FILTERS_PARAMS
-      )
+      ).toEqual(MOCK_FILTERS_PARAMS)
     );
 
     await user.click(screen.getByRole('button', {name: /reset/i}));
@@ -158,50 +148,47 @@ describe('<Filters />', () => {
     );
   });
 
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it : it.skip)(
-    'should write filters to url - evaluation date range',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
+  it('should write filters to url - evaluation date range', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
 
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toBeEmptyDOMElement();
 
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Evaluation Date Range'));
-      await user.click(screen.getByLabelText('Evaluation Date Range'));
-      const evaluationDate = await pickDateTimeRange({
-        user,
-        screen,
-        fromDay: '15',
-        toDay: '20',
-        fromTime: '20:30:00',
-        toTime: '11:03:59',
-      });
-      await user.click(screen.getByText('Apply'));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Evaluation Date Range'));
+    await user.click(screen.getByLabelText('Evaluation Date Range'));
+    const evaluationDate = await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '15',
+      toDay: '20',
+      fromTime: '20:30:00',
+      toTime: '11:03:59',
+    });
+    await user.click(screen.getByText('Apply'));
 
-      await waitFor(() =>
-        expect(
-          Object.fromEntries(
-            new URLSearchParams(
-              screen.getByTestId('search').textContent ?? ''
-            ).entries()
-          )
-        ).toEqual({
-          evaluationDateAfter: evaluationDate.fromDate,
-          evaluationDateBefore: evaluationDate.toDate,
-        })
-      );
+    await waitFor(() =>
+      expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? ''
+          ).entries()
+        )
+      ).toEqual({
+        evaluationDateAfter: evaluationDate.fromDate,
+        evaluationDateBefore: evaluationDate.toDate,
+      })
+    );
 
-      await user.click(screen.getByRole('button', {name: /reset/i}));
+    await user.click(screen.getByRole('button', {name: /reset/i}));
 
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
-      expect(screen.getByTestId('search')).toHaveTextContent(
-        /^\?evaluated=true&failed=true$/
-      );
-    }
-  );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    expect(screen.getByTestId('search')).toHaveTextContent(
+      /^\?evaluated=true&failed=true$/
+    );
+  });
 
   it('initialise filter values from url', () => {
     render(<Filters />, {
@@ -218,28 +205,22 @@ describe('<Filters />', () => {
     expect(screen.getByLabelText(/failed/i)).toBeChecked();
     expect(screen.getByDisplayValue(/2251799813689540-1/i)).toBeInTheDocument();
     expect(screen.getByDisplayValue(/2251799813689549/i)).toBeInTheDocument();
-    if (!IS_DATE_RANGE_FILTERS_ENABLED) {
-      expect(screen.getByDisplayValue(/1111-11-11/i)).toBeInTheDocument();
-    }
   });
 
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it : it.skip)(
-    'initialise filter values from url - evaluation date range',
-    () => {
-      const MOCK_PARAMS = {
-        evaluationDateAfter: '2021-02-21 09:00:00',
-        evaluationDateBefore: '2021-02-22 10:00:00',
-      } as const;
+  it('initialise filter values from url - evaluation date range', () => {
+    const MOCK_PARAMS = {
+      evaluationDateAfter: '2021-02-21 09:00:00',
+      evaluationDateBefore: '2021-02-22 10:00:00',
+    } as const;
 
-      render(<Filters />, {
-        wrapper: getWrapper(`/?${new URLSearchParams(MOCK_PARAMS)}`),
-      });
+    render(<Filters />, {
+      wrapper: getWrapper(`/?${new URLSearchParams(MOCK_PARAMS)}`),
+    });
 
-      expect(
-        screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
-      ).toBeInTheDocument();
-    }
-  );
+    expect(
+      screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
+    ).toBeInTheDocument();
+  });
 
   it('should remove enabled filters on unmount', async () => {
     const {unmount, user} = render(<Filters />, {
@@ -252,7 +233,9 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/evaluation date range/i)
+    ).not.toBeInTheDocument();
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(/decision instance key\(s\)/i));
@@ -261,16 +244,12 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/process instance key/i));
 
     await user.click(screen.getByText(/^more filters$/i));
-    await user.click(screen.getByText(/evaluation date/i));
+    await user.click(screen.getByText(/evaluation date range/i));
 
     expect(
       screen.getByLabelText(/decision instance key\(s\)/i)
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
-
-    if (!IS_DATE_RANGE_FILTERS_ENABLED) {
-      expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
-    }
 
     unmount();
 
@@ -284,7 +263,9 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/evaluation date/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/evaluation date range/i)
+    ).not.toBeInTheDocument();
   });
 
   it('should hide optional filters', async () => {
@@ -299,31 +280,17 @@ describe('<Filters />', () => {
     await user.click(screen.getByText(/process instance key/i));
 
     await user.click(screen.getByText(/^more filters$/i));
-    if (IS_DATE_RANGE_FILTERS_ENABLED) {
-      await user.click(screen.getByText(/evaluation date range/i));
-    } else {
-      await user.click(screen.getByText(/evaluation date/i));
-    }
+    await user.click(screen.getByText(/evaluation date range/i));
 
     expect(
       screen.getByLabelText(/decision instance key\(s\)/i)
     ).toBeInTheDocument();
     expect(screen.getByLabelText(/process instance key/i)).toBeInTheDocument();
-    if (IS_DATE_RANGE_FILTERS_ENABLED) {
-      expect(
-        screen.getByLabelText(/evaluation date range/i)
-      ).toBeInTheDocument();
-    } else {
-      expect(screen.getByLabelText(/evaluation date/i)).toBeInTheDocument();
-    }
+    expect(screen.getByLabelText(/evaluation date range/i)).toBeInTheDocument();
 
     await user.click(screen.getByTestId('delete-decisionInstanceIds'));
     await user.click(screen.getByTestId('delete-processInstanceId'));
-    if (IS_DATE_RANGE_FILTERS_ENABLED) {
-      await user.click(screen.getByTestId('delete-evaluationDateRange'));
-    } else {
-      await user.click(screen.getByTestId('delete-evaluationDate'));
-    }
+    await user.click(screen.getByTestId('delete-evaluationDateRange'));
 
     expect(
       screen.queryByLabelText(/decision instance key\(s\)/i)
@@ -331,15 +298,9 @@ describe('<Filters />', () => {
     expect(
       screen.queryByLabelText(/process instance key/i)
     ).not.toBeInTheDocument();
-    if (IS_DATE_RANGE_FILTERS_ENABLED) {
-      expect(
-        screen.queryByLabelText(/evaluation date range/i)
-      ).not.toBeInTheDocument();
-    } else {
-      expect(
-        screen.queryByLabelText(/evaluation date/i)
-      ).not.toBeInTheDocument();
-    }
+    expect(
+      screen.queryByLabelText(/evaluation date range/i)
+    ).not.toBeInTheDocument();
   });
 
   it('should select decision name and version', async () => {
@@ -497,38 +458,6 @@ describe('<Filters />', () => {
       screen.queryByText('Key has to be a 16 to 19 digit number')
     );
   });
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should validate evaluation date',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText(/evaluation date/i));
-      await user.type(screen.getByLabelText(/evaluation date/i), 'a');
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-
-      expect(screen.getByTestId('search')).toBeEmptyDOMElement();
-
-      await user.clear(screen.getByLabelText(/evaluation date/i));
-
-      await waitForElementToBeRemoved(() =>
-        screen.queryByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      );
-
-      await user.type(screen.getByLabelText(/evaluation date/i), '2021-05');
-
-      expect(
-        await screen.findByText('Date has to be in format YYYY-MM-DD hh:mm:ss')
-      ).toBeInTheDocument();
-    }
-  );
 
   it('should reset applied filters on navigation', async () => {
     const {user} = render(<Filters />, {

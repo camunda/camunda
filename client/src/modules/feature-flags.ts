@@ -5,6 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-const IS_DATE_RANGE_FILTERS_ENABLED = true;
-
-export {IS_DATE_RANGE_FILTERS_ENABLED};
+export {};

@@ -34,8 +34,6 @@ import {isEqual} from 'lodash';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {DecisionsFormGroup} from './DecisionsFormGroup';
 import {
-  validateDateCharacters,
-  validateDateComplete,
   validateDecisionIdsCharacters,
   validateDecisionIdsLength,
   validateParentInstanceIdCharacters,
@@ -45,7 +43,6 @@ import {
 } from 'modules/validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {tracking} from 'modules/tracking';
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
@@ -53,13 +50,12 @@ import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 type OptionalFilter =
   | 'decisionInstanceIds'
   | 'processInstanceId'
-  | 'evaluationDate'
   | 'evaluationDateRange';
 
 const optionalFilters: Array<OptionalFilter> = [
   'decisionInstanceIds',
   'processInstanceId',
-  IS_DATE_RANGE_FILTERS_ENABLED ? 'evaluationDateRange' : 'evaluationDate',
+  'evaluationDateRange',
 ];
 
 const OPTIONAL_FILTER_FIELDS: Record<
@@ -94,13 +90,6 @@ const OPTIONAL_FILTER_FIELDS: Record<
       validateParentInstanceIdNotTooLong,
       validateParentInstanceIdCharacters
     ),
-  },
-  evaluationDate: {
-    keys: ['evaluationDate'],
-    label: 'Evaluation Date',
-    placeholder: 'YYYY-MM-DD hh:mm:ss',
-    type: 'text',
-    validate: mergeValidators(validateDateCharacters, validateDateComplete),
   },
   evaluationDateRange: {
     keys: ['evaluationDateAfter', 'evaluationDateBefore'],

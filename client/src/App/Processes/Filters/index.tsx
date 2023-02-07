@@ -43,8 +43,6 @@ import {
   validateParentInstanceIdCharacters,
   validateParentInstanceIdComplete,
   validateParentInstanceIdNotTooLong,
-  validateDateCharacters,
-  validateDateComplete,
   validateOperationIdCharacters,
   validateOperationIdComplete,
 } from 'modules/validators';
@@ -52,7 +50,6 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {FieldValidator} from 'final-form';
 import {Variable} from './VariableField';
 import {DateRangeField} from 'modules/components/DateRangeField';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {tracking} from 'modules/tracking';
 import {dateRangePopoverStore} from 'modules/stores/dateRangePopover';
 
@@ -62,8 +59,6 @@ type OptionalFilter =
   | 'parentInstanceId'
   | 'operationId'
   | 'errorMessage'
-  | 'startDate'
-  | 'endDate'
   | 'startDateRange'
   | 'endDateRange';
 
@@ -73,8 +68,8 @@ const optionalFilters: Array<OptionalFilter> = [
   'operationId',
   'parentInstanceId',
   'errorMessage',
-  IS_DATE_RANGE_FILTERS_ENABLED ? 'startDateRange' : 'startDate',
-  IS_DATE_RANGE_FILTERS_ENABLED ? 'endDateRange' : 'endDate',
+  'startDateRange',
+  'endDateRange',
 ];
 
 type LocationType = Omit<Location, 'state'> & {
@@ -136,20 +131,6 @@ const OPTIONAL_FILTER_FIELDS: Record<
     keys: ['errorMessage'],
     label: 'Error Message',
     type: 'text',
-  },
-  startDate: {
-    keys: ['startDate'],
-    label: 'Start Date',
-    placeholder: 'YYYY-MM-DD hh:mm:ss',
-    type: 'text',
-    validate: mergeValidators(validateDateCharacters, validateDateComplete),
-  },
-  endDate: {
-    keys: ['endDate'],
-    label: 'End Date',
-    placeholder: 'YYYY-MM-DD hh:mm:ss',
-    type: 'text',
-    validate: mergeValidators(validateDateCharacters, validateDateComplete),
   },
   startDateRange: {
     keys: ['startDateAfter', 'startDateBefore'],

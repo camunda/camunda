@@ -7,7 +7,6 @@
 
 import {render, screen, within, waitFor} from 'modules/testing-library';
 import {getWrapper} from './mocks';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {
   groupedProcessesMock,
   mockProcessStatistics,
@@ -67,8 +66,10 @@ describe('Optional Filters', () => {
       screen.queryByLabelText(/Parent Process Instance Key/i)
     ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/start date range/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
   });
 
   it('should display variable fields on click', async () => {
@@ -173,15 +174,13 @@ describe('Optional Filters', () => {
       wrapper: getWrapper(),
     });
 
-    const LABEL = IS_DATE_RANGE_FILTERS_ENABLED
-      ? 'Start Date Range'
-      : 'Start Date';
+    const LABEL = 'Start Date Range';
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(LABEL));
     await user.click(screen.getByText(/^more filters$/i));
 
-    expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/start date range/i)).toBeInTheDocument();
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL)
@@ -193,13 +192,13 @@ describe('Optional Filters', () => {
       wrapper: getWrapper(),
     });
 
-    const LABEL = IS_DATE_RANGE_FILTERS_ENABLED ? 'End Date Range' : 'End Date';
+    const LABEL = 'End Date Range';
 
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText(LABEL));
     await user.click(screen.getByText(/^more filters$/i));
 
-    expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date range/i)).toBeInTheDocument();
     expect(
       // eslint-disable-next-line testing-library/prefer-presence-queries
       within(screen.getByTestId('more-filters-dropdown')).queryByText(LABEL)
@@ -221,18 +220,10 @@ describe('Optional Filters', () => {
     await user.click(screen.getByText('Parent Process Instance Key'));
     await user.click(screen.getByText(/^more filters$/i));
     await user.click(screen.getByText('Error Message'));
-
-    if (IS_DATE_RANGE_FILTERS_ENABLED) {
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Start Date Range'));
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('End Date Range'));
-    } else {
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Start Date'));
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('End Date'));
-    }
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Start Date Range'));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('End Date Range'));
 
     expect(
       screen.queryByTestId('more-filters-dropdown')
@@ -243,291 +234,300 @@ describe('Optional Filters', () => {
     expect(screen.getByText(/^more filters$/i)).toBeInTheDocument();
   });
 
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should delete optional filters',
-    async () => {
-      const MOCK_PARAMS = {
-        process: 'bigVarProcess',
-        version: '1',
-        ids: '2251799813685467',
-        parentInstanceId: '1954699813693756',
-        errorMessage: 'a random error',
-        startDate: '2021-02-21 18:17:18',
-        endDate: '2021-02-23 18:17:18',
-        flowNodeId: 'ServiceTask_0kt6c5i',
-        variableName: 'foo',
-        variableValue: '"bar"',
-        operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-        active: 'true',
-        incidents: 'true',
-        completed: 'true',
-        canceled: 'true',
-      } as const;
+  it('should delete optional filters', async () => {
+    const MOCK_PARAMS = {
+      process: 'bigVarProcess',
+      version: '1',
+      ids: '2251799813685467',
+      parentInstanceId: '1954699813693756',
+      errorMessage: 'a random error',
+      startDateBefore: '2021-02-21 18:17:18',
+      startDateAfter: '2021-02-21 20:00:00',
+      endDateBefore: '2021-02-23 18:17:18',
+      endDateAfter: '2021-02-23 22:00:00',
+      flowNodeId: 'ServiceTask_0kt6c5i',
+      variableName: 'foo',
+      variableValue: '"bar"',
+      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+    } as const;
 
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(
-          `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
-        ),
-      });
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+      ),
+    });
 
+    expect(screen.getByTestId('search').textContent).toBe(
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+    );
+
+    expect(
+      screen.getByLabelText(/process instance key\(s\)/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Parent Process Instance Key/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
+
+    expect(screen.getByLabelText(/start date range/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date range/i)).toBeInTheDocument();
+
+    expect(
+      screen.getByTestId('optional-filter-variable-name')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
+
+    await user.click(screen.getByTestId('delete-ids'));
+
+    await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
-        `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
-      );
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            parentInstanceId: '1954699813693756',
+            errorMessage: 'a random error',
+            startDateBefore: '2021-02-21 18:17:18',
+            startDateAfter: '2021-02-21 20:00:00',
+            endDateBefore: '2021-02-23 18:17:18',
+            endDateAfter: '2021-02-23 22:00:00',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            variableName: 'foo',
+            variableValue: '"bar"',
+            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
 
-      expect(
-        screen.getByLabelText(/process instance key\(s\)/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByLabelText(/Parent Process Instance Key/i)
-      ).toBeInTheDocument();
-      expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/process instance key\(s\)/i)
+    ).not.toBeInTheDocument();
 
-      expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
+    await user.click(screen.getByTestId('delete-parentInstanceId'));
 
-      expect(
-        screen.getByTestId('optional-filter-variable-name')
-      ).toBeInTheDocument();
-      expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-ids'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              parentInstanceId: '1954699813693756',
-              errorMessage: 'a random error',
-              startDate: '2021-02-21 18:17:18',
-              endDate: '2021-02-23 18:17:18',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              variableName: 'foo',
-              variableValue: '"bar"',
-              operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-
-      expect(
-        screen.queryByLabelText(/process instance key\(s\)/i)
-      ).not.toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-parentInstanceId'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              errorMessage: 'a random error',
-              startDate: '2021-02-21 18:17:18',
-              endDate: '2021-02-23 18:17:18',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              variableName: 'foo',
-              variableValue: '"bar"',
-              operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-      expect(
-        screen.queryByLabelText(/Parent Process Instance Key/i)
-      ).not.toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-errorMessage'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              startDate: '2021-02-21 18:17:18',
-              endDate: '2021-02-23 18:17:18',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              variableName: 'foo',
-              variableValue: '"bar"',
-              operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-      expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-startDate'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              endDate: '2021-02-23 18:17:18',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              variableName: 'foo',
-              variableValue: '"bar"',
-              operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-      expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-endDate'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              variableName: 'foo',
-              variableValue: '"bar"',
-              operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-      expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-variable'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-      expect(
-        screen.queryByTestId('optional-filter-variable-name')
-      ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
-
-      await user.click(screen.getByTestId('delete-operationId'));
-
-      await waitFor(() =>
-        expect(screen.getByTestId('search').textContent).toBe(
-          `?${new URLSearchParams(
-            Object.entries({
-              process: 'bigVarProcess',
-              version: '1',
-              flowNodeId: 'ServiceTask_0kt6c5i',
-              active: 'true',
-              incidents: 'true',
-              completed: 'true',
-              canceled: 'true',
-            })
-          ).toString()}`
-        )
-      );
-      expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
-    }
-  );
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should remove optional filters on filter reset',
-    async () => {
-      const MOCK_PARAMS = {
-        process: 'bigVarProcess',
-        version: '1',
-        ids: '2251799813685467',
-        parentInstanceId: '1954699813693756',
-        errorMessage: 'a random error',
-        startDate: '2021-02-21 18:17:18',
-        endDate: '2021-02-23 18:17:18',
-        flowNodeId: 'ServiceTask_0kt6c5i',
-        variableName: 'foo',
-        variableValue: '"bar"',
-        operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
-        active: 'true',
-        incidents: 'true',
-        completed: 'true',
-        canceled: 'true',
-      } as const;
-
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(
-          `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
-        ),
-      });
-
+    await waitFor(() =>
       expect(screen.getByTestId('search').textContent).toBe(
-        `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
-      );
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            errorMessage: 'a random error',
+            startDateBefore: '2021-02-21 18:17:18',
+            startDateAfter: '2021-02-21 20:00:00',
+            endDateBefore: '2021-02-23 18:17:18',
+            endDateAfter: '2021-02-23 22:00:00',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            variableName: 'foo',
+            variableValue: '"bar"',
+            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
+    expect(
+      screen.queryByLabelText(/Parent Process Instance Key/i)
+    ).not.toBeInTheDocument();
 
-      expect(
-        screen.getByLabelText(/process instance key\(s\)/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByLabelText(/Parent Process Instance Key/i)
-      ).toBeInTheDocument();
-      expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
-      expect(
-        screen.getByTestId('optional-filter-variable-name')
-      ).toBeInTheDocument();
-      expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
+    await user.click(screen.getByTestId('delete-errorMessage'));
 
-      await user.click(screen.getByTitle(/reset filters/i));
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            startDateBefore: '2021-02-21 18:17:18',
+            startDateAfter: '2021-02-21 20:00:00',
+            endDateBefore: '2021-02-23 18:17:18',
+            endDateAfter: '2021-02-23 22:00:00',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            variableName: 'foo',
+            variableValue: '"bar"',
+            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
+    expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
 
-      await waitFor(() =>
-        expect(screen.getByTestId('search')).toHaveTextContent(
-          /^\?active=true&incidents=true$/
-        )
-      );
+    await user.click(screen.getByTestId('delete-startDateRange'));
 
-      expect(
-        screen.queryByLabelText(/process instance key\(s\)/i)
-      ).not.toBeInTheDocument();
-      expect(
-        screen.queryByLabelText(/Parent Process Instance Key/i)
-      ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/start date/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/end date/i)).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId('optional-filter-variable-name')
-      ).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
-    }
-  );
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            endDateBefore: '2021-02-23 18:17:18',
+            endDateAfter: '2021-02-23 22:00:00',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            variableName: 'foo',
+            variableValue: '"bar"',
+            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
+    expect(
+      screen.queryByLabelText(/start date range/i)
+    ).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('delete-endDateRange'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            variableName: 'foo',
+            variableValue: '"bar"',
+            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
+    expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('delete-variable'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
+    expect(
+      screen.queryByTestId('optional-filter-variable-name')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('delete-operationId'));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search').textContent).toBe(
+        `?${new URLSearchParams(
+          Object.entries({
+            process: 'bigVarProcess',
+            version: '1',
+            flowNodeId: 'ServiceTask_0kt6c5i',
+            active: 'true',
+            incidents: 'true',
+            completed: 'true',
+            canceled: 'true',
+          })
+        ).toString()}`
+      )
+    );
+    expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
+  });
+
+  it('should remove optional filters on filter reset', async () => {
+    const MOCK_PARAMS = {
+      process: 'bigVarProcess',
+      version: '1',
+      ids: '2251799813685467',
+      parentInstanceId: '1954699813693756',
+      errorMessage: 'a random error',
+      startDateBefore: '2021-02-21 18:17:18',
+      startDateAfter: '2021-02-21 20:00:00',
+      endDateBefore: '2021-02-23 18:17:18',
+      endDateAfter: '2021-02-23 22:00:00',
+      flowNodeId: 'ServiceTask_0kt6c5i',
+      variableName: 'foo',
+      variableValue: '"bar"',
+      operationId: '2f5b1beb-cbeb-41c8-a2f0-4c0bcf76c4ee',
+      active: 'true',
+      incidents: 'true',
+      completed: 'true',
+      canceled: 'true',
+    } as const;
+
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(
+        `/?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+      ),
+    });
+
+    expect(screen.getByTestId('search').textContent).toBe(
+      `?${new URLSearchParams(Object.entries(MOCK_PARAMS)).toString()}`
+    );
+
+    expect(
+      screen.getByLabelText(/process instance key\(s\)/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/Parent Process Instance Key/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/error message/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/start date range/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/end date range/i)).toBeInTheDocument();
+    expect(
+      screen.getByTestId('optional-filter-variable-name')
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/value/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/operation id/i)).toBeInTheDocument();
+
+    await user.click(screen.getByTitle(/reset filters/i));
+
+    await waitFor(() =>
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        /^\?active=true&incidents=true$/
+      )
+    );
+
+    expect(
+      screen.queryByLabelText(/process instance key\(s\)/i)
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/Parent Process Instance Key/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/error message/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText(/start date range/i)
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/end date range/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId('optional-filter-variable-name')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/value/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/operation id/i)).not.toBeInTheDocument();
+  });
 });

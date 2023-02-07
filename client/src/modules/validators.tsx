@@ -9,7 +9,6 @@ import {FieldValidator} from 'final-form';
 import {isValidJSON} from 'modules/utils';
 import {
   parseIds,
-  parseFilterDate,
   ProcessInstanceFilters,
   DecisionInstanceFilters,
   parseFilterTime,
@@ -134,22 +133,6 @@ const validateParentInstanceIdNotTooLong: FieldValidator<
   }
 };
 
-const validateDateComplete: FieldValidator<
-  ProcessInstanceFilters['startDate'] | ProcessInstanceFilters['endDate']
-> = promisifyValidator((value = '') => {
-  if (value !== '' && !isValid(parseFilterDate(value.trim()))) {
-    return ERRORS.date;
-  }
-}, VALIDATION_TIMEOUT);
-
-const validateDateCharacters: FieldValidator<
-  ProcessInstanceFilters['startDate'] | ProcessInstanceFilters['endDate']
-> = (value = '') => {
-  if (value !== '' && value.replace(/[0-9]|\s|:|-/g, '') !== '') {
-    return ERRORS.date;
-  }
-};
-
 const validateTimeComplete = promisifyValidator((value = '') => {
   if (value !== '' && !isValid(parseFilterTime(value.trim()))) {
     return ERRORS.time;
@@ -240,8 +223,6 @@ export {
   validateParentInstanceIdCharacters,
   validateParentInstanceIdComplete,
   validateParentInstanceIdNotTooLong,
-  validateDateCharacters,
-  validateDateComplete,
   validateTimeComplete,
   validateTimeCharacters,
   validateOperationIdCharacters,

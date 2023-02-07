@@ -14,7 +14,6 @@ import {
   mockProcessStatistics,
   mockProcessXML,
 } from 'modules/testUtils';
-import {IS_DATE_RANGE_FILTERS_ENABLED} from 'modules/feature-flags';
 import {Filters} from '../index';
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
@@ -140,83 +139,48 @@ describe('Filters', () => {
     expect(screen.getByTestId(/canceled/)).toBeChecked();
   });
 
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it : it.skip)(
-    'should load values from the URL - date ranges',
-    async () => {
-      const MOCK_PARAMS = {
-        startDateAfter: '2021-02-21 09:00:00',
-        startDateBefore: '2021-02-22 10:00:00',
-        endDateAfter: '2021-02-23 11:00:00',
-        endDateBefore: '2021-02-24 12:00:00',
-      } as const;
+  it('should load values from the URL - date ranges', async () => {
+    const MOCK_PARAMS = {
+      startDateAfter: '2021-02-21 09:00:00',
+      startDateBefore: '2021-02-22 10:00:00',
+      endDateAfter: '2021-02-23 11:00:00',
+      endDateBefore: '2021-02-24 12:00:00',
+    } as const;
 
-      const initialPath = `/?${new URLSearchParams(
-        Object.entries(MOCK_PARAMS)
-      ).toString()}`;
+    const initialPath = `/?${new URLSearchParams(
+      Object.entries(MOCK_PARAMS)
+    ).toString()}`;
 
-      render(<Filters />, {
-        wrapper: getWrapper(initialPath),
-      });
+    render(<Filters />, {
+      wrapper: getWrapper(initialPath),
+    });
 
-      expect(
-        await screen.findByText('Big variable process')
-      ).toBeInTheDocument();
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
+    expect(await screen.findByText('Big variable process')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+    );
 
-      // Hidden fields
-      expect(
-        screen.getByDisplayValue(MOCK_PARAMS.endDateAfter)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue(MOCK_PARAMS.endDateBefore)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue(MOCK_PARAMS.endDateAfter)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue(MOCK_PARAMS.endDateBefore)
-      ).toBeInTheDocument();
-      // Non-hidden fields
-      expect(
-        screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByDisplayValue('2021-02-23 11:00:00 - 2021-02-24 12:00:00')
-      ).toBeInTheDocument();
-    }
-  );
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should load values from the URL - startDate / endDate',
-    async () => {
-      const MOCK_PARAMS = {
-        startDate: '2021-02-21 18:17:18',
-        endDate: '2021-02-23 18:17:18',
-      } as const;
-
-      const initialPath = `/?${new URLSearchParams(
-        Object.entries(MOCK_PARAMS)
-      ).toString()}`;
-
-      render(<Filters />, {
-        wrapper: getWrapper(initialPath),
-      });
-
-      expect(
-        await screen.findByText('Big variable process')
-      ).toBeInTheDocument();
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
-
-      expect(
-        screen.getByDisplayValue(MOCK_PARAMS.startDate)
-      ).toBeInTheDocument();
-      expect(screen.getByDisplayValue(MOCK_PARAMS.endDate)).toBeInTheDocument();
-    }
-  );
+    // Hidden fields
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateAfter)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(MOCK_PARAMS.endDateBefore)
+    ).toBeInTheDocument();
+    // Non-hidden fields
+    expect(
+      screen.getByDisplayValue('2021-02-21 09:00:00 - 2021-02-22 10:00:00')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue('2021-02-23 11:00:00 - 2021-02-24 12:00:00')
+    ).toBeInTheDocument();
+  });
 
   it('should set modified values to the URL', async () => {
     const MOCK_VALUES = {
@@ -314,93 +278,58 @@ describe('Filters', () => {
     );
   });
 
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it.skip : it)(
-    'should set modified values to the URL - startDate / endDate',
-    async () => {
-      const MOCK_VALUES = {
-        startDate: '2021-02-24 13:57:29',
-        endDate: '2021-02-26 13:57:29',
-      } as const;
+  it('should set modified values to the URL - date ranges', async () => {
+    const {user} = render(<Filters />, {
+      wrapper: getWrapper(),
+    });
 
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
+    await waitFor(() =>
+      expect(screen.getByTestId('filter-process-name')).toBeEnabled()
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
+    );
 
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
-      );
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('Start Date Range'));
+    await user.click(screen.getByLabelText('Start Date Range'));
+    const startDate = await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '5',
+      toDay: '10',
+    });
+    await user.click(screen.getByText('Apply'));
+    await user.click(screen.getByText(/^more filters$/i));
+    await user.click(screen.getByText('End Date Range'));
+    await user.click(screen.getByLabelText('End Date Range'));
+    const endDate = await pickDateTimeRange({
+      user,
+      screen,
+      fromDay: '15',
+      toDay: '20',
+      fromTime: '11:22:33',
+      toTime: '08:59:59',
+    });
+    await user.click(screen.getByText('Apply'));
 
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Start Date'));
-      await user.type(
-        screen.getByLabelText(/start date/i),
-        MOCK_VALUES.startDate
-      );
+    const MOCK_VALUES = {
+      startDateAfter: startDate.fromDate,
+      startDateBefore: startDate.toDate,
+      endDateAfter: endDate.fromDate,
+      endDateBefore: endDate.toDate,
+    } as const;
 
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('End Date'));
-      await user.type(screen.getByLabelText(/end date/i), MOCK_VALUES.endDate);
-    }
-  );
-
-  (IS_DATE_RANGE_FILTERS_ENABLED ? it : it.skip)(
-    'should set modified values to the URL - date ranges',
-    async () => {
-      const {user} = render(<Filters />, {
-        wrapper: getWrapper(),
-      });
-
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-process-name')).toBeEnabled()
-      );
-      await waitFor(() =>
-        expect(screen.getByTestId('filter-flow-node')).toBeEnabled()
-      );
-
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('Start Date Range'));
-      await user.click(screen.getByLabelText('Start Date Range'));
-      const startDate = await pickDateTimeRange({
-        user,
-        screen,
-        fromDay: '5',
-        toDay: '10',
-      });
-      await user.click(screen.getByText('Apply'));
-      await user.click(screen.getByText(/^more filters$/i));
-      await user.click(screen.getByText('End Date Range'));
-      await user.click(screen.getByLabelText('End Date Range'));
-      const endDate = await pickDateTimeRange({
-        user,
-        screen,
-        fromDay: '15',
-        toDay: '20',
-        fromTime: '11:22:33',
-        toTime: '08:59:59',
-      });
-      await user.click(screen.getByText('Apply'));
-
-      const MOCK_VALUES = {
-        startDateAfter: startDate.fromDate,
-        startDateBefore: startDate.toDate,
-        endDateAfter: endDate.fromDate,
-        endDateBefore: endDate.toDate,
-      } as const;
-
-      await waitFor(() => {
-        return expect(
-          Object.fromEntries(
-            new URLSearchParams(
-              screen.getByTestId('search').textContent ?? ''
-            ).entries()
-          )
-        ).toEqual(expect.objectContaining(MOCK_VALUES));
-      });
-    }
-  );
+    await waitFor(() => {
+      return expect(
+        Object.fromEntries(
+          new URLSearchParams(
+            screen.getByTestId('search').textContent ?? ''
+          ).entries()
+        )
+      ).toEqual(expect.objectContaining(MOCK_VALUES));
+    });
+  });
 
   it('should have JSON editor for variable value filter', async () => {
     const {user} = render(<Filters />, {
@@ -512,18 +441,10 @@ describe('Filters', () => {
         name: 'Parent Process Instance Key',
         fields: ['Parent Process Instance Key'],
       },
-      {name: 'End Date', fields: ['End Date']},
       {name: 'Variable', fields: ['Name', 'Value']},
-      {name: 'Start Date', fields: ['Start Date']},
       {name: 'Process Instance Key(s)', fields: ['Process Instance Key(s)']},
       {name: 'Operation Id', fields: ['Operation Id']},
     ];
-
-    // remove End Date and Start Date filters
-    if (IS_DATE_RANGE_FILTERS_ENABLED) {
-      optionalFilters.splice(4, 1);
-      optionalFilters.splice(2, 1);
-    }
 
     let fieldLabels = optionalFilters.reduce((acc, optionalFilter) => {
       return [...acc, ...optionalFilter.fields];

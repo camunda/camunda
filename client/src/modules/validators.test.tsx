@@ -8,8 +8,6 @@
 import {
   validateIdsCharacters,
   validatesIdsComplete,
-  validateDateCharacters,
-  validateDateComplete,
   validateOperationIdCharacters,
   validateOperationIdComplete,
   validateVariableNameComplete,
@@ -206,76 +204,6 @@ describe('validators', () => {
     ).resolves.toBe('Key has to be a 16 to 19 digit number');
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
-  });
-
-  it('should validate date without delay', () => {
-    expect(validateDateCharacters('', {})).toBeUndefined();
-
-    expect(validateDateCharacters('a', {})).toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateCharacters('2222-22-22 a', {})).toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateCharacters('1111-11-11', {})).toBeUndefined();
-
-    expect(validateDateCharacters('1111-11-11 11', {})).toBeUndefined();
-
-    expect(validateDateCharacters('1111-11-11 11:11', {})).toBeUndefined();
-
-    expect(validateDateCharacters('1111-11-11 11:11:11', {})).toBeUndefined();
-
-    expect(setTimeoutSpy).toHaveBeenCalledTimes(0);
-  });
-
-  it('should validate date with delay', () => {
-    expect(validateDateComplete('1', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete(':', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('2222-22-22 22:22:22', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-1', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('2222-22-22 22:22:', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-11 11:11:', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-11 11:1', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-11 11:11:1', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-11 11:11:111', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(validateDateComplete('1111-11-11 11:11::11', {})).resolves.toBe(
-      'Date has to be in format YYYY-MM-DD hh:mm:ss'
-    );
-
-    expect(setTimeoutSpy).toHaveBeenCalledTimes(11);
   });
 
   it('should validate operationId without delay', () => {
