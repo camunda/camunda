@@ -340,7 +340,7 @@ public class LeaderRoleTest {
     verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
 
     assertThat(entries).hasSize(2);
-    assertThat(entries.get(0).highestPosition()).isEqualTo(1);
+    assertThat(entries.get(0).highestPosition()).isOne();
     assertThat(entries.get(1).highestPosition()).isEqualTo(2);
   }
 
@@ -387,32 +387,8 @@ public class LeaderRoleTest {
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
   }
 
-  private static class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
-
-    private final long index;
-    private final long term;
-    private final RaftEntry entry;
-
-    public TestIndexedRaftLogEntry(final long index, final long term, final RaftEntry entry) {
-      this.index = index;
-      this.term = term;
-      this.entry = entry;
-    }
-
-    @Override
-    public long index() {
-      return index;
-    }
-
-    @Override
-    public long term() {
-      return term;
-    }
-
-    @Override
-    public RaftEntry entry() {
-      return entry;
-    }
+  private record TestIndexedRaftLogEntry(long index, long term, RaftEntry entry)
+      implements IndexedRaftLogEntry {
 
     @Override
     public boolean isApplicationEntry() {
