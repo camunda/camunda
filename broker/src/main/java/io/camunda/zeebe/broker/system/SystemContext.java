@@ -44,9 +44,6 @@ public final class SystemContext {
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
-  private static final String REPLICATION_WITH_DISABLED_FLUSH_WARNING =
-      "Disabling explicit flushing is an experimental feature and can lead to inconsistencies "
-          + "and/or data loss! Please refer to the documentation whether or not you should use this!";
 
   private final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
@@ -124,10 +121,6 @@ public final class SystemContext {
 
   private void validateExperimentalConfigs(
       final ClusterCfg cluster, final ExperimentalCfg experimental) {
-    if (experimental.isDisableExplicitRaftFlush()) {
-      LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
-    }
-
     final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
     if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
       throw new IllegalArgumentException(
