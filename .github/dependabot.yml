@@ -70,6 +70,9 @@ updates:
       # Ignore major and minor updates, for stable branches we only want to get patches
       - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    allow:
+      # Allow only production dependency updates for maintenance branches
+      - dependency-type: "production"
 
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
@@ -127,6 +130,9 @@ updates:
       # Ignore major and minor updates, for stable branches we only want to get patches
       - dependency-name: "*"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    allow:
+      # Allow only production dependency updates for maintenance branches
+      - dependency-type: "production"
 
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
