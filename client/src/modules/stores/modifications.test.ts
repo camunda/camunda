@@ -1282,6 +1282,14 @@ describe('stores/modifications', () => {
     });
 
     modificationsStore.cancelToken('flow_node_5', 'some_instance_key');
+    modificationsStore.addMoveModification({
+      sourceFlowNodeId: 'flow_node_6',
+      sourceFlowNodeInstanceKey: 'some_instance_key_2',
+      targetFlowNodeId: 'flow_node_7',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      newScopeCount: 1,
+    });
 
     expect(modificationsStore.generateModificationsPayload()).toEqual([
       {
@@ -1325,6 +1333,12 @@ describe('stores/modifications', () => {
       {
         fromFlowNodeInstanceKey: 'some_instance_key',
         modification: 'CANCEL_TOKEN',
+      },
+      {
+        fromFlowNodeInstanceKey: 'some_instance_key_2',
+        modification: 'MOVE_TOKEN',
+        newTokensCount: 1,
+        toFlowNodeId: 'flow_node_7',
       },
       {
         modification: 'ADD_VARIABLE',

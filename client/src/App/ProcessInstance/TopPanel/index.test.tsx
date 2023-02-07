@@ -246,7 +246,7 @@ describe('TopPanel', () => {
 
     expect(
       screen.getByTitle(
-        /Move all running instances in this flow node to another target/
+        /Move selected instance in this flow node to another target/
       )
     ).toBeInTheDocument();
   });

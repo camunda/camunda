@@ -743,5 +743,103 @@ describe('stores/flowNodeSelection', () => {
     expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
       false
     );
+
+    modificationsStore.removeLastModification();
+
+    // move all tokens one by one
+    modificationsStore.addMoveModification({
+      sourceFlowNodeId: 'userTask',
+      sourceFlowNodeInstanceKey: '2251799813689409',
+      targetFlowNodeId: 'anotherTask',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      newScopeCount: 1,
+    });
+    modificationsStore.addMoveModification({
+      sourceFlowNodeId: 'userTask',
+      sourceFlowNodeInstanceKey: '2251799813689410',
+      targetFlowNodeId: 'anotherTask',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      newScopeCount: 1,
+    });
+    modificationsStore.addMoveModification({
+      sourceFlowNodeId: 'userTask',
+      sourceFlowNodeInstanceKey: '2251799813689411',
+      targetFlowNodeId: 'anotherTask',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      newScopeCount: 1,
+    });
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689409',
+    });
+
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      true
+    );
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      true
+    );
+    flowNodeSelectionStore.clearSelection();
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      false
+    );
+
+    modificationsStore.removeLastModification();
+    modificationsStore.removeLastModification();
+    modificationsStore.removeLastModification();
+
+    // move one token
+    modificationsStore.addMoveModification({
+      sourceFlowNodeId: 'userTask',
+      sourceFlowNodeInstanceKey: '2251799813689409',
+      targetFlowNodeId: 'anotherTask',
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      newScopeCount: 1,
+    });
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689409',
+    });
+
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      true
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689410',
+    });
+
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      false
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+      flowNodeInstanceId: '2251799813689411',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      false
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'userTask',
+    });
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      false
+    );
+    flowNodeSelectionStore.clearSelection();
+    expect(flowNodeSelectionStore.hasPendingCancelOrMoveModification).toBe(
+      false
+    );
   });
 });

@@ -126,7 +126,7 @@ describe('stores/modificationRules', () => {
 
     expect(modificationRulesStore.availableModifications).toEqual([
       'cancel-instance',
-      'move-all',
+      'move-instance',
     ]);
   });
 
@@ -199,7 +199,7 @@ describe('stores/modificationRules', () => {
     expect(modificationRulesStore.availableModifications).toEqual([
       'add',
       'cancel-instance',
-      'move-all',
+      'move-instance',
     ]);
 
     // cancel the other instance

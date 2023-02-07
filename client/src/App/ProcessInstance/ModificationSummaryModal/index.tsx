@@ -189,7 +189,7 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                           id: 'instanceKey',
                           cellContent: (
                             <TruncatedValueContainer>
-                              {modification.operation === 'CANCEL_TOKEN' &&
+                              {modification.operation !== 'ADD_TOKEN' &&
                               modification.flowNodeInstanceKey !== undefined ? (
                                 <TruncatedValue>
                                   {modification.flowNodeInstanceKey}

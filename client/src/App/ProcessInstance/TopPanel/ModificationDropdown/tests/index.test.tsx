@@ -406,7 +406,7 @@ describe('Modification Dropdown', () => {
       screen.getByTestId('dropdown-spinner')
     );
     expect(screen.getByText(/Add/)).toBeInTheDocument();
-    expect(screen.getByText(/Move all/)).toBeInTheDocument();
+    expect(screen.getByText(/Move instance/)).toBeInTheDocument();
     expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
   });
 

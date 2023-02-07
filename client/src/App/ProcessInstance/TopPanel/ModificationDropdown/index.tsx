@@ -158,6 +158,22 @@ const ModificationDropdown: React.FC<Props> = observer(
                   </Option>
                 )}
 
+                {availableModifications.includes('move-instance') &&
+                  !isNil(flowNodeInstanceId) && (
+                    <Option
+                      title="Move selected instance in this flow node to another target"
+                      onClick={() => {
+                        modificationsStore.startMovingToken(
+                          flowNodeId,
+                          flowNodeInstanceId
+                        );
+                        flowNodeSelectionStore.clearSelection();
+                      }}
+                    >
+                      <MoveIcon />
+                      Move instance
+                    </Option>
+                  )}
                 {availableModifications.includes('move-all') && (
                   <Option
                     title="Move all running instances in this flow node to another target"

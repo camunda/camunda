@@ -11,7 +11,12 @@ import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {flowNodeSelectionStore} from './flowNodeSelection';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 
-type ModificationOption = 'add' | 'cancel-all' | 'cancel-instance' | 'move-all';
+type ModificationOption =
+  | 'add'
+  | 'cancel-all'
+  | 'cancel-instance'
+  | 'move-all'
+  | 'move-instance';
 
 class ModificationRules {
   constructor() {
@@ -93,8 +98,14 @@ class ModificationRules {
     }
 
     if (
-      !processInstanceDetailsDiagramStore.isSubProcess(this.selectedFlowNodeId)
+      processInstanceDetailsDiagramStore.isSubProcess(this.selectedFlowNodeId)
     ) {
+      return options;
+    }
+
+    if (isSingleOperationAllowed) {
+      options.push('move-instance');
+    } else {
       options.push('move-all');
     }
 
