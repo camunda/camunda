@@ -17,9 +17,10 @@ updates:
     open-pull-requests-limit: 5
     target-branch: main
     ignore:
-      # we will always manually update ES dependencies as we need to sync with the other teams
-      # before doing that
+      # we will always manually update ES dependencies to minor or major releases
+      # as we need to sync with the other teams before doing that
       - dependency-name: org.elasticsearch.client:*
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
