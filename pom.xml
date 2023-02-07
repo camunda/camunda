@@ -45,6 +45,7 @@
     <version.gson>2.10.1</version.gson>
     <version.node>v16.18.1</version.node>
     <version.yarn>v1.22.10</version.yarn>
+    <version.snakeyaml>1.33</version.snakeyaml>
 
     <zeebe-test-container.version>3.5.2</zeebe-test-container.version>
     <elasticsearch-test-container.version>1.17.6</elasticsearch-test-container.version>
@@ -101,8 +102,19 @@
         <groupId>org.elasticsearch</groupId>
         <artifactId>elasticsearch-x-content</artifactId>
         <version>${version.elasticsearch}</version>
-      </dependency>
-      <!-- END -->
+          <exclusions>
+            <exclusion>
+              <groupId>org.yaml</groupId>
+              <artifactId>snakeyaml</artifactId>
+            </exclusion>
+          </exclusions>
+        </dependency>
+
+        <dependency>
+          <groupId>org.yaml</groupId>
+          <artifactId>snakeyaml</artifactId>
+          <version>${version.snakeyaml}</version>
+        </dependency>
 
       <dependency>
         <groupId>org.apache.logging.log4j</groupId>
