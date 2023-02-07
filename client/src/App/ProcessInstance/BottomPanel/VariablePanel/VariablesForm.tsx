@@ -46,7 +46,7 @@ const VariablesForm: React.FC<
     return (
       flowNodeSelectionStore.isPlaceholderSelected ||
       (flowNodeMetaDataStore.isSelectedInstanceRunning &&
-        !flowNodeSelectionStore.hasPendingCancelModification)
+        !flowNodeSelectionStore.hasPendingCancelOrMoveModification)
     );
   });
 

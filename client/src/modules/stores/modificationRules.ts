@@ -44,14 +44,14 @@ class ModificationRules {
       return false;
     }
 
-    const {hasPendingCancelModification, selectedRunningInstanceCount} =
+    const {hasPendingCancelOrMoveModification, selectedRunningInstanceCount} =
       flowNodeSelectionStore;
 
     return (
       processInstanceDetailsDiagramStore.cancellableFlowNodes.includes(
         this.selectedFlowNodeId
       ) &&
-      !hasPendingCancelModification &&
+      !hasPendingCancelOrMoveModification &&
       selectedRunningInstanceCount > 0
     );
   }

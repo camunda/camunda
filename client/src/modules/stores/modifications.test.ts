@@ -590,17 +590,17 @@ describe('stores/modifications', () => {
     });
 
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-1')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-1')
     ).toBe(false);
 
     modificationsStore.cancelAllTokens('service-task-1');
 
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-1')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-1')
     ).toBe(true);
 
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode(
+      modificationsStore.hasPendingCancelOrMoveModification(
         'non-existing-flownode'
       )
     ).toBe(false);
@@ -618,10 +618,10 @@ describe('stores/modifications', () => {
       },
     });
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-2')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-2')
     ).toBe(true);
     expect(
-      modificationsStore.isCancelModificationAppliedOnFlowNode('service-task-3')
+      modificationsStore.hasPendingCancelOrMoveModification('service-task-3')
     ).toBe(false);
   });
 

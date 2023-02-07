@@ -237,7 +237,7 @@ const TopPanel: React.FC = observer(() => {
                       flowNodeState={payload.flowNodeState}
                       count={payload.count}
                       container={overlay.container}
-                      isFaded={modificationsStore.isCancelModificationAppliedOnFlowNode(
+                      isFaded={modificationsStore.hasPendingCancelOrMoveModification(
                         overlay.flowNodeId
                       )}
                     />

@@ -218,7 +218,7 @@ class FlowNodeSelection {
     );
   }
 
-  get hasPendingCancelModification() {
+  get hasPendingCancelOrMoveModification() {
     const currentSelection = this.state.selection;
 
     if (currentSelection === null) {
@@ -240,7 +240,8 @@ class FlowNodeSelection {
 
     return (
       flowNodeInstanceId !== undefined &&
-      modificationsStore.isCancelModificationAppliedOnFlowNodeInstanceKey(
+      modificationsStore.hasPendingCancelOrMoveModification(
+        flowNodeId,
         flowNodeInstanceId
       )
     );

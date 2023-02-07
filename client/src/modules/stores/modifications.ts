@@ -172,29 +172,12 @@ class Modifications {
         ? 1
         : affectedTokenCount;
 
-      modificationsStore.addModification({
-        type: 'token',
-        payload: {
-          operation: 'MOVE_TOKEN',
-          flowNode: {
-            id: this.state.sourceFlowNodeIdForMoveOperation,
-            name: processInstanceDetailsDiagramStore.getFlowNodeName(
-              this.state.sourceFlowNodeIdForMoveOperation
-            ),
-          },
-          targetFlowNode: {
-            id: targetFlowNodeId,
-            name: processInstanceDetailsDiagramStore.getFlowNodeName(
-              targetFlowNodeId
-            ),
-          },
-          affectedTokenCount,
-          visibleAffectedTokenCount,
-          scopeIds: Array.from({
-            length: newScopeCount,
-          }).map(() => generateUniqueID()),
-          parentScopeIds: this.generateParentScopeIds(targetFlowNodeId),
-        },
+      this.addMoveModification({
+        sourceFlowNodeId: this.state.sourceFlowNodeIdForMoveOperation,
+        targetFlowNodeId,
+        affectedTokenCount,
+        visibleAffectedTokenCount,
+        newScopeCount,
       });
     }
 
@@ -404,21 +387,19 @@ class Modifications {
     }, {});
   }
 
-  isCancelModificationAppliedOnFlowNode = (flowNodeId: string) => {
-    const cancelledTokens =
-      this.modificationsByFlowNode[flowNodeId]?.cancelledTokens ?? 0;
-
-    return cancelledTokens > 0;
-  };
-
-  isCancelModificationAppliedOnFlowNodeInstanceKey = (
-    flowNodeInstanceKey: string
+  hasPendingCancelOrMoveModification = (
+    flowNodeId: string,
+    flowNodeInstanceKey?: string
   ) => {
-    return this.flowNodeModifications.some(
-      (modification) =>
-        modification.operation === 'CANCEL_TOKEN' &&
-        modification.flowNodeInstanceKey === flowNodeInstanceKey
-    );
+    if (flowNodeInstanceKey !== undefined) {
+      return this.flowNodeModifications.some(
+        (modification) =>
+          modification.operation !== 'ADD_TOKEN' &&
+          modification.flowNodeInstanceKey === flowNodeInstanceKey
+      );
+    }
+
+    return (this.modificationsByFlowNode[flowNodeId]?.cancelledTokens ?? 0) > 0;
   };
 
   get variableModifications() {
@@ -720,6 +701,48 @@ class Modifications {
         processInstanceDetailsStatisticsStore.getTotalRunningInstancesVisibleForFlowNode(
           flowNodeId
         ),
+    });
+  };
+
+  addMoveModification = ({
+    sourceFlowNodeId,
+    sourceFlowNodeInstanceKey,
+    targetFlowNodeId,
+    newScopeCount,
+    affectedTokenCount,
+    visibleAffectedTokenCount,
+  }: {
+    sourceFlowNodeId: string;
+    sourceFlowNodeInstanceKey?: string;
+    targetFlowNodeId: string;
+    newScopeCount: number;
+    affectedTokenCount: number;
+    visibleAffectedTokenCount: number;
+  }) => {
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        flowNode: {
+          id: sourceFlowNodeId,
+          name: processInstanceDetailsDiagramStore.getFlowNodeName(
+            sourceFlowNodeId
+          ),
+        },
+        flowNodeInstanceKey: sourceFlowNodeInstanceKey,
+        targetFlowNode: {
+          id: targetFlowNodeId,
+          name: processInstanceDetailsDiagramStore.getFlowNodeName(
+            targetFlowNodeId
+          ),
+        },
+        affectedTokenCount,
+        visibleAffectedTokenCount,
+        scopeIds: Array.from({
+          length: newScopeCount,
+        }).map(() => generateUniqueID()),
+        parentScopeIds: this.generateParentScopeIds(targetFlowNodeId),
+      },
     });
   };
 
