@@ -36,9 +36,11 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -52,10 +54,17 @@ class SegmentedJournalTest {
   private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
   private final int entrySize = getSerializedSize(data);
 
+  private SegmentedJournal journal;
+
+  @AfterEach
+  void teardown() {
+    CloseHelper.quietClose(journal);
+  }
+
   @Test
   void shouldDeleteIndexMappingsOnReset() {
     // given
-    final SegmentedJournal journal = openJournal(10);
+    journal = openJournal(10);
 
     long asqn = 1;
     // append until there are two index mappings
@@ -78,7 +87,7 @@ class SegmentedJournalTest {
     // given
     final int entriesPerSegment = 10;
     long asqn = 1;
-    final SegmentedJournal journal = openJournal(entriesPerSegment);
+    journal = openJournal(entriesPerSegment);
     for (int i = 0; i < 3 * entriesPerSegment; i++) {
       journal.append(asqn++, recordDataWriter);
     }
@@ -98,7 +107,7 @@ class SegmentedJournalTest {
     // given
     final int entriesPerSegment = 10;
     long asqn = 1;
-    final SegmentedJournal journal = openJournal(entriesPerSegment);
+    journal = openJournal(entriesPerSegment);
     for (int i = 0; i < 2 * journalIndexDensity; i++) {
       journal.append(asqn++, recordDataWriter);
     }
@@ -121,7 +130,7 @@ class SegmentedJournalTest {
     // given
     final int asqn = 1;
     // one entry fits but not two
-    final SegmentedJournal journal = openJournal(1.5f);
+    journal = openJournal(1.5f);
 
     final JournalReader reader = journal.openReader();
 
@@ -145,7 +154,7 @@ class SegmentedJournalTest {
   void shouldNotTruncateIfIndexIsHigherThanLast() {
     // given
     final int asqn = 1;
-    final SegmentedJournal journal = openJournal(1);
+    journal = openJournal(1);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -168,7 +177,7 @@ class SegmentedJournalTest {
   void shouldNotCompactIfIndexIsLowerThanFirst() {
     // given
     final int asqn = 1;
-    final SegmentedJournal journal = openJournal(1.5f);
+    journal = openJournal(1.5f);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -186,7 +195,7 @@ class SegmentedJournalTest {
   @Test
   void shouldTruncateNextEntry() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -204,7 +213,7 @@ class SegmentedJournalTest {
   @Test
   void shouldTruncateReadEntry() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -222,7 +231,7 @@ class SegmentedJournalTest {
   @Test
   void shouldTruncateNextSegment() {
     // given
-    final SegmentedJournal journal = openJournal(1);
+    journal = openJournal(1);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -239,7 +248,7 @@ class SegmentedJournalTest {
   @Test
   void shouldReadSegmentStartAfterMidSegmentTruncate() {
     final int entryPerSegment = 2;
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -258,7 +267,7 @@ class SegmentedJournalTest {
   @Test
   void shouldCompactUpToStartOfSegment() {
     final int entryPerSegment = 2;
-    final SegmentedJournal journal = openJournal(entryPerSegment);
+    journal = openJournal(entryPerSegment);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -278,7 +287,7 @@ class SegmentedJournalTest {
   @Test
   void shouldNotCompactTheLastSegmentWhenNonExistingHigherIndex() {
     final int entryPerSegment = 2;
-    final SegmentedJournal journal = openJournal(entryPerSegment);
+    journal = openJournal(entryPerSegment);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -298,7 +307,7 @@ class SegmentedJournalTest {
   @Test
   void shouldReturnCorrectFirstIndexAfterCompaction() {
     final int entryPerSegment = 2;
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
 
     // when
     long lastIndex = -1;
@@ -313,7 +322,7 @@ class SegmentedJournalTest {
 
   @Test
   void shouldWriteAndReadAfterTruncate() {
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final JournalReader reader = journal.openReader();
 
     // when
@@ -360,7 +369,7 @@ class SegmentedJournalTest {
     // given
     final int entriesPerSegment = 10;
     long asqn = 1;
-    SegmentedJournal journal = openJournal(entriesPerSegment);
+    journal = openJournal(entriesPerSegment);
     for (int i = 0; i < 2 * journalIndexDensity; i++) {
       journal.append(asqn++, recordDataWriter);
     }
@@ -394,7 +403,7 @@ class SegmentedJournalTest {
     assertThat(emptyLog.createNewFile()).isTrue();
 
     // when
-    final var journal = openJournal(10);
+    journal = openJournal(10);
     final var reader = journal.openReader();
     final var record = journal.append(recordDataWriter);
 
@@ -408,7 +417,7 @@ class SegmentedJournalTest {
   @Test
   void shouldContinueWritingAfterDetectingCorruptedDescriptorWithOutAckEntries() throws Exception {
     // given
-    var journal = openJournal(1);
+    journal = openJournal(1);
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
@@ -430,7 +439,7 @@ class SegmentedJournalTest {
   @Test
   void shouldHandleCorruptionAtDescriptorWithSomeAckedEntries() throws Exception {
     // given
-    var journal = openJournal(1);
+    journal = openJournal(1);
     final var firstRecord = (PersistedJournalRecord) journal.append(recordDataWriter);
     final var copiedFirstRecord =
         new PersistedJournalRecord(
@@ -463,7 +472,7 @@ class SegmentedJournalTest {
   @Test
   void shouldNotDeleteSegmentFileImmediately() {
     // given
-    final var journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(recordDataWriter);
     journal.append(recordDataWriter);
     final var reader = journal.openReader();
@@ -484,7 +493,7 @@ class SegmentedJournalTest {
   void shouldNotFailOnResetAndOpeningReaderConcurrently() throws InterruptedException {
     // given
     final var latch = new CountDownLatch(2);
-    final var journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(recordDataWriter);
     journal.append(recordDataWriter);
 
@@ -511,7 +520,7 @@ class SegmentedJournalTest {
   void shouldNotFailOnDeleteAndOpeningReaderConcurrently() throws InterruptedException {
     // given
     final var latch = new CountDownLatch(2);
-    final var journal = openJournal(2);
+    journal = openJournal(2);
     for (int i = 0; i < 10; i++) {
       journal.append(recordDataWriter);
     }
@@ -538,7 +547,7 @@ class SegmentedJournalTest {
   @Test
   void shouldDeleteSegmentFileWhenReaderIsClosed() {
     // given
-    final var journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(recordDataWriter);
     final var reader = journal.openReader();
     journal.reset(100);
@@ -557,7 +566,7 @@ class SegmentedJournalTest {
   @Test
   void shouldDeleteSegmentFileImmediatelyWhenThereAreNoReaders() {
     // given
-    final var journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(recordDataWriter);
 
     // when
@@ -574,7 +583,7 @@ class SegmentedJournalTest {
   @Test
   void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() {
     // given
-    final var journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(recordDataWriter);
     journal.openReader(); // Keep the reader opened so that the file is not deleted.
     journal.reset(100);
@@ -600,7 +609,7 @@ class SegmentedJournalTest {
   void shouldReleaseReadLock() throws InterruptedException {
     // given
     final var latch = new CountDownLatch(1);
-    final var journal = openJournal(5);
+    journal = openJournal(5);
 
     // delete first segment so that it closes
     final var segment = journal.getFirstSegment();
@@ -668,7 +677,7 @@ class SegmentedJournalTest {
   void shouldValidateAsqnBeforeCreatingNewSegment() {
     // given
     // one entry fits but not two
-    final SegmentedJournal journal = openJournal(1.5f);
+    journal = openJournal(1.5f);
     journal.append(1, recordDataWriter);
 
     // when/then
@@ -681,7 +690,7 @@ class SegmentedJournalTest {
   void shouldValidateAsqnWhenWritingToNewSegment() {
     // given
     // one entry fits but not two
-    final SegmentedJournal journal = openJournal(1.5f);
+    journal = openJournal(1.5f);
     journal.append(1, recordDataWriter);
 
     // when
@@ -701,7 +710,7 @@ class SegmentedJournalTest {
     // given
     // one entry fits but not two
     final float entriesPerSegment = 5;
-    SegmentedJournal journal = openJournal(entriesPerSegment);
+    journal = openJournal(entriesPerSegment);
 
     journal.append(1, recordDataWriter);
 
@@ -722,7 +731,7 @@ class SegmentedJournalTest {
     // given
     // one entry fits but not two
     final float entriesPerSegment = 1.5f;
-    final SegmentedJournal journal = openJournal(entriesPerSegment);
+    journal = openJournal(entriesPerSegment);
 
     journal.append(1, recordDataWriter);
 
@@ -730,19 +739,19 @@ class SegmentedJournalTest {
     // force creation of new segment with an asqn ignore entry
     journal.append(ASQN_IGNORE, recordDataWriter);
     journal.close();
-    final SegmentedJournal reopenedJournal = openJournal(entriesPerSegment);
 
     // then
-    Assertions.assertThatThrownBy(() -> reopenedJournal.append(1, recordDataWriter))
-        .isInstanceOf(InvalidAsqn.class);
-
-    assertThat(reopenedJournal.getFirstSegment()).isNotEqualTo(reopenedJournal.getLastSegment());
+    try (final var reopenedJournal = openJournal(entriesPerSegment)) {
+      Assertions.assertThatThrownBy(() -> reopenedJournal.append(1, recordDataWriter))
+          .isInstanceOf(InvalidAsqn.class);
+      assertThat(reopenedJournal.getFirstSegment()).isNotEqualTo(reopenedJournal.getLastSegment());
+    }
   }
 
   @Test
   void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegment() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final long initalAsqn = journal.getFirstSegment().lastAsqn();
     journal.append(1, recordDataWriter);
 
@@ -757,7 +766,7 @@ class SegmentedJournalTest {
   @Test
   void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegmentWhenNewSegContainsAsqnIgnoreOnly() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(1, recordDataWriter);
     final var expectedLastAsqn = journal.append(2, recordDataWriter).asqn();
     // write to second segment
@@ -774,7 +783,7 @@ class SegmentedJournalTest {
   @Test
   void shouldSuceedToAppendWithPreviousAsqnAfterTruncateToIndexOfPreviousSegment() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     journal.append(1, recordDataWriter);
 
     // when
@@ -787,7 +796,7 @@ class SegmentedJournalTest {
   @Test
   void shouldResetAsqnOnTruncateToIndexWithinCurrentSegment() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final JournalRecord firstJournalRecord = journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
 
@@ -801,7 +810,7 @@ class SegmentedJournalTest {
   @Test
   void shouldSucceedToAppendWithPreviousAsqnAfterTruncateToIndexWithinCurrentSegment() {
     // given
-    final SegmentedJournal journal = openJournal(2);
+    journal = openJournal(2);
     final JournalRecord firstJournalRecord = journal.append(1, recordDataWriter);
     journal.append(2, recordDataWriter);
 

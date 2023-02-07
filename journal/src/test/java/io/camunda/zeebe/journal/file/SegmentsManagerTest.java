@@ -45,16 +45,22 @@ class SegmentsManagerTest {
     segments.getFirstSegment().delete();
 
     // when
-    // if we close the current journal, it will delete the files on closing. So we cannot test this
-    // scenario.
-    createSegmentsManager(0).open();
+    // opening another journal instance without closing the original one, the segment marked
+    // for deletion is deleted. We can't close the first journal instance before because closing
+    // will cause the segment to be deleted on close where we actually want to test that the file is
+    // deleted when opening.
 
-    // then
-    final File logDirectory = directory.resolve("data").toFile();
-    assertThat(logDirectory)
-        .isDirectoryNotContaining(
-            file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
-        .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+    try (var newSegments = createSegmentsManager(0)) {
+      newSegments.open();
+      // then
+      final File logDirectory = directory.resolve("data").toFile();
+      assertThat(logDirectory)
+          .isDirectoryNotContaining(
+              file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
+          .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
+    }
+
+    segments.close();
   }
 
   @Test
