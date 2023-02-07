@@ -141,6 +141,7 @@ public class DevDataGenerator implements DataGenerator {
       startSimpleProcess();
       startBigFormProcess();
       startCarForRentProcess();
+      startTwoUserTasks();
     }
   }
 
@@ -170,6 +171,10 @@ public class DevDataGenerator implements DataGenerator {
 
   private void startCarForRentProcess() {
     ZeebeTestUtil.startProcessInstance(zeebeClient, "registerCarForRent", null);
+  }
+
+  private void startTwoUserTasks() {
+    ZeebeTestUtil.startProcessInstance(zeebeClient, "twoUserTasks", null);
   }
 
   private void startOrderProcess() {
@@ -221,6 +226,7 @@ public class DevDataGenerator implements DataGenerator {
     ZeebeTestUtil.deployProcess(zeebeClient, "simpleProcess.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "bigFormProcess.bpmn");
     ZeebeTestUtil.deployProcess(zeebeClient, "registerCarForRent.bpmn");
+    ZeebeTestUtil.deployProcess(zeebeClient, "twoUserTasks.bpmn");
   }
 
   public boolean shouldCreateData() {
