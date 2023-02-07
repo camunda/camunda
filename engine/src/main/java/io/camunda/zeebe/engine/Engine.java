@@ -104,6 +104,7 @@ public class Engine implements RecordProcessor {
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder processingResultBuilder) {
+
     try (final var scope = new ProcessingResultBuilderScope(processingResultBuilder)) {
       TypedRecordProcessor<?> currentProcessor = null;
 
@@ -124,12 +125,7 @@ public class Engine implements RecordProcessor {
 
       final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
-        currentProcessor.processRecord(
-            record,
-            (sep) -> {
-              processingResultBuilder.resetPostCommitTasks();
-              processingResultBuilder.appendPostCommitTask(sep::flush);
-            });
+        currentProcessor.processRecord(record);
       }
     }
     return processingResultBuilder.build();

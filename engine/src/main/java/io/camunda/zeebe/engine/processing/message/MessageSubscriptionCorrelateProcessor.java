@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.message;
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRe
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.function.Consumer;
 
 public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -43,13 +41,12 @@ public final class MessageSubscriptionCorrelateProcessor
     this.subscriptionState = subscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    messageCorrelator = new MessageCorrelator(messageState, commandSender, stateWriter);
+    messageCorrelator =
+        new MessageCorrelator(messageState, commandSender, stateWriter, writers.sideEffect());
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<MessageSubscriptionRecord> record,
-      final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
 
     final MessageSubscriptionRecord command = record.getValue();
     final MessageSubscription subscription =
@@ -65,8 +62,7 @@ public final class MessageSubscriptionCorrelateProcessor
         subscription.getKey(), MessageSubscriptionIntent.CORRELATED, messageSubscription);
 
     if (!messageSubscription.isInterrupting()) {
-      messageCorrelator.correlateNextMessage(
-          subscription.getKey(), messageSubscription, sideEffect);
+      messageCorrelator.correlateNextMessage(subscription.getKey(), messageSubscription);
     }
   }
 

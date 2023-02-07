@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectProducer;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -25,7 +23,6 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -34,7 +31,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
-  private final SideEffectQueue sideEffectQueue;
   private final ProcessState processState;
   private final BpmnElementProcessors processors;
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
@@ -46,7 +42,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final BpmnBehaviors bpmnBehaviors,
       final MutableZeebeState zeebeState,
       final Writers writers,
-      final SideEffectQueue sideEffectQueue,
       final ProcessEngineMetrics processEngineMetrics) {
     processState = zeebeState.getProcessState();
 
@@ -61,7 +56,6 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             this::getContainerProcessor,
             writers);
     processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior);
-    this.sideEffectQueue = sideEffectQueue;
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -70,14 +64,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   @Override
-  public void processRecord(
-      final TypedRecord<ProcessInstanceRecord> record,
-      final Consumer<SideEffectProducer> sideEffect) {
+  public void processRecord(final TypedRecord<ProcessInstanceRecord> record) {
 
     // initialize
-    sideEffectQueue.clear();
-    sideEffect.accept(sideEffectQueue);
-
     final var intent = (ProcessInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
 

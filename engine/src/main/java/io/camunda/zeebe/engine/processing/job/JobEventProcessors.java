@@ -52,7 +52,7 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.FAIL,
             new JobFailProcessor(
-                zeebeState, zeebeState.getKeyGenerator(), jobMetrics, jobBackoffChecker))
+                zeebeState, writers, zeebeState.getKeyGenerator(), jobMetrics, jobBackoffChecker))
         .onCommand(
             ValueType.JOB,
             JobIntent.THROW_ERROR,

@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.KeyGenerator;
@@ -67,7 +66,6 @@ public final class EngineProcessors {
 
     final var jobMetrics = new JobMetrics(partitionId);
     final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
-    final var sideEffectQueue = new SideEffectQueue();
 
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
@@ -77,8 +75,7 @@ public final class EngineProcessors {
             partitionsCount,
             timerChecker,
             jobMetrics,
-            processEngineMetrics,
-            sideEffectQueue);
+            processEngineMetrics);
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
@@ -98,8 +95,7 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker,
-            sideEffectQueue);
+            timerChecker);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
@@ -121,10 +117,8 @@ public final class EngineProcessors {
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
       final JobMetrics jobMetrics,
-      final ProcessEngineMetrics processEngineMetrics,
-      final SideEffectQueue sideEffectQueue) {
+      final ProcessEngineMetrics processEngineMetrics) {
     return new BpmnBehaviorsImpl(
-        sideEffectQueue,
         zeebeState,
         writers,
         jobMetrics,
@@ -140,16 +134,14 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker,
-      final SideEffectQueue sideEffectQueue) {
+      final DueDateTimerChecker timerChecker) {
     return ProcessEventProcessors.addProcessProcessors(
         zeebeState,
         bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers,
-        sideEffectQueue);
+        writers);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

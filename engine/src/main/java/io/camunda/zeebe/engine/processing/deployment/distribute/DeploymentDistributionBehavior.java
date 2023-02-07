@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.distribute;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.sideeffect.SideEffectQueue;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
@@ -31,6 +31,7 @@ public final class DeploymentDistributionBehavior {
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
   private final StateWriter stateWriter;
+  private final SideEffectWriter sideEffectWriter;
 
   public DeploymentDistributionBehavior(
       final Writers writers,
@@ -44,12 +45,10 @@ public final class DeploymentDistributionBehavior {
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
 
     stateWriter = writers.state();
+    sideEffectWriter = writers.sideEffect();
   }
 
-  public void distributeDeployment(
-      final DeploymentRecord deploymentEvent,
-      final long key,
-      final SideEffectQueue sideEffectQueue) {
+  public void distributeDeployment(final DeploymentRecord deploymentEvent, final long key) {
     final var copiedDeploymentBuffer = BufferUtil.createCopy(deploymentEvent);
 
     otherPartitions.forEach(
@@ -58,7 +57,7 @@ public final class DeploymentDistributionBehavior {
           stateWriter.appendFollowUpEvent(
               key, DeploymentDistributionIntent.DISTRIBUTING, deploymentDistributionRecord);
 
-          sideEffectQueue.add(
+          sideEffectWriter.appendSideEffect(
               () -> {
                 distributeDeploymentToPartition(key, partitionId, copiedDeploymentBuffer);
                 return true;
