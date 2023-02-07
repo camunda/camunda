@@ -36,7 +36,7 @@ public class InterruptingEventSubprocessConcurrencyTest {
       EngineRule.singlePartition()
           // Disable batch processing. Interrupting behaviour is only reproducible if
           // process instance is not completed in one batch.
-          .processingBatchLimit(1);
+          .maxCommandsInBatch(1);
 
   @Test
   // https://github.com/camunda/zeebe/issues/6552

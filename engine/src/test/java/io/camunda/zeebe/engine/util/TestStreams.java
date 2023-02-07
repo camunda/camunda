@@ -86,7 +86,7 @@ public final class TestStreams {
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
-  private int processingBatchLimit = StreamProcessorContext.DEFAULT_PROCESSING_BATCH_LIMIT;
+  private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -260,7 +260,7 @@ public final class TestStreams {
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
             .recordProcessors(List.of(new Engine(wrappedFactory)))
             .streamProcessorMode(streamProcessorMode)
-            .processingBatchLimit(processingBatchLimit)
+            .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     final StreamProcessor streamProcessor = builder.build();
@@ -311,8 +311,8 @@ public final class TestStreams {
             () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
 
-  public void processingBatchLimit(final int processingBatchLimit) {
-    this.processingBatchLimit = processingBatchLimit;
+  public void maxCommandsInBatch(final int maxCommandsInBatch) {
+    this.maxCommandsInBatch = maxCommandsInBatch;
   }
 
   public static class FluentLogWriter {

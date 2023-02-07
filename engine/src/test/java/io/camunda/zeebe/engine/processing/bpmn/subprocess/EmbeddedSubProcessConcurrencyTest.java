@@ -37,7 +37,7 @@ public class EmbeddedSubProcessConcurrencyTest {
       EngineRule.singlePartition()
           // Disable batch processing. Interrupting behaviour is only reproducible if
           // process instance is not completed in one batch.
-          .processingBatchLimit(1);
+          .maxCommandsInBatch(1);
 
   private static final String PROCESS_ID = "process-with-sub-process";
 

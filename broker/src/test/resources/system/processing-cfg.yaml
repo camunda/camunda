@@ -1,0 +1,4 @@
+zeebe:
+  broker:
+    processing:
+      maxCommandsInBatch: 125
