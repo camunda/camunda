@@ -30,7 +30,10 @@ import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.zeebe.EntryValidator;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
@@ -357,13 +360,14 @@ public final class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Sets whether to flush logs to disk on commit.
+     * Sets the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
+     * RaftLog} when {@link io.atomix.raft.storage.RaftStorage#openLog(ThreadContext)}} is called.
      *
-     * @param flushExplicitly whether to flush logs to disk on commit
+     * @param flusherFactory factory to create the flushing strategy for the {@link RaftLog}
      * @return the Raft partition group builder
      */
-    public Builder withFlushExplicitly(final boolean flushExplicitly) {
-      config.getStorageConfig().setFlushExplicitly(flushExplicitly);
+    public Builder withFlusherFactory(final RaftLogFlusher.Factory flusherFactory) {
+      config.getStorageConfig().setFlusherFactory(flusherFactory);
       return this;
     }
 

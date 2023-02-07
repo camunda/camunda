@@ -18,11 +18,16 @@ package io.atomix.raft.storage.log;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
+import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.NoOpFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
@@ -37,6 +42,7 @@ import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -215,19 +221,6 @@ class RaftLogTest {
     assertThat(raftlog.getCommitIndex()).isEqualTo(10);
   }
 
-  @Test
-  void shouldFlushWhenFlushExplicitlyTrue() {
-    // given
-    final Journal journal = mock(Journal.class);
-    final var log = new RaftLog(journal, true);
-
-    // when
-    log.flush();
-
-    // then
-    verify(journal).flush();
-  }
-
   private ApplicationEntry createApplicationEntryAfter(final ApplicationEntry applicationEntry) {
     return createApplicationEntry(applicationEntry.highestPosition() + 1);
   }
@@ -236,5 +229,63 @@ class RaftLogTest {
     // -1 on highest position as the lowestPosition is inclusive
     return new SerializedApplicationEntry(
         lowestPosition, lowestPosition + DEFAULT_APPLICATION_ENTRY_LENGTH - 1, data);
+  }
+
+  @Nested
+  final class FlushTest {
+    @Test
+    void shouldUseFlusher() {
+      // given
+      final var journal = mock(Journal.class);
+      final var flusher = mock(RaftLogFlusher.class);
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.flush();
+
+      // then
+      verify(flusher, times(1)).flush(journal);
+    }
+
+    @Test
+    void shouldForceFlush() {
+      final var journal = mock(Journal.class);
+      final var flusher = mock(RaftLogFlusher.class);
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.forceFlush();
+
+      // then
+      verify(journal, times(1)).flush();
+    }
+
+    @Test
+    void shouldFlushDirectly() {
+      // given
+      final var journal = mock(Journal.class);
+      final var log = new RaftLog(journal, new DirectFlusher());
+
+      // when
+      log.flush();
+
+      // then
+      verify(journal, times(1)).flush();
+    }
+
+    @Test
+    void shouldDisableFlush() {
+      // given
+      final var journal = mock(Journal.class);
+      final var flusher = spy(new NoOpFlusher());
+      final var log = new RaftLog(journal, flusher);
+
+      // when
+      log.flush();
+
+      // then
+      verify(flusher, times(1)).flush(journal);
+      verify(journal, never()).flush();
+    }
   }
 }

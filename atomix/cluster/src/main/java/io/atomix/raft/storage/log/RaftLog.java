@@ -29,16 +29,16 @@ import org.agrona.CloseHelper;
 
 /** Raft log. */
 public final class RaftLog implements Closeable {
-  private final Journal journal;
   private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
-  private final boolean flushExplicitly;
+  private final Journal journal;
+  private final RaftLogFlusher flusher;
 
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
-  RaftLog(final Journal journal, final boolean flushExplicitly) {
+  RaftLog(final Journal journal, final RaftLogFlusher flusher) {
     this.journal = journal;
-    this.flushExplicitly = flushExplicitly;
+    this.flusher = flusher;
   }
 
   /**
@@ -101,8 +101,8 @@ public final class RaftLog implements Closeable {
     commitIndex = index;
   }
 
-  public boolean shouldFlushExplicitly() {
-    return flushExplicitly;
+  public boolean flushesDirectly() {
+    return flusher.isDirect();
   }
 
   public long getFirstIndex() {
@@ -168,7 +168,22 @@ public final class RaftLog implements Closeable {
     lastAppendedEntry = null;
   }
 
+  /**
+   * Flushes the underlying journal using the configured flushing strategy. For guarantees, refer to
+   * the configured {@link RaftLogFlusher}.
+   */
   public void flush() {
+    flusher.flush(journal);
+  }
+
+  /**
+   * Flushes the underlying journal in a blocking, synchronous way. When this returns, it is
+   * guaranteed that any appended data since the last flush is persisted on disk.
+   *
+   * <p>NOTE: this bypasses the configured flushing strategy, and is meant to be used when certain
+   * guarantees are required.
+   */
+  public void forceFlush() {
     journal.flush();
   }
 
@@ -184,8 +199,6 @@ public final class RaftLog implements Closeable {
         + journal
         + ", serializer="
         + serializer
-        + ", flushExplicitly="
-        + flushExplicitly
         + ", lastAppendedEntry="
         + lastAppendedEntry
         + ", commitIndex="

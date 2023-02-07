@@ -56,7 +56,7 @@ public class PassiveRoleTest {
     ctx = mock(RaftContext.class);
 
     log = mock(RaftLog.class);
-    when(log.shouldFlushExplicitly()).thenReturn(true);
+    when(log.flushesDirectly()).thenReturn(true);
     when(ctx.getLog()).thenReturn(log);
 
     final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);

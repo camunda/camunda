@@ -191,7 +191,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     lastVotedFor = meta.loadVote();
 
     // Construct the core log, reader, writer, and compactor.
-    raftLog = storage.openLog();
+    raftLog = storage.openLog(threadContext);
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -431,7 +431,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     if (commitIndex > previousCommitIndex) {
       this.commitIndex = commitIndex;
       raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
-      if (raftLog.shouldFlushExplicitly() && isLeader()) {
+      if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
         setLastWrittenIndex(commitIndex);
@@ -528,21 +528,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @return a future to be completed once the log is flushed to disk
    */
   public CompletableFuture<Void> flushLog() {
-    final CompletableFuture<Void> future = new CompletableFuture<>();
-    if (raftLog.shouldFlushExplicitly()) {
-      // If default explicit flush is enabled, then the log is flushed by default before committing.
-      // Hence, there is no need to flush them again here. This is an optimization to ensure we are
-      // not unnecessarily blocking raft thread to do an i/o.
-      future.complete(null);
-    } else {
-      threadContext.execute(
-          () -> {
-            raftLog.flush();
-            future.complete(null);
-          });
+    // If flush operations are synchronous on the Raft thread, then the log is guaranteed to be
+    // flushed by before committing. Hence, there is no need to flush them again here. This is an
+    // optimization to ensure we are not unnecessarily blocking raft thread to do an i/o.
+    if (raftLog.flushesDirectly()) {
+      return CompletableFuture.completedFuture(null);
     }
 
-    return future;
+    return threadContext.submit(raftLog::forceFlush);
   }
 
   /** Attempts to become the leader. */
