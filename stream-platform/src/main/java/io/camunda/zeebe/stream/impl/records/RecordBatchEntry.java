@@ -21,7 +21,7 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public record RecordBatchEntry(
-    long key, int sourceIndex, RecordMetadata recordMetadata, UnifiedRecordValue unifiedRecordValue)
+    RecordMetadata recordMetadata, long key, int sourceIndex, UnifiedRecordValue unifiedRecordValue)
     implements LogAppendEntry {
 
   @Override
@@ -55,6 +55,6 @@ public record RecordBatchEntry(
         ReflectUtil.newInstance(EVENT_REGISTRY.get(recordMetadata.getValueType()));
     unifiedRecordValue.wrap(recordValueBuffer, 0, recordValueBuffer.capacity());
 
-    return new RecordBatchEntry(key, sourceIndex, recordMetadata, unifiedRecordValue);
+    return new RecordBatchEntry(recordMetadata, key, sourceIndex, unifiedRecordValue);
   }
 }

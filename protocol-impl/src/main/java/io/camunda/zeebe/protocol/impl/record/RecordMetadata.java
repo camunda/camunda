@@ -39,11 +39,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
   private final RecordMetadataDecoder decoder = new RecordMetadataDecoder();
 
-  private long requestId;
-  private ValueType valueType = ValueType.NULL_VAL;
   private RecordType recordType = RecordType.NULL_VAL;
-  private short intentValue = Intent.NULL_VAL;
+  private ValueType valueType = ValueType.NULL_VAL;
   private Intent intent = null;
+  private long requestId;
+  private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
@@ -242,29 +242,17 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public String toString() {
-    return "RecordMetadata{"
-        + "recordType="
-        + recordType
-        + ", intentValue="
-        + intentValue
-        + ", intent="
-        + intent
-        + ", requestStreamId="
-        + requestStreamId
-        + ", requestId="
-        + requestId
-        + ", protocolVersion="
-        + protocolVersion
-        + ", valueType="
-        + valueType
-        + ", rejectionType="
-        + rejectionType
-        + ", rejectionReason="
-        + BufferUtil.bufferAsString(rejectionReason)
-        + ", brokerVersion="
-        + brokerVersion
-        + '}';
+  public int hashCode() {
+    return Objects.hash(
+        requestId,
+        valueType,
+        recordType,
+        intentValue,
+        requestStreamId,
+        rejectionType,
+        rejectionReason,
+        protocolVersion,
+        brokerVersion);
   }
 
   @Override
@@ -288,16 +276,28 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(
-        requestId,
-        valueType,
-        recordType,
-        intentValue,
-        requestStreamId,
-        rejectionType,
-        rejectionReason,
-        protocolVersion,
-        brokerVersion);
+  public String toString() {
+    // The toString is intentionally cut-down to the only important properties for debugging
+    // (mostly for tests).
+    // If the record is already written to the log (in production) we have other ways to make
+    // it readable again.
+    final var builder =
+        new StringBuilder(
+            "RecordMetadata{"
+                + "recordType="
+                + recordType
+                + ", valueType="
+                + valueType
+                + ", intent="
+                + intent);
+    if (!rejectionType.equals(RejectionType.NULL_VAL)) {
+      builder.append(", rejectionType=").append(rejectionType);
+    }
+    if (rejectionReason.capacity() > 0) {
+      builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
+    }
+
+    builder.append('}');
+    return builder.toString();
   }
 }
