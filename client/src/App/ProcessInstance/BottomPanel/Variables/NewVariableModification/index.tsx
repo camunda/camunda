@@ -102,6 +102,11 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
   const isNameFieldValid = (!isNameValidating && isNameValid) ?? false;
   const isValueFieldValid = (!isValueValidating && isValueValid) ?? false;
   const areFormFieldsValid = isNameFieldValid && isValueFieldValid;
+  const scopeId =
+    variablesStore.scopeId ??
+    modificationsStore.getNewScopeIdForFlowNode(
+      flowNodeSelectionStore.state.selection?.flowNodeId
+    );
 
   return (
     <>
@@ -133,7 +138,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
                   input.onBlur();
 
                   createModification({
-                    scopeId: variablesStore.scopeId,
+                    scopeId,
                     areFormFieldsValid,
                     id: currentId,
                     name: currentName,
@@ -175,7 +180,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
                   input.onBlur();
 
                   createModification({
-                    scopeId: variablesStore.scopeId,
+                    scopeId,
                     areFormFieldsValid,
                     id: currentId,
                     name: currentName,
@@ -191,7 +196,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
               onClick={() => {
                 onRemove();
                 modificationsStore.removeVariableModification(
-                  variablesStore.scopeId!,
+                  scopeId!,
                   currentId,
                   'ADD_VARIABLE',
                   'variables'
@@ -214,7 +219,7 @@ const NewVariableModification: React.FC<Props> = ({variableName, onRemove}) => {
           setIsModalVisible(false);
           if (value !== undefined) {
             createModification({
-              scopeId: variablesStore.scopeId,
+              scopeId,
               areFormFieldsValid:
                 (isNameFieldValid &&
                   form.getFieldState(valueFieldName)?.valid) ??

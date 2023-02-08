@@ -681,4 +681,18 @@ describe('stores/variables', () => {
     expect(variablesStore.getSortValues('prev')).toEqual(['mwst']);
     expect(variablesStore.getSortValues('next')).toEqual(['paid']);
   });
+
+  it('should clear items when scope id is changed', async () => {
+    variablesStore.init('id');
+
+    await waitFor(() =>
+      expect(variablesStore.state.items).toEqual(mockVariables)
+    );
+
+    flowNodeSelectionStore.setSelection({
+      flowNodeId: 'flow_node_without_running_scope',
+    });
+
+    await waitFor(() => expect(variablesStore.state.items).toEqual([]));
+  });
 });

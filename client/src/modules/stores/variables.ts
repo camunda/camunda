@@ -144,8 +144,9 @@ class Variables extends NetworkReconnectionHandler {
     this.fetchVariablesDisposer = reaction(
       () => this.scopeId,
       (scopeId) => {
+        this.clearItems();
+
         if (scopeId !== null) {
-          this.clearItems();
           this.setPendingItem(null);
           this.fetchAbortController?.abort();
 

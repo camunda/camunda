@@ -759,6 +759,43 @@ class Modifications {
     });
   };
 
+  getNewScopeIdForFlowNode = (flowNodeId?: string) => {
+    if (
+      flowNodeId === undefined ||
+      (this.modificationsByFlowNode[flowNodeId]?.newTokens ?? 0) !== 1
+    ) {
+      return null;
+    }
+
+    const addTokenModification = this.flowNodeModifications.find(
+      (modification) =>
+        modification.operation === 'ADD_TOKEN' &&
+        modification.flowNode.id === flowNodeId
+    );
+
+    if (
+      addTokenModification !== undefined &&
+      'scopeId' in addTokenModification
+    ) {
+      return addTokenModification.scopeId;
+    }
+
+    const moveTokenModification = this.flowNodeModifications.find(
+      (modification) =>
+        modification.operation === 'MOVE_TOKEN' &&
+        modification.targetFlowNode.id === flowNodeId
+    );
+
+    if (
+      moveTokenModification !== undefined &&
+      'scopeIds' in moveTokenModification
+    ) {
+      return moveTokenModification.scopeIds[0] ?? null;
+    }
+
+    return null;
+  };
+
   reset = () => {
     this.state = {...DEFAULT_STATE};
     window.clearTimeout(this.modificationsLoadingTimeout);

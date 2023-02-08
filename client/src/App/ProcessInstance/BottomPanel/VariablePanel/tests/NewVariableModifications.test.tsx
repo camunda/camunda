@@ -607,4 +607,72 @@ describe('New Variable Modifications', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
   });
+
+  it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
+    jest.useFakeTimers();
+
+    modificationsStore.enableModificationMode();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {
+          id: 'flow-node-that-has-not-run-yet',
+          name: 'some-flow-node',
+        },
+        scopeId: 'some-scope-id',
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    // select flow node without instance id (use case: from the diagram)
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'flow-node-that-has-not-run-yet',
+    });
+
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    expect(
+      await screen.findByText('The Flow Node has no Variables')
+    ).toBeInTheDocument();
+
+    await waitFor(() =>
+      expect(processInstanceDetailsStatisticsStore.state.status).toBe('fetched')
+    );
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+    });
+
+    await user.click(screen.getByRole('button', {name: /add variable/i}));
+    expect(await screen.findByTestId('new-variable-name')).toBeInTheDocument();
+
+    await editNameFromTextfieldAndBlur(user, 'test1');
+    await editValueFromTextfieldAndBlur(user, '123');
+
+    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+
+    mockFetchVariables().withSuccess([]);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'someProcessName',
+      flowNodeInstanceId: 'test',
+    });
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    mockFetchVariables().withSuccess([]);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'flow-node-that-has-not-run-yet',
+    });
+    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+
+    expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('123')).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
 });

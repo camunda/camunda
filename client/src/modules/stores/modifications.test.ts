@@ -1357,4 +1357,89 @@ describe('stores/modifications', () => {
       },
     ]);
   });
+
+  it('should get new scope id for a flow node', async () => {
+    expect(modificationsStore.getNewScopeIdForFlowNode()).toBe(null);
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
+      null
+    );
+
+    const uniqueID = generateUniqueID();
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: uniqueID,
+        flowNode: {id: 'test-flownode', name: 'test flow node'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
+      uniqueID
+    );
+
+    const uniqueID_2 = generateUniqueID();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: uniqueID_2,
+        flowNode: {id: 'test-flownode', name: 'test flow node'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
+      null
+    );
+    modificationsStore.removeLastModification();
+    modificationsStore.removeLastModification();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        scopeIds: [uniqueID, uniqueID_2],
+        flowNode: {id: 'test-flownode', name: 'test flow node'},
+        targetFlowNode: {id: 'test-flownode2', name: 'test flow node 2'},
+        affectedTokenCount: 2,
+        visibleAffectedTokenCount: 2,
+        parentScopeIds: {},
+      },
+    });
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
+      null
+    );
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
+      null
+    );
+
+    modificationsStore.removeLastModification();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        scopeIds: [uniqueID],
+        flowNode: {id: 'test-flownode', name: 'test flow node'},
+        targetFlowNode: {id: 'test-flownode2', name: 'test flow node 2'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode')).toBe(
+      null
+    );
+    expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
+      uniqueID
+    );
+  });
 });

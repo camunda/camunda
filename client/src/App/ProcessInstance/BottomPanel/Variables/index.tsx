@@ -44,8 +44,13 @@ const Variables: React.FC<Props> = observer(
     const {
       state: {items, pendingItem, loadingItemId, status},
       displayStatus,
-      scopeId,
     } = variablesStore;
+
+    const scopeId =
+      variablesStore.scopeId ??
+      modificationsStore.getNewScopeIdForFlowNode(
+        flowNodeSelectionStore.state.selection?.flowNodeId
+      );
 
     const scrollableContentRef = useRef<HTMLDivElement>(null);
     const variablesContentRef = useRef<HTMLDivElement>(null);
