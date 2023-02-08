@@ -335,7 +335,7 @@ jobs:
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
-      - uses: actions/setup-java@v3.9.0
+      - uses: actions/setup-java@v3.10.0
         with:
           java-version: '8'
           distribution: 'temurin'
@@ -544,7 +544,7 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v3.9.0
+      - uses: actions/setup-java@v3.10.0
         with:
           distribution: 'temurin'
           java-version: '17'
