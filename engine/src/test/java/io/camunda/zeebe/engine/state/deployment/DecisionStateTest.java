@@ -500,6 +500,36 @@ public final class DecisionStateTest {
     assertThat(decisionKey).isEmpty();
   }
 
+  @DisplayName("should find previous version when version is skipped")
+  @Test
+  void shouldFindPreviousVersionWhenVersionIsSkipped() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1)
+            .setDecisionId("decision-id");
+    final var decisionRecord3 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(3)
+            .setDecisionKey(3)
+            .setDecisionId("decision-id");
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord3);
+
+    // when
+    final var decisionKey =
+        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 3);
+
+    // then
+    assertThat(decisionKey).isNotEmpty();
+    assertThat(decisionKey.get()).isEqualTo(1);
+  }
+
   private DecisionRecord sampleDecisionRecord() {
     return new DecisionRecord()
         .setDecisionId("decision-id")
