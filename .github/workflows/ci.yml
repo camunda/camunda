@@ -311,7 +311,10 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -am -pl clients/java
+          # Force `build-zeebe` to compile test sources too.
+          # Otherwise, running tests will try to compile test sources with Java 8 which is not
+          # possible with our maven POMs.
+          maven-extra-args: -am -pl clients/java -Dmaven.test.skip=false
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
