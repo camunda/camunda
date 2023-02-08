@@ -75,8 +75,6 @@ jobs:
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
-        with:
-          maven-extra-args: -T1C
       - uses: ./.github/actions/build-docker
         with:
           repository: gcr.io/zeebe-io/zeebe
