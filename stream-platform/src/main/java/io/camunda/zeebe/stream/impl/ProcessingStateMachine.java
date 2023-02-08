@@ -31,6 +31,7 @@ import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
+import io.camunda.zeebe.stream.impl.metrics.ProcessingMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
@@ -86,6 +87,9 @@ import org.slf4j.Logger;
  * </pre>
  */
 public final class ProcessingStateMachine {
+
+  public static final String WARN_MESSAGE_BATCH_PROCESSING_RETRY =
+      "Expected to process commands in a batch, but exceeded the resulting batch size after processing {} commands (maxCommandsInBatch: {}).";
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_WRITE_RECORD_ABORTED =
       "Expected to write one or more follow-up records for record '{} {}' without errors, but exception was thrown.";
@@ -101,12 +105,9 @@ public final class ProcessingStateMachine {
       "Expected to invoke processed listener for record {} successfully, but exception was thrown.";
   private static final String NOTIFY_SKIPPED_LISTENER_ERROR_MESSAGE =
       "Expected to invoke skipped listener for record '{} {}' successfully, but exception was thrown.";
-
   private static final Duration PROCESSING_RETRY_DELAY = Duration.ofMillis(250);
-
   private static final MetadataFilter PROCESSING_FILTER =
       recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND;
-
   private final EventFilter eventFilter =
       new MetadataEventFilter(new RecordProtocolVersionFilter().and(PROCESSING_FILTER));
 
@@ -150,6 +151,7 @@ public final class ProcessingStateMachine {
   private boolean inProcessing;
   private final int maxCommandsInBatch;
   private int processedCommandsCount;
+  private final ProcessingMetrics processingMetrics;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -176,6 +178,8 @@ public final class ProcessingStateMachine {
 
     metrics = new StreamProcessorMetrics(partitionId);
     streamProcessorListener = context.getStreamProcessorListener();
+
+    processingMetrics = new ProcessingMetrics(Integer.toString(partitionId));
   }
 
   private void skipRecord() {
@@ -255,7 +259,11 @@ public final class ProcessingStateMachine {
       typedCommand.wrap(loggedEvent, metadata, value);
 
       zeebeDbTransaction = transactionContext.getCurrentTransaction();
-      zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
+      try (final var timer = processingMetrics.startBatchProcessingDurationTimer()) {
+        zeebeDbTransaction.run(() -> batchProcessing(typedCommand));
+        processingMetrics.observeCommandCount(processedCommandsCount);
+      }
+
       if (currentProcessingResult.isEmpty()) {
         skipRecord();
         return;
@@ -276,6 +284,12 @@ public final class ProcessingStateMachine {
       throw unrecoverableException;
     } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
       if (processedCommandsCount > 0) {
+        LOG.warn(
+            WARN_MESSAGE_BATCH_PROCESSING_RETRY,
+            processedCommandsCount,
+            maxCommandsInBatch,
+            exceededBatchRecordSizeException);
+        processingMetrics.countRetry();
         onError(() -> processCommand(loggedEvent));
       } else {
         onError(
@@ -520,10 +534,10 @@ public final class ProcessingStateMachine {
                 if (!responseSent) {
                   return false;
                 } else {
-                  return currentProcessingResult.executePostCommitTasks();
+                  return executePostCommitTasks();
                 }
               }
-              return currentProcessingResult.executePostCommitTasks();
+              return executePostCommitTasks();
             },
             abortCondition);
 
@@ -544,6 +558,12 @@ public final class ProcessingStateMachine {
           inProcessing = false;
           actor.submit(this::readNextRecord);
         });
+  }
+
+  private boolean executePostCommitTasks() {
+    try (final var timer = processingMetrics.startBatchProcessingPostCommitTasksTimer()) {
+      return currentProcessingResult.executePostCommitTasks();
+    }
   }
 
   private void notifyProcessedListener(final TypedRecord processedRecord) {
