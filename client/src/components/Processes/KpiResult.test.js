@@ -102,3 +102,24 @@ it('should display kpi value and target in correct format', () => {
   expect(node.find('.reportValues span').at(0)).toIncludeText('12ms');
   expect(node.find('.reportValues span').at(1)).toIncludeText('4 days');
 });
+
+it('should add collection part to the link if kpi has collectionId', () => {
+  const node = shallow(
+    <KpiResult
+      kpis={[
+        {
+          reportName: 'report Name',
+          value: '123',
+          target: '300',
+          unit: null,
+          isBelow: true,
+          measure: 'percentage',
+          collectionId: 'collectionId',
+          reportId: 'reportId',
+        },
+      ]}
+    />
+  );
+
+  expect(node.find('Link').prop('to')).toBe('/collection/collectionId/report/reportId/');
+});

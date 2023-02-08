@@ -30,34 +30,42 @@ export default function KpiResult({kpis, displayTip}) {
 
   return (
     <div className="KpiResult">
-      {kpis?.map(({reportId, reportName, value, unit, target, isBelow, measure}, idx) => {
-        const formatter = formatters[measure];
-        return (
-          <div key={idx} className="kpi">
-            <b className="title">
-              {t('report.label')}: {reportName}
-            </b>{' '}
-            <Link to={`/report/${reportId}/`} target="_blank">
-              <Icon type="jump" />
-            </Link>
-            <div className="reportValues">
-              <span
-                className={classnames(
-                  {success: isSuccessful({target, unit, value, isBelow, measure})},
-                  'reportValue'
-                )}
-              >
-                {t('common.value')}:{' '}
-                {measure === 'duration' ? formatter(value, 3) : formatter(value)}
-              </span>
-              <span>
-                {t('report.config.goal.target')}: {target}
-                {measure === 'percentage' && '%'} {unit}
-              </span>
+      {kpis?.map(
+        ({reportId, reportName, value, unit, target, isBelow, measure, collectionId}, idx) => {
+          const formatter = formatters[measure];
+
+          let link = `/report/${reportId}/`;
+          if (collectionId) {
+            link = `/collection/${collectionId}` + link;
+          }
+
+          return (
+            <div key={idx} className="kpi">
+              <b className="title">
+                {t('report.label')}: {reportName}
+              </b>{' '}
+              <Link to={link} target="_blank">
+                <Icon type="jump" />
+              </Link>
+              <div className="reportValues">
+                <span
+                  className={classnames(
+                    {success: isSuccessful({target, unit, value, isBelow, measure})},
+                    'reportValue'
+                  )}
+                >
+                  {t('common.value')}:{' '}
+                  {measure === 'duration' ? formatter(value, 3) : formatter(value)}
+                </span>
+                <span>
+                  {t('report.config.goal.target')}: {target}
+                  {measure === 'percentage' && '%'} {unit}
+                </span>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        }
+      )}
     </div>
   );
 }
