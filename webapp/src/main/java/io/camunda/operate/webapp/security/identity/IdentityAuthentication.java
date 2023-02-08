@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.util.StringUtils;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken {
 
@@ -55,9 +57,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   }
 
   private boolean hasRefreshTokenExpired() {
+    if(!StringUtils.hasText(tokens.getRefreshToken())) return true;
     final DecodedJWT refreshToken =
         getIdentity().authentication().decodeJWT(tokens.getRefreshToken());
     final Date refreshTokenExpiresAt = refreshToken.getExpiresAt();
+    logger.info("Refresh token will expire at {}", refreshTokenExpiresAt);
     return refreshTokenExpiresAt == null || refreshTokenExpiresAt.before(new Date());
   }
 
@@ -73,6 +77,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
       if (hasRefreshTokenExpired()) {
         setAuthenticated(false);
         logger.info("No refresh token available. Authentication is invalid.");
+        throw new InsufficientAuthenticationException("Access token and refresh token are expired.");
       } else {
         logger.info("Get a new access token by using refresh token");
         try {
@@ -109,8 +114,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     }
     subject = accessToken.getToken().getSubject();
     expires = accessToken.getToken().getExpiresAt();
+    logger.info("Access token will expire at {}", expires);
     if (!hasExpired()) {
       setAuthenticated(true);
+    } else {
+      setAuthenticated(false);
     }
   }
 
