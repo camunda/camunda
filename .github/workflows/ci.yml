@@ -361,6 +361,9 @@ jobs:
           languages: java
           queries: +security-and-quality
       - uses: ./.github/actions/build-zeebe
+        with:
+          # Force compilation of test sources to spot issues there too.
+          maven-extra-args: -Dmaven.test.skip=false
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
         with:
