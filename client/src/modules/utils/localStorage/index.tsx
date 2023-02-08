@@ -8,6 +8,10 @@
 function storeStateLocally(storageKey: 'hasCompletedTask', value: true): void;
 function storeStateLocally(storageKey: 'wasReloaded', value: boolean): void;
 function storeStateLocally(
+  storageKey: 'hasConsentedToStartProcess',
+  value: boolean,
+): void;
+function storeStateLocally(
   storageKey: 'theme',
   value: 'light' | 'dark' | 'system',
 ): void;
@@ -23,7 +27,11 @@ function clearStateLocally(storageKey: string) {
 }
 
 function getStateLocally(
-  storageKey: 'hasCompletedTask' | 'wasReloaded' | 'theme',
+  storageKey:
+    | 'hasCompletedTask'
+    | 'wasReloaded'
+    | 'theme'
+    | 'hasConsentedToStartProcess',
 ): unknown;
 function getStateLocally(storageKey: string): unknown {
   const value = localStorage.getItem(storageKey);

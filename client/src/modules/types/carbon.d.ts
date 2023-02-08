@@ -117,6 +117,33 @@ declare module '@carbon/react' {
     props: StackProps<C>,
   ) => React.ReactElement | null;
 
+  export const ActionableNotification: React.FunctionComponent<{
+    actionButtonLabel: string;
+    ariaLabel?: string;
+    caption?: string;
+    children?: React.ReactNode;
+    className?: string;
+    closeOnEscape?: boolean;
+    hasFocus?: boolean;
+    hideCloseButton?: boolean;
+    inline?: boolean;
+    kind:
+      | 'error'
+      | 'info'
+      | 'info-square'
+      | 'success'
+      | 'warning'
+      | 'warning-alt';
+    lowContrast?: boolean;
+    onActionButtonClick?: () => void;
+    onClose?: () => void;
+    onCloseButtonClick?: () => void;
+    role?: string;
+    statusIconDescription?: string;
+    subtitle?: string;
+    title?: string;
+  }>;
+
   export const useTheme: () => {theme: ThemeType};
 
   export const usePrefix: () => string;

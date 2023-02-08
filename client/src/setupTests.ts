@@ -35,6 +35,8 @@ mockMatchMedia();
 
 beforeEach(() => {
   mockMatchMedia();
+
+  window.localStorage.clear();
 });
 
 beforeAll(() => {
@@ -45,6 +47,34 @@ beforeAll(() => {
   Object.defineProperty(window, 'clientConfig', {
     writable: true,
     value: DEFAULT_MOCK_CLIENT_CONFIG,
+  });
+
+  Object.defineProperty(window, 'localStorage', {
+    value: (function () {
+      let store: Record<string, unknown> = {};
+
+      return {
+        getItem(key: string) {
+          return store[key] ?? null;
+        },
+
+        setItem(key: string, value: unknown) {
+          store[key] = value;
+        },
+
+        clear() {
+          store = {};
+        },
+
+        removeItem(key: string) {
+          delete store[key];
+        },
+
+        getAll() {
+          return store;
+        },
+      };
+    })(),
   });
 });
 

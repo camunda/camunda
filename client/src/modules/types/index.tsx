@@ -55,4 +55,25 @@ type Form = Readonly<{
   schema: string;
 }>;
 
-export type {User, Variable, Task, TaskState, Form, Permissions};
+type Process = Readonly<{
+  __typename: string;
+  id: string;
+  name: string | null;
+  processDefinitionId: string;
+}>;
+
+type ProcessInstance = Readonly<{
+  __typename: string;
+  id: string;
+}>;
+
+export type {
+  User,
+  Variable,
+  Task,
+  TaskState,
+  Form,
+  Permissions,
+  Process,
+  ProcessInstance,
+};
