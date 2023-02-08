@@ -8,8 +8,8 @@ description: Builds & installs the complete Zeebe distribution
 
 inputs:
   go:
-    description: If false, will not build zbctl; defaults to true
-    default: "true"
+    description: If false, will not build zbctl; defaults to false
+    default: "false"
     required: false
   java:
     description: If false, will not build the Java distribution; defaults to true

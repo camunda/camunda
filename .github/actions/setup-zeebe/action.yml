@@ -7,9 +7,9 @@ description: Sets up the required stack to build, install, and run Zeebe
 
 inputs:
   go:
-    description: If true, will set up Golang; defaults to true
+    description: If true, will set up Golang; defaults to false
     required: false
-    default: "true"
+    default: "false"
   java:
     description: If true, will set up Java; defaults to true
     required: false
