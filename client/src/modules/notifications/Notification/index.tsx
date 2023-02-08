@@ -6,7 +6,7 @@
  */
 
 import {CSSTransition} from 'react-transition-group';
-import {ToastNotification} from './styled';
+import {ActionableNotification, ToastNotification} from './styled';
 import {Notification as NotificationType} from 'modules/stores/notifications';
 import {observer} from 'mobx-react-lite';
 import {useRef} from 'react';
@@ -26,6 +26,9 @@ const Notification: React.FC<Props> = observer(
       isDismissable,
       date,
       hideNotification,
+      isActionable,
+      actionButtonLabel,
+      onActionButtonClick,
     },
     animationTimeout,
     ...props
@@ -41,18 +44,35 @@ const Notification: React.FC<Props> = observer(
         {...props}
       >
         <div ref={nodeRef}>
-          <ToastNotification
-            kind={kind}
-            lowContrast={false}
-            title={title}
-            caption={relativeDate}
-            subtitle={subtitle}
-            hideCloseButton={!isDismissable}
-            onClose={() => {
-              hideNotification();
-              return false;
-            }}
-          />
+          {isActionable ? (
+            <ActionableNotification
+              kind={kind}
+              lowContrast={false}
+              title={title}
+              caption={relativeDate}
+              subtitle={subtitle}
+              hideCloseButton={!isDismissable}
+              onClose={() => {
+                hideNotification();
+                return false;
+              }}
+              actionButtonLabel={actionButtonLabel ?? ''}
+              onActionButtonClick={onActionButtonClick}
+            />
+          ) : (
+            <ToastNotification
+              kind={kind}
+              lowContrast={false}
+              title={title}
+              caption={relativeDate}
+              subtitle={subtitle}
+              hideCloseButton={!isDismissable}
+              onClose={() => {
+                hideNotification();
+                return false;
+              }}
+            />
+          )}
         </div>
       </CSSTransition>
     );

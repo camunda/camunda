@@ -13,12 +13,15 @@ const MAX_VISIBLE_NOTIFICATIONS = 5;
 
 type Notification = {
   id: string;
-  title: NonNullable<React.ReactNode>;
-  subtitle?: React.ReactNode;
+  title: string;
+  subtitle?: string;
   date: number;
   isDismissable: boolean;
-  kind: React.ComponentProps<typeof ToastNotification>['kind'];
+  kind: NonNullable<React.ComponentProps<typeof ToastNotification>['kind']>;
   hideNotification: () => void;
+  isActionable?: boolean;
+  actionButtonLabel?: string;
+  onActionButtonClick?: () => void;
 };
 
 class Notifications {

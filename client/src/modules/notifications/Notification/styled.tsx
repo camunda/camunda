@@ -5,14 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
-import {ToastNotification as BaseToastNotification} from '@carbon/react';
+import styled from 'styled-components';
+import {
+  ToastNotification as BaseToastNotification,
+  ActionableNotification as BaseActionableNotification,
+} from '@carbon/react';
 
 const ToastNotification = styled(BaseToastNotification)`
-  ${({theme}) =>
-    css`
-      margin-top: ${theme.spacing03};
-    `}
+  margin-top: var(--cds-spacing-03);
 `;
 
-export {ToastNotification};
+const ActionableNotification = styled(BaseActionableNotification)`
+  margin-top: var(--cds-spacing-03);
+`;
+
+export {ToastNotification, ActionableNotification};

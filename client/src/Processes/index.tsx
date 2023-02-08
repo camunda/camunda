@@ -27,11 +27,14 @@ import {useEffect, useRef, useState} from 'react';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
 import {observer} from 'mobx-react-lite';
+import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {FirstTimeModal} from './FirstTimeModal';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/utils/logger';
+import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 
 const Processes: React.FC = observer(() => {
+  const {instance} = newProcessInstance;
   const location = useLocation();
   const navigate = useNavigate();
   const searchParam =
@@ -82,6 +85,7 @@ const Processes: React.FC = observer(() => {
 
   return (
     <>
+      <NewProcessInstanceTasksPolling />
       <Stack as={Container} gap={6} className="cds--content">
         <NotificationContainer>
           <ActionableNotification
@@ -153,7 +157,9 @@ const Processes: React.FC = observer(() => {
                     name={name}
                     processDefinitionId={processDefinitionId}
                     key={processDefinitionId}
-                    isStartButtonDisabled={false}
+                    isStartButtonDisabled={
+                      instance !== null && instance.id !== processDefinitionId
+                    }
                     data-testid="process-tile"
                   />
                 ))}

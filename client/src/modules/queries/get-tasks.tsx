@@ -71,11 +71,17 @@ interface GetCompletedVariables {
   isPolling?: boolean;
 }
 
+interface GetNewProcessInstanceTasksVariables {
+  state: typeof TaskStates.Created;
+  processInstanceId: string;
+}
+
 type GetTasksVariables =
   | GetAllOpenVariables
   | GetClaimedByMeVariables
   | GetUnclaimedVariables
-  | GetCompletedVariables;
+  | GetCompletedVariables
+  | GetNewProcessInstanceTasksVariables;
 
 const GET_TASKS = gql`
   query GetTasks(
@@ -86,6 +92,8 @@ const GET_TASKS = gql`
     $searchAfter: [String!]
     $searchBefore: [String!]
     $searchAfterOrEqual: [String!]
+    $processInstanceId: String
+    $processDefinitionId: String
   ) {
     tasks(
       query: {
@@ -96,6 +104,8 @@ const GET_TASKS = gql`
         searchAfter: $searchAfter
         searchBefore: $searchBefore
         searchAfterOrEqual: $searchAfterOrEqual
+        processInstanceId: $processInstanceId
+        processDefinitionId: $processDefinitionId
       }
     ) {
       id
