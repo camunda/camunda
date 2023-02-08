@@ -9343,7 +9343,7 @@
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "sum(rate(zeebe_log_appender_commit_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) / sum(rate(zeebe_log_appender_commit_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) ",
+              "expr": "sum(rate(atomix_journal_append_latency_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) / sum(rate(atomix_journal_append_latency_count{cluster=~\"$cluster\", namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition) ",
               "hide": false,
               "interval": "",
               "legendFormat": "AVG partition {{partition}}",
@@ -14603,6 +14603,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 7,
+  "version": 8,
   "weekStart": ""
 }
