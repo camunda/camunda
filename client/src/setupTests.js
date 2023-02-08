@@ -23,6 +23,20 @@ beforeAll(async () => {
   await initTranslation();
 });
 
+// cleans pending promisse and mock call history to isolate tests from each other
+afterEach(async () => {
+  await flushPromises();
+  jest.clearAllMocks();
+});
+
+// this calls garbage collection after each test suite to free memory
+// due to memory leaks in jest with node 16 https://github.com/facebook/jest/issues/11956
+afterAll(() => {
+  if (global.gc) {
+    global.gc();
+  }
+});
+
 global.MutationObserver = class MutationObserver {
   disconnect() {}
   observe() {}

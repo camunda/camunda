@@ -19,6 +19,8 @@ jest.mock('services', () => {
   return {...rest, loadVariables: jest.fn().mockReturnValue([])};
 });
 
+jest.mock('request', () => ({post: jest.fn().mockReturnValue({json: jest.fn()})}));
+
 const EventsSourceModal = EventsSourceModalWithErrorHandling.WrappedComponent;
 
 const allExternalGroups = {type: 'external', configuration: {includeAllGroups: true, group: null}};

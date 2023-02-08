@@ -48,6 +48,7 @@ const report = {
     view: {proeprty: 'rawData', entity: null},
     groupBy: {type: 'none', value: null},
     visualization: 'table',
+    processDefinitionKey: 'key',
   },
   result: {data: [1, 2, 3], instanceCount: 37},
 };
@@ -117,6 +118,7 @@ it('should evaluate the report on mount if the config is complete, but the resul
 it('should evaluate the report after updating', async () => {
   const node = shallow(<ReportEdit {...props} />);
 
+  node.setState({shouldAutoReloadPreview: true});
   evaluateReport.mockReturnValue(report);
   await node.instance().updateReport({visualization: {$set: 'customTestVis'}}, true);
 
@@ -249,7 +251,7 @@ it('should notify the saveGuard of changes', () => {
 
   expect(nowDirty).toHaveBeenCalled();
 
-  node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: null}});
+  node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'key'}});
 
   expect(nowPristine).toHaveBeenCalled();
 });
