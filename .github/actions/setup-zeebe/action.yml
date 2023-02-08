@@ -24,7 +24,7 @@ inputs:
     required: false
   maven-cache:
     description: A modifier key used to toggle the usage of a maven repo cache.
-    default: "false"
+    default: "true"
     required: false
   maven-cache-key-modifier:
     description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
