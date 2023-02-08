@@ -18,6 +18,7 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -39,6 +40,7 @@ public class ProcessMutationResolver implements GraphQLMutationResolver {
     this.zeebeClient = zeebeClient;
   }
 
+  @PreAuthorize("hasPermission('write')")
   public ProcessInstanceDTO startProcess(final String processDefinitionId) {
     return this.startProcess(processDefinitionId, null);
   }
