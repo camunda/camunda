@@ -242,6 +242,7 @@ public class DbMigrationState implements MutableMigrationState {
     decisionsByKeyColumnFamily.forEach(
         (key, value) -> {
           dbDecisionId.wrapBuffer(value.getDecisionId());
+          dbDecisionKey.wrapLong(value.getDecisionKey());
           dbDecisionVersion.wrapInt(value.getVersion());
           decisionVersionByDecisionIdAndDecisionKey.insert(
               decisionKeyByDecisionId, dbDecisionVersion);

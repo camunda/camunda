@@ -115,7 +115,7 @@ public class DecisionMigrationTest {
     public void afterMigrationRunNoFurtherMigrationIsNeeded() {
       // given
       final long key = 123L;
-      legacyDecisionState.putDecision(key, sampleDecisionRecord());
+      legacyDecisionState.putDecision(key, sampleDecisionRecord().setDecisionKey(key));
 
       // when
       sutMigration.runMigration(zeebeState);
@@ -128,10 +128,10 @@ public class DecisionMigrationTest {
     @Test
     public void shouldFindCorrectDecisionKeyAfterMigration() {
       // given
-      final DecisionRecord decision1 = sampleDecisionRecord().setVersion(1);
-      final DecisionRecord decision2 = sampleDecisionRecord().setVersion(2);
-      legacyDecisionState.putDecision(111L, decision1);
-      legacyDecisionState.putDecision(222L, decision2);
+      final DecisionRecord decision1 = sampleDecisionRecord().setVersion(1).setDecisionKey(111L);
+      final DecisionRecord decision2 = sampleDecisionRecord().setVersion(2).setDecisionKey(222L);
+      legacyDecisionState.putDecision(decision1.getDecisionKey(), decision1);
+      legacyDecisionState.putDecision(decision2.getDecisionKey(), decision2);
 
       // when
       sutMigration.runMigration(zeebeState);
