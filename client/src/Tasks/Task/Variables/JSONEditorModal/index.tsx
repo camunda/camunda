@@ -5,13 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {Modal} from '@carbon/react';
+import {Modal} from 'modules/components/Modal';
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {useMonaco} from '@monaco-editor/react';
 import {editor} from 'monaco-editor';
 import {isValidJSON} from 'modules/utils/isValidJSON';
-import {createPortal} from 'react-dom';
-import {CarbonTheme} from 'modules/theme/CarbonTheme';
 import {observer} from 'mobx-react-lite';
 import {themeStore} from 'modules/stores/theme';
 import {Editor, EditorPlaceholder} from './styled';
@@ -73,56 +71,53 @@ const JSONEditorModal: React.FC<Props> = observer(
       }
     }, [isValid]);
 
-    return createPortal(
-      <CarbonTheme>
-        <Modal
-          open={isOpen}
-          modalHeading={title}
-          onRequestClose={onClose}
-          onRequestSubmit={() => {
-            if (isValid) {
-              onSave?.(editedValue);
-            } else {
-              editorRef.current?.trigger(
-                '',
-                'editor.action.marker.next',
-                undefined,
-              );
-              editorRef.current?.trigger(
-                '',
-                'editor.action.marker.prev',
-                undefined,
-              );
-            }
-          }}
-          primaryButtonDisabled={!isValid}
-          preventCloseOnClickOutside
-          primaryButtonText="Apply"
-          secondaryButtonText="Cancel"
-          size="lg"
-        >
-          {isOpen ? (
-            <Editor
-              options={options}
-              language="json"
-              value={editedValue}
-              theme={themeStore.actualTheme === 'light' ? 'light' : 'vs-dark'}
-              onChange={(value) => {
-                const newValue = value ?? '';
-                setEditedValue(newValue);
-                setIsValid(isValidJSON(newValue));
-              }}
-              onMount={(editor) => {
-                editor.focus();
-                editorRef.current = editor;
-              }}
-            />
-          ) : (
-            <EditorPlaceholder />
-          )}
-        </Modal>
-      </CarbonTheme>,
-      document.body,
+    return (
+      <Modal
+        open={isOpen}
+        modalHeading={title}
+        onRequestClose={onClose}
+        onRequestSubmit={() => {
+          if (isValid) {
+            onSave?.(editedValue);
+          } else {
+            editorRef.current?.trigger(
+              '',
+              'editor.action.marker.next',
+              undefined,
+            );
+            editorRef.current?.trigger(
+              '',
+              'editor.action.marker.prev',
+              undefined,
+            );
+          }
+        }}
+        primaryButtonDisabled={!isValid}
+        preventCloseOnClickOutside
+        primaryButtonText="Apply"
+        secondaryButtonText="Cancel"
+        size="lg"
+      >
+        {isOpen ? (
+          <Editor
+            options={options}
+            language="json"
+            value={editedValue}
+            theme={themeStore.actualTheme === 'light' ? 'light' : 'vs-dark'}
+            onChange={(value) => {
+              const newValue = value ?? '';
+              setEditedValue(newValue);
+              setIsValid(isValidJSON(newValue));
+            }}
+            onMount={(editor) => {
+              editor.focus();
+              editorRef.current = editor;
+            }}
+          />
+        ) : (
+          <EditorPlaceholder />
+        )}
+      </Modal>
     );
   },
 );
