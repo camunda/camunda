@@ -52,7 +52,6 @@ const ModificationDropdown: React.FC<Props> = observer(
 
     return (
       <Popover
-        key={flowNodeInstanceId}
         referenceElement={selectedFlowNodeRef}
         middlewareOptions={[
           offset(10),
@@ -62,6 +61,7 @@ const ModificationDropdown: React.FC<Props> = observer(
           }),
         ]}
         variant="arrow"
+        autoUpdatePosition
       >
         <Title>Flow Node Modifications</Title>
         <Options>
