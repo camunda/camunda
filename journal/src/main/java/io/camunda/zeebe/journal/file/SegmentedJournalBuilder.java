@@ -153,7 +153,13 @@ public class SegmentedJournalBuilder {
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
     final var segmentsManager =
         new SegmentsManager(
-            journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
+            journalIndex,
+            maxSegmentSize,
+            directory,
+            lastWrittenIndex,
+            name,
+            segmentLoader,
+            journalMetrics);
 
     return new SegmentedJournal(
         directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics);

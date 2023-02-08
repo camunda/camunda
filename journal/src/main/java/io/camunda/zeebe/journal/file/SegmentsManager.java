@@ -61,14 +61,15 @@ final class SegmentsManager implements AutoCloseable {
       final File directory,
       final long lastWrittenIndex,
       final String name,
-      final SegmentLoader segmentLoader) {
+      final SegmentLoader segmentLoader,
+      final JournalMetrics journalMetrics) {
     this.name = checkNotNull(name, "name cannot be null");
-    journalMetrics = new JournalMetrics(name);
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
     this.lastWrittenIndex = lastWrittenIndex;
     this.segmentLoader = segmentLoader;
+    this.journalMetrics = journalMetrics;
   }
 
   @Override

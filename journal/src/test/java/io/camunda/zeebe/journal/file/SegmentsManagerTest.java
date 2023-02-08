@@ -50,7 +50,7 @@ class SegmentsManagerTest {
     // will cause the segment to be deleted on close where we actually want to test that the file is
     // deleted when opening.
 
-    try (var newSegments = createSegmentsManager(0)) {
+    try (final var newSegments = createSegmentsManager(0)) {
       newSegments.open();
       // then
       final File logDirectory = directory.resolve("data").toFile();
@@ -137,13 +137,15 @@ class SegmentsManagerTest {
   private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var maxSegmentSize = entrySize + SegmentDescriptor.getEncodingLength();
+    final var metrics = new JournalMetrics("1");
     return new SegmentsManager(
         journalIndex,
         maxSegmentSize,
         directory.resolve("data").toFile(),
         lastWrittenIndex,
         JOURNAL_NAME,
-        new SegmentLoader(2 * maxSegmentSize, new JournalMetrics("1")));
+        new SegmentLoader(2 * maxSegmentSize, metrics),
+        metrics);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment) {
