@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
@@ -20,7 +21,10 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -43,6 +47,11 @@ public final class DbDecisionState implements MutableDecisionState {
 
   private final ColumnFamily<DbLong, PersistedDecision> decisionsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
+
+  private final DbInt dbDecisionVersion;
+  private final DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
+  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      decisionKeyByDecisionIdAndVersion;
 
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
@@ -92,6 +101,15 @@ public final class DbDecisionState implements MutableDecisionState {
             transactionContext,
             dbDecisionRequirementsKeyAndDecisionKey,
             DbNil.INSTANCE);
+
+    dbDecisionVersion = new DbInt();
+    decisionIdAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
+    decisionKeyByDecisionIdAndVersion =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+            transactionContext,
+            decisionIdAndVersion,
+            fkDecision);
   }
 
   @Override
@@ -144,6 +162,28 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
+  public Optional<Long> findPreviousVersionDecisionKey(
+      final DirectBuffer decisionId, final int currentVersion) {
+    final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
+
+    dbDecisionId.wrapBuffer(decisionId);
+    decisionKeyByDecisionIdAndVersion.whileEqualPrefix(
+        dbDecisionId,
+        ((key, decisionKey) -> {
+          if (key.second().getValue() < currentVersion) {
+            decisionKeysByVersion.put(key.second().getValue(), decisionKey.inner().getValue());
+          }
+        }));
+
+    if (decisionKeysByVersion.isEmpty()) {
+      return Optional.empty();
+    } else {
+      final Integer previousVersion = Collections.max(decisionKeysByVersion.keySet());
+      return Optional.of(decisionKeysByVersion.get(previousVersion));
+    }
+  }
+
+  @Override
   public void storeDecisionRecord(final DecisionRecord record) {
     dbDecisionKey.wrapLong(record.getDecisionKey());
     dbPersistedDecision.wrap(record);
@@ -153,6 +193,10 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
     decisionKeyByDecisionRequirementsKey.upsert(
         dbDecisionRequirementsKeyAndDecisionKey, DbNil.INSTANCE);
+
+    dbDecisionId.wrapString(record.getDecisionId());
+    dbDecisionVersion.wrapInt(record.getVersion());
+    decisionKeyByDecisionIdAndVersion.upsert(decisionIdAndVersion, fkDecision);
 
     updateLatestDecisionVersion(record);
   }

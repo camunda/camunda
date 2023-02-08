@@ -11,9 +11,12 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -54,6 +57,16 @@ public class DbMigrationState implements MutableMigrationState {
       processSubscriptionSentTimeColumnFamily;
 
   private final ColumnFamily<DbLong, TemporaryVariables> temporaryVariableColumnFamily;
+
+  private final DbLong dbDecisionKey;
+  private final PersistedDecision dbPersistedDecision;
+  private final DbString dbDecisionId;
+  private final DbForeignKey<DbLong> fkDecision;
+  private final DbInt dbDecisionVersion;
+  private final ColumnFamily<DbLong, PersistedDecision> decisionsByKeyColumnFamily;
+  private final DbCompositeKey<DbString, DbInt> decisionKeyAndVersion;
+  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      decisionKeyByDecisionIdAndVersion;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -98,6 +111,23 @@ public class DbMigrationState implements MutableMigrationState {
             transactionContext,
             temporaryVariablesKeyInstance,
             temporaryVariablesValue);
+
+    //  ColumnFamilies for decision migration
+    dbDecisionKey = new DbLong();
+    dbPersistedDecision = new PersistedDecision();
+    decisionsByKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DMN_DECISIONS, transactionContext, dbDecisionKey, dbPersistedDecision);
+    dbDecisionId = new DbString();
+    fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
+    dbDecisionVersion = new DbInt();
+    decisionKeyAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
+    decisionKeyByDecisionIdAndVersion =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+            transactionContext,
+            decisionKeyAndVersion,
+            fkDecision);
   }
 
   @Override
@@ -204,6 +234,17 @@ public class DbMigrationState implements MutableMigrationState {
           }
 
           temporaryVariableColumnFamily.deleteExisting(key);
+        });
+  }
+
+  @Override
+  public void migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey() {
+    decisionsByKeyColumnFamily.forEach(
+        (key, value) -> {
+          dbDecisionId.wrapBuffer(value.getDecisionId());
+          dbDecisionKey.wrapLong(value.getDecisionKey());
+          dbDecisionVersion.wrapInt(value.getVersion());
+          decisionKeyByDecisionIdAndVersion.insert(decisionKeyAndVersion, fkDecision);
         });
   }
 }
