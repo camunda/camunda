@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -302,6 +303,10 @@ public final class RecordingExporter implements Exporter {
   public static DecisionEvaluationRecordStream decisionEvaluationRecords() {
     return new DecisionEvaluationRecordStream(
         records(ValueType.DECISION_EVALUATION, DecisionEvaluationRecordValue.class));
+  }
+
+  public static DecisionEvaluationRecordStream decisionEvaluationRecords(final DecisionEvaluationIntent intent) {
+    return decisionEvaluationRecords().withIntent(intent);
   }
 
   public static SignalSubscriptionRecordStream signalSubscriptionRecords() {
