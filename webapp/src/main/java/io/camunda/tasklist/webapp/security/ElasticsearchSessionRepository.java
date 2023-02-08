@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.servlet.http.HttpServletRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,7 @@ public class ElasticsearchSessionRepository
     implements SessionRepository<ElasticsearchSessionRepository.ElasticsearchSession> {
 
   public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30; // min
+  public static final String POLLING_HEADER = "x-is-polling";
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSessionRepository.class);
 
@@ -66,6 +68,8 @@ public class ElasticsearchSessionRepository
   @Autowired private GenericConversionService conversionService;
 
   @Autowired private TasklistWebSessionIndex tasklistWebSessionIndex;
+
+  @Autowired private HttpServletRequest request;
 
   @PostConstruct
   private void setUp() {
@@ -237,8 +241,18 @@ public class ElasticsearchSessionRepository
     try {
       final String sessionId = getSessionIdFrom(document);
       final ElasticsearchSession session = new ElasticsearchSession(sessionId);
-      session.setCreationTime(getInstantFor(document.get(CREATION_TIME)));
       session.setLastAccessedTime(getInstantFor(document.get(LAST_ACCESSED_TIME)));
+      try {
+        if (request != null
+            && request.getHeader(POLLING_HEADER) != null
+            && (!request.getHeader(POLLING_HEADER).equals(true))) {
+          session.setPolling(true);
+        }
+      } catch (Exception e) {
+        LOGGER.debug(
+            "Expected Exception: is not possible to access request as currently this is not on a request context");
+      }
+      session.setCreationTime(getInstantFor(document.get(CREATION_TIME)));
       session.setMaxInactiveInterval(
           getDurationFor(document.get(MAX_INACTIVE_INTERVAL_IN_SECONDS)));
 
@@ -270,8 +284,11 @@ public class ElasticsearchSessionRepository
 
     private boolean changed;
 
+    private boolean polling;
+
     public ElasticsearchSession(String id) {
       delegate = new MapSession(id);
+      polling = false;
     }
 
     boolean isChanged() {
@@ -334,8 +351,10 @@ public class ElasticsearchSessionRepository
 
     @Override
     public void setLastAccessedTime(Instant lastAccessedTime) {
-      delegate.setLastAccessedTime(lastAccessedTime);
-      changed = true;
+      if (!polling) {
+        delegate.setLastAccessedTime(lastAccessedTime);
+        changed = true;
+      }
     }
 
     @Override
@@ -375,6 +394,15 @@ public class ElasticsearchSessionRepository
     public boolean isExpired() {
       final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
       return delegate.isExpired() || (authentication != null && !authentication.isAuthenticated());
+    }
+
+    public boolean isPolling() {
+      return polling;
+    }
+
+    public ElasticsearchSession setPolling(boolean polling) {
+      this.polling = polling;
+      return this;
     }
   }
 }

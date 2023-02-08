@@ -49,6 +49,13 @@ function useTasks({withPolling}: {withPolling?: boolean}) {
     fetchPolicy: 'network-only',
     nextFetchPolicy: 'cache-first',
     notifyOnNetworkStatusChange: true,
+    context: {
+      headers: withPolling
+        ? {
+            'x-is-polling': 'true',
+          }
+        : undefined,
+    },
   });
 
   const tasks = data?.tasks;

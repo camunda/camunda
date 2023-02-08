@@ -75,6 +75,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
       if (hasRefreshTokenExpired()) {
         setAuthenticated(false);
         LOGGER.info("No refresh token available. Authentication is invalid.");
+        throw new InsufficientAuthenticationException(
+            "Access token and refresh token are expired.");
       } else {
         LOGGER.info("Get a new access token by using refresh token");
         try {
@@ -115,6 +117,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     expires = accessToken.getToken().getExpiresAt();
     if (!hasExpired()) {
       setAuthenticated(true);
+    } else {
+      setAuthenticated(false);
     }
   }
 
