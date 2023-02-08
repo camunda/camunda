@@ -311,6 +311,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
+          maven-cache-key-modifier: java-client
           # Force `build-zeebe` to compile test sources too.
           # Otherwise, running tests will try to compile test sources with Java 8 which is not
           # possible with our maven POMs.
@@ -362,6 +363,7 @@ jobs:
           queries: +security-and-quality
       - uses: ./.github/actions/build-zeebe
         with:
+          maven-cache-key-modifier: codeql
           # Force compilation of test sources to spot issues there too.
           maven-extra-args: -Dmaven.test.skip=false
       - name: Perform CodeQL Analysis
