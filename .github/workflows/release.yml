@@ -149,7 +149,7 @@ jobs:
           # As the maven build of the tag happens in a sub-directory to which maven checks out the release tag to build it.
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
           export ZBCTL_ROOT_DIR=${PWD}
-          mvn release:prepare release:perform -B \
+          ./mvnw release:prepare release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
             -Dresume=false \
             -Dtag=${RELEASE_VERSION} \
@@ -196,8 +196,8 @@ jobs:
           git commit -am "build(project): update go versions"
           popd
 
-          mvn -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
-          FILE=$(mvn -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
+          ./mvnw -B versions:set-property -DgenerateBackupPoms=false -Dproperty=backwards.compat.version -DnewVersion="${RELEASE_VERSION}"
+          FILE=$(./mvnw -B help:evaluate -Dexpression=ignored.changes.file -q -DforceStdout)
           rm -f "clients/java/${FILE}" "test/${FILE}" "exporter-api/${FILE}" "protocol/${FILE}" "bpmn-model/${FILE}"
           git commit -am "build(project): update java compat versions"
       - name: Go Post-Release
