@@ -68,7 +68,8 @@ final class DiskSpaceRecoveryIT {
         .newPublishMessageCommand()
         .messageName("test")
         .correlationKey(String.valueOf(1))
-        .variables(Map.of("key", "x".repeat(4096)))
+        .variables(Map.of("key", "abc".repeat(4096)))
+        .timeToLive(Duration.ZERO)
         .send()
         .join();
   }
