@@ -42,7 +42,7 @@ public class DecisionMigrationTest {
 
       // when
       when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISIONS)).thenReturn(true);
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY))
+      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(true);
       final var actual = sutMigration.needsToRun(mockZeebeState);
 
@@ -57,7 +57,7 @@ public class DecisionMigrationTest {
 
       // when
       when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISIONS)).thenReturn(false);
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY))
+      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(false);
       final var actual = sutMigration.needsToRun(mockZeebeState);
 
@@ -72,7 +72,7 @@ public class DecisionMigrationTest {
 
       // when
       when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISIONS)).thenReturn(false);
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY))
+      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION))
           .thenReturn(true);
       final var actual = sutMigration.needsToRun(mockZeebeState);
 

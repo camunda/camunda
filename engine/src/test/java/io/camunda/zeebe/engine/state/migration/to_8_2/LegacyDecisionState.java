@@ -44,7 +44,7 @@ public class LegacyDecisionState {
     dbDecisionVersion = new DbInt();
     decisionVersionByDecisionIdAndDecisionKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY,
+            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
             transactionContext,
             decisionKeyByDecisionId,
             dbDecisionVersion);

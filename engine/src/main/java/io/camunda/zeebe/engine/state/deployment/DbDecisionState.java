@@ -49,9 +49,9 @@ public final class DbDecisionState implements MutableDecisionState {
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionKeysByDecisionId;
 
   private final DbInt dbDecisionVersion;
-  private final DbCompositeKey<DbString, DbForeignKey<DbLong>> decisionKeyByDecisionId;
-  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbInt>
-      decisionVersionByDecisionIdAndDecisionKey;
+  private final DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
+  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      decisionKeyByDecisionIdAndVersion;
 
   private final ColumnFamily<DbLong, PersistedDecisionRequirements> decisionRequirementsByKey;
   private final ColumnFamily<DbString, DbForeignKey<DbLong>> latestDecisionRequirementsKeysById;
@@ -102,14 +102,14 @@ public final class DbDecisionState implements MutableDecisionState {
             dbDecisionRequirementsKeyAndDecisionKey,
             DbNil.INSTANCE);
 
-    decisionKeyByDecisionId = new DbCompositeKey<>(dbDecisionId, fkDecision);
     dbDecisionVersion = new DbInt();
-    decisionVersionByDecisionIdAndDecisionKey =
+    decisionIdAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
+    decisionKeyByDecisionIdAndVersion =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY,
+            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
             transactionContext,
-            decisionKeyByDecisionId,
-            dbDecisionVersion);
+            decisionIdAndVersion,
+            fkDecision);
   }
 
   @Override
@@ -167,11 +167,11 @@ public final class DbDecisionState implements MutableDecisionState {
     final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
 
     dbDecisionId.wrapBuffer(decisionId);
-    decisionVersionByDecisionIdAndDecisionKey.whileEqualPrefix(
+    decisionKeyByDecisionIdAndVersion.whileEqualPrefix(
         dbDecisionId,
-        ((key, version) -> {
-          if (version.getValue() < currentVersion) {
-            decisionKeysByVersion.put(version.getValue(), key.second().inner().getValue());
+        ((key, decisionKey) -> {
+          if (key.second().getValue() < currentVersion) {
+            decisionKeysByVersion.put(key.second().getValue(), decisionKey.inner().getValue());
           }
         }));
 
@@ -196,7 +196,7 @@ public final class DbDecisionState implements MutableDecisionState {
 
     dbDecisionId.wrapString(record.getDecisionId());
     dbDecisionVersion.wrapInt(record.getVersion());
-    decisionVersionByDecisionIdAndDecisionKey.upsert(decisionKeyByDecisionId, dbDecisionVersion);
+    decisionKeyByDecisionIdAndVersion.upsert(decisionIdAndVersion, fkDecision);
 
     updateLatestDecisionVersion(record);
   }

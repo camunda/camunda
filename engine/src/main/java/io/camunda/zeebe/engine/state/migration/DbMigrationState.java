@@ -64,9 +64,9 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbForeignKey<DbLong> fkDecision;
   private final DbInt dbDecisionVersion;
   private final ColumnFamily<DbLong, PersistedDecision> decisionsByKeyColumnFamily;
-  private final DbCompositeKey<DbString, DbForeignKey<DbLong>> decisionKeyByDecisionId;
-  private final ColumnFamily<DbCompositeKey<DbString, DbForeignKey<DbLong>>, DbInt>
-      decisionVersionByDecisionIdAndDecisionKey;
+  private final DbCompositeKey<DbString, DbInt> decisionKeyAndVersion;
+  private final ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+      decisionKeyByDecisionIdAndVersion;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -120,14 +120,14 @@ public class DbMigrationState implements MutableMigrationState {
             ZbColumnFamilies.DMN_DECISIONS, transactionContext, dbDecisionKey, dbPersistedDecision);
     dbDecisionId = new DbString();
     fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
-    decisionKeyByDecisionId = new DbCompositeKey<>(dbDecisionId, fkDecision);
     dbDecisionVersion = new DbInt();
-    decisionVersionByDecisionIdAndDecisionKey =
+    decisionKeyAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
+    decisionKeyByDecisionIdAndVersion =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY,
+            ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
             transactionContext,
-            decisionKeyByDecisionId,
-            dbDecisionVersion);
+            decisionKeyAndVersion,
+            fkDecision);
   }
 
   @Override
@@ -244,8 +244,7 @@ public class DbMigrationState implements MutableMigrationState {
           dbDecisionId.wrapBuffer(value.getDecisionId());
           dbDecisionKey.wrapLong(value.getDecisionKey());
           dbDecisionVersion.wrapInt(value.getVersion());
-          decisionVersionByDecisionIdAndDecisionKey.insert(
-              decisionKeyByDecisionId, dbDecisionVersion);
+          decisionKeyByDecisionIdAndVersion.insert(decisionKeyAndVersion, fkDecision);
         });
   }
 }

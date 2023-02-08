@@ -26,7 +26,7 @@ public class DecisionMigration implements MigrationTask {
 
   @Override
   public boolean needsToRun(final ZeebeState zeebeState) {
-    return zeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_VERSION_BY_DECISION_ID_AND_KEY)
+    return zeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION)
         && !zeebeState.isEmpty(ZbColumnFamilies.DMN_DECISIONS);
   }
 
