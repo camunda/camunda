@@ -14,7 +14,6 @@ import HorizontalRulePlugin from './HorizontalRulePlugin';
 import ImagesPlugin from './ImagesPlugin';
 import LinkPlugin from './LinkPlugin';
 
-export {default as InitialStatePlugin} from './InitialStatePlugin';
 export {ToolbarPlugin} from './ToolbarPlugin';
 
 const editorPlugins = [

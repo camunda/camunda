@@ -35,6 +35,7 @@ const theme = {
 
 export default function TextEditor({onChange, error = false, initialValue}) {
   const initialConfig = {
+    editorState: initialValue ? JSON.stringify(initialValue) : null,
     editable: !!onChange,
     namespace: 'Editor',
     nodes: editorNodes,
@@ -50,7 +51,7 @@ export default function TextEditor({onChange, error = false, initialValue}) {
       className="TextEditor"
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <Editor onChange={onChange} error={error} initialValue={initialValue} />
+        <Editor onChange={onChange} error={error} />
       </LexicalComposer>
     </div>
   );

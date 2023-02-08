@@ -5,17 +5,26 @@
  * except in compliance with the proprietary license.
  */
 
+import {useCallback} from 'react';
 import classnames from 'classnames';
 import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
+import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
 
-import editorPlugins, {InitialStatePlugin, ToolbarPlugin} from './plugins';
+import editorPlugins, {ToolbarPlugin} from './plugins';
 
 import './Editor.scss';
 
-export default function Editor({onChange, error, initialValue}) {
+export default function Editor({onChange, error}) {
   const contentEditable = <ContentEditable className={classnames('editor', {error})} />;
+
+  const onEditorChange = useCallback(
+    (editorState) => {
+      onChange?.(editorState.toJSON());
+    },
+    [onChange]
+  );
 
   return (
     <div className="Editor">
@@ -25,7 +34,7 @@ export default function Editor({onChange, error, initialValue}) {
         placeholder={null}
         ErrorBoundary={LexicalErrorBoundary}
       />
-      <InitialStatePlugin value={initialValue} onChange={onChange} />
+      <OnChangePlugin onChange={onEditorChange} ignoreSelectionChange />
       {editorPlugins.map((EditorPlugin, idx) => (
         <EditorPlugin key={idx} />
       ))}
