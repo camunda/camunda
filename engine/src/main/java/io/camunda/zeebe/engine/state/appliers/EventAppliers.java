@@ -262,6 +262,7 @@ public final class EventAppliers implements EventApplier {
 
   private void registerDecisionAppliers(final MutableZeebeState state) {
     register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
+    register(DecisionIntent.DELETED, new DecisionDeletedApplier(state.getDecisionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
