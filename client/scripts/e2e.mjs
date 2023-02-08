@@ -165,6 +165,9 @@ async function startTest() {
         hasFailures = true;
       }
     }
+  } catch (err) {
+    hasFailures = true;
+    console.error(err);
   } finally {
     await testCafe.close();
     if (ciMode && !chromeheadlessMode) {
