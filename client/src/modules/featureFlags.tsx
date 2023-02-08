@@ -5,6 +5,4 @@
  * except in compliance with the proprietary license.
  */
 
-const hasStartProcess = false;
-
-export {hasStartProcess};
+export {};

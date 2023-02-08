@@ -21,7 +21,7 @@ import {capitalize} from 'lodash';
 import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
 import {observer} from 'mobx-react-lite';
-import {hasStartProcess} from 'modules/featureFlags';
+import {usePermissions} from 'modules/hooks/usePermissions';
 
 const orderedApps = [
   'console',
@@ -52,6 +52,7 @@ const Header: React.FC = observer(() => {
     (typeof orderedApps)[number],
     string
   >;
+  const {hasPermission} = usePermissions(['write']);
   const switcherElements = orderedApps
     .map<AppSwitcherElementType | undefined>((appName) =>
       parsedC8Links[appName] === undefined
@@ -67,6 +68,10 @@ const Header: React.FC = observer(() => {
           },
     )
     .filter((entry): entry is AppSwitcherElementType => entry !== undefined);
+  const isProcessesPageEnabled =
+    (process.env.REACT_APP_VERSION?.includes('alpha') ||
+      process.env.REACT_APP_VERSION?.includes('SNAPSHOT')) &&
+    hasPermission;
 
   useEffect(() => {
     if (data?.currentUser) {
@@ -92,7 +97,7 @@ const Header: React.FC = observer(() => {
       }}
       forwardRef={Link}
       navbar={{
-        elements: hasStartProcess
+        elements: isProcessesPageEnabled
           ? [
               {
                 isCurrentPage: !isProcessesPage,
