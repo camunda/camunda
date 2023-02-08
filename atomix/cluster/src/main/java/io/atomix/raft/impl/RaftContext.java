@@ -36,9 +36,9 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
-import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
+import io.atomix.raft.metrics.RaftServiceMetrics;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.RaftResponse;
@@ -204,7 +204,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     StateUtil.verifySnapshotLogConsistent(
         getCurrentSnapshotIndex(), raftLog.getFirstIndex(), raftLog.isEmpty(), raftLog::reset, log);
 
-    logCompactor = new LogCompactor(this);
+    logCompactor =
+        new LogCompactor(
+            threadContext,
+            raftLog,
+            partitionConfig.getPreferSnapshotReplicationThreshold(),
+            new RaftServiceMetrics(name),
+            ContextualLoggerFactory.getLogger(
+                LogCompactor.class, LoggerContext.builder(getClass()).addValue(name).build()));
 
     this.partitionConfig = partitionConfig;
     cluster = new RaftClusterContext(localMemberId, this);
@@ -774,8 +781,6 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     started = false;
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
-
-    logCompactor.close();
 
     // Close the log.
     try {

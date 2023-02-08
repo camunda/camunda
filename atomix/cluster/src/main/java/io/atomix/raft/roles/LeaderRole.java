@@ -491,7 +491,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
       try {
         return append(entry);
       } catch (final JournalException.OutOfDiskSpace e) {
-        if (!raft.getLogCompactor().compact()) {
+        // ignore the replication threshold in order to free as much data as possible
+        if (!raft.getLogCompactor().compactIgnoringReplicationThreshold()) {
           // no reason to retry if we failed to delete any data
           throw e;
         }

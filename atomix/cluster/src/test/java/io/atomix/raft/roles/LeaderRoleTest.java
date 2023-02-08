@@ -28,8 +28,8 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.impl.LogCompactor;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.RaftStorage;
@@ -189,7 +189,7 @@ public class LeaderRoleTest {
               return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
     // make sure we report something was deleted, otherwise the leader would step down
-    when(context.getLogCompactor().compact()).thenReturn(true);
+    when(context.getLogCompactor().compactIgnoringReplicationThreshold()).thenReturn(true);
 
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
     final CountDownLatch latch = new CountDownLatch(1);
@@ -206,13 +206,12 @@ public class LeaderRoleTest {
 
     // then
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
-    verify(logCompactor, times(1)).compact();
+    verify(logCompactor, times(1)).compactIgnoringReplicationThreshold();
   }
 
   @Test
   public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
     // given - fail once with OOD then accept the next entry
-    when(logCompactor.compact()).thenReturn(false);
     when(log.append(any(RaftLogEntry.class)))
         .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"))
         .then(
@@ -221,7 +220,7 @@ public class LeaderRoleTest {
               return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
             });
     // make sure we report nothing was deleted, otherwise the leader would retry
-    when(context.getLogCompactor().compact()).thenReturn(false);
+    when(context.getLogCompactor().compactIgnoringReplicationThreshold()).thenReturn(false);
 
     final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -241,7 +240,7 @@ public class LeaderRoleTest {
     // then
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
     assertThat(caughtError.get()).isInstanceOf(JournalException.OutOfDiskSpace.class);
-    verify(logCompactor, times(1)).compact();
+    verify(logCompactor, times(1)).compactIgnoringReplicationThreshold();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
   }
