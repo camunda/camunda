@@ -45,7 +45,7 @@
     "build": "react-scripts build",
     "generate-data": "node scripts/generate-data",
     "test": "react-scripts test --verbose=false",
-    "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
+    "test:ci": "CI=true react-scripts --expose-gc --max_old_space_size=1024 test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "screenshots": "testcafe chrome e2e/tests/*.js -s thumbnails=false,path=../../camunda-platform-docs/docs/components/optimize/userguide ",
     "e2e": "testcafe -c 3 chrome e2e/tests/*.js --disable-screenshots",
     "e2e:local": "node scripts/e2e.mjs",
