@@ -1,3 +1,88 @@
+# v8.2.0-alpha4
+## 🚀 New Features
+* Replace feature flag with conditional rendering of processes menu item ([#2485](https://github.com/camunda/tasklist/issues/2485))
+* **feature-flagged**: Implement process tile logic ([#2482](https://github.com/camunda/tasklist/issues/2482))
+* **feature-flagged**: Implement first time modal for processes page ([#2481](https://github.com/camunda/tasklist/issues/2481))
+* **feature-flagged**: Implement processes fetching ([#2479](https://github.com/camunda/tasklist/issues/2479))
+* adding a new mock process with 2 user tasks ([#2477](https://github.com/camunda/tasklist/issues/2477))
+* Style searchable select ([#2466](https://github.com/camunda/tasklist/issues/2466))
+* not returning nulls for processDefinitionId ([#2467](https://github.com/camunda/tasklist/issues/2467))
+* configure max-age for 2 years for HSTS header ([#2464](https://github.com/camunda/tasklist/issues/2464))
+* adding feature to start process from tasklist apis ([#2450](https://github.com/camunda/tasklist/issues/2450))
+* content-security-policy ([#2432](https://github.com/camunda/tasklist/issues/2432))
+* adding processinstanceid and processdefinitionid filters ([#2435](https://github.com/camunda/tasklist/issues/2435))
+* Update variable value field error message ([#2423](https://github.com/camunda/tasklist/issues/2423))
+* **qa**: nightly Jenkins job to test backup and restore of data ([#2392](https://github.com/camunda/tasklist/issues/2392))
+* adding a new form to test-data-generator ([#2398](https://github.com/camunda/tasklist/issues/2398))
+
+## 💊 Bugfixes
+* session not expiring ([#2459](https://github.com/camunda/tasklist/issues/2459))
+* adding write permission to startProcess ([#2489](https://github.com/camunda/tasklist/issues/2489))
+* **deps**: update dependency @carbon/elements to v11.19.0 ([#2469](https://github.com/camunda/tasklist/issues/2469))
+* **deps**: update dependency @carbon/react to v1.22.0 ([#2470](https://github.com/camunda/tasklist/issues/2470))
+* **deps**: update all non-major dependencies ([#2391](https://github.com/camunda/tasklist/issues/2391))
+* **deps**: update dependency sass to v1.58.0 ([#2457](https://github.com/camunda/tasklist/issues/2457))
+* **deps**: update dependency react-router-dom to v6.8.0 ([#2438](https://github.com/camunda/tasklist/issues/2438))
+* **deps**: update dependency react-router-dom to v6.7.0 ([#2409](https://github.com/camunda/tasklist/issues/2409))
+* **deps**: update dependency @carbon/elements to v11.18.0 ([#2415](https://github.com/camunda/tasklist/issues/2415))
+* **deps**: update dependency @carbon/react to v1.21.0 ([#2416](https://github.com/camunda/tasklist/issues/2416))
+* Fix missing form-js customization issues ([#2403](https://github.com/camunda/tasklist/issues/2403))
+* **deps**: update dependency final-form-arrays to v3.1.0 ([#2394](https://github.com/camunda/tasklist/issues/2394))
+* **deps**: update all non-major dependencies ([#2385](https://github.com/camunda/tasklist/issues/2385))
+* **deps**: update dependency @carbon/elements to v11.17.0 ([#2379](https://github.com/camunda/tasklist/issues/2379))
+* **deps**: update dependency @carbon/react to v1.20.0 ([#2380](https://github.com/camunda/tasklist/issues/2380))
+* **chore**: use mvn for start app ([#2370](https://github.com/camunda/tasklist/issues/2370))
+
+## 🧹 Chore
+* **backend**: update Zeebe and Identity to 8.2.0-alpha4 ([#2490](https://github.com/camunda/tasklist/issues/2490))
+* **deps**: update dependency @types/node to v18.13.0 ([#2475](https://github.com/camunda/tasklist/issues/2475))
+* **deps**: update dependency monaco-editor to v0.35.0 ([#2480](https://github.com/camunda/tasklist/issues/2480))
+* **deps**: update actions/add-to-project digest to 28a69b2 ([#2486](https://github.com/camunda/tasklist/issues/2486))
+* **deps**: update actions/add-to-project digest to 5a55c0c ([#2473](https://github.com/camunda/tasklist/issues/2473))
+* Enable tracking on dev
+* Revert header menu order
+* bump json5 from 1.0.1 to 1.0.2 in /client ([#2471](https://github.com/camunda/tasklist/issues/2471))
+* bump http-cache-semantics from 4.1.0 to 4.1.1 in /client ([#2468](https://github.com/camunda/tasklist/issues/2468))
+* bump luxon from 3.2.0 to 3.2.1 in /client ([#2384](https://github.com/camunda/tasklist/issues/2384))
+* bump express from 4.17.1 to 4.18.2 in /client ([#2322](https://github.com/camunda/tasklist/issues/2322))
+* bump qs from 6.5.2 to 6.5.3 in /client ([#2321](https://github.com/camunda/tasklist/issues/2321))
+* bump decode-uri-component from 0.2.0 to 0.2.2 in /client ([#2305](https://github.com/camunda/tasklist/issues/2305))
+* Update Browserlist DB
+* Add mock setup ([#2456](https://github.com/camunda/tasklist/issues/2456))
+* make mixpanel available as global variable
+* **deps**: update actions/add-to-project digest to 09abe09 ([#2455](https://github.com/camunda/tasklist/issues/2455))
+* **deps**: update dependency testcafe to v2.3.0 ([#2447](https://github.com/camunda/tasklist/issues/2447))
+* Mock requests in visual regression tests and add test for empty page ([#2441](https://github.com/camunda/tasklist/issues/2441))
+* **GHA**: use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml ([#2448](https://github.com/camunda/tasklist/issues/2448))
+* **feature-flagged**: Add new processes tab ([#2449](https://github.com/camunda/tasklist/issues/2449))
+* Update Browserlist DB
+* **deps**: update hashicorp/vault-action digest to 130d1f5 ([#2436](https://github.com/camunda/tasklist/issues/2436))
+* **deps**: update hashicorp/vault-action action to v2.5.0 ([#2437](https://github.com/camunda/tasklist/issues/2437))
+* Add add attributes for complete task tracking event ([#2424](https://github.com/camunda/tasklist/issues/2424))
+* **deps**: update hashicorp/vault-action digest to d34ee14 ([#2433](https://github.com/camunda/tasklist/issues/2433))
+* **deps**: update actions/add-to-project digest to add81c3 ([#2431](https://github.com/camunda/tasklist/issues/2431))
+* **deps**: update dependency @types/jest to v29.4.0 ([#2428](https://github.com/camunda/tasklist/issues/2428))
+* **deps**: update hashicorp/vault-action digest to 77bab83 ([#2425](https://github.com/camunda/tasklist/issues/2425))
+* **deps**: update dependency @playwright/test to v1.30.0 ([#2426](https://github.com/camunda/tasklist/issues/2426))
+* **deps**: update dependency msw to v1 ([#2427](https://github.com/camunda/tasklist/issues/2427))
+* **deps**: update hashicorp/vault-action digest to 7318a98 ([#2420](https://github.com/camunda/tasklist/issues/2420))
+* **deps**: update actions/add-to-project digest to bcf48a5 ([#2421](https://github.com/camunda/tasklist/issues/2421))
+* bump netty-bom from 4.1.86.Final to 4.1.87.Final ([#2399](https://github.com/camunda/tasklist/issues/2399))
+* bump assertj-core from 3.23.1 to 3.24.2 ([#2400](https://github.com/camunda/tasklist/issues/2400))
+* bump maven-checkstyle-plugin from 3.2.0 to 3.2.1 ([#2401](https://github.com/camunda/tasklist/issues/2401))
+* Add visual regression tests ([#2404](https://github.com/camunda/tasklist/issues/2404))
+* Update Browserlist DB
+* **deps**: update hashicorp/vault-action digest to b08bc49 ([#2405](https://github.com/camunda/tasklist/issues/2405))
+* bump version.micrometer from 1.10.2 to 1.10.3 ([#2386](https://github.com/camunda/tasklist/issues/2386))
+* bump byte-buddy from 1.12.20 to 1.12.22 ([#2393](https://github.com/camunda/tasklist/issues/2393))
+* bump maven-surefire-plugin from 3.0.0-M7 to 3.0.0-M8 ([#2388](https://github.com/camunda/tasklist/issues/2388))
+* bump maven-failsafe-plugin from 3.0.0-M7 to 3.0.0-M8 ([#2389](https://github.com/camunda/tasklist/issues/2389))
+* bump mvc-auth-commons from 1.9.3 to 1.9.4 ([#2390](https://github.com/camunda/tasklist/issues/2390))
+* bump mockito-core from 4.10.0 to 5.0.0 ([#2396](https://github.com/camunda/tasklist/issues/2396))
+* Update Browserlist DB
+* **deps**: update all non-major dependencies ([#2381](https://github.com/camunda/tasklist/issues/2381))
+* Update Browserlist DB
+* update CHANGELOG.md
 # v8.2.0-alpha3
 ## 🚀 New Features
 * **backend**: return 502 in case of Elastic connection error ([#2365](https://github.com/camunda/tasklist/issues/2365))
