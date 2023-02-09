@@ -63,6 +63,8 @@ camunda-platform:
       fullnameOverride: keycloak
       externalDatabase:
         password: postgresql
+      nodeSelector:
+        cloud.google.com/gke-nodepool: previews
       postgresql:
         fullnameOverride: postgresql
         # fixing the password to avoid failure on restart of keycloak pod
@@ -70,6 +72,8 @@ camunda-platform:
         auth:
           password: postgresql
         primary:
+          nodeSelector:
+            cloud.google.com/gke-nodepool: previews
           persistence:
             enabled: false
           resources:
