@@ -161,8 +161,7 @@ public final class DbDecisionState implements MutableDecisionState {
     return decisions;
   }
 
-  @Override
-  public Optional<Long> findPreviousVersionDecisionKey(
+  private Optional<Long> findPreviousVersionDecisionKey(
       final DirectBuffer decisionId, final int currentVersion) {
     final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
 
