@@ -380,6 +380,127 @@ public final class DecisionStateTest {
         .contains(decision3.getDecisionKey());
   }
 
+  @DisplayName("should not find decision after it has been deleted")
+  @Test
+  void shouldNotFindDecisionAfterItHasBeenDeleted() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord =
+        sampleDecisionRecord().setDecisionRequirementsKey(drg.getDecisionRequirementsKey());
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord);
+
+    // when
+    decisionState.deleteDecision(decisionRecord);
+
+    // then
+    assertThat(decisionState.findDecisionByKey(decisionRecord.getDecisionKey()).isEmpty());
+    assertThat(decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer()))
+        .isEmpty();
+    assertThat(
+            decisionState.findDecisionsByDecisionRequirementsKey(
+                decisionRecord.getDecisionRequirementsKey()))
+        .isEmpty();
+  }
+
+  @DisplayName("should find version 2 as latest decision after version 1 has been deleted")
+  @Test
+  void shouldFindVersion2AsLatestDecisionAfterVersion1HasBeenDeleted() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1);
+    final var decisionRecord2 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(2)
+            .setDecisionKey(2);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
+
+    // when
+    decisionState.deleteDecision(decisionRecord1);
+
+    // then
+    assertThat(decisionState.findDecisionByKey(decisionRecord1.getDecisionKey()).isEmpty());
+    final var latestDecisionById =
+        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+    assertThat(latestDecisionById).isNotEmpty();
+    assertThat(latestDecisionById.get().getDecisionId())
+        .isEqualTo(decisionRecord2.getDecisionIdBuffer());
+    assertThat(latestDecisionById.get().getVersion()).isEqualTo(decisionRecord2.getVersion());
+  }
+
+  @DisplayName("should find version 1 as latest decision after version 2 has been deleted")
+  @Test
+  void shouldFindVersion1AsLatestDecisionAfterVersion2HasBeenDeleted() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1);
+    final var decisionRecord2 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(2)
+            .setDecisionKey(2);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord2);
+
+    // when
+    decisionState.deleteDecision(decisionRecord2);
+
+    // then
+    assertThat(decisionState.findDecisionByKey(decisionRecord2.getDecisionKey()).isEmpty());
+    final var latestDecisionById =
+        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+    assertThat(latestDecisionById).isNotEmpty();
+    assertThat(latestDecisionById.get().getDecisionId())
+        .isEqualTo(decisionRecord1.getDecisionIdBuffer());
+    assertThat(latestDecisionById.get().getVersion()).isEqualTo(decisionRecord1.getVersion());
+  }
+
+  @DisplayName("should find version 1 as latest when version 2 is skipped and version 3 is deleted")
+  @Test
+  void shouldFindVersion1AsLatestDecisionWhenVersion2IsSkippedAndVersion3IsDeleted() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decisionRecord1 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(1)
+            .setDecisionKey(1)
+            .setDecisionId("decision-id");
+    final var decisionRecord3 =
+        sampleDecisionRecord()
+            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+            .setVersion(3)
+            .setDecisionKey(3)
+            .setDecisionId("decision-id");
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decisionRecord1);
+    decisionState.storeDecisionRecord(decisionRecord3);
+
+    // when
+    decisionState.deleteDecision(decisionRecord3);
+
+    // then
+    assertThat(decisionState.findDecisionByKey(decisionRecord3.getDecisionKey()).isEmpty());
+    final var latestDecisionById =
+        decisionState.findLatestDecisionById(decisionRecord3.getDecisionIdBuffer());
+    assertThat(latestDecisionById).isNotEmpty();
+    assertThat(latestDecisionById.get().getDecisionId())
+        .isEqualTo(decisionRecord1.getDecisionIdBuffer());
+    assertThat(latestDecisionById.get().getVersion()).isEqualTo(decisionRecord1.getVersion());
+  }
+
   private DecisionRecord sampleDecisionRecord() {
     return new DecisionRecord()
         .setDecisionId("decision-id")
