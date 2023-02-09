@@ -23,6 +23,6 @@ public final class DecisionDeletedApplier
 
   @Override
   public void applyState(final long key, final DecisionRecord value) {
-
+    decisionState.deleteDecision(value);
   }
 }

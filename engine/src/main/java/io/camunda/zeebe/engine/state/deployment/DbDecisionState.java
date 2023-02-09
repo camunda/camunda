@@ -209,6 +209,38 @@ public final class DbDecisionState implements MutableDecisionState {
     updateLatestDecisionRequirementsVersion(record);
   }
 
+  @Override
+  public void deleteDecision(final DecisionRecord record) {
+    findLatestDecisionById(record.getDecisionIdBuffer())
+        .map(PersistedDecision::getVersion)
+        .ifPresent(
+            latestVersion -> {
+              if (latestVersion == record.getVersion()) {
+                dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
+                findPreviousVersionDecisionKey(record.getDecisionIdBuffer(), record.getVersion())
+                    .ifPresentOrElse(
+                        previousDecisionKey -> {
+                          // Update the latest decision version
+                          dbDecisionKey.wrapLong(previousDecisionKey);
+                          latestDecisionKeysByDecisionId.update(dbDecisionId, fkDecision);
+                        },
+                        () -> {
+                          // Clear the latest decision version
+                          latestDecisionKeysByDecisionId.deleteExisting(dbDecisionId);
+                        });
+              }
+            });
+
+    dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
+    dbDecisionKey.wrapLong(record.getDecisionKey());
+    dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
+    dbDecisionVersion.wrapInt(record.getVersion());
+
+    decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
+    decisionsByKey.deleteExisting(dbDecisionKey);
+    decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
+  }
+
   private void updateLatestDecisionVersion(final DecisionRecord record) {
     findLatestDecisionById(record.getDecisionIdBuffer())
         .ifPresentOrElse(
