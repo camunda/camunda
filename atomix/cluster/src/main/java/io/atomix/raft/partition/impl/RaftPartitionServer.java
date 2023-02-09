@@ -323,6 +323,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
     final RaftStorageConfig storageConfig = config.getStorageConfig();
     return RaftStorage.builder()
         .withPrefix(partition.name())
+        .withPartitionId(partition.id().id())
         .withDirectory(partition.dataDirectory())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize())
         .withFlushExplicitly(storageConfig.shouldFlushExplicitly())

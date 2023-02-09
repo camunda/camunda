@@ -104,20 +104,16 @@ final class JournalMetrics {
   private final Counter.Child appendRate;
   private final Counter.Child appendDataRate;
 
-  JournalMetrics(final String name) {
-    // hacky way of fetching the partition ID if the journal was created from a partition group; if
-    // not, the name is used as is
-    final var partition = name.substring(name.lastIndexOf('-') + 1);
-
-    segmentCreationTime = SEGMENT_CREATION_TIME.labels(partition);
-    segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(partition);
-    segmentFlushTime = SEGMENT_FLUSH_TIME.labels(partition);
-    segmentCount = SEGMENT_COUNT.labels(partition);
-    journalOpenTime = JOURNAL_OPEN_DURATION.labels(partition);
-    segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(partition);
-    appendLatency = APPEND_LATENCY.labels(partition);
-    appendRate = APPEND_RATE.labels(partition);
-    appendDataRate = APPEND_DATA_RATE.labels(partition);
+  JournalMetrics(final String partitionId) {
+    segmentCreationTime = SEGMENT_CREATION_TIME.labels(partitionId);
+    segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(partitionId);
+    segmentFlushTime = SEGMENT_FLUSH_TIME.labels(partitionId);
+    segmentCount = SEGMENT_COUNT.labels(partitionId);
+    journalOpenTime = JOURNAL_OPEN_DURATION.labels(partitionId);
+    segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(partitionId);
+    appendLatency = APPEND_LATENCY.labels(partitionId);
+    appendRate = APPEND_RATE.labels(partitionId);
+    appendDataRate = APPEND_DATA_RATE.labels(partitionId);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {

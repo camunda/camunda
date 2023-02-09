@@ -53,6 +53,7 @@ import java.nio.file.StandardOpenOption;
 public final class RaftStorage {
 
   private final String prefix;
+  private final int partitionId;
   private final File directory;
   private final int maxSegmentSize;
   private final long freeDiskSpace;
@@ -63,6 +64,7 @@ public final class RaftStorage {
 
   private RaftStorage(
       final String prefix,
+      final int partitionId,
       final File directory,
       final int maxSegmentSize,
       final long freeDiskSpace,
@@ -71,6 +73,7 @@ public final class RaftStorage {
       final int journalIndexDensity,
       final boolean preallocateSegmentFiles) {
     this.prefix = prefix;
+    this.partitionId = partitionId;
     this.directory = directory;
     this.maxSegmentSize = maxSegmentSize;
     this.freeDiskSpace = freeDiskSpace;
@@ -184,6 +187,7 @@ public final class RaftStorage {
 
     return RaftLog.builder()
         .withName(prefix)
+        .withPartitionId(partitionId)
         .withDirectory(directory)
         .withMaxSegmentSize(maxSegmentSize)
         .withFreeDiskSpace(freeDiskSpace)
@@ -239,6 +243,9 @@ public final class RaftStorage {
     private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
     private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
 
+    // impossible value to make it clear it's unset and there's an error
+    private static final int DEFAULT_PARTITION_ID = -1;
+
     private String prefix = DEFAULT_PREFIX;
     private File directory = new File(DEFAULT_DIRECTORY);
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
@@ -247,6 +254,7 @@ public final class RaftStorage {
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
     private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+    private int partitionId = DEFAULT_PARTITION_ID;
 
     private Builder() {}
 
@@ -351,6 +359,17 @@ public final class RaftStorage {
     }
 
     /**
+     * The ID of the partition on which this storage resides.
+     *
+     * @param partitionId the storage's partition ID
+     * @return this builder for chaining
+     */
+    public Builder withPartitionId(final int partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
+    /**
      * Builds the {@link RaftStorage} object.
      *
      * @return The built storage configuration.
@@ -359,6 +378,7 @@ public final class RaftStorage {
     public RaftStorage build() {
       return new RaftStorage(
           prefix,
+          partitionId,
           directory,
           maxSegmentSize,
           freeDiskSpace,

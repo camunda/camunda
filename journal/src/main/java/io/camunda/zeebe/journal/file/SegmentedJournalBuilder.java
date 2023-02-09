@@ -32,6 +32,9 @@ public class SegmentedJournalBuilder {
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
   private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
 
+  // impossible value to make it clear it's unset
+  private static final int DEFAULT_PARTITION_ID = -1;
+
   protected String name = DEFAULT_NAME;
   protected File directory = new File(DEFAULT_DIRECTORY);
   protected int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
@@ -40,6 +43,7 @@ public class SegmentedJournalBuilder {
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
   private long lastWrittenIndex = -1L;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
+  private int partitionId = DEFAULT_PARTITION_ID;
 
   protected SegmentedJournalBuilder() {}
 
@@ -145,9 +149,21 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  /**
+   * The ID of the partition on which this journal resides. This is used primarily for
+   * observability, e.g. in {@link JournalMetrics}.
+   *
+   * @param partitionId the journal's partition ID
+   * @return this builder for chaining
+   */
+  public SegmentedJournalBuilder withPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
+    return this;
+  }
+
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
-    final var journalMetrics = new JournalMetrics(name);
+    final var journalMetrics = new JournalMetrics(String.valueOf(partitionId));
     final var segmentAllocator =
         preallocateSegmentFiles ? SegmentAllocator.fill() : SegmentAllocator.noop();
     final var segmentLoader = new SegmentLoader(freeDiskSpace, journalMetrics, segmentAllocator);
