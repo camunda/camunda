@@ -84,6 +84,7 @@ public class KpiService {
         final Double evaluationValue = (Double) evaluationResult.getFirstCommandResult().getFirstMeasureData();
         KpiResultDto kpiResponseDto = new KpiResultDto();
         kpiResponseDto.setReportId(report.getId());
+        kpiResponseDto.setCollectionId(report.getCollectionId());
         if (evaluationValue != null) {
           kpiResponseDto.setValue(evaluationValue.toString());
         }
@@ -109,6 +110,7 @@ public class KpiService {
             kpiResponseDto.setUnit(targetAndUnit.getTargetValueUnit());
           });
         kpiResponseDto.setReportId(report.getId());
+        kpiResponseDto.setCollectionId(report.getCollectionId());
         kpiResponseDto.setReportName(report.getName());
         kpiResponseDto.setBelow(getIsBelow(report));
         kpiResponseDto.setType(getKpiType(report));

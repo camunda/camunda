@@ -7,7 +7,6 @@ package org.camunda.optimize.dto.optimize.query.processoverview;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
@@ -21,11 +20,11 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 
 @Data
 @FieldNameConstants
-@AllArgsConstructor
 @NoArgsConstructor
 public class KpiResultDto {
 
   private String reportId;
+  private String collectionId;
   private String reportName;
   private String value;
   private String target;
