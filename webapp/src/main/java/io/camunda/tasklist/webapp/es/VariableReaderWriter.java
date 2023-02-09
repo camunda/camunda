@@ -28,6 +28,7 @@ import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
@@ -66,6 +67,7 @@ public class VariableReaderWriter {
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
   @Autowired private VariableIndex variableIndex;
   @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistProperties tasklistProperties;
   @Autowired private ObjectMapper objectMapper;
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
@@ -184,7 +186,8 @@ public class VariableReaderWriter {
             .source(
                 new SearchSourceBuilder()
                     .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC));
+                    .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC)
+                    .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
     } catch (IOException e) {
