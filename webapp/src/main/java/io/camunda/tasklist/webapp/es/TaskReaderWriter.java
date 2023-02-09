@@ -25,6 +25,7 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
@@ -236,15 +237,16 @@ public class TaskReaderWriter {
     // active tasks
     final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(esQuery);
     applySorting(sourceBuilder, query);
+
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
+        ElasticsearchUtil.createSearchRequest(
+                taskTemplate, getQueryTypeByTaskState(query.getState()))
             .source(
                 sourceBuilder
                 //  .fetchSource(fieldNames.toArray(String[]::new), null)
                 );
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
       final List<TaskDTO> tasks = mapTasksFromEntity(response);
 
       if (tasks.size() > 0) {
@@ -267,6 +269,10 @@ public class TaskReaderWriter {
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
+  }
+
+  private static QueryType getQueryTypeByTaskState(TaskState taskState) {
+    return TaskState.CREATED == taskState ? QueryType.ONLY_RUNTIME : QueryType.ALL;
   }
 
   private boolean checkTaskIsFirst(final TaskQueryDTO query, final String id) {

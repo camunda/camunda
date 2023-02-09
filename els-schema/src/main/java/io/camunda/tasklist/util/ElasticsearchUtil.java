@@ -123,8 +123,7 @@ public abstract class ElasticsearchUtil {
 
   public static SearchRequest createSearchRequest(
       TemplateDescriptor template, QueryType queryType) {
-    final SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType));
-    return searchRequest;
+    return new SearchRequest(whereToSearch(template, queryType));
   }
 
   public static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
