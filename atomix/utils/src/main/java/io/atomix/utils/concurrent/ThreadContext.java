@@ -47,7 +47,7 @@ public interface ThreadContext extends CloseableSilently, Executor, Scheduler {
    */
   static ThreadContext currentContext() {
     final Thread thread = Thread.currentThread();
-    return thread instanceof AtomixThread ? ((AtomixThread) thread).getContext() : null;
+    return thread instanceof AtomixThread atomixThread ? atomixThread.getContext() : null;
   }
 
   /** Checks that the current thread is the correct context thread. */
