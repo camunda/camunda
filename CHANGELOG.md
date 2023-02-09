@@ -1,3 +1,82 @@
+# v8.2.0-alpha4
+## 🚀 New Features
+* **backend**: Add web security headers ([#4028](https://github.com/camunda/operate/issues/4028))
+* move single token modification ([#4008](https://github.com/camunda/operate/issues/4008))
+* **backend**: Add processDefinitionKey to flow node public API ([#4022](https://github.com/camunda/operate/issues/4022))
+* **backend**: Extend flownode-instances public API with flowNodeId ([#3989](https://github.com/camunda/operate/issues/3989))
+* enable cancel single token modification ([#3993](https://github.com/camunda/operate/issues/3993))
+* change design for single running instance selection on diagram ([#3983](https://github.com/camunda/operate/issues/3983))
+* display spinner in modification dropdown ([#3978](https://github.com/camunda/operate/issues/3978))
+* pass flow node instance key to modify api ([#3957](https://github.com/camunda/operate/issues/3957))
+* **backend**: add ancestorElementInstanceKey to modify process instance operation ([#3906](https://github.com/camunda/operate/issues/3906))
+* display instance key in summary modal ([#3954](https://github.com/camunda/operate/issues/3954))
+* allow canceling multi instance instances ([#3947](https://github.com/camunda/operate/issues/3947))
+* **feature-flagged**: support cancel single modification in history and variables panel ([#3922](https://github.com/camunda/operate/issues/3922))
+* add validation for time inputs to date range filters ([#3903](https://github.com/camunda/operate/issues/3903))
+* **backend**: add organizationId label to count model metric ([#3938](https://github.com/camunda/operate/issues/3938))
+* add placeholder for date range input ([#3888](https://github.com/camunda/operate/issues/3888))
+* **feature-flagged**: add multiple instance selected info bar ([#3918](https://github.com/camunda/operate/issues/3918))
+* **feature-flagged**: add cancel selected option for modification dropdown ([#3914](https://github.com/camunda/operate/issues/3914))
+* **feature-flagged**: display selected running instances count in modification dropdown ([#3910](https://github.com/camunda/operate/issues/3910))
+* allow cancel and move operations on elements inside multi instance subprocesses ([#3885](https://github.com/camunda/operate/issues/3885))
+
+## 💊 Bugfixes
+* correctly position modification dropdown ([#4045](https://github.com/camunda/operate/issues/4045))
+* fix add variable issue when new placeholder is selected from diagram ([#4023](https://github.com/camunda/operate/issues/4023))
+* **backend**: improve Identity token handling ([#4064](https://github.com/camunda/operate/issues/4064))
+* **backend-vulnerability**: use explicit snakeyaml version ([#4058](https://github.com/camunda/operate/issues/4058))
+* prevent flickering on diagram panel during polling ([#4016](https://github.com/camunda/operate/issues/4016))
+* update common ui to solve big process name issue ([#4024](https://github.com/camunda/operate/issues/4024))
+* shift date range popover when not enough space ([#4013](https://github.com/camunda/operate/issues/4013))
+* make input/output mappings tabs scrollable ([#3970](https://github.com/camunda/operate/issues/3970))
+* **backend-test**: ignore flaky tests
+* display correct theme for editors when system theme is selected ([#3966](https://github.com/camunda/operate/issues/3966))
+* **import**: avoid NPE in case of empty reread ([#3951](https://github.com/camunda/operate/issues/3951))
+* **backend**: avoid archiver timeouts ([#3904](https://github.com/camunda/operate/issues/3904))
+* **deps**: update dependency @carbon/react to v1.20.0 ([#3961](https://github.com/camunda/operate/issues/3961))
+* **e2e**: create process instances in batches ([#3955](https://github.com/camunda/operate/issues/3955))
+* **deps**: update all non-major dependencies ([#3744](https://github.com/camunda/operate/issues/3744))
+* **deps**: update dependency sass to v1.57.1 ([#3648](https://github.com/camunda/operate/issues/3648))
+* **deps**: update dependency @carbon/elements to v11.17.0 ([#3351](https://github.com/camunda/operate/issues/3351))
+* **deps**: update react monorepo to v18 (major) ([#3199](https://github.com/camunda/operate/issues/3199))
+* **backend**: fix bean dependencies ([#3898](https://github.com/camunda/operate/issues/3898))
+
+## 🧹 Chore
+* **backend**: update Zeebe and Identity to 8.2.0-alpha4 ([#4082](https://github.com/camunda/operate/issues/4082))
+* support has pending move modification ([#4012](https://github.com/camunda/operate/issues/4012))
+* remove IS_DATE_RANGE_FILTERS_ENABLED feature flag ([#4059](https://github.com/camunda/operate/issues/4059))
+* Update Browserlist DB
+* add empty column for variables table for proper alignment ([#4030](https://github.com/camunda/operate/issues/4030))
+* make mixpanel available as global variable ([#4017](https://github.com/camunda/operate/issues/4017))
+* **GHA**: use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml ([#4011](https://github.com/camunda/operate/issues/4011))
+* update QA issue
+* update QA issue template
+* rename QA template
+* Create QA template ([#4014](https://github.com/camunda/operate/issues/4014))
+* Update Browserlist DB
+* **deps**: bump java-jwt from 4.2.1 to 4.2.2 ([#3927](https://github.com/camunda/operate/issues/3927))
+* show linting warnings in pre-commit hook ([#3975](https://github.com/camunda/operate/issues/3975))
+* Update Browserlist DB
+* **deps**: update dependency testcafe to v2.2.0 ([#3900](https://github.com/camunda/operate/issues/3900))
+* **deps**: update dependency lint-staged to v13.1.0 ([#3860](https://github.com/camunda/operate/issues/3860))
+* **deps**: update dependency prettier to v2.8.3 ([#3745](https://github.com/camunda/operate/issues/3745))
+* **deps**: update dependency typescript to v4.9.4 ([#3710](https://github.com/camunda/operate/issues/3710))
+* reset stores on unmount in tests ([#3912](https://github.com/camunda/operate/issues/3912))
+* use cancelAllTokens in tests and rename flow node id in process xml mock ([#3929](https://github.com/camunda/operate/issues/3929))
+* **deps**: bump gson from 2.10 to 2.10.1 ([#3908](https://github.com/camunda/operate/issues/3908))
+* **deps**: bump netty-tcnative-boringssl-static ([#3919](https://github.com/camunda/operate/issues/3919))
+* **deps**: bump version.micrometer from 1.10.2 to 1.10.3 ([#3921](https://github.com/camunda/operate/issues/3921))
+* **deps**: bump maven-failsafe-plugin from 3.0.0-M7 to 3.0.0-M8 ([#3925](https://github.com/camunda/operate/issues/3925))
+* **deps**: bump maven-surefire-plugin from 3.0.0-M7 to 3.0.0-M8 ([#3926](https://github.com/camunda/operate/issues/3926))
+* **deps**: bump mvc-auth-commons from 1.9.3 to 1.9.4 ([#3928](https://github.com/camunda/operate/issues/3928))
+* **deps**: bump assertj-core from 3.23.1 to 3.24.2 ([#3942](https://github.com/camunda/operate/issues/3942))
+* **deps**: bump mockito-core from 4.10.0 to 5.0.0 ([#3937](https://github.com/camunda/operate/issues/3937))
+* **readme**: add link to Maven settings
+* Update Browserlist DB
+* simplify variable form state ([#3905](https://github.com/camunda/operate/issues/3905))
+* Update Browserlist DB
+* upgrade dependencies ([#3890](https://github.com/camunda/operate/issues/3890))
+* update CHANGELOG.md
 # v8.2.0-alpha3
 ## 🚀 New Features
 * **backend**: return 502 in case of Elastic connection error ([#3880](https://github.com/camunda/operate/issues/3880))
