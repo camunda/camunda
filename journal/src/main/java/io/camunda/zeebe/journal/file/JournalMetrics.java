@@ -104,16 +104,16 @@ final class JournalMetrics {
   private final Counter.Child appendRate;
   private final Counter.Child appendDataRate;
 
-  JournalMetrics(final String logName) {
-    segmentCreationTime = SEGMENT_CREATION_TIME.labels(logName);
-    segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(logName);
-    segmentFlushTime = SEGMENT_FLUSH_TIME.labels(logName);
-    segmentCount = SEGMENT_COUNT.labels(logName);
-    journalOpenTime = JOURNAL_OPEN_DURATION.labels(logName);
-    segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(logName);
-    appendLatency = APPEND_LATENCY.labels(logName);
-    appendRate = APPEND_RATE.labels(logName);
-    appendDataRate = APPEND_DATA_RATE.labels(logName);
+  JournalMetrics(final String partitionId) {
+    segmentCreationTime = SEGMENT_CREATION_TIME.labels(partitionId);
+    segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(partitionId);
+    segmentFlushTime = SEGMENT_FLUSH_TIME.labels(partitionId);
+    segmentCount = SEGMENT_COUNT.labels(partitionId);
+    journalOpenTime = JOURNAL_OPEN_DURATION.labels(partitionId);
+    segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(partitionId);
+    appendLatency = APPEND_LATENCY.labels(partitionId);
+    appendRate = APPEND_RATE.labels(partitionId);
+    appendDataRate = APPEND_DATA_RATE.labels(partitionId);
   }
 
   void observeSegmentCreation(final Runnable segmentCreation) {

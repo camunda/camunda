@@ -131,6 +131,17 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
+  /**
+   * The ID of the partition on which this log resides.
+   *
+   * @param partitionId the log's partition ID
+   * @return this builder for chaining
+   */
+  public RaftLogBuilder withPartitionId(final int partitionId) {
+    journalBuilder.withPartitionId(partitionId);
+    return this;
+  }
+
   @Override
   public RaftLog build() {
     final Journal journal = journalBuilder.build();
