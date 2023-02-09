@@ -25,8 +25,10 @@ import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -55,6 +57,11 @@ class SegmentedJournalReaderTest {
             .withJournalIndexDensity(5)
             .build();
     reader = journal.openReader();
+  }
+
+  @AfterEach
+  void afterEach() {
+    CloseHelper.quietCloseAll(reader, journal);
   }
 
   @Test

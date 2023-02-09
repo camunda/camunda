@@ -21,8 +21,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Objects;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -36,12 +38,19 @@ class SegmentsManagerTest {
   private final BufferWriter recordDataWriter = new DirectBufferWriter().wrap(data);
   private final int entrySize = getSerializedSize(data);
 
+  private SegmentsManager segments;
+
+  @AfterEach
+  void afterEach() {
+    CloseHelper.quietClose(segments);
+  }
+
   @Test
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
-    final var segments = createSegmentsManager(0);
+    segments = createSegmentsManager(0);
     segments.open();
-    segments.getFirstSegment().createReader();
+    Objects.requireNonNull(segments.getFirstSegment()).createReader();
     segments.getFirstSegment().delete();
 
     // when
@@ -50,7 +59,7 @@ class SegmentsManagerTest {
     // will cause the segment to be deleted on close where we actually want to test that the file is
     // deleted when opening.
 
-    try (var newSegments = createSegmentsManager(0)) {
+    try (final var newSegments = createSegmentsManager(0)) {
       newSegments.open();
       // then
       final File logDirectory = directory.resolve("data").toFile();
@@ -59,62 +68,68 @@ class SegmentsManagerTest {
               file -> SegmentFile.isDeletedSegmentFile(JOURNAL_NAME, file.getName()))
           .isDirectoryContaining(file -> SegmentFile.isSegmentFile(JOURNAL_NAME, file.getName()));
     }
-
-    segments.close();
   }
 
   @Test
   void shouldDetectCorruptionAtDescriptorWithAckedEntries() throws Exception {
     // given
-    final var journal = openJournal(1);
-    final long index = journal.append(recordDataWriter).index();
+    final long index;
+    try (final var journal = openJournal()) {
+      index = journal.append(recordDataWriter).index();
+    }
 
-    journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    final var segments = createSegmentsManager(index);
+    segments = createSegmentsManager(index);
     assertThatThrownBy(segments::open).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
   void shouldNotThrowExceptionWhenCorruptionAtNotAckEntries() throws Exception {
     // given
-    final var journal = openJournal(1);
-    final var index = journal.append(recordDataWriter).index();
-    journal.append(recordDataWriter);
+    final long index;
+    try (final var journal = openJournal()) {
+      index = journal.append(recordDataWriter).index();
+      journal.append(recordDataWriter);
+    }
 
-    journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
 
-    // when/then
-    final var segments = createSegmentsManager(index);
+    // when
+    segments = createSegmentsManager(index);
+
+    // then
     assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(index);
-    assertThat(segments.getLastSegment().index()).isEqualTo(index);
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(index, index);
   }
 
   @Test
   void shouldNotThrowExceptionWhenCorruptionAtDescriptorWithoutAckedEntries() throws Exception {
     // given
-    final var journal = openJournal(1);
+    final var journal = openJournal();
     journal.close();
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith(".log")))[0];
     LogCorrupter.corruptDescriptor(logFile);
 
-    // when/then
-    final var segments = createSegmentsManager(0);
+    // when
+    segments = createSegmentsManager(0);
+
+    // then
     assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(1);
-    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(1L, 0L);
   }
 
   @Test
@@ -126,12 +141,13 @@ class SegmentsManagerTest {
     assertThat(emptyLog.createNewFile()).isTrue();
 
     // when
-    final var segments = createSegmentsManager(0);
+    segments = createSegmentsManager(0);
 
     // then
     assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(1);
-    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
+    assertThat(segments.getFirstSegment())
+        .extracting(Segment::index, Segment::lastIndex)
+        .containsExactly(1L, 0L);
   }
 
   private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
@@ -146,15 +162,14 @@ class SegmentsManagerTest {
         new SegmentLoader(2 * maxSegmentSize, new JournalMetrics("1")));
   }
 
-  private SegmentedJournal openJournal(final float entriesPerSegment) {
-    return openJournal(entriesPerSegment, entrySize);
+  private SegmentedJournal openJournal() {
+    return openJournal(entrySize);
   }
 
-  private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
+  private SegmentedJournal openJournal(final int entrySize) {
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
-        .withMaxSegmentSize(
-            (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
+        .withMaxSegmentSize(entrySize + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
         .build();
