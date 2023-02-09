@@ -9,6 +9,7 @@ on:
       - trying
       - staging
   pull_request: { }
+  merge_group: { }
   workflow_dispatch: { }
   workflow_call: { }
 
