@@ -305,7 +305,8 @@ public final class RecordingExporter implements Exporter {
         records(ValueType.DECISION_EVALUATION, DecisionEvaluationRecordValue.class));
   }
 
-  public static DecisionEvaluationRecordStream decisionEvaluationRecords(final DecisionEvaluationIntent intent) {
+  public static DecisionEvaluationRecordStream decisionEvaluationRecords(
+      final DecisionEvaluationIntent intent) {
     return decisionEvaluationRecords().withIntent(intent);
   }
 

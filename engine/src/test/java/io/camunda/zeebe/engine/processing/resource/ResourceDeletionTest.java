@@ -130,13 +130,14 @@ public class ResourceDeletionTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     assertThat(
-        RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withDecisionId("jedi_or_sith")
-            .getFirst())
+            RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withDecisionId("jedi_or_sith")
+                .getFirst())
         .describedAs("Should evaluate version 1 of the decision")
         .extracting(Record::getValue)
-        .extracting(DecisionEvaluationRecordValue::getDecisionId,
+        .extracting(
+            DecisionEvaluationRecordValue::getDecisionId,
             DecisionEvaluationRecordValue::getDecisionVersion,
             DecisionEvaluationRecordValue::getDecisionRequirementsKey)
         .containsOnly("jedi_or_sith", 1, drgKeyV1);
@@ -160,9 +161,9 @@ public class ResourceDeletionTest {
 
     // then
     assertThat(
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .limitToProcessInstanceCompleted())
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .describedAs("Process Instance should be completed")
         .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
         .containsSubsequence(
@@ -171,13 +172,14 @@ public class ResourceDeletionTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     assertThat(
-        RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withDecisionId("jedi_or_sith")
-            .getFirst())
+            RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withDecisionId("jedi_or_sith")
+                .getFirst())
         .describedAs("Should evaluate version 2 of the decision")
         .extracting(Record::getValue)
-        .extracting(DecisionEvaluationRecordValue::getDecisionId,
+        .extracting(
+            DecisionEvaluationRecordValue::getDecisionId,
             DecisionEvaluationRecordValue::getDecisionVersion,
             DecisionEvaluationRecordValue::getDecisionRequirementsKey)
         .containsOnly("jedi_or_sith", 2, drgKeyV2);
