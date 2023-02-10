@@ -51,7 +51,7 @@ final class SegmentsManager implements AutoCloseable {
 
   private final SegmentLoader segmentLoader;
 
-  private final long lastWrittenIndex;
+  private final long lastFlushedIndex;
 
   private final String name;
 
@@ -59,7 +59,7 @@ final class SegmentsManager implements AutoCloseable {
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics) {
@@ -67,7 +67,7 @@ final class SegmentsManager implements AutoCloseable {
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
-    this.lastWrittenIndex = lastWrittenIndex;
+    this.lastFlushedIndex = lastFlushedIndex;
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
   }
@@ -129,7 +129,7 @@ final class SegmentsManager implements AutoCloseable {
             nextSegment
                 .join()
                 .initializeForUse(
-                    nextSegmentIndex, lastWrittenAsqn, lastWrittenIndex, journalMetrics);
+                    nextSegmentIndex, lastWrittenAsqn, lastFlushedIndex, journalMetrics);
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         currentSegment = createSegment(descriptor, lastWrittenAsqn);
@@ -305,13 +305,13 @@ final class SegmentsManager implements AutoCloseable {
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createUninitializedSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, journalIndex);
+        segmentFile.toPath(), descriptor, lastFlushedIndex, journalIndex);
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile.toPath(), descriptor, lastFlushedIndex, lastWrittenAsqn, journalIndex);
   }
 
   /**
@@ -334,7 +334,7 @@ final class SegmentsManager implements AutoCloseable {
         final Segment segment =
             segmentLoader.loadExistingSegment(
                 file.toPath(),
-                lastWrittenIndex,
+                lastFlushedIndex,
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
 
@@ -375,13 +375,13 @@ final class SegmentsManager implements AutoCloseable {
       lastSegmentIndex = previousSegment.lastIndex();
     }
 
-    if (lastWrittenIndex > lastSegmentIndex) {
+    if (lastFlushedIndex > lastSegmentIndex) {
       return false;
     }
 
     LOG.debug(
         "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
-        lastWrittenIndex,
+        lastFlushedIndex,
         files.get(failedIndex).getName(),
         files.get(files.size() - 1).getName());
 
