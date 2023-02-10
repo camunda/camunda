@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.6
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.17.7
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -16,7 +16,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.1.6
+        image: camunda/zeebe:8.1.7
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
