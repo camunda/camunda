@@ -7,8 +7,12 @@
  */
 package io.camunda.zeebe.engine.api.records;
 
+import java.util.List;
+
 /**
  * Represents an unmodifiable batch of records, which extends the {@link Iterable<
  * ImmutableRecordBatchEntry >} in order to make sure that the contained entries can be accessed.
  */
-public interface ImmutableRecordBatch extends Iterable<ImmutableRecordBatchEntry> {}
+public interface ImmutableRecordBatch extends Iterable<ImmutableRecordBatchEntry> {
+  List<ImmutableRecordBatchEntry> entries();
+}
