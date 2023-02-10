@@ -42,11 +42,6 @@ public final class DelayedFlusher implements RaftLogFlusher {
   }
 
   @Override
-  public boolean isDirect() {
-    return false;
-  }
-
-  @Override
   public void close() {
     if (closed) {
       return;

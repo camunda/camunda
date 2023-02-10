@@ -15,7 +15,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.storage.log.DelayedFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
-import io.atomix.raft.storage.log.RaftLogFlusher.NoOpFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -129,7 +129,7 @@ final class PartitionManagerImplTest {
     // then
     final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
-        .isInstanceOf(NoOpFlusher.class);
+        .isInstanceOf(NoopFlusher.class);
   }
 
   @Test
@@ -156,7 +156,7 @@ final class PartitionManagerImplTest {
     // then
     final var config = getPartitionGroupConfig(partitionManager);
     assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
-        .isInstanceOf(NoOpFlusher.class);
+        .isInstanceOf(NoopFlusher.class);
   }
 
   private RaftPartitionGroupConfig getPartitionGroupConfig(

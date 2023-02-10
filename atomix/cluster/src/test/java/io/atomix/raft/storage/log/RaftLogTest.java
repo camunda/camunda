@@ -27,7 +27,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
-import io.atomix.raft.storage.log.RaftLogFlusher.NoOpFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
@@ -277,7 +277,7 @@ class RaftLogTest {
     void shouldDisableFlush() {
       // given
       final var journal = mock(Journal.class);
-      final var flusher = spy(new NoOpFlusher());
+      final var flusher = spy(new NoopFlusher());
       final var log = new RaftLog(journal, flusher);
 
       // when

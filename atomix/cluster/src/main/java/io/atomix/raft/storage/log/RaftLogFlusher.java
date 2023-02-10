@@ -17,31 +17,19 @@ import io.camunda.zeebe.util.CloseableSilently;
  *
  * <p>The default strategy is {@link DirectFlusher}, which is the safest but slowest option.
  *
- * <p>The {@link NoOpFlusher} is the fastest but most dangerous option, as it will defer flushing to
+ * <p>The {@link NoopFlusher} is the fastest but most dangerous option, as it will defer flushing to
  * the operating system. It's then possible to run into data corruption or data loss issues. Please
  * refer to the documentation regarding this.
  *
  * <p>{@link DelayedFlusher} can be configured to provide a trade-off between performance and
  * safety. This will cause flushes to be performed in a delayed fashion. See its documentation for
  * more. You should pick this if {@link DirectFlusher} does not provide the desired performance, but
- * you still wish a lower likelihood of corruption issues than with {@link NoOpFlusher}. The
+ * you still wish a lower likelihood of corruption issues than with {@link NoopFlusher}. The
  * recommended configuration would be to find the smallest possible delay with which you achieve
  * your performance goals.
  */
 @FunctionalInterface
 public interface RaftLogFlusher extends CloseableSilently {
-
-  /**
-   * Shared, thread-safe, reusable {@link DirectFlusher} instance. Use {@link
-   * Factory#direct(ThreadContext)} as its factory method.
-   */
-  DirectFlusher DIRECT = new DirectFlusher();
-
-  /**
-   * Shared, thread-safe, reusable {@link NoOpFlusher} instance. Use {@link
-   * Factory#noop(ThreadContext)} as its factory method.
-   */
-  NoOpFlusher NOOP = new NoOpFlusher();
 
   /**
    * Signals that there is data to be flushed in the journal. The implementation may or may not
@@ -57,7 +45,7 @@ public interface RaftLogFlusher extends CloseableSilently {
    * #flush(Journal)}.
    */
   default boolean isDirect() {
-    return true;
+    return false;
   }
 
   @Override
@@ -67,7 +55,7 @@ public interface RaftLogFlusher extends CloseableSilently {
    * An implementation of {@link RaftLogFlusher} which does nothing. When this is the configured
    * implementation, the journal is flushed only before a snapshot is taken.
    */
-  final class NoOpFlusher implements RaftLogFlusher {
+  final class NoopFlusher implements RaftLogFlusher {
 
     @Override
     public void flush(final Journal ignored) {}
@@ -84,6 +72,11 @@ public interface RaftLogFlusher extends CloseableSilently {
     public void flush(final Journal journal) {
       journal.flush();
     }
+
+    @Override
+    public boolean isDirect() {
+      return true;
+    }
   }
 
   /**
@@ -92,6 +85,12 @@ public interface RaftLogFlusher extends CloseableSilently {
    */
   @FunctionalInterface
   interface Factory {
+
+    /** Shared, thread-safe, reusable {@link DirectFlusher} instance. */
+    DirectFlusher DIRECT = new DirectFlusher();
+
+    /** Shared, thread-safe, reusable {@link NoopFlusher} instance. */
+    NoopFlusher NOOP = new NoopFlusher();
 
     /**
      * Creates a new {@link RaftLogFlusher} which should use the given thread context for
@@ -107,8 +106,8 @@ public interface RaftLogFlusher extends CloseableSilently {
       return DIRECT;
     }
 
-    /** Preset factory method which returns a shared {@link NoOpFlusher} instance. */
-    static NoOpFlusher noop(final ThreadContext ignored) {
+    /** Preset factory method which returns a shared {@link NoopFlusher} instance. */
+    static NoopFlusher noop(final ThreadContext ignored) {
       return NOOP;
     }
   }

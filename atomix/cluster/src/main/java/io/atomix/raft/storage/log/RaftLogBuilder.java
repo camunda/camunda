@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -24,7 +25,7 @@ import java.io.File;
 public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
   private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
-  private RaftLogFlusher flusher = RaftLogFlusher.DIRECT;
+  private RaftLogFlusher flusher = Factory.DIRECT;
 
   protected RaftLogBuilder() {}
 
