@@ -5,6 +5,10 @@
  * except in compliance with the proprietary license.
  */
 
+import {useState} from 'react';
+import styled from 'styled-components';
+import {CmButton} from '@camunda-cloud/common-ui-react';
+import Modal, {SIZES} from 'modules/components/Modal';
 import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
 
@@ -13,17 +17,50 @@ type Props = {
   decisionVersion: string;
 };
 
+const DeleteButton = styled(CmButton)`
+  margin-left: 15px;
+  width: 117px;
+`;
+
 const DecisionOperations: React.FC<Props> = ({
   decisionName,
   decisionVersion,
 }) => {
+  const [isDeleteModalVisible, setIsDeleteModalVisible] =
+    useState<boolean>(false);
+
   return (
-    <OperationItems>
-      <OperationItem
-        title={`Delete Decision Definition "${decisionName} - Version ${decisionVersion}"`}
-        type="DELETE"
-      />
-    </OperationItems>
+    <>
+      <OperationItems>
+        <OperationItem
+          title={`Delete Decision Definition "${decisionName} - Version ${decisionVersion}"`}
+          type="DELETE"
+          onClick={() => setIsDeleteModalVisible(true)}
+        />
+      </OperationItems>
+      <Modal
+        onModalClose={() => setIsDeleteModalVisible(false)}
+        isVisible={isDeleteModalVisible}
+        size={SIZES.SMALL}
+      >
+        <Modal.Header>Delete DRD</Modal.Header>
+        <Modal.Body>You are about to delete the following DRD:</Modal.Body>
+        <Modal.Footer>
+          <Modal.SecondaryButton
+            title="Cancel"
+            onClick={() => setIsDeleteModalVisible(false)}
+          >
+            Cancel
+          </Modal.SecondaryButton>
+          <DeleteButton
+            appearance="danger"
+            label="Delete"
+            onCmPress={() => {}}
+            data-testid="delete-button"
+          />
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };
 
