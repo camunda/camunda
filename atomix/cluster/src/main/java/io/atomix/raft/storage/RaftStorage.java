@@ -181,11 +181,7 @@ public final class RaftStorage {
    *
    * @return The opened log.
    */
-  public RaftLog openLog(final ThreadContext flushContext) {
-    final long lastWrittenIndex;
-    try (final MetaStore metaStore = openMetaStore()) {
-      lastWrittenIndex = metaStore.loadLastWrittenIndex();
-    }
+  public RaftLog openLog(final long lastFlushedIndex, final ThreadContext flushContext) {
 
     return RaftLog.builder()
         .withName(prefix)
@@ -194,7 +190,7 @@ public final class RaftStorage {
         .withMaxSegmentSize(maxSegmentSize)
         .withFreeDiskSpace(freeDiskSpace)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastWrittenIndex(lastWrittenIndex)
+        .withLastFlushedIndex(lastFlushedIndex)
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .withFlusher(flusherFactory.createFlusher(flushContext))
         .build();

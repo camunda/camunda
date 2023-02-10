@@ -191,7 +191,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     lastVotedFor = meta.loadVote();
 
     // Construct the core log, reader, writer, and compactor.
-    raftLog = storage.openLog(threadContext);
+    raftLog = storage.openLog(meta.lastFlushedIndex(), threadContext);
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -434,7 +434,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
         raftLog.flush();
-        setLastWrittenIndex(commitIndex);
+        setLastFlushedIndex(commitIndex);
       }
       final long configurationIndex = cluster.getConfiguration().index();
       if (configurationIndex > previousCommitIndex && configurationIndex <= commitIndex) {
@@ -1063,9 +1063,9 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     }
   }
 
-  public void setLastWrittenIndex(final long index) {
-    try (final var ignored = raftRoleMetrics.observeLastWrittenIndexUpdate()) {
-      meta.storeLastWrittenIndex(index);
+  public void setLastFlushedIndex(final long index) {
+    try (final var ignored = raftRoleMetrics.observeLastFlushedIndexUpdate()) {
+      meta.storeLastFlushedIndex(index);
     }
   }
 

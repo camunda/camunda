@@ -54,11 +54,11 @@ public class RaftRoleMetrics extends RaftMetrics {
           .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
-  private static final Histogram LAST_WRITTEN_INDEX_UPDATE =
+  private static final Histogram LAST_FLUSHED_INDEX_UPDATE =
       Histogram.build()
           .namespace(NAMESPACE)
-          .name("last_written_index_update")
-          .help("Time it takes to update the last written index")
+          .name("last_flushed_index_update")
+          .help("Time it takes to update the last flushed index")
           .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
@@ -66,7 +66,7 @@ public class RaftRoleMetrics extends RaftMetrics {
   private final Counter.Child heartbeatMiss;
   private final Histogram.Child heartbeatTime;
   private final Gauge.Child electionLatency;
-  private final Histogram.Child lastWrittenIndexUpdate;
+  private final Histogram.Child lastFlushedIndexUpdate;
 
   public RaftRoleMetrics(final String partitionName) {
     super(partitionName);
@@ -75,7 +75,7 @@ public class RaftRoleMetrics extends RaftMetrics {
     heartbeatMiss = HEARTBEAT_MISS.labels(partitionGroupName, partition);
     heartbeatTime = HEARTBEAT_TIME.labels(partitionGroupName, partition);
     electionLatency = ELECTION_LATENCY.labels(partitionGroupName, partition);
-    lastWrittenIndexUpdate = LAST_WRITTEN_INDEX_UPDATE.labels(partitionGroupName, partition);
+    lastFlushedIndexUpdate = LAST_FLUSHED_INDEX_UPDATE.labels(partitionGroupName, partition);
   }
 
   public void becomingFollower() {
@@ -106,7 +106,7 @@ public class RaftRoleMetrics extends RaftMetrics {
     electionLatency.set(latencyMs);
   }
 
-  public Timer observeLastWrittenIndexUpdate() {
-    return lastWrittenIndexUpdate.startTimer();
+  public Timer observeLastFlushedIndexUpdate() {
+    return lastFlushedIndexUpdate.startTimer();
   }
 }

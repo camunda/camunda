@@ -111,8 +111,8 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
-  public RaftLogBuilder withLastWrittenIndex(final long lastWrittenIndex) {
-    journalBuilder.withLastWrittenIndex(lastWrittenIndex);
+  public RaftLogBuilder withLastFlushedIndex(final long lastFlushedIndex) {
+    journalBuilder.withLastFlushedIndex(lastFlushedIndex);
     return this;
   }
 

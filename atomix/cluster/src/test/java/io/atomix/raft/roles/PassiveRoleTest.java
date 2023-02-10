@@ -154,7 +154,7 @@ public class PassiveRoleTest {
   }
 
   @Test
-  public void shouldStoreLastWrittenIndex() {
+  public void shouldStoreLastFlushedIndex() {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
@@ -167,7 +167,7 @@ public class PassiveRoleTest {
     role.handleAppend(request).join();
 
     // then
-    verify(ctx).setLastWrittenIndex(eq(1L));
+    verify(ctx).setLastFlushedIndex(eq(1L));
   }
 
   @Test
@@ -190,11 +190,11 @@ public class PassiveRoleTest {
     role.handleAppend(request).join();
 
     // then
-    verify(ctx).setLastWrittenIndex(eq(2L));
+    verify(ctx).setLastFlushedIndex(eq(2L));
   }
 
   @Test
-  public void shouldResetLastWrittenIndexAfterTruncating() {
+  public void shouldResetLastFlushedIndexAfterTruncating() {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(
@@ -209,7 +209,7 @@ public class PassiveRoleTest {
         .thenReturn(mock(IndexedRaftLogEntry.class));
     when(ctx.getLog()).thenReturn(log);
     role.handleAppend(request).join();
-    verify(ctx).setLastWrittenIndex(eq(3L));
+    verify(ctx).setLastFlushedIndex(eq(3L));
 
     // when - force truncation
     when(log.getLastIndex()).thenReturn(3L);
@@ -219,6 +219,6 @@ public class PassiveRoleTest {
     role.start().join();
 
     // then
-    verify(ctx).setLastWrittenIndex(eq(1L));
+    verify(ctx).setLastFlushedIndex(eq(1L));
   }
 }
