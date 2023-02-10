@@ -14,9 +14,10 @@ import java.time.Duration;
 import java.util.Objects;
 
 /**
- * An implementation of {@link RaftLogFlusher} which treats calls to {@link #flush(Journal)} as
- * signals that there is data to be flushed. When that happens, an asynchronous operation is
- * scheduled with a predefined delay. If a flush was already scheduled, then the signal is ignored.
+ * An implementation of {@link RaftLogFlusher} which treats calls to {@link #flush(Journal,
+ * FlushMetaStore)} as signals that there is data to be flushed. When that happens, an asynchronous
+ * operation is scheduled with a predefined delay. If a flush was already scheduled, then the signal
+ * is ignored.
  *
  * <p>In other words, this implementation flushes at least every given period, if there is anything
  * to flush.
@@ -37,8 +38,8 @@ public final class DelayedFlusher implements RaftLogFlusher {
   }
 
   @Override
-  public void flush(final Journal journal) {
-    scheduleFlush(journal);
+  public void flush(final Journal journal, final FlushMetaStore flushMetaStore) {
+    scheduleFlush(journal, flushMetaStore);
   }
 
   @Override
@@ -53,7 +54,8 @@ public final class DelayedFlusher implements RaftLogFlusher {
     }
   }
 
-  private void asyncFlush(final Journal journal) {
+  private void asyncFlush(
+      final Journal journal, final FlushMetaStore flushMetaStore, final long lastIndex) {
     scheduledFlush = null;
 
     if (closed || !journal.isOpen()) {
@@ -61,11 +63,16 @@ public final class DelayedFlusher implements RaftLogFlusher {
     }
 
     journal.flush();
+    flushMetaStore.storeLastFlushedIndex(lastIndex);
   }
 
-  private void scheduleFlush(final Journal journal) {
+  private void scheduleFlush(final Journal journal, final FlushMetaStore flushMetaStore) {
     if (scheduledFlush == null) {
-      scheduledFlush = scheduler.schedule(delayTime, () -> asyncFlush(journal));
+      // necessary if the flush is asynchronous, as last index may or may not be thread-safe
+      // TODO: re-evaluate this when implementing asynchronous flushing
+      final var lastIndex = journal.getLastIndex();
+      scheduledFlush =
+          scheduler.schedule(delayTime, () -> asyncFlush(journal, flushMetaStore, lastIndex));
     }
   }
 

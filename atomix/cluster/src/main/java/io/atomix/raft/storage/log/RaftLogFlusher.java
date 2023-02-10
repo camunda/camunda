@@ -37,12 +37,12 @@ public interface RaftLogFlusher extends CloseableSilently {
    *
    * @param journal the journal to flush
    */
-  void flush(final Journal journal);
+  void flush(final Journal journal, final FlushMetaStore metaStore);
 
   /**
-   * If this returns true, then any calls to {@link #flush(Journal)} are synchronous and immediate,
-   * and any guarantees offered by the implementation will hold after a call to {@link
-   * #flush(Journal)}.
+   * If this returns true, then any calls to {@link #flush(Journal, FlushMetaStore)} are synchronous
+   * and immediate, and any guarantees offered by the implementation will hold after a call to
+   * {@link #flush(Journal, FlushMetaStore)}.
    */
   default boolean isDirect() {
     return false;
@@ -58,25 +58,42 @@ public interface RaftLogFlusher extends CloseableSilently {
   final class NoopFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal ignored) {}
+    public void flush(final Journal ignoredJournal, final FlushMetaStore ignoredMetaStore) {}
   }
 
   /**
    * An implementation of {@link RaftLogFlusher} which flushes immediately in a blocking fashion.
-   * After any calls to {@link #flush(Journal)}, any data written before the call is guaranteed to
-   * be on disk.
+   * After any calls to {@link #flush(Journal, FlushMetaStore)}, any data written before the call is
+   * guaranteed to be on disk.
    */
   final class DirectFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal journal) {
+    public void flush(final Journal journal, final FlushMetaStore metaStore) {
       journal.flush();
+      metaStore.storeLastFlushedIndex(journal.getLastIndex());
     }
 
     @Override
     public boolean isDirect() {
       return true;
     }
+  }
+
+  /**
+   * Temporary interface to allow the flusher to update the last flushed index once we know a flush
+   * operation occurred. Ideally we will push this down into the journal, such that it becomes
+   * unnecessary in a later iteration.
+   */
+  @FunctionalInterface
+  interface FlushMetaStore {
+
+    /**
+     * Sets the last guaranteed flush index.
+     *
+     * @param lastIndex the last guaranteed flushed index
+     */
+    void storeLastFlushedIndex(final long lastIndex);
   }
 
   /**

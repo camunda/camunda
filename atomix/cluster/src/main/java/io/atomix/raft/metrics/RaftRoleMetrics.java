@@ -19,7 +19,6 @@ package io.atomix.raft.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
-import io.prometheus.client.Histogram.Timer;
 
 public class RaftRoleMetrics extends RaftMetrics {
 
@@ -54,19 +53,10 @@ public class RaftRoleMetrics extends RaftMetrics {
           .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
           .register();
 
-  private static final Histogram LAST_FLUSHED_INDEX_UPDATE =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("last_flushed_index_update")
-          .help("Time it takes to update the last flushed index")
-          .labelNames(PARTITION_GROUP_NAME_LABEL, PARTITION_LABEL)
-          .register();
-
   private final Gauge.Child role;
   private final Counter.Child heartbeatMiss;
   private final Histogram.Child heartbeatTime;
   private final Gauge.Child electionLatency;
-  private final Histogram.Child lastFlushedIndexUpdate;
 
   public RaftRoleMetrics(final String partitionName) {
     super(partitionName);
@@ -75,7 +65,6 @@ public class RaftRoleMetrics extends RaftMetrics {
     heartbeatMiss = HEARTBEAT_MISS.labels(partitionGroupName, partition);
     heartbeatTime = HEARTBEAT_TIME.labels(partitionGroupName, partition);
     electionLatency = ELECTION_LATENCY.labels(partitionGroupName, partition);
-    lastFlushedIndexUpdate = LAST_FLUSHED_INDEX_UPDATE.labels(partitionGroupName, partition);
   }
 
   public void becomingFollower() {
@@ -104,9 +93,5 @@ public class RaftRoleMetrics extends RaftMetrics {
 
   public void setElectionLatency(final long latencyMs) {
     electionLatency.set(latencyMs);
-  }
-
-  public Timer observeLastFlushedIndexUpdate() {
-    return lastFlushedIndexUpdate.startTimer();
   }
 }

@@ -181,7 +181,7 @@ public final class RaftStorage {
    *
    * @return The opened log.
    */
-  public RaftLog openLog(final long lastFlushedIndex, final ThreadContext flushContext) {
+  public RaftLog openLog(final MetaStore metaStore, final ThreadContext flushContext) {
 
     return RaftLog.builder()
         .withName(prefix)
@@ -190,8 +190,9 @@ public final class RaftStorage {
         .withMaxSegmentSize(maxSegmentSize)
         .withFreeDiskSpace(freeDiskSpace)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastFlushedIndex(lastFlushedIndex)
+        .withLastFlushedIndex(metaStore.lastFlushedIndex())
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
+        .withFlushMetaStore(metaStore::storeLastFlushedIndex)
         .withFlusher(flusherFactory.createFlusher(flushContext))
         .build();
   }
@@ -206,13 +207,18 @@ public final class RaftStorage {
    *
    * <p>The storage directory is the directory to which all {@link RaftLog}s write files. Segment
    * files for multiple logs may be stored in the storage directory, and files for each log instance
-   * will be identified by the {@code name} provided when the log is {@link #openLog(ThreadContext)
-   * opened}.
+   * will be identified by the {@code name} provided when the log is {@link #openLog(MetaStore,
+   * ThreadContext) opened}.
    *
    * @return The storage directory.
    */
   public File directory() {
     return directory;
+  }
+
+  /** The ID of the partition associated with this storage. */
+  public int partitionId() {
+    return partitionId;
   }
 
   /**
@@ -319,7 +325,7 @@ public final class RaftStorage {
 
     /**
      * Sets the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
-     * RaftLog} when {@link #openLog(ThreadContext)} is called.
+     * RaftLog} when {@link #openLog(MetaStore, ThreadContext)} is called.
      *
      * @param flusherFactory factory to create the flushing strategy for the {@link RaftLog}
      * @return the storage builder.
