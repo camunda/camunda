@@ -9800,7 +9800,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(atomix_last_written_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le)",
+              "expr": "sum(increase(atomix_last_flushed_index_update_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le)",
               "format": "heatmap",
               "intervalFactor": 1,
               "legendFormat": "{{le}}",
