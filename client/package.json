@@ -10,7 +10,7 @@
     "@carbon/elements": "11.17.0",
     "@carbon/react": "1.20.0",
     "@devbookhq/splitter": "1.4.0",
-    "@floating-ui/react-dom": "1.0.1",
+    "@floating-ui/react-dom": "1.2.2",
     "@monaco-editor/react": "4.4.6",
     "bpmn-js": "10.3.0",
     "bpmn-moddle": "8.0.0",
