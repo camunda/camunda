@@ -128,7 +128,7 @@ describe('OperationItems', () => {
     it('should show the correct icon based on the type', () => {
       render(
         <OperationItems>
-          <OperationItem type="DELETE_PROCESS_INSTANCE" onClick={noop} />
+          <OperationItem type="DELETE" onClick={noop} />
         </OperationItems>,
         {wrapper: ThemeProvider}
       );
@@ -140,11 +140,7 @@ describe('OperationItems', () => {
       const BUTTON_TITLE = 'Delete Instance 1';
       render(
         <OperationItems>
-          <OperationItem
-            type="DELETE_PROCESS_INSTANCE"
-            onClick={noop}
-            title={BUTTON_TITLE}
-          />
+          <OperationItem type="DELETE" onClick={noop} title={BUTTON_TITLE} />
         </OperationItems>,
         {wrapper: ThemeProvider}
       );
@@ -160,7 +156,7 @@ describe('OperationItems', () => {
       const {user} = render(
         <OperationItems>
           <OperationItem
-            type="DELETE_PROCESS_INSTANCE"
+            type="DELETE"
             onClick={MOCK_ON_CLICK}
             title={BUTTON_TITLE}
           />

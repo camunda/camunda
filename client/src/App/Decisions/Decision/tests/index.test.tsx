@@ -8,36 +8,11 @@
 import {render, screen} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {decisionXmlStore} from 'modules/stores/decisionXml';
-import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {Decision} from '.';
-import {MemoryRouter} from 'react-router-dom';
+import {Decision} from '..';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
-import {useEffect} from 'react';
+import {createWrapper} from './mocks';
 
-function createWrapper(initialPath: string = '/') {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      decisionXmlStore.init();
-      groupedDecisionsStore.fetchDecisions();
-
-      return () => {
-        decisionXmlStore.reset();
-        groupedDecisionsStore.reset();
-      };
-    }, []);
-
-    return (
-      <ThemeProvider>
-        <MemoryRouter initialEntries={[initialPath]}>{children}</MemoryRouter>
-      </ThemeProvider>
-    );
-  };
-
-  return Wrapper;
-}
 describe('<Decision />', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);

@@ -20,8 +20,6 @@ const Container = styled.div`
       align-items: center;
       background-color: ${colors.backgroundColor};
       padding: 8px 0 8px 19px;
-      ${styles.productiveHeading02};
-      color: ${theme.colors.text01};
       border-bottom: solid 1px ${theme.colors.borderColor};
     `;
   }}
@@ -38,4 +36,14 @@ const InstancesCount = styled.span`
   }}
 `;
 
-export {Container, InstancesCount};
+const Title = styled.h2`
+  ${({theme}) => {
+    return css`
+      ${styles.productiveHeading02};
+      color: ${theme.colors.text01};
+      margin: 0;
+    `;
+  }}
+`;
+
+export {Container, Title, InstancesCount};

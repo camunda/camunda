@@ -5,4 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-export {};
+const IS_DECISION_DEFINITION_DELETION_ENABLED = false;
+
+export {IS_DECISION_DEFINITION_DELETION_ENABLED};

@@ -5,18 +5,24 @@
  * except in compliance with the proprietary license.
  */
 
-import {Container, InstancesCount} from './styled';
+import {Container, InstancesCount, Title} from './styled';
 
 type Props = {
   title: string;
   count?: number;
   children?: React.ReactNode;
+  className?: string;
 };
 
-const PanelHeader: React.FC<Props> = ({title, count = 0, children}) => {
+const PanelHeader: React.FC<Props> = ({
+  title,
+  count = 0,
+  children,
+  className,
+}) => {
   return (
-    <Container role="heading">
-      {title}
+    <Container className={className}>
+      <Title>{title}</Title>
       {count > 0 && (
         <InstancesCount data-testid="result-count">
           {count} results found

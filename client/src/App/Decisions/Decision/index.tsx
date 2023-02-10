@@ -15,10 +15,12 @@ import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
-import {PanelHeader} from 'modules/components/PanelHeader';
-import {Container} from './styled';
+import {Container, PanelHeader} from './styled';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {useNotifications} from 'modules/notifications';
+import {IS_DECISION_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
+import {Restricted} from 'modules/components/Restricted';
+import {DecisionOperations} from './DecisionOperations';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -96,7 +98,16 @@ const Decision: React.FC = observer(() => {
 
   return (
     <Container>
-      <PanelHeader title={decisionName || 'Decision'} />
+      <PanelHeader title={decisionName || 'Decision'}>
+        {IS_DECISION_DEFINITION_DELETION_ENABLED && isVersionSelected && (
+          <Restricted scopes={['write']}>
+            <DecisionOperations
+              decisionName={decisionName || 'Decision'}
+              decisionVersion={version}
+            />
+          </Restricted>
+        )}
+      </PanelHeader>
       {(() => {
         if (decisionXmlStore.state.status === 'error') {
           return (

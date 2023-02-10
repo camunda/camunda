@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 import styled, {css} from 'styled-components';
 
 const Container = styled.div`
@@ -22,4 +23,9 @@ const Container = styled.div`
   }}
 `;
 
-export {Container};
+const PanelHeader = styled(BasePanelHeader)`
+  justify-content: space-between;
+  padding-right: 8px;
+`;
+
+export {Container, PanelHeader};

@@ -113,7 +113,7 @@ const Operations: React.FC<Props> = observer(
           )}
           {!isRunning(instance) && (
             <OperationItem
-              type="DELETE_PROCESS_INSTANCE"
+              type="DELETE"
               onClick={() => setIsDeleteModalVisible(true)}
               title={`Delete Instance ${instance.id}`}
               disabled={isOperationActive('DELETE_PROCESS_INSTANCE')}

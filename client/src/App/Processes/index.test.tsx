@@ -116,8 +116,9 @@ describe('Instances', () => {
 
     // instances table
     expect(
-      await screen.findByRole('heading', {name: /instances 912 results found/i})
+      screen.getByRole('heading', {name: /^process instances$/i})
     ).toBeInTheDocument();
+    expect(await screen.findByText(/^912 results found$/i)).toBeInTheDocument();
 
     // operations
     expect(

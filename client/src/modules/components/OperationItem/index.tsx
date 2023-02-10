@@ -18,7 +18,7 @@ type ItemProps = {
   type:
     | 'RESOLVE_INCIDENT'
     | 'CANCEL_PROCESS_INSTANCE'
-    | 'DELETE_PROCESS_INSTANCE'
+    | 'DELETE'
     | 'ENTER_MODIFICATION_MODE';
   onClick?: React.ComponentProps<'button'>['onClick'];
   title?: string;
@@ -48,7 +48,7 @@ const OperationItem: React.FC<ItemProps> = ({
         {type === 'CANCEL_PROCESS_INSTANCE' && (
           <CancelIcon data-testid="cancel-operation-icon" />
         )}
-        {type === 'DELETE_PROCESS_INSTANCE' && (
+        {type === 'DELETE' && (
           <DeleteIcon data-testid="delete-operation-icon" />
         )}
         {type === 'ENTER_MODIFICATION_MODE' && (
