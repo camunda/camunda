@@ -55,14 +55,14 @@ final class Segment implements AutoCloseable {
       final SegmentFile file,
       final SegmentDescriptor descriptor,
       final MappedByteBuffer buffer,
-      final long maxWrittenIndex,
+      final long lastFlushedIndex,
       final JournalIndex index) {
     this.file = file;
     this.descriptor = descriptor;
     this.buffer = buffer;
     this.index = index;
 
-    writer = createWriter(maxWrittenIndex);
+    writer = createWriter(lastFlushedIndex);
   }
 
   /**
@@ -151,8 +151,8 @@ final class Segment implements AutoCloseable {
     return reader;
   }
 
-  private SegmentWriter createWriter(final long lastWrittenIndex) {
-    return new SegmentWriter(buffer, this, index, lastWrittenIndex);
+  private SegmentWriter createWriter(final long lastFlushedIndex) {
+    return new SegmentWriter(buffer, this, index, lastFlushedIndex);
   }
 
   /**

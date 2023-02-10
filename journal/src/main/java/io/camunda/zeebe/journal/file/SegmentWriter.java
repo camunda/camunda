@@ -54,7 +54,7 @@ final class SegmentWriter {
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
-      final long lastWrittenIndex) {
+      final long lastFlushedIndex) {
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
     recordUtil = new JournalRecordReaderUtil(serializer);
@@ -62,7 +62,7 @@ final class SegmentWriter {
     firstIndex = segment.index();
     this.buffer = buffer;
     writeBuffer.wrap(buffer);
-    reset(0, lastWrittenIndex);
+    reset(0, lastFlushedIndex);
   }
 
   long getLastIndex() {
@@ -193,7 +193,7 @@ final class SegmentWriter {
     reset(index, -1);
   }
 
-  private void reset(final long index, final long lastWrittenIndex) {
+  private void reset(final long index, final long lastFlushedIndex) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
@@ -213,7 +213,7 @@ final class SegmentWriter {
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
     } catch (final CorruptedJournalException e) {
-      handleChecksumMismatch(e, nextIndex, lastWrittenIndex, position);
+      handleChecksumMismatch(e, nextIndex, lastFlushedIndex, position);
     } finally {
       buffer.reset();
     }
@@ -222,10 +222,10 @@ final class SegmentWriter {
   private void handleChecksumMismatch(
       final CorruptedJournalException e,
       final long nextIndex,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final int position) {
     // entry wasn't acked (likely a partial write): it's safe to delete it
-    if (nextIndex > lastWrittenIndex) {
+    if (nextIndex > lastFlushedIndex) {
       FrameUtil.markAsIgnored(buffer, position);
       buffer.position(position);
       buffer.mark();

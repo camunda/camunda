@@ -47,7 +47,7 @@ final class SegmentsManager {
 
   private final SegmentLoader segmentLoader;
 
-  private final long lastWrittenIndex;
+  private final long lastFlushedIndex;
 
   private final String name;
 
@@ -55,7 +55,7 @@ final class SegmentsManager {
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final String name,
       final SegmentLoader segmentLoader) {
     this.name = checkNotNull(name, "name cannot be null");
@@ -63,7 +63,7 @@ final class SegmentsManager {
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
-    this.lastWrittenIndex = lastWrittenIndex;
+    this.lastFlushedIndex = lastFlushedIndex;
     this.segmentLoader = segmentLoader;
   }
 
@@ -266,7 +266,7 @@ final class SegmentsManager {
   private Segment createSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastWrittenIndex, journalIndex);
+        segmentFile.toPath(), descriptor, lastFlushedIndex, journalIndex);
   }
 
   /**
@@ -286,7 +286,7 @@ final class SegmentsManager {
       try {
         LOG.debug("Found segment file: {}", file.getName());
         final Segment segment =
-            segmentLoader.loadExistingSegment(file.toPath(), lastWrittenIndex, journalIndex);
+            segmentLoader.loadExistingSegment(file.toPath(), lastFlushedIndex, journalIndex);
 
         if (i > 0) {
           checkForIndexGaps(segments.get(i - 1), segment);
@@ -324,13 +324,13 @@ final class SegmentsManager {
       lastSegmentIndex = previousSegment.lastIndex();
     }
 
-    if (lastWrittenIndex > lastSegmentIndex) {
+    if (lastFlushedIndex > lastSegmentIndex) {
       return false;
     }
 
     LOG.debug(
         "Found corrupted segment after last ack'ed index {}. Deleting segments {} - {}",
-        lastWrittenIndex,
+        lastFlushedIndex,
         files.get(failedIndex).getName(),
         files.get(files.size() - 1).getName());
 

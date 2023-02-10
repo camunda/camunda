@@ -566,7 +566,7 @@ final class JournalTest {
 
     // then
     assertThatThrownBy(
-            () -> journal = openJournal(b -> b.withLastWrittenIndex(secondRecord.index())))
+            () -> journal = openJournal(b -> b.withLastFlushedIndex(secondRecord.index())))
         .isInstanceOf(CorruptedJournalException.class);
   }
 
@@ -582,7 +582,7 @@ final class JournalTest {
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
-    journal = openJournal(b -> b.withLastWrittenIndex(firstRecord.index()));
+    journal = openJournal(b -> b.withLastFlushedIndex(firstRecord.index()));
     data.wrap("111".getBytes(StandardCharsets.UTF_8));
     final var lastRecord = journal.append(data);
     final var reader = journal.openReader();

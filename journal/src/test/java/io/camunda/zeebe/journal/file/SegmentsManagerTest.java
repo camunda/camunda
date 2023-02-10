@@ -125,13 +125,13 @@ class SegmentsManagerTest {
     assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
   }
 
-  private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
+  private SegmentsManager createSegmentsManager(final long lastFlushedIndex) {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentsManager(
         journalIndex,
         entrySize + SegmentDescriptor.getEncodingLength(),
         directory.resolve("data").toFile(),
-        lastWrittenIndex,
+        lastFlushedIndex,
         JOURNAL_NAME,
         new SegmentLoader());
   }
