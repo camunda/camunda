@@ -18,11 +18,12 @@ export function ReportCreationModal({onClose, existingReport, mightFail, onConfi
   const [initialTemplateDefinitions, setInitialTemplateDefinitions] = useState();
 
   useEffect(() => {
-    if (!existingReport) {
+    const {id, data} = existingReport || {};
+
+    if (!id && !data) {
       return setInitialTemplateDefinitions([]);
     }
 
-    const {id, data} = existingReport;
     if (id) {
       mightFail(
         loadEntity('report', id),
