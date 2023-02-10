@@ -150,14 +150,14 @@ class SegmentsManagerTest {
         .containsExactly(1L, 0L);
   }
 
-  private SegmentsManager createSegmentsManager(final long lastWrittenIndex) {
+  private SegmentsManager createSegmentsManager(final long lastFlushedIndex) {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var maxSegmentSize = entrySize + SegmentDescriptor.getEncodingLength();
     return new SegmentsManager(
         journalIndex,
         maxSegmentSize,
         directory.resolve("data").toFile(),
-        lastWrittenIndex,
+        lastFlushedIndex,
         JOURNAL_NAME,
         new SegmentLoader(2 * maxSegmentSize));
   }

@@ -43,13 +43,13 @@ final class SegmentLoader {
   Segment createSegment(
       final Path segmentFile,
       final SegmentDescriptor descriptor,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex);
+      mappedSegment = mapNewSegment(segmentFile, descriptor, lastFlushedIndex);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -78,18 +78,18 @@ final class SegmentLoader {
     }
 
     return loadSegment(
-        segmentFile, mappedSegment, descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile, mappedSegment, descriptor, lastFlushedIndex, lastWrittenAsqn, journalIndex);
   }
 
   UninitializedSegment createUninitializedSegment(
       final Path segmentFile,
       final SegmentDescriptor descriptor,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastWrittenIndex);
+      mappedSegment = mapNewSegment(segmentFile, descriptor, lastFlushedIndex);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -115,7 +115,7 @@ final class SegmentLoader {
 
   Segment loadExistingSegment(
       final Path segmentFile,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final var descriptor = readDescriptor(segmentFile);
@@ -130,7 +130,7 @@ final class SegmentLoader {
     }
 
     return loadSegment(
-        segmentFile, mappedSegment, descriptor, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile, mappedSegment, descriptor, lastFlushedIndex, lastWrittenAsqn, journalIndex);
   }
 
   /* ---- Internal methods ------ */
@@ -138,12 +138,12 @@ final class SegmentLoader {
       final Path file,
       final MappedByteBuffer buffer,
       final SegmentDescriptor descriptor,
-      final long lastWrittenIndex,
+      final long lastFlushedIndex,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
     return new Segment(
-        segmentFile, descriptor, buffer, lastWrittenIndex, lastWrittenAsqn, journalIndex);
+        segmentFile, descriptor, buffer, lastFlushedIndex, lastWrittenAsqn, journalIndex);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -213,7 +213,7 @@ final class SegmentLoader {
   }
 
   private MappedByteBuffer mapNewSegment(
-      final Path segmentPath, final SegmentDescriptor descriptor, final long lastWrittenIndex)
+      final Path segmentPath, final SegmentDescriptor descriptor, final long lastFlushedIndex)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
 
@@ -229,12 +229,12 @@ final class SegmentLoader {
       return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
       // do not reuse a segment into which we've already written!
-      if (lastWrittenIndex >= descriptor.index()) {
+      if (lastFlushedIndex >= descriptor.index()) {
         throw new JournalException(
             String.format(
                 "Failed to create journal segment %s, as it already exists, and the last written "
                     + "index %d indicates we've already written to it",
-                segmentPath, lastWrittenIndex),
+                segmentPath, lastFlushedIndex),
             e);
       }
 
@@ -243,7 +243,7 @@ final class SegmentLoader {
           segmentPath,
           e);
       Files.delete(segmentPath);
-      return mapNewSegment(segmentPath, descriptor, lastWrittenIndex);
+      return mapNewSegment(segmentPath, descriptor, lastFlushedIndex);
     }
   }
 

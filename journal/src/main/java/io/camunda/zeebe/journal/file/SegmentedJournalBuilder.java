@@ -38,7 +38,7 @@ public class SegmentedJournalBuilder {
 
   private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
-  private long lastWrittenIndex = -1L;
+  private long lastFlushedIndex = -1L;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
 
   protected SegmentedJournalBuilder() {}
@@ -123,11 +123,11 @@ public class SegmentedJournalBuilder {
   /**
    * Writes the last index to have been persisted to the metastore.
    *
-   * @param lastWrittenIndex last index to have been persisted in the log
+   * @param lastFlushedIndex last index to have been persisted in the log
    * @return the storage builder
    */
-  public SegmentedJournalBuilder withLastWrittenIndex(final long lastWrittenIndex) {
-    this.lastWrittenIndex = lastWrittenIndex;
+  public SegmentedJournalBuilder withLastFlushedIndex(final long lastFlushedIndex) {
+    this.lastFlushedIndex = lastFlushedIndex;
     return this;
   }
 
@@ -152,7 +152,7 @@ public class SegmentedJournalBuilder {
     final var segmentLoader = new SegmentLoader(segmentAllocator, freeDiskSpace);
     final var segmentsManager =
         new SegmentsManager(
-            journalIndex, maxSegmentSize, directory, lastWrittenIndex, name, segmentLoader);
+            journalIndex, maxSegmentSize, directory, lastFlushedIndex, name, segmentLoader);
     final var journalMetrics = new JournalMetrics(name);
 
     return new SegmentedJournal(
