@@ -16,12 +16,13 @@
  */
 package io.atomix.raft.metrics;
 
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
+import io.prometheus.client.Histogram.Timer;
 
 public class RaftRoleMetrics extends RaftMetrics {
-
   private static final Gauge ROLE =
       Gauge.build()
           .namespace("atomix")
@@ -29,7 +30,6 @@ public class RaftRoleMetrics extends RaftMetrics {
           .help("Shows current role")
           .labelNames("partitionGroupName", "partition")
           .register();
-
   private static final Counter HEARTBEAT_MISS =
       Counter.build()
           .namespace("atomix")
@@ -37,7 +37,6 @@ public class RaftRoleMetrics extends RaftMetrics {
           .help("Count of missing heartbeats")
           .labelNames("partitionGroupName", "partition")
           .register();
-
   private static final Histogram HEARTBEAT_TIME =
       Histogram.build()
           .namespace("atomix")
@@ -53,35 +52,60 @@ public class RaftRoleMetrics extends RaftMetrics {
           .labelNames("partitionGroupName", "partition")
           .register();
 
+  private static final Histogram LAST_FLUSHED_INDEX_UPDATE =
+      Histogram.build()
+          .namespace("atomix")
+          .name("last_flushed_index_update")
+          .help("Time it takes to update the last flushed index")
+          .labelNames("partitionGroupName", "partition")
+          .register();
+
+  private final Gauge.Child role;
+  private final Counter.Child heartbeatMiss;
+  private final Histogram.Child heartbeatTime;
+  private final Gauge.Child electionLatency;
+  private final Histogram.Child lastFlushedIndexUpdate;
+
   public RaftRoleMetrics(final String partitionName) {
     super(partitionName);
+
+    role = ROLE.labels(partitionGroupName, partition);
+    heartbeatMiss = HEARTBEAT_MISS.labels(partitionGroupName, partition);
+    heartbeatTime = HEARTBEAT_TIME.labels(partitionGroupName, partition);
+    electionLatency = ELECTION_LATENCY.labels(partitionGroupName, partition);
+    lastFlushedIndexUpdate = LAST_FLUSHED_INDEX_UPDATE.labels(partitionGroupName, partition);
   }
 
   public void becomingFollower() {
-    ROLE.labels(partitionGroupName, partition).set(1);
+    role.set(1);
   }
 
   public void becomingCandidate() {
-    ROLE.labels(partitionGroupName, partition).set(2);
+    role.set(2);
   }
 
   public void becomingLeader() {
-    ROLE.labels(partitionGroupName, partition).set(3);
+    role.set(3);
   }
 
   public void countHeartbeatMiss() {
-    HEARTBEAT_MISS.labels(partitionGroupName, partition).inc();
+    heartbeatMiss.inc();
   }
 
   public void observeHeartbeatInterval(final long milliseconds) {
-    HEARTBEAT_TIME.labels(partitionGroupName, partition).observe(milliseconds / 1000f);
+    heartbeatTime.observe(milliseconds / 1000f);
   }
 
+  @VisibleForTesting
   public static double getHeartbeatMissCount(final String partition) {
     return HEARTBEAT_MISS.labels(partition, partition).get();
   }
 
   public void setElectionLatency(final long latencyMs) {
-    ELECTION_LATENCY.labels(partitionGroupName, partition).set(latencyMs);
+    electionLatency.set(latencyMs);
+  }
+
+  public Timer observeLastFlushedIndexUpdate() {
+    return lastFlushedIndexUpdate.startTimer();
   }
 }

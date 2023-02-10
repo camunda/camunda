@@ -177,9 +177,9 @@ public final class RaftStorage {
    * @return The opened log.
    */
   public RaftLog openLog() {
-    final long lastWrittenIndex;
+    final long lastFlushedIndex;
     try (final MetaStore metaStore = openMetaStore()) {
-      lastWrittenIndex = metaStore.loadLastWrittenIndex();
+      lastFlushedIndex = metaStore.lastFlushedIndex();
     }
 
     return RaftLog.builder()
@@ -189,7 +189,7 @@ public final class RaftStorage {
         .withFreeDiskSpace(freeDiskSpace)
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastWrittenIndex(lastWrittenIndex)
+        .withLastFlushedIndex(lastFlushedIndex)
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .build();
   }
