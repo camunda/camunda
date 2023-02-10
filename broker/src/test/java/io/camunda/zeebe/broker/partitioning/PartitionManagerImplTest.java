@@ -38,7 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public final class PartitionManagerImplTest {
+final class PartitionManagerImplTest {
   private @TempDir Path tempDir;
   private Environment environment;
 
