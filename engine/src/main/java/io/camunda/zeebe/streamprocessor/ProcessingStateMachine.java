@@ -14,8 +14,6 @@ import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.TypedRecord;
-import io.camunda.zeebe.engine.api.records.ImmutableRecordBatchEntry;
-import io.camunda.zeebe.engine.api.records.ProcessedRecordBatchEntry;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -141,7 +139,6 @@ public final class ProcessingStateMachine {
   private final StreamProcessorContext context;
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
-  private List<ImmutableRecordBatchEntry> pendingWrites;
 
   private RecordProcessor currentProcessor;
   private final LogStreamBatchWriter logStreamBatchWriter;
@@ -234,7 +231,7 @@ public final class ProcessingStateMachine {
     inProcessing = true;
 
     currentProcessingResult = EmptyProcessingResult.INSTANCE;
-
+    logStreamBatchWriter.reset();
     metadata.reset();
     loggedEvent.readMetadata(metadata);
 
@@ -284,7 +281,6 @@ public final class ProcessingStateMachine {
         new BufferedProcessingResultBuilder(logStreamBatchWriter::canWriteAdditionalEvent);
     var lastProcessingResultSize = 0;
     var processedCommandsCount = 0;
-    pendingWrites = new ArrayList<>();
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);
 
@@ -300,15 +296,14 @@ public final class ProcessingStateMachine {
       if (currentProcessor != null) {
         currentProcessingResult = currentProcessor.process(command, processingResultBuilder);
 
-        final BatchProcessingStepResult batchProcessingStepResult =
+        final var nextToProcessCommands =
             collectBatchProcessingStepResult(
                 currentProcessingResult,
                 lastProcessingResultSize,
                 // +1 since we already need include the current command in the calculation
                 pendingCommands.size() + processedCommandsCount + 1);
 
-        pendingCommands.addAll(batchProcessingStepResult.toProcess());
-        pendingWrites.addAll(batchProcessingStepResult.toWrite());
+        pendingCommands.addAll(nextToProcessCommands);
       }
 
       lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
@@ -327,21 +322,27 @@ public final class ProcessingStateMachine {
    * @param currentBatchSize the current batch size (only commands counted), includes already
    *     processed and pending commands
    * @return the result of the current batch processing step, which contains the next to processed
-   *     commands and the records which should be written to the log
+   *     commands
    */
-  private BatchProcessingStepResult collectBatchProcessingStepResult(
+  private List<TypedRecord<?>> collectBatchProcessingStepResult(
       final ProcessingResult processingResult,
       final int lastProcessingResultSize,
       final int currentBatchSize) {
 
     final var commandsToProcess = new ArrayList<TypedRecord<?>>();
-    final var toWriteEntries = new ArrayList<ImmutableRecordBatchEntry>();
 
     processingResult.getRecordBatch().entries().stream()
         .skip(lastProcessingResultSize) // because the result builder is reused
         .forEachOrdered(
             entry -> {
-              var toWriteEntry = entry;
+              final var logEntryBuilder =
+                  logStreamBatchWriter
+                      .event()
+                      .key(entry.key())
+                      .metadataWriter(entry.recordMetadata())
+                      .sourceIndex(entry.sourceIndex())
+                      .valueWriter(entry.recordValue());
+
               final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
                   && potentialBatchSize < COMMAND_LIMIT) {
@@ -351,17 +352,13 @@ public final class ProcessingStateMachine {
                         context.getPartitionId(),
                         entry.recordValue(),
                         entry.recordMetadata()));
-                toWriteEntry =
-                    new ProcessedRecordBatchEntry(
-                        entry.key(),
-                        entry.sourceIndex(),
-                        entry.recordMetadata(),
-                        entry.recordValue());
+
+                logEntryBuilder.skipProcessing();
               }
-              toWriteEntries.add(toWriteEntry);
+              logEntryBuilder.done();
             });
 
-    return new BatchProcessingStepResult(commandsToProcess, toWriteEntries);
+    return commandsToProcess;
   }
 
   private void onError(final Throwable processingException, final Runnable nextStep) {
@@ -402,7 +399,17 @@ public final class ProcessingStateMachine {
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
-          pendingWrites = currentProcessingResult.getRecordBatch().entries();
+          logStreamBatchWriter.reset();
+          final var entries = currentProcessingResult.getRecordBatch().entries();
+          entries.forEach(
+              entry ->
+                  logStreamBatchWriter
+                      .event()
+                      .key(entry.key())
+                      .metadataWriter(entry.recordMetadata())
+                      .sourceIndex(entry.sourceIndex())
+                      .valueWriter(entry.recordValue())
+                      .done());
         });
   }
 
@@ -410,23 +417,7 @@ public final class ProcessingStateMachine {
     final ActorFuture<Boolean> retryFuture =
         writeRetryStrategy.runWithRetry(
             () -> {
-              logStreamBatchWriter.reset();
               logStreamBatchWriter.sourceRecordPosition(typedCommand.getPosition());
-              pendingWrites.forEach(
-                  entry -> {
-                    final var logEntryBuilder =
-                        logStreamBatchWriter
-                            .event()
-                            .key(entry.key())
-                            .metadataWriter(entry.recordMetadata())
-                            .sourceIndex(entry.sourceIndex())
-                            .valueWriter(entry.recordValue());
-                    if (entry.shouldSkipProcessing()) {
-                      logEntryBuilder.skipProcessing();
-                    }
-                    logEntryBuilder.done();
-                  });
-
               final long position = logStreamBatchWriter.tryWrite();
               if (position > 0) {
                 writtenPosition = position;
@@ -578,7 +569,4 @@ public final class ProcessingStateMachine {
 
     actor.submit(this::readNextRecord);
   }
-
-  private record BatchProcessingStepResult(
-      List<TypedRecord<?>> toProcess, List<ImmutableRecordBatchEntry> toWrite) {}
 }

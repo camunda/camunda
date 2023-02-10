@@ -42,8 +42,4 @@ public interface ImmutableRecordBatchEntry {
    *     its maximum size
    */
   int getLength();
-
-  default boolean shouldSkipProcessing() {
-    return false;
-  }
 }
