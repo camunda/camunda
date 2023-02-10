@@ -5,7 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {processResult, getReportResult, isCategoricalBar, isCategorical} from './reportService';
+import {
+  processResult,
+  getReportResult,
+  isCategoricalBar,
+  isCategorical,
+  isTextReportValid,
+  isTextReportTooLong,
+} from './reportService';
 
 import {post} from 'request';
 
@@ -225,5 +232,26 @@ describe('isCategorical', () => {
         },
       })
     ).toBe(true);
+  });
+});
+
+describe('isTextReportValid', () => {
+  it('should return true if report is valid', () => {
+    expect(isTextReportValid(100)).toBe(true);
+  });
+
+  it('should return false if report is not valid', () => {
+    expect(isTextReportValid(0)).toBe(false);
+    expect(isTextReportValid(3001)).toBe(false);
+  });
+});
+
+describe('isTextReportTooLong', () => {
+  it('should return true if report is too long', () => {
+    expect(isTextReportTooLong(3001)).toBe(true);
+  });
+
+  it('should return false if report is not too long', () => {
+    expect(isTextReportTooLong(100)).toBe(false);
   });
 });

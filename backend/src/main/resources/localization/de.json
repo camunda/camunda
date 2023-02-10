@@ -343,6 +343,8 @@
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "textReport": "Text Report",
+    "externalUrl": "Externe URL",
     "create": "Bericht Erstellen",
     "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
@@ -755,9 +757,7 @@
       "addReportLabel": "Report hinzufügen",
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
-      "externalUrl": "Externe URL",
-      "newReport": "Neuer Bericht aus einer Vorlage",
-      "textReport": "Text Report"
+      "newReport": "Neuer Bericht aus einer Vorlage"
     },
     "textReportEditNotification": "Dies ist eine Funktion, die wir zu bauen planen",
     "noAuthorization": "Fehlende Berechtigung",

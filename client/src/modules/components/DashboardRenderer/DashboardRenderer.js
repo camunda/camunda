@@ -27,7 +27,8 @@ export default function DashboardRenderer({
   filter = [],
   loadReport,
   addons,
-  onChange,
+  onLayoutChange,
+  onReportUpdate,
 }) {
   const [isDragging, setIsDragging] = useState(false);
 
@@ -57,7 +58,7 @@ export default function DashboardRenderer({
       cols={{all: columns}}
       breakpoints={{all: 0}}
       rowHeight={rowHeight}
-      onLayoutChange={onChange}
+      onLayoutChange={onLayoutChange}
       className={classnames('DashboardRenderer', {isDragging})}
       style={style}
       isDraggable={!!disableReportInteractions}
@@ -86,6 +87,7 @@ export default function DashboardRenderer({
               report={report}
               filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}
               addons={addons}
+              onReportUpdate={onReportUpdate}
             />
           </div>
         );

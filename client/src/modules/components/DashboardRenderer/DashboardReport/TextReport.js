@@ -6,24 +6,30 @@
  */
 
 import React, {useState} from 'react';
+import update from 'immutability-helper';
 
 import {Button, Icon, TextEditor} from 'components';
-import {addNotification} from 'notifications';
-import {t} from 'translation';
 import {track} from 'tracking';
+
+import TextReportEditModal from './TextReportEditModal';
 
 import './TextReport.scss';
 
-export default function TextReport({report, children = () => {}}) {
+export default function TextReport({report, children = () => {}, onReportUpdate}) {
   const [reloadState, setReloadState] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const reloadReport = () => {
     setReloadState((prevReloadState) => prevReloadState + 1);
   };
 
   const handleEdit = () => {
-    addNotification(t('dashboard.textReportEditNotification'));
+    setIsModalOpen(!isModalOpen);
     track('editTextReport');
+  };
+
+  const onConfirm = (text) => {
+    onReportUpdate(update(report, {configuration: {text: {$set: text}}}));
   };
 
   if (!report?.configuration?.text) {
@@ -31,15 +37,24 @@ export default function TextReport({report, children = () => {}}) {
   }
 
   return (
-    <div className="TextReport DashboardReport__wrapper">
-      <TextEditor key={reloadState} initialValue={report.configuration.text} />
-      {children({loadReportData: reloadReport})}
-      {children && (
-        <Button className="EditButton EditTextReport" onClick={handleEdit}>
-          <Icon type="edit-small" />
-        </Button>
+    <>
+      <div className="TextReport DashboardReport__wrapper">
+        <TextEditor key={reloadState} initialValue={report.configuration.text} />
+        {children({loadReportData: reloadReport})}
+        {children && (
+          <Button className="EditButton EditTextReport" onClick={handleEdit}>
+            <Icon type="edit-small" />
+          </Button>
+        )}
+      </div>
+      {isModalOpen && (
+        <TextReportEditModal
+          initialValue={report.configuration.text}
+          onClose={() => setIsModalOpen(false)}
+          onConfirm={onConfirm}
+        />
       )}
-    </div>
+    </>
   );
 }
 

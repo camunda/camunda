@@ -107,6 +107,7 @@ export default class Modal extends React.Component {
             className="Modal"
             role="dialog"
             onClick={(evt) => evt.stopPropagation()}
+            onMouseDown={(evt) => evt.stopPropagation()}
             onKeyDown={this.handleKeyPress}
           >
             <div className="Modal__scroll-container">

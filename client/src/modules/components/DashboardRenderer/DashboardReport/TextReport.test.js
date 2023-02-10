@@ -8,7 +8,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import {track} from 'tracking';
-import {addNotification} from 'notifications';
 
 import TextReport from './TextReport';
 
@@ -73,15 +72,43 @@ it('should return null when no text is provided', () => {
   expect(node.find('.TextReport')).not.toExist();
 });
 
-it('should add notification and sent mixpanel event on edit', async () => {
+it('should open edit modal and sent mixpanel event on edit', () => {
   const node = shallow(
     <TextReport report={{configuration: {text: editorValue}}} children={() => <p>child</p>} />
   );
 
   node.find('.EditTextReport').simulate('click');
 
+  expect(node.find('TextReportEditModal')).toExist();
   expect(track).toHaveBeenCalledWith('editTextReport');
-  expect(addNotification).toHaveBeenCalled();
+});
+
+it('should close modal when modal invokes onClose', () => {
+  const node = shallow(
+    <TextReport report={{configuration: {text: editorValue}}} children={() => <p>child</p>} />
+  );
+
+  node.find('.EditTextReport').simulate('click');
+  node.find('TextReportEditModal').prop('onClose')();
+
+  expect(node.find('TextReportEditModal')).not.toExist();
+});
+
+it('should invoke onReportUpdate when modal is saved', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <TextReport
+      report={{configuration: {text: 'text'}}}
+      children={() => <p>child</p>}
+      onReportUpdate={spy}
+    />
+  );
+
+  node.find('.EditTextReport').simulate('click');
+
+  node.find('TextReportEditModal').prop('onConfirm')('newText');
+
+  expect(spy).toHaveBeenCalledWith({configuration: {text: 'newText'}});
 });
 
 describe('TextReport.isTextReport', () => {

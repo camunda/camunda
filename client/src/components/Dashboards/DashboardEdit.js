@@ -153,6 +153,22 @@ export class DashboardEdit extends React.Component {
     });
   };
 
+  updateReport = (report) => {
+    this.setState(({reports}) => {
+      const newReports = reports.map((oldReport) => {
+        if (
+          report.position.x === oldReport.position.x &&
+          report.position.y === oldReport.position.y
+        ) {
+          return report;
+        }
+        return oldReport;
+      });
+
+      return {reports: newReports};
+    });
+  };
+
   deleteReport = ({report: reportToRemove}) => {
     this.setState({
       reports: this.state.reports.filter((report) => report !== reportToRemove),
@@ -302,7 +318,8 @@ export class DashboardEdit extends React.Component {
               <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />,
               <EditButton key="EditButton" onClick={this.editReport} />,
             ]}
-            onChange={this.updateLayout}
+            onLayoutChange={this.updateLayout}
+            onReportUpdate={this.updateReport}
           />
         </div>
       </div>

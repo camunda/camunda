@@ -119,3 +119,13 @@ export function isCategorical({groupBy, distributedBy}) {
     distributedBy?.type === 'process'
   );
 }
+
+export const TEXT_REPORT_MAX_CHARACTERS = 3000;
+
+export function isTextReportValid(textLength) {
+  return textLength > 0 && !isTextReportTooLong(textLength);
+}
+
+export function isTextReportTooLong(textLength) {
+  return textLength > TEXT_REPORT_MAX_CHARACTERS;
+}

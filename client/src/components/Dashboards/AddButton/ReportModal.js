@@ -20,7 +20,13 @@ import {
   Icon,
   TextEditor,
 } from 'components';
-import {getCollection, loadReports} from 'services';
+import {
+  getCollection,
+  isTextReportTooLong,
+  isTextReportValid,
+  loadReports,
+  TEXT_REPORT_MAX_CHARACTERS,
+} from 'services';
 import {t} from 'translation';
 
 function ReportModal({close, confirm, location}) {
@@ -57,22 +63,13 @@ function ReportModal({close, confirm, location}) {
     return url.match(/^(https|http):\/\/.+/);
   };
 
-  const isTextReportValid = (text) => {
-    const textLength = TextEditor.getEditorStateLength(text);
-    return textLength > 0 && !isTextReportTooLong(text);
-  };
-
-  const TEXT_REPORT_MAX_CHARACTERS = 3000;
-  const isTextReportTooLong = (text) => {
-    const textLength = TextEditor.getEditorStateLength(text);
-    return textLength > TEXT_REPORT_MAX_CHARACTERS;
-  };
+  const textLength = TextEditor.getEditorStateLength(text);
 
   const isCurrentTabInvalid = (tabOpen, externalUrl, selectedReportId, text) => {
     const isInvalidMap = {
       report: !selectedReportId,
       external: !isExternalUrlValid(externalUrl),
-      text: !isTextReportValid(text),
+      text: !isTextReportValid(textLength),
     };
 
     return isInvalidMap[tabOpen];
@@ -123,9 +120,9 @@ function ReportModal({close, confirm, location}) {
                 {loading && <LoadingIndicator />}
               </Form.Group>
             </Tabs.Tab>
-            <Tabs.Tab value="external" title={t('dashboard.addButton.externalUrl')}>
+            <Tabs.Tab value="external" title={t('report.externalUrl')}>
               <Form.Group>
-                <Labeled label={t('dashboard.addButton.externalUrl')}>
+                <Labeled label={t('report.externalUrl')}>
                   <Input
                     name="externalInput"
                     className="externalInput"
@@ -136,13 +133,13 @@ function ReportModal({close, confirm, location}) {
                 </Labeled>
               </Form.Group>
             </Tabs.Tab>
-            <Tabs.Tab value="text" title={t('dashboard.addButton.textReport')}>
+            <Tabs.Tab value="text" title={t('report.textReport')}>
               <Form.Group className="Labeled">
-                <span className="label before">{t('dashboard.addButton.textReport')}</span>
+                <span className="label before">{t('report.textReport')}</span>
                 <TextEditor
                   initialValue={initialTextReportValue}
                   onChange={setText}
-                  error={isTextReportTooLong(text)}
+                  error={isTextReportTooLong(textLength)}
                 />
                 <TextEditor.CharCount editorState={text} limit={TEXT_REPORT_MAX_CHARACTERS} />
               </Form.Group>

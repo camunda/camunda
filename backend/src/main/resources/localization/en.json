@@ -343,6 +343,8 @@
   "report": {
     "label": "Report",
     "label-plural": "Reports",
+    "textReport": "Text Report",
+    "externalUrl": "External URL",
     "create": "Create Report",
     "createNew": "Create New Report",
     "new": "New Report",
@@ -755,9 +757,7 @@
       "addReportLabel": "Add Report",
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",
-      "externalUrl": "External URL",
-      "newReport": "New Report from a template",
-      "textReport": "Text Report"
+      "newReport": "New Report from a template"
     },
     "textReportEditNotification": "This is a feature we plan to build",
     "noAuthorization": "Missing authorization",

@@ -21,6 +21,7 @@ export default function DashboardReport({
   addons,
   tileDimensions,
   loadReport,
+  onReportUpdate,
 }) {
   let ReportComponent = OptimizeReport;
 
@@ -37,6 +38,7 @@ export default function DashboardReport({
       disableNameLink={disableNameLink}
       customizeReportLink={customizeReportLink}
       loadReport={loadReport}
+      onReportUpdate={onReportUpdate}
     >
       {(props = {}) =>
         addons &&

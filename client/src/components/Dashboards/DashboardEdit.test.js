@@ -78,7 +78,7 @@ it('should react to layout changes', () => {
     />
   );
 
-  node.find('DashboardRenderer').prop('onChange')([
+  node.find('DashboardRenderer').prop('onLayoutChange')([
     {x: 0, y: 0, h: 4, w: 2},
     {x: 3, y: 2, h: 4, w: 3},
   ]);
@@ -169,4 +169,21 @@ it('should save basic dashboard info', async () => {
   await flushPromises();
 
   expect(saveSpy).toHaveBeenCalledWith(dashboardName, [], [], intervalSeconds, stayInEditMode);
+});
+
+it('should update report', () => {
+  const report = {
+    position: {x: 0, y: 0},
+    id: '',
+    configuration: {text: 'text'},
+  };
+  const node = shallow(<DashboardEdit initialReports={[report]} />);
+
+  const newReport = {
+    ...report,
+    configuration: {text: 'newText'},
+  };
+  node.find('DashboardRenderer').prop('onReportUpdate')(newReport);
+
+  expect(node.state('reports')[0]).toEqual(newReport);
 });

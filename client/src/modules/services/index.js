@@ -40,6 +40,9 @@ export {
   isAlertCompatibleReport,
   isCategoricalBar,
   isCategorical,
+  TEXT_REPORT_MAX_CHARACTERS,
+  isTextReportTooLong,
+  isTextReportValid,
 } from './reportService';
 
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
