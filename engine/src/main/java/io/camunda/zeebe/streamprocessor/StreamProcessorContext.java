@@ -26,6 +26,7 @@ import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
+  public static final int DEFAULT_PROCESSING_BATCH_LIMIT = 1;
   private static final StreamProcessorListener NOOP_LISTENER =
       new StreamProcessorListener() {
         @Override
@@ -34,7 +35,6 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
         @Override
         public void onSkipped(final LoggedEvent skippedRecord) {}
       };
-
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
@@ -55,6 +55,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
+  private int processingBatchLimit = DEFAULT_PROCESSING_BATCH_LIMIT;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -195,5 +196,14 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public void streamProcessorPhase(final Phase phase) {
     this.phase = phase;
+  }
+
+  public StreamProcessorContext processingBatchLimit(final int processingBatchLimit) {
+    this.processingBatchLimit = processingBatchLimit;
+    return this;
+  }
+
+  public int getProcessingBatchLimit() {
+    return processingBatchLimit;
   }
 }

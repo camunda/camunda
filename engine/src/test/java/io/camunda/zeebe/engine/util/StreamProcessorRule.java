@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.streamprocessor.state.MutableLastProcessedPositionState;
@@ -68,6 +69,7 @@ public final class StreamProcessorRule implements TestRule {
   private StreamProcessingComposite streamProcessingComposite;
   private ListLogStorage sharedStorage = null;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private int processingBatchLimit = StreamProcessorContext.DEFAULT_PROCESSING_BATCH_LIMIT;
 
   public StreamProcessorRule() {
     this(new TemporaryFolder());
@@ -325,6 +327,10 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.getLastProcessedPositionState();
   }
 
+  public void processingBatchLimit(final int processingBatchLimit) {
+    this.processingBatchLimit = processingBatchLimit;
+  }
+
   private class SetupRule extends ExternalResource {
 
     private final int startPartitionId;
@@ -339,6 +345,7 @@ public final class StreamProcessorRule implements TestRule {
     protected void before() {
       streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
       streams.withStreamProcessorMode(streamProcessorMode);
+      streams.processingBatchLimit(processingBatchLimit);
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {

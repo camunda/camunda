@@ -104,6 +104,7 @@ public final class EngineRule extends ExternalResource {
       new Int2ObjectHashMap<>();
 
   private long lastProcessedPosition = -1L;
+  private int batchLimit;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -403,6 +404,11 @@ public final class EngineRule extends ExternalResource {
 
   public boolean hasReachedEnd() {
     return getStreamProcessor(PARTITION_ID).hasProcessingReachedTheEnd().join();
+  }
+
+  public EngineRule processingBatchLimit(final int processingBatchLimit) {
+    environmentRule.processingBatchLimit(processingBatchLimit);
+    return this;
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

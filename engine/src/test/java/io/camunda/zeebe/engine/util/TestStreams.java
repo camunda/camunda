@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.streamprocessor.StreamProcessor;
+import io.camunda.zeebe.streamprocessor.StreamProcessorContext;
 import io.camunda.zeebe.streamprocessor.StreamProcessorListener;
 import io.camunda.zeebe.streamprocessor.StreamProcessorMode;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
@@ -90,6 +91,7 @@ public final class TestStreams {
 
   private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
+  private int processingBatchLimit = StreamProcessorContext.DEFAULT_PROCESSING_BATCH_LIMIT;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -295,6 +297,7 @@ public final class TestStreams {
             .recordProcessors(List.of(new Engine(wrappedFactory)))
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode)
+            .processingBatchLimit(processingBatchLimit)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     final StreamProcessor streamProcessor = builder.build();
@@ -360,6 +363,10 @@ public final class TestStreams {
           .done();
     }
     return logStreamBatchWriter;
+  }
+
+  public void processingBatchLimit(final int processingBatchLimit) {
+    this.processingBatchLimit = processingBatchLimit;
   }
 
   public static class FluentLogWriter {
