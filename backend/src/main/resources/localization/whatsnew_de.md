@@ -1,3 +1,7 @@
+## Textberichte
+
+Mit Textberichten können Benutzer formatierte Beschreibungen und Bilder zu einem Dashboard hinzufügen. Hiermit kann der Inhalt des Dashboards für andere Benutzer leichter verständlich gemacht werden. 
+
 ## Verbesserte Camunda 8 Plattform Navigation
 
 Camunda Saas ermöglicht eine einfache und intuitive Navigation zwischen den Anwendungen (Console, Modeler, Operate, Optimize).
