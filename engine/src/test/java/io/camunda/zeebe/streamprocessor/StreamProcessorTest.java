@@ -51,7 +51,6 @@ import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
