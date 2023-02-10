@@ -14,7 +14,7 @@ import {
   Middleware,
 } from '@floating-ui/react-dom';
 
-import {useEffect, useLayoutEffect, useRef} from 'react';
+import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {Container, Arrow, getArrowPosition} from './styled';
 import {isNil} from 'lodash';
 import {createPortal} from 'react-dom';
@@ -68,11 +68,11 @@ const ArrowPopover: React.FC<Props> = ({
     whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,
   });
 
+  const [isHidden, setIsHidden] = useState<boolean>(false);
+
   useEffect(() => {
     if (middlewareData.hide && popoverElementRef?.current !== null) {
-      Object.assign(popoverElementRef.current.style, {
-        display: middlewareData.hide.referenceHidden ? 'none' : 'block',
-      });
+      setIsHidden(!!middlewareData.hide.referenceHidden);
     }
   }, [popoverElementRef, middlewareData]);
 
@@ -115,18 +115,22 @@ const ArrowPopover: React.FC<Props> = ({
           }}
           data-testid="popover"
         >
-          <Arrow
-            ref={arrowElementRef}
-            style={{
-              ...getArrowPosition({
-                side: getSide(actualPlacement),
-                x: getValueWhenValidNumber(arrowX),
-                y: getValueWhenValidNumber(arrowY),
-              }),
-            }}
-            $side={getSide(actualPlacement)}
-          />
-          <div>{children}</div>
+          {!isHidden && (
+            <>
+              <Arrow
+                ref={arrowElementRef}
+                style={{
+                  ...getArrowPosition({
+                    side: getSide(actualPlacement),
+                    x: getValueWhenValidNumber(arrowX),
+                    y: getValueWhenValidNumber(arrowY),
+                  }),
+                }}
+                $side={getSide(actualPlacement)}
+              />
+              <div>{children}</div>
+            </>
+          )}
         </Container>,
         document.body
       );

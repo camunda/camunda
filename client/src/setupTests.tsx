@@ -67,6 +67,15 @@ global.beforeEach(() => {
   });
 });
 
+jest.mock('@floating-ui/react-dom', () => {
+  const originalModule = jest.requireActual('@floating-ui/react-dom');
+
+  return {
+    ...originalModule,
+    hide: () => {},
+  };
+});
+
 const localStorageMock = (function () {
   let store: {[key: string]: string} = {};
   return {
