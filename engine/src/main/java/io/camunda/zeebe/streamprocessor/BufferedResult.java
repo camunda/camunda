@@ -60,4 +60,11 @@ final class BufferedResult implements ProcessingResult, TaskResult {
 
     return aggregatedResult;
   }
+
+  @Override
+  public boolean isEmpty() {
+    return getProcessingResponse().isEmpty()
+        && getRecordBatch().entries().isEmpty()
+        && postCommitTasks.isEmpty();
+  }
 }

@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
+import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -50,11 +51,25 @@ public final class StreamProcessorReprocessingTest {
   private static final ProcessInstanceRecord PROCESS_INSTANCE_RECORD = Records.processInstance(1);
 
   @Rule public final StreamProcessorRule streamProcessorRule = new StreamProcessorRule();
+  private StreamProcessorTestFactory processorTestFactory;
 
   @Before
   public void setup() {
     final var mockEventApplier = mock(EventApplier.class);
     streamProcessorRule.withEventApplierFactory(state -> mockEventApplier);
+
+    processorTestFactory =
+        (processors, context) ->
+            processors.onCommand(
+                ValueType.PROCESS_INSTANCE,
+                ACTIVATE_ELEMENT,
+                new TypedRecordProcessor<>() {
+                  @Override
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                    // we need to produce a result otherwise the command will marked as skipped
+                    context.getWriters().sideEffect().appendSideEffect(() -> true);
+                  }
+                });
   }
 
   @Test
@@ -239,15 +254,7 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldStartAfterLastProcessedEventInSnapshot() {
     // given
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
-                }));
+    streamProcessorRule.startTypedStreamProcessor(processorTestFactory);
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(2));
@@ -263,15 +270,7 @@ public final class StreamProcessorReprocessingTest {
     // when
     // The processor restarts with a snapshot that was the state of the processor before it
     // was closed.
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
-                }));
+    streamProcessorRule.startTypedStreamProcessor(processorTestFactory);
 
     final long position =
         streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, Records.processInstance(3));
@@ -372,15 +371,7 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldUpdateLastProcessedEventWhenSnapshot() throws Exception {
     // given
-    streamProcessorRule.startTypedStreamProcessor(
-        (processors, context) ->
-            processors.onCommand(
-                ValueType.PROCESS_INSTANCE,
-                ACTIVATE_ELEMENT,
-                new TypedRecordProcessor<>() {
-                  @Override
-                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {}
-                }));
+    streamProcessorRule.startTypedStreamProcessor(processorTestFactory);
 
     streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, PROCESS_INSTANCE_RECORD);
     // should be processed and included in the snapshot

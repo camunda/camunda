@@ -23,10 +23,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.util.Records;
+import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -104,7 +107,21 @@ public final class StreamProcessorReplayTest {
     final var eventKeyBeforeSnapshot = 1L;
     final var eventKeyAfterSnapshot = 2L;
 
-    startStreamProcessor(typedRecordProcessor, eventApplier);
+    final StreamProcessorTestFactory processorTestFactory =
+        (processors, context) ->
+            processors.onCommand(
+                ValueType.PROCESS_INSTANCE,
+                ACTIVATE_ELEMENT,
+                new TypedRecordProcessor<>() {
+                  @Override
+                  public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                    // we need to produce a result otherwise the command will marked as skipped
+                    context.getWriters().sideEffect().appendSideEffect(() -> true);
+                  }
+                });
+    streamProcessorRule
+        .withEventApplierFactory(zeebeState -> eventApplier)
+        .startTypedStreamProcessor(processorTestFactory);
 
     final long commandPositionBeforeSnapshot =
         streamProcessorRule.writeCommand(ACTIVATE_ELEMENT, RECORD);

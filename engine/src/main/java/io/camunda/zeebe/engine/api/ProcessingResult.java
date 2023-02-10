@@ -36,4 +36,17 @@ public interface ProcessingResult {
    * @return <code>false</code> to indicate that the side effect could not be applied successfully
    */
   boolean executePostCommitTasks();
+
+  /**
+   * Indicates whether the processing result is empty.
+   *
+   * @return true if all the following applies:
+   *     <ul>
+   *       <li>there is no response
+   *       <li>the record batch is empty
+   *       <li>there is no tasks to execute
+   *     </ul>
+   *     false otherwise.
+   */
+  boolean isEmpty();
 }
