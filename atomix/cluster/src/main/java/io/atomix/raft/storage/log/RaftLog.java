@@ -19,6 +19,8 @@ package io.atomix.raft.storage.log;
 import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
+import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
+import io.atomix.raft.storage.log.RaftLogFlusher.FlushMetaStore;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
@@ -29,16 +31,21 @@ import org.agrona.CloseHelper;
 
 /** Raft log. */
 public final class RaftLog implements Closeable {
-  private final Journal journal;
   private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
-  private final boolean flushExplicitly;
+  private final Journal journal;
+  private final RaftLogFlusher flusher;
+  private final FlushMetaStore flushMetaStore;
 
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
-  RaftLog(final Journal journal, final boolean flushExplicitly) {
+  RaftLog(
+      final Journal journal,
+      final RaftLogFlusher flusher,
+      final RaftLogFlusher.FlushMetaStore flushMetaStore) {
     this.journal = journal;
-    this.flushExplicitly = flushExplicitly;
+    this.flusher = flusher;
+    this.flushMetaStore = flushMetaStore;
   }
 
   /**
@@ -101,8 +108,8 @@ public final class RaftLog implements Closeable {
     commitIndex = index;
   }
 
-  public boolean shouldFlushExplicitly() {
-    return flushExplicitly;
+  public boolean flushesDirectly() {
+    return flusher.isDirect();
   }
 
   public long getFirstIndex() {
@@ -168,8 +175,23 @@ public final class RaftLog implements Closeable {
     lastAppendedEntry = null;
   }
 
+  /**
+   * Flushes the underlying journal using the configured flushing strategy. For guarantees, refer to
+   * the configured {@link RaftLogFlusher}.
+   */
   public void flush() {
-    journal.flush();
+    flusher.flush(journal, flushMetaStore);
+  }
+
+  /**
+   * Flushes the underlying journal in a blocking, synchronous way. When this returns, it is
+   * guaranteed that any appended data since the last flush is persisted on disk.
+   *
+   * <p>NOTE: this bypasses the configured flushing strategy, and is meant to be used when certain
+   * guarantees are required.
+   */
+  public void forceFlush() {
+    Factory.DIRECT.flush(journal, flushMetaStore);
   }
 
   @Override
@@ -184,8 +206,6 @@ public final class RaftLog implements Closeable {
         + journal
         + ", serializer="
         + serializer
-        + ", flushExplicitly="
-        + flushExplicitly
         + ", lastAppendedEntry="
         + lastAppendedEntry
         + ", commitIndex="

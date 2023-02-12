@@ -17,6 +17,9 @@
 package io.atomix.raft.partition;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
+import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogFlusher;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStoreFactory;
 
 /** Raft storage configuration. */
@@ -24,7 +27,8 @@ public class RaftStorageConfig {
 
   private static final String DATA_PREFIX = ".data";
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
-  private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
+  private static final RaftLogFlusher.Factory DEFAULT_FLUSHER_FACTORY =
+      RaftLogFlusher.Factory::direct;
   private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
   private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
 
@@ -32,7 +36,7 @@ public class RaftStorageConfig {
 
   private String directory;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
-  private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
+  private RaftLogFlusher.Factory flusherFactory = DEFAULT_FLUSHER_FACTORY;
   private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
   private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
@@ -73,24 +77,24 @@ public class RaftStorageConfig {
   }
 
   /**
-   * Returns whether to flush logs to disk to guarantee correctness. If true, followers will flush
-   * on every append, and the leader will flush on commit.
+   * Returns the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
+   * RaftLog} when * {@link io.atomix.raft.storage.RaftStorage#openLog(ThreadContext)} is called.
    *
-   * @return whether to flush logs to disk
+   * @return the flusher factory for this storage
    */
-  public boolean shouldFlushExplicitly() {
-    return flushExplicitly;
+  public RaftLogFlusher.Factory flusherFactory() {
+    return flusherFactory;
   }
 
   /**
-   * Sets whether to flush logs to disk to guarantee correctness. If true, followers will flush on
-   * every append, and the leader will flush on commit.
+   * Sets the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
+   * RaftLog} when {@link io.atomix.raft.storage.RaftStorage#openLog(ThreadContext)} is called.
    *
-   * @param flushExplicitly whether to flush logs to disk
+   * @param flusherFactory factory to create the flushing strategy for the {@link RaftLog}
    * @return the Raft partition group configuration
    */
-  public RaftStorageConfig setFlushExplicitly(final boolean flushExplicitly) {
-    this.flushExplicitly = flushExplicitly;
+  public RaftStorageConfig setFlusherFactory(final RaftLogFlusher.Factory flusherFactory) {
+    this.flusherFactory = flusherFactory;
     return this;
   }
 
@@ -181,7 +185,7 @@ public class RaftStorageConfig {
         + ", segmentSize="
         + segmentSize
         + ", flushExplicitly="
-        + flushExplicitly
+        + flusherFactory
         + ", freeDiskSpace="
         + freeDiskSpace
         + ", journalIndexDensity="

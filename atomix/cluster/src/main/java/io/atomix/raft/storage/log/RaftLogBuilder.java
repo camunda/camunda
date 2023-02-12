@@ -15,6 +15,9 @@
  */
 package io.atomix.raft.storage.log;
 
+import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
+import io.atomix.raft.storage.log.RaftLogFlusher.FlushMetaStore;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -23,7 +26,8 @@ import java.io.File;
 public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
   private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
-  private boolean flushExplicitly = true;
+  private RaftLogFlusher flusher = Factory.DIRECT;
+  private RaftLogFlusher.FlushMetaStore flushMetaStore = lastIndex -> {};
 
   protected RaftLogBuilder() {}
 
@@ -83,18 +87,15 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   }
 
   /**
-   * Sets whether or not to flush buffered I/O explicitly at various points, returning the builder
-   * for chaining.
+   * Sets the flushing strategy. See implementations of {@link RaftLogFlusher} for which to use.
+   * Each strategy provides different guarantees to allow for a trade-off between performance and
+   * safety.
    *
-   * <p>Enabling this ensures that entries are flushed on followers before acknowledging a write,
-   * and are flushed on the leader before marking an entry as committed. This guarantees the
-   * correctness of various Raft properties.
-   *
-   * @param flushExplicitly whether to flush explicitly or not
+   * @param flusher the flushing strategy, defaults to {@link DirectFlusher}
    * @return this builder for chaining
    */
-  public RaftLogBuilder withFlushExplicitly(final boolean flushExplicitly) {
-    this.flushExplicitly = flushExplicitly;
+  public RaftLogBuilder withFlusher(final RaftLogFlusher flusher) {
+    this.flusher = flusher;
     return this;
   }
 
@@ -113,8 +114,8 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
-  public RaftLogBuilder withLastWrittenIndex(final long lastWrittenIndex) {
-    journalBuilder.withLastWrittenIndex(lastWrittenIndex);
+  public RaftLogBuilder withLastFlushedIndex(final long lastFlushedIndex) {
+    journalBuilder.withLastFlushedIndex(lastFlushedIndex);
     return this;
   }
 
@@ -142,9 +143,20 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
+  /**
+   * Temporary builder method to specify the logic for how to store the last flushed index.
+   *
+   * @param flushMetaStore the handler to store the last flushed index
+   * @return this builder for chaining
+   */
+  public RaftLogBuilder withFlushMetaStore(final FlushMetaStore flushMetaStore) {
+    this.flushMetaStore = flushMetaStore;
+    return this;
+  }
+
   @Override
   public RaftLog build() {
     final Journal journal = journalBuilder.build();
-    return new RaftLog(journal, flushExplicitly);
+    return new RaftLog(journal, flusher, flushMetaStore);
   }
 }

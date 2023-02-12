@@ -7,10 +7,16 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import java.time.Duration;
+import java.util.Objects;
+
 public final class RaftCfg implements ConfigurationEntry {
   public static final boolean DEFAULT_ENABLE_PRIORITY_ELECTION = true;
+  private static final FlushConfig DEFAULT_FLUSH_CONFIG = new FlushConfig(true, Duration.ZERO);
 
   private boolean enablePriorityElection = DEFAULT_ENABLE_PRIORITY_ELECTION;
+
+  private FlushConfig flush = DEFAULT_FLUSH_CONFIG;
 
   public boolean isEnablePriorityElection() {
     return enablePriorityElection;
@@ -20,8 +26,28 @@ public final class RaftCfg implements ConfigurationEntry {
     this.enablePriorityElection = enablePriorityElection;
   }
 
+  public FlushConfig getFlush() {
+    return flush;
+  }
+
+  public void setFlush(final FlushConfig flush) {
+    this.flush = flush;
+  }
+
   @Override
   public String toString() {
-    return "RaftCfg{" + "enablePriorityElection=" + enablePriorityElection + '}';
+    return "RaftCfg{"
+        + "enablePriorityElection="
+        + enablePriorityElection
+        + ", flushConfig="
+        + flush
+        + '}';
+  }
+
+  public record FlushConfig(boolean enabled, Duration delayTime) {
+    public FlushConfig(final boolean enabled, final Duration delayTime) {
+      this.enabled = enabled;
+      this.delayTime = Objects.requireNonNull(delayTime, "must specify a valid delay");
+    }
   }
 }

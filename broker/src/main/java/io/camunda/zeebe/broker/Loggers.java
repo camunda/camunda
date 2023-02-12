@@ -26,6 +26,7 @@ public final class Loggers {
       LoggerFactory.getLogger("io.camunda.zeebe.broker.exporter");
   public static final Logger DELETION_SERVICE =
       LoggerFactory.getLogger("io.camunda.zeebe.broker.logstreams.delete");
+  public static final Logger RAFT = LoggerFactory.getLogger("io.camunda.zeebe.broker.raft");
 
   public static Logger getExporterLogger(final String exporterId) {
     final String loggerName = String.format("io.camunda.zeebe.broker.exporter.%s", exporterId);

@@ -91,7 +91,7 @@ public class ZeebeTestNode {
   }
 
   public RaftPartitionGroup getPartitionGroup() {
-    return this.dataPartitionGroup;
+    return dataPartitionGroup;
   }
 
   public MemberId getMemberId() {
@@ -119,7 +119,6 @@ public class ZeebeTestNode {
         .withMembers(members.toArray(new Member[0]))
         .withNumPartitions(1)
         .withPartitionSize(members.size())
-        .withFlushExplicitly(true)
         .withSegmentSize(1024L)
         .withSnapshotStoreFactory(
             (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));

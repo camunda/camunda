@@ -18,6 +18,7 @@ package io.atomix.raft.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -46,7 +47,7 @@ public class RaftStorageTest {
             .withDirectory(new File(PATH.toFile(), "foo"))
             .withMaxSegmentSize(1024 * 1024)
             .withFreeDiskSpace(100)
-            .withFlushExplicitly(false)
+            .withFlusherFactory(RaftLogFlusher.Factory::noop)
             .build();
     assertThat(storage.prefix()).isEqualTo("foo");
     assertThat(storage.directory()).isEqualTo(new File(PATH.toFile(), "foo"));

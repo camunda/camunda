@@ -17,9 +17,9 @@ package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.mockito.Mockito;
 
 public class PassiveRoleTest {
 
@@ -56,7 +57,7 @@ public class PassiveRoleTest {
     ctx = mock(RaftContext.class);
 
     log = mock(RaftLog.class);
-    when(log.shouldFlushExplicitly()).thenReturn(true);
+    when(log.flushesDirectly()).thenReturn(true);
     when(ctx.getLog()).thenReturn(log);
 
     final PersistedSnapshot snapshot = mock(PersistedSnapshot.class);
@@ -110,7 +111,7 @@ public class PassiveRoleTest {
     final AppendResponse response = role.handleAppend(request).join();
 
     // then
-    verify(log).flush();
+    verify(log, times(1)).flush();
     assertThat(response.lastLogIndex()).isEqualTo(2);
   }
 
@@ -131,8 +132,8 @@ public class PassiveRoleTest {
     final AppendResponse response = role.handleAppend(request).join();
 
     // then
-    verify(log).flush();
-    assertThat(response.lastLogIndex()).isEqualTo(1);
+    verify(log, times(1)).flush();
+    assertThat(response.lastLogIndex()).isOne();
   }
 
   @Test
@@ -150,28 +151,11 @@ public class PassiveRoleTest {
 
     // then
     verify(log, never()).flush();
-    assertThat(response.lastLogIndex()).isEqualTo(0);
+    assertThat(response.lastLogIndex()).isZero();
   }
 
   @Test
-  public void shouldStoreLastWrittenIndex() {
-    // given
-    final List<PersistedRaftRecord> entries =
-        List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
-    final AppendRequest request = new AppendRequest(2, "", 0, 0, entries, 1);
-
-    when(log.append(any(PersistedRaftRecord.class))).thenReturn(mock(IndexedRaftLogEntry.class));
-    when(ctx.getLog()).thenReturn(log);
-
-    // when
-    role.handleAppend(request).join();
-
-    // then
-    verify(ctx).setLastWrittenIndex(eq(1L));
-  }
-
-  @Test
-  public void shouldStoreLastWrittenEvenWithFailure() {
+  public void shouldFlushEventWithFailure() {
     // given
     final List<PersistedRaftRecord> entries =
         List.of(
@@ -190,12 +174,13 @@ public class PassiveRoleTest {
     role.handleAppend(request).join();
 
     // then
-    verify(ctx).setLastWrittenIndex(eq(2L));
+    verify(log, times(1)).flush();
   }
 
   @Test
-  public void shouldResetLastWrittenIndexAfterTruncating() {
+  public void shouldFlushAfterTruncating() {
     // given
+    final var orderedFlush = Mockito.inOrder(log);
     final List<PersistedRaftRecord> entries =
         List.of(
             new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
@@ -209,7 +194,7 @@ public class PassiveRoleTest {
         .thenReturn(mock(IndexedRaftLogEntry.class));
     when(ctx.getLog()).thenReturn(log);
     role.handleAppend(request).join();
-    verify(ctx).setLastWrittenIndex(eq(3L));
+    orderedFlush.verify(log, times(1)).flush();
 
     // when - force truncation
     when(log.getLastIndex()).thenReturn(3L);
@@ -219,6 +204,6 @@ public class PassiveRoleTest {
     role.start().join();
 
     // then
-    verify(ctx).setLastWrittenIndex(eq(1L));
+    orderedFlush.verify(log, times(1)).flush();
   }
 }

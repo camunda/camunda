@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 
@@ -58,10 +59,21 @@ public class ExperimentalCfg implements ConfigurationEntry {
     return Optional.ofNullable(maxAppendBatchSize).orElse(DEFAULT_MAX_APPEND_BATCH_SIZE).toBytes();
   }
 
+  /**
+   * @deprecated Deprecated in favor of {@link RaftCfg#getFlush()}. The equivalent is a null
+   *     configuration, e.g. {@link new FlushConfig(null)}. Will be removed in 8.3.0.
+   */
+  @Deprecated(since = "8.2.0", forRemoval = true)
   public boolean isDisableExplicitRaftFlush() {
     return disableExplicitRaftFlush;
   }
 
+  /**
+   * @deprecated Deprecated in favor of {@link RaftCfg#setFlush(FlushConfig)}. To disable, you can
+   *     call {@link RaftCfg#setFlush(FlushConfig)} with a null configuration, e.g. {@code new
+   *     FlushConfig(null)}. Will be removed in 8.3.0.
+   */
+  @Deprecated(since = "8.2.0", forRemoval = true)
   public void setDisableExplicitRaftFlush(final boolean disableExplicitRaftFlush) {
     this.disableExplicitRaftFlush = disableExplicitRaftFlush;
   }

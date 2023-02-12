@@ -326,7 +326,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer>, Health
         .withPartitionId(partition.id().id())
         .withDirectory(partition.dataDirectory())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize())
-        .withFlushExplicitly(storageConfig.shouldFlushExplicitly())
+        .withFlusherFactory(storageConfig.flusherFactory())
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexDensity(storageConfig.getJournalIndexDensity())

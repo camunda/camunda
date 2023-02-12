@@ -26,15 +26,15 @@ final class SegmentLoaderTest {
     final var segmentSize = 4 * 1024 * 1024;
     final var descriptor =
         SegmentDescriptor.builder().withId(1).withIndex(1).withMaxSegmentSize(segmentSize).build();
-    final var lastWrittenIndex = descriptor.index() - 1;
+    final var lastFlushedIndex = descriptor.index() - 1;
     final var segmentLoader = new SegmentLoader(segmentSize * 2, new JournalMetrics("1"));
     final var segmentFile = tmpDir.resolve("segment.log");
 
-    // when - the segment is "unused" if the lastWrittenIndex is less than the expected first index
+    // when - the segment is "unused" if the lastFlushedIndex is less than the expected first index
     // this can happen if we crashed in the middle of creating the new segment
     Files.writeString(segmentFile, "foo");
     segmentLoader.createSegment(
-        segmentFile, descriptor, lastWrittenIndex, 0, new SparseJournalIndex(1));
+        segmentFile, descriptor, lastFlushedIndex, 0, new SparseJournalIndex(1));
 
     // then
     PosixPathAssert.assertThat(segmentFile).hasRealSize(segmentSize);

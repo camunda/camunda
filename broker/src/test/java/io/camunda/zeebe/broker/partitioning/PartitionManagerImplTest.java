@@ -12,34 +12,40 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
-import io.atomix.cluster.Member;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
+import io.atomix.raft.storage.log.DelayedFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
+import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
+import io.atomix.utils.concurrent.Scheduled;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.util.Environment;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(MockitoJUnitRunner.class)
-public final class PartitionManagerImplTest {
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+@ExtendWith(MockitoExtension.class)
+final class PartitionManagerImplTest {
+  private @TempDir Path tempDir;
   private Environment environment;
 
   @Mock private ClusterServices mockClusterServices;
   @Mock private ClusterMembershipService mockMembershipService;
-  @Mock private Member mockMember;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     environment = new Environment();
 
@@ -47,10 +53,10 @@ public final class PartitionManagerImplTest {
   }
 
   @Test
-  public void shouldDisableExplicitFlush() {
+  void shouldUseDelayedFlushStrategy() {
     // given
     final var brokerConfig = newConfig();
-    brokerConfig.getExperimental().setDisableExplicitRaftFlush(true);
+    brokerConfig.getCluster().getRaft().setFlush(new FlushConfig(true, Duration.ofSeconds(5)));
 
     // when
     final var partitionManager =
@@ -68,14 +74,17 @@ public final class PartitionManagerImplTest {
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().shouldFlushExplicitly()).isFalse();
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+        .isInstanceOf(DelayedFlusher.class)
+        .asInstanceOf(InstanceOfAssertFactories.type(DelayedFlusher.class))
+        .hasFieldOrPropertyWithValue("delayTime", Duration.ofSeconds(5));
   }
 
   @Test
-  public void shouldEnableExplicitFlush() {
+  void shouldUseDirectFlushStrategy() {
     // given
     final var brokerConfig = newConfig();
-    brokerConfig.getExperimental().setDisableExplicitRaftFlush(false);
+    brokerConfig.getCluster().getRaft().setFlush(new FlushConfig(true, Duration.ZERO));
 
     // when
     final var partitionManager =
@@ -90,9 +99,64 @@ public final class PartitionManagerImplTest {
             null,
             mock(ExporterRepository.class),
             null);
+
     // then
     final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+        .isInstanceOf(DirectFlusher.class);
+  }
+
+  @Test
+  void shouldUseNoOpFlushStrategy() {
+    // given
+    final var brokerConfig = newConfig();
+    brokerConfig.getCluster().getRaft().setFlush(new FlushConfig(false, Duration.ofSeconds(5)));
+
+    // when
+    final var partitionManager =
+        new PartitionManagerImpl(
+            mock(ActorSchedulingService.class),
+            brokerConfig,
+            new BrokerInfo(1, "dummy"),
+            mockClusterServices,
+            mock(BrokerHealthCheckService.class),
+            null,
+            new ArrayList<>(),
+            null,
+            mock(ExporterRepository.class),
+            null);
+
+    // then
+    final var config = getPartitionGroupConfig(partitionManager);
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+        .isInstanceOf(NoopFlusher.class);
+  }
+
+  @Test
+  void shouldDisableExplicitFlush() {
+    // given
+    final var brokerConfig = newConfig();
+    brokerConfig.getExperimental().setDisableExplicitRaftFlush(true);
+    brokerConfig.getCluster().getRaft().setFlush(new FlushConfig(true, Duration.ofSeconds(5)));
+
+    // when
+    final var partitionManager =
+        new PartitionManagerImpl(
+            mock(ActorSchedulingService.class),
+            brokerConfig,
+            new BrokerInfo(1, "dummy"),
+            mockClusterServices,
+            mock(BrokerHealthCheckService.class),
+            null,
+            new ArrayList<>(),
+            null,
+            mock(ExporterRepository.class),
+            null);
+
+    // then
+    final var config = getPartitionGroupConfig(partitionManager);
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+        .isInstanceOf(NoopFlusher.class);
   }
 
   private RaftPartitionGroupConfig getPartitionGroupConfig(
@@ -102,8 +166,20 @@ public final class PartitionManagerImplTest {
 
   private BrokerCfg newConfig() {
     final var config = new BrokerCfg();
-    config.init(temporaryFolder.getRoot().getAbsolutePath(), environment);
+    config.init(tempDir.toAbsolutePath().toString(), environment);
 
     return config;
+  }
+
+  private static class NoOpContext implements ThreadContext {
+
+    @Override
+    public Scheduled schedule(
+        final Duration initialDelay, final Duration interval, final Runnable callback) {
+      return null;
+    }
+
+    @Override
+    public void execute(final Runnable command) {}
   }
 }

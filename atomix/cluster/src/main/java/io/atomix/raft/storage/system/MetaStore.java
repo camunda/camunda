@@ -19,6 +19,7 @@ package io.atomix.raft.storage.system;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 import io.atomix.cluster.MemberId;
+import io.atomix.raft.metrics.MetaStoreMetrics;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
@@ -55,12 +56,15 @@ public class MetaStore implements AutoCloseable {
   private final File confFile;
   private final MetaStoreSerializer serializer = new MetaStoreSerializer();
   private final FileChannel metaFileChannel;
+  private final MetaStoreMetrics metrics;
 
   public MetaStore(final RaftStorage storage) throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
       throw new IllegalArgumentException(
           String.format("Can't create storage directory [%s].", storage.directory()));
     }
+
+    metrics = new MetaStoreMetrics(String.valueOf(storage.partitionId()));
 
     // Note that for raft safety, irrespective of the storage level, <term, vote> metadata is always
     // persisted on disk.
@@ -100,11 +104,11 @@ public class MetaStore implements AutoCloseable {
 
   private void initializeMetaBuffer() {
     final var term = loadTerm();
-    final long index = loadLastWrittenIndex();
+    final long index = lastFlushedIndex();
     final var voted = loadVote();
     metaBuffer.put(0, VERSION);
     storeTerm(term);
-    storeLastWrittenIndex(index);
+    storeLastFlushedIndex(index);
     storeVote(voted);
   }
 
@@ -173,21 +177,21 @@ public class MetaStore implements AutoCloseable {
     return id.isEmpty() ? null : MemberId.from(id);
   }
 
-  public synchronized long loadLastWrittenIndex() {
+  public synchronized long lastFlushedIndex() {
     try {
       metaFileChannel.read(metaBuffer, 0);
       metaBuffer.position(0);
     } catch (final IOException e) {
       throw new StorageException(e);
     }
-    return serializer.readLastWrittenIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 
-  public synchronized void storeLastWrittenIndex(final long index) {
+  public synchronized void storeLastFlushedIndex(final long index) {
     log.trace("Store last flushed index {}", index);
 
-    try {
-      serializer.writeLastWrittenIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+    try (final var ignored = metrics.observeLastFlushedIndexUpdate()) {
+      serializer.writeLastFlushedIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
       metaFileChannel.write(metaBuffer, 0);
       metaBuffer.position(0);
     } catch (final IOException e) {

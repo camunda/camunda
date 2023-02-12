@@ -21,7 +21,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.storage.log.RaftLog;
+import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.system.MetaStore;
+import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -57,10 +59,10 @@ public final class RaftStorage {
   private final File directory;
   private final int maxSegmentSize;
   private final long freeDiskSpace;
-  private final boolean flushExplicitly;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final int journalIndexDensity;
   private final boolean preallocateSegmentFiles;
+  private final RaftLogFlusher.Factory flusherFactory;
 
   private RaftStorage(
       final String prefix,
@@ -68,7 +70,7 @@ public final class RaftStorage {
       final File directory,
       final int maxSegmentSize,
       final long freeDiskSpace,
-      final boolean flushExplicitly,
+      final RaftLogFlusher.Factory flusherFactory,
       final ReceivableSnapshotStore persistedSnapshotStore,
       final int journalIndexDensity,
       final boolean preallocateSegmentFiles) {
@@ -77,7 +79,7 @@ public final class RaftStorage {
     this.directory = directory;
     this.maxSegmentSize = maxSegmentSize;
     this.freeDiskSpace = freeDiskSpace;
-    this.flushExplicitly = flushExplicitly;
+    this.flusherFactory = flusherFactory;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexDensity = journalIndexDensity;
     this.preallocateSegmentFiles = preallocateSegmentFiles;
@@ -179,11 +181,7 @@ public final class RaftStorage {
    *
    * @return The opened log.
    */
-  public RaftLog openLog() {
-    final long lastWrittenIndex;
-    try (final MetaStore metaStore = openMetaStore()) {
-      lastWrittenIndex = metaStore.loadLastWrittenIndex();
-    }
+  public RaftLog openLog(final MetaStore metaStore, final ThreadContext flushContext) {
 
     return RaftLog.builder()
         .withName(prefix)
@@ -191,10 +189,11 @@ public final class RaftStorage {
         .withDirectory(directory)
         .withMaxSegmentSize(maxSegmentSize)
         .withFreeDiskSpace(freeDiskSpace)
-        .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastWrittenIndex(lastWrittenIndex)
+        .withLastFlushedIndex(metaStore.lastFlushedIndex())
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
+        .withFlushMetaStore(metaStore::storeLastFlushedIndex)
+        .withFlusher(flusherFactory.createFlusher(flushContext))
         .build();
   }
 
@@ -208,12 +207,18 @@ public final class RaftStorage {
    *
    * <p>The storage directory is the directory to which all {@link RaftLog}s write files. Segment
    * files for multiple logs may be stored in the storage directory, and files for each log instance
-   * will be identified by the {@code name} provided when the log is {@link #openLog() opened}.
+   * will be identified by the {@code name} provided when the log is {@link #openLog(MetaStore,
+   * ThreadContext) opened}.
    *
    * @return The storage directory.
    */
   public File directory() {
     return directory;
+  }
+
+  /** The ID of the partition associated with this storage. */
+  public int partitionId() {
+    return partitionId;
   }
 
   /**
@@ -239,7 +244,8 @@ public final class RaftStorage {
         System.getProperty("atomix.data", System.getProperty("user.dir"));
     private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
     private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024;
-    private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
+    private static final RaftLogFlusher.Factory DEFAULT_FLUSHER_FACTORY =
+        RaftLogFlusher.Factory::direct;
     private static final int DEFAULT_JOURNAL_INDEX_DENSITY = 100;
     private static final boolean DEFAULT_PREALLOCATE_SEGMENT_FILES = true;
 
@@ -250,7 +256,7 @@ public final class RaftStorage {
     private File directory = new File(DEFAULT_DIRECTORY);
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
-    private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
+    private RaftLogFlusher.Factory flusherFactory = DEFAULT_FLUSHER_FACTORY;
     private ReceivableSnapshotStore persistedSnapshotStore;
     private int journalIndexDensity = DEFAULT_JOURNAL_INDEX_DENSITY;
     private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
@@ -318,14 +324,14 @@ public final class RaftStorage {
     }
 
     /**
-     * Sets whether to flush logs to disk to guarantee correctness. If true, followers will flush on
-     * every append, and the leader will flush on commit.
+     * Sets the {@link RaftLogFlusher.Factory} to create a new flushing strategy for the {@link
+     * RaftLog} when {@link #openLog(MetaStore, ThreadContext)} is called.
      *
-     * @param flushExplicitly whether to flush buffers to disk
+     * @param flusherFactory factory to create the flushing strategy for the {@link RaftLog}
      * @return the storage builder.
      */
-    public Builder withFlushExplicitly(final boolean flushExplicitly) {
-      this.flushExplicitly = flushExplicitly;
+    public Builder withFlusherFactory(final RaftLogFlusher.Factory flusherFactory) {
+      this.flusherFactory = flusherFactory;
       return this;
     }
 
@@ -382,7 +388,7 @@ public final class RaftStorage {
           directory,
           maxSegmentSize,
           freeDiskSpace,
-          flushExplicitly,
+          flusherFactory,
           persistedSnapshotStore,
           journalIndexDensity,
           preallocateSegmentFiles);
