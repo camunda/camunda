@@ -134,7 +134,7 @@
     <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
     <plugin.version.scala>4.7.1</plugin.version.scala>
-    <plugin.version.shade>3.4.0</plugin.version.shade>
+    <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.2.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M7</plugin.version.surefire>
