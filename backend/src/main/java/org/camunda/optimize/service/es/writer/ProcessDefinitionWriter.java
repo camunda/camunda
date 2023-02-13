@@ -11,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -30,6 +32,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -76,6 +79,23 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
     writeProcessDefinitionInformation(procDefs);
   }
 
+  public void markDefinitionAsDeleted(final String definitionId) {
+    log.debug("Marking process definition with ID {} as deleted", definitionId);
+    try {
+      final UpdateRequest updateRequest = new UpdateRequest()
+        .index(PROCESS_DEFINITION_INDEX_NAME)
+        .id(definitionId)
+        .script(MARK_AS_DELETED_SCRIPT)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      esClient.update(updateRequest);
+    } catch (Exception e) {
+      throw new OptimizeRuntimeException(
+        String.format("There was a problem when trying to mark process definition with ID %s as deleted", definitionId),
+        e
+      );
+    }
+  }
+
   public boolean markRedeployedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> importedDefinitions) {
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
     // We must partition this into batches to avoid the maximum ES boolQuery clause limit being reached
@@ -114,7 +134,7 @@ public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
         }
       );
     if (definitionsUpdated.get()) {
-      log.debug("Marked old definitions with new deployments as deleted");
+      log.debug("Marked old process definitions with new deployments as deleted");
     }
     return definitionsUpdated.get();
   }

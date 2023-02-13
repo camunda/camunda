@@ -390,7 +390,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
     assertThat(noTenantSearchResponse.getResult())
       .singleElement()
@@ -439,7 +439,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(noTenantSearchResponse.getTotal()).isEqualTo(1);
     assertThat(noTenantSearchResponse.getResult())
       .singleElement()
@@ -484,7 +484,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
@@ -514,7 +514,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
@@ -807,7 +807,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
@@ -844,7 +844,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(searchResponse.getTotal()).isEqualTo(2);
     assertThat(searchResponse.getResult())
       .hasSize(2)
@@ -870,7 +870,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()
@@ -897,7 +897,7 @@ public class AssigneeRestServiceIT extends AbstractIT {
         .build()
     );
 
-    //then
+    // then
     assertThat(searchResponse.getTotal()).isEqualTo(1);
     assertThat(searchResponse.getResult())
       .singleElement()

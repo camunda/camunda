@@ -31,7 +31,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.SORT_O
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends RetryBackoffEngineEntityFetcher<DEF> {
+public abstract class DefinitionFetcher<DEF extends DefinitionEngineDto> extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 

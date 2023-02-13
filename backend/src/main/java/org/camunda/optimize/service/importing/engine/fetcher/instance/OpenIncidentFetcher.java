@@ -26,7 +26,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.OPEN_I
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher<HistoricIncidentEngineDto> {
+public class OpenIncidentFetcher extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 

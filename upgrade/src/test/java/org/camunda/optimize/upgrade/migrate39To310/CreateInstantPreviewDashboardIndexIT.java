@@ -28,7 +28,7 @@ public class CreateInstantPreviewDashboardIndexIT extends AbstractUpgrade310IT {
   private boolean indexExists(final String versionedIndexName) {
     try {
       GetIndexRequest request = new GetIndexRequest(versionedIndexName);
-      return prefixAwareClient.getHighLevelClient().indices().exists(request, RequestOptions.DEFAULT);
+      return prefixAwareClient.getHighLevelClient().indices().exists(request, prefixAwareClient.requestOptions());
     } catch (IOException e) {
       return false;
     }

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
-import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher;
@@ -14,19 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotFoundException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Supplier;
 
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> extends EngineEntityFetcher {
+public abstract class RetryBackoffEngineEntityFetcher extends EngineEntityFetcher {
 
   @Autowired
-  private BackoffCalculator backoffCalculator;
+  protected BackoffCalculator backoffCalculator;
 
   protected RetryBackoffEngineEntityFetcher(final EngineContext engineContext) {
     super(engineContext);
@@ -59,40 +55,14 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto> ext
     return result;
   }
 
-  protected List<ENG> fetchWithRetryIgnoreClientError(Supplier<List<ENG>> fetchFunction) {
-    List<ENG> result = null;
-    try {
-      while (result == null) {
-        try {
-          result = fetchFunction.get();
-        } catch (ClientErrorException ex) {
-          logger.warn("ClientError on fetching entity: {}", ex.getMessage(), ex);
-          result = new ArrayList<>();
-        } catch (IllegalStateException e) {
-          throw e;
-        } catch (Exception ex) {
-          logError(ex);
-          long timeToSleep = backoffCalculator.calculateSleepTime();
-          logDebugSleepInformation(timeToSleep);
-          Thread.sleep(timeToSleep);
-        }
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new OptimizeRuntimeException("Was interrupted while fetching.", e);
-    }
-    backoffCalculator.resetBackoff();
-    return result;
-  }
-
-  private void logDebugSleepInformation(long sleepTime) {
+  protected void logDebugSleepInformation(long sleepTime) {
     logger.debug(
       "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
       sleepTime
     );
   }
 
-  private void logError(Exception e) {
+  protected void logError(Exception e) {
     StringBuilder errorMessageBuilder = new StringBuilder();
     errorMessageBuilder.append(String.format(
       "Error during fetching of entities. Please check the connection with [%s]!",

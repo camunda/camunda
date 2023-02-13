@@ -26,7 +26,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.VARIAB
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricVariableUpdateInstanceDto> {
+public class VariableUpdateInstanceFetcher extends RetryBackoffEngineEntityFetcher {
 
   private static final String PARAM_EXCLUDE_OBJECT_VALUES = "excludeObjectValues";
   // @formatter:off

@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -67,6 +68,23 @@ public class DecisionDefinitionWriter {
     writeDecisionDefinitionInformation(decisionDefinitionOptimizeDtos);
   }
 
+  public void markDefinitionAsDeleted(final String definitionId) {
+    log.debug("Marking decision definition with ID {} as deleted", definitionId);
+    try {
+      final UpdateRequest updateRequest = new UpdateRequest()
+        .index(DECISION_DEFINITION_INDEX_NAME)
+        .id(definitionId)
+        .script(MARK_AS_DELETED_SCRIPT)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      esClient.update(updateRequest);
+    } catch (Exception e) {
+      throw new OptimizeRuntimeException(
+        String.format("There was a problem when trying to mark decision definition with ID %s as deleted", definitionId),
+        e
+      );
+    }
+  }
+
   public boolean markRedeployedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> importedDefinitions) {
     final AtomicBoolean definitionsUpdated = new AtomicBoolean(false);
     // We must partition this into batches to avoid the maximum ES boolQuery clause limit being reached
@@ -102,7 +120,7 @@ public class DecisionDefinitionWriter {
           }
         });
     if (definitionsUpdated.get()) {
-      log.debug("Marked old definitions with new deployments as deleted");
+      log.debug("Marked old decision definitions with new deployments as deleted");
     }
     return definitionsUpdated.get();
   }

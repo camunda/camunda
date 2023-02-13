@@ -279,9 +279,9 @@ public class ProcessViewRawData extends ProcessViewPart {
     } else if (sortByField.equals(ProcessInstanceIndex.DURATION)) {
       params.put("duration", ProcessInstanceIndex.DURATION);
       params.put("startDate", ProcessInstanceIndex.START_DATE);
-      //when running the query, ES throws an error message for checking the existence of the value of a field with
+      // when running the query, ES throws an error message for checking the existence of the value of a field with
       // doc['field'].value == null
-      //and recommends using doc['field'].size() == 0
+      // and recommends using doc['field'].size() == 0
       //@formatter:off
       String query =
         "if (doc[params.duration].size() == 0) {" +

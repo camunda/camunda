@@ -778,6 +778,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .id(key)
       .key(key)
       .version("1")
+      .dmn10Xml("someXml")
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .name(name)
       .build();
@@ -793,6 +794,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .key(key)
       .name(name)
       .version("1")
+      .bpmn20Xml("someXml")
       .dataSource(new EngineDataSourceDto(DEFAULT_ENGINE_ALIAS))
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(

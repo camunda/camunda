@@ -26,7 +26,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.STARTE
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricActivityInstanceEngineDto> {
+public class RunningActivityInstanceFetcher extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 

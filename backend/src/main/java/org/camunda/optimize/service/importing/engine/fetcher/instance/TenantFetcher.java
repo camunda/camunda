@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.TENANT
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class TenantFetcher extends RetryBackoffEngineEntityFetcher<TenantEngineDto> {
+public class TenantFetcher extends RetryBackoffEngineEntityFetcher {
 
   // @formatter:off
   private static final GenericType<List<TenantEngineDto>> TENANT_LIST_TYPE = new GenericType<List<TenantEngineDto>>() {};

@@ -24,7 +24,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RE
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricDecisionInstanceDto> {
+public class DecisionInstanceFetcher extends RetryBackoffEngineEntityFetcher {
   private static final String EVALUATED_AFTER = "evaluatedAfter";
   private static final String EVALUATED_AT = "evaluatedAt";
 

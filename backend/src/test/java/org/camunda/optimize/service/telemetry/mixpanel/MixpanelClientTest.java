@@ -130,7 +130,7 @@ public class MixpanelClientTest {
     // when
     final MixpanelEvent event = new MixpanelEvent(EventReportingEvent.HEARTBEAT, new MixpanelEventProperties());
     assertThatThrownBy(() -> mixpanelClient.importEvent(event))
-      //then
+      // then
       .isInstanceOf(OptimizeRuntimeException.class)
       .hasMessage("Unexpected response status on a mixpanel import: 400, response body: {}");
   }
@@ -153,7 +153,7 @@ public class MixpanelClientTest {
     // when
     final MixpanelEvent event = new MixpanelEvent(EventReportingEvent.HEARTBEAT, new MixpanelEventProperties());
     assertThatThrownBy(() -> mixpanelClient.importEvent(event))
-      //then
+      // then
       .isInstanceOf(OptimizeRuntimeException.class)
       .hasMessage("Mixpanel import was not successful, error: failure");
   }

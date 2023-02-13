@@ -26,7 +26,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.STARTE
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricProcessInstanceDto> {
+public class RunningProcessInstanceFetcher extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 

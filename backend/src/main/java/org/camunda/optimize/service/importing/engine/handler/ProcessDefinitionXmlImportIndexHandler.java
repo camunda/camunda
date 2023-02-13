@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -92,6 +93,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends DefinitionXmlImportI
   private QueryBuilder buildBasicQuery() {
     return QueryBuilders.boolQuery()
       .mustNot(existsQuery(PROCESS_DEFINITION_XML))
+      .must(termQuery(DEFINITION_DELETED, false))
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineContext.getEngineAlias()));
   }

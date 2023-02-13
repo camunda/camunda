@@ -64,11 +64,10 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractEngine
     );
   }
 
-  private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(
-    EngineContext engineContext) {
+  private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(EngineContext engineContext) {
     return new ProcessDefinitionXmlEngineImportMediator(
       importIndexHandlerRegistry.getProcessDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext),
+      beanFactory.getBean(ProcessDefinitionXmlFetcher.class, engineContext, processDefinitionWriter),
       new ProcessDefinitionXmlImportService(configurationService, engineContext, processDefinitionXmlWriter),
       configurationService,
       new BackoffCalculator(configurationService)

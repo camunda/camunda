@@ -428,37 +428,6 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void xmlFetchingIsNotRetriedOn4xx() {
-    final ProcessDefinitionOptimizeDto procDef = ProcessDefinitionOptimizeDto.builder()
-      .id("123")
-      .key("lol")
-      .version("1")
-      .dataSource(new EngineDataSourceDto("1"))
-      .build();
-
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      PROCESS_DEFINITION_INDEX_NAME,
-      procDef.getId(),
-      procDef
-    );
-    importAllEngineEntitiesFromScratch();
-
-    ProcessInstanceEngineDto serviceTask = deployAndStartSimpleServiceTaskProcess();
-    String definitionId = serviceTask.getDefinitionId();
-    importAllEngineEntitiesFromLastIndex();
-
-    SearchResponse response = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    assertThat(response.getHits().getTotalHits().value).isEqualTo(2L);
-    response.getHits().forEach((SearchHit hit) -> {
-      Map<String, Object> source = hit.getSourceAsMap();
-      if (source.get("id").equals(definitionId)) {
-        assertThat(source.get("bpmn20Xml")).isNotNull();
-      }
-    });
-  }
-
-  @Test
   public void processInstanceStateIsImported() {
     // given
     createStartAndCancelUserTaskProcess();

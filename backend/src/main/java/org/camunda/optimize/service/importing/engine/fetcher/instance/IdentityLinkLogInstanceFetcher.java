@@ -27,7 +27,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.OCCURR
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class IdentityLinkLogInstanceFetcher extends RetryBackoffEngineEntityFetcher<HistoricIdentityLinkLogDto> {
+public class IdentityLinkLogInstanceFetcher extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 

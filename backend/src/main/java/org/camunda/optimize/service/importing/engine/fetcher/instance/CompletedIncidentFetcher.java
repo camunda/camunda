@@ -27,7 +27,7 @@ import static org.camunda.optimize.service.util.importing.EngineConstants.MAX_RE
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedIncidentFetcher
-  extends RetryBackoffEngineEntityFetcher<HistoricIncidentEngineDto> {
+  extends RetryBackoffEngineEntityFetcher {
 
   private DateTimeFormatter dateTimeFormatter;
 

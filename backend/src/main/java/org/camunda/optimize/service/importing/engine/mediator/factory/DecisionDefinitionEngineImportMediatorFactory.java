@@ -74,7 +74,7 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractEngin
     EngineContext engineContext) {
     return new DecisionDefinitionXmlEngineImportMediator(
       importIndexHandlerRegistry.getDecisionDefinitionXmlImportIndexHandler(engineContext.getEngineAlias()),
-      beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext),
+      beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext, decisionDefinitionWriter),
       new DecisionDefinitionXmlImportService(
         configurationService,
         engineContext,

@@ -504,7 +504,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @ParameterizedTest
   @MethodSource("definitionType")
   public void bulkDeleteAlertsNoUserAuthorization(final DefinitionType definitionType) {
-    //given
+    // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);

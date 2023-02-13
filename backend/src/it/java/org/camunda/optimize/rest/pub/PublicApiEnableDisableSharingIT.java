@@ -26,7 +26,7 @@ public class PublicApiEnableDisableSharingIT extends AbstractIT {
     settings.setSharingEnabled(!enableSharing);
     embeddedOptimizeExtension.getSettingsService().setSettings(settings);
 
-    //then
+    // then
     // making sure the setting was set correctly
     assertThat(embeddedOptimizeExtension.getSettingsService().getSettings().getSharingEnabled()).contains(!enableSharing);
     // making sure the setting was also propagated to the configuration service

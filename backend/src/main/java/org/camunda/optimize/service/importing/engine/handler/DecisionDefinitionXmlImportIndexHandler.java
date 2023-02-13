@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
+import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -93,6 +94,7 @@ public class DecisionDefinitionXmlImportIndexHandler extends DefinitionXmlImport
   private QueryBuilder buildBasicQuery() {
     return QueryBuilders.boolQuery()
       .mustNot(existsQuery(DecisionDefinitionIndex.DECISION_DEFINITION_XML))
+      .must(termQuery(DEFINITION_DELETED, false))
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.type, DataImportSourceType.ENGINE))
       .must(termQuery(DATA_SOURCE + "." + DataSourceDto.Fields.name, engineContext.getEngineAlias()));
   }

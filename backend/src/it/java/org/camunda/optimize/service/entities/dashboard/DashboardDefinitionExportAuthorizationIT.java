@@ -31,7 +31,7 @@ public class DashboardDefinitionExportAuthorizationIT extends AbstractExportImpo
     // given
     final String dashboardId = dashboardClient.createEmptyDashboard(null);
 
-    //when
+    // when
     final Response response;
     if (superUserType == SuperUserType.USER) {
       response = exportClient.exportDashboardAsUser("demo", "demo", dashboardId, "my_file.json");

@@ -7,56 +7,38 @@ package org.camunda.optimize.service.importing.engine.fetcher.instance;
 
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
+import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 
 import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionDefinitionXmlFetcher extends RetryBackoffEngineEntityFetcher<DecisionDefinitionXmlEngineDto> {
+public class DecisionDefinitionXmlFetcher extends AbstractDefinitionXmlFetcher<DecisionDefinitionXmlEngineDto> {
 
-  public DecisionDefinitionXmlFetcher(final EngineContext engineContext) {
+  private final DecisionDefinitionWriter decisionDefinitionWriter;
+
+  public DecisionDefinitionXmlFetcher(final EngineContext engineContext,
+                                      final DecisionDefinitionWriter decisionDefinitionWriter) {
     super(engineContext);
+    this.decisionDefinitionWriter = decisionDefinitionWriter;
   }
 
-  public List<DecisionDefinitionXmlEngineDto> fetchXmlsForDefinitions(IdSetBasedImportPage page) {
-    final Set<String> ids = page.getIds();
-    return fetchXmlsForDefinitions(new ArrayList<>(ids));
+  @Override
+  protected void markDefinitionAsDeleted(final String definitionId) {
+    decisionDefinitionWriter.markDefinitionAsDeleted(definitionId);
   }
 
-  private List<DecisionDefinitionXmlEngineDto> fetchXmlsForDefinitions(final List<String> decisionDefinitionIds) {
-    logger.debug("Fetching decision definition xml ...");
-    final List<DecisionDefinitionXmlEngineDto> xmls = new ArrayList<>(decisionDefinitionIds.size());
-    final long requestStart = System.currentTimeMillis();
-    for (String processDefinitionId : decisionDefinitionIds) {
-      final List<DecisionDefinitionXmlEngineDto> singleXml = fetchWithRetryIgnoreClientError(
-        () -> performGetDecisionDefinitionXmlRequest(processDefinitionId)
-      );
-      xmls.addAll(singleXml);
-    }
-    final long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] decision definition xmls within [{}] ms", decisionDefinitionIds.size(), requestEnd - requestStart
-    );
-    return xmls;
+  @Override
+  protected String getRequestPath() {
+    return DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE;
   }
 
-  private List<DecisionDefinitionXmlEngineDto> performGetDecisionDefinitionXmlRequest(final String decisionDefinitionId) {
-    final DecisionDefinitionXmlEngineDto decisionDefinitionXmlEngineDto = getEngineClient()
-      .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE)
-      .resolveTemplate("id", decisionDefinitionId)
-      .request(MediaType.APPLICATION_JSON)
-      .get(DecisionDefinitionXmlEngineDto.class);
-    return Collections.singletonList(decisionDefinitionXmlEngineDto);
+  @Override
+  protected Class<DecisionDefinitionXmlEngineDto> getOptimizeClassForDefinitionResponse() {
+    return DecisionDefinitionXmlEngineDto.class;
   }
+
 }
