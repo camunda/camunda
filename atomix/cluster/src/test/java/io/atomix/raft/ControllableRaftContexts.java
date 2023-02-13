@@ -42,6 +42,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -395,7 +396,7 @@ public final class ControllableRaftContexts {
       FileUtil.deleteFolderIfExists(dataDirectory);
     } catch (final IOException e) {
       LOG.error("Failed to delete directory {} of member {}", dataDirectory, memberId.id());
-      throw new RuntimeException(e);
+      throw new UncheckedIOException(e);
     }
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
     newContext.getCluster().bootstrap(raftServers.keySet());
