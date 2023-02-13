@@ -31,7 +31,7 @@
     <version.zeebe>8.2.0-alpha4</version.zeebe>
     <version.identity>8.2.0-alpha4</version.identity>
     <version.log4j>2.17.2</version.log4j>
-    <version.elasticsearch>7.17.8</version.elasticsearch>
+    <version.elasticsearch>7.17.9</version.elasticsearch>
     <version.spring.boot>2.7.6</version.spring.boot>
     <version.junit>4.13.2</version.junit>
     <version.springdoc>1.6.14</version.springdoc>
