@@ -25,4 +25,4 @@ icon: https://console.cloud.camunda.io/favicon.ico
 dependencies:
 - name: infra-preview-environments-ingress
   repository: oci://registry.camunda.cloud/library
-  version: 1.1.1
+  version: 1.1.3

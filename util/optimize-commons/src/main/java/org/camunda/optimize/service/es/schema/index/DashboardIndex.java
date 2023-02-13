@@ -27,7 +27,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT
 
 public class DashboardIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 6;
+  public static final int VERSION = 7;
 
   public static final String ID = BaseDashboardDefinitionDto.Fields.id;
   public static final String NAME = BaseDashboardDefinitionDto.Fields.name;
@@ -39,6 +39,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String REPORTS = DashboardDefinitionRestDto.Fields.reports;
   public static final String COLLECTION_ID = BaseDashboardDefinitionDto.Fields.collectionId;
   public static final String MANAGEMENT_DASHBOARD = BaseDashboardDefinitionDto.Fields.managementDashboard;
+  public static final String INSTANT_PREVIEW_DASHBOARD = BaseDashboardDefinitionDto.Fields.instantPreviewDashboard;
   public static final String AVAILABLE_FILTERS = BaseDashboardDefinitionDto.Fields.availableFilters;
 
   public static final String POSITION = ReportLocationDto.Fields.position;
@@ -102,6 +103,9 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
         .field(MAPPING_PROPERTY_TYPE,TYPE_KEYWORD)
       .endObject()
       .startObject(MANAGEMENT_DASHBOARD)
+        .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
+      .endObject()
+      .startObject(INSTANT_PREVIEW_DASHBOARD)
         .field(MAPPING_PROPERTY_TYPE,TYPE_BOOLEAN)
       .endObject()
       .startObject(AVAILABLE_FILTERS)

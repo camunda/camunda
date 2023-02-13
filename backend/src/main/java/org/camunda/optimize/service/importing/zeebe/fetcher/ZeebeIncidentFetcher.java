@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.incident.ZeebeIncidentRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -15,8 +14,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Set;
-
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_INCIDENT_INDEX_NAME;
 
 @Component
@@ -24,10 +21,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ZEEBE_INCID
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ZeebeIncidentFetcher extends AbstractZeebeRecordFetcher<ZeebeIncidentRecordDto> {
 
-  private static final Set<String> INTENTS = Set.of(
-    IncidentIntent.CREATED.name(),
-    IncidentIntent.RESOLVED.name()
-  );
 
   public ZeebeIncidentFetcher(final int partitionId,
                               final OptimizeElasticsearchClient esClient,
@@ -39,11 +32,6 @@ public class ZeebeIncidentFetcher extends AbstractZeebeRecordFetcher<ZeebeIncide
   @Override
   protected String getBaseIndexName() {
     return ZEEBE_INCIDENT_INDEX_NAME;
-  }
-
-  @Override
-  protected Set<String> getIntentsForRecordType() {
-    return INTENTS;
   }
 
   @Override

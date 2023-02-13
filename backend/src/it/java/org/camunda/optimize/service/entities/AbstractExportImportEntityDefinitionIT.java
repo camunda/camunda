@@ -589,7 +589,7 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
       .build();
   }
 
-  private static ProcessReportDataDto createSimpleProcessReportData() {
+  protected static ProcessReportDataDto createSimpleProcessReportData() {
     return TemplatedProcessReportDataBuilder
       .createReportData()
       // using definition key as identifier to ensure we have consistent identifiers

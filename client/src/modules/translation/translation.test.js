@@ -51,6 +51,7 @@ it('return an error message if key does not exist', async () => {
 });
 
 it('should get the language file depending on the browser language', async () => {
+  await initTranslation();
   expect(request.get.mock.calls[0][1]).toEqual({localeCode: 'de', version: '2.7.0'});
 });
 

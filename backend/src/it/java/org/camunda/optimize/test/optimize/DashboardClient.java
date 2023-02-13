@@ -36,6 +36,12 @@ public class DashboardClient {
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public DashboardDefinitionRestDto getInstantPreviewDashboard(String processDefinitionKey, String template) {
+    return getRequestExecutor()
+      .buildGetInstantPreviewDashboardRequest(processDefinitionKey, template)
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public AuthorizedDashboardDefinitionResponseDto getDashboardAsUser(final String dashboardId, String username,
                                                                      String password) {
     return getRequestExecutor()

@@ -26,9 +26,7 @@ spec:
           effect: "NoSchedule"
       volumes:
         - name: ssd-storage
-          hostPath:
-            path: /mnt/disks/array0
-            type: Directory
+          emptyDir: {}
       initContainers:
         - name: init-sysctl-max-map-count
           image: busybox
@@ -101,7 +99,7 @@ spec:
             - name: cluster.initial_master_nodes
               value: "elasticsearch-0"
             - name: ES_JAVA_OPTS
-              value: "-Xms8g -Xmx8g"
+              value: "-Xms4g -Xmx4g"
             - name: bootstrap.memory_lock
               value: "false"
           resources:

@@ -20,6 +20,7 @@ export default function BucketSize({
     result,
   },
   onChange,
+  disabled,
 }) {
   const isDistributedByVariable =
     distributedBy?.type === 'variable' &&
@@ -67,6 +68,8 @@ export default function BucketSize({
       <fieldset className="BucketSize">
         <legend>
           <Switch
+            title={disabled ? t('report.updateReportPreview.cannotUpdate') : undefined}
+            disabled={disabled}
             checked={active}
             onChange={({target: {checked}}) => {
               const change = {[customBucket]: {active: {$set: checked}}};

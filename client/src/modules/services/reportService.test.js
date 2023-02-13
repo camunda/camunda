@@ -66,49 +66,82 @@ it('should add a label to data with variable value key "missing"', () => {
   });
 });
 
-it('should convert group by none distribute by process hypermap report to normal map report', async () => {
-  const hyperMapReport = {
-    data: {
-      groupBy: {type: 'none'},
-      distributedBy: {type: 'process'},
-    },
-    result: {
-      type: 'hyperMap',
+describe('getReportResult', () => {
+  it('should convert group by none distribute by process hypermap report to normal map report', async () => {
+    const hyperMapReport = {
+      data: {
+        groupBy: {type: 'none'},
+        distributedBy: {type: 'process'},
+      },
+      result: {
+        type: 'hyperMap',
+        measures: [
+          {
+            type: 'hyperMap',
+            data: [
+              {
+                key: '____none',
+                label: '____none',
+                value: [
+                  {key: 'definition1', value: 12, label: 'Definition 1'},
+                  {key: 'definition2', value: 34, label: 'Definition 2'},
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    post.mockReturnValueOnce({json: () => hyperMapReport});
+
+    expect(await getReportResult(hyperMapReport)).toEqual({
+      data: [
+        {key: 'definition1', value: 12, label: 'Definition 1'},
+        {key: 'definition2', value: 34, label: 'Definition 2'},
+      ],
+      type: 'map',
       measures: [
         {
-          type: 'hyperMap',
+          type: 'map',
           data: [
-            {
-              key: '____none',
-              label: '____none',
-              value: [
-                {key: 'definition1', value: 12, label: 'Definition 1'},
-                {key: 'definition2', value: 34, label: 'Definition 2'},
-              ],
-            },
+            {key: 'definition1', value: 12, label: 'Definition 1'},
+            {key: 'definition2', value: 34, label: 'Definition 2'},
           ],
         },
       ],
-    },
-  };
+    });
+  });
 
-  post.mockReturnValueOnce({json: () => hyperMapReport});
-
-  expect(await getReportResult(hyperMapReport)).toEqual({
-    data: [
-      {key: 'definition1', value: 12, label: 'Definition 1'},
-      {key: 'definition2', value: 34, label: 'Definition 2'},
-    ],
-    type: 'map',
-    measures: [
-      {
-        type: 'map',
-        data: [
-          {key: 'definition1', value: 12, label: 'Definition 1'},
-          {key: 'definition2', value: 34, label: 'Definition 2'},
+  it('default missing value to empty array', async () => {
+    const hyperMapReport = {
+      data: {
+        groupBy: {type: 'none'},
+        distributedBy: {type: 'process'},
+      },
+      result: {
+        type: 'hyperMap',
+        measures: [
+          {
+            type: 'hyperMap',
+            data: [],
+          },
         ],
       },
-    ],
+    };
+
+    post.mockReturnValueOnce({json: () => hyperMapReport});
+
+    expect(await getReportResult(hyperMapReport)).toEqual({
+      data: [],
+      type: 'map',
+      measures: [
+        {
+          type: 'map',
+          data: [],
+        },
+      ],
+    });
   });
 });
 

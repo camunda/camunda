@@ -114,3 +114,12 @@ it('should find an apropriate bucket size and baseline when enabling the switch 
     true
   );
 });
+
+it('should disable the switch and set the tooltip message when disabled', () => {
+  const node = shallow(<BucketSize report={report} disabled />);
+
+  expect(node.find('Switch').prop('title')).toBe(
+    'This function only works with automatic preview update turned on'
+  );
+  expect(node.find('Switch').prop('disabled')).toBe(true);
+});

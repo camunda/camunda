@@ -29,6 +29,7 @@ public class ConfigurationServiceTest {
   private static final int DEFAULT_AUTH_TOKEN_LIFE_MIN = 5;
   private static final int CUSTOM_AUTH_TOKEN_LIFE_MIN = 6;
   private static final String TOKEN_SECRET = "someSecret";
+  private static final long HSTS_MAX_AGE = 31536000;
   private static final Boolean DEFAULT_FIRST_ENGINE_IMPORT_ENABLED = false;
   private static final Boolean CUSTOM_FIRST_ENGINE_IMPORT_ENABLED = true;
   private static final Boolean DEFAULT_SECOND_ENGINE_IMPORT_ENABLED = true;
@@ -171,6 +172,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
     environmentVariablesExtension.set(
@@ -226,6 +228,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
@@ -269,6 +272,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(true));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", "wrong");
+    environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(false));
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_NAME", "wrong");
     environmentVariablesExtension.set("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT + 1));
@@ -304,6 +308,7 @@ public class ConfigurationServiceTest {
     System.setProperty("CAMUNDA_OPTIMIZE_ENTERPRISE", String.valueOf(false));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
@@ -359,6 +364,7 @@ public class ConfigurationServiceTest {
     System.setProperty("OPTIMIZE_SUPER_GROUP_IDS", CUSTOM_SUPER_GROUP_IDS);
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_AUTH_TOKEN_SECRET", TOKEN_SECRET);
+    System.setProperty("CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE", String.valueOf(HSTS_MAX_AGE));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_ENABLED", String.valueOf(true));
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_NAME", CUSTOM_ZEEBE_RECORD_PREFIX);
     System.setProperty("CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT", String.valueOf(CUSTOM_ZEEBE_PARTITION_COUNT));
@@ -468,6 +474,8 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getSecurityConfiguration().getAuth().getCookieConfiguration().isSameSiteFlagEnabled())
       .isTrue();
     assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret()).isEmpty();
+    assertThat(underTest.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge())
+      .isEqualTo(63072000);
     assertThat(underTest.getConfiguredZeebe().isEnabled()).isFalse();
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo("zeebe-record");
     assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(1);
@@ -513,6 +521,8 @@ public class ConfigurationServiceTest {
     assertThat(underTest.getSecurityConfiguration().getAuth().getTokenSecret()).isPresent()
       .get()
       .isEqualTo(TOKEN_SECRET);
+    assertThat(underTest.getSecurityConfiguration().getResponseHeaders().getHttpStrictTransportSecurityMaxAge())
+      .isEqualTo(HSTS_MAX_AGE);
     assertThat(underTest.getConfiguredZeebe().isEnabled()).isEqualTo(CUSTOM_ZEEBE_ENABLED);
     assertThat(underTest.getConfiguredZeebe().getName()).isEqualTo(CUSTOM_ZEEBE_RECORD_PREFIX);
     assertThat(underTest.getConfiguredZeebe().getPartitionCount()).isEqualTo(CUSTOM_ZEEBE_PARTITION_COUNT);

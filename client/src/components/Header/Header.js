@@ -108,7 +108,6 @@ function createWebappLinks(webappLinks) {
     label: t(`navigation.apps.${key}`),
     ariaLabel: t(`navigation.apps.${key}`),
     href,
-    target: '_blank',
     active: key === 'optimize',
     routeProps: key === 'optimize' ? {to: '/'} : undefined,
   }));

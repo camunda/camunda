@@ -10,7 +10,18 @@ import {mount} from 'enzyme';
 
 import DashboardReport from './DashboardReport';
 
-jest.mock('./ExternalReport', () => ({children}) => <span>ExternalReport: {children()}</span>);
+jest.mock('./ExternalReport', () => {
+  const actual = jest.requireActual('./ExternalReport');
+  const ExternalReport = ({children}) => <span>ExternalReport: {children()}</span>;
+  ExternalReport.isExternalReport = actual.default.isExternalReport;
+  return ExternalReport;
+});
+jest.mock('./TextReport', () => {
+  const actual = jest.requireActual('./TextReport');
+  const TextReport = ({children}) => <span>TextReport: {children()}</span>;
+  TextReport.isTextReport = actual.default.isTextReport;
+  return TextReport;
+});
 jest.mock('./OptimizeReport', () => ({children}) => <span>OptimizeReport: {children()}</span>);
 
 const props = {

@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.service.dashboard.DashboardService;
+import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -48,6 +49,7 @@ import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullS
 public class DashboardRestService {
 
   private final DashboardService dashboardService;
+  private final InstantPreviewDashboardService instantPreviewDashboardService;
   private final SessionService sessionService;
   private final DashboardRestMapper dashboardRestMapper;
 
@@ -112,6 +114,24 @@ public class DashboardRestService {
       dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
     }
 
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    return dashboardDefinition;
+  }
+
+  /**
+   * Retrieve the instant dashboard for the specified process and template
+   */
+  @GET
+  @Path("/instant/{procDefKey}")
+  @Produces(MediaType.APPLICATION_JSON)
+  public AuthorizedDashboardDefinitionResponseDto getInstantDashboard(@Context ContainerRequestContext requestContext,
+                                                                      @PathParam("procDefKey") String processDefinitionKey,
+                                                                      @QueryParam("template") String dashboardJsonTemplateFilename) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
+    dashboardDefinition = instantPreviewDashboardService.getInstantPreviewDashboard(processDefinitionKey,
+                                                                      dashboardJsonTemplateFilename,
+                                                                      userId);
     dashboardRestMapper.prepareRestResponse(dashboardDefinition);
     return dashboardDefinition;
   }

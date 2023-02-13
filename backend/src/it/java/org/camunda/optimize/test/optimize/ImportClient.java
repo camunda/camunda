@@ -26,11 +26,7 @@ public class ImportClient {
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
   public Response importEntity(final OptimizeEntityExportDto exportedDto) {
-    return this.importEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, Collections.singleton(exportedDto));
-  }
-
-  public Response importEntities(final Set<OptimizeEntityExportDto> exportedDtos) {
-    return this.importEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, exportedDtos);
+    return importEntitiesAsUser(DEFAULT_USERNAME, DEFAULT_USERNAME, Collections.singleton(exportedDto));
   }
 
   public EntityIdResponseDto importEntityAndReturnId(final OptimizeEntityExportDto exportedDto) {
@@ -69,7 +65,7 @@ public class ImportClient {
   }
 
   public EntityIdResponseDto importEntityIntoCollectionAndReturnId(final String collectionId,
-                                                             final OptimizeEntityExportDto exportedDto) {
+                                                                   final OptimizeEntityExportDto exportedDto) {
     return importEntityIntoCollectionAsUserAndReturnId(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
@@ -79,7 +75,7 @@ public class ImportClient {
   }
 
   public List<EntityIdResponseDto> importEntitiesIntoCollectionAndReturnIds(final String collectionId,
-                                                                      final Set<OptimizeEntityExportDto> exportedDtos) {
+                                                                            final Set<OptimizeEntityExportDto> exportedDtos) {
     return importEntitiesIntoCollectionAsUserAndReturnIds(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
@@ -95,30 +91,20 @@ public class ImportClient {
     return importEntitiesIntoCollectionAsUser(userId, password, collectionId, Collections.singleton(exportedDto));
   }
 
-  public Response importEntitiesIntoCollectionAsUser(final String userId,
-                                                     final String password,
-                                                     final String collectionId,
-                                                     final Set<OptimizeEntityExportDto> exportedDtos) {
-    return getRequestExecutor()
-      .withUserAuthentication(userId, password)
-      .buildImportEntityRequest(collectionId, exportedDtos)
-      .execute();
-  }
-
-  public List<EntityIdResponseDto> importEntitiesIntoCollectionAsUserAndReturnIds(final String userId,
-                                                                            final String password,
-                                                                            final String collectionId,
-                                                                            final Set<OptimizeEntityExportDto> exportedDtos) {
+  private List<EntityIdResponseDto> importEntitiesIntoCollectionAsUserAndReturnIds(final String userId,
+                                                                                   final String password,
+                                                                                   final String collectionId,
+                                                                                   final Set<OptimizeEntityExportDto> exportedDtos) {
     return getRequestExecutor()
       .withUserAuthentication(userId, password)
       .buildImportEntityRequest(collectionId, exportedDtos)
       .executeAndReturnList(EntityIdResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public EntityIdResponseDto importEntityIntoCollectionAsUserAndReturnId(final String userId,
-                                                                   final String password,
-                                                                   final String collectionId,
-                                                                   final OptimizeEntityExportDto exportedDto) {
+  private EntityIdResponseDto importEntityIntoCollectionAsUserAndReturnId(final String userId,
+                                                                          final String password,
+                                                                          final String collectionId,
+                                                                          final OptimizeEntityExportDto exportedDto) {
     final List<EntityIdResponseDto> importedIds = getRequestExecutor()
       .withUserAuthentication(userId, password)
       .buildImportEntityRequest(collectionId, Sets.newHashSet(exportedDto))
@@ -127,7 +113,18 @@ public class ImportClient {
     return importedIds.get(0);
   }
 
+  private Response importEntitiesIntoCollectionAsUser(final String userId,
+                                                      final String password,
+                                                      final String collectionId,
+                                                      final Set<OptimizeEntityExportDto> exportedDtos) {
+    return getRequestExecutor()
+      .withUserAuthentication(userId, password)
+      .buildImportEntityRequest(collectionId, exportedDtos)
+      .execute();
+  }
+
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }
+
 }

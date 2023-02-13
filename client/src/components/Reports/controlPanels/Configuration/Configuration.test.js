@@ -168,3 +168,20 @@ it('should show the precison config for chart report', () => {
 
   expect(node.find(PrecisionConfig)).toExist();
 });
+
+it('should disable the bucket size component when automatic preview is off', () => {
+  const node = shallow(
+    <Configuration
+      report={{
+        data: {
+          configuration: {tableColumns: {columnOrder: ['test']}},
+          view: {entity: 'flowNode', properties: []},
+        },
+      }}
+      type="typeA"
+      autoPreviewDisabled
+    />
+  );
+
+  expect(node.find('BucketSize').prop('disabled')).toBe(true);
+});

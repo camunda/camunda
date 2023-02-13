@@ -50,9 +50,9 @@ public class DashboardExportService {
   }
 
   public List<OptimizeEntityExportDto> getCompleteDashboardExport(final String userId,
-                                                                  final Set<String> dashboardIds) {
-    log.debug("Exporting dashboards with IDs {} as user {}.", dashboardIds, userId);
-    final List<DashboardDefinitionRestDto> dashboards = retrieveDashboardDefinitionsOrFailIfMissing(dashboardIds);
+                                                                  final String dashboardId) {
+    log.debug("Exporting dashboard with ID {} as user {}.", dashboardId, userId);
+    final List<DashboardDefinitionRestDto> dashboards = retrieveDashboardDefinitionsOrFailIfMissing(Set.of(dashboardId));
     validateUserAuthorizedToAccessDashboardsOrFail(userId, dashboards);
 
     final List<ReportDefinitionDto<?>> reports = retrieveRelevantReportDefinitionsOrFailIfMissing(dashboards);

@@ -9,8 +9,14 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Button} from 'components';
+import {getScreenBounds} from 'services';
 
 import Popover from './Popover';
+
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  getScreenBounds: jest.fn().mockReturnValue({top: 0, bottom: 100}),
+}));
 
 jest.useFakeTimers();
 
@@ -215,22 +221,15 @@ it('should render in Portal if requested', () => {
 });
 
 it('should flip the popover vertically if there is no enough space below when using portal rendering', () => {
+  getScreenBounds.mockReturnValueOnce({top: 100, bottom: 400});
   const node = shallow(
     <Popover title="a" renderInPortal="test">
       <p>Child content</p>
     </Popover>
   );
 
-  node.instance().header = {
-    getBoundingClientRect: () => ({bottom: 100}),
-  };
-
   node.instance().buttonRef = {
     getBoundingClientRect: () => ({left: 0, bottom: 300, height: 50}),
-  };
-
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: 400}),
   };
 
   node.instance().popoverDialogRef = {

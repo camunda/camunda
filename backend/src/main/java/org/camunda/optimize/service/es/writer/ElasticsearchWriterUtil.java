@@ -62,27 +62,6 @@ public class ElasticsearchWriterUtil {
   private static final String NESTED_DOC_LIMIT_MESSAGE = "The number of nested documents has exceeded the allowed " +
     "limit of";
 
-  public static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
-                                                        final Object entityDto) {
-    final Map<String, Object> params = new HashMap<>();
-    for (String fieldName : fields) {
-      try {
-        Object fieldValue = PropertyUtils.getProperty(entityDto, fieldName);
-        if (fieldValue instanceof TemporalAccessor) {
-          fieldValue = dateTimeFormatter.format((TemporalAccessor) fieldValue);
-        }
-        params.put(fieldName, fieldValue);
-      } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-        throw new OptimizeRuntimeException("Could not read field from entity: " + fieldName, e);
-      }
-    }
-
-    return createDefaultScriptWithPrimitiveParams(
-      ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()),
-      params
-    );
-  }
-
   static Script createFieldUpdateScript(final Set<String> fields,
                                         final Object entityDto,
                                         final ObjectMapper objectMapper) {

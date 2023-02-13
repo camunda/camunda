@@ -108,7 +108,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
     waitUntilMinimumProcessInstanceEventsExportedCount(6);
     importAllZeebeEntitiesFromScratch();
 
-    // then
+    // then process activating event has been imported
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
       .singleElement()
       .satisfies(savedInstance -> {
@@ -117,7 +117,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
 
     // when
-    importAllZeebeEntitiesFromLastIndex();
+    importAllZeebeEntitiesFromLastIndex(); // fetch process activated event - not imported
+    importAllZeebeEntitiesFromLastIndex(); // fetch and import flownode activating event
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances())
@@ -131,7 +132,7 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       });
 
     // when we increase the page size
-    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(10);
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredZeebe().setMaxImportPageSize(15);
     importAllZeebeEntitiesFromScratch();
 
     // then we get the rest of the process data
@@ -302,8 +303,8 @@ public class ZeebeProcessInstanceImportIT extends AbstractZeebeIT {
       zeebeExtension.startProcessInstanceForProcess(deployedProcess.getBpmnProcessId());
 
     // when
-    // The first instance generates 6 events, so the 7th indicates that both processes have been exported
-    waitUntilMinimumProcessInstanceEventsExportedCount(7);
+    // Each instance generates 6 events
+    waitUntilMinimumProcessInstanceEventsExportedCount(12);
     importAllZeebeEntitiesFromScratch();
 
     // then

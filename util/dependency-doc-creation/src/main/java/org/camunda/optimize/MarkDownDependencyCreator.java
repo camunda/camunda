@@ -12,6 +12,7 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.File;
@@ -34,6 +35,7 @@ public class MarkDownDependencyCreator {
     try {
       File inputFile = new File(licenseFilePath);
       DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+      dbFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
       DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
       Document doc = dBuilder.parse(inputFile);
       doc.getDocumentElement().normalize();

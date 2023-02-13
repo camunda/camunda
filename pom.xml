@@ -34,7 +34,7 @@
     <!-- We use this for the Zeebe test container version only -->
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
-    <surefire-plugin.version>3.0.0-M7</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M8</surefire-plugin.version>
     <!-- maven plugins -->
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
 
@@ -50,16 +50,16 @@
     <guava.version>31.1-jre</guava.version>
     <spring.boot.version>2.7.7</spring.boot.version>
     <spring.version>5.3.23</spring.version>
-    <mockito.version>4.11.0</mockito.version>
+    <mockito.version>5.1.1</mockito.version>
     <httpclient.version>4.5.14</httpclient.version>
-    <junit.jupiter.version>5.9.1</junit.jupiter.version>
-    <junit.platform.version>1.9.1</junit.platform.version>
+    <junit.jupiter.version>5.9.2</junit.jupiter.version>
+    <junit.platform.version>1.9.2</junit.platform.version>
     <mockserver.version>5.14.0</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
-    <assertj.version>3.23.1</assertj.version>
-    <postgres.version>42.5.1</postgres.version>
+    <assertj.version>3.24.2</assertj.version>
+    <postgres.version>42.5.3</postgres.version>
 
-    <lombok.version>1.18.24</lombok.version>
+    <lombok.version>1.18.26</lombok.version>
     <logback.version>1.2.11</logback.version>
     <slf4j.version>1.7.36</slf4j.version>
 
@@ -320,6 +320,12 @@
       <artifactId>httpmime</artifactId>
       <version>${httpclient.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>commons-codec</artifactId>
+          <groupId>commons-codec</groupId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.awaitility</groupId>
@@ -335,7 +341,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.4.0</version>
+          <version>3.5.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>

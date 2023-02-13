@@ -13,12 +13,34 @@
   flex-direction: column;
   min-height: 0;
 
-  &.ReportEdit .Report__view {
-    margin-top: 10px;
-    border-top: 1px solid var(--silver-darken-87);
+  &.ReportEdit {
+    .Report__header {
+      .headerTopLine {
+        .RunPreviewButton {
+          margin-left: 6px;
+          min-width: auto;
+        }
+      }
 
-    .Heatmap > .Select {
-      transform: translateY(-42px);
+      .headerBottomLine {
+        justify-content: space-between;
+      }
+
+      .updatePreview {
+        margin-top: 0.625rem;
+        display: flex;
+        .Switch {
+          font-size: 0.875rem;
+        }
+      }
+    }
+    .Report__view {
+      margin-top: 10px;
+      border-top: 1px solid var(--silver-darken-87);
+
+      .Heatmap > .Select {
+        transform: translateY(-42px);
+      }
     }
   }
 }
@@ -27,8 +49,14 @@
   margin-bottom: 20px;
   margin: 0 40px;
 
+  .headerTopLine,
+  .headerBottomLine {
+    display: flex;
+  }
+
   .head {
     display: flex;
+    flex-grow: 1;
   }
 
   .tools {

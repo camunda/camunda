@@ -10,12 +10,14 @@ import {isDurationReport, formatters} from 'services';
 import {t} from 'translation';
 
 import {getFormattedTargetValue} from './service';
+
 import {
   formatTooltip,
   formatTooltipTitle,
   getTooltipLabelColor,
   canBeInterpolated,
   hasReportPersistedTooltips,
+  getAxesConfig,
 } from '../service';
 import {getColorFor, determineBarColor} from '../colorsUtils';
 
@@ -32,14 +34,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
 
   const isDark = theme === 'dark';
   const isDuration = isDurationReport(report);
-  const maxValue = isDuration
-    ? Math.max(
-        ...result.measures
-          .filter(({property}) => property === 'duration')
-          .map((measure) => measure.data.map(({value}) => value))
-          .flat()
-      )
-    : 0;
   const isPersistedTooltips = hasReportPersistedTooltips(report);
 
   const groupedByDurationMaxValue =
@@ -57,7 +51,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         targetValue,
         visualization,
         configuration,
-        maxDuration: maxValue,
+        maxDuration: getMaxDuration(result, isDuration),
         groupedByDurationMaxValue,
         isDark,
         isPersistedTooltips,
@@ -150,6 +144,7 @@ export function createBarOptions({
   );
   const hasCountMeasure = measures.some(({property}) => property === 'frequency');
   const topPadding = isPersistedTooltips && !horizontalBar;
+  const {axis0, axis1, groupBy} = getAxesConfig(horizontalBar);
 
   const measuresAxis = {
     'axis-0': {
@@ -174,9 +169,7 @@ export function createBarOptions({
         precision: hasCountMeasure ? 0 : undefined,
       },
       suggestedMax: targetLine,
-      id: 'axis-0',
-      axis: horizontalBar ? 'x' : 'y',
-      position: horizontalBar ? 'bottom' : 'left',
+      ...axis0,
       stacked,
     },
   };
@@ -206,9 +199,7 @@ export function createBarOptions({
         color: getColorFor('label', isDark),
       },
       suggestedMax: targetLine,
-      id: 'axis-1',
-      position: horizontalBar ? 'top' : 'right',
-      axis: horizontalBar ? 'x' : 'y',
+      ...axis1,
     };
   }
 
@@ -244,7 +235,7 @@ export function createBarOptions({
         : {}),
     },
     stacked: stacked || isCombinedNumber,
-    axis: horizontalBar ? 'y' : 'x',
+    ...groupBy,
   };
 
   if (logScale) {
@@ -255,13 +246,13 @@ export function createBarOptions({
 
   return {
     ...(pointMarkers === false ? {elements: {point: {radius: 0}}} : {}),
-    indexAxis: horizontalBar ? 'y' : 'x',
+    indexAxis: groupBy.id,
     layout: {
       padding: {top: topPadding ? 30 : 0},
     },
     scales: {
       ...measuresAxis,
-      groupByAxis,
+      [groupBy.id]: groupByAxis,
     },
     spanGaps: true,
     // plugin property
@@ -270,7 +261,7 @@ export function createBarOptions({
     plugins: {
       datalabels: {
         align: (context) => {
-          if (!configuration.horizontalBar) {
+          if (!horizontalBar) {
             return 'end';
           }
 
@@ -302,7 +293,8 @@ function createPieOptions(isDark, isGroupedByDuration, precision) {
     // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
     // we also need it to render the legends based on the hovered dataset in order to fade out only non hovered legends
     // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
-    const data = chart.data;
+    const {data, legend} = chart;
+    const {color} = legend.options.labels;
     let labels = data.labels;
 
     if (data.labels.length && data.datasets.length) {
@@ -318,7 +310,7 @@ function createPieOptions(isDark, isGroupedByDuration, precision) {
           strokeStyle: style.borderColor,
           lineWidth: style.borderWidth,
           hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
-
+          fontColor: color,
           // Extra data used for toggling the correct item
           index: i,
         };
@@ -396,4 +388,18 @@ export function createDatasetOptions({
         borderWidth: undefined,
       };
   }
+}
+
+function getMaxDuration(result, isDuration) {
+  if (!isDuration) {
+    return 0;
+  }
+
+  return Math.max(
+    ...result.measures
+      .filter(({property}) => property === 'duration')
+      .map((measure) => measure.data.map(({value}) => value))
+      .flat(),
+    0
+  );
 }

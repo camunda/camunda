@@ -46,10 +46,8 @@ module.exports = function createServer(
       return;
     }
 
-    var filePath = __dirname + request.url;
-    if (request.url === '/') {
-      filePath += 'index.html';
-    }
+    var filename = path.parse(request.url).base || 'index.html';
+    var filePath = path.join(__dirname, filename);
 
     var extname = String(path.extname(filePath)).toLowerCase();
     var mimeTypes = {
@@ -88,7 +86,7 @@ module.exports = function createServer(
   process.on('SIGINT', () => socketServer.close(() => server.close()));
   process.on('SIGTERM', () => socketServer.close(() => server.close()));
 
-  server.listen(8100);
+  server.listen(8100, 'localhost');
 
   opn('http://localhost:8100');
 

@@ -1,0 +1,28 @@
+.TextReport {
+  padding: 10px;
+
+  .TextEditor {
+    .Editor .editor {
+      max-height: 100%;
+    }
+  }
+
+  .EditButton:not(.EditTextReport) {
+    display: none;
+  }
+
+  .DeleteButton {
+    right: 10px;
+  }
+
+  .EditButton {
+    right: 39px;
+  }
+}
+
+.DashboardView,
+.Sharing {
+  .EditTextReport {
+    display: none;
+  }
+}

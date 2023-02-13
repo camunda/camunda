@@ -355,6 +355,7 @@ pipeline {
             # git config
             git config --global user.email "ci_automation@camunda.com"
             git config --global user.name "${optimizeUtils.defaultCredentialsId()}"
+            git config --global --add safe.directory "\$PWD"
           """)
         }
       }
@@ -432,7 +433,7 @@ pipeline {
           export VERSION=${VERSION}
           export DATE=${DATE}
           export REVISION=${REVISION}
-          export BASE_IMAGE=docker.io/library/alpine:3.17.0
+          export BASE_IMAGE=docker.io/library/alpine:3
           apk update
           apk add jq
 

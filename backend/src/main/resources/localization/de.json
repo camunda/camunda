@@ -465,6 +465,11 @@
       "exceededInstances": "Uberschrittene-Instanzen-{name}",
       "noValueAvailable": "Kein aktueller Wert verfügbar.<br/>Soll- und Istwert können nicht verglichen werden."
     },
+    "updateReportPreview": {
+      "switchLabel": "Vorschau Automatisch Aktualisieren",
+      "buttonLabel": "Lauf",
+      "cannotUpdate": "Diese Funktion funktioniert nur, wenn die automatische Vorschauaktualisierung aktiviert ist"
+    },
     "invalidCombinationError": "Es können keine Daten für die angegebenen Einstellungen angezeigt werden. Bitte wählen Sie eine andere Kombination!",
     "noDataNotice": "Keine Daten zur Ansicht vorhanden",
     "errorNotice": "Fehler beim Laden von Daten",
@@ -744,8 +749,10 @@
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
       "externalUrl": "Externe URL",
-      "newReport": "Neuer Bericht aus einer Vorlage"
+      "newReport": "Neuer Bericht aus einer Vorlage",
+      "textReport": "Text Report"
     },
+    "textReportEditNotification": "Dies ist eine Funktion, die wir zu bauen planen",
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
@@ -1468,6 +1475,59 @@
     "importDefinitionDoesNotExist": "Import fehlgeschlagen, weil die zu importierende Entität auf Definitionen basiert, die nicht existieren.",
     "importIndexVersionMismatch": "Import fehlgeschlagen, weil die Datenstruktur der zu importierenden Entität nicht mit der aktuellen Datenstruktur übereinstimmt. Bitte migrieren Sie die Daten vor dem Export, um sicher zu stellen, dass die Optimize Version übereinstimmt.",
     "importDefinitionForbidden": "Import fehlgeschlagen, weil Ihnen die Befugnis für eine oder mehrere Definitionen, auf denen die zu importierende Entität basiert, fehlt.",
-    "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden."
+    "importFileInvalid": "Import fehlgeschlagen, weil die ausgewählte Datei ungültig ist. Es können nur von Optimize exportierte JSON-Dateien importiert werden.",
+    "invalidAlertEmailAddresses": "Benutzer mit den folgenden Email-Addressen können keine Alarme empfange: {invalidAlertEmails}"
+  },
+  "textEditor": {
+    "toolbar": {
+      "history": {
+        "undo": "Widerrufen",
+        "redo": "Wiederholen"
+      },
+      "align": {
+        "left": "Links",
+        "center": "Mitte",
+        "right": "Rechts"
+      },
+      "styles": {
+        "bold": "Deutlich",
+        "italic": "Kursiv",
+        "underline": "Unterstreichen",
+        "strikethrough": "Durchgestrichen",
+        "code": "Code"
+      },
+      "blockStyles": {
+        "bullet": "Aufzählungsliste",
+        "code": "Code Block",
+        "h1": "Kopfzeile 1",
+        "h2": "Kopfzeile 2",
+        "h3": "Kopfzeile 3",
+        "number": "Nummerierte Liste",
+        "paragraph": "Normal",
+        "quote": "Anführungsblock"
+      },
+      "insert": {
+        "label": "Einfügung",
+        "horizontalRule": "Horizontale Regel",
+        "image": "Bild",
+        "link": "Link"
+      }
+    },
+    "plugins": {
+      "images": {
+        "title": "Einfügung Bild",
+        "urlLabel": "Bild URL",
+        "urlPlaceholder": "https://picture/some-picture.jpg",
+        "altTextLabel": "Bildname",
+        "altTextPlaceholder": "Etwas Bild"
+      },
+      "link": {
+        "title": "Einfügung Link",
+        "urlLabel": "Link URL",
+        "urlPlaceholder": "https://example.com",
+        "altTextLabel": "Text anzeigen",
+        "altTextPlaceholder": "Link zu example.com"
+      }
+    }
   }
 }

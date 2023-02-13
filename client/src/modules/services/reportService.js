@@ -100,7 +100,7 @@ function convertHyperMapToMap(report) {
     newResult.measures = newResult.measures.map((measure) => ({
       ...measure,
       type: 'map',
-      data: measure.data[0]?.value,
+      data: measure.data[0]?.value || [],
     }));
   }
 

@@ -9,7 +9,6 @@ import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
-import * as Homepage from './Homepage.elements.js';
 import * as Report from './DecisionReport.elements.js';
 import * as Filter from './Filter.elements.js';
 
@@ -19,9 +18,7 @@ fixture('Decision Report Filter')
   .afterEach(cleanEntities);
 
 test('should apply a filter to the report result', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');
@@ -45,9 +42,7 @@ test('should apply a filter to the report result', async (t) => {
 });
 
 test('should have seperate input and output variables', async (t) => {
-  await t.click(Homepage.createNewMenu);
-  await t.click(Homepage.option('Report'));
-  await t.click(Homepage.submenuOption('Decision Report'));
+  await u.createNewDecisionReport(t);
 
   await u.selectDefinition(t, 'Invoice Classification');
   await u.selectView(t, 'Evaluation Count');

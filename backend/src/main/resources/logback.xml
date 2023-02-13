@@ -1,17 +1,26 @@
 <configuration>
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-    <!-- encoders are assigned the type
-         ch.qos.logback.classic.encoder.PatternLayoutEncoder by default -->
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
+    <if condition='property("JSON_LOGGING").contains("true")'>
+      <then>
+         <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+          </encoder>
+      </then>
+      <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
+       in case JSON_LOGGING != true-->
+      <else>
+        <encoder>
+          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+      </else>
+     </if>
   </appender>
 
-  <logger name="org.camunda.optimize" level="debug" />
-  <logger name="org.elasticsearch" level="warn" />
 
-  <root level="info">
-    <appender-ref ref="STDOUT" />
-  </root>
+<logger name="org.camunda.optimize" level="debug" />
+<logger name="org.elasticsearch" level="warn" />
+
+<root level="info">
+ <appender-ref ref="STDOUT" />
+</root>
 </configuration>

@@ -74,7 +74,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private final DashboardWriter dashboardWriter;
   private final DashboardReader dashboardReader;
-
   private final ProcessVariableService processVariableService;
   private final ReportService reportService;
   private final AuthorizedCollectionService collectionService;
@@ -304,7 +303,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private RoleType getUserRoleType(String userId, DashboardDefinitionRestDto dashboard) {
     RoleType currentUserRole = null;
-    if (dashboard.isManagementDashboard()) {
+    if (dashboard.isManagementDashboard() || dashboard.isInstantPreviewDashboard()) {
       currentUserRole = RoleType.VIEWER;
     } else if (dashboard.getCollectionId() != null) {
       currentUserRole = collectionService.getUsersCollectionResourceRole(userId, dashboard.getCollectionId())

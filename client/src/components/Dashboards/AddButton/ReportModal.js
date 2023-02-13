@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {withRouter} from 'react-router-dom';
 
 import {
@@ -18,128 +18,148 @@ import {
   Form,
   Tabs,
   Icon,
+  TextEditor,
 } from 'components';
 import {getCollection, loadReports} from 'services';
 import {t} from 'translation';
 
-export default withRouter(
-  class ReportModal extends React.Component {
-    state = {
-      availableReports: null,
-      selectedReportId: '',
-      external: false,
-      externalUrl: '',
-    };
+function ReportModal({close, confirm, location}) {
+  const [availableReports, setAvailableReports] = useState(null);
+  const [selectedReportId, setSelectedReportId] = useState('');
+  const [externalUrl, setExternalUrl] = useState('');
+  const [tabOpen, setTabOpen] = useState('report');
+  const initialTextReportValue = '';
+  const [text, setText] = useState(initialTextReportValue);
 
-    componentDidMount = async () => {
-      const collection = getCollection(this.props.location.pathname);
+  useEffect(() => {
+    (async () => {
+      const collection = getCollection(location.pathname);
+      const availableReports = await loadReports(collection);
+      setAvailableReports(availableReports);
+    })();
+  }, [location.pathname]);
 
-      this.setState({
-        availableReports: await loadReports(collection),
-      });
-    };
+  const addReport = () => {
+    confirm(getReportConfig(tabOpen, externalUrl, text, selectedReportId));
+  };
 
-    selectReport = (id) => {
-      this.setState({
-        selectedReportId: id,
-      });
-    };
-
-    addReport = () => {
-      const {external, selectedReportId, externalUrl} = this.state;
-      this.props.confirm(
-        external ? {id: '', configuration: {external: externalUrl}} : {id: selectedReportId}
-      );
-    };
-
-    setExternal = (external) => this.setState({external});
-
-    isValid = (url) => {
-      // url has to start with https:// or http://
-      return url.match(/^(https|http):\/\/.+/);
-    };
-
-    render() {
-      const loading = this.state.availableReports === null;
-
-      const {external, externalUrl, selectedReportId, availableReports} = this.state;
-      const isInvalidExternal = !this.isValid(externalUrl);
-
-      const isInvalid = external ? isInvalidExternal : !selectedReportId;
-
-      const selectedReport =
-        (!loading && availableReports.find(({id}) => selectedReportId === id)) || {};
-
-      return (
-        <Modal
-          className="ReportModal"
-          open
-          onClose={this.props.close}
-          onConfirm={!isInvalid ? this.addReport : undefined}
-        >
-          <Modal.Header>{t('dashboard.addButton.addReport')}</Modal.Header>
-          <Modal.Content>
-            <Form>
-              <Tabs value={external} onChange={this.setExternal}>
-                <Tabs.Tab value={false} title={t('dashboard.addButton.optimizeReport')}>
-                  <Form.Group>
-                    {!loading && (
-                      <Labeled label={t('dashboard.addButton.addReportLabel')}>
-                        <Typeahead
-                          initialValue={selectedReport.id}
-                          placeholder={t('dashboard.addButton.selectReportPlaceholder')}
-                          onChange={this.selectReport}
-                          noValuesMessage={t('dashboard.addButton.noReports')}
-                        >
-                          <Typeahead.Option
-                            key="newReport"
-                            value="newReport"
-                            label={`+ ${t('dashboard.addButton.newReport')}`}
-                          >
-                            <Icon type="plus" />
-                            <b>{t('dashboard.addButton.newReport')}</b>
-                          </Typeahead.Option>
-                          {availableReports.map(({id, name}) => (
-                            <Typeahead.Option key={id} value={id}>
-                              {name}
-                            </Typeahead.Option>
-                          ))}
-                        </Typeahead>
-                      </Labeled>
-                    )}
-                    {loading && <LoadingIndicator />}
-                  </Form.Group>
-                </Tabs.Tab>
-                <Tabs.Tab value={true} title={t('dashboard.addButton.externalUrl')}>
-                  <Form.Group>
-                    <Labeled label={t('dashboard.addButton.externalUrl')}>
-                      <Input
-                        name="externalInput"
-                        className="externalInput"
-                        placeholder="https://www.example.com/widget/embed.html"
-                        value={externalUrl}
-                        onChange={({target: {value}}) =>
-                          this.setState({
-                            externalUrl: value,
-                          })
-                        }
-                      />
-                    </Labeled>
-                  </Form.Group>
-                </Tabs.Tab>
-              </Tabs>
-            </Form>
-          </Modal.Content>
-          <Modal.Actions>
-            <Button main onClick={this.props.close}>
-              {t('common.cancel')}
-            </Button>
-            <Button main primary onClick={this.addReport} disabled={isInvalid}>
-              {t('dashboard.addButton.addReportLabel')}
-            </Button>
-          </Modal.Actions>
-        </Modal>
-      );
+  const getReportConfig = (tabOpen, externalUrl, text, selectedReportId) => {
+    if (tabOpen === 'external') {
+      return {id: '', configuration: {external: externalUrl}};
+    } else if (tabOpen === 'text') {
+      return {id: '', configuration: {text}};
     }
-  }
-);
+    return {id: selectedReportId};
+  };
+
+  const isExternalUrlValid = (url) => {
+    // url has to start with https:// or http://
+    return url.match(/^(https|http):\/\/.+/);
+  };
+
+  const isTextReportValid = (text) => {
+    const textLength = TextEditor.getEditorStateLength(text);
+    return textLength > 0 && !isTextReportTooLong(text);
+  };
+
+  const TEXT_REPORT_MAX_CHARACTERS = 3000;
+  const isTextReportTooLong = (text) => {
+    const textLength = TextEditor.getEditorStateLength(text);
+    return textLength > TEXT_REPORT_MAX_CHARACTERS;
+  };
+
+  const isCurrentTabInvalid = (tabOpen, externalUrl, selectedReportId, text) => {
+    const isInvalidMap = {
+      report: !selectedReportId,
+      external: !isExternalUrlValid(externalUrl),
+      text: !isTextReportValid(text),
+    };
+
+    return isInvalidMap[tabOpen];
+  };
+
+  const isInvalid = isCurrentTabInvalid(tabOpen, externalUrl, selectedReportId, text);
+  const loading = availableReports === null;
+  const selectedReport =
+    (!loading && availableReports.find(({id}) => selectedReportId === id)) || {};
+
+  return (
+    <Modal
+      className="ReportModal"
+      open
+      onClose={close}
+      onConfirm={!isInvalid ? addReport : undefined}
+    >
+      <Modal.Header>{t('dashboard.addButton.addReport')}</Modal.Header>
+      <Modal.Content>
+        <Form>
+          <Tabs value={tabOpen} onChange={setTabOpen}>
+            <Tabs.Tab value="report" title={t('dashboard.addButton.optimizeReport')}>
+              <Form.Group>
+                {!loading && (
+                  <Labeled label={t('dashboard.addButton.addReportLabel')}>
+                    <Typeahead
+                      initialValue={selectedReport.id}
+                      placeholder={t('dashboard.addButton.selectReportPlaceholder')}
+                      onChange={setSelectedReportId}
+                      noValuesMessage={t('dashboard.addButton.noReports')}
+                    >
+                      <Typeahead.Option
+                        key="newReport"
+                        value="newReport"
+                        label={`+ ${t('dashboard.addButton.newReport')}`}
+                      >
+                        <Icon type="plus" />
+                        <b>{t('dashboard.addButton.newReport')}</b>
+                      </Typeahead.Option>
+                      {availableReports.map(({id, name}) => (
+                        <Typeahead.Option key={id} value={id}>
+                          {name}
+                        </Typeahead.Option>
+                      ))}
+                    </Typeahead>
+                  </Labeled>
+                )}
+                {loading && <LoadingIndicator />}
+              </Form.Group>
+            </Tabs.Tab>
+            <Tabs.Tab value="external" title={t('dashboard.addButton.externalUrl')}>
+              <Form.Group>
+                <Labeled label={t('dashboard.addButton.externalUrl')}>
+                  <Input
+                    name="externalInput"
+                    className="externalInput"
+                    placeholder="https://www.example.com/widget/embed.html"
+                    value={externalUrl}
+                    onChange={({target: {value}}) => setExternalUrl(value)}
+                  />
+                </Labeled>
+              </Form.Group>
+            </Tabs.Tab>
+            <Tabs.Tab value="text" title={t('dashboard.addButton.textReport')}>
+              <Form.Group className="Labeled">
+                <span className="label before">{t('dashboard.addButton.textReport')}</span>
+                <TextEditor
+                  initialValue={initialTextReportValue}
+                  onChange={setText}
+                  error={isTextReportTooLong(text)}
+                />
+                <TextEditor.CharCount editorState={text} limit={TEXT_REPORT_MAX_CHARACTERS} />
+              </Form.Group>
+            </Tabs.Tab>
+          </Tabs>
+        </Form>
+      </Modal.Content>
+      <Modal.Actions>
+        <Button main onClick={close}>
+          {t('common.cancel')}
+        </Button>
+        <Button main primary onClick={addReport} disabled={isInvalid}>
+          {t('dashboard.addButton.addReportLabel')}
+        </Button>
+      </Modal.Actions>
+    </Modal>
+  );
+}
+
+export default withRouter(ReportModal);

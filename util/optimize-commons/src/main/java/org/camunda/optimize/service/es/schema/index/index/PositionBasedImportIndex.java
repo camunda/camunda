@@ -12,16 +12,22 @@ import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DYNAMIC_PROPERTY_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROPERTY_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
 
 public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
-  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
-    ImportIndexDto.Fields.lastImportExecutionTimestamp;
+  private static final String LAST_IMPORT_EXECUTION_TIMESTAMP = ImportIndexDto.Fields.lastImportExecutionTimestamp;
   private static final String POSITION_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.positionOfLastEntity;
+  private static final String SEQUENCE_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.sequenceOfLastEntity;
   private static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   private static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
   private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
@@ -46,22 +52,25 @@ public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(DATA_SOURCE)
-        .field("type", "object")
-        .field("dynamic", true)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_OBJECT)
+        .field(DYNAMIC_PROPERTY_TYPE, true)
       .endObject()
       .startObject(ES_TYPE_INDEX_REFERS_TO)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(POSITION_OF_LAST_ENTITY)
-        .field("type", "keyword")
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(SEQUENCE_OF_LAST_ENTITY)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(TIMESTAMP_OF_LAST_ENTITY)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)
+        .field(FORMAT_PROPERTY_TYPE, OPTIMIZE_DATE_FORMAT)
       .endObject();
     // @formatter:on
   }

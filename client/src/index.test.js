@@ -7,7 +7,8 @@
 
 const fs = require('fs');
 
-const blacklist = ['setupTests.js'];
+const blacklistedFiles = ['setupTests.js'];
+const blacklistedDependencies = ['@lexical/'];
 
 function getAllFilesInDirectory(dir, filelist) {
   var files = fs.readdirSync(dir);
@@ -35,7 +36,7 @@ function isStyleFile(filename) {
 }
 
 function isFileNotBlacklisted(filename) {
-  return !blacklist.some((blacklistEntry) => filename.includes(blacklistEntry));
+  return !blacklistedFiles.some((blacklistEntry) => filename.includes(blacklistEntry));
 }
 
 function getImportedModules(content, fileType) {
@@ -101,7 +102,10 @@ it('should use all declared dependencies in production code', () => {
 it('should declare all used dependencies', () => {
   const undeclaredDependencies = new Set();
   usedModules.forEach((entry) => {
-    if (!declaredDependencies.includes(entry)) {
+    if (
+      !declaredDependencies.includes(entry) &&
+      !blacklistedDependencies.some((dependency) => entry.includes(dependency))
+    ) {
       undeclaredDependencies.add(entry);
     }
   });

@@ -26,3 +26,13 @@ it('should update the iframe key to reload it when loadReportData function is ca
 
   expect(node.state().reloadState).toBe(1);
 });
+
+describe('ExternalReport.isExternalReport', () => {
+  it('should return true if report is external', () => {
+    expect(ExternalReport.isExternalReport({configuration: {external: 'externalUrl'}})).toBe(true);
+  });
+
+  it('should return false if report is not external', () => {
+    expect(ExternalReport.isExternalReport({configuration: {text: 'text'}})).toBe(false);
+  });
+});

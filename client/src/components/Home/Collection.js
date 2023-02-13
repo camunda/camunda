@@ -12,7 +12,7 @@ import {parseISO} from 'date-fns';
 
 import {format} from 'dates';
 import {t} from 'translation';
-import {withErrorHandling, withUser} from 'HOC';
+import {withErrorHandling} from 'HOC';
 import {
   Icon,
   Dropdown,
@@ -132,7 +132,7 @@ export class Collection extends React.Component {
       optimizeProfile,
     } = this.state;
 
-    const {user, match} = this.props;
+    const {match} = this.props;
 
     const homeTab = match.params.viewMode === undefined;
     const userTab = match.params.viewMode === 'users';
@@ -269,23 +269,23 @@ export class Collection extends React.Component {
                       text: t('common.edit'),
                       action: () => this.setState({redirect: formatLink(id, entityType) + 'edit'}),
                     });
-                    actions.push({
-                      icon: 'delete',
-                      text: t('common.delete'),
-                      action: () => this.setState({deleting: entity}),
-                    });
-                  }
 
-                  if (user?.authorizations.includes('import_export')) {
-                    actions.push({
-                      icon: 'save',
-                      text: t('common.export'),
-                      action: () => {
-                        window.location.href = `api/export/${entityType}/json/${
-                          entity.id
-                        }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                    actions.push(
+                      {
+                        icon: 'delete',
+                        text: t('common.delete'),
+                        action: () => this.setState({deleting: entity}),
                       },
-                    });
+                      {
+                        icon: 'save',
+                        text: t('common.export'),
+                        action: () => {
+                          window.location.href = `api/export/${entityType}/json/${
+                            entity.id
+                          }/${encodeURIComponent(formatters.formatFileName(entity.name))}.json`;
+                        },
+                      }
+                    );
                   }
 
                   return {
@@ -394,4 +394,4 @@ export class Collection extends React.Component {
   }
 }
 
-export default withErrorHandling(withUser(Collection));
+export default withErrorHandling(Collection);

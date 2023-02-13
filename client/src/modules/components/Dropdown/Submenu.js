@@ -8,6 +8,8 @@
 import React from 'react';
 import classnames from 'classnames';
 
+import {getScreenBounds} from 'services';
+
 import DropdownOption from './DropdownOption';
 import {findLetterOption} from './service';
 
@@ -106,8 +108,6 @@ export default class Submenu extends React.Component {
       childList: true,
       subtree: true,
     });
-
-    this.initilizeHeaderAndFooterRefs();
   }
 
   componentWillUnmount() {
@@ -121,15 +121,6 @@ export default class Submenu extends React.Component {
 
     if (prevProps.open && !this.props.open) {
       this.props.onClose?.();
-    }
-  }
-
-  initilizeHeaderAndFooterRefs() {
-    if (!this.footerRef || !document.body.contains(this.footerRef)) {
-      this.footerRef = document.body.querySelector('.Footer');
-    }
-    if (!this.headerRef || !document.body.contains(this.headerRef)) {
-      this.headerRef = document.body.querySelector('.cds--header');
     }
   }
 
@@ -148,21 +139,19 @@ export default class Submenu extends React.Component {
       }
 
       const margin = 10;
-      this.initilizeHeaderAndFooterRefs();
-      const footerTop = this.footerRef.getBoundingClientRect().top;
-      const headerBottom = this.headerRef.getBoundingClientRect().bottom;
+      const screenBounds = getScreenBounds();
 
-      const bottomAvailableHeight = footerTop - parentMenu.top - margin;
+      const bottomAvailableHeight = screenBounds.bottom - parentMenu.top - margin;
       if (submenu.clientHeight > bottomAvailableHeight) {
         let shiftDistance = submenu.clientHeight - bottomAvailableHeight;
 
-        const topAvailableHeight = parentMenu.top - headerBottom - margin;
+        const topAvailableHeight = parentMenu.top - screenBounds.top - margin;
         if (shiftDistance > topAvailableHeight) {
           shiftDistance = topAvailableHeight;
         }
 
         styles.top = '-' + shiftDistance + 'px';
-        styles.maxHeight = footerTop - headerBottom - 2 * margin;
+        styles.maxHeight = screenBounds.bottom - screenBounds.top - 2 * margin;
       }
     }
 

@@ -114,7 +114,7 @@ export default class Configuration extends React.Component {
   };
 
   render() {
-    const {report, type, disabled} = this.props;
+    const {report, type, disabled, autoPreviewDisabled} = this.props;
     const {configuration, view} = report.data;
     const Component = visualizations[type];
 
@@ -142,7 +142,11 @@ export default class Configuration extends React.Component {
               />
             )}
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
-            <BucketSize report={report} onChange={this.updateConfiguration} />
+            <BucketSize
+              disabled={autoPreviewDisabled}
+              report={report}
+              onChange={this.updateConfiguration}
+            />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
             {(configuration.showInstanceCount || (!isPercentageOnly && !isRawDataReport)) && (
               <PrecisionConfig

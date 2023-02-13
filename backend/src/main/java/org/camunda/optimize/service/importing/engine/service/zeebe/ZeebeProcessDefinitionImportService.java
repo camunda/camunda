@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine.service.zeebe;
 
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
@@ -20,10 +21,13 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeProcessDefinitionRecordDto> {
+
+  private static final Set<ProcessIntent> INTENTS_TO_IMPORT = Set.of(ProcessIntent.CREATED);
 
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final ProcessDefinitionWriter processDefinitionWriter;
@@ -49,7 +53,7 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
     boolean newDataIsAvailable = !pageOfProcessDefinitions.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities =
-        mapZeebeRecordsToOptimizeEntities(pageOfProcessDefinitions);
+        filterAndMapZeebeRecordsToOptimizeEntities(pageOfProcessDefinitions);
       final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
@@ -65,12 +69,18 @@ public class ZeebeProcessDefinitionImportService implements ImportService<ZeebeP
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<ProcessDefinitionOptimizeDto> mapZeebeRecordsToOptimizeEntities(
-    List<ZeebeProcessDefinitionRecordDto> zeebeRecords) {
-    return zeebeRecords
+  private List<ProcessDefinitionOptimizeDto> filterAndMapZeebeRecordsToOptimizeEntities(List<ZeebeProcessDefinitionRecordDto> zeebeRecords) {
+    final List<ProcessDefinitionOptimizeDto> optimizeDtos = zeebeRecords
       .stream()
+      .filter(zeebeRecord -> INTENTS_TO_IMPORT.contains(zeebeRecord.getIntent()))
       .map(this::mapZeebeRecordsToOptimizeEntities)
       .collect(Collectors.toList());
+    log.debug(
+      "Processing {} fetched zeebe process definition records, of which {} are relevant to Optimize and will be imported.",
+      zeebeRecords.size(),
+      optimizeDtos.size()
+    );
+    return optimizeDtos;
   }
 
   private ElasticsearchImportJob<ProcessDefinitionOptimizeDto> createElasticsearchImportJob(

@@ -207,7 +207,7 @@ it('should set the loading state of the entity list', async () => {
   expect(node.find('EntityList').prop('isLoading')).toBe(false);
 });
 
-it('should include an option to export reports for superusers', () => {
+it('should include an option to export reports for entity editors', () => {
   const node = shallow(<Collection {...props} />);
 
   expect(
@@ -215,16 +215,26 @@ it('should include an option to export reports for superusers', () => {
       .find('EntityList')
       .prop('data')[1]
       .actions.find(({text}) => text === 'Export')
-  ).toBe(undefined);
+  ).not.toBe(undefined);
+});
 
-  node.setProps({user: {name: 'John Doe', authorizations: ['import_export']}});
+it('should hide the export option for entity viewers', () => {
+  loadCollectionEntities.mockReturnValueOnce([
+    {
+      entityType: 'report',
+      currentUserRole: 'viewer',
+      lastModified: '2019-11-18T12:29:37+0000',
+      data: {subEntityCounts: {}},
+    },
+  ]);
+  const node = shallow(<Collection {...props} />);
 
   expect(
     node
       .find('EntityList')
-      .prop('data')[1]
+      .prop('data')[0]
       .actions.find(({text}) => text === 'Export')
-  ).not.toBe(undefined);
+  ).toBe(undefined);
 });
 
 it('should hide alerts and users tab in the ccsm environment', async () => {

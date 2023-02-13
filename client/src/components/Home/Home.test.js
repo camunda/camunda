@@ -130,28 +130,6 @@ it('should show entity list component when user is not editor and there no entit
   expect(node.find('EmptyState')).not.toExist();
 });
 
-it('should include an option to export reports for superusers', () => {
-  const node = shallow(<Home {...props} />);
-
-  runAllEffects();
-
-  expect(
-    node
-      .find('EntityList')
-      .prop('data')[0]
-      .actions.find(({text}) => text === 'Export')
-  ).toBe(undefined);
-
-  node.setProps({user: {name: 'John Doe', authorizations: ['import_export']}});
-
-  expect(
-    node
-      .find('EntityList')
-      .prop('data')[0]
-      .actions.find(({text}) => text === 'Export')
-  ).not.toBe(undefined);
-});
-
 it('should hide edit options for read only users', () => {
   loadEntities.mockReturnValue([
     {
@@ -208,4 +186,72 @@ it('should hide entity creation button for read only users', () => {
 
   const updatedActionButton = node.find('EntityList').renderProp('action')();
   expect(updatedActionButton.find(CreateNewButton)).not.toExist();
+});
+
+describe('export authorizations', () => {
+  it('should show export option for editable entities', () => {
+    loadEntities.mockReturnValueOnce([
+      {
+        entityType: 'dashboard',
+        currentUserRole: 'editor',
+        lastModified: '2019-11-18T12:29:37+0000',
+        data: {subEntityCounts: {}},
+      },
+    ]);
+
+    const node = shallow(<Home {...props} />);
+
+    runAllEffects();
+
+    expect(
+      node
+        .find('EntityList')
+        .prop('data')[0]
+        .actions.find(({text}) => text === 'Export')
+    ).not.toBe(undefined);
+  });
+
+  it('should hide export option for collection entities', () => {
+    loadEntities.mockReturnValueOnce([
+      {
+        entityType: 'collection',
+        currentUserRole: 'editor',
+        lastModified: '2019-11-18T12:29:37+0000',
+        data: {subEntityCounts: {}},
+      },
+    ]);
+
+    const node = shallow(<Home {...props} />);
+
+    runAllEffects();
+
+    expect(
+      node
+        .find('EntityList')
+        .prop('data')[0]
+        .actions.find(({text}) => text === 'Export')
+    ).toBe(undefined);
+  });
+
+  it('should hide export option for view only entities', () => {
+    loadEntities.mockReturnValueOnce([
+      {
+        entityType: 'report',
+        currentUserRole: 'viewer',
+        lastModified: '2019-11-18T12:29:37+0000',
+        data: {subEntityCounts: {}},
+      },
+    ]);
+
+    const node = shallow(<Home {...props} />);
+
+    runAllEffects();
+
+    expect(
+      node
+        .find('EntityList')
+        .prop('data')[0]
+        .actions.find(({text}) => text === 'Export')
+    ).toBe(undefined);
+  });
 });

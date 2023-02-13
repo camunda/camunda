@@ -37,3 +37,7 @@ export default class ExternalReport extends React.Component {
     }
   }
 }
+
+ExternalReport.isExternalReport = function (report) {
+  return !!report.configuration?.external;
+};

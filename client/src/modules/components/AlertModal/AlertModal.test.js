@@ -7,7 +7,6 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import update from 'immutability-helper';
 
 import {AlertModal} from './AlertModal';
 
@@ -277,4 +276,10 @@ it('should allow to remove an alert from inside the modal if onRemove prop is pr
   node.find('.deleteButton').simulate('click');
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should disable the submit button when disabled prop is passed', () => {
+  const node = shallow(<AlertModal {...props} disabled />);
+
+  expect(node.find('[primary]')).toBeDisabled();
 });

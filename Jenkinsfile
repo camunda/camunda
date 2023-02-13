@@ -68,6 +68,9 @@ spec:
     emptyDir:
       medium: Memory
       sizeLimit: 1Gi
+  - name: dshm
+    emptyDir:
+      medium: Memory
   imagePullSecrets:
   - name: registry-camunda-cloud
   initContainers:
@@ -91,6 +94,9 @@ spec:
     image: ${mavenDockerImage}
     command: ["cat"]
     tty: true
+    volumeMounts:
+      - mountPath: /dev/shm
+        name: dshm
     env:
       - name: LIMITS_CPU
         value: ${mavenForkCount}
@@ -751,7 +757,7 @@ pipeline {
                   export VERSION=${VERSION}
                   export DATE=${DATE}
                   export REVISION=${REVISION}
-                  export BASE_IMAGE=docker.io/library/alpine:3.17.0
+                  export BASE_IMAGE=docker.io/library/alpine:3
                   apk update
                   apk add jq
 

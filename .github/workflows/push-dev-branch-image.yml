@@ -22,7 +22,7 @@ jobs:
       # that is being administrated by infra.
       - name: Import secrets
         id: secrets
-        uses: hashicorp/vault-action@8fa61e909919a3f94952e9e07ace6b5a1114440b
+        uses: hashicorp/vault-action@130d1f5f4fe645bb6c83e4225c04d64cfb62de6e
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -37,17 +37,21 @@ jobs:
         shell: bash
         run: echo "::set-output name=result::$(date --iso-8601=seconds)"
 
+      # Configure the registry where we can push the GH IMAGE
       - name: Configure Google tools
         id: auth
         uses: camunda-cloud/action-setup-gcloud@v2
         with:
           account-alias: registry
 
+      # SET UP JAVA
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: 17
+          distribution: 'temurin'
 
+      # SET UP MAVEN XML
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v2.8.0
         with:
@@ -58,11 +62,13 @@ jobs:
               "username": "${{ steps.secrets.outputs.NEXUS_USERNAME }}",
               "password": "${{ steps.secrets.outputs.NEXUS_PASSWORD }}"
             }]
-          mirrors: '[{"url": "https://camunda.jfrog.io/artifactory/internal", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
 
+      # CREATE JAR FILE
       - name: Build a package
         run: mvn -B package --file pom.xml -Dmaven.test.skip
 
+     # COMPUTE IMAGE NAME & TAG NAME
       - name: Compute metadata
         id: meta
         run: |
@@ -70,8 +76,12 @@ jobs:
           echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
           echo "docker_image=gcr.io/${{ steps.auth.outputs.project_id }}/${{ env.IMAGE_NAME }}:${{ github.event.inputs.image_tag }}" >> "$GITHUB_OUTPUT"
 
+      # This action equaes to:
+      # docker buildx build -t registry.camunda.cloud/team-optimize/optimize:OPT-xxxx
+      # --build-arg VERSION=3.10.0-SNAPSHOT --build-arg DATE=2022-12-08T15:25:30.165965Z
+      # --build-arg REVISION=cb723f69397c60c7f513ca58c99473e5c8431a27 --platform linux/amd64,linux/arm64 --push .
       - name: Build and Push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           push: true
@@ -81,3 +91,4 @@ jobs:
             DATE= ${{ steps.get-date.outputs.result }}
             REVISION= ${{ github.sha }}
           tags: ${{ steps.meta.outputs.docker_image }}
+

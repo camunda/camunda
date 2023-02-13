@@ -8,6 +8,8 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {getScreenBounds} from 'services';
+
 import Dropdown from './Dropdown';
 import {findLetterOption} from './service';
 
@@ -33,6 +35,11 @@ jest.mock('./Submenu', () => (props) => (
 
 jest.mock('./service', () => ({findLetterOption: jest.fn()}));
 
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  getScreenBounds: jest.fn().mockReturnValue({top: 0, bottom: 100}),
+}));
+
 Object.defineProperty(window.HTMLElement.prototype, 'offsetParent', {
   value: {
     getBoundingClientRect: () => ({
@@ -53,21 +60,9 @@ afterEach(() => {
   document.body.removeChild(container);
 });
 
-function setupRefs(node) {
-  const footer = document.createElement('div');
-  footer.getBoundingClientRect = () => ({});
-  document.body.appendChild(footer);
-  node.instance().footerRef = footer;
-
-  const header = document.createElement('div');
-  header.getBoundingClientRect = () => ({});
-  document.body.appendChild(header);
-  node.instance().headerRef = header;
-}
-
 function simulateDropdown(
   node,
-  {oneItemHeight, buttonPosition, menuHeight, menuPosition, footerTop, headerBottom}
+  {oneItemHeight, buttonPosition, menuHeight, menuPosition, screenBottom, screenTop}
 ) {
   node.instance().container = {
     querySelector: () => ({
@@ -91,12 +86,11 @@ function simulateDropdown(
   };
 
   const footer = document.createElement('div');
-  footer.getBoundingClientRect = () => ({top: footerTop});
+  getScreenBounds.mockReturnValueOnce({top: screenTop, bottom: screenBottom});
   document.body.appendChild(footer);
   node.instance().footerRef = footer;
 
   const header = document.createElement('div');
-  header.getBoundingClientRect = () => ({bottom: headerBottom});
   document.body.appendChild(header);
   node.instance().headerRef = header;
 }
@@ -118,8 +112,6 @@ it('should display the child elements when clicking the trigger', () => {
     </Dropdown>
   );
 
-  setupRefs(node);
-
   node.find('button.activateButton').simulate('click');
 
   expect(node.find('.Dropdown')).toMatchSelector('.is-open');
@@ -133,8 +125,6 @@ it('should call onOpen if provided', () => {
     </Dropdown>
   );
 
-  setupRefs(node);
-
   node.find('button.activateButton').simulate('click');
 
   expect(spy).toHaveBeenCalledWith(true);
@@ -146,8 +136,6 @@ it('should close when clicking somewhere', () => {
       <Dropdown.Option>foo</Dropdown.Option>
     </Dropdown>
   );
-
-  setupRefs(node);
 
   node.setState({open: true});
 
@@ -165,8 +153,6 @@ it('should close when selecting an option', () => {
       </Dropdown.Option>
     </Dropdown>
   );
-
-  setupRefs(node);
 
   node.setState({open: true});
 
@@ -207,8 +193,6 @@ it('should set aria-expanded to true when open', () => {
     </Dropdown>
   );
 
-  setupRefs(node);
-
   node.simulate('click');
 
   expect(node.state('open')).toBe(true);
@@ -223,8 +207,6 @@ it('should set aria-expanded to false when closed', () => {
       <Dropdown.Option>foo</Dropdown.Option>
     </Dropdown>
   );
-
-  setupRefs(node);
 
   node.setState({open: true});
 
@@ -253,8 +235,6 @@ it('should close after pressing Esc', () => {
       <Dropdown.Option>bar</Dropdown.Option>
     </Dropdown>
   );
-
-  setupRefs(node);
 
   node.setState({open: true});
 
@@ -321,8 +301,8 @@ it('should add scrollable class when there is no enough space to show all items'
     buttonPosition: {bottom: 0, top: 0, left: 0, height: 10, width: 100},
     menuHeight: 160,
     menuPosition: {top: 0},
-    footerTop: 150,
-    headerBottom: 0,
+    screenBottom: 150,
+    screenTop: 0,
   };
 
   simulateDropdown(node, specs);
@@ -330,7 +310,7 @@ it('should add scrollable class when there is no enough space to show all items'
   node.instance().calculateMenuStyle(true);
   node.update();
 
-  expect(node.state().listStyles.height).toBe(specs.footerTop - 10);
+  expect(node.state().listStyles.height).toBe(specs.screenBottom - 10);
   expect(node.find('.menu > DropdownOptionsList').first()).toHaveClassName('scrollable');
 });
 
@@ -350,8 +330,8 @@ it('flip dropdown vertically when there is no enough space', () => {
     buttonPosition: {bottom: 50, top: 200, left: 0, height: 10, width: 100},
     menuHeight: 70,
     menuPosition: {top: 53},
-    footerTop: 110,
-    headerBottom: 0,
+    screenBottom: 110,
+    screenTop: 0,
   };
 
   simulateDropdown(node, specs);
@@ -378,8 +358,8 @@ it('should not add scrollable class when the item is flipped and there is enough
     buttonPosition: {top: 500, bottom: 535, left: 0, height: 10, width: 100},
     menuHeight: 400,
     menuPosition: {top: 503},
-    footerTop: 550,
-    headerBottom: 10,
+    screenBottom: 550,
+    screenTop: 10,
   });
 
   node.instance().calculateMenuStyle(true);

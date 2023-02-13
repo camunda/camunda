@@ -161,7 +161,9 @@ export class DashboardEdit extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (
-      this.state.reports.every(({id, configuration}) => id || configuration?.external) &&
+      this.state.reports.every(
+        ({id, configuration}) => id || configuration?.external || configuration?.text
+      ) &&
       deepEqual(this.state.reports, this.props.initialReports) &&
       deepEqual(this.state.availableFilters, this.props.initialAvailableFilters) &&
       this.state.name === this.props.name

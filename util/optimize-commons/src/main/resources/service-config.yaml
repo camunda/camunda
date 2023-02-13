@@ -52,7 +52,7 @@ security:
     HSTS:
       # The time, in seconds, that the browser should remember that this site is only to be accessed using HTTPS.
       # If you set the number to a negative value no HSTS header is sent.
-      max-age: 31536000
+      max-age: ${CAMUNDA_OPTIMIZE_SECURITY_RESPONSE_HEADERS_HSTS_MAX_AGE:63072000}
       # If this optional parameter is specified, this rule applies to all of the site’s subdomains as well.
       includeSubDomains: true
     # This header enables the cross-site scripting (XSS) filter in your browser.

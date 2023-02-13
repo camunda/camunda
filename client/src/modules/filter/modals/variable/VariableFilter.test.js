@@ -199,6 +199,8 @@ it('should use custom filter adding logic from input components', async () => {
 it('should load available variables', () => {
   shallow(<VariableFilter {...props} />);
 
+  runAllEffects();
+
   expect(props.config.getVariables).toHaveBeenCalled();
 });
 

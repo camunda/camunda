@@ -6,7 +6,8 @@
  */
 
 import React, {runLastEffect, useRef} from 'react';
-import {shallow} from 'enzyme';
+import {mount, shallow} from 'enzyme';
+import {act} from 'react-dom/test-utils';
 
 import {getNonOverflowingValues} from './service';
 import Tooltip from './Tooltip';
@@ -199,4 +200,25 @@ it('should keep the tooltip open when the mouse is inside it', () => {
   node.find('.Tooltip').simulate('mouseLeave');
 
   expect(node.find('.Tooltip')).not.toExist();
+});
+
+it('should stop event from propagating when clicked inside the tooltip', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <div onClick={spy}>
+      <Tooltip content="tooltip content">
+        <p>child content</p>
+      </Tooltip>
+    </div>
+  );
+  act(() => {
+    node.find('p').simulate('mouseEnter', {currentTarget: element});
+    jest.runAllTimers();
+    node.find('p').simulate('mouseLeave', {currentTarget: element});
+    node.find('.Tooltip').simulate('mouseEnter');
+    jest.runAllTimers();
+    node.find('.Tooltip').simulate('click', new Event('click'));
+
+    expect(spy).not.toHaveBeenCalled();
+  });
 });

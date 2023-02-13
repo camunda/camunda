@@ -11,6 +11,7 @@ import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
 import disableCollapsedSubprocessModule from 'bpmn-js-disable-collapsed-subprocess';
+import elementTemplateIconExtension from '@bpmn-io/element-templates-icons-renderer';
 
 import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
@@ -103,7 +104,10 @@ export default themed(
             conf.disableNavigation === this.props.disableNavigation
         );
 
-        const additionalModules = [{drilldownOverlayBehavior: ['value', null]}];
+        const additionalModules = [
+          elementTemplateIconExtension,
+          {drilldownOverlayBehavior: ['value', null]},
+        ];
         const available = availableViewers[idx];
 
         if (!this.props.allowModeling && available) {

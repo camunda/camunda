@@ -22,6 +22,7 @@ Chart.register = jest.fn();
 const registerables = [];
 
 class LineController {
+  // eslint-disable-next-line no-useless-constructor
   constructor(...args) {}
 }
 

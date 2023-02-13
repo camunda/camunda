@@ -69,7 +69,7 @@ export default function DashboardRenderer({
         return (
           <div
             className="grid-entry"
-            key={idx + '_' + (report.id || report.report?.name || report.configuration?.external)}
+            key={getReportKey(report, idx)}
             data-grid={{
               x: report.position.x,
               y: report.position.y,
@@ -112,5 +112,16 @@ function constructBackgroundGrid() {
         `</svg>`
     ) +
     '")'
+  );
+}
+
+function getReportKey(report, idx) {
+  return (
+    idx +
+    '_' +
+    (report.id ||
+      report.report?.name ||
+      report.configuration?.external ||
+      JSON.stringify(report.configuration?.text || '').substring(20))
   );
 }

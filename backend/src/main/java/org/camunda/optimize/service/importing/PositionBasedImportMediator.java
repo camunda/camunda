@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import static org.camunda.optimize.MetricEnum.INDEXING_DURATION_METRIC;
@@ -108,16 +109,18 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
     if (!entitiesNextPage.isEmpty()) {
       final DTO lastImportedEntity = entitiesNextPage.get(entitiesNextPage.size() - 1);
       final long currentPageLastEntityPosition = lastImportedEntity.getPosition();
+      final long currentPageLastEntitySequence = Optional.ofNullable(lastImportedEntity.getSequence()).orElse(0L);
 
       getIndexingDurationTimer()
         .record(() -> importService.executeImport(entitiesNextPage, () -> {
-          importIndexHandler.updateLastPersistedEntityPosition(currentPageLastEntityPosition);
+          importIndexHandler.updateLastPersistedEntityPositionAndSequence(currentPageLastEntityPosition,
+                                                                          currentPageLastEntitySequence);
           importIndexHandler.updateTimestampOfLastPersistedEntity(
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(lastImportedEntity.getTimestamp()), ZoneId.systemDefault()));
           OptimizeMetrics.recordOverallEntitiesImportTime(entitiesNextPage);
           importCompleteCallback.run();
         }));
-      importIndexHandler.updatePendingLastEntityPosition(currentPageLastEntityPosition);
+      importIndexHandler.updatePendingLastEntityPositionAndSequence(currentPageLastEntityPosition, currentPageLastEntitySequence);
     } else {
       importCompleteCallback.run();
     }
@@ -134,6 +137,7 @@ public abstract class PositionBasedImportMediator<T extends PositionBasedImportI
   }
 
   protected abstract String getRecordType();
+
   protected abstract Integer getPartitionId();
 
   private void calculateNewDateUntilIsBlocked() {

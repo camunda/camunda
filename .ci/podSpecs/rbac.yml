@@ -5,22 +5,19 @@ metadata:
   namespace: ${NAMESPACE}
 rules:
   - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["pods"]
+    resources: ["configmaps", "namespaces", "pods", "pods/log", "services"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["pods/exec"]
     verbs: ["get", "list", "watch", "create"]
   - apiGroups: [""]
-    resources: ["pods/log"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
     resources: ["pods/portforward"]
     verbs: ["get", "list", "create"]
-  - apiGroups: ["", "apps", "extensions"]
-    resources: ["configmaps", "services", "deployments", "ingresses", "statefulsets"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
     verbs: ["get", "list", "watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -33,9 +30,6 @@ roleRef:
   kind: Role
   name: optimize-team-read-permissions
 subjects:
-  - kind: ServiceAccount
-    name: sebastian-bathke
-    namespace: optimize
   - kind: ServiceAccount
     name: kyrylo-zakurdaiev
     namespace: optimize

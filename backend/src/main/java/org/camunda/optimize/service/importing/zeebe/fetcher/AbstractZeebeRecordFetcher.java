@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.importing.zeebe.fetcher;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -18,7 +18,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 
@@ -26,43 +26,35 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INDEX_NOT_FOUND_EXCEPTION_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
 
   @Getter
-  protected int partitionId;
+  protected final int partitionId;
 
-  private OptimizeElasticsearchClient esClient;
-  private ObjectMapper objectMapper;
-  private ConfigurationService configurationService;
+  private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
+  private final ConfigurationService configurationService;
+  private boolean hasSeenSequenceField;
 
   protected abstract String getBaseIndexName();
-
-  protected abstract Set<String> getIntentsForRecordType();
 
   protected abstract Class<T> getRecordDtoClass();
 
   public List<T> getZeebeRecordsForPrefixAndPartitionFrom(PositionBasedImportPage positionBasedImportPage) {
-    final QueryBuilder queryBuilder =
-      boolQuery()
-        .must(termsQuery(ZeebeRecordDto.Fields.intent, getIntentsForRecordType()))
-        .must(termQuery(ZeebeRecordDto.Fields.partitionId, partitionId))
-        .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
-
+    setHaveSeenSequenceField(positionBasedImportPage);
     SearchSourceBuilder searchSourceBuilder =
       new SearchSourceBuilder()
-        .query(queryBuilder)
+        .query(getRecordQuery(positionBasedImportPage))
         .size(configurationService.getConfiguredZeebe().getMaxImportPageSize())
-        .sort(ZeebeRecordDto.Fields.position, SortOrder.ASC);
+        .sort(getSortField(), SortOrder.ASC);
     final SearchRequest searchRequest = new SearchRequest(getIndexAlias())
       .source(searchSourceBuilder)
       .routing(String.valueOf(partitionId))
@@ -83,6 +75,28 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
       }
     }
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), getRecordDtoClass(), objectMapper);
+  }
+
+  private BoolQueryBuilder getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
+    return hasSeenSequenceField
+      ? boolQuery()
+      .must(rangeQuery(ZeebeRecordDto.Fields.sequence)
+              .gt(positionBasedImportPage.getSequence())
+              .lte(positionBasedImportPage.getSequence() + configurationService.getConfiguredZeebe().getMaxImportPageSize()))
+      : boolQuery()
+      .must(termQuery(ZeebeRecordDto.Fields.partitionId, partitionId))
+      .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
+  }
+
+  private String getSortField() {
+    return hasSeenSequenceField ? ZeebeRecordDto.Fields.sequence : ZeebeRecordDto.Fields.position;
+  }
+
+  private void setHaveSeenSequenceField(final PositionBasedImportPage positionBasedImportPage) {
+    if (!hasSeenSequenceField && positionBasedImportPage.getSequence() != 0L) {
+      log.info("First Zeebe record with sequence field has been imported. Zeebe records will now be fetched based on sequence.");
+      hasSeenSequenceField = true;
+    }
   }
 
   private String getIndexAlias() {

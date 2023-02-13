@@ -78,7 +78,7 @@ public class ExportRestService {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
     final List<OptimizeEntityExportDto> jsonDashboards =
-      entityExportService.getCompleteDashboardExportAsUser(userId, Sets.newHashSet(dashboardId));
+      entityExportService.getCompleteDashboardExportAsUser(userId, dashboardId);
 
     return createJsonResponse(fileName, jsonDashboards);
   }

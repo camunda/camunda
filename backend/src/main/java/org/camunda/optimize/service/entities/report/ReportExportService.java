@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.export.report.ReportDefinitionExportDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +34,7 @@ import static java.util.stream.Collectors.toList;
 public class ReportExportService {
   private final ReportReader reportReader;
   private final ReportAuthorizationService reportAuthorizationService;
+  private final AuthorizedCollectionService authorizedCollectionService;
 
   public List<ReportDefinitionExportDto> getReportExportDtos(final Set<String> reportIds) {
     log.debug("Exporting all reports with IDs {} for export via API.", reportIds);
@@ -110,6 +112,11 @@ public class ReportExportService {
       if (!reportAuthorizationService.isAuthorizedToReport(userId, reportDef)) {
         notAuthorizedReportIds.add(reportDef.getId());
       }
+      Optional.ofNullable(reportDef.getCollectionId())
+        .ifPresent(collectionId -> authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
+          userId,
+          collectionId
+        ));
     });
 
     if (!notAuthorizedReportIds.isEmpty()) {

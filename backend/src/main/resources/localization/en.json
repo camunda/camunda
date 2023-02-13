@@ -465,6 +465,11 @@
       "exceededInstances": "Exceeded-instances-{name}",
       "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."
     },
+    "updateReportPreview": {
+      "switchLabel": "Update Preview Automatically",
+      "buttonLabel": "Run",
+      "cannotUpdate": "This function only works with automatic preview update turned on"
+    },
     "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data",
     "errorNotice": "Error loading data",
@@ -744,8 +749,10 @@
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",
       "externalUrl": "External URL",
-      "newReport": "New Report from a template"
+      "newReport": "New Report from a template",
+      "textReport": "Text Report"
     },
+    "textReportEditNotification": "This is a feature we plan to build",
     "noAuthorization": "Missing authorization",
     "noReportAccess": "No access to report",
     "filter": {
@@ -1468,6 +1475,59 @@
     "importDefinitionDoesNotExist": "Import failed because the imported entity requires definitions that don't exist.",
     "importIndexVersionMismatch": "Import failed because the data structure of the imported entities do not match the current data structure. Please migrate the data in your source Optimize before exporting to ensure the Optimize Version matches.",
     "importDefinitionForbidden": "Import failed because you are not authorized to access some of the required definitions for the imported entity.",
-    "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported."
+    "importFileInvalid": "Import failed because the provided file was invalid. Only JSON files exported from Optimize can be imported.",
+    "invalidAlertEmailAddresses": "Users with the following email addresses are not available for receiving alerts: {invalidAlertEmails}"
+  },
+  "textEditor": {
+    "toolbar": {
+      "history": {
+        "undo": "Undo",
+        "redo": "Redo"
+      },
+      "align": {
+        "left": "Left",
+        "center": "Center",
+        "right": "Right"
+      },
+      "styles": {
+        "bold": "Bold",
+        "italic": "Italic",
+        "underline": "Underline",
+        "strikethrough": "Strikethrough",
+        "code": "Code"
+      },
+      "blockStyles": {
+        "bullet": "Bulleted List",
+        "code": "Code Block",
+        "h1": "Heading 1",
+        "h2": "Heading 2",
+        "h3": "Heading 3",
+        "number": "Numbered List",
+        "paragraph": "Normal",
+        "quote": "Quote Block"
+      },
+      "insert": {
+        "label": "Insert",
+        "horizontalRule": "Horizontal Rule",
+        "image": "Image",
+        "link": "Link"
+      }
+    },
+    "plugins": {
+      "images": {
+        "title": "Insert Image",
+        "urlLabel": "Image URL",
+        "urlPlaceholder": "https://picture/some-picture.jpg",
+        "altTextLabel": "Image name",
+        "altTextPlaceholder": "Some picture"
+      },
+      "link": {
+        "title": "Insert Link",
+        "urlLabel": "Link URL",
+        "urlPlaceholder": "https://example.com",
+        "altTextLabel": "Display text",
+        "altTextPlaceholder": "Link to example.com"
+      }
+    }
   }
 }

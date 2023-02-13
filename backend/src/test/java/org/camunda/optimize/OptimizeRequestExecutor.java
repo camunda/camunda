@@ -719,6 +719,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetInstantPreviewDashboardRequest(String processDefinitionKey, String template) {
+    this.path = "dashboard/instant/" + processDefinitionKey;
+    this.addSingleQueryParam("template", template);
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetManagementDashboardRequest() {
     this.path = "dashboard/management";
     this.method = GET;
@@ -1159,7 +1166,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildImportEntityRequest(final String collectionId,
                                                           final Set<OptimizeEntityExportDto> exportedDtos) {
-    this.path = "import/";
+    this.path = "import";
     this.body = getBody(exportedDtos);
     this.method = POST;
     setCollectionIdQueryParam(collectionId);
@@ -1167,7 +1174,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildImportEntityRequest(final Entity<?> importRequestBody) {
-    this.path = "import/";
+    this.path = "import";
     this.body = importRequestBody;
     this.method = POST;
     return this;

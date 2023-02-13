@@ -1,15 +1,31 @@
 <configuration>
 
   <appender name="UPGRADE" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} - %msg%n</pattern>
-    </encoder>
+    <if condition='property("JSON_LOGGING").contains("true")'>
+      <then>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        </encoder>
+      </then>
+      <else>
+        <encoder>
+          <pattern>%d{HH:mm:ss.SSS} - %msg%n</pattern>
+        </encoder>
+      </else>
+    </if>
   </appender>
 
   <appender name="RUNTIME" class="ch.qos.logback.core.ConsoleAppender">
-    <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-    </encoder>
+    <if condition='property("JSON_LOGGING").contains("true")'>
+      <then>
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+        </encoder>
+      </then>
+      <else>
+        <encoder>
+          <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+      </else>
+    </if>
   </appender>
 
   <!-- Change the log level for the Optimize runtime here. If provided, the environment variable will take precedence -->

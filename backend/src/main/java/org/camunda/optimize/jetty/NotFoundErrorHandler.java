@@ -25,19 +25,20 @@ public class NotFoundErrorHandler extends ErrorHandler {
   private static final Logger logger = Log.getLogger(NotFoundErrorHandler.class);
 
   @Override
-  public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException {
+  public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    throws IOException {
 
     response.setHeader(HttpHeader.CONTENT_ENCODING.toString(), null);
 
     String requestUri = request.getRequestURI();
     boolean notApiOrPage = !requestUri.startsWith(API_PATH) &&
-        (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
+      (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
 
     if (notApiOrPage && Response.Status.NOT_FOUND.getStatusCode() == response.getStatus()) {
       response.setStatus(Response.Status.OK.getStatusCode());
       response.setContentType(MimeTypes.Type.TEXT_HTML.toString());
       Dispatcher dispatcher = (Dispatcher) ((Request) request).getErrorContext().getRequestDispatcher(INDEX_PAGE);
-      
+
       try {
         dispatcher.forward(request, response);
       } catch (ServletException e) {

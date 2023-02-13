@@ -6,14 +6,15 @@
  */
 
 import {getColorFor} from './colorsUtils';
-import {calculateLinePosition} from './service';
+import {calculateLinePosition, getAxesConfig} from './service';
 
 export default function drawLine(isVertical) {
+  const groupByAxisId = getAxesConfig(isVertical).groupBy.id;
   return {
     afterDatasetsDraw: function (chart) {
       if (chart.options.lineAt >= 0 && chart.options.lineAt !== false) {
         const ctx = chart.ctx;
-        const groupByAxis = chart.scales['groupByAxis'];
+        const groupByAxis = chart.scales[groupByAxisId];
         const lineAt = calculateLinePosition(chart);
 
         ctx.save();

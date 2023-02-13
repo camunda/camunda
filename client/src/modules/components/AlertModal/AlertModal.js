@@ -245,7 +245,7 @@ export class AlertModal extends React.Component {
       report,
     } = this.state;
 
-    const {reports, webhooks, onClose, onRemove} = this.props;
+    const {reports, webhooks, onClose, onRemove, disabled} = this.props;
     const selectedReport = reports.find((report) => report.id === reportId) || {};
     const reportMeasure = this.getReportMeasure(reportId);
 
@@ -467,7 +467,7 @@ export class AlertModal extends React.Component {
           <Button main onClick={onClose}>
             {t('common.cancel')}
           </Button>
-          <Button main primary onClick={this.confirm} disabled={invalid}>
+          <Button main primary onClick={this.confirm} disabled={invalid || disabled}>
             {this.isInEditingMode() ? t('alert.apply') : t('alert.create')}
           </Button>
         </Modal.Actions>

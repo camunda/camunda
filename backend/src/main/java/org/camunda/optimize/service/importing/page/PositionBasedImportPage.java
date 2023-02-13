@@ -11,5 +11,6 @@ import lombok.Data;
 public class PositionBasedImportPage implements ImportPage {
 
   private Long position = 0L;
+  private Long sequence = 0L;
 
 }
