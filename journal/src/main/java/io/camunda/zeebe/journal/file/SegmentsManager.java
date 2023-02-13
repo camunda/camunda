@@ -47,7 +47,7 @@ final class SegmentsManager {
 
   private final SegmentLoader segmentLoader;
 
-  private final long lastFlushedIndex;
+  private long lastFlushedIndex;
 
   private final String name;
 
@@ -55,7 +55,6 @@ final class SegmentsManager {
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
-      final long lastFlushedIndex,
       final String name,
       final SegmentLoader segmentLoader) {
     this.name = checkNotNull(name, "name cannot be null");
@@ -63,7 +62,6 @@ final class SegmentsManager {
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
-    this.lastFlushedIndex = lastFlushedIndex;
     this.segmentLoader = segmentLoader;
   }
 
@@ -230,7 +228,8 @@ final class SegmentsManager {
   }
 
   /** Loads existing segments from the disk * */
-  void open() {
+  void open(final long lastFlushedIndex) {
+    this.lastFlushedIndex = lastFlushedIndex;
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
     for (final Segment segment : loadSegments()) {

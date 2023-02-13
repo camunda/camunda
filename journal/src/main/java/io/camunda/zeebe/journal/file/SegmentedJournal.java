@@ -63,7 +63,7 @@ public final class SegmentedJournal implements Journal {
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
     this.journalMetaStore = journalMetaStore;
 
-    this.segments.open();
+    this.segments.open(journalMetaStore.loadLastFlushedIndex());
     writer = new SegmentedJournalWriter(this);
   }
 
