@@ -41,7 +41,7 @@
     <version.assertj-core>3.24.2</version.assertj-core>
     <version.jackson>2.14.1</version.jackson>
     <version.auth0>1.9.4</version.auth0>
-    <version.auth0.jwt>4.2.2</version.auth0.jwt>
+    <version.auth0.jwt>4.3.0</version.auth0.jwt>
     <version.gson>2.10.1</version.gson>
     <version.node>v16.18.1</version.node>
     <version.yarn>v1.22.10</version.yarn>
