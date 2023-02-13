@@ -11,6 +11,7 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -33,7 +34,11 @@ final class JournalReaderTest {
     final File directory = tempDir.resolve("data").toFile();
 
     journal =
-        SegmentedJournal.builder().withDirectory(directory).withJournalIndexDensity(5).build();
+        SegmentedJournal.builder()
+            .withDirectory(directory)
+            .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
+            .build();
     reader = journal.openReader();
   }
 
@@ -73,7 +78,7 @@ final class JournalReaderTest {
     assertThat(nextIndex).isEqualTo(journal.getFirstIndex());
     final JournalRecord record = reader.next();
     assertThat(record.index()).isEqualTo(nextIndex);
-    assertThat(record.asqn()).isEqualTo(1);
+    assertThat(record.asqn()).isOne();
   }
 
   @Test
@@ -173,7 +178,7 @@ final class JournalReaderTest {
 
     // when - then
     assertThat(reader.seekToAsqn(5, firstIndex)).isEqualTo(firstIndex);
-    assertThat(reader.next().asqn()).isEqualTo(1);
+    assertThat(reader.next().asqn()).isOne();
 
     assertThat(reader.seekToAsqn(5, secondIndex)).isEqualTo(secondIndex);
     assertThat(reader.next().asqn()).isEqualTo(4);
@@ -245,7 +250,7 @@ final class JournalReaderTest {
     assertThat(nextIndex).isEqualTo(journal.getFirstIndex());
     assertThat(reader.hasNext()).isTrue();
     final JournalRecord record = reader.next();
-    assertThat(record.asqn()).isEqualTo(1);
+    assertThat(record.asqn()).isOne();
     assertThat(record.index()).isEqualTo(nextIndex);
     assertThat(record.data()).isEqualTo(data);
   }

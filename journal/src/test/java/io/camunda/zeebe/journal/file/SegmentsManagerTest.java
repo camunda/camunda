@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -36,15 +37,15 @@ class SegmentsManagerTest {
   @Test
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
-    final var segments = createSegmentsManager(0);
-    segments.open();
-    segments.getFirstSegment().createReader();
+    final var segments = createSegmentsManager();
+    segments.open(0);
+    Objects.requireNonNull(segments.getFirstSegment()).createReader();
     segments.getFirstSegment().delete();
 
     // when
     // if we close the current journal, it will delete the files on closing. So we cannot test this
     // scenario.
-    createSegmentsManager(0).open();
+    createSegmentsManager().open(0);
 
     // then
     final File logDirectory = directory.resolve("data").toFile();
@@ -67,8 +68,8 @@ class SegmentsManagerTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    final var segments = createSegmentsManager(index);
-    assertThatThrownBy(segments::open).isInstanceOf(CorruptedJournalException.class);
+    final var segments = createSegmentsManager();
+    assertThatThrownBy(() -> segments.open(index)).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -85,10 +86,10 @@ class SegmentsManagerTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    final var segments = createSegmentsManager(index);
-    assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(index);
-    assertThat(segments.getLastSegment().index()).isEqualTo(index);
+    final var segments = createSegmentsManager();
+    assertThatNoException().isThrownBy(() -> segments.open(index));
+    assertThat(Objects.requireNonNull(segments.getFirstSegment()).index()).isEqualTo(index);
+    assertThat(Objects.requireNonNull(segments.getLastSegment()).index()).isEqualTo(index);
   }
 
   @Test
@@ -102,10 +103,10 @@ class SegmentsManagerTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    final var segments = createSegmentsManager(0);
-    assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(1);
-    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
+    final var segments = createSegmentsManager();
+    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThat(Objects.requireNonNull(segments.getFirstSegment()).index()).isOne();
+    assertThat(segments.getFirstSegment().lastIndex()).isZero();
   }
 
   @Test
@@ -117,21 +118,20 @@ class SegmentsManagerTest {
     assertThat(emptyLog.createNewFile()).isTrue();
 
     // when
-    final var segments = createSegmentsManager(0);
+    final var segments = createSegmentsManager();
 
     // then
-    assertThatNoException().isThrownBy(segments::open);
-    assertThat(segments.getFirstSegment().index()).isEqualTo(1);
-    assertThat(segments.getFirstSegment().lastIndex()).isEqualTo(0);
+    assertThatNoException().isThrownBy(() -> segments.open(0));
+    assertThat(Objects.requireNonNull(segments.getFirstSegment()).index()).isOne();
+    assertThat(segments.getFirstSegment().lastIndex()).isZero();
   }
 
-  private SegmentsManager createSegmentsManager(final long lastFlushedIndex) {
+  private SegmentsManager createSegmentsManager() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     return new SegmentsManager(
         journalIndex,
         entrySize + SegmentDescriptor.getEncodingLength(),
         directory.resolve("data").toFile(),
-        lastFlushedIndex,
         JOURNAL_NAME,
         new SegmentLoader());
   }
@@ -147,6 +147,7 @@ class SegmentsManagerTest {
             (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
+        .withMetaStore(new MockJournalMetastore())
         .build();
   }
 
