@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.state.immutable.MessageState;
-import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -18,9 +17,10 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 
 public final class MessageTimeToLiveChecker implements Task {
 
-  private final MessageState messageState;
+  private static final MessageRecord EMPTY_DELETE_MESSAGE_COMMAND =
+      new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
 
-  private final MessageRecord deleteMessageCommand = new MessageRecord();
+  private final MessageState messageState;
 
   public MessageTimeToLiveChecker(final MessageState messageState) {
     this.messageState = messageState;
@@ -30,26 +30,13 @@ public final class MessageTimeToLiveChecker implements Task {
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     messageState.visitMessagesWithDeadlineBefore(
         ActorClock.currentTimeMillis(),
-        message -> writeDeleteMessageCommand(message, taskResultBuilder));
+        expiredMessageKey -> writeDeleteMessageCommand(expiredMessageKey, taskResultBuilder));
     return taskResultBuilder.build();
   }
 
   private boolean writeDeleteMessageCommand(
-      final StoredMessage storedMessage, final TaskResultBuilder taskResultBuilder) {
-    final var message = storedMessage.getMessage();
-
-    deleteMessageCommand.reset();
-    deleteMessageCommand
-        .setName(message.getName())
-        .setCorrelationKey(message.getCorrelationKey())
-        .setTimeToLive(message.getTimeToLive())
-        .setVariables(message.getVariablesBuffer());
-
-    if (message.hasMessageId()) {
-      deleteMessageCommand.setMessageId(message.getMessageIdBuffer());
-    }
-
+      final long expiredMessageKey, final TaskResultBuilder taskResultBuilder) {
     return taskResultBuilder.appendCommandRecord(
-        storedMessage.getMessageKey(), MessageIntent.EXPIRE, deleteMessageCommand);
+        expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND);
   }
 }
