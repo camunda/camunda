@@ -8,11 +8,11 @@
 # Define the Elasticsearch host, index name and number of returned documents
 host="http://localhost:9200"
 # Add the index name that you want to dump here
-index="optimize-dashboard_v6"
+index="optimize-single-process-report_v9"
 size=1000
 
 # Define the output file
-output_file="bulk_format.json"
+output_file="39-singleprocessreport-index.json"
 
 # Initialize the bulk_data variable
 bulk_data=""

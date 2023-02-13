@@ -15,7 +15,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.INSTANT_DAS
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_LONG;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 
 public class InstantPreviewDashboardMetadataIndex extends DefaultIndexMappingCreator {
 
@@ -45,13 +44,13 @@ public class InstantPreviewDashboardMetadataIndex extends DefaultIndexMappingCre
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(DASHBOARD_ID)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(PROCESS_DEFINITION_KEY)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(TEMPLATE_NAME)
-        .field(MAPPING_PROPERTY_TYPE, TYPE_TEXT)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(TEMPLATE_HASH)
         .field(MAPPING_PROPERTY_TYPE, TYPE_LONG)

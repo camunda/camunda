@@ -69,6 +69,7 @@ import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
@@ -201,12 +202,10 @@ public class ReportService implements CollectionReferencingService {
                                          final boolean keepSubReportNames) {
     final AuthorizedReportDefinitionResponseDto authorizedReportDefinition = getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition = authorizedReportDefinition.getDefinitionDto();
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-
-    if (originalReportDefinition instanceof SingleProcessReportDefinitionRequestDto
-      && ((SingleProcessReportDefinitionRequestDto) originalReportDefinition).getData().isManagementReport()) {
-      throw new OptimizeValidationException("Management reports cannot be copied");
+    if (isManagementOrInstantPreviewReport(originalReportDefinition)) {
+      throw new OptimizeValidationException("Management and Instant Preview Reports cannot be copied");
     }
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
@@ -346,8 +345,8 @@ public class ReportService implements CollectionReferencingService {
     final SingleProcessReportDefinitionRequestDto currentReportVersion = getSingleProcessReportDefinition(
       reportId, userId
     );
-    if (currentReportVersion.getData().isManagementReport()) {
-      throw new OptimizeValidationException("Management Reports cannot be updated");
+    if (isManagementOrInstantPreviewReport(currentReportVersion)) {
+      throw new OptimizeValidationException("Management and Instant Preview Reports cannot be updated");
     }
     getReportWithEditAuthorization(userId, currentReportVersion);
     ensureCompliesWithCollectionScope(userId, currentReportVersion.getCollectionId(), updatedReport);
@@ -397,18 +396,21 @@ public class ReportService implements CollectionReferencingService {
 
   public void deleteReport(final String reportId) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
-    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto &&
-      ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {
-      throw new OptimizeValidationException("Management Reports cannot be deleted");
+    if (isManagementOrInstantPreviewReport(reportDefinition)) {
+      throw new OptimizeValidationException("Management and Instant Preview Reports cannot be deleted manually");
     }
+    removeReportAndAssociatedResources(reportId, reportDefinition);
+  }
+
+  public void deleteManagementOrInstantPreviewReport(final String reportId) {
+    final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
     removeReportAndAssociatedResources(reportId, reportDefinition);
   }
 
   public void deleteReportAsUser(final String userId, final String reportId, final boolean force) {
     final ReportDefinitionDto<?> reportDefinition = getReportOrFail(reportId);
-    if (reportDefinition instanceof SingleProcessReportDefinitionRequestDto
-      && ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()) {
-      throw new OptimizeValidationException("Management reports cannot be deleted");
+    if (isManagementOrInstantPreviewReport(reportDefinition)) {
+      throw new OptimizeValidationException("Management and Instant Preview Reports cannot be deleted");
     }
     getReportWithEditAuthorization(userId, reportDefinition);
     validateEntityEditorAuthorization(reportDefinition.getCollectionId(), userId);
@@ -832,6 +834,12 @@ public class ReportService implements CollectionReferencingService {
     to.setName(from.getName());
     to.setLastModifier(userId);
     to.setLastModified(from.getLastModified());
+  }
+
+  private boolean isManagementOrInstantPreviewReport(final ReportDefinitionDto<?> reportDefinition) {
+    return reportDefinition instanceof SingleProcessReportDefinitionRequestDto
+      && (((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isManagementReport()
+      || ((SingleProcessReportDefinitionRequestDto) reportDefinition).getData().isInstantPreviewReport());
   }
 
   @FunctionalInterface

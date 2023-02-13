@@ -86,6 +86,12 @@ public class DashboardClient {
       .getId();
   }
 
+  public Response createDashboardAndReturnResponse(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    return getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute();
+  }
+
   public Response updateDashboardWithReports(final String dashboardId,
                                              final List<String> reportIds) {
     final List<ReportLocationDto> reports = reportIds.stream()
@@ -106,6 +112,11 @@ public class DashboardClient {
       .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
+  public Response updateDashboardAndReturnResponse(String id, DashboardDefinitionRestDto updatedDashboard) {
+    return getRequestExecutor()
+      .buildUpdateDashboardRequest(id, updatedDashboard)
+      .execute();
+  }
   public Response updateDashboardAsUser(String id, DashboardDefinitionRestDto updatedDashboard, String username,
                                         String password) {
     return getRequestExecutor()
@@ -116,6 +127,12 @@ public class DashboardClient {
 
   public IdResponseDto copyDashboard(final String dashboardId) {
     return copyDashboardToCollection(dashboardId, null);
+  }
+
+  public Response copyDashboardAndReturnResponse(final String dashboardId) {
+    return getRequestExecutor()
+      .buildCopyDashboardRequest(dashboardId, null)
+      .execute();
   }
 
   public IdResponseDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
@@ -135,6 +152,12 @@ public class DashboardClient {
 
   public void deleteDashboard(final String dashboardId) {
     deleteDashboard(dashboardId, false);
+  }
+
+  public Response deleteDashboardAndReturnResponse(final String dashboardId) {
+    return getRequestExecutor()
+      .buildDeleteDashboardRequest(dashboardId, false)
+      .execute();
   }
 
   public void deleteDashboard(final String dashboardId, final boolean force) {

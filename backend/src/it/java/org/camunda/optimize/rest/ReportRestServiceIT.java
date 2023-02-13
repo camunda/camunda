@@ -50,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,6 +77,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWoName;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.mockserver.model.HttpRequest.request;
@@ -1221,6 +1223,81 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       });
   }
 
+  @Test
+  public void managementReportCannotBeCreated() {
+    // given
+    final SingleProcessReportDefinitionRequestDto reportDefinition =
+      new SingleProcessReportDefinitionRequestDto();
+    reportDefinition.getData().setManagementReport(true);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(reportDefinition)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+
+  @Test
+  public void managementReportCannotBeUpdated() {
+    // given
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+    final String reportId = findManagementReportId();
+    final SingleProcessReportDefinitionRequestDto updatedReport = new SingleProcessReportDefinitionRequestDto();
+    updatedReport.getData().setManagementReport(true);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(reportId, updatedReport)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void instantReportCannotBeCreated() {
+    // given
+    final SingleProcessReportDefinitionRequestDto reportDefinition =
+      new SingleProcessReportDefinitionRequestDto();
+    reportDefinition.getData().setInstantPreviewReport(true);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(reportDefinition)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void instantReportCannotBeUpdated() {
+    // given
+    String processDefKey = "aProceass";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    Optional<String> instantReportId = dashboardClient.getInstantPreviewDashboard(
+      processDefKey,
+      "template1.json"
+    ).getReportIds().stream().findFirst();
+    assertThat(instantReportId).isPresent();
+    final SingleProcessReportDefinitionRequestDto updatedReport = new SingleProcessReportDefinitionRequestDto();
+    updatedReport.getData().setInstantPreviewReport(true);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateSingleProcessReportRequest(instantReportId.get(), new SingleProcessReportDefinitionRequestDto())
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
   private List<ReportDataDefinitionDto> createSingleDefinitionListWithIdentifier(final String definitionIdentifier) {
     return List.of(new ReportDataDefinitionDto(
       definitionIdentifier,
@@ -1344,9 +1421,9 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
   private String findManagementReportId() {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-        SINGLE_PROCESS_REPORT_INDEX_NAME,
-        SingleProcessReportDefinitionRequestDto.class
-      )
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SingleProcessReportDefinitionRequestDto.class
+    )
       .stream()
       .filter(reportDef -> reportDef.getData().isManagementReport())
       .findFirst()

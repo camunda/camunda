@@ -50,6 +50,10 @@ public class ReportAuthorizationService {
     if (report.getCollectionId() != null) {
       role = collectionAuthorizationService.getUsersCollectionResourceRole(userId, report.getCollectionId())
         .orElse(null);
+    } else if (report.getData() instanceof ProcessReportDataDto &&
+               ((ProcessReportDataDto) report.getData()).isInstantPreviewReport()) {
+      role = isAuthorizedToAccessProcessReportDefinition(userId, (ProcessReportDataDto) report.getData()) ?
+        RoleType.VIEWER : null;
     } else if (Optional.ofNullable(report.getOwner()).map(owner -> owner.equals(userId)).orElse(true)) {
       role = RoleType.EDITOR;
     }

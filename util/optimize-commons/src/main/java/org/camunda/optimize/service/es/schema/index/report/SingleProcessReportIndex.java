@@ -21,8 +21,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_TEXT;
 public class SingleProcessReportIndex extends AbstractReportIndex {
 
   public static final String MANAGEMENT_REPORT = ProcessReportDataDto.Fields.managementReport;
+  public static final String INSTANT_PREVIEW_REPORT = ProcessReportDataDto.Fields.instantPreviewReport;
 
-  public static final int VERSION = 9;
+  public static final int VERSION = 10;
 
   @Override
   public String getIndexName() {
@@ -55,6 +56,9 @@ public class SingleProcessReportIndex extends AbstractReportIndex {
             .field(MAPPING_ENABLED_SETTING, false)
           .endObject()
           .startObject(MANAGEMENT_REPORT)
+            .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
+          .endObject()
+          .startObject(INSTANT_PREVIEW_REPORT)
             .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
           .endObject()
           .startObject(CONFIGURATION)

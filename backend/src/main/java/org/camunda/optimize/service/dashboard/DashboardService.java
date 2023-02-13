@@ -189,12 +189,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                                             final boolean keepReportNames) {
     final AuthorizedDashboardDefinitionResponseDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionRestDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
+    if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
+      throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be copied");
+    }
 
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     validateEntityEditorAuthorization(dashboardDefinition.getCollectionId(), userId);
-    if (dashboardDefinition.isManagementDashboard()) {
-      throw new OptimizeValidationException("Management Dashboards cannot be copied");
-    }
 
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
@@ -348,8 +348,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final AuthorizedDashboardDefinitionResponseDto dashboardWithEditAuthorization =
       getDashboardWithEditAuthorization(dashboardId, userId);
     if (dashboardWithEditAuthorization.getDefinitionDto() != null) {
-      if (dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()) {
-        throw new OptimizeValidationException("Management Dashboards cannot be edited");
+      if (dashboardWithEditAuthorization.getDefinitionDto().isManagementDashboard()
+        || dashboardWithEditAuthorization.getDefinitionDto().isInstantPreviewDashboard()) {
+        throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be edited");
       } else {
         validateEntityEditorAuthorization(dashboardWithEditAuthorization.getDefinitionDto().getCollectionId(), userId);
       }
@@ -384,6 +385,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   public void deleteDashboardAsUser(final String dashboardId, final String userId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
+    validateEntityCanBeDeletedByUser(dashboardDefinitionDto);
     validateEntityEditorAuthorization(dashboardDefinitionDto.getCollectionId(), userId);
     deleteDashboard(dashboardId, dashboardDefinitionDto);
   }
@@ -557,6 +559,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private void validateEntityEditorAuthorization(final String collectionId, final String userId) {
     if (collectionId == null && !identityService.getUserAuthorizations(userId).contains(AuthorizationType.ENTITY_EDITOR)) {
       throw new ForbiddenException("User is not an authorized entity editor");
+    }
+  }
+
+  private void validateEntityCanBeDeletedByUser(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
+      throw new OptimizeValidationException("Instant preview dashboards cannot be deleted");
     }
   }
 

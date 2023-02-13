@@ -59,11 +59,13 @@ public class InstantPreviewDashboardService {
   public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(final String processDefinitionKey,
                                                                              final String dashboardJsonTemplate,
                                                                              final String userId) {
-    String emptySafeDashboardTemplate= StringUtils.isEmpty(dashboardJsonTemplate)
-    ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
-    String processedTemplateName = emptySafeDashboardTemplate.replace(".","");
-    Optional<String> dashboardIdMaybe = instantDashboardMetadataReader.getInstantDashboardIdFor(processDefinitionKey,
-                                                                                                processedTemplateName);
+    String emptySafeDashboardTemplate = StringUtils.isEmpty(dashboardJsonTemplate)
+      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
+    String processedTemplateName = emptySafeDashboardTemplate.replace(".", "");
+    Optional<String> dashboardIdMaybe = instantDashboardMetadataReader.getInstantDashboardIdFor(
+      processDefinitionKey,
+      processedTemplateName
+    );
     if (dashboardIdMaybe.isPresent()) {
       return dashboardService.getDashboardDefinition(dashboardIdMaybe.get(), userId);
     } else {
@@ -78,15 +80,15 @@ public class InstantPreviewDashboardService {
       } else {
         throw new NotFoundException(
           String.format("Dashboard does not exist! Either the process definition [%s]" +
-                        " or the template [%s] does not exist", processDefinitionKey, emptySafeDashboardTemplate));
+                          " or the template [%s] does not exist", processDefinitionKey, emptySafeDashboardTemplate));
       }
     }
   }
 
   public Optional<InstantDashboardDataDto> createInstantPreviewDashboard(final String processDefinitionKey,
                                                                          final String dashboardJsonTemplate) {
- String emptySafeDashboardTemplate= StringUtils.isEmpty(dashboardJsonTemplate) 
-    ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
+    String emptySafeDashboardTemplate = StringUtils.isEmpty(dashboardJsonTemplate)
+      ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : dashboardJsonTemplate;
     final InstantDashboardDataDto instantDashboardDataDto = new InstantDashboardDataDto();
     instantDashboardDataDto.setTemplateName(emptySafeDashboardTemplate);
     instantDashboardDataDto.setProcessDefinitionKey(processDefinitionKey);
@@ -111,19 +113,25 @@ public class InstantPreviewDashboardService {
 
     exportDtos.stream()
       .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
-      .forEach(reportEntity -> ((SingleProcessReportDefinitionExportDto) reportEntity)
-        .getData().setDefinitions(List.of(new ReportDataDefinitionDto(processDefinitionKey))));
+      .forEach(reportEntity -> {
+        SingleProcessReportDefinitionExportDto singleReport = ((SingleProcessReportDefinitionExportDto) reportEntity);
+
+        singleReport.getData().setDefinitions(List.of(new ReportDataDefinitionDto(processDefinitionKey)));
+        singleReport.getData().setInstantPreviewReport(true);
+      });
 
     exportDtos.stream()
       .filter(DashboardDefinitionExportDto.class::isInstance)
-      .forEach(dashboardEntity-> ((DashboardDefinitionExportDto) dashboardEntity)
-        .setInstantPreviewDashboard(true));
+      .forEach(dashboardEntity -> {
+        DashboardDefinitionExportDto dashboardData = ((DashboardDefinitionExportDto) dashboardEntity);
+        dashboardData.setInstantPreviewDashboard(true);
+      });
 
     final List<EntityIdResponseDto> importedEntities =
-      entityImportService.importEntities(
-      null,
-      exportDtos
-    );
+      entityImportService.importInstantPreviewEntities(
+        null,
+        exportDtos
+      );
     return importedEntities
       .stream()
       .filter(entity -> entity.getEntityType() == EntityType.DASHBOARD)
@@ -147,7 +155,10 @@ public class InstantPreviewDashboardService {
         log.error("Could not read dashboard template from " + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename);
       }
     } catch (IOException e) {
-      log.error("Could not read dashboard template from " + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename, e);
+      log.error(
+        "Could not read dashboard template from " + INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplateFilename,
+        e
+      );
     }
     return Optional.empty();
   }
@@ -155,7 +166,7 @@ public class InstantPreviewDashboardService {
   @EventListener(ApplicationReadyEvent.class)
   /*
     This method checks at startup if any of the templates have changed. Should any template have changed, this will
-    trigger the removal of the instant preview dashboard entry as well as the deletion of the related dashboards and
+    trigger the removal of the Instant Preview Dashboard entry as well as the deletion of the related dashboards and
     reports. Since there is no way with spring boot to check all the files in the "resources" folder, we're assuming
     the following convention for the template name: templateN.json , where N is any positive integer. We will scan
     the folder as long as we keep finding templates, so we start with template1.json, template2.json,..., templateN
@@ -186,7 +197,7 @@ public class InstantPreviewDashboardService {
         if (dashboardDefinition.isInstantPreviewDashboard()) {
           final Set<String> reportsToDelete = dashboardDefinition.getReportIds();
           for (String reportId : reportsToDelete) {
-            reportService.deleteReport(reportId);
+            reportService.deleteManagementOrInstantPreviewReport(reportId);
           }
           dashboardService.deleteDashboard(dashboardIdToDelete);
         }
@@ -195,14 +206,14 @@ public class InstantPreviewDashboardService {
       // Whichever error occurred in the code above the details of it are contained in the exception message. Catching
       // all possible exceptions here so that Optimize doesn't crash if anything goes wrong with the template checks,
       // since any error is not critical and would not hinder optimize in functioning properly
-      log.error("There was an error deleting data from an outdated instant preview dashboard", e);
+      log.error("There was an error deleting data from an outdated Instant Preview Dashboard", e);
     }
   }
 
   public static long getChecksumCRC32(InputStream stream, int bufferSize) throws IOException {
     CheckedInputStream checkedInputStream = new CheckedInputStream(stream, new CRC32());
     byte[] buffer = new byte[bufferSize];
-    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0);
+    while (checkedInputStream.read(buffer, 0, buffer.length) >= 0) ;
     return checkedInputStream.getChecksum().getValue();
   }
 
@@ -215,6 +226,7 @@ public class InstantPreviewDashboardService {
 
   /**
    * This method returns the name of the next file to process by incrementing the current file name by one
+   *
    * @param fileName: name of the file to increment, e.g. template2.json
    * @return name of the fileName with the suffix incremented by 1, e.g. template3.json
    */

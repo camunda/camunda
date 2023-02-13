@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.pub;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -13,9 +14,12 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class PublicApiReportDeletionIT extends AbstractIT {
   private static final String ACCESS_TOKEN = "secret_export_token";
@@ -43,6 +47,25 @@ public class PublicApiReportDeletionIT extends AbstractIT {
 
     // when
     final Response deleteResponse = publicApiClient.deleteReport(reportId, ACCESS_TOKEN);
+
+    // then
+    assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void deleteInstantPreviewProcessReportNotSupported() {
+    // given
+    setAccessToken();
+    final String processDefKey = "dummy";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+    DashboardDefinitionRestDto originalDashboard =
+      dashboardClient.getInstantPreviewDashboard(processDefKey, "template1.json");
+    final Optional<String> instantReportId = originalDashboard.getReportIds().stream().findFirst();
+    assertThat(instantReportId).isPresent();
+
+    // when
+    final Response deleteResponse = publicApiClient.deleteReport(instantReportId.get(), ACCESS_TOKEN);
 
     // then
     assertThat(deleteResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());

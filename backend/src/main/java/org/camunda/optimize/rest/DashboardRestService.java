@@ -65,8 +65,8 @@ public class DashboardRestService {
                                           DashboardDefinitionRestDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (dashboardDefinitionDto != null) {
-      if (dashboardDefinitionDto.isManagementDashboard()) {
-        throw new OptimizeValidationException("Management Dashboards cannot be created");
+      if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
+        throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be created");
       }
       validateExternalDashboardLinks(dashboardDefinitionDto);
     }
@@ -119,7 +119,7 @@ public class DashboardRestService {
   }
 
   /**
-   * Retrieve the instant dashboard for the specified process and template
+   * Retrieve the Instant Preview Dashboard for the specified process and template
    */
   @GET
   @Path("/instant/{procDefKey}")

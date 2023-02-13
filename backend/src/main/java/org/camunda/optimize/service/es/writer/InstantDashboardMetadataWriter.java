@@ -39,7 +39,7 @@ public class InstantDashboardMetadataWriter {
   private final ObjectMapper objectMapper;
 
   public void saveInstantDashboard(InstantDashboardDataDto dashboardDataDto) {
-    log.debug("Writing new instant dashboard to Elasticsearch");
+    log.debug("Writing new Instant Preview Dashboard to Elasticsearch");
     String id = dashboardDataDto.getInstantDashboardId();
     try {
       IndexRequest request = new IndexRequest(INSTANT_DASHBOARD_INDEX_NAME)
@@ -51,17 +51,17 @@ public class InstantDashboardMetadataWriter {
 
       if (!indexResponse.getResult().equals(DocWriteResponse.Result.CREATED) &&
           !indexResponse.getResult().equals(DocWriteResponse.Result.UPDATED)) {
-        String message = "Could not write instant dashboard data to Elasticsearch. " +
+        String message = "Could not write Instant Preview Dashboard data to Elasticsearch. " +
           "Maybe the connection to Elasticsearch got lost?";
         log.error(message);
         throw new OptimizeRuntimeException(message);
       }
     } catch (IOException e) {
-      String errorMessage = "Could not write instant dashboard data to Elasticsearch.";
+      String errorMessage = "Could not write Instant Preview Dashboard data to Elasticsearch.";
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    log.debug("Instant dashboard information with id [{}] has been created", id);
+    log.debug("Instant Preview Dashboard information with id [{}] has been created", id);
   }
 
   public List<String> deleteOutdatedTemplateEntries(List<Long> hashesAllowed) throws IOException {
@@ -81,7 +81,7 @@ public class InstantDashboardMetadataWriter {
       try {
         esClient.delete(deleteRequest);
       } catch (IOException e) {
-        log.error(String.format("There was an error deleting data from an outdated instant preview dashboard: %s",
+        log.error(String.format("There was an error deleting data from an outdated Instant Preview Dashboard: %s",
                                 hit.getId()), e);
       }
     });

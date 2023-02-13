@@ -63,7 +63,18 @@ public class EntityImportService {
   public List<EntityIdResponseDto> importEntities(final String collectionId,
                                                   final Set<OptimizeEntityExportDto> entitiesToImport) {
     validateCompletenessOrFail(entitiesToImport);
+    validateNoInstantPreviewEntities(entitiesToImport);
+    return importValidatedEntities(collectionId, entitiesToImport);
+  }
 
+  public List<EntityIdResponseDto> importInstantPreviewEntities(final String collectionId,
+                                                                final Set<OptimizeEntityExportDto> entitiesToImport) {
+    validateCompletenessOrFail(entitiesToImport);
+    return importValidatedEntities(collectionId, entitiesToImport);
+  }
+
+  private List<EntityIdResponseDto> importValidatedEntities(final String collectionId,
+                                                            final Set<OptimizeEntityExportDto> entitiesToImport) {
     final List<ReportDefinitionExportDto> reportsToImport = retrieveAllReportsToImport(entitiesToImport);
     final List<DashboardDefinitionExportDto> dashboardsToImport = retrieveAllDashboardsToImport(entitiesToImport);
 
@@ -107,7 +118,6 @@ public class EntityImportService {
 
     return new ArrayList<>(originalIdToNewIdMap.values());
   }
-
 
   public Set<OptimizeEntityExportDto> readExportDtoOrFailIfInvalid(final String exportedDtoJson) {
     if (StringUtils.isEmpty(exportedDtoJson)) {
@@ -201,7 +211,16 @@ public class EntityImportService {
           "report or dashboard are missing. The missing reports have IDs: " + requiredReportIds
       );
     }
+  }
 
+  private void validateNoInstantPreviewEntities(final Set<OptimizeEntityExportDto> entitiesToImport) {
+    if (entitiesToImport.stream()
+      .anyMatch(exportDto -> (DASHBOARD.equals(exportDto.getExportEntityType())
+        && ((DashboardDefinitionExportDto) exportDto).isInstantPreviewDashboard())
+        || (SINGLE_PROCESS_REPORT.equals(exportDto.getExportEntityType())
+        && ((SingleProcessReportDefinitionExportDto) exportDto).getData().isInstantPreviewReport()))) {
+      throw new OptimizeValidationException("Cannot import Instant Preview Dashboards and reports.");
+    }
   }
 
 }

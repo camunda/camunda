@@ -63,6 +63,8 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessVisualization visualization;
   @Builder.Default
   protected boolean managementReport = false;
+  @Builder.Default
+  protected boolean instantPreviewReport = false;
 
   public String getProcessDefinitionKey() {
     return getDefinitionKey();

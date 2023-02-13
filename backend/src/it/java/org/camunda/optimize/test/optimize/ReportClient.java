@@ -297,6 +297,12 @@ public class ReportClient {
       .getId();
   }
 
+  public Response createSingleProcessReportAndReturnResponse(SingleProcessReportDefinitionRequestDto singleProcessReportDefinitionDto) {
+    return getRequestExecutor()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+      .execute();
+  }
+
   public String createSingleProcessReport(final ProcessReportDataDto data) {
     return createSingleProcessReport(data, null);
   }

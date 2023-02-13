@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluation
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
@@ -71,8 +72,9 @@ public class ReportRestService {
   public IdResponseDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
                                                     @Valid final SingleProcessReportDefinitionRequestDto definition) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (definition != null && definition.getData() != null &&  definition.getData().isManagementReport()) {
-      throw new OptimizeValidationException("Management Reports cannot be created manually");
+    if (definition != null && definition.getData() != null &&
+      (definition.getData().isManagementReport() || definition.getData().isInstantPreviewReport())) {
+      throw new OptimizeValidationException("Management or Instant Preview Reports cannot be created manually");
     }
     return reportService.createNewSingleProcessReport(
       userId,
@@ -228,8 +230,9 @@ public class ReportRestService {
                                         @QueryParam("force") final boolean force,
                                         @NotNull @Valid final SingleProcessReportDefinitionRequestDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (updatedReport.getData() != null &&  updatedReport.getData().isManagementReport()) {
-      throw new OptimizeValidationException("Existing Reports cannot be set as Management Reports");
+    final @Valid ProcessReportDataDto reportData = updatedReport.getData();
+    if (reportData != null && (reportData.isManagementReport() || reportData.isInstantPreviewReport())) {
+      throw new OptimizeValidationException("Existing Reports cannot be set as Management/Instant Preview Reports");
     }
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);

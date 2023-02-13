@@ -2,7 +2,7 @@
   "id" : "de508893-50e2-4647-a44c-e7b955f5a77c",
   "exportEntityType" : "single_process_report",
   "name" : "Throughput (30-day rolling)",
-  "sourceIndexVersion" : 9,
+  "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -131,7 +131,7 @@
   "id" : "a7fe3d92-e8d2-4288-9209-a6e30fb70cbd",
   "exportEntityType" : "single_process_report",
   "name" : "P75 Duration",
-  "sourceIndexVersion" : 9,
+  "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -246,7 +246,7 @@
   "id" : "c7304ec0-f532-413f-bd4b-dc8adf5d3183",
   "exportEntityType" : "single_process_report",
   "name" : "Incident-Free Rate",
-  "sourceIndexVersion" : 9,
+  "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -366,7 +366,7 @@
   "id" : "d816cc24-87e9-4086-a791-fc0624662819",
   "exportEntityType" : "single_process_report",
   "name" : "% SLA Met",
-  "sourceIndexVersion" : 9,
+  "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
@@ -491,7 +491,7 @@
   "id" : "754367b4-485a-4e6b-9b16-8423d2760ef3",
   "exportEntityType" : "single_process_report",
   "name" : "P99 Duration",
-  "sourceIndexVersion" : 9,
+  "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
     "configuration" : {
