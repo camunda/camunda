@@ -20,9 +20,18 @@ type Events =
       hasRemainingTasks: boolean;
       filter: string;
     }
-  | {eventName: 'tasks-filtered'; filter: string}
-  | {eventName: 'navigation'; link: 'header-logo'}
-  | {eventName: 'app-switcher-item-clicked'; app: string}
+  | {
+      eventName: 'tasks-filtered';
+      filter: string;
+    }
+  | {
+      eventName: 'navigation';
+      link: 'header-logo' | 'header-tasks' | 'header-processes';
+    }
+  | {
+      eventName: 'app-switcher-item-clicked';
+      app: string;
+    }
   | {
       eventName: 'info-bar';
       link: 'documentation' | 'academy' | 'feedback' | 'slack';
@@ -30,6 +39,50 @@ type Events =
   | {
       eventName: 'user-side-bar';
       link: 'cookies' | 'terms-conditions' | 'privacy-policy' | 'imprint';
+    }
+  | {
+      eventName: 'processes-consent-refused';
+    }
+  | {
+      eventName: 'processes-consent-accepted';
+    }
+  | {
+      eventName: 'processes-alpha-consent-link-clicked';
+    }
+  | {
+      eventName: 'processes-loaded';
+      count: number;
+      filter: string;
+    }
+  | {
+      eventName: 'processes-fetch-failed';
+    }
+  | {
+      eventName: 'processes-empty-message-link-clicked';
+    }
+  | {
+      eventName: 'early-access-feedback-link-clicked';
+      feature: 'start-process';
+    }
+  | {
+      eventName: 'process-start-clicked';
+    }
+  | {
+      eventName: 'process-started';
+    }
+  | {
+      eventName: 'process-start-failed';
+    }
+  | {
+      eventName: 'process-tasks-polling-ended';
+      outcome:
+        | 'single-task-found'
+        | 'multiple-tasks-found'
+        | 'no-tasks-found'
+        | 'navigated-away';
+    }
+  | {
+      eventName: 'process-task-toast-clicked';
     };
 
 const STAGE_ENV = getStage(window.location.host);

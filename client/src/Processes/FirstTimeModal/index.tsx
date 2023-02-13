@@ -12,6 +12,7 @@ import Placeholder from './placeholder.svg';
 import {Container, Image, ActionableNotification, Tag} from './styled';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {Pages} from 'modules/constants/pages';
+import {tracking} from 'modules/tracking';
 
 const FirstTimeModal: React.FC = () => {
   const location = useLocation();
@@ -20,6 +21,9 @@ const FirstTimeModal: React.FC = () => {
     !Boolean(getStateLocally('hasConsentedToStartProcess') ?? false),
   );
   const goToInitialPage = () => {
+    tracking.track({
+      eventName: 'processes-consent-refused',
+    });
     navigate(
       {
         ...location,
@@ -56,6 +60,9 @@ const FirstTimeModal: React.FC = () => {
       onRequestSubmit={() => {
         setIsOpen(false);
         storeStateLocally('hasConsentedToStartProcess', true);
+        tracking.track({
+          eventName: 'processes-consent-accepted',
+        });
       }}
       onSecondarySubmit={() => {
         goToInitialPage();
@@ -92,6 +99,9 @@ const FirstTimeModal: React.FC = () => {
             lowContrast
             inline
             onActionButtonClick={() => {
+              tracking.track({
+                eventName: 'processes-alpha-consent-link-clicked',
+              });
               window.open(
                 'https://docs.camunda.io/docs/reference/early-access/#alpha',
                 '_blank',

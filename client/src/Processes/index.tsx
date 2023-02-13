@@ -32,6 +32,7 @@ import {FirstTimeModal} from './FirstTimeModal';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/utils/logger';
 import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
+import {tracking} from 'modules/tracking';
 
 const Processes: React.FC = observer(() => {
   const {instance} = newProcessInstance;
@@ -47,6 +48,13 @@ const Processes: React.FC = observer(() => {
       search: searchParam,
     },
     pollInterval: 5000,
+    onCompleted: () => {
+      tracking.track({
+        eventName: 'processes-loaded',
+        filter: variables?.search ?? '',
+        count: data?.processes.length ?? 0,
+      });
+    },
   });
   const isExecutingFirstFetch = networkStatus === NetworkStatus.loading;
   const debouncedNavigate = useRef(
@@ -74,6 +82,9 @@ const Processes: React.FC = observer(() => {
 
   useEffect(() => {
     if (error !== undefined) {
+      tracking.track({
+        eventName: 'processes-fetch-failed',
+      });
       notificationsStore.displayNotification({
         isDismissable: false,
         kind: 'error',
@@ -98,6 +109,10 @@ const Processes: React.FC = observer(() => {
             lowContrast
             inline
             onActionButtonClick={() => {
+              tracking.track({
+                eventName: 'early-access-feedback-link-clicked',
+                feature: 'start-process',
+              });
               window.open(
                 'https://forum.camunda.io/',
                 '_blank',
@@ -140,6 +155,11 @@ const Processes: React.FC = observer(() => {
                   target="_blank"
                   rel="noopener noreferrer"
                   inline
+                  onClick={() => {
+                    tracking.track({
+                      eventName: 'processes-empty-message-link-clicked',
+                    });
+                  }}
                 >
                   here
                 </Link>

@@ -105,6 +105,12 @@ const Header: React.FC = observer(() => {
                 label: 'Tasks',
                 routeProps: {
                   to: Pages.Initial(),
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-tasks',
+                    });
+                  },
                 },
               },
               {
@@ -113,6 +119,12 @@ const Header: React.FC = observer(() => {
                 label: 'Processes',
                 routeProps: {
                   to: Pages.Processes,
+                  onClick: () => {
+                    tracking.track({
+                      eventName: 'navigation',
+                      link: 'header-processes',
+                    });
+                  },
                 },
               },
             ]

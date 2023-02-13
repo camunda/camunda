@@ -20,6 +20,7 @@ import {Container, Title, Subtitle} from './styled';
 import {useNavigate} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {logger} from 'modules/utils/logger';
+import {tracking} from 'modules/tracking';
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -95,8 +96,14 @@ const ProcessTile: React.FC<Props> = ({
             onClick: async () => {
               setStatus('active');
               try {
+                tracking.track({
+                  eventName: 'process-start-clicked',
+                });
                 const result = await startProcess();
                 const instance = result.data?.startProcess;
+                tracking.track({
+                  eventName: 'process-started',
+                });
                 setStatus('active-tasks');
 
                 if (instance !== undefined) {
@@ -105,6 +112,10 @@ const ProcessTile: React.FC<Props> = ({
                     removeCallback: (tasks = []) => {
                       setStatus('finished');
                       if (tasks === null) {
+                        tracking.track({
+                          eventName: 'process-tasks-polling-ended',
+                          outcome: 'navigated-away',
+                        });
                         notificationsStore.displayNotification({
                           isDismissable: true,
                           kind: 'info',
@@ -116,6 +127,10 @@ const ProcessTile: React.FC<Props> = ({
                       }
 
                       if (tasks.length === 0) {
+                        tracking.track({
+                          eventName: 'process-tasks-polling-ended',
+                          outcome: 'no-tasks-found',
+                        });
                         notificationsStore.displayNotification({
                           isDismissable: true,
                           kind: 'info',
@@ -129,6 +144,10 @@ const ProcessTile: React.FC<Props> = ({
                       }
 
                       if (tasks.length > 1) {
+                        tracking.track({
+                          eventName: 'process-tasks-polling-ended',
+                          outcome: 'multiple-tasks-found',
+                        });
                         tasks.forEach(({name, id, processName}) => {
                           notificationsStore.displayNotification({
                             isDismissable: false,
@@ -137,6 +156,9 @@ const ProcessTile: React.FC<Props> = ({
                             isActionable: true,
                             actionButtonLabel: 'Open task',
                             onActionButtonClick: () => {
+                              tracking.track({
+                                eventName: 'process-task-toast-clicked',
+                              });
                               navigate({pathname: Pages.TaskDetails(id)});
                             },
                           });
@@ -161,6 +183,9 @@ const ProcessTile: React.FC<Props> = ({
             },
           }}
           onError={() => {
+            tracking.track({
+              eventName: 'process-start-failed',
+            });
             setStatus('inactive');
             notificationsStore.displayNotification({
               isDismissable: false,

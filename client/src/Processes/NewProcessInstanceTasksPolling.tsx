@@ -18,6 +18,7 @@ import {
   GetNewTasksVariables,
   GET_NEW_TASKS,
 } from 'modules/queries/get-new-tasks';
+import {tracking} from 'modules/tracking';
 
 const NewProcessInstanceTasksPolling: React.FC = observer(() => {
   if (newProcessInstance.instance === null) {
@@ -57,6 +58,11 @@ const PollForTasks: React.FC<Props> = observer(({processInstanceId}) => {
 
     if (tasks.length === 1 && location.pathname === `/${Pages.Processes}`) {
       const [{id}] = tasks;
+
+      tracking.track({
+        eventName: 'process-tasks-polling-ended',
+        outcome: 'single-task-found',
+      });
 
       navigate({pathname: Pages.TaskDetails(id)});
 
