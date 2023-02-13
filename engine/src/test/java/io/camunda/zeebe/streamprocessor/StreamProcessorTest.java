@@ -47,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.List;
@@ -55,6 +56,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
@@ -316,7 +318,9 @@ public final class StreamProcessorTest {
         "",
         Records.processInstance(1));
 
-    when(defaultRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    when(defaultRecordProcessor.process(
+            ArgumentMatchers.argThat(new RecordIntentMatcher(ACTIVATE_ELEMENT)), any()))
+        .thenReturn(resultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 
@@ -873,6 +877,20 @@ public final class StreamProcessorTest {
         final ProcessingResultBuilder processingResultBuilder) {
       onProcessingErrorAction.accept(recordProcessorContext);
       return processingResultOnError;
+    }
+  }
+
+  private final class RecordIntentMatcher implements ArgumentMatcher<TypedRecord> {
+
+    private final Intent toMatchIntent;
+
+    private RecordIntentMatcher(final Intent toMatchIntent) {
+      this.toMatchIntent = toMatchIntent;
+    }
+
+    @Override
+    public boolean matches(final TypedRecord typedRecord) {
+      return toMatchIntent.equals(typedRecord.getIntent());
     }
   }
 }
