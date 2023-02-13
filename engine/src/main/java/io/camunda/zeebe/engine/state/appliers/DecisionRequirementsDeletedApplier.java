@@ -22,5 +22,7 @@ public final class DecisionRequirementsDeletedApplier
   }
 
   @Override
-  public void applyState(final long key, final DecisionRequirementsRecord value) {}
+  public void applyState(final long key, final DecisionRequirementsRecord value) {
+    decisionState.deleteDecisionRequirements(value);
+  }
 }
