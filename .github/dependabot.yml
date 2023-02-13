@@ -1,5 +1,8 @@
 version: 2
 updates:
+  ########
+  # main #
+  ########
   # Enable version updates for Java
   - package-ecosystem: "maven"
     directory: "/"
@@ -12,10 +15,12 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 5
+    target-branch: main
     ignore:
-      # we will always manually update ES dependencies as we need to sync with the other teams
-      # before doing that
+      # we will always manually update ES dependencies to minor or major releases
+      # as we need to sync with the other teams before doing that
       - dependency-name: org.elasticsearch.client:*
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
 
   # Enable version updates for the go client
   - package-ecosystem: "gomod"
@@ -29,6 +34,7 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 5
+    target-branch: main
 
   # Enable version updates for the github actions
   - package-ecosystem: "github-actions"
@@ -42,3 +48,124 @@ updates:
     labels:
       - "dependencies"
     open-pull-requests-limit: 5
+    target-branch: main
+
+  ##############
+  # stable/8.1 #
+  ##############
+  # Enable version updates for Java
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "deps(maven): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    target-branch: "stable/8.1"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    allow:
+      # Allow only production dependency updates for maintenance branches
+      - dependency-type: "production"
+
+  # Enable version updates for the go client
+  - package-ecosystem: "gomod"
+    directory: "clients/go"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "deps(go): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    target-branch: "stable/8.1"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+
+  # Enable version updates for the github actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "deps(.github): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    target-branch: "stable/8.1"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+
+  ##############
+  # stable/8.0 #
+  ##############
+  # Enable version updates for Java
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "deps(maven): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    target-branch: "stable/8.0"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+    allow:
+      # Allow only production dependency updates for maintenance branches
+      - dependency-type: "production"
+
+  # Enable version updates for the go client
+  - package-ecosystem: "gomod"
+    directory: "clients/go"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "deps(go): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    target-branch: "stable/8.0"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
+
+  # Enable version updates for the github actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "deps(.github): "
+    labels:
+      - "dependencies"
+    open-pull-requests-limit: 5
+    target-branch: "stable/8.0"
+    ignore:
+      # Ignore major and minor updates, for stable branches we only want to get patches
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
