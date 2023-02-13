@@ -20,7 +20,6 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 
 import io.atomix.raft.protocol.PersistedRaftRecord;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
-import io.atomix.raft.storage.log.RaftLogFlusher.FlushMetaStore;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
@@ -34,18 +33,12 @@ public final class RaftLog implements Closeable {
   private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   private final Journal journal;
   private final RaftLogFlusher flusher;
-  private final FlushMetaStore flushMetaStore;
-
   private IndexedRaftLogEntry lastAppendedEntry;
   private volatile long commitIndex;
 
-  RaftLog(
-      final Journal journal,
-      final RaftLogFlusher flusher,
-      final RaftLogFlusher.FlushMetaStore flushMetaStore) {
+  RaftLog(final Journal journal, final RaftLogFlusher flusher) {
     this.journal = journal;
     this.flusher = flusher;
-    this.flushMetaStore = flushMetaStore;
   }
 
   /**
@@ -180,7 +173,7 @@ public final class RaftLog implements Closeable {
    * the configured {@link RaftLogFlusher}.
    */
   public void flush() {
-    flusher.flush(journal, flushMetaStore);
+    flusher.flush(journal);
   }
 
   /**
@@ -191,7 +184,7 @@ public final class RaftLog implements Closeable {
    * guarantees are required.
    */
   public void forceFlush() {
-    Factory.DIRECT.flush(journal, flushMetaStore);
+    Factory.DIRECT.flush(journal);
   }
 
   @Override

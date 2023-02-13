@@ -17,7 +17,6 @@ package io.atomix.raft.storage.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -29,7 +28,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
-import io.atomix.raft.storage.log.RaftLogFlusher.FlushMetaStore;
 import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
@@ -241,22 +239,20 @@ class RaftLogTest {
       // given
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
-      final var flushMetaStore = mock(FlushMetaStore.class);
-      final var log = new RaftLog(journal, flusher, flushMetaStore);
+      final var log = new RaftLog(journal, flusher);
 
       // when
       log.flush();
 
       // then
-      verify(flusher, times(1)).flush(journal, flushMetaStore);
+      verify(flusher, times(1)).flush(journal);
     }
 
     @Test
     void shouldForceFlush() {
       final var journal = mock(Journal.class);
       final var flusher = mock(RaftLogFlusher.class);
-      final var flushMetaStore = mock(FlushMetaStore.class);
-      final var log = new RaftLog(journal, flusher, flushMetaStore);
+      final var log = new RaftLog(journal, flusher);
       when(journal.getLastIndex()).thenReturn(3L);
 
       // when
@@ -264,15 +260,13 @@ class RaftLogTest {
 
       // then
       verify(journal, times(1)).flush();
-      verify(flushMetaStore, times(1)).storeLastFlushedIndex(3L);
     }
 
     @Test
     void shouldFlushDirectly() {
       // given
       final var journal = mock(Journal.class);
-      final var flushMetaStore = mock(FlushMetaStore.class);
-      final var log = new RaftLog(journal, new DirectFlusher(), flushMetaStore);
+      final var log = new RaftLog(journal, new DirectFlusher());
       when(journal.getLastIndex()).thenReturn(3L);
 
       // when
@@ -280,7 +274,6 @@ class RaftLogTest {
 
       // then
       verify(journal, times(1)).flush();
-      verify(flushMetaStore, times(1)).storeLastFlushedIndex(3L);
     }
 
     @Test
@@ -288,16 +281,14 @@ class RaftLogTest {
       // given
       final var journal = mock(Journal.class);
       final var flusher = spy(new NoopFlusher());
-      final var flushMetaStore = mock(FlushMetaStore.class);
-      final var log = new RaftLog(journal, flusher, flushMetaStore);
+      final var log = new RaftLog(journal, flusher);
 
       // when
       log.flush();
 
       // then
-      verify(flusher, times(1)).flush(journal, flushMetaStore);
+      verify(flusher, times(1)).flush(journal);
       verify(journal, never()).flush();
-      verify(flushMetaStore, never()).storeLastFlushedIndex(anyLong());
     }
   }
 }

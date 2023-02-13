@@ -192,7 +192,7 @@ public final class RaftStorage {
         .withJournalIndexDensity(journalIndexDensity)
         .withLastFlushedIndex(metaStore.loadLastFlushedIndex())
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
-        .withFlushMetaStore(metaStore::storeLastFlushedIndex)
+        .withMetaStore(metaStore)
         .withFlusher(flusherFactory.createFlusher(flushContext))
         .build();
   }

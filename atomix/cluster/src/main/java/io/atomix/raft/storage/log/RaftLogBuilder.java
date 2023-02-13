@@ -17,8 +17,8 @@ package io.atomix.raft.storage.log;
 
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
-import io.atomix.raft.storage.log.RaftLogFlusher.FlushMetaStore;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import java.io.File;
@@ -27,7 +27,7 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
   private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
   private RaftLogFlusher flusher = Factory.DIRECT;
-  private RaftLogFlusher.FlushMetaStore flushMetaStore = lastIndex -> {};
+  private JournalMetaStore flushMetaStore;
 
   protected RaftLogBuilder() {}
 
@@ -144,19 +144,17 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
   }
 
   /**
-   * Temporary builder method to specify the logic for how to store the last flushed index.
-   *
-   * @param flushMetaStore the handler to store the last flushed index
+   * @param metaStore A persisted JournalMetaStore that can store lastFlushedIndex.
    * @return this builder for chaining
    */
-  public RaftLogBuilder withFlushMetaStore(final FlushMetaStore flushMetaStore) {
-    this.flushMetaStore = flushMetaStore;
+  public RaftLogBuilder withMetaStore(final JournalMetaStore metaStore) {
+    flushMetaStore = metaStore;
     return this;
   }
 
   @Override
   public RaftLog build() {
     final Journal journal = journalBuilder.build();
-    return new RaftLog(journal, flusher, flushMetaStore);
+    return new RaftLog(journal, flusher);
   }
 }
