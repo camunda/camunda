@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {t} from 'translation';
+import {getLanguage, t} from './translation/translation';
 
 const handlers = [];
 
@@ -64,6 +64,7 @@ export async function request(payload) {
     headers: {
       'Content-Type': 'application/json',
       'X-Optimize-Client-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
+      'X-Optimize-Client-Locale': getLanguage(),
       ...headers,
     },
     mode: 'cors',
