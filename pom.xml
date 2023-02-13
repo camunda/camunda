@@ -37,7 +37,7 @@
     <version.springdoc>1.6.14</version.springdoc>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.10.3</version.micrometer>
-    <version.mockito>5.0.0</version.mockito>
+    <version.mockito>5.1.1</version.mockito>
     <version.assertj-core>3.24.2</version.assertj-core>
     <version.jackson>2.14.1</version.jackson>
     <version.auth0>1.9.4</version.auth0>
