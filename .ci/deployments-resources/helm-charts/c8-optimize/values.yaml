@@ -65,6 +65,10 @@ camunda-platform:
         password: postgresql
       nodeSelector:
         cloud.google.com/gke-nodepool: previews
+      tolerations:
+        - key: "previews"
+          operator: "Exists"
+          effect: "NoSchedule"
       postgresql:
         fullnameOverride: postgresql
         # fixing the password to avoid failure on restart of keycloak pod
