@@ -26,7 +26,7 @@ import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
-  public static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
+  public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
   private static final StreamProcessorListener NOOP_LISTENER =
       new StreamProcessorListener() {
         @Override
@@ -55,7 +55,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   // this is accessed outside, which is why we need to make sure that it is thread-safe
   private volatile StreamProcessor.Phase phase = Phase.INITIAL;
   private KeyGeneratorControls keyGeneratorControls;
-  private int processingBatchLimit = DEFAULT_PROCESSING_BATCH_LIMIT;
+  private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -198,12 +198,12 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     this.phase = phase;
   }
 
-  public StreamProcessorContext processingBatchLimit(final int processingBatchLimit) {
-    this.processingBatchLimit = processingBatchLimit;
+  public StreamProcessorContext maxCommandsInBatch(final int maxCommandsInBatch) {
+    this.maxCommandsInBatch = maxCommandsInBatch;
     return this;
   }
 
-  public int getProcessingBatchLimit() {
-    return processingBatchLimit;
+  public int getMaxCommandsInBatch() {
+    return maxCommandsInBatch;
   }
 }

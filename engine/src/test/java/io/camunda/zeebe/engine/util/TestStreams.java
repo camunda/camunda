@@ -91,7 +91,7 @@ public final class TestStreams {
 
   private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
-  private int processingBatchLimit = StreamProcessorContext.DEFAULT_PROCESSING_BATCH_LIMIT;
+  private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -297,7 +297,7 @@ public final class TestStreams {
             .recordProcessors(List.of(new Engine(wrappedFactory)))
             .eventApplierFactory(eventApplierFactory)
             .streamProcessorMode(streamProcessorMode)
-            .processingBatchLimit(processingBatchLimit)
+            .maxCommandsInBatch(maxCommandsInBatch)
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     final StreamProcessor streamProcessor = builder.build();
@@ -365,8 +365,8 @@ public final class TestStreams {
     return logStreamBatchWriter;
   }
 
-  public void processingBatchLimit(final int processingBatchLimit) {
-    this.processingBatchLimit = processingBatchLimit;
+  public void maxCommandsInBatch(final int maxCommandsInBatch) {
+    this.maxCommandsInBatch = maxCommandsInBatch;
   }
 
   public static class FluentLogWriter {

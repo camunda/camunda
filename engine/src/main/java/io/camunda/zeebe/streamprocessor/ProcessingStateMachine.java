@@ -142,7 +142,7 @@ public final class ProcessingStateMachine {
   private RecordProcessor currentProcessor;
   private final LogStreamBatchWriter logStreamBatchWriter;
   private boolean inProcessing;
-  private final int processingBatchLimit;
+  private final int maxCommandsInBatch;
   private int processedCommandsCount;
 
   public ProcessingStateMachine(
@@ -158,7 +158,7 @@ public final class ProcessingStateMachine {
     transactionContext = context.getTransactionContext();
     abortCondition = context.getAbortCondition();
     lastProcessedPositionState = context.getLastProcessedPositionState();
-    processingBatchLimit = context.getProcessingBatchLimit();
+    maxCommandsInBatch = context.getMaxCommandsInBatch();
 
     writeRetryStrategy = new AbortableRetryStrategy(actor);
     sideEffectsRetryStrategy = new AbortableRetryStrategy(actor);
@@ -301,7 +301,7 @@ public final class ProcessingStateMachine {
     // We know that we can process until the last processed commands count, which is why we set it
     // as our processing batch limit, in order to handle the commands afterwards as own batch.
     final var currentProcessingBatchLimit =
-        processedCommandsCount > 0 ? processedCommandsCount : processingBatchLimit;
+        processedCommandsCount > 0 ? processedCommandsCount : maxCommandsInBatch;
     processedCommandsCount = 0;
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);

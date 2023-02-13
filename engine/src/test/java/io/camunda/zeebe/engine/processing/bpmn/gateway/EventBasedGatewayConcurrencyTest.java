@@ -33,7 +33,7 @@ public class EventBasedGatewayConcurrencyTest {
       EngineRule.singlePartition()
           // Disable batch processing. Interrupting behaviour is only reproducible if
           // process instance is not completed in one batch.
-          .processingBatchLimit(1);
+          .maxCommandsInBatch(1);
 
   private static final BpmnModelInstance PROCESS_WITH_EQUAL_TIMERS =
       Bpmn.createExecutableProcess("PROCESS_WITH_EQUAL_TIMERS")
