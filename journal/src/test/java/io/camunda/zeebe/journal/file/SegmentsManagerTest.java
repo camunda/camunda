@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.io.File;
@@ -48,8 +49,8 @@ class SegmentsManagerTest {
   @Test
   void shouldDeleteFilesMarkedForDeletionsOnLoad() {
     // given
-    segments = createSegmentsManager(0);
-    segments.open();
+    segments = createSegmentsManager();
+    segments.open(0);
     Objects.requireNonNull(segments.getFirstSegment()).createReader();
     segments.getFirstSegment().delete();
 
@@ -59,8 +60,8 @@ class SegmentsManagerTest {
     // will cause the segment to be deleted on close where we actually want to test that the file is
     // deleted when opening.
 
-    try (final var newSegments = createSegmentsManager(0)) {
-      newSegments.open();
+    try (final var newSegments = createSegmentsManager()) {
+      newSegments.open(0);
       // then
       final File logDirectory = directory.resolve("data").toFile();
       assertThat(logDirectory)
@@ -84,8 +85,8 @@ class SegmentsManagerTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when/then
-    segments = createSegmentsManager(index);
-    assertThatThrownBy(segments::open).isInstanceOf(CorruptedJournalException.class);
+    segments = createSegmentsManager();
+    assertThatThrownBy(() -> segments.open(index)).isInstanceOf(CorruptedJournalException.class);
   }
 
   @Test
@@ -103,10 +104,10 @@ class SegmentsManagerTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when
-    segments = createSegmentsManager(index);
+    segments = createSegmentsManager();
 
     // then
-    assertThatNoException().isThrownBy(segments::open);
+    assertThatNoException().isThrownBy(() -> segments.open(index));
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(index, index);
@@ -123,10 +124,10 @@ class SegmentsManagerTest {
     LogCorrupter.corruptDescriptor(logFile);
 
     // when
-    segments = createSegmentsManager(0);
+    segments = createSegmentsManager();
 
     // then
-    assertThatNoException().isThrownBy(segments::open);
+    assertThatNoException().isThrownBy(() -> segments.open(0));
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
@@ -141,16 +142,16 @@ class SegmentsManagerTest {
     assertThat(emptyLog.createNewFile()).isTrue();
 
     // when
-    segments = createSegmentsManager(0);
+    segments = createSegmentsManager();
 
     // then
-    assertThatNoException().isThrownBy(segments::open);
+    assertThatNoException().isThrownBy(() -> segments.open(0));
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
   }
 
-  private SegmentsManager createSegmentsManager(final long lastFlushedIndex) {
+  private SegmentsManager createSegmentsManager() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var maxSegmentSize = entrySize + SegmentDescriptor.getEncodingLength();
     final var metrics = new JournalMetrics("1");
@@ -158,7 +159,6 @@ class SegmentsManagerTest {
         journalIndex,
         maxSegmentSize,
         directory.resolve("data").toFile(),
-        lastFlushedIndex,
         JOURNAL_NAME,
         new SegmentLoader(2 * maxSegmentSize, metrics),
         metrics);
@@ -174,6 +174,7 @@ class SegmentsManagerTest {
         .withMaxSegmentSize(entrySize + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
+        .withMetaStore(new MockJournalMetastore())
         .build();
   }
 

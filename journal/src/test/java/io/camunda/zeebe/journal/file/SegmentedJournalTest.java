@@ -25,6 +25,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -641,7 +642,8 @@ class SegmentedJournalTest {
         SegmentedJournal.builder()
             .withPreallocateSegmentFiles(true)
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile());
+            .withDirectory(tmpDir.toFile())
+            .withMetaStore(new MockJournalMetastore());
     final File firstSegment;
 
     // when
@@ -661,7 +663,8 @@ class SegmentedJournalTest {
         SegmentedJournal.builder()
             .withPreallocateSegmentFiles(false)
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile());
+            .withDirectory(tmpDir.toFile())
+            .withMetaStore(new MockJournalMetastore());
     final File firstSegment;
 
     // when
@@ -832,6 +835,7 @@ class SegmentedJournalTest {
             (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
+        .withMetaStore(new MockJournalMetastore())
         .build();
   }
 
