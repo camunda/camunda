@@ -528,7 +528,17 @@ public final class ControllableRaftContexts {
   }
 
   boolean hasReplicatedAllEntries() {
-    return raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+    final boolean allReplicasHaveSameLastIndex =
+        raftServers.values().stream()
+                .map(RaftContext::getLog)
+                .map(RaftLog::getLastIndex)
+                .distinct()
+                .count()
+            == 1;
+    final boolean allReplicasHaveSameLastEntry =
+        raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+    // should check both to cover cases where one log is empty
+    return allReplicasHaveSameLastIndex && allReplicasHaveSameLastEntry;
   }
 
   public void assertAllEntriesCommittedAndReplicatedToAll() {
