@@ -281,7 +281,7 @@ jobs:
       # This is a workaround for java 8, which does not support the --add-exports options
       - run: rm .mvn/jvm.config
       # Then run client tests with JDK 8
-      - uses: actions/setup-java@v3.5.0
+      - uses: actions/setup-java@v3.5.1
         with:
           java-version: '8'
           distribution: 'temurin'
