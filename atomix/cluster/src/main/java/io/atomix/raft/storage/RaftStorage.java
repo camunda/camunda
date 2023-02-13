@@ -184,7 +184,7 @@ public final class RaftStorage {
         .withFreeDiskSpace(freeDiskSpace)
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastFlushedIndex(metaStore.loadLastFlushedIndex())
+        .withMetaStore(metaStore)
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .build();
   }

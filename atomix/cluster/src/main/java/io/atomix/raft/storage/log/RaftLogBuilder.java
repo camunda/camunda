@@ -16,6 +16,7 @@
 package io.atomix.raft.storage.log;
 
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import java.io.File;
@@ -113,11 +114,6 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
     return this;
   }
 
-  public RaftLogBuilder withLastFlushedIndex(final long lastFlushedIndex) {
-    journalBuilder.withLastFlushedIndex(lastFlushedIndex);
-    return this;
-  }
-
   /**
    * Sets whether segment files are pre-allocated at creation. If true, segment files are
    * pre-allocated to the maximum segment size (see {@link #withMaxSegmentSize(int)}}) at creation
@@ -128,6 +124,15 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
    */
   public RaftLogBuilder withPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {
     journalBuilder.withPreallocateSegmentFiles(preallocateSegmentFiles);
+    return this;
+  }
+
+  /**
+   * @param metaStore A persisted JournalMetaStore that can store lastFlushedIndex.
+   * @return this builder for chaining
+   */
+  public RaftLogBuilder withMetaStore(final JournalMetaStore metaStore) {
+    journalBuilder.withMetaStore(metaStore);
     return this;
   }
 
