@@ -112,7 +112,6 @@ public class PartitionRestoreService {
         SegmentedJournal.builder()
             .withDirectory(dataDirectory.toFile())
             .withName(partition.name())
-            .withLastFlushedIndex(-1)
             .build()) {
 
       resetJournal(checkpointPosition, journal);

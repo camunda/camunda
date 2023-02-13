@@ -190,7 +190,6 @@ public final class RaftStorage {
         .withMaxSegmentSize(maxSegmentSize)
         .withFreeDiskSpace(freeDiskSpace)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastFlushedIndex(metaStore.loadLastFlushedIndex())
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .withMetaStore(metaStore)
         .withFlusher(flusherFactory.createFlusher(flushContext))
