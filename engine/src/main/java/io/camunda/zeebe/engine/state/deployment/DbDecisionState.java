@@ -291,6 +291,11 @@ public final class DbDecisionState implements MutableDecisionState {
     decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
   }
 
+  @Override
+  public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
+    // TODO
+  }
+
   private void updateLatestDecisionVersion(final DecisionRecord record) {
     findLatestDecisionById(record.getDecisionIdBuffer())
         .ifPresentOrElse(
