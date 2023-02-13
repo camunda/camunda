@@ -558,7 +558,7 @@ public class ModifyProcessInstanceTerminationTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit("A", ProcessInstanceIntent.ELEMENT_TERMINATED))
+                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(
             r -> r.getValue().getBpmnElementType(),
             r -> r.getValue().getElementId(),
