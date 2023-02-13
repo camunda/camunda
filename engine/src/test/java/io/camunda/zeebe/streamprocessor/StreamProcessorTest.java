@@ -880,7 +880,7 @@ public final class StreamProcessorTest {
     }
   }
 
-  private final class RecordIntentMatcher implements ArgumentMatcher<TypedRecord> {
+  private static final class RecordIntentMatcher implements ArgumentMatcher<TypedRecord> {
 
     private final Intent toMatchIntent;
 
