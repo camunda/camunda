@@ -8,9 +8,9 @@ On Tasklist we use Playwright for visual regression testing. These tests run on 
 
 To run these locally you can follow the steps below:
 
-1. In the root folder run `make env-up`
-2. In another terminal window run `make start-e2e`
-3. In a 3rd terminal window and inside the folder `client/` run `yarn start-visual-regression-docker`. This starts a Docker container. This is necessary because, even though the tests always run on the same browser, each OS has slight UI differences on the same browsers.
-4. Inside the Docker container run `yarn test:visual-regression`
+1. Inside the client folder run `yarn build`
+2. After the build is finished start the Docker container with `yarn start-visual-regression-docker`
+3. Inside the container, run `yarn start:visual-regression &`
+4. After that, run `yarn test:visual-regression`
 
 If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn test:visual-regression --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.

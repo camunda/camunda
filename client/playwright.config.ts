@@ -32,15 +32,9 @@ const config: PlaywrightTestConfig = {
     },
   ],
   outputDir: 'test-results/',
-  webServer: IS_CI
-    ? undefined
-    : {
-        command: 'yarn start:e2e',
-        port: 3001,
-      },
   use: {
     actionTimeout: 0,
-    baseURL: IS_CI ? 'http://localhost:8080' : 'http://localhost:3001',
+    baseURL: 'http://localhost:8080',
     trace: 'on-first-retry',
   },
 };
