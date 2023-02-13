@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.io.File;
@@ -44,19 +45,23 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
 
+  private final JournalMetaStore journalMetaStore;
+
   SegmentedJournal(
       final File directory,
       final int maxSegmentSize,
       final long minFreeDiskSpace,
       final JournalIndex journalIndex,
       final SegmentsManager segments,
-      final JournalMetrics journalMetrics) {
+      final JournalMetrics journalMetrics,
+      final JournalMetaStore journalMetaStore) {
     this.directory = Objects.requireNonNull(directory, "must specify a journal directory");
     this.maxSegmentSize = maxSegmentSize;
     this.minFreeDiskSpace = minFreeDiskSpace;
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
+    this.journalMetaStore = journalMetaStore;
 
     this.segments.open();
     writer = new SegmentedJournalWriter(this);
@@ -141,6 +146,7 @@ public final class SegmentedJournal implements Journal {
   @Override
   public void flush() {
     writer.flush();
+    journalMetaStore.storeLastFlushedIndex(getLastIndex());
   }
 
   @Override
