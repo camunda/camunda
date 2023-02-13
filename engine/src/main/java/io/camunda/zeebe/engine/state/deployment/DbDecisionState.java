@@ -161,6 +161,14 @@ public final class DbDecisionState implements MutableDecisionState {
     return decisions;
   }
 
+  /**
+   * Query decisions to find the key of the decision with the version that comes before the given
+   * version.
+   *
+   * @param decisionId the id of the decision
+   * @param currentVersion the current version
+   * @return the decision key of the version that's previous to the given version
+   */
   private Optional<Long> findPreviousVersionDecisionKey(
       final DirectBuffer decisionId, final int currentVersion) {
     final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
