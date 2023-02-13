@@ -176,12 +176,7 @@ public final class RaftStorage {
    *
    * @return The opened log.
    */
-  public RaftLog openLog() {
-    final long lastFlushedIndex;
-    try (final MetaStore metaStore = openMetaStore()) {
-      lastFlushedIndex = metaStore.lastFlushedIndex();
-    }
-
+  public RaftLog openLog(final MetaStore metaStore) {
     return RaftLog.builder()
         .withName(prefix)
         .withDirectory(directory)
@@ -189,7 +184,7 @@ public final class RaftStorage {
         .withFreeDiskSpace(freeDiskSpace)
         .withFlushExplicitly(flushExplicitly)
         .withJournalIndexDensity(journalIndexDensity)
-        .withLastFlushedIndex(lastFlushedIndex)
+        .withLastFlushedIndex(metaStore.loadLastFlushedIndex())
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .build();
   }
@@ -204,7 +199,8 @@ public final class RaftStorage {
    *
    * <p>The storage directory is the directory to which all {@link RaftLog}s write files. Segment
    * files for multiple logs may be stored in the storage directory, and files for each log instance
-   * will be identified by the {@code name} provided when the log is {@link #openLog() opened}.
+   * will be identified by the {@code name} provided when the log is {@link #openLog(MetaStore)
+   * opened}.
    *
    * @return The storage directory.
    */
