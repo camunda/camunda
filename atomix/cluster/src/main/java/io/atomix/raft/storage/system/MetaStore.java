@@ -22,6 +22,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.StorageException;
 import io.atomix.raft.storage.serializer.MetaStoreSerializer;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * algorithm. Additionally, the metastore is responsible for storing the last know server {@link
  * Configuration}, including cluster membership.
  */
-public class MetaStore implements AutoCloseable {
+public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   private static final byte VERSION = 1;
   private static final int VERSION_LENGTH = Byte.BYTES;
@@ -100,7 +101,7 @@ public class MetaStore implements AutoCloseable {
 
   private void initializeMetaBuffer() {
     final var term = loadTerm();
-    final long index = lastFlushedIndex();
+    final long index = loadLastFlushedIndex();
     final var voted = loadVote();
     metaBuffer.put(0, VERSION);
     storeTerm(term);
@@ -173,16 +174,7 @@ public class MetaStore implements AutoCloseable {
     return id.isEmpty() ? null : MemberId.from(id);
   }
 
-  public synchronized long lastFlushedIndex() {
-    try {
-      metaFileChannel.read(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
-    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
-  }
-
+  @Override
   public synchronized void storeLastFlushedIndex(final long index) {
     log.trace("Store last flushed index {}", index);
 
@@ -193,6 +185,17 @@ public class MetaStore implements AutoCloseable {
     } catch (final IOException e) {
       throw new StorageException(e);
     }
+  }
+
+  @Override
+  public synchronized long loadLastFlushedIndex() {
+    try {
+      metaFileChannel.read(metaBuffer, 0);
+      metaBuffer.position(0);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 
   /**

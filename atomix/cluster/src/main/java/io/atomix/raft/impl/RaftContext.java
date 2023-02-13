@@ -191,7 +191,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     lastVotedFor = meta.loadVote();
 
     // Construct the core log, reader, writer, and compactor.
-    raftLog = storage.openLog();
+    raftLog = storage.openLog(meta);
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
