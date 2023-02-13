@@ -55,7 +55,7 @@ runs:
       name: Generate image tag
       shell: bash
       run: |
-        version=$(mvn help:evaluate -q -DforceStdout -D"expression=project.version")
+        version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
         tag="$version-$BRANCH_NAME-${GITHUB_SHA::8}"
         echo "TAG=$tag" >> $GITHUB_ENV
     - name: Import Secrets

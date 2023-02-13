@@ -66,7 +66,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B -T2 --no-snapshot-updates
+          ./mvnw -B -T2 --no-snapshot-updates
           -D forkCount=5
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
@@ -127,7 +127,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B -T2 --no-snapshot-updates
+          ./mvnw -B -T2 --no-snapshot-updates
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
@@ -167,7 +167,7 @@ jobs:
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          mvn -T2 -B --no-snapshot-updates
+          ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests
@@ -210,8 +210,6 @@ jobs:
       - uses: ./.github/actions/setup-zeebe
         with:
           go: false
-          # setting up maven often times out on macOS
-          maven: ${{ runner.os != 'macOS' }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -235,7 +233,7 @@ jobs:
           # For non Linux runners there is no container available for testing, see build-docker job
           EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
         run: >
-          mvn -B --no-snapshot-updates
+          ./mvnw -B --no-snapshot-updates
           -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
           -pl qa/integration-tests
           -P smoke-test,extract-flaky-tests
@@ -267,7 +265,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -T1C -B --no-snapshot-updates
+          ./mvnw -T1C -B --no-snapshot-updates
           -P parallel-tests,include-random-tests
           -D junitThreadCount=16
           -D skipChecks
@@ -345,7 +343,7 @@ jobs:
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         run: >
-          mvn -B --no-snapshot-updates
+          ./mvnw -B --no-snapshot-updates
           -P disableCheckstyle,extract-flaky-tests
           -D skipChecks -D skipITs
           -D surefire.rerunFailingTestsCount=3
@@ -432,7 +430,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - run: mvn -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
+      - run: ./mvnw -T1C -B -D skipTests -P !autoFormat,checkFormat,spotbugs verify
   docker-checks:
     name: Docker checks
     runs-on: ubuntu-latest
@@ -565,7 +563,7 @@ jobs:
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: mvn -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
         env:
           MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
           MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
