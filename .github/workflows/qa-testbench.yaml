@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v3
         with:
           ref: "${{ github.event.inputs.branch }}"
-      - uses: actions/setup-java@v3.5.0
+      - uses: actions/setup-java@v3.5.1
         with:
           distribution: 'temurin'
           java-version: '17'
