@@ -8,6 +8,10 @@ package io.camunda.operate.entities;
 
 import io.camunda.operate.util.ConversionUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   private String name;
@@ -15,6 +19,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String bpmnProcessId;
   private String bpmnXml;
   private String resourceName;
+  private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
 
   public String getName() {
     return name;
@@ -68,6 +73,18 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     return this;
   }
 
+  public List<ProcessFlowNodeEntity> getFlowNodes() {
+    if (flowNodes == null) {
+      flowNodes = new ArrayList<>();
+    }
+    return flowNodes;
+  }
+
+  public ProcessEntity setFlowNodes(List<ProcessFlowNodeEntity> flowNodes) {
+    this.flowNodes = flowNodes;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -81,13 +98,15 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
     if (version != that.version)
       return false;
-    if (name != null ? !name.equals(that.name) : that.name != null)
+    if (!Objects.equals(name, that.name))
       return false;
-    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
+    if (!Objects.equals(bpmnProcessId, that.bpmnProcessId))
       return false;
-    if (bpmnXml != null ? !bpmnXml.equals(that.bpmnXml) : that.bpmnXml != null)
+    if (!Objects.equals(bpmnXml, that.bpmnXml))
       return false;
-    return resourceName != null ? resourceName.equals(that.resourceName) : that.resourceName == null;
+    if(!Objects.equals(resourceName, that.resourceName))
+       return false;
+    return Objects.equals(flowNodes, that.flowNodes);
   }
 
   @Override
@@ -98,13 +117,13 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (bpmnXml != null ? bpmnXml.hashCode() : 0);
     result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
+    result = 31 * result + (flowNodes != null ? flowNodes.hashCode() : 0);
     return result;
   }
 
   @Override
   public String toString() {
     return "ProcessEntity{"+ "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
-      + ", resourceName='" + resourceName + '\'' + "} " + super.toString();
+      + ", resourceName='" + resourceName + '\'' + ", flowNodes='" + flowNodes + "} " + super.toString();
   }
-
 }

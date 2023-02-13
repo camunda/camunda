@@ -11,8 +11,15 @@ import javax.xml.parsers.SAXParserFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collection;
 import java.util.Optional;
 import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.ProcessFlowNodeEntity;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import org.camunda.bpm.model.xml.ModelException;
+import org.camunda.bpm.model.xml.ModelParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -49,8 +56,13 @@ public class XMLUtil {
     BpmnXmlParserHandler handler = new BpmnXmlParserHandler();
     try {
       saxParserFactory.newSAXParser().parse(is, handler);
-      return Optional.of(handler.getProcessEntity());
-    } catch (ParserConfigurationException | SAXException | IOException e) {
+      ProcessEntity processEntity = handler.getProcessEntity();
+      is = new ByteArrayInputStream(byteArray);
+      BpmnModelInstance modelInstance = Bpmn.readModelFromStream(is);
+      Collection<FlowNode> flowNodes = modelInstance.getModelElementsByType(FlowNode.class);
+      flowNodes.forEach(x -> processEntity.getFlowNodes().add(new ProcessFlowNodeEntity(x.getId(), x.getName())));
+      return Optional.of(processEntity);
+    } catch (ParserConfigurationException | SAXException | IOException | ModelException e) {
       logger.warn("Unable to parse diagram: " + e.getMessage(), e);
       return Optional.empty();
     }

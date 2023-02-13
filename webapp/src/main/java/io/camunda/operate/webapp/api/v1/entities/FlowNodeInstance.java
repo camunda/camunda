@@ -32,6 +32,7 @@ public class FlowNodeInstance {
   private String startDate;
   private String endDate;
   private String flowNodeId;
+  private String flowNodeName;
   private Long incidentKey;
   private String type;
   private String state;
@@ -91,6 +92,15 @@ public class FlowNodeInstance {
     return this;
   }
 
+   public String getFlowNodeName() {
+      return flowNodeName;
+   }
+
+   public FlowNodeInstance setFlowNodeName(String flowNodeName) {
+      this.flowNodeName = flowNodeName;
+      return this;
+   }
+
   public Long getIncidentKey() {
     return incidentKey;
   }
@@ -139,13 +149,13 @@ public class FlowNodeInstance {
     return Objects.equals(key, that.key) && Objects.equals(processInstanceKey, that.processInstanceKey) &&
         Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
         Objects.equals(startDate, that.startDate) && Objects.equals(endDate, that.endDate) &&
-        Objects.equals(flowNodeId, that.flowNodeId) && Objects.equals(incidentKey, that.incidentKey) &&
+        Objects.equals(flowNodeId, that.flowNodeId) && Objects.equals(flowNodeName, that.flowNodeName) &&  Objects.equals(incidentKey, that.incidentKey) &&
         Objects.equals(type, that.type) && Objects.equals(state, that.state) && Objects.equals(incident, that.incident);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(key, processInstanceKey, processDefinitionKey, startDate, endDate, flowNodeId, incidentKey, type, state, incident);
+    return Objects.hash(key, processInstanceKey, processDefinitionKey, startDate, endDate, flowNodeId, flowNodeName, incidentKey, type, state, incident);
   }
 
   @Override
@@ -157,6 +167,7 @@ public class FlowNodeInstance {
         ", startDate='" + startDate + '\'' +
         ", endDate='" + endDate + '\'' +
         ", flowNodeId='" + flowNodeId + '\'' +
+        ", flowNodeName='" + flowNodeName + '\'' +
         ", incidentKey=" + incidentKey +
         ", type='" + type + '\'' +
         ", state='" + state + '\'' +

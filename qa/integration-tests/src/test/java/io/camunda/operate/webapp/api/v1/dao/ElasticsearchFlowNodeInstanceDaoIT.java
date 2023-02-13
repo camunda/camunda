@@ -78,10 +78,12 @@ public class ElasticsearchFlowNodeInstanceDaoIT extends OperateZeebeIntegrationT
           .extracting(
               "processInstanceKey",
               "flowNodeId",
+              "flowNodeName",
               "type",
               "state")
           .containsExactly(
               processInstanceKey,
+              "start",
               "start",
               "START_EVENT",
               "COMPLETED"
@@ -107,10 +109,15 @@ public class ElasticsearchFlowNodeInstanceDaoIT extends OperateZeebeIntegrationT
       assertThat(flowNodeInstanceResults.getItems()).hasSize(4);
       assertThat(flowNodeInstanceResults.getItems().get(0))
           .extracting(
+              "flowNodeId",
+              "flowNodeName",
               "type",
               "state")
           .containsExactly(
-              "START_EVENT", "COMPLETED"
+              "start",
+              "start",
+              "START_EVENT",
+              "COMPLETED"
           );
     });
   }

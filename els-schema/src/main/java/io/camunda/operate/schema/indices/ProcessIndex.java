@@ -20,10 +20,17 @@ public class ProcessIndex extends AbstractIndexDescriptor  implements Prio4Backu
   public static final String VERSION = "version";
   public static final String BPMN_XML = "bpmnXml";
   public static final String RESOURCE_NAME = "resourceName";
+  public static final String FLOWNODES = "flowNodes";
+  public static final String FLOWNODE_ID = "id";
+  public static final String FLOWNODE_NAME = "name";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "8.1.7";
+  }
 }

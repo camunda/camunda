@@ -7,6 +7,7 @@
 package io.camunda.operate.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.entities.ProcessFlowNodeEntity;
 import io.camunda.operate.schema.indices.ProcessIndex;
 import io.camunda.operate.util.ElasticsearchUtil;
 import java.io.IOException;
@@ -51,17 +52,10 @@ public class ProcessCache {
   private ObjectMapper objectMapper;
 
   public String getProcessNameOrDefaultValue(Long processDefinitionKey, String defaultValue) {
-    final ProcessEntity cachedProcessData = cache.get(processDefinitionKey);
+    final ProcessEntity cachedProcessData = getCachedProcessEntity(processDefinitionKey).orElse(null);
     String processName = defaultValue;
     if (cachedProcessData != null) {
       processName = cachedProcessData.getName();
-    } else {
-      final Optional<ProcessEntity> processMaybe = findOrWaitProcess(processDefinitionKey, MAX_ATTEMPTS, WAIT_TIME);
-      if (processMaybe.isPresent()) {
-        ProcessEntity process = processMaybe.get();
-        putToCache(processDefinitionKey, process);
-        processName = process.getName();
-      }
     }
     if(StringUtils.isEmpty(processName)) {
       logger.debug("ProcessName is empty, use default value: {} ",defaultValue);
@@ -71,15 +65,8 @@ public class ProcessCache {
   }
 
   public String getProcessNameOrBpmnProcessId(Long processDefinitionKey, String defaultValue) {
-    ProcessEntity cachedProcessData = cache.get(processDefinitionKey);
+    final ProcessEntity cachedProcessData = getCachedProcessEntity(processDefinitionKey).orElse(null);
     String processName = null;
-    if (cachedProcessData == null) {
-      final Optional<ProcessEntity> processMaybe = findOrWaitProcess(processDefinitionKey, MAX_ATTEMPTS, WAIT_TIME);
-      if (processMaybe.isPresent()) {
-        cachedProcessData = processMaybe.get();
-        putToCache(processDefinitionKey, cachedProcessData);
-      }
-    }
     if (cachedProcessData != null) {
       processName = cachedProcessData.getName();
       if (processName == null) {
@@ -91,6 +78,35 @@ public class ProcessCache {
       processName = defaultValue;
     }
     return processName;
+  }
+
+  public String getFlowNodeNameOrDefaultValue(Long processDefinitionKey, String flowNodeId, String defaultValue) {
+    final ProcessEntity cachedProcessData = getCachedProcessEntity(processDefinitionKey).orElse(null);
+    String flowNodeName = defaultValue;
+    if (cachedProcessData != null && flowNodeId != null) {
+      ProcessFlowNodeEntity flowNodeEntity = cachedProcessData.getFlowNodes().stream()
+          .filter(x -> flowNodeId.equals(x.getId())).findFirst().orElse(null);
+      if (flowNodeEntity != null) {
+        flowNodeName = flowNodeEntity.getName();
+      }
+    }
+    if (StringUtils.isEmpty(flowNodeName)) {
+      logger.debug("FlowNodeName is empty, use default value: {} ", defaultValue);
+      flowNodeName = defaultValue;
+    }
+    return flowNodeName;
+  }
+
+  private Optional<ProcessEntity> getCachedProcessEntity(Long processDefinitionKey) {
+    ProcessEntity cachedProcessData = cache.get(processDefinitionKey);
+    if (cachedProcessData == null) {
+      final Optional<ProcessEntity> processMaybe = findOrWaitProcess(processDefinitionKey, MAX_ATTEMPTS, WAIT_TIME);
+      if (processMaybe.isPresent()) {
+        cachedProcessData = processMaybe.get();
+        putToCache(processDefinitionKey, cachedProcessData);
+      }
+    }
+    return Optional.ofNullable(cachedProcessData);
   }
   
   private Optional<ProcessEntity> readProcessByKey(Long processDefinitionKey) {

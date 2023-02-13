@@ -130,6 +130,7 @@ public class ProcessZeebeRecordProcessor {
     final Optional<ProcessEntity> diagramData = xmlUtil.extractDiagramData(byteArray);
     if (diagramData.isPresent()) {
       processEntity.setName(diagramData.get().getName());
+      processEntity.setFlowNodes(diagramData.get().getFlowNodes());
     }
 
     return processEntity;

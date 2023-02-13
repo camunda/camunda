@@ -9,6 +9,9 @@ package io.camunda.operate.webapp.api.v1.dao;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+import io.camunda.operate.cache.ProcessCache;
+import io.camunda.operate.entities.ProcessEntity;
+import io.camunda.operate.entities.ProcessFlowNodeEntity;
 import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
@@ -20,6 +23,8 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -35,6 +40,9 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
 
   @Autowired
   private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+
+   @Autowired
+   private ProcessCache processCache;
 
   @Override
   protected void buildFiltering(
@@ -108,7 +116,7 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
 
   private FlowNodeInstance searchHitToFlowNodeInstance(final SearchHit searchHit) {
     final Map<String,Object> searchHitAsMap = searchHit.getSourceAsMap();
-    return new FlowNodeInstance()
+     FlowNodeInstance flowNodeInstance = new FlowNodeInstance()
         .setKey((Long) searchHitAsMap.get(FlowNodeInstance.KEY))
         .setProcessInstanceKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_INSTANCE_KEY))
         .setProcessDefinitionKey((Long) searchHitAsMap.get(FlowNodeInstance.PROCESS_DEFINITION_KEY))
@@ -119,6 +127,14 @@ public class ElasticsearchFlowNodeInstanceDao extends ElasticsearchDao<FlowNodeI
         .setFlowNodeId((String) searchHitAsMap.get(FlowNodeInstance.FLOW_NODE_ID))
         .setIncident((Boolean) searchHitAsMap.get(FlowNodeInstance.INCIDENT))
         .setIncidentKey((Long) searchHitAsMap.get(FlowNodeInstance.INCIDENT_KEY));
+
+     if(flowNodeInstance.getFlowNodeId() != null) {
+       String flowNodeName = processCache.getFlowNodeNameOrDefaultValue(flowNodeInstance.getProcessDefinitionKey(),
+           flowNodeInstance.getFlowNodeId(), null);
+       flowNodeInstance.setFlowNodeName(flowNodeName);
+     }
+
+     return flowNodeInstance;
   }
 
   protected List<FlowNodeInstance> searchFor(final SearchSourceBuilder searchSourceBuilder){
