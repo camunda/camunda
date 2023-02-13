@@ -19,6 +19,7 @@ package io.camunda.zeebe.journal.file;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 
 /** Raft log builder. */
@@ -44,6 +45,8 @@ public class SegmentedJournalBuilder {
   private long lastFlushedIndex = -1L;
   private boolean preallocateSegmentFiles = DEFAULT_PREALLOCATE_SEGMENT_FILES;
   private int partitionId = DEFAULT_PARTITION_ID;
+
+  private JournalMetaStore journalMetaStore;
 
   protected SegmentedJournalBuilder() {}
 
@@ -161,6 +164,15 @@ public class SegmentedJournalBuilder {
     return this;
   }
 
+  /**
+   * @param metaStore journal metastore to update lastFlushedIndex
+   * @return this builder for chaining
+   */
+  public SegmentedJournalBuilder withMetaStore(final JournalMetaStore metaStore) {
+    journalMetaStore = metaStore;
+    return this;
+  }
+
   public SegmentedJournal build() {
     final var journalIndex = new SparseJournalIndex(journalIndexDensity);
     final var journalMetrics = new JournalMetrics(String.valueOf(partitionId));
@@ -178,6 +190,6 @@ public class SegmentedJournalBuilder {
             journalMetrics);
 
     return new SegmentedJournal(
-        directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics);
+        directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics, journalMetaStore);
   }
 }
