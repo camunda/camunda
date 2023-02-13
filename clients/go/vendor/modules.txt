@@ -41,9 +41,7 @@ github.com/cenkalti/backoff
 github.com/containerd/cgroups/stats/v1
 # github.com/containerd/containerd v1.5.0-beta.4
 ## explicit; go 1.16
-github.com/containerd/containerd/errdefs
 github.com/containerd/containerd/log
-github.com/containerd/containerd/platforms
 github.com/containerd/containerd/sys
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
@@ -52,8 +50,7 @@ github.com/davecgh/go-spew/spew
 ## explicit
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-github.com/docker/distribution/registry/api/errcode
-# github.com/docker/docker v20.10.14+incompatible
+# github.com/docker/docker v20.10.23+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
