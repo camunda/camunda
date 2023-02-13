@@ -61,7 +61,7 @@
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.jackson>2.14.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
-    <version.jna>5.12.1</version.jna>
+    <version.jna>5.13.0</version.jna>
     <version.junit>5.9.1</version.junit>
     <version.junit4>4.13.2</version.junit4>
     <version.log4j>2.19.0</version.log4j>
@@ -112,7 +112,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.16</version.jnr-posix>
-    <version.zpt>8.1.5</version.zpt>
+    <version.zpt>8.1.7</version.zpt>
     <version.feign>12.1</version.feign>
     <version.awssdk>2.19.5</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
@@ -129,7 +129,7 @@
     <plugin.version.compiler>3.10.1</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.13.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.4.0</plugin.version.dependency>
-    <plugin.version.enforcer>3.1.0</plugin.version.enforcer>
+    <plugin.version.enforcer>3.2.1</plugin.version.enforcer>
     <plugin.version.exec>3.1.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M7</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
