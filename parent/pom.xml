@@ -85,7 +85,7 @@
     <version.testcontainers>1.17.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.1</version.zeebe-test-container>
-    <version.feel-scala>1.15.2</version.feel-scala>
+    <version.feel-scala>1.15.3</version.feel-scala>
     <version.dmn-scala>1.7.3</version.dmn-scala>
     <version.rest-assured>5.2.0</version.rest-assured>
     <version.spring>5.3.23</version.spring>
@@ -99,7 +99,7 @@
     <version.byte-buddy>1.12.17</version.byte-buddy>
     <version.revapi>0.27.0</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
-    <version.immutables>2.9.2</version.immutables>
+    <version.immutables>2.9.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
     <version.classgraph>4.8.149</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
@@ -134,7 +134,7 @@
     <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
     <plugin.version.scala>4.7.1</plugin.version.scala>
-    <plugin.version.shade>3.4.0</plugin.version.shade>
+    <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.2.0</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M7</plugin.version.surefire>
