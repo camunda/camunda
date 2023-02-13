@@ -150,13 +150,44 @@ it('should contain text editor if in text report mode', () => {
 it('should  disable the submit button if the text in editor is empty or too long', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  node.find(Tabs).prop('onChange')('external');
+  node.find(Tabs).prop('onChange')('text');
 
   expect(node.find('[primary]')).toBeDisabled();
 
-  node.find('.externalInput').prop('onChange')({
-    target: {value: new Array(3001).join('a')},
-  });
+  const normalText = {
+    root: {
+      children: [
+        {
+          children: [
+            {
+              text: 'a'.repeat(10),
+            },
+          ],
+          type: 'paragraph',
+        },
+      ],
+      type: 'root',
+    },
+  };
+  node.find('TextEditor').prop('onChange')(normalText);
+  expect(node.find('[primary]')).not.toBeDisabled();
+
+  const tooLongText = {
+    root: {
+      children: [
+        {
+          children: [
+            {
+              text: 'a'.repeat(3001),
+            },
+          ],
+          type: 'paragraph',
+        },
+      ],
+      type: 'root',
+    },
+  };
+  node.find('TextEditor').prop('onChange')(tooLongText);
 
   expect(node.find('[primary]')).toBeDisabled();
 });

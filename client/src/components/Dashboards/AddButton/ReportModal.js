@@ -59,7 +59,7 @@ function ReportModal({close, confirm, location}) {
 
   const isTextReportValid = (text) => {
     const textLength = TextEditor.getEditorStateLength(text);
-    return textLength > 0 && !isTextReportTooLong(textLength);
+    return textLength > 0 && !isTextReportTooLong(text);
   };
 
   const TEXT_REPORT_MAX_CHARACTERS = 3000;

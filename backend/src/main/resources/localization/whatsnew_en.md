@@ -1,3 +1,7 @@
+## Text Reports
+
+Text reports allow adding formatted descriptions and pictures to a dashboard. This helps the user to easily understand the content of the dashboard.
+
 ## Improved Camunda 8 Platform navigation
 
 Camunda SaaS provides easy and intuitive navigation between applications (Console, Modeler, Operate, Optimize)

@@ -65,3 +65,11 @@ it('should invoke onClose when closing the template modal', () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+it('should set initial templates to an empty array when existing report has falsy id and no data', () => {
+  const node = shallow(<ReportCreationModal {...props} existingReport={{id: ''}} />);
+
+  runLastEffect();
+
+  expect(node.find('ReportTemplateModal').prop('initialDefinitions')).toEqual([]);
+});
