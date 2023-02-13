@@ -78,6 +78,10 @@ camunda-platform:
         primary:
           nodeSelector:
             cloud.google.com/gke-nodepool: previews
+          tolerations:
+            - key: "previews"
+              operator: "Exists"
+              effect: "NoSchedule"
           persistence:
             enabled: false
           resources:
