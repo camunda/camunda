@@ -189,6 +189,7 @@ public class RandomizedRaftTest {
     raftContexts.assertAllLogsEqual();
     raftContexts.assertNoGapsInLog();
     raftContexts.assertNoJournalAppendErrors();
+    raftContexts.assertNoDataLoss();
   }
 
   private void livenessTest(
@@ -235,6 +236,7 @@ public class RandomizedRaftTest {
     raftContexts.assertAllEntriesCommittedAndReplicatedToAll();
     raftContexts.assertNoGapsInLog();
     raftContexts.assertNoJournalAppendErrors();
+    raftContexts.assertNoDataLoss();
   }
 
   /** Basic raft operations without snapshotting, compaction or restart */

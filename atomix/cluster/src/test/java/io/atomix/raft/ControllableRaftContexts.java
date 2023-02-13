@@ -94,6 +94,7 @@ public final class ControllableRaftContexts {
   // Used only for verification. Map[term -> leader]
   private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
   private final AppendListener appendListener = mock(AppendListener.class);
+  private final DataLossChecker dataLossChecker = new DataLossChecker(appendListener);
 
   public ControllableRaftContexts(final int nodeCount) {
     this.nodeCount = nodeCount;
@@ -318,7 +319,7 @@ public final class ControllableRaftContexts {
     if (role instanceof final LeaderRole leaderRole) {
       LoggerFactory.getLogger("TEST").info("Appending on leader {}", memberId.id());
       final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, nextEntry++);
-      leaderRole.appendEntry(nextEntry, nextEntry, data, appendListener);
+      leaderRole.appendEntry(nextEntry, nextEntry, data, dataLossChecker);
     }
   }
 
@@ -614,5 +615,68 @@ public final class ControllableRaftContexts {
 
   public void assertNoJournalAppendErrors() {
     verify(appendListener, times(0)).onWriteError(any(JournalException.class));
+  }
+
+  public void assertNoDataLoss() {
+    assertThat(dataLossChecker.hasDataLoss())
+        .withFailMessage(dataLossChecker.getFailMessage())
+        .isFalse();
+  }
+
+  // AppendListener that verifies that no committed entries are overwritten. This checker keeps
+  // track of committed entries and its checksum. After a leader change or restart, if the new
+  // leader commits a new entry at the same index because it is missing already committed entries,
+  // the checker can detect it.
+  static class DataLossChecker implements AppendListener {
+
+    final AppendListener delegate;
+
+    // Keep track of committed entries and its checksum.
+    final Map<Long, Long> indexToChecksumMap = new HashMap<>();
+
+    private String failMessage = "";
+    private boolean dataloss = false;
+
+    DataLossChecker(final AppendListener delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void onWrite(final IndexedRaftLogEntry indexed) {
+      delegate.onWrite(indexed);
+    }
+
+    @Override
+    public void onWriteError(final Throwable error) {
+      delegate.onWriteError(error);
+    }
+
+    @Override
+    public void onCommit(final IndexedRaftLogEntry indexed) {
+      final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
+      final long index = indexed.index();
+      if (indexToChecksumMap.containsKey(index) && indexToChecksumMap.get(index) != entryChecksum) {
+        failMessage =
+            "Committed entry at index %d checksum %d is being overwritten by entry with checksum %d"
+                .formatted(index, indexToChecksumMap.get(index), entryChecksum);
+        LOG.info(failMessage);
+        dataloss = true;
+      }
+      indexToChecksumMap.put(index, entryChecksum);
+      delegate.onCommit(indexed);
+    }
+
+    @Override
+    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+      delegate.onCommitError(indexed, error);
+    }
+
+    public String getFailMessage() {
+      return failMessage;
+    }
+
+    public boolean hasDataLoss() {
+      return dataloss;
+    }
   }
 }
