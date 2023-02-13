@@ -47,6 +47,7 @@ public class RandomizedRaftTest {
   private List<RaftOperation> operationsWithSnapshot;
   private List<RaftOperation> operationsWithRestarts;
   private List<RaftOperation> operationsWithSnapshotsAndRestarts;
+  private List<RaftOperation> operationsWithSnapshotsAndRestartsWithDataLoss;
 
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
@@ -63,6 +64,8 @@ public class RandomizedRaftTest {
     operationsWithSnapshot = RaftOperation.getRaftOperationsWithSnapshot();
     operationsWithRestarts = RaftOperation.getRaftOperationsWithRestarts();
     operationsWithSnapshotsAndRestarts = RaftOperation.getRaftOperationsWithSnapshotsAndRestarts();
+    operationsWithSnapshotsAndRestartsWithDataLoss =
+        RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss();
     raftMembers = servers;
   }
 
@@ -106,6 +109,17 @@ public class RandomizedRaftTest {
   @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
   void consistencyTestWithSnapshotsAndRestarts(
       @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 1, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void consistencyTestAfterDataLoss(
+      @ForAll("raftOperationsWithSnapshotsAndRestartsWithDataLoss")
+          final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
       @ForAll("seeds") final long seed)
       throws Exception {
@@ -245,6 +259,13 @@ public class RandomizedRaftTest {
   @Provide
   Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestarts() {
     return Arbitraries.of(operationsWithSnapshotsAndRestarts).list().ofSize(OPERATION_SIZE);
+  }
+
+  @Provide
+  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestartsWithDataLoss() {
+    return Arbitraries.of(operationsWithSnapshotsAndRestartsWithDataLoss)
+        .list()
+        .ofSize(OPERATION_SIZE);
   }
 
   @Provide

@@ -68,6 +68,14 @@ public final class RaftOperation {
     return operationsWithSnapshot;
   }
 
+  public static List<RaftOperation> getRaftOperationsWithSnapshotsAndRestartsWithDataLoss() {
+    final List<RaftOperation> operations = getRaftOperationsWithSnapshotsAndRestarts();
+    operations.add(
+        RaftOperation.of(
+            "Restart member with full data loss", ControllableRaftContexts::restartWithDataLoss));
+    return operations;
+  }
+
   public static List<RaftOperation> getDefaultRaftOperations() {
     final List<RaftOperation> defaultRaftOperation = new ArrayList<>();
     defaultRaftOperation.add(
