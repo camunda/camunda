@@ -136,7 +136,6 @@ public class OutputMappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)

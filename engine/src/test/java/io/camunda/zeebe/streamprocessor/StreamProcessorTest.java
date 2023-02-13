@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.util.RecordToWrite.command;
 import static io.camunda.zeebe.engine.util.RecordToWrite.event;
 import static io.camunda.zeebe.engine.util.RecordToWrite.rejection;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -228,23 +229,42 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldWriteFollowUpEventsAndCommands() {
+  public void shouldProcessFollowUpEventsAndCommands() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var firstResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
-    firstResultBuilder.appendRecordReturnEither(
-        1, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
-    firstResultBuilder.appendRecordReturnEither(
-        2, RecordType.COMMAND, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
-
-    final var secondResultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
-    secondResultBuilder.appendRecordReturnEither(
-        3, RecordType.EVENT, ACTIVATE_ELEMENT, RejectionType.NULL_VAL, "", RECORD);
-
-    when(defaultRecordProcessor.process(any(), any()))
-        .thenReturn(firstResultBuilder.build())
-        .thenReturn(secondResultBuilder.build())
-        .thenReturn(EmptyProcessingResult.INSTANCE);
+    final var resultBuilderCaptor = ArgumentCaptor.forClass(ProcessingResultBuilder.class);
+    when(defaultRecordProcessor.process(any(), resultBuilderCaptor.capture()))
+        .thenAnswer(
+            (invocation) -> {
+              final var resultBuilder = resultBuilderCaptor.getValue();
+              resultBuilder.appendRecordReturnEither(
+                  1,
+                  RecordType.EVENT,
+                  ACTIVATE_ELEMENT,
+                  RejectionType.NULL_VAL,
+                  "",
+                  Records.processInstance(1));
+              resultBuilder.appendRecordReturnEither(
+                  2,
+                  RecordType.COMMAND,
+                  ACTIVATE_ELEMENT,
+                  RejectionType.NULL_VAL,
+                  "",
+                  Records.processInstance(1));
+              return resultBuilder.build();
+            })
+        .thenAnswer(
+            (invocation) -> {
+              final var resultBuilder = resultBuilderCaptor.getValue();
+              resultBuilder.appendRecordReturnEither(
+                  3,
+                  RecordType.EVENT,
+                  ACTIVATE_ELEMENT,
+                  RejectionType.NULL_VAL,
+                  "",
+                  Records.processInstance(1));
+              return resultBuilder.build();
+            });
 
     streamPlatform.startStreamProcessor();
 
@@ -261,7 +281,64 @@ public final class StreamProcessorTest {
             () ->
                 assertThat(
                         streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
-                    .isEqualTo(3));
+                    .isEqualTo(1));
+
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    final var firstRecord = logStreamReader.next();
+    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+    final var firstRecordPosition = firstRecord.getPosition();
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    while (logStreamReader.hasNext()) {
+      assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+    }
+  }
+
+  @Test
+  public void shouldSetSourcePointerForFollowUpRecords() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    final var resultBuilder = new BufferedProcessingResultBuilder((c, v) -> true);
+    resultBuilder.appendRecordReturnEither(
+        1,
+        RecordType.EVENT,
+        ACTIVATE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
+    resultBuilder.appendRecordReturnEither(
+        2,
+        RecordType.COMMAND,
+        COMPLETE_ELEMENT,
+        RejectionType.NULL_VAL,
+        "",
+        Records.processInstance(1));
+
+    when(defaultRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+
+    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
+    logStreamReader.seekToFirstEvent();
+    final var firstRecord = logStreamReader.next();
+    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+    final var firstRecordPosition = firstRecord.getPosition();
+
+    await("should write follow up events")
+        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
+    assertThat(logStreamReader.hasNext()).isTrue();
+    assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+    assertThat(logStreamReader.hasNext()).isTrue();
+    assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
   }
 
   @Test

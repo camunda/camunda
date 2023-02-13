@@ -88,7 +88,6 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(failureCommand.getPosition());
     assertThat(incidentEvent.getValue().getVariableScopeKey()).isEqualTo(failureCommand.getKey());
 
     final IncidentRecordValue incidentEventValue = incidentEvent.getValue();
@@ -461,8 +460,6 @@ public final class MappingIncidentTest {
             .getFirst();
 
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
-    assertThat(terminateActivity.getPosition())
-        .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     Assertions.assertThat(incidentResolvedEvent.getValue())
         .hasErrorType(ErrorType.IO_MAPPING_ERROR)
