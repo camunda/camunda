@@ -60,14 +60,4 @@ public interface DecisionState {
    *     it
    */
   List<PersistedDecision> findDecisionsByDecisionRequirementsKey(long decisionRequirementsKey);
-
-  /**
-   * Query decisions to find the key of the decision with the version that comes before the given
-   * version.
-   *
-   * @param decisionId the id of the decision
-   * @param currentVersion the current version
-   * @return the decision key of the version that's previous to the given version
-   */
-  Optional<Long> findPreviousVersionDecisionKey(DirectBuffer decisionId, int currentVersion);
 }

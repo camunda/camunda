@@ -70,7 +70,7 @@ public final class EventAppliers implements EventApplier {
     registerTimeEventAppliers(state);
     registerProcessEventAppliers(state);
 
-    register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
+    registerDecisionAppliers(state);
     register(
         DecisionRequirementsIntent.CREATED,
         new DecisionRequirementsCreatedApplier(state.getDecisionState()));
@@ -258,6 +258,11 @@ public final class EventAppliers implements EventApplier {
     register(
         SignalSubscriptionIntent.DELETED,
         new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
+  }
+
+  private void registerDecisionAppliers(final MutableZeebeState state) {
+    register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
+    register(DecisionIntent.DELETED, new DecisionDeletedApplier(state.getDecisionState()));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

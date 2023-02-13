@@ -380,20 +380,9 @@ public final class DecisionStateTest {
         .contains(decision3.getDecisionKey());
   }
 
-  @DisplayName("should return empty if no decision is deployed")
+  @DisplayName("should not find decision after it has been deleted")
   @Test
-  void shouldReturnEmptyWhenFindingPreviousDecisionKeyIfNoDecisionIsDeployed() {
-    // when
-    final var decisionKey =
-        decisionState.findPreviousVersionDecisionKey(wrapString("decision-1"), 1);
-
-    // then
-    assertThat(decisionKey).isEmpty();
-  }
-
-  @DisplayName("should return empty if no other version is deployed")
-  @Test
-  void shouldReturnEmptyWhenFindingPreviousDecisionKeyIfNoOtherVersionExists() {
+  void shouldNotFindDecisionAfterItHasBeenDeleted() {
     // given
     final var drg = sampleDecisionRequirementsRecord();
     final var decisionRecord =
@@ -402,16 +391,21 @@ public final class DecisionStateTest {
     decisionState.storeDecisionRecord(decisionRecord);
 
     // when
-    final var decisionKey =
-        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 1);
+    decisionState.deleteDecision(decisionRecord);
 
     // then
-    assertThat(decisionKey).isEmpty();
+    assertThat(decisionState.findDecisionByKey(decisionRecord.getDecisionKey()).isEmpty());
+    assertThat(decisionState.findLatestDecisionById(decisionRecord.getDecisionIdBuffer()))
+        .isEmpty();
+    assertThat(
+            decisionState.findDecisionsByDecisionRequirementsKey(
+                decisionRecord.getDecisionRequirementsKey()))
+        .isEmpty();
   }
 
-  @DisplayName("should return empty if no lower version is deployed")
+  @DisplayName("should find version 2 as latest decision after version 1 has been deleted")
   @Test
-  void shouldReturnEmptyWhenFindingPreviousDecisionKeyIfNoLowerVersionExists() {
+  void shouldFindVersion2AsLatestDecisionAfterVersion1HasBeenDeleted() {
     // given
     final var drg = sampleDecisionRequirementsRecord();
     final var decisionRecord1 =
@@ -429,16 +423,21 @@ public final class DecisionStateTest {
     decisionState.storeDecisionRecord(decisionRecord2);
 
     // when
-    final var decisionKey =
-        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 1);
+    decisionState.deleteDecision(decisionRecord1);
 
     // then
-    assertThat(decisionKey).isEmpty();
+    assertThat(decisionState.findDecisionByKey(decisionRecord1.getDecisionKey()).isEmpty());
+    final var latestDecisionById =
+        decisionState.findLatestDecisionById(decisionRecord1.getDecisionIdBuffer());
+    assertThat(latestDecisionById).isNotEmpty();
+    assertThat(latestDecisionById.get().getDecisionId())
+        .isEqualTo(decisionRecord2.getDecisionIdBuffer());
+    assertThat(latestDecisionById.get().getVersion()).isEqualTo(decisionRecord2.getVersion());
   }
 
-  @DisplayName("should return previous decision key")
+  @DisplayName("should find version 1 as latest decision after version 2 has been deleted")
   @Test
-  void shouldReturnPreviousDecisionKey() {
+  void shouldFindVersion1AsLatestDecisionAfterVersion2HasBeenDeleted() {
     // given
     final var drg = sampleDecisionRequirementsRecord();
     final var decisionRecord1 =
@@ -451,58 +450,26 @@ public final class DecisionStateTest {
             .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
             .setVersion(2)
             .setDecisionKey(2);
-    final var decisionRecord3 =
-        sampleDecisionRecord()
-            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
-            .setVersion(3)
-            .setDecisionKey(3);
-    decisionState.storeDecisionRequirements(drg);
-    decisionState.storeDecisionRecord(decisionRecord1);
-    decisionState.storeDecisionRecord(decisionRecord2);
-    decisionState.storeDecisionRecord(decisionRecord3);
-
-    // when
-    final var decisionKey =
-        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 3);
-
-    // then
-    assertThat(decisionKey).isNotEmpty();
-    assertThat(decisionKey.get()).isEqualTo(2);
-  }
-
-  @DisplayName(
-      "should return empty if no decision with lower version and same decision id is deployed")
-  @Test
-  void shouldReturnEmptyIfNotDecisionWithLowerVersionAndSameDecisionIdIsDeployed() {
-    // given
-    final var drg = sampleDecisionRequirementsRecord();
-    final var decisionRecord1 =
-        sampleDecisionRecord()
-            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
-            .setVersion(1)
-            .setDecisionKey(1)
-            .setDecisionId("decision-1");
-    final var decisionRecord2 =
-        sampleDecisionRecord()
-            .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
-            .setVersion(2)
-            .setDecisionKey(2)
-            .setDecisionId("decision-2");
     decisionState.storeDecisionRequirements(drg);
     decisionState.storeDecisionRecord(decisionRecord1);
     decisionState.storeDecisionRecord(decisionRecord2);
 
     // when
-    final var decisionKey =
-        decisionState.findPreviousVersionDecisionKey(wrapString("decision-2"), 2);
+    decisionState.deleteDecision(decisionRecord2);
 
     // then
-    assertThat(decisionKey).isEmpty();
+    assertThat(decisionState.findDecisionByKey(decisionRecord2.getDecisionKey()).isEmpty());
+    final var latestDecisionById =
+        decisionState.findLatestDecisionById(decisionRecord2.getDecisionIdBuffer());
+    assertThat(latestDecisionById).isNotEmpty();
+    assertThat(latestDecisionById.get().getDecisionId())
+        .isEqualTo(decisionRecord1.getDecisionIdBuffer());
+    assertThat(latestDecisionById.get().getVersion()).isEqualTo(decisionRecord1.getVersion());
   }
 
-  @DisplayName("should find previous version when version is skipped")
+  @DisplayName("should find version 1 as latest when version 2 is skipped and version 3 is deleted")
   @Test
-  void shouldFindPreviousVersionWhenVersionIsSkipped() {
+  void shouldFindVersion1AsLatestDecisionWhenVersion2IsSkippedAndVersion3IsDeleted() {
     // given
     final var drg = sampleDecisionRequirementsRecord();
     final var decisionRecord1 =
@@ -522,12 +489,16 @@ public final class DecisionStateTest {
     decisionState.storeDecisionRecord(decisionRecord3);
 
     // when
-    final var decisionKey =
-        decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 3);
+    decisionState.deleteDecision(decisionRecord3);
 
     // then
-    assertThat(decisionKey).isNotEmpty();
-    assertThat(decisionKey.get()).isEqualTo(1);
+    assertThat(decisionState.findDecisionByKey(decisionRecord3.getDecisionKey()).isEmpty());
+    final var latestDecisionById =
+        decisionState.findLatestDecisionById(decisionRecord3.getDecisionIdBuffer());
+    assertThat(latestDecisionById).isNotEmpty();
+    assertThat(latestDecisionById.get().getDecisionId())
+        .isEqualTo(decisionRecord1.getDecisionIdBuffer());
+    assertThat(latestDecisionById.get().getVersion()).isEqualTo(decisionRecord1.getVersion());
   }
 
   private DecisionRecord sampleDecisionRecord() {

@@ -161,8 +161,15 @@ public final class DbDecisionState implements MutableDecisionState {
     return decisions;
   }
 
-  @Override
-  public Optional<Long> findPreviousVersionDecisionKey(
+  /**
+   * Query decisions to find the key of the decision with the version that comes before the given
+   * version.
+   *
+   * @param decisionId the id of the decision
+   * @param currentVersion the current version
+   * @return the decision key of the version that's previous to the given version
+   */
+  private Optional<Long> findPreviousVersionDecisionKey(
       final DirectBuffer decisionId, final int currentVersion) {
     final Map<Integer, Long> decisionKeysByVersion = new HashMap<>();
 
@@ -208,6 +215,38 @@ public final class DbDecisionState implements MutableDecisionState {
     decisionRequirementsByKey.upsert(dbDecisionRequirementsKey, dbPersistedDecisionRequirements);
 
     updateLatestDecisionRequirementsVersion(record);
+  }
+
+  @Override
+  public void deleteDecision(final DecisionRecord record) {
+    findLatestDecisionById(record.getDecisionIdBuffer())
+        .map(PersistedDecision::getVersion)
+        .ifPresent(
+            latestVersion -> {
+              if (latestVersion == record.getVersion()) {
+                dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
+                findPreviousVersionDecisionKey(record.getDecisionIdBuffer(), record.getVersion())
+                    .ifPresentOrElse(
+                        previousDecisionKey -> {
+                          // Update the latest decision version
+                          dbDecisionKey.wrapLong(previousDecisionKey);
+                          latestDecisionKeysByDecisionId.update(dbDecisionId, fkDecision);
+                        },
+                        () -> {
+                          // Clear the latest decision version
+                          latestDecisionKeysByDecisionId.deleteExisting(dbDecisionId);
+                        });
+              }
+            });
+
+    dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
+    dbDecisionKey.wrapLong(record.getDecisionKey());
+    dbDecisionId.wrapBuffer(record.getDecisionIdBuffer());
+    dbDecisionVersion.wrapInt(record.getVersion());
+
+    decisionKeyByDecisionRequirementsKey.deleteExisting(dbDecisionRequirementsKeyAndDecisionKey);
+    decisionsByKey.deleteExisting(dbDecisionKey);
+    decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
   }
 
   private void updateLatestDecisionVersion(final DecisionRecord record) {

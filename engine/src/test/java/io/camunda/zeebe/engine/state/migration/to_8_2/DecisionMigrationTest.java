@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_2;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -15,15 +14,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
+import io.camunda.zeebe.db.impl.DbInt;
+import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -103,12 +106,29 @@ public class DecisionMigrationTest {
     private MutableZeebeState zeebeState;
     private TransactionContext transactionContext;
     private LegacyDecisionState legacyDecisionState;
-    private DecisionState decisionState;
+
+    private DbString dbDecisionId;
+    private DbLong dbDecisionKey;
+    private DbForeignKey<DbLong> fkDecision;
+    private DbInt dbDecisionVersion;
+    private DbCompositeKey<DbString, DbInt> decisionIdAndVersion;
+    private ColumnFamily<DbCompositeKey<DbString, DbInt>, DbForeignKey<DbLong>>
+        decisionKeyByDecisionIdAndVersion;
 
     @BeforeEach
     public void setup() {
       legacyDecisionState = new LegacyDecisionState(zeebeDb, transactionContext);
-      decisionState = zeebeState.getDecisionState();
+      dbDecisionKey = new DbLong();
+      fkDecision = new DbForeignKey<>(dbDecisionKey, ZbColumnFamilies.DMN_DECISIONS);
+      dbDecisionId = new DbString();
+      dbDecisionVersion = new DbInt();
+      decisionIdAndVersion = new DbCompositeKey<>(dbDecisionId, dbDecisionVersion);
+      decisionKeyByDecisionIdAndVersion =
+          zeebeDb.createColumnFamily(
+              ZbColumnFamilies.DMN_DECISION_KEY_BY_DECISION_ID_AND_VERSION,
+              transactionContext,
+              decisionIdAndVersion,
+              fkDecision);
     }
 
     @Test
@@ -137,10 +157,8 @@ public class DecisionMigrationTest {
       sutMigration.runMigration(zeebeState);
 
       // then
-      final Optional<Long> previousVersionDecisionKey =
-          decisionState.findPreviousVersionDecisionKey(wrapString("decision-id"), 2);
-      assertThat(previousVersionDecisionKey).isNotEmpty();
-      assertThat(previousVersionDecisionKey.get()).isEqualTo(111L);
+      assertContainsDecision(decision1);
+      assertContainsDecision(decision2);
     }
 
     private DecisionRecord sampleDecisionRecord() {
@@ -151,6 +169,15 @@ public class DecisionMigrationTest {
           .setDecisionKey(1L)
           .setDecisionRequirementsId("drg-id")
           .setDecisionRequirementsKey(1L);
+    }
+
+    private void assertContainsDecision(final DecisionRecord decisionRecord) {
+      dbDecisionId.wrapString(decisionRecord.getDecisionId());
+      dbDecisionKey.wrapLong(decisionRecord.getDecisionKey());
+      dbDecisionVersion.wrapInt(decisionRecord.getVersion());
+      assertThat(decisionKeyByDecisionIdAndVersion.exists(decisionIdAndVersion)).isTrue();
+      assertThat(decisionKeyByDecisionIdAndVersion.get(decisionIdAndVersion).inner().getValue())
+          .isEqualTo(decisionRecord.getDecisionKey());
     }
   }
 }
