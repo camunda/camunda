@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
 import java.nio.ByteBuffer;
@@ -55,6 +56,7 @@ class SegmentedJournalReaderTest {
             .withMaxSegmentSize(
                 entrySize * ENTRIES_PER_SEGMENT + SegmentDescriptor.getEncodingLength())
             .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
             .build();
     reader = journal.openReader();
   }

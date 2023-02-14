@@ -73,7 +73,7 @@ public class MetaStoreTest {
   }
 
   @Test
-  public void shouldStoreAndLoadTerm() throws IOException {
+  public void shouldStoreAndLoadTerm() {
     // when
     metaStore.storeTerm(2L);
 
@@ -223,7 +223,7 @@ public class MetaStoreTest {
     metaStore.storeLastFlushedIndex(5L);
 
     // when/then
-    assertThat(metaStore.lastFlushedIndex()).isEqualTo(5L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
   }
 
   @Test
@@ -236,7 +236,7 @@ public class MetaStoreTest {
     metaStore = new MetaStore(storage);
 
     // then
-    assertThat(metaStore.lastFlushedIndex()).isEqualTo(5L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(5L);
   }
 
   @Test
@@ -248,7 +248,7 @@ public class MetaStoreTest {
     metaStore.storeLastFlushedIndex(7L);
 
     // then
-    assertThat(metaStore.lastFlushedIndex()).isEqualTo(7L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(7L);
 
     // when
     metaStore.storeLastFlushedIndex(8L);
@@ -257,7 +257,7 @@ public class MetaStoreTest {
     metaStore = new MetaStore(storage);
 
     // then
-    assertThat(metaStore.lastFlushedIndex()).isEqualTo(8L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(8L);
   }
 
   @Test
@@ -269,7 +269,7 @@ public class MetaStoreTest {
 
     // then
     assertThat(metaStore.loadTerm()).isEqualTo(1L);
-    assertThat(metaStore.lastFlushedIndex()).isEqualTo(2L);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(2L);
     assertThat(metaStore.loadVote()).isEqualTo(MemberId.from("a"));
   }
 }
