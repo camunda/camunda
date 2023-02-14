@@ -9,9 +9,9 @@ package io.camunda.zeebe.journal.util;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
 
-public class MockJournalMetastore implements JournalMetaStore {
+public final class MockJournalMetastore implements JournalMetaStore {
 
-  long lastFlushedIndex = -1;
+  private long lastFlushedIndex = -1;
 
   @Override
   public void storeLastFlushedIndex(final long index) {
