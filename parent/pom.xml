@@ -39,7 +39,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.15.0</version.agrona>
+    <version.agrona>1.15.2</version.agrona>
     <version.animal-sniffer>1.21</version.animal-sniffer>
     <version.assertj>3.22.0</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
@@ -54,7 +54,7 @@
     <version.docker-java-api>3.2.13</version.docker-java-api>
     <version.elasticsearch>7.17.0</version.elasticsearch>
     <version.error-prone>2.11.0</version.error-prone>
-    <version.grpc>1.45.1</version.grpc>
+    <version.grpc>1.45.4</version.grpc>
     <version.gson>2.9.0</version.gson>
     <version.guava>31.1-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -73,7 +73,7 @@
     <version.mockito>4.4.0</version.mockito>
     <version.mockito-jupiter>4.4.0</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
-    <version.msgpack>0.9.1</version.msgpack>
+    <version.msgpack>0.9.3</version.msgpack>
     <version.netty>4.1.74.Final</version.netty>
     <version.objenesis>3.2</version.objenesis>
     <version.prometheus>0.15.0</version.prometheus>
