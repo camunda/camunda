@@ -11,6 +11,10 @@ on:
         description: 'Id of process to start in testbench (eg:- e2e-testbench-protocol)'
         required: true
         type: string
+      branch:
+        description: 'Branch to test'
+        required: true
+        type: string
 
 jobs:
   testbench:
@@ -20,7 +24,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: "${{ github.ref_name || 'main' }}"
+          ref: "${{ inputs.branch || 'main' }}"
 
       - name: Build and push docker
         id: build-docker

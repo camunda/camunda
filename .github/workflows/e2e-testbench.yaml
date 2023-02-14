@@ -85,4 +85,5 @@ jobs:
         \"fault\": ${{ inputs.fault || 'null' }}
         }
         }
+      branch: ${{ inputs.branch }}
     secrets: inherit
