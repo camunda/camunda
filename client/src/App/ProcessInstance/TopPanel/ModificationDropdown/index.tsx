@@ -96,7 +96,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                           )
                         )
                       ) {
-                        modificationsStore.startAddingToken();
+                        modificationsStore.startAddingToken(flowNodeId);
                       } else {
                         tracking.track({
                           eventName: 'add-token',

@@ -186,7 +186,7 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               data-testid={flowNodeInstance.id}
               onSelection={() => {
                 if (modificationsStore.state.status === 'adding-token') {
-                  modificationsStore.finishAddingToken();
+                  modificationsStore.finishAddingToken(flowNodeInstance.id);
                 } else {
                   tracking.track({eventName: 'instance-history-item-clicked'});
                   flowNodeSelectionStore.selectFlowNode({

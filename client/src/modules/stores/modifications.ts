@@ -26,6 +26,7 @@ type FlowNodeModificationPayload =
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
+      ancestorElementInstanceKey?: string;
       parentScopeIds: {
         [flowNodeId: string]: string;
       };
@@ -89,6 +90,7 @@ type State = {
     | undefined;
   sourceFlowNodeIdForMoveOperation: string | null;
   sourceFlowNodeInstanceKeyForMoveOperation: string | null;
+  sourceFlowNodeIdForAddOperation: string | null;
 };
 
 const DEFAULT_STATE: State = {
@@ -96,6 +98,7 @@ const DEFAULT_STATE: State = {
   modifications: [],
   sourceFlowNodeIdForMoveOperation: null,
   sourceFlowNodeInstanceKeyForMoveOperation: null,
+  sourceFlowNodeIdForAddOperation: null,
   lastRemovedModification: undefined,
 };
 
@@ -128,8 +131,9 @@ class Modifications {
       sourceFlowNodeInstanceKey ?? null;
   };
 
-  startAddingToken = () => {
+  startAddingToken = (sourceFlowNodeId: string) => {
     this.state.status = 'adding-token';
+    this.state.sourceFlowNodeIdForAddOperation = sourceFlowNodeId;
   };
 
   generateParentScopeIds = (targetFlowNodeId: string) => {
@@ -209,8 +213,34 @@ class Modifications {
     this.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
   };
 
-  finishAddingToken = () => {
+  finishAddingToken = (ancestorElementInstanceKey?: string) => {
+    if (
+      ancestorElementInstanceKey !== undefined &&
+      this.state.sourceFlowNodeIdForAddOperation !== null
+    ) {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: generateUniqueID(),
+          flowNode: {
+            id: this.state.sourceFlowNodeIdForAddOperation,
+            name: processInstanceDetailsDiagramStore.getFlowNodeName(
+              this.state.sourceFlowNodeIdForAddOperation
+            ),
+          },
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          ancestorElementInstanceKey,
+          parentScopeIds: modificationsStore.generateParentScopeIds(
+            this.state.sourceFlowNodeIdForAddOperation
+          ),
+        },
+      });
+    }
+
     this.state.status = 'enabled';
+    this.state.sourceFlowNodeIdForAddOperation = null;
   };
 
   enableModificationMode = () => {
@@ -565,6 +595,7 @@ class Modifications {
           {
             modification: payload.operation,
             toFlowNodeId: payload.flowNode.id,
+            ancestorElementInstanceKey: payload.ancestorElementInstanceKey,
             variables:
               Object.keys(allVariables).length > 0 ? allVariables : undefined,
           },

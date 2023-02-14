@@ -19,6 +19,7 @@ type ModificationPayload = {
         newTokensCount?: number;
         variables?: FlowNodeVariables;
         fromFlowNodeInstanceKey?: string;
+        ancestorElementInstanceKey?: string;
       }
     | {
         modification: 'ADD_VARIABLE' | 'EDIT_VARIABLE';

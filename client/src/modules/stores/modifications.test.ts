@@ -1291,11 +1291,25 @@ describe('stores/modifications', () => {
       newScopeCount: 1,
     });
 
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        flowNode: {id: 'flow_node_11', name: 'flow node 11'},
+        scopeId: 'random-scope-id-11',
+        affectedTokenCount: 1,
+        ancestorElementInstanceKey: 'some-ancestor-instance-key',
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
     expect(modificationsStore.generateModificationsPayload()).toEqual([
       {
         modification: 'ADD_TOKEN',
         toFlowNodeId: 'flow_node_0',
         variables: undefined,
+        ancestorElementInstanceKey: undefined,
       },
       {
         modification: 'ADD_TOKEN',
@@ -1308,6 +1322,7 @@ describe('stores/modifications', () => {
           ],
           flow_node_1: [{name1: 'value1', name2: 'value2'}],
         },
+        ancestorElementInstanceKey: undefined,
       },
       {modification: 'CANCEL_TOKEN', fromFlowNodeId: 'flow_node_2'},
       {
@@ -1339,6 +1354,12 @@ describe('stores/modifications', () => {
         modification: 'MOVE_TOKEN',
         newTokensCount: 1,
         toFlowNodeId: 'flow_node_7',
+      },
+      {
+        ancestorElementInstanceKey: 'some-ancestor-instance-key',
+        modification: 'ADD_TOKEN',
+        toFlowNodeId: 'flow_node_11',
+        variables: undefined,
       },
       {
         modification: 'ADD_VARIABLE',
@@ -1441,5 +1462,57 @@ describe('stores/modifications', () => {
     expect(modificationsStore.getNewScopeIdForFlowNode('test-flownode2')).toBe(
       uniqueID
     );
+  });
+
+  it('should add tokens to flow nodes that has multiple running scopes', async () => {
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 2,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+
+      {
+        activityId: 'subprocess-service-task',
+        active: 2,
+        incidents: 1,
+        completed: 0,
+        canceled: 0,
+      },
+    ]);
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(1);
+
+    expect(modificationsStore.modificationsByFlowNode).toEqual({});
+    expect(modificationsStore.state.sourceFlowNodeIdForAddOperation).toBeNull();
+
+    modificationsStore.startAddingToken('subprocess-service-task');
+    expect(modificationsStore.state.sourceFlowNodeIdForAddOperation).toBe(
+      'subprocess-service-task'
+    );
+
+    modificationsStore.finishAddingToken('some-instance-key');
+
+    expect(modificationsStore.modificationsByFlowNode).toEqual({
+      'subprocess-service-task': {
+        areAllTokensCanceled: false,
+        cancelledTokens: 0,
+        newTokens: 1,
+        cancelledChildTokens: 0,
+        visibleCancelledTokens: 0,
+      },
+    });
+
+    expect(
+      modificationsStore.state.sourceFlowNodeIdForMoveOperation
+    ).toBeNull();
+    expect(modificationsStore.state.status).toBe('enabled');
   });
 });
