@@ -56,5 +56,4 @@ jobs:
         \"processId\": \"qa-protocol\"
         }
       branch: ${{ inputs.branch }}
-      generation: ${{ inputs.generation }}
     secrets: inherit

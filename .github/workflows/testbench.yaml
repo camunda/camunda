@@ -11,6 +11,10 @@ on:
         description: 'Id of process to start in testbench (eg:- e2e-testbench-protocol)'
         required: true
         type: string
+      branch:
+        description: 'Branch to test'
+        required: true
+        type: string
 
 jobs:
   testbench:
