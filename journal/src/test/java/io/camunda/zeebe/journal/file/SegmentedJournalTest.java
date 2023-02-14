@@ -56,6 +56,7 @@ class SegmentedJournalTest {
   private final int entrySize = getSerializedSize(data);
 
   private SegmentedJournal journal;
+  private final MockJournalMetastore metaStore = new MockJournalMetastore();
 
   @AfterEach
   void teardown() {
@@ -824,18 +825,32 @@ class SegmentedJournalTest {
     journal.append(2, recordDataWriter);
   }
 
+  @Test
+  void shouldUpdateMetastoreAfterFlush() {
+    journal = openJournal(2);
+    journal.append(1, recordDataWriter);
+    final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
+
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(
             (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
-        .withMetaStore(new MockJournalMetastore())
+        .withMetaStore(metaStore)
         .build();
   }
 
