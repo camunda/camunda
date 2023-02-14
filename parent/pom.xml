@@ -39,7 +39,7 @@
     <spotbugs.exclude>spotbugs/spotbugs-exclude.xml</spotbugs.exclude>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>1.15.0</version.agrona>
+    <version.agrona>1.15.2</version.agrona>
     <version.animal-sniffer>1.21</version.animal-sniffer>
     <version.assertj>3.22.0</version.assertj>
     <version.awaitility>4.2.0</version.awaitility>
