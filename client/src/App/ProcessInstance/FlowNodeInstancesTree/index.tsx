@@ -185,15 +185,19 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               ref={rowRef}
               data-testid={flowNodeInstance.id}
               onSelection={() => {
-                tracking.track({eventName: 'instance-history-item-clicked'});
-                flowNodeSelectionStore.selectFlowNode({
-                  flowNodeId: isProcessInstance
-                    ? undefined
-                    : flowNodeInstance.flowNodeId,
-                  flowNodeInstanceId: flowNodeInstance.id,
-                  isMultiInstance: isMultiInstanceBody,
-                  isPlaceholder: flowNodeInstance.isPlaceholder,
-                });
+                if (modificationsStore.state.status === 'adding-token') {
+                  modificationsStore.finishAddingToken();
+                } else {
+                  tracking.track({eventName: 'instance-history-item-clicked'});
+                  flowNodeSelectionStore.selectFlowNode({
+                    flowNodeId: isProcessInstance
+                      ? undefined
+                      : flowNodeInstance.flowNodeId,
+                    flowNodeInstanceId: flowNodeInstance.id,
+                    isMultiInstance: isMultiInstanceBody,
+                    isPlaceholder: flowNodeInstance.isPlaceholder,
+                  });
+                }
               }}
               isSelected={isSelected}
               isLastChild={isLastChild}

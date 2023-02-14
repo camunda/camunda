@@ -89,29 +89,40 @@ const ModificationDropdown: React.FC<Props> = observer(
                     title="Add single flow node instance"
                     aria-label="Add single flow node instance"
                     onClick={() => {
-                      tracking.track({
-                        eventName: 'add-token',
-                      });
+                      if (
+                        processInstanceDetailsDiagramStore.hasMultipleScopes(
+                          processInstanceDetailsDiagramStore.getParentFlowNode(
+                            flowNodeId
+                          )
+                        )
+                      ) {
+                        modificationsStore.startAddingToken();
+                      } else {
+                        tracking.track({
+                          eventName: 'add-token',
+                        });
 
-                      modificationsStore.addModification({
-                        type: 'token',
-                        payload: {
-                          operation: 'ADD_TOKEN',
-                          scopeId: generateUniqueID(),
-                          flowNode: {
-                            id: flowNodeId,
-                            name: processInstanceDetailsDiagramStore.getFlowNodeName(
-                              flowNodeId
-                            ),
+                        modificationsStore.addModification({
+                          type: 'token',
+                          payload: {
+                            operation: 'ADD_TOKEN',
+                            scopeId: generateUniqueID(),
+                            flowNode: {
+                              id: flowNodeId,
+                              name: processInstanceDetailsDiagramStore.getFlowNodeName(
+                                flowNodeId
+                              ),
+                            },
+                            affectedTokenCount: 1,
+                            visibleAffectedTokenCount: 1,
+                            parentScopeIds:
+                              modificationsStore.generateParentScopeIds(
+                                flowNodeId
+                              ),
                           },
-                          affectedTokenCount: 1,
-                          visibleAffectedTokenCount: 1,
-                          parentScopeIds:
-                            modificationsStore.generateParentScopeIds(
-                              flowNodeId
-                            ),
-                        },
-                      });
+                        });
+                      }
+
                       flowNodeSelectionStore.clearSelection();
                     }}
                   >

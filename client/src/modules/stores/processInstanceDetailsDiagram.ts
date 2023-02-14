@@ -153,21 +153,25 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return [flowNode.$parent.id, ...this.getFlowNodeParents(flowNode.$parent)];
   };
 
-  hasMultipleScopes = (flowNode: BusinessObject): boolean => {
+  hasMultipleScopes = (parentFlowNode?: BusinessObject): boolean => {
+    if (parentFlowNode === undefined) {
+      return false;
+    }
+
     const scopeCount =
       processInstanceDetailsStatisticsStore.getTotalRunningInstancesForFlowNode(
-        flowNode.id
+        parentFlowNode.id
       );
 
     if (scopeCount > 1) {
       return true;
     }
 
-    if (flowNode.$parent?.$type !== 'bpmn:SubProcess') {
+    if (parentFlowNode.$parent?.$type !== 'bpmn:SubProcess') {
       return false;
     }
 
-    return this.hasMultipleScopes(flowNode.$parent);
+    return this.hasMultipleScopes(parentFlowNode.$parent);
   };
 
   get flowNodes() {
@@ -186,10 +190,7 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
         hasMultiInstanceParent: isWithinMultiInstance(flowNode),
         isAttachedToAnEventBasedGateway:
           isAttachedToAnEventBasedGateway(flowNode),
-        hasMultipleScopes:
-          flowNode.$parent !== undefined
-            ? this.hasMultipleScopes(flowNode.$parent)
-            : false,
+        hasMultipleScopes: this.hasMultipleScopes(flowNode.$parent),
       };
     });
   }
@@ -252,6 +253,11 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
   isMultiInstance = (flowNodeId: string) => {
     const businessObject = this.businessObjects[flowNodeId];
     return isMultiInstance(businessObject);
+  };
+
+  getParentFlowNode = (flowNodeId: string) => {
+    const businessObject = this.businessObjects[flowNodeId];
+    return businessObject?.$parent;
   };
 
   handleFetchFailure = (error?: unknown) => {

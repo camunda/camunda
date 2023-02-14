@@ -28,6 +28,7 @@ describe('stores/processInstanceDiagram', () => {
   afterEach(() => {
     processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStore.reset();
+    processInstanceDetailsStatisticsStore.reset();
   });
 
   it('should fetch process xml when current instance is available', async () => {
@@ -404,5 +405,111 @@ describe('stores/processInstanceDiagram', () => {
         processInstanceDetailsDiagramStore.businessObjects['non_existing']
       )
     ).toEqual([]);
+  });
+
+  it('should get has multiple scopes', async () => {
+    mockFetchProcessInstanceDetailStatistics().withSuccess([
+      {
+        activityId: 'service-task-1',
+        active: 2,
+        canceled: 0,
+        incidents: 0,
+        completed: 1,
+      },
+      {
+        activityId: 'service-task-7',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'subprocess-service-task',
+        active: 1,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+      {
+        activityId: 'multi-instance-subprocess',
+        active: 2,
+        canceled: 0,
+        incidents: 0,
+        completed: 0,
+      },
+    ]);
+
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+    await processInstanceDetailsStatisticsStore.fetchFlowNodeStatistics(
+      'processInstanceId'
+    );
+
+    expect(processInstanceDetailsDiagramStore.hasMultipleScopes()).toBe(false);
+
+    expect(
+      processInstanceDetailsDiagramStore.hasMultipleScopes({
+        id: 'service-task-1',
+        name: 'some-name',
+        $type: 'bpmn:ServiceTask',
+      })
+    ).toBe(true);
+
+    expect(
+      processInstanceDetailsDiagramStore.hasMultipleScopes({
+        id: 'service-task-7',
+        name: 'some-name',
+        $type: 'bpmn:ServiceTask',
+      })
+    ).toBe(false);
+
+    expect(
+      processInstanceDetailsDiagramStore.hasMultipleScopes({
+        id: 'subprocess-service-task',
+        name: 'some-name',
+        $type: 'bpmn:ServiceTask',
+      })
+    ).toBe(false);
+
+    expect(
+      processInstanceDetailsDiagramStore.hasMultipleScopes({
+        id: 'subprocess-service-task',
+        name: 'some-name',
+        $type: 'bpmn:ServiceTask',
+        $parent: {
+          id: 'multi-instance-subprocess',
+          name: 'some-name',
+          $type: 'bpmn:SubProcess',
+        },
+      })
+    ).toBe(true);
+  });
+
+  it('should get parent flow node', async () => {
+    mockFetchProcessXML().withSuccess(open('diagramForModifications.bpmn'));
+
+    await processInstanceDetailsDiagramStore.fetchProcessXml(
+      'processInstanceId'
+    );
+
+    expect(
+      processInstanceDetailsDiagramStore.getParentFlowNode(
+        'subprocess-service-task'
+      )
+    ).toEqual({
+      $type: 'bpmn:SubProcess',
+      flowElements: [
+        {$type: 'bpmn:StartEvent', id: 'subprocess-start-1'},
+        {$type: 'bpmn:SequenceFlow', id: 'Flow_1vur7mf'},
+        {$type: 'bpmn:EndEvent', id: 'subprocess-end-task'},
+        {$type: 'bpmn:SequenceFlow', id: 'Flow_0r3hsrs'},
+        {$type: 'bpmn:ServiceTask', id: 'subprocess-service-task'},
+      ],
+      id: 'multi-instance-subprocess',
+      loopCharacteristics: {$type: 'bpmn:MultiInstanceLoopCharacteristics'},
+    });
   });
 });

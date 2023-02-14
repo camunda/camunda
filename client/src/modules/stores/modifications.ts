@@ -74,7 +74,12 @@ type Modification = FlowNodeModification | VariableModification;
 type RemovedModificationSource = 'variables' | 'summaryModal' | 'footer';
 
 type State = {
-  status: 'enabled' | 'moving-token' | 'disabled' | 'applying-modifications';
+  status:
+    | 'enabled'
+    | 'adding-token'
+    | 'moving-token'
+    | 'disabled'
+    | 'applying-modifications';
   modifications: Modification[];
   lastRemovedModification:
     | {
@@ -121,6 +126,10 @@ class Modifications {
     this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
     this.state.sourceFlowNodeInstanceKeyForMoveOperation =
       sourceFlowNodeInstanceKey ?? null;
+  };
+
+  startAddingToken = () => {
+    this.state.status = 'adding-token';
   };
 
   generateParentScopeIds = (targetFlowNodeId: string) => {
@@ -198,6 +207,10 @@ class Modifications {
     this.state.status = 'enabled';
     this.state.sourceFlowNodeIdForMoveOperation = null;
     this.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
+  };
+
+  finishAddingToken = () => {
+    this.state.status = 'enabled';
   };
 
   enableModificationMode = () => {

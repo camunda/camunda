@@ -33,6 +33,8 @@ import {mockFetchSequenceFlows} from 'modules/mocks/api/processInstances/sequenc
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
+import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
+import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -351,4 +353,67 @@ describe('TopPanel', () => {
       )
     ).toBeInTheDocument();
   });
+
+  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
+    'should display parent selection banner when trying to add a token on a flow node that has multiple scopes',
+    async () => {
+      mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+
+      processInstanceDetailsStore.init({id: 'active_instance'});
+      processInstanceDetailsDiagramStore.init();
+
+      mockFetchProcessInstanceDetailStatistics().withSuccess([
+        {
+          activityId: 'parent_sub_process',
+          active: 2,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+        {
+          activityId: 'inner_sub_process',
+          active: 2,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+        {
+          activityId: 'user_task',
+          active: 2,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
+        },
+      ]);
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+
+      const {user} = render(<TopPanel />, {
+        wrapper: Wrapper,
+      });
+
+      modificationsStore.enableModificationMode();
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'user_task',
+      });
+
+      await user.click(
+        await screen.findByTitle(/Add single flow node instance/)
+      );
+
+      expect(
+        await screen.findByText(
+          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i
+        )
+      ).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', {name: 'Discard'}));
+
+      expect(
+        screen.queryByText(
+          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i
+        )
+      ).not.toBeInTheDocument();
+    }
+  );
 });
