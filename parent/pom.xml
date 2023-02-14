@@ -134,7 +134,7 @@
     <plugin.version.exec>3.0.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M8</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
-    <plugin.version.jacoco>0.8.7</plugin.version.jacoco>
+    <plugin.version.jacoco>0.8.8</plugin.version.jacoco>
     <plugin.version.license>4.1</plugin.version.license>
     <plugin.version.maven-jar>3.2.2</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
