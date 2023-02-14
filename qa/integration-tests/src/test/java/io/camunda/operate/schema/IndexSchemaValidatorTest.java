@@ -69,7 +69,7 @@ public class IndexSchemaValidatorTest {
   public void setUp() {
     operatePrefix = operateProperties.getElasticsearch().getIndexPrefix();
     allIndexNames = indexDescriptors.stream().map(IndexDescriptor::getFullQualifiedName).collect(Collectors.toList());
-    newerVersions = Set.of("1.1.1", "1.1.2", "1.0.1", "1.2.3");
+    newerVersions = Set.of("100.1.1", "100.1.2", "100.0.1", "100.2.3");
     olderVersions = Set.of("0.2.5" , "0.1.2");
   }
 
@@ -155,15 +155,16 @@ public class IndexSchemaValidatorTest {
         getFullQualifiedIndexName(processIndex, "0.9.0"),
         getFullQualifiedIndexName(processIndex, "0.8.0")));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> indexSchemaValidator.validate())
-        .withMessageContaining("More than one older version for process (1.0.0) found: [0.8.0, 0.9.0]");
+        .withMessageContaining("More than one older version for process (" + processIndex.getVersion() + ") found: [0.8.0, 0.9.0]");
   }
 
   @Test
   public void testIsNotValidForANewerVersion() {
     // 1 newer version for index
-    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, "2.0.0")));
+    var newerVersion = "10.0.0";
+    whenELSClientReturnsIndexNames(List.of(getFullQualifiedIndexName(processIndex, newerVersion)));
     assertThatExceptionOfType(OperateRuntimeException.class).isThrownBy(() -> indexSchemaValidator.validate())
-        .withMessageContaining("Newer version(s) for process (1.0.0) already exists: [2.0.0]");
+        .withMessageContaining("Newer version(s) for process ("+processIndex.getVersion()+") already exists: ["+newerVersion+"]");
   }
 
   private void whenELSClientReturnsIndexNames(List<String> givenIndexNames) {
