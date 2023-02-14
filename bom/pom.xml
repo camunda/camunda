@@ -91,6 +91,18 @@
   </dependencyManagement>
 
   <repositories>
+    <!-- This entry for central makes sure that artifacts are first resolved via central. -->
+    <!-- This ensures traffic for non-camunda artifacts is not routed through camunda repos. -->
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2</url>
+      <layout>default</layout>
+    </repository>
+
     <repository>
       <releases>
         <enabled>true</enabled>
