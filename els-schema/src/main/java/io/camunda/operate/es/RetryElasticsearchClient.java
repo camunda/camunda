@@ -13,15 +13,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.RetryOperation;
 import org.elasticsearch.ElasticsearchException;
@@ -126,9 +122,19 @@ public class RetryElasticsearchClient {
     return this;
   }
 
-  public void refresh(String indexPattern) {
+  public void refresh(final String indexPattern) {
     executeWithRetries("Refresh " + indexPattern,
-        () ->  esClient.indices().refresh(new RefreshRequest(indexPattern), requestOptions));
+        () -> {
+          try {
+            for(var index: getFilteredIndices(indexPattern)){
+              esClient.indices().refresh(new RefreshRequest(index), requestOptions);
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+          return true;
+      }
+      );
   }
 
   public long getNumberOfDocumentsFor(String... indexPatterns){
@@ -242,10 +248,15 @@ public class RetryElasticsearchClient {
         IndicesOptions.fromOptions(true, false, true, false)), requestOptions);
   }
 
+  private Set<String> getFilteredIndices(final String indexPattern) throws IOException {
+    return Arrays.stream(esClient.indices().get(new GetIndexRequest(indexPattern), RequestOptions.DEFAULT)
+        .getIndices()).sequential().collect(Collectors.toSet());
+  }
+
   public boolean deleteIndicesFor(final String indexPattern) {
     return executeWithRetries("DeleteIndices " + indexPattern, () -> {
-      if (indicesExist(indexPattern)){
-        return esClient.indices().delete(new DeleteIndexRequest(indexPattern), requestOptions).isAcknowledged();
+      for(var index: getFilteredIndices(indexPattern)) {
+          esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
       }
       return true;
     });

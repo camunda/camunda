@@ -1,7 +1,7 @@
 version: "2.4"
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.2
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.0
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -22,7 +22,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:7.13.0
+    image: docker.elastic.co/kibana/kibana:7.17.0
     ports:
       - 5601:5601
     links:

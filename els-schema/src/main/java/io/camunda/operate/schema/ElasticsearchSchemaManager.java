@@ -17,6 +17,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.AbstractIndexDescriptor;
 import io.camunda.operate.schema.indices.IndexDescriptor;
 import io.camunda.operate.schema.templates.TemplateDescriptor;
+import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
@@ -102,10 +103,12 @@ public class ElasticsearchSchemaManager {
   }
 
   private void createIndex(final IndexDescriptor indexDescriptor) {
-    final String indexFilename = String.format("/schema/create/index/operate-%s.json", indexDescriptor.getIndexName());
-    final Map<String, Object> indexDescription = prepareCreateIndex(indexFilename, indexDescriptor.getAlias());
+    final String indexFilename = String.format("/schema/create/index/operate-%s.json",
+        indexDescriptor.getIndexName());
+    final Map<String, Object> indexDescription = readJSONFileToMap(indexFilename);
     createIndex(new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
             .source(indexDescription)
+            .aliases(Set.of(new Alias(indexDescriptor.getAlias()).writeIndex(false)))
             .settings(getIndexSettings()),
         indexDescriptor.getFullQualifiedName());
   }
@@ -140,13 +143,6 @@ public class ElasticsearchSchemaManager {
       throw new OperateRuntimeException(
           String.format("Error in reading mappings for %s ",templateDescriptor.getTemplateName()), e );
     }
-  }
-
-  private Map<String, Object> prepareCreateIndex(String fileName, String alias) {
-    final Map<String, Object> indexDescription = readJSONFileToMap(fileName);
-    // Adjust aliases in case of other configured indexNames, e.g. non-default prefix
-    indexDescription.put(ALIASES, Collections.singletonMap(alias, Collections.emptyMap()));
-    return indexDescription;
   }
 
   private Map<String, Object> readJSONFileToMap(final String filename) {

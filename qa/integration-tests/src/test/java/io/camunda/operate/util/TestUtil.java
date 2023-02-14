@@ -47,6 +47,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -334,10 +335,16 @@ public abstract class TestUtil {
   public static void removeAllIndices(RestHighLevelClient esClient, String prefix) {
     try {
       logger.info("Removing indices");
-      esClient.indices().delete(new DeleteIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
-      esClient.indices().deleteTemplate(new DeleteIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
+      var indexResponses = esClient.indices().get(new GetIndexRequest(prefix + "*"), RequestOptions.DEFAULT);
+      for(String index: indexResponses.getIndices()){
+        esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
+      }
+      var templateResponses = esClient.indices().getIndexTemplate(new GetComposableIndexTemplateRequest(prefix + "*"), RequestOptions.DEFAULT);
+      for(String template: templateResponses.getIndexTemplates().keySet()){
+        esClient.indices().deleteIndexTemplate(new DeleteComposableIndexTemplateRequest(template), RequestOptions.DEFAULT);
+      }
     } catch (ElasticsearchStatusException | IOException ex) {
-      //do nothing
+      logger.error(ex.getMessage(), ex);
     }
   }
 
