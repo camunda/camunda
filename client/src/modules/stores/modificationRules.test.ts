@@ -155,7 +155,7 @@ describe('stores/modificationRules', () => {
     });
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
-    expect(modificationRulesStore.availableModifications).toEqual(['add']);
+    expect(modificationRulesStore.availableModifications).toEqual([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'service-task-2',
@@ -163,7 +163,7 @@ describe('stores/modificationRules', () => {
     });
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
-    expect(modificationRulesStore.availableModifications).toEqual(['add']);
+    expect(modificationRulesStore.availableModifications).toEqual([]);
 
     modificationsStore.removeLastModification();
     flowNodeSelectionStore.selectFlowNode({
@@ -187,7 +187,7 @@ describe('stores/modificationRules', () => {
 
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
-    expect(modificationRulesStore.availableModifications).toEqual(['add']);
+    expect(modificationRulesStore.availableModifications).toEqual([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'service-task-2',
@@ -197,7 +197,6 @@ describe('stores/modificationRules', () => {
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(true);
     expect(modificationRulesStore.availableModifications).toEqual([
-      'add',
       'cancel-instance',
       'move-instance',
     ]);
@@ -206,7 +205,7 @@ describe('stores/modificationRules', () => {
     modificationsStore.cancelToken('service-task-2', 'some-instance-key-2');
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
-    expect(modificationRulesStore.availableModifications).toEqual(['add']);
+    expect(modificationRulesStore.availableModifications).toEqual([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'service-task-2',
@@ -232,7 +231,7 @@ describe('stores/modificationRules', () => {
 
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
-    expect(modificationRulesStore.availableModifications).toEqual(['add']);
+    expect(modificationRulesStore.availableModifications).toEqual([]);
 
     flowNodeSelectionStore.selectFlowNode({
       flowNodeId: 'service-task-1',
@@ -241,9 +240,15 @@ describe('stores/modificationRules', () => {
 
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
-    expect(modificationRulesStore.availableModifications).toEqual(['add']);
+    expect(modificationRulesStore.availableModifications).toEqual([]);
 
-    flowNodeMetaDataStore.setMetaData(incidentFlowNodeMetaData);
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-1',
+    });
+
+    expect(modificationRulesStore.canBeModified).toBe(true);
+    expect(modificationRulesStore.canBeCanceled).toBe(false);
+    expect(modificationRulesStore.availableModifications).toEqual(['add']);
   });
 
   it('should get modification rules for multi instance subprocess and its instances', () => {
@@ -290,5 +295,26 @@ describe('stores/modificationRules', () => {
     expect(modificationRulesStore.canBeModified).toBe(true);
     expect(modificationRulesStore.canBeCanceled).toBe(false);
     expect(modificationRulesStore.availableModifications).toEqual([]);
+  });
+
+  it('should display/hide add token option depending on flow node/instance key selection', () => {
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-2',
+    });
+
+    expect(modificationRulesStore.availableModifications).toEqual([
+      'add',
+      'cancel-all',
+      'move-all',
+    ]);
+    flowNodeSelectionStore.selectFlowNode({
+      flowNodeId: 'service-task-2',
+      flowNodeInstanceId: 'some-instance-key',
+    });
+
+    expect(modificationRulesStore.availableModifications).toEqual([
+      'cancel-instance',
+      'move-instance',
+    ]);
   });
 });

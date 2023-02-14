@@ -405,7 +405,7 @@ describe('Modification Dropdown', () => {
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('dropdown-spinner')
     );
-    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.getByText(/Move instance/)).toBeInTheDocument();
     expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
   });
@@ -460,6 +460,6 @@ describe('Modification Dropdown', () => {
     });
     expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
-    expect(screen.getByText(/Add/)).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
 });

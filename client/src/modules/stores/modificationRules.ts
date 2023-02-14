@@ -63,7 +63,10 @@ class ModificationRules {
 
   get availableModifications() {
     const options: ModificationOption[] = [];
-    const {selectedRunningInstanceCount} = flowNodeSelectionStore;
+    const {
+      selectedRunningInstanceCount,
+      state: {selection},
+    } = flowNodeSelectionStore;
 
     if (this.selectedFlowNodeId === undefined || !this.canBeModified) {
       return options;
@@ -76,8 +79,9 @@ class ModificationRules {
       !(
         processInstanceDetailsDiagramStore.isMultiInstance(
           this.selectedFlowNodeId
-        ) && !flowNodeSelectionStore.state.selection?.isMultiInstance
-      )
+        ) && !selection?.isMultiInstance
+      ) &&
+      selection?.flowNodeInstanceId === undefined
     ) {
       options.push('add');
     }
