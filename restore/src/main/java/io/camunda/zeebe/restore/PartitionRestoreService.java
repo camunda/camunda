@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
@@ -112,6 +113,19 @@ public class PartitionRestoreService {
         SegmentedJournal.builder()
             .withDirectory(dataDirectory.toFile())
             .withName(partition.name())
+            .withMetaStore(
+                // A NoopMetastore
+                new JournalMetaStore() {
+                  @Override
+                  public void storeLastFlushedIndex(final long index) {
+                    // noop
+                  }
+
+                  @Override
+                  public long loadLastFlushedIndex() {
+                    return 0;
+                  }
+                })
             .build()) {
 
       resetJournal(checkpointPosition, journal);
