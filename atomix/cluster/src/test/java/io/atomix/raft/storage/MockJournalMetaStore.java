@@ -9,9 +9,9 @@ package io.atomix.raft.storage;
 
 import io.camunda.zeebe.journal.JournalMetaStore;
 
-public class MockJournalMetaStore implements JournalMetaStore {
+public final class MockJournalMetaStore implements JournalMetaStore {
 
-  long index;
+  private long index;
 
   @Override
   public void storeLastFlushedIndex(final long index) {
