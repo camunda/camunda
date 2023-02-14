@@ -28,6 +28,7 @@ import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance
 import {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 
 type State = {
   diagramModel: DiagramModel | null;
@@ -200,7 +201,8 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
           !flowNode.hasMultiInstanceParent &&
           !flowNode.isAttachedToAnEventBasedGateway &&
           flowNode.isAppendable &&
-          !flowNode.hasMultipleScopes
+          (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ||
+            !flowNode.hasMultipleScopes)
       )
       .map(({id}) => id);
   }

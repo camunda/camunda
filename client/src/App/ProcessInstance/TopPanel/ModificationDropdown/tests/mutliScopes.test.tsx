@@ -13,6 +13,7 @@ import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
+import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   beforeAll(() => {
@@ -75,144 +76,206 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
 
-  it('should not support add modification for task with multiple inner parent scopes', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'OuterSubProcess',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'InnerSubProcess',
-        active: 10,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'TaskB',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
+  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
+    'should not support add modification for task with multiple inner parent scopes',
+    async () => {
+      mockFetchProcessInstanceDetailStatistics().withSuccess([
+        {
+          activityId: 'OuterSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'InnerSubProcess',
+          active: 10,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'TaskB',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ]);
 
-    renderPopover();
+      renderPopover();
 
-    await waitFor(() =>
+      await waitFor(() =>
+        expect(
+          processInstanceDetailsDiagramStore.state.diagramModel
+        ).not.toBeNull()
+      );
+      modificationsStore.enableModificationMode();
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TaskB',
+      });
+
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
-    );
-    modificationsStore.enableModificationMode();
+        await screen.findByText(/Flow Node Modifications/)
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+      expect(screen.getByText(/Move/)).toBeInTheDocument();
+      expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+    }
+  );
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TaskB',
-    });
+  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
+    'should not support add modification for task with multiple outer parent scopes',
+    async () => {
+      mockFetchProcessInstanceDetailStatistics().withSuccess([
+        {
+          activityId: 'OuterSubProcess',
+          active: 10,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'InnerSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'TaskB',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ]);
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
-    expect(screen.getByText(/Move/)).toBeInTheDocument();
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-  });
+      renderPopover();
 
-  it('should not support add modification for task with multiple outer parent scopes', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'OuterSubProcess',
-        active: 10,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'InnerSubProcess',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'TaskB',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
+      await waitFor(() =>
+        expect(
+          processInstanceDetailsDiagramStore.state.diagramModel
+        ).not.toBeNull()
+      );
+      modificationsStore.enableModificationMode();
 
-    renderPopover();
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TaskB',
+      });
 
-    await waitFor(() =>
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
-    );
-    modificationsStore.enableModificationMode();
+        await screen.findByText(/Flow Node Modifications/)
+      ).toBeInTheDocument();
+      expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+      expect(screen.getByText(/Move/)).toBeInTheDocument();
+      expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+    }
+  );
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TaskB',
-    });
+  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it.skip : it)(
+    'should render no modifications available',
+    async () => {
+      mockFetchProcessInstanceDetailStatistics().withSuccess([
+        {
+          activityId: 'OuterSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'InnerSubProcess',
+          active: 10,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'TaskB',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ]);
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
-    expect(screen.getByText(/Move/)).toBeInTheDocument();
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-  });
+      renderPopover();
 
-  it('should render no modifications available', async () => {
-    mockFetchProcessInstanceDetailStatistics().withSuccess([
-      {
-        activityId: 'OuterSubProcess',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'InnerSubProcess',
-        active: 10,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-      {
-        activityId: 'TaskB',
-        active: 1,
-        incidents: 0,
-        completed: 0,
-        canceled: 0,
-      },
-    ]);
+      await waitFor(() =>
+        expect(
+          processInstanceDetailsDiagramStore.state.diagramModel
+        ).not.toBeNull()
+      );
+      modificationsStore.enableModificationMode();
 
-    renderPopover();
+      modificationsStore.cancelAllTokens('TaskB');
 
-    await waitFor(() =>
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TaskB',
+      });
+
       expect(
-        processInstanceDetailsDiagramStore.state.diagramModel
-      ).not.toBeNull()
-    );
-    modificationsStore.enableModificationMode();
+        await screen.findByText(/Flow Node Modifications/)
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/No modifications available/)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+    }
+  );
 
-    modificationsStore.cancelAllTokens('TaskB');
+  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
+    'should render add modification for flow nodes that has multiple running scopes',
+    async () => {
+      mockFetchProcessInstanceDetailStatistics().withSuccess([
+        {
+          activityId: 'OuterSubProcess',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'InnerSubProcess',
+          active: 10,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+        {
+          activityId: 'TaskB',
+          active: 1,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ]);
 
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'TaskB',
-    });
+      renderPopover();
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/)
-    ).toBeInTheDocument();
-    expect(screen.getByText(/No modifications available/)).toBeInTheDocument();
-    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-  });
+      await waitFor(() =>
+        expect(
+          processInstanceDetailsDiagramStore.state.diagramModel
+        ).not.toBeNull()
+      );
+      modificationsStore.enableModificationMode();
+
+      modificationsStore.cancelAllTokens('TaskB');
+
+      flowNodeSelectionStore.selectFlowNode({
+        flowNodeId: 'TaskB',
+      });
+
+      expect(
+        await screen.findByText(/Flow Node Modifications/)
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+      expect(screen.getByText(/Add/)).toBeInTheDocument();
+    }
+  );
 });
