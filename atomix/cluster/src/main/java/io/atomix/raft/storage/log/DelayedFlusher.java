@@ -54,7 +54,7 @@ public final class DelayedFlusher implements RaftLogFlusher {
     }
   }
 
-  private void asyncFlush(final Journal journal, final long lastIndex) {
+  private void asyncFlush(final Journal journal) {
     scheduledFlush = null;
 
     if (closed || !journal.isOpen()) {
@@ -66,10 +66,7 @@ public final class DelayedFlusher implements RaftLogFlusher {
 
   private void scheduleFlush(final Journal journal) {
     if (scheduledFlush == null) {
-      // necessary if the flush is asynchronous, as last index may or may not be thread-safe
-      // TODO: re-evaluate this when implementing asynchronous flushing
-      final var lastIndex = journal.getLastIndex();
-      scheduledFlush = scheduler.schedule(delayTime, () -> asyncFlush(journal, lastIndex));
+      scheduledFlush = scheduler.schedule(delayTime, () -> asyncFlush(journal));
     }
   }
 
