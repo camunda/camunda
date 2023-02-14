@@ -27,7 +27,6 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
 
   private final SegmentedJournalBuilder journalBuilder = SegmentedJournal.builder();
   private RaftLogFlusher flusher = Factory.DIRECT;
-  private JournalMetaStore flushMetaStore;
 
   protected RaftLogBuilder() {}
 
@@ -143,7 +142,7 @@ public class RaftLogBuilder implements io.atomix.utils.Builder<RaftLog> {
    * @return this builder for chaining
    */
   public RaftLogBuilder withMetaStore(final JournalMetaStore metaStore) {
-    flushMetaStore = metaStore;
+    journalBuilder.withMetaStore(metaStore);
     return this;
   }
 

@@ -27,6 +27,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.cluster.RaftMember.Type;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
+import io.atomix.raft.storage.MockJournalMetaStore;
 import io.atomix.raft.storage.log.RaftLogFlusher.DirectFlusher;
 import io.atomix.raft.storage.log.RaftLogFlusher.NoopFlusher;
 import io.atomix.raft.storage.log.entry.ApplicationEntry;
@@ -64,7 +65,12 @@ class RaftLogTest {
 
   @BeforeEach
   void setup(@TempDir final File directory) {
-    raftlog = RaftLog.builder().withDirectory(directory).withName("test").build();
+    raftlog =
+        RaftLog.builder()
+            .withDirectory(directory)
+            .withName("test")
+            .withMetaStore(new MockJournalMetaStore())
+            .build();
     reader = raftlog.openUncommittedReader();
   }
 
@@ -143,7 +149,11 @@ class RaftLogTest {
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     final var persistedRaftRecord = raftlog.append(entry).getPersistedRaftRecord();
     final var raftlogFollower =
-        RaftLog.builder().withDirectory(directory).withName("test-follower").build();
+        RaftLog.builder()
+            .withDirectory(directory)
+            .withName("test-follower")
+            .withMetaStore(new MockJournalMetaStore())
+            .build();
 
     // when
     final var appended = raftlogFollower.append(persistedRaftRecord);
