@@ -33,8 +33,10 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -46,6 +48,14 @@ class SegmentedJournalTest {
   private final int journalIndexDensity = 1;
   private final DirectBuffer data = new UnsafeBuffer("test".getBytes(StandardCharsets.UTF_8));
   private final int entrySize = getSerializedSize(data);
+
+  private SegmentedJournal journal;
+  private final MockJournalMetastore metaStore = new MockJournalMetastore();
+
+  @AfterEach
+  void teardown() {
+    CloseHelper.quietClose(journal);
+  }
 
   @Test
   void shouldDeleteIndexMappingsOnReset() {
@@ -107,8 +117,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNotNull();
-    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index())
-        .isEqualTo(journalIndexDensity);
+    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index()).isOne();
   }
 
   @Test
@@ -211,7 +220,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(reader.hasNext()).isFalse();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
   }
 
   @Test
@@ -364,8 +373,7 @@ class SegmentedJournalTest {
     final var secondIndexedPosition = 2 * journalIndexDensity;
     final JournalIndex indexAfterRestart = journal.getJournalIndex();
 
-    assertThat(indexAfterRestart.lookup(firstIndexedPosition).index())
-        .isEqualTo(firstIndexedPosition);
+    assertThat(indexAfterRestart.lookup(firstIndexedPosition).index()).isOne();
     assertThat(indexAfterRestart.lookup(secondIndexedPosition).index())
         .isEqualTo(secondIndexedPosition);
     assertThat(indexAfterRestart.lookup(firstIndexedPosition).position())
@@ -655,6 +663,19 @@ class SegmentedJournalTest {
     PosixPathAssert.assertThat(firstSegment).hasRealSizeLessThan(segmentSize);
   }
 
+  @Test
+  void shouldUpdateMetastoreAfterFlush() {
+    journal = openJournal(2);
+    journal.append(1, data);
+    final var lastWrittenIndex = journal.append(2, data).index();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
@@ -673,7 +694,7 @@ class SegmentedJournalTest {
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
-        .withMetaStore(new MockJournalMetastore())
+        .withMetaStore(metaStore)
         .build();
   }
 
