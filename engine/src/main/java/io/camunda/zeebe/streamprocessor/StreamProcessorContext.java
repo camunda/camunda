@@ -26,7 +26,7 @@ import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
-  public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
+  public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 1;
   private static final StreamProcessorListener NOOP_LISTENER =
       new StreamProcessorListener() {
         @Override

@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 public final class ProcessingCfg implements ConfigurationEntry {
-  private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 100;
+  private static final int DEFAULT_PROCESSING_BATCH_LIMIT = 1;
   private Integer maxCommandsInBatch = DEFAULT_PROCESSING_BATCH_LIMIT;
 
   @Override

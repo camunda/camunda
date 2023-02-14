@@ -24,7 +24,7 @@ final class ProcessingCfgTest {
     final int limit = cfg.getMaxCommandsInBatch();
 
     // then
-    assertThat(limit).isEqualTo(100);
+    assertThat(limit).isEqualTo(1);
   }
 
   @Test

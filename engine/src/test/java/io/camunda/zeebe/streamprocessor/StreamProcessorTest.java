@@ -47,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.exception.RecoverableException;
 import java.util.List;
@@ -55,6 +56,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
@@ -229,74 +231,6 @@ public final class StreamProcessorTest {
   }
 
   @Test
-  public void shouldProcessFollowUpEventsAndCommands() {
-    // given
-    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
-    final var resultBuilderCaptor = ArgumentCaptor.forClass(ProcessingResultBuilder.class);
-    when(defaultRecordProcessor.process(any(), resultBuilderCaptor.capture()))
-        .thenAnswer(
-            (invocation) -> {
-              final var resultBuilder = resultBuilderCaptor.getValue();
-              resultBuilder.appendRecordReturnEither(
-                  1,
-                  RecordType.EVENT,
-                  ACTIVATE_ELEMENT,
-                  RejectionType.NULL_VAL,
-                  "",
-                  Records.processInstance(1));
-              resultBuilder.appendRecordReturnEither(
-                  2,
-                  RecordType.COMMAND,
-                  ACTIVATE_ELEMENT,
-                  RejectionType.NULL_VAL,
-                  "",
-                  Records.processInstance(1));
-              return resultBuilder.build();
-            })
-        .thenAnswer(
-            (invocation) -> {
-              final var resultBuilder = resultBuilderCaptor.getValue();
-              resultBuilder.appendRecordReturnEither(
-                  3,
-                  RecordType.EVENT,
-                  ACTIVATE_ELEMENT,
-                  RejectionType.NULL_VAL,
-                  "",
-                  Records.processInstance(1));
-              return resultBuilder.build();
-            });
-
-    streamPlatform.startStreamProcessor();
-
-    // when
-    streamPlatform.writeBatch(command().processInstance(ACTIVATE_ELEMENT, RECORD));
-
-    // then
-    verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
-    await("Last written position should be updated")
-        .untilAsserted(
-            () -> assertThat(streamPlatform.getLogStream().getLastWrittenPosition()).isEqualTo(4));
-    await("Last processed position should be updated")
-        .untilAsserted(
-            () ->
-                assertThat(
-                        streamPlatform.getStreamProcessor().getLastProcessedPositionAsync().join())
-                    .isEqualTo(1));
-
-    final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
-    logStreamReader.seekToFirstEvent();
-    final var firstRecord = logStreamReader.next();
-    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
-    final var firstRecordPosition = firstRecord.getPosition();
-
-    await("should write follow up events")
-        .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
-    while (logStreamReader.hasNext()) {
-      assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
-    }
-  }
-
-  @Test
   public void shouldSetSourcePointerForFollowUpRecords() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -316,7 +250,9 @@ public final class StreamProcessorTest {
         "",
         Records.processInstance(1));
 
-    when(defaultRecordProcessor.process(any(), any())).thenReturn(resultBuilder.build());
+    when(defaultRecordProcessor.process(
+            ArgumentMatchers.argThat(new RecordIntentMatcher(ACTIVATE_ELEMENT)), any()))
+        .thenReturn(resultBuilder.build());
 
     streamPlatform.startStreamProcessor();
 
@@ -873,6 +809,20 @@ public final class StreamProcessorTest {
         final ProcessingResultBuilder processingResultBuilder) {
       onProcessingErrorAction.accept(recordProcessorContext);
       return processingResultOnError;
+    }
+  }
+
+  private static final class RecordIntentMatcher implements ArgumentMatcher<TypedRecord> {
+
+    private final Intent toMatchIntent;
+
+    private RecordIntentMatcher(final Intent toMatchIntent) {
+      this.toMatchIntent = toMatchIntent;
+    }
+
+    @Override
+    public boolean matches(final TypedRecord typedRecord) {
+      return toMatchIntent.equals(typedRecord.getIntent());
     }
   }
 }
