@@ -6,6 +6,7 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.NotFoundErrorHandler;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import org.camunda.optimize.service.util.configuration.security.ResponseHeadersConfiguration;
@@ -35,7 +36,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 import javax.servlet.DispatcherType;
+import java.net.InetAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.util.EnumSet;
 import java.util.Optional;
 
@@ -62,6 +65,12 @@ public class JettyConfig {
       .map(contextPath -> new JettyServletWebServerFactory(contextPath, getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)))
       .orElseGet(() -> new JettyServletWebServerFactory(getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)));
     String host = configurationService.getContainerHost();
+
+    try {
+      jetty.setAddress(InetAddress.getByName(host));
+    } catch (UnknownHostException ex) {
+      throw new OptimizeConfigurationException("Invalid container host specified");
+    }
     jetty.addServerCustomizers(server -> server.addConnector(
       initHttpsConnector(
         configurationService, host, configurationService.getContainerKeystorePassword(),

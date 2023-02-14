@@ -29,6 +29,7 @@ import org.camunda.optimize.service.util.configuration.security.AuthConfiguratio
 import org.camunda.optimize.service.util.configuration.security.SecurityConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.camunda.optimize.service.util.configuration.users.UsersConfiguration;
+import org.camunda.optimize.util.SuppressionConstants;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -815,6 +816,7 @@ public class ConfigurationService {
   }
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
+  @SuppressWarnings(SuppressionConstants.UNUSED)
   public void setContainerHttpPortValue(Integer containerHttpPort) {
     this.containerHttpPort = Optional.ofNullable(containerHttpPort);
   }

@@ -18,7 +18,7 @@ import javax.ws.rs.ext.Provider;
 @Produces(MediaType.APPLICATION_JSON)
 @Component
 public class EngineObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
-  private ObjectMapper engineObjectMapper;
+  private final ObjectMapper engineObjectMapper;
 
   public EngineObjectMapperContextResolver(@Qualifier("engineMapper") final ObjectMapper objectMapper) {
     this.engineObjectMapper = objectMapper;
