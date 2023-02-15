@@ -73,32 +73,27 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/zeebe/ci/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Setup BuildKit
+        uses: docker/setup-buildx-action@v2
       - name: Login to GCR
         uses: docker/login-action@v2
         with:
           registry: gcr.io
           username: _json_key
           password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
-      - uses: ./.github/actions/setup-zeebe
+      - uses: docker/build-push-action@v3
         with:
-          maven-cache: 'true'
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Get image tag
-        id: image-tag
-        run: |
-          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
-        with:
-          maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
-        with:
-          repository: gcr.io/zeebe-io/zeebe
-          version: ${{ steps.image-tag.outputs.image-tag }}
+          context: .
+          tags: gcr.io/zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: DIST=build
+          target: app
   deploy-benchmark-cluster:
     name: Deploy benchmark cluster
     needs:
