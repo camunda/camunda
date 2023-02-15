@@ -62,7 +62,8 @@ public final class JournalRecordReaderUtil {
     if (checksum != metadata.checksum()) {
       buffer.reset();
       throw new CorruptedJournalException(
-          "Record doesn't match checksum. Log segment may be corrupted.");
+          "Record's checksum (%d) doesn't match checksum stored in metadata (%d)."
+              .formatted(checksum, metadata.checksum()));
     }
 
     // Read record
