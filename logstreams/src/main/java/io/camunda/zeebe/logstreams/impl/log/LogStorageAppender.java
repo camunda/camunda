@@ -41,8 +41,8 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   private final ActorFuture<Void> closeFuture;
   private final int partitionId;
 
-  private final int batchSize = 128 * 1024;
-  private final int linger = 5;
+  private final int batchSize = 8 * 1024;
+  private final int linger = 0;
   private long lastWriteTimestamp;
   private SequencedBatches batches;
 
