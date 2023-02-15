@@ -60,7 +60,7 @@
     <version.hamcrest>2.2</version.hamcrest>
     <version.hppc>0.8.1</version.hppc>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
-    <version.httpclient>4.5.13</version.httpclient>
+    <version.httpclient>4.5.14</version.httpclient>
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.jackson>2.14.0</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
@@ -93,7 +93,7 @@
     <version.testcontainers>1.16.3</version.testcontainers>
     <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
     <version.zeebe-test-container>3.3.0</version.zeebe-test-container>
-    <version.feel-scala>1.14.3</version.feel-scala>
+    <version.feel-scala>1.14.4</version.feel-scala>
     <version.dmn-scala>1.7.2</version.dmn-scala>
     <version.rest-assured>4.5.1</version.rest-assured>
     <version.spring>5.3.25</version.spring>
