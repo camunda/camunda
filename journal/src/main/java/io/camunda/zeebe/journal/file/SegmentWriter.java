@@ -203,7 +203,7 @@ final class SegmentWriter {
     FrameUtil.markAsIgnored(buffer, position);
   }
 
-  private void reset(final long index, final boolean detectCorruptionAsPartialWrite) {
+  private void reset(final long index, final boolean detectCorruption) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
@@ -224,11 +224,10 @@ final class SegmentWriter {
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
     } catch (final CorruptedJournalException e) {
-      if (detectCorruptionAsPartialWrite) {
-        resetPartiallyWrittenEntry(e, position);
-      } else {
+      if (detectCorruption) {
         throw e;
       }
+      resetPartiallyWrittenEntry(e, position);
     } finally {
       buffer.reset();
     }
@@ -261,7 +260,7 @@ final class SegmentWriter {
       buffer.position(descriptorLength);
       invalidateNextEntry(descriptorLength);
     } else {
-      reset(index, false);
+      reset(index, true);
       invalidateNextEntry(buffer.position());
     }
   }
