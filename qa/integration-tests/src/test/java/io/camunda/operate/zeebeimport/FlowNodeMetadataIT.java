@@ -1015,15 +1015,14 @@ public class FlowNodeMetadataIT extends OperateZeebeIntegrationTest {
         .getProcessInstanceKey();
 
     // when
-    tester.sendMessages(messageName, correlationKey, "{\"messageVar\": \"someValue\"}",20)
-        .and().waitUntil()
-        .flowNodeIsActive("taskA");
+    tester.waitUntil()
+        .flowNodeIsActive("IntermediateCatchEvent_1ds9kwv");
 
     // then
     // assert flow node instances
     final List<FlowNodeInstanceEntity> allFlowNodeInstances = tester
         .getAllFlowNodeInstances(processInstanceKey);
-    assertThat(allFlowNodeInstances).hasSize(3);
+    assertThat(allFlowNodeInstances).hasSize(2);
     final String messageEventId = allFlowNodeInstances.get(1).getId();
     final FlowNodeMetadataDto flowNodeMetadata = tester.getFlowNodeMetadataFromRest(
         String.valueOf(processInstanceKey), null, null, messageEventId);

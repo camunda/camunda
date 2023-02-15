@@ -80,7 +80,7 @@ public class EventZeebeRecordProcessor {
     PROCESS_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());
     PROCESS_INSTANCE_STATES.add(ELEMENT_TERMINATED.name());
 
-    PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.CORRELATED.name());
+    PROCESS_MESSAGE_SUBSCRIPTION_STATES.add(ProcessMessageSubscriptionIntent.CREATED.name());
   }
 
   @Autowired
