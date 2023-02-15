@@ -128,7 +128,7 @@ final class SegmentsManager implements AutoCloseable {
         currentSegment =
             nextSegment
                 .join()
-                .initializeForUse(nextSegmentIndex, lastWrittenAsqn, lastFlushedIndex);
+                .initializeForUse(nextSegmentIndex, lastWrittenAsqn);
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         currentSegment = createSegment(descriptor, lastWrittenAsqn);
@@ -334,12 +334,19 @@ final class SegmentsManager implements AutoCloseable {
         final Segment segment =
             segmentLoader.loadExistingSegment(
                 file.toPath(),
-                lastFlushedIndex,
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
 
         if (i > 0) {
+          // throws CorruptedJournalException if there is gap
           checkForIndexGaps(segments.get(i - 1), segment);
+        }
+
+        final boolean isLastSegment = i == files.size() - 1;
+        if (isLastSegment && segment.lastIndex() < lastFlushedIndex) {
+          throw new CorruptedJournalException(
+              "Expected to find records until index %d, but last index is %d"
+                  .formatted(lastFlushedIndex, segment.lastIndex()));
         }
 
         segments.add(segment);
