@@ -512,7 +512,10 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @return a future to be completed once the logs have been compacted
    */
   public CompletableFuture<Void> compact() {
-    return threadContext.submit(logCompactor::compact);
+    return CompletableFuture.supplyAsync(() -> {
+      logCompactor.compact();
+      return null;
+    });
   }
 
   /**

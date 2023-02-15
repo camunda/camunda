@@ -70,7 +70,7 @@ public final class LogCompactor {
   }
 
   private boolean compact(final long index) {
-    threadContext.checkThread();
+//    threadContext.checkThread();
 
     try {
       final var startTime = System.currentTimeMillis();
