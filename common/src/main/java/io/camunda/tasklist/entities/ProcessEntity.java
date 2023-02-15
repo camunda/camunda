@@ -16,6 +16,8 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
 
   private String name;
 
+  private Integer version;
+
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
 
   public String getName() {
@@ -45,6 +47,15 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     return this;
   }
 
+  public Integer getVersion() {
+    return version;
+  }
+
+  public ProcessEntity setVersion(Integer version) {
+    this.version = version;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -59,11 +70,12 @@ public class ProcessEntity extends TasklistZeebeEntity<ProcessEntity> {
     final ProcessEntity that = (ProcessEntity) o;
     return Objects.equals(bpmnProcessId, that.bpmnProcessId)
         && Objects.equals(name, that.name)
+        && Objects.equals(version, that.version)
         && Objects.equals(flowNodes, that.flowNodes);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), bpmnProcessId, name, flowNodes);
+    return Objects.hash(super.hashCode(), bpmnProcessId, name, version, flowNodes);
   }
 }

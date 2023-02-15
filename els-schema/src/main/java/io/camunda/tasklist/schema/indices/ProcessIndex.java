@@ -18,6 +18,8 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
   public static final String NAME = "name";
 
   public static final String PROCESS_DEFINITION_ID = "bpmnProcessId";
+
+  public static final String VERSION = "version";
   public static final String FLOWNODES = "flowNodes";
   public static final String FLOWNODE_ID = "id";
   public static final String FLOWNODE_NAME = "name";
@@ -29,6 +31,6 @@ public class ProcessIndex extends AbstractIndexDescriptor implements Prio4Backup
 
   @Override
   public String getVersion() {
-    return "8.2.0";
+    return "8.2.1";
   }
 }

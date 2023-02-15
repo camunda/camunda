@@ -21,6 +21,9 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.collapse.CollapseBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,8 +79,7 @@ public class ProcessReader {
             .must(QueryBuilders.existsQuery(ProcessIndex.PROCESS_DEFINITION_ID))
             .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""));
 
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias()).source(new SearchSourceBuilder().query(qb));
+    final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
 
     final SearchResponse response;
     try {
@@ -111,8 +113,7 @@ public class ProcessReader {
             .mustNot(QueryBuilders.termQuery(ProcessIndex.PROCESS_DEFINITION_ID, ""))
             .minimumShouldMatch(1);
 
-    final SearchRequest searchRequest =
-        new SearchRequest(processIndex.getAlias()).source(new SearchSourceBuilder().query(qb));
+    final SearchRequest searchRequest = getSearchRequestUniqueByProcessDefinitionId(qb);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -124,6 +125,15 @@ public class ProcessReader {
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
+  }
+
+  private SearchRequest getSearchRequestUniqueByProcessDefinitionId(QueryBuilder qb) {
+    return new SearchRequest(processIndex.getAlias())
+        .source(
+            new SearchSourceBuilder()
+                .query(qb)
+                .collapse(new CollapseBuilder(ProcessIndex.PROCESS_DEFINITION_ID))
+                .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC)));
   }
 
   private List<ProcessDTO> mapResponse(SearchResponse response) {

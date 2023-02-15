@@ -36,6 +36,9 @@
       },
       "bpmnProcessId": {
         "type": "keyword"
+      },
+      "version": {
+        "type": "integer"
       }
     }
   }

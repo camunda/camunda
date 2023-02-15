@@ -139,4 +139,29 @@ public class ProcessIT extends TasklistZeebeIntegrationTest {
     final String processInstanceId = response.get("$.data.startProcess.id");
     assertNotNull(processInstanceId);
   }
+
+  @Test
+  public void shouldReturnOnlyMostRecentVersionBasedOnQuery() throws IOException {
+    final String querySimpleProcess = "multipleVersions";
+    tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
+    tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
+
+    final GraphQLResponse response = tester.getAllProcesses(querySimpleProcess);
+    assertTrue(response.isOk());
+    assertEquals("1", response.get("$.data.processes.length()"));
+    assertEquals(querySimpleProcess, response.get("$.data.processes[0].name"));
+    assertEquals("2", response.get("$.data.processes[0].version"));
+  }
+
+  @Test
+  public void shouldReturnOnlyMostRecentVersionForEmptyQuery() throws IOException {
+    final String emptyQuery = "";
+    tester.deployProcess("multipleVersions.bpmn").waitUntil().processIsDeployed();
+    tester.deployProcess("multipleVersions-v2.bpmn").waitUntil().processIsDeployed();
+
+    final GraphQLResponse response = tester.getAllProcesses(emptyQuery);
+    assertTrue(response.isOk());
+    assertEquals("1", response.get("$.data.processes.length()"));
+    assertEquals("2", response.get("$.data.processes[0].version"));
+  }
 }

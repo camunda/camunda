@@ -20,6 +20,8 @@ public class ProcessDTO {
 
   private String[] sortValues;
 
+  private Integer version;
+
   public static ProcessDTO createFrom(ProcessEntity processEntity, ObjectMapper objectMapper) {
     return createFrom(processEntity, null, objectMapper);
   }
@@ -30,7 +32,8 @@ public class ProcessDTO {
         new ProcessDTO()
             .setId(processEntity.getId())
             .setName(processEntity.getName())
-            .setProcessDefinitionId(processEntity.getBpmnProcessId());
+            .setProcessDefinitionId(processEntity.getBpmnProcessId())
+            .setVersion(processEntity.getVersion());
 
     if (sortValues != null) {
       processDTO.setSortValues(CollectionUtil.toArrayOfStrings(sortValues));
@@ -71,6 +74,15 @@ public class ProcessDTO {
 
   public ProcessDTO setProcessDefinitionId(String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
+    return this;
+  }
+
+  public Integer getVersion() {
+    return version;
+  }
+
+  public ProcessDTO setVersion(Integer version) {
+    this.version = version;
     return this;
   }
 }

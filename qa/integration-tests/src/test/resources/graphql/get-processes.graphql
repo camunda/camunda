@@ -3,5 +3,6 @@ query getProcesses($search: String!){
         id
         name
         processDefinitionId
+        version
     }
 }

@@ -46,6 +46,7 @@ type Process {
     id:String!
     name:String
     processDefinitionId: String
+    version:Int
 }
 
 #Task query - query to get one page of tasks.
