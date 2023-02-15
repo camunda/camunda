@@ -31,6 +31,6 @@ public class ProcessIndex extends AbstractIndexDescriptor  implements Prio4Backu
 
   @Override
   public String getVersion() {
-    return "8.1.7";
+    return "8.1.8";
   }
 }
