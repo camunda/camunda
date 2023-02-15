@@ -144,7 +144,7 @@
     <plugin.version.google-java-format>1.15.0</plugin.version.google-java-format>
 
     <!-- maven extensions -->
-    <extension.version.os-maven-plugin>1.7.0</extension.version.os-maven-plugin>
+    <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
     <backwards.compat.version>8.1.7</backwards.compat.version>
