@@ -73,7 +73,7 @@ final class SegmentWriter {
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
     this.metrics = metrics;
-    reset(0, lastFlushedIndex);
+    reset(0, true);
   }
 
   long getLastIndex() {
@@ -205,11 +205,7 @@ final class SegmentWriter {
     FrameUtil.markAsIgnored(buffer, position);
   }
 
-  private void reset(final long index) {
-    reset(index, -1);
-  }
-
-  private void reset(final long index, final long lastFlushedIndex) {
+  private void reset(final long index, final boolean detectCorruptionAsPartialWrite) {
     long nextIndex = firstIndex;
 
     // Clear the buffer indexes.
@@ -230,26 +226,20 @@ final class SegmentWriter {
     } catch (final BufferUnderflowException e) {
       // Reached end of the segment
     } catch (final CorruptedJournalException e) {
-      handleChecksumMismatch(e, nextIndex, lastFlushedIndex, position);
+      if (detectCorruptionAsPartialWrite) {
+        resetPartiallyWrittenEntry(position);
+      } else {
+        throw e;
+      }
     } finally {
       buffer.reset();
     }
   }
 
-  private void handleChecksumMismatch(
-      final CorruptedJournalException e,
-      final long nextIndex,
-      final long lastFlushedIndex,
-      final int position) {
-    // entry wasn't acked (likely a partial write): it's safe to delete it
-    if (nextIndex > lastFlushedIndex) {
-      FrameUtil.markAsIgnored(buffer, position);
-      buffer.position(position);
-      buffer.mark();
-      return;
-    }
-
-    throw e;
+  private void resetPartiallyWrittenEntry(final int position) {
+    FrameUtil.markAsIgnored(buffer, position);
+    buffer.position(position);
+    buffer.mark();
   }
 
   public void truncate(final long index) {
@@ -269,7 +259,7 @@ final class SegmentWriter {
       buffer.position(descriptorLength);
       invalidateNextEntry(descriptorLength);
     } else {
-      reset(index);
+      reset(index, false);
       invalidateNextEntry(buffer.position());
     }
   }
