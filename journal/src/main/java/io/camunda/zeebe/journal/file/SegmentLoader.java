@@ -41,12 +41,11 @@ final class SegmentLoader {
   Segment createSegment(
       final Path segmentFile,
       final SegmentDescriptor descriptor,
-      final long lastFlushedIndex,
       final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastFlushedIndex);
+      mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -168,8 +167,7 @@ final class SegmentLoader {
     return buffer.get(0);
   }
 
-  private MappedByteBuffer mapNewSegment(
-      final Path segmentPath, final SegmentDescriptor descriptor, final long lastFlushedIndex)
+  private MappedByteBuffer mapNewSegment(final Path segmentPath, final SegmentDescriptor descriptor)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
     try (final var channel =
@@ -186,7 +184,7 @@ final class SegmentLoader {
           segmentPath,
           e);
       Files.delete(segmentPath);
-      return mapNewSegment(segmentPath, descriptor, lastFlushedIndex);
+      return mapNewSegment(segmentPath, descriptor);
     }
   }
 }
