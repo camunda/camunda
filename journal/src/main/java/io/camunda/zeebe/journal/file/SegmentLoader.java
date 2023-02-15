@@ -43,13 +43,12 @@ final class SegmentLoader {
   Segment createSegment(
       final Path segmentFile,
       final SegmentDescriptor descriptor,
-      final long lastFlushedIndex,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastFlushedIndex);
+      mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -77,19 +76,15 @@ final class SegmentLoader {
           e);
     }
 
-    return loadSegment(
-        segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
+    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
   }
 
   UninitializedSegment createUninitializedSegment(
-      final Path segmentFile,
-      final SegmentDescriptor descriptor,
-      final long lastFlushedIndex,
-      final JournalIndex journalIndex) {
+      final Path segmentFile, final SegmentDescriptor descriptor, final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
     try {
-      mappedSegment = mapNewSegment(segmentFile, descriptor, lastFlushedIndex);
+      mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to create new segment file %s", segmentFile), e);
@@ -114,9 +109,7 @@ final class SegmentLoader {
   }
 
   Segment loadExistingSegment(
-      final Path segmentFile,
-      final long lastWrittenAsqn,
-      final JournalIndex journalIndex) {
+      final Path segmentFile, final long lastWrittenAsqn, final JournalIndex journalIndex) {
     final var descriptor = readDescriptor(segmentFile);
     final MappedByteBuffer mappedSegment;
 
@@ -128,8 +121,7 @@ final class SegmentLoader {
           String.format("Failed to load existing segment %s", segmentFile), e);
     }
 
-    return loadSegment(
-        segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
+    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
   }
 
   /* ---- Internal methods ------ */
@@ -140,8 +132,7 @@ final class SegmentLoader {
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
-    return new Segment(
-        segmentFile, descriptor, buffer, lastWrittenAsqn, journalIndex);
+    return new Segment(segmentFile, descriptor, buffer, lastWrittenAsqn, journalIndex);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -210,8 +201,7 @@ final class SegmentLoader {
     return buffer.get(0);
   }
 
-  private MappedByteBuffer mapNewSegment(
-      final Path segmentPath, final SegmentDescriptor descriptor, final long lastFlushedIndex)
+  private MappedByteBuffer mapNewSegment(final Path segmentPath, final SegmentDescriptor descriptor)
       throws IOException {
     final var maxSegmentSize = descriptor.maxSegmentSize();
 
@@ -231,7 +221,7 @@ final class SegmentLoader {
           segmentPath,
           e);
       Files.delete(segmentPath);
-      return mapNewSegment(segmentPath, descriptor, lastFlushedIndex);
+      return mapNewSegment(segmentPath, descriptor);
     }
   }
 
