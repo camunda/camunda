@@ -135,6 +135,22 @@ class SegmentsManagerTest {
   }
 
   @Test
+  void shouldDetectMissingEntryAsCorruption() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, recordDataWriter).index();
+    journal.close();
+
+    // when
+    segments = createSegmentsManager();
+
+    // then
+    assertThatException()
+        .isThrownBy(() -> segments.open(indexInFirstSegment + 1))
+        .isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
   void shouldDetectCorruptionInIntermediateSegments() throws Exception {
     // given
     final var journal = openJournal();
