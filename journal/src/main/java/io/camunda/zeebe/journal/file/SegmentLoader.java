@@ -74,11 +74,10 @@ final class SegmentLoader {
           e);
     }
 
-    return loadSegment(segmentFile, mappedSegment, descriptor, lastFlushedIndex, journalIndex);
+    return loadSegment(segmentFile, mappedSegment, descriptor, journalIndex);
   }
 
-  Segment loadExistingSegment(
-      final Path segmentFile, final long lastFlushedIndex, final JournalIndex journalIndex) {
+  Segment loadExistingSegment(final Path segmentFile, final JournalIndex journalIndex) {
     final var descriptor = readDescriptor(segmentFile);
     final MappedByteBuffer mappedSegment;
 
@@ -90,7 +89,7 @@ final class SegmentLoader {
           String.format("Failed to load existing segment %s", segmentFile), e);
     }
 
-    return loadSegment(segmentFile, mappedSegment, descriptor, lastFlushedIndex, journalIndex);
+    return loadSegment(segmentFile, mappedSegment, descriptor, journalIndex);
   }
 
   /* ---- Internal methods ------ */
@@ -98,10 +97,9 @@ final class SegmentLoader {
       final Path file,
       final MappedByteBuffer buffer,
       final SegmentDescriptor descriptor,
-      final long lastFlushedIndex,
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
-    return new Segment(segmentFile, descriptor, buffer, lastFlushedIndex, journalIndex);
+    return new Segment(segmentFile, descriptor, buffer, journalIndex);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)

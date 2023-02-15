@@ -286,10 +286,18 @@ final class SegmentsManager implements AutoCloseable {
       try {
         LOG.debug("Found segment file: {}", file.getName());
         final Segment segment =
-            segmentLoader.loadExistingSegment(file.toPath(), lastFlushedIndex, journalIndex);
+            segmentLoader.loadExistingSegment(file.toPath(), journalIndex);
 
         if (i > 0) {
+          // throws CorruptedJournalException if there is gap
           checkForIndexGaps(segments.get(i - 1), segment);
+        }
+
+        final boolean isLastSegment = i == files.size() - 1;
+        if (isLastSegment && segment.lastIndex() < lastFlushedIndex) {
+          throw new CorruptedJournalException(
+              "Expected to find records until index %d, but last index is %d"
+                  .formatted(lastFlushedIndex, segment.lastIndex()));
         }
 
         segments.add(segment);
