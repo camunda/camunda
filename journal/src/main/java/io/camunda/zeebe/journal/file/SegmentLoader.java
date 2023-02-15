@@ -141,7 +141,6 @@ final class SegmentLoader {
       final Path file,
       final MappedByteBuffer buffer,
       final SegmentDescriptor descriptor,
-      final long lastFlushedIndex,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
@@ -231,16 +230,6 @@ final class SegmentLoader {
       allocateSegment(maxSegmentSize, channel);
       return mapSegment(channel, maxSegmentSize);
     } catch (final FileAlreadyExistsException e) {
-      // do not reuse a segment into which we've already written!
-      if (lastFlushedIndex >= descriptor.index()) {
-        throw new JournalException(
-            String.format(
-                "Failed to create journal segment %s, as it already exists, and the last written "
-                    + "index %d indicates we've already written to it",
-                segmentPath, lastFlushedIndex),
-            e);
-      }
-
       LOGGER.warn(
           "Failed to create segment {}: an unused file already existed, and will be replaced",
           segmentPath,
