@@ -5,18 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {WarningContainer, WarningIcon, Text} from './styled';
+import {Text} from './styled';
+import {WarningMessage} from 'modules/components/Messages/WarningMessage';
 
 const Warning: React.FC = () => {
   return (
-    <WarningContainer>
-      <WarningIcon />
-      <Text>
-        The planned modifications will cancel all remaining running flow node
-        instances. Applying these modifications will cancel the entire process
-        instance.
-      </Text>
-    </WarningContainer>
+    <WarningMessage
+      content={
+        <Text>
+          The planned modifications will cancel all remaining running flow node
+          instances. Applying these modifications will cancel the entire process
+          instance.
+        </Text>
+      }
+    />
   );
 };
 

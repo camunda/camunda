@@ -374,14 +374,6 @@ const theme = {
             tableHeader: {
               backgroundColor: DARK_COLORS.ui01,
             },
-            warning: {
-              backgroundColor: DARK_COLORS.warningNotification,
-              color: SEMANTIC_COLORS.white,
-            },
-            error: {
-              backgroundColor: DARK_COLORS.errorNotification,
-              color: SEMANTIC_COLORS.white,
-            },
           },
           loadingOverlay: {
             backgroundColor: rgba(SEMANTIC_COLORS.black, 0.65),
@@ -719,6 +711,16 @@ const theme = {
             color: SEMANTIC_COLORS.white,
           },
         },
+        messages: {
+          warning: {
+            backgroundColor: DARK_COLORS.warningNotification,
+            color: SEMANTIC_COLORS.white,
+          },
+          error: {
+            backgroundColor: DARK_COLORS.errorNotification,
+            color: SEMANTIC_COLORS.white,
+          },
+        },
         modal: {
           modalRoot: {
             backgroundColor: rgba(SEMANTIC_COLORS.black, 0.5),
@@ -1008,10 +1010,6 @@ const theme = {
           banner: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         },
       },
-      modificationSummaryModal: {
-        warning: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
-        error: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
-      },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
@@ -1034,6 +1032,10 @@ const theme = {
           },
         },
         popover: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
+        messages: {
+          warning: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+          error: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+        },
         dropdown: {
           menu: {
             ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.6)}`,
@@ -1324,14 +1326,6 @@ const theme = {
           summaryModal: {
             tableHeader: {
               backgroundColor: LIGHT_COLORS.ui04,
-            },
-            warning: {
-              backgroundColor: LIGHT_COLORS.warningNotification,
-              color: DARK_COLORS.ui04,
-            },
-            error: {
-              backgroundColor: LIGHT_COLORS.errorNotification,
-              color: DARK_COLORS.ui04,
             },
           },
           loadingOverlay: {
@@ -1663,6 +1657,16 @@ const theme = {
             color: LIGHT_COLORS.ui06,
           },
         },
+        messages: {
+          warning: {
+            backgroundColor: LIGHT_COLORS.warningNotification,
+            color: DARK_COLORS.ui04,
+          },
+          error: {
+            backgroundColor: LIGHT_COLORS.errorNotification,
+            color: DARK_COLORS.ui04,
+          },
+        },
         modal: {
           modalRoot: {
             backgroundColor: rgba(SEMANTIC_COLORS.white, 0.7),
@@ -1952,10 +1956,6 @@ const theme = {
           banner: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         },
       },
-      modificationSummaryModal: {
-        warning: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
-        error: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
-      },
       modificationMode: {
         footer: `0 -1px 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         lastModification: `0 3px 4px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
@@ -1982,6 +1982,10 @@ const theme = {
           menu: {
             ul: `0 0 2px 0 ${rgba(SEMANTIC_COLORS.black, 0.2)}`,
           },
+        },
+        messages: {
+          warning: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
+          error: `1px 2px 3px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,
         },
         operationItems: {
           ul: `0 1px 1px 0 ${rgba(SEMANTIC_COLORS.black, 0.1)}`,

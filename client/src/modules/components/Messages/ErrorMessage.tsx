@@ -5,11 +5,19 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
+import {ErrorContainer, ErrorIcon} from './styled';
 
-const Text = styled.p`
-  margin: 0;
-  font-weight: 500;
-`;
+type Props = {
+  content: string | React.ReactNode;
+};
 
-export {Text};
+const ErrorMessage: React.FC<Props> = ({content}) => {
+  return (
+    <ErrorContainer>
+      <ErrorIcon />
+      {content}
+    </ErrorContainer>
+  );
+};
+
+export {ErrorMessage};

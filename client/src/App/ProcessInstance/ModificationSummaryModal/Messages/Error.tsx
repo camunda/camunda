@@ -6,8 +6,9 @@
  */
 
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {ErrorContainer, ErrorIcon, Text} from './styled';
+import {Text} from './styled';
 import {Anchor} from 'modules/components/Anchor/styled';
+import {ErrorMessage} from 'modules/components/Messages/ErrorMessage';
 
 function getParentAndRootProcessInformation(
   processInstance: null | ProcessInstanceEntity
@@ -40,24 +41,25 @@ const Error: React.FC = () => {
   }
 
   return (
-    <ErrorContainer>
-      <ErrorIcon />
-      <Text>
-        {`This set of planned modifications cannot be applied. This instance is a child instance of `}
-        <Anchor href={`/processes/${parentProcessId}`} target="_blank">
-          {parentProcessName === undefined
-            ? parentProcessId
-            : `${parentProcessName} - ${parentProcessId}`}
-        </Anchor>
-        {`, and cannot be canceled entirely. To cancel this instance, the root instance `}
-        <Anchor href={`/processes/${rootProcessId}`} target="_blank">
-          {rootProcessName === undefined
-            ? rootProcessId
-            : `${rootProcessName} - ${rootProcessId}`}
-        </Anchor>
-        {` needs to be canceled.`}
-      </Text>
-    </ErrorContainer>
+    <ErrorMessage
+      content={
+        <Text>
+          {`This set of planned modifications cannot be applied. This instance is a child instance of `}
+          <Anchor href={`/processes/${parentProcessId}`} target="_blank">
+            {parentProcessName === undefined
+              ? parentProcessId
+              : `${parentProcessName} - ${parentProcessId}`}
+          </Anchor>
+          {`, and cannot be canceled entirely. To cancel this instance, the root instance `}
+          <Anchor href={`/processes/${rootProcessId}`} target="_blank">
+            {rootProcessName === undefined
+              ? rootProcessId
+              : `${rootProcessName} - ${rootProcessId}`}
+          </Anchor>
+          {` needs to be canceled.`}
+        </Text>
+      }
+    />
   );
 };
 
