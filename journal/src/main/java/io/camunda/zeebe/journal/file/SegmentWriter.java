@@ -34,9 +34,13 @@ import java.nio.MappedByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Segment writer. */
 final class SegmentWriter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SegmentWriter.class);
 
   private final MappedByteBuffer buffer;
   private final Segment segment;
@@ -209,7 +213,7 @@ final class SegmentWriter {
       // Reached end of the segment
     } catch (final CorruptedJournalException e) {
       if (detectCorruptionAsPartialWrite) {
-        resetPartiallyWrittenEntry(position);
+        resetPartiallyWrittenEntry(e, position);
       } else {
         throw e;
       }
@@ -218,7 +222,11 @@ final class SegmentWriter {
     }
   }
 
-  private void resetPartiallyWrittenEntry(final int position) {
+  private void resetPartiallyWrittenEntry(final CorruptedJournalException e, final int position) {
+    LOG.debug(
+        "{} Found a corrupted or partially written entry at position {}. Considering it as a partially written entry and resetting the position.",
+        e.getMessage(),
+        position);
     FrameUtil.markAsIgnored(buffer, position);
     buffer.position(position);
     buffer.mark();
