@@ -11,6 +11,10 @@
   <name>Tasklist Webapp</name>
   <artifactId>tasklist-webapp</artifactId>
 
+  <properties>
+    <mvc-auth-commons.version>1.9.4</mvc-auth-commons.version>
+  </properties>
+  
   <dependencies>
 
     <dependency>
@@ -44,7 +48,6 @@
     </dependency>
 
     <!-- SPRING BOOT -->
-
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
@@ -81,21 +84,18 @@
     </dependency>
 
     <!-- ELASTICSEARCH -->
-
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
 
     <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
-
     <dependency>
       <groupId>org.glassfish</groupId>
       <artifactId>javax.json</artifactId>
     </dependency>
 
     <!-- WEBJAR -->
-
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>tasklist-webjar</artifactId>
@@ -117,7 +117,7 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>mvc-auth-commons</artifactId>
-      <version>1.9.4</version>
+      <version>${mvc-auth-commons.version}</version>
     </dependency>
 
     <!-- OAuth2 token authorization -->
@@ -153,7 +153,6 @@
     </dependency>
 
     <!-- TEST -->
-
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -181,7 +180,6 @@
   </dependencies>
 
   <build>
-
     <plugins>
 
       <!-- LICENSE PLUGIN -->

@@ -43,6 +43,7 @@
     <version.jackson>2.14.1</version.jackson>
     <version.graphql>11.1.0</version.graphql>
     <version.graphql.tools>11.0.1</version.graphql.tools>
+    <version.snakeyaml>1.32</version.snakeyaml>
     <version.failsafe>2.4.4</version.failsafe>
     <version.netty>4.1.87.Final</version.netty>
     <version.guava>31.1-jre</version.guava>
@@ -246,6 +247,12 @@
         <groupId>net.jodah</groupId>
         <artifactId>failsafe</artifactId>
         <version>${version.failsafe}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.yaml</groupId>
+        <artifactId>snakeyaml</artifactId>
+        <version>${version.snakeyaml}</version>
       </dependency>
 
     </dependencies>
