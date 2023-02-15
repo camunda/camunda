@@ -64,7 +64,6 @@ final class SegmentWriter {
       final MappedByteBuffer buffer,
       final Segment segment,
       final JournalIndex index,
-      final long lastFlushedIndex,
       final long lastWrittenAsqn,
       final JournalMetrics metrics) {
     this.segment = segment;
