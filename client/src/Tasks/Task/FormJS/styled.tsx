@@ -62,6 +62,10 @@ const getBaseInputStyles = ({height}: {height: string}) => css`
       outline: 2px solid var(--cds-focus);
       outline-offset: -2px;
     }
+
+    &::placeholder {
+      color: var(--cds-text-placeholder);
+    }
   `}
 `;
 
@@ -648,10 +652,23 @@ const DATETIME_INPUTS = css`
   ${({theme}) => css`
     .fjs-container {
       .fjs-form-field-datetime {
-        .fjs-input {
+        .fjs-input.flatpickr-input {
           width: 100%;
           height: 100%;
           border: none;
+          color: var(--cds-text-primary);
+        }
+
+        .fjs-input.flatpickr-input:disabled {
+          color: var(--cds-text-disabled);
+        }
+
+        .fjs-input.flatpickr-input:disabled::placeholder {
+          color: var(--cds-text-placeholder);
+        }
+
+        .fjs-input.flatpickr-input:disabled::placeholder {
+          color: var(--cds-text-placeholder);
         }
 
         select {
