@@ -41,7 +41,7 @@ public class BackupService {
   private final ConfigurationService configurationService;
   private static final int EXPECTED_NUMBER_OF_SNAPSHOTS_PER_BACKUP = 2;
 
-  public synchronized void triggerBackup(final String backupId) {
+  public synchronized void triggerBackup(final Integer backupId) {
     validateRepositoryExists();
     backupReader.validateNoDuplicateBackupId(backupId);
 
@@ -56,24 +56,24 @@ public class BackupService {
       .collect(toList());
   }
 
-  public BackupInfoDto getSingleBackupInfo(final String backupId) {
+  public BackupInfoDto getSingleBackupInfo(final Integer backupId) {
     validateRepositoryExists();
-    return getSingleBackupInfo(backupId, backupReader.getAllOptimizeSnapshots(backupId)
+    return getSingleBackupInfo(backupId, backupReader.getOptimizeSnapshotsForBackupId(backupId)
       .stream()
       .collect(groupingBy(SnapshotInfo::state)));
   }
 
-  private BackupInfoDto getSingleBackupInfo(final String backupId,
+  private BackupInfoDto getSingleBackupInfo(final Integer backupId,
                                             final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
     if (snapshotInfosPerState.isEmpty()) {
-      final String reason = String.format("No Optimize backup with ID [%s] could be found.", backupId);
+      final String reason = String.format("No Optimize backup with ID [%d] could be found.", backupId);
       log.error(reason);
       throw new NotFoundException(reason);
     }
     return getBackupInfoDto(backupId, snapshotInfosPerState);
   }
 
-  private BackupInfoDto getBackupInfoDto(final String backupId,
+  private BackupInfoDto getBackupInfoDto(final Integer backupId,
                                          final Map<SnapshotState, List<SnapshotInfo>> snapshotInfosPerState) {
     final BackupState backupState = determineBackupState(snapshotInfosPerState);
     String failureReason = null;
@@ -102,7 +102,7 @@ public class BackupService {
     );
   }
 
-  public void deleteBackup(final String backupId) {
+  public void deleteBackup(final Integer backupId) {
     validateRepositoryExists();
     backupWriter.deleteOptimizeSnapshots(backupId);
   }

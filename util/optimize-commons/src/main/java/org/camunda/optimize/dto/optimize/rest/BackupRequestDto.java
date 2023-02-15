@@ -10,18 +10,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class BackupRequestDto {
-  @NotBlank
-  //  max. 3996 chars to avoid too_long_frame_exception (snapshot name must not exceed 4096 chars, minus 100 chars for rest of
-  //  snapshot name templates)
-  @Pattern(regexp = "((?![A-Z \"*\\\\<|,>\\/?_]).){0,3996}$", message =
-    "BackupId must be less than 3996 characters and must not contain any uppercase letters or any of [ , \", *, \\, <, |, ,, >," +
-      " /, ?, _].")
-  private String backupId;
+  @NotNull
+  @Min(0)
+  private Integer backupId;
 }

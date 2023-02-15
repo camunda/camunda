@@ -37,7 +37,7 @@ public class BackupWriter {
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService indexNameService;
 
-  public void triggerSnapshotCreation(final String backupId) {
+  public void triggerSnapshotCreation(final Integer backupId) {
     final String snapshot1Name = getSnapshotNameForImportIndices(backupId);
     final String snapshot2Name = getSnapshotNameForNonImportIndices(backupId);
     CompletableFuture.runAsync(() -> {
@@ -46,7 +46,7 @@ public class BackupWriter {
     });
   }
 
-  public void deleteOptimizeSnapshots(final String backupId) {
+  public void deleteOptimizeSnapshots(final Integer backupId) {
     final DeleteSnapshotRequest deleteSnapshotRequest = new DeleteSnapshotRequest()
       .repository(configurationService.getEsSnapshotRepositoryName())
       .snapshots(getSnapshotPrefixWithBackupId(backupId) + "*");
@@ -114,19 +114,19 @@ public class BackupWriter {
     };
   }
 
-  private ActionListener<AcknowledgedResponse> getDeleteSnapshotActionListener(final String backupId) {
+  private ActionListener<AcknowledgedResponse> getDeleteSnapshotActionListener(final Integer backupId) {
     return new ActionListener<>() {
       @Override
       public void onResponse(AcknowledgedResponse deleteSnapshotResponse) {
         if (deleteSnapshotResponse.isAcknowledged()) {
           String reason = String.format(
-            "Request to delete all Optimize snapshots with the backupID [%s] successfully submitted",
+            "Request to delete all Optimize snapshots with the backupID [%d] successfully submitted",
             backupId
           );
           log.info(reason);
         } else {
           String reason = String.format(
-            "Request to delete all Optimize snapshots with the backupID [%s] was not acknowledged by Elasticsearch.",
+            "Request to delete all Optimize snapshots with the backupID [%d] was not acknowledged by Elasticsearch.",
             backupId
           );
           log.error(reason);

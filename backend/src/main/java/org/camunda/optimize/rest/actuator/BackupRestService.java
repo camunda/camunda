@@ -58,7 +58,7 @@ public class BackupRestService {
     return new ResponseEntity<>(
       String.format(
         "{\"message\" : " +
-          "\"Backup creation for ID %s has been scheduled. Use the GET API to monitor completion of backup process\"}",
+          "\"Backup creation for ID %d has been scheduled. Use the GET API to monitor completion of backup process\"}",
         backupRequestDto.getBackupId()
       ),
       HttpStatus.ACCEPTED
@@ -66,7 +66,7 @@ public class BackupRestService {
   }
 
   @GetMapping(value = "/{backupId}")
-  public BackupInfoDto info(final @PathVariable @Nullable String backupId) {
+  public BackupInfoDto info(final @PathVariable @Nullable Integer backupId) {
     return backupService.getSingleBackupInfo(backupId);
   }
 
@@ -77,7 +77,7 @@ public class BackupRestService {
 
   @DeleteMapping(value = "/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(final @PathVariable String backupId) {
+  public void delete(final @PathVariable Integer backupId) {
     backupService.deleteBackup(backupId);
   }
 

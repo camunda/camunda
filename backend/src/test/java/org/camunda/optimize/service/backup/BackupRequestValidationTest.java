@@ -25,29 +25,22 @@ public class BackupRequestValidationTest {
 
   @ParameterizedTest
   @MethodSource("invalidBackupIds")
-  public void triggerBackupWithInvalidBackupId(final String invalidBackupId, final String expectedErrorMsg) {
+  public void triggerBackupWithInvalidBackupId(final Integer invalidBackupId, final String expectedErrorMsg) {
     // when
     ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
     Validator validator = factory.getValidator();
     BackupRequestDto backupRequestDto = new BackupRequestDto(invalidBackupId);
     Set<ConstraintViolation<BackupRequestDto>> violations = validator.validate(backupRequestDto);
+
+    // then
     assertThat(violations).singleElement().extracting(ConstraintViolation::getMessage).isEqualTo(expectedErrorMsg);
   }
 
   @SuppressWarnings(UNUSED)
   private static Stream<Arguments> invalidBackupIds() {
     return Stream.of(
-      Arguments.of(null, "must not be blank"),
-      Arguments.of("", "must not be blank"),
-      Arguments.of("ALLCAPS", "BackupId must be less than 3996 characters and must not contain any uppercase letters or any " +
-        "of [ , \", *, \\, <, |, ,, >, /, ?, _]."),
-      Arguments.of("&*((%$££", "BackupId must be less than 3996 characters and must not contain any uppercase letters or any " +
-        "of [ , \", *, \\, <, |, ,, >, /, ?, _]."),
-      Arguments.of(
-        StringUtils.repeat('a', 4000),
-        "BackupId must be less than 3996 characters and must not contain any uppercase letters or any " +
-          "of [ , \", *, \\, <, |, ,, >, /, ?, _]."
-      )
+      Arguments.of(null, "must not be null"),
+      Arguments.of(-1, "must be greater than or equal to 0")
     );
   }
 }

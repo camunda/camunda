@@ -34,6 +34,7 @@ import static java.util.stream.Collectors.joining;
 import static org.camunda.optimize.service.util.SnapshotUtil.REPOSITORY_MISSING_EXCEPTION_TYPE;
 import static org.camunda.optimize.service.util.SnapshotUtil.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static org.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnapshotNamesForBackupId;
+import static org.camunda.optimize.service.util.SnapshotUtil.getAllWildcardedSnapshotNamesForWildcardedBackupId;
 
 @RequiredArgsConstructor
 @Component
@@ -81,8 +82,8 @@ public class BackupReader {
     }
   }
 
-  public void validateNoDuplicateBackupId(final String backupId) {
-    final List<SnapshotInfo> existingSnapshots = getAllOptimizeSnapshots(backupId);
+  public void validateNoDuplicateBackupId(final Integer backupId) {
+    final List<SnapshotInfo> existingSnapshots = getOptimizeSnapshotsForBackupId(backupId);
     if (!existingSnapshots.isEmpty()) {
       final String reason = String.format(
         "A backup with ID [%s] already exists. Found snapshots: [%s]",
@@ -94,17 +95,25 @@ public class BackupReader {
     }
   }
 
-  public Map<String, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
-    return getAllOptimizeSnapshots("*").stream()
+  public Map<Integer, List<SnapshotInfo>> getAllOptimizeSnapshotsByBackupId() {
+    return getAllOptimizeSnapshots().stream()
       .collect(
         groupingBy(snapshotInfo -> SnapshotUtil.getBackupIdFromSnapshotName(snapshotInfo.snapshot().getSnapshotId().getName()))
       );
   }
 
-  public List<SnapshotInfo> getAllOptimizeSnapshots(final String backupId) {
+  public List<SnapshotInfo> getAllOptimizeSnapshots() {
+    return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForWildcardedBackupId());
+  }
+
+  public List<SnapshotInfo> getOptimizeSnapshotsForBackupId(final Integer backupId) {
+    return getOptimizeSnapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
+  }
+
+  private List<SnapshotInfo> getOptimizeSnapshots(final String[] snapshots) {
     final GetSnapshotsRequest snapshotsStatusRequest = new GetSnapshotsRequest()
       .repository(getRepositoryName())
-      .snapshots(getAllWildcardedSnapshotNamesForBackupId(backupId));
+      .snapshots(snapshots);
     GetSnapshotsResponse response;
     try {
       response = esClient.getSnapshots(snapshotsStatusRequest);
@@ -114,15 +123,15 @@ public class BackupReader {
         return Collections.emptyList();
       }
       final String reason = String.format(
-        "Could not retrieve snapshots for backupID [%s] due to an ElasticsearchStatusException.",
-        backupId
+        "Could not retrieve snapshots with names [%s] due to an ElasticsearchStatusException.",
+        snapshots
       );
       log.error(reason);
       throw new OptimizeRuntimeException(reason, e);
     } catch (IOException | TransportException e) {
       final String reason = String.format(
-        "Encountered an error connecting to Elasticsearch while retrieving snapshots for backupID [%s].",
-        backupId
+        "Encountered an error connecting to Elasticsearch while retrieving snapshots with names [%s].",
+        snapshots
       );
       log.error(reason, e);
       throw new OptimizeElasticsearchConnectionException(reason, e);

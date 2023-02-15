@@ -64,7 +64,7 @@ public class BackupServiceTest {
     // when/then
     final OptimizeConfigurationException thrown = assertThrows(
       OptimizeConfigurationException.class,
-      () -> backupService.triggerBackup("backupid")
+      () -> backupService.triggerBackup(123)
     );
     assertThat(thrown.getMessage()).isEqualTo(
       "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
@@ -82,7 +82,7 @@ public class BackupServiceTest {
     // when/then
     final OptimizeRuntimeException thrown = assertThrows(
       OptimizeRuntimeException.class,
-      () -> backupService.triggerBackup("backupid")
+      () -> backupService.triggerBackup(123)
     );
     assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -96,16 +96,16 @@ public class BackupServiceTest {
     doNothing().when(backupReader).validateRepositoryExistsOrFail();
     // Mock existence of other backup with the same ID
     doThrow(new OptimizeConflictException(
-      "A backup with ID [alreadyExists] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
+      "A backup with ID [123] already exists. Found snapshots: [existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]"))
       .when(backupReader).validateNoDuplicateBackupId(any());
 
     // when
     final OptimizeConflictException thrown = assertThrows(
       OptimizeConflictException.class,
-      () -> backupService.triggerBackup("alreadyExists")
+      () -> backupService.triggerBackup(123)
     );
     assertThat(thrown.getMessage()).isEqualTo(
-      "A backup with ID [alreadyExists] already exists. Found snapshots: " +
+      "A backup with ID [123] already exists. Found snapshots: " +
         "[existingSnapshotName/Xtll5DxHQ56j6rMz8nFDmQ]");
   }
 
@@ -117,7 +117,7 @@ public class BackupServiceTest {
     // when/then
     final OptimizeConfigurationException thrown = assertThrows(
       OptimizeConfigurationException.class,
-      () -> backupService.getSingleBackupInfo("backupid")
+      () -> backupService.getSingleBackupInfo(123)
     );
     assertThat(thrown.getMessage()).isEqualTo(
       "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
@@ -135,7 +135,7 @@ public class BackupServiceTest {
     // when/then
     final OptimizeRuntimeException thrown = assertThrows(
       OptimizeRuntimeException.class,
-      () -> backupService.getSingleBackupInfo("backupid")
+      () -> backupService.getSingleBackupInfo(123)
     );
     assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
   }
@@ -146,14 +146,14 @@ public class BackupServiceTest {
     // Mock existence of repository name field in config
     stringUtils.when(() -> StringUtils.isEmpty(any())).thenReturn(false);
     doNothing().when(backupReader).validateRepositoryExistsOrFail();
-    when(backupReader.getAllOptimizeSnapshots(any())).thenReturn(Collections.emptyList());
+    when(backupReader.getOptimizeSnapshotsForBackupId(any())).thenReturn(Collections.emptyList());
 
     // when/then
     final NotFoundException thrown = assertThrows(
       NotFoundException.class,
-      () -> backupService.getSingleBackupInfo("backupid")
+      () -> backupService.getSingleBackupInfo(123)
     );
-    assertThat(thrown.getMessage()).isEqualTo("No Optimize backup with ID [backupid] could be found.");
+    assertThat(thrown.getMessage()).isEqualTo("No Optimize backup with ID [123] could be found.");
   }
 
   @Test
@@ -207,7 +207,7 @@ public class BackupServiceTest {
     // when/then
     final OptimizeConfigurationException thrown = assertThrows(
       OptimizeConfigurationException.class,
-      () -> backupService.deleteBackup("backupid")
+      () -> backupService.deleteBackup(123)
     );
     assertThat(thrown.getMessage()).isEqualTo(
       "Cannot execute backup request because no Elasticsearch snapshot repository name found in Optimize " +
@@ -225,7 +225,7 @@ public class BackupServiceTest {
     // when/then
     final OptimizeRuntimeException thrown = assertThrows(
       OptimizeRuntimeException.class,
-      () -> backupService.deleteBackup("backupid")
+      () -> backupService.deleteBackup(123)
     );
     assertThat(thrown.getMessage()).isEqualTo("No repository with name [does_not_exist] could be found.");
   }

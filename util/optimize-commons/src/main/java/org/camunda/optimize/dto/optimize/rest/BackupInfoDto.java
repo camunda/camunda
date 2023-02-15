@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @Data
 public class BackupInfoDto {
-  private String backupId;
+  private int backupId;
   private String failureReason;
   private BackupState state;
   private List<SnapshotInfoDto> details;
