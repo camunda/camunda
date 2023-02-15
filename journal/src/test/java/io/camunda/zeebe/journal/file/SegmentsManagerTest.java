@@ -8,6 +8,7 @@
 package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -131,6 +132,60 @@ class SegmentsManagerTest {
     assertThat(segments.getFirstSegment())
         .extracting(Segment::index, Segment::lastIndex)
         .containsExactly(1L, 0L);
+  }
+
+  @Test
+  void shouldDetectMissingEntryAsCorruption() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, recordDataWriter).index();
+    journal.close();
+
+    // when
+    segments = createSegmentsManager();
+
+    // then
+    assertThatException()
+        .isThrownBy(() -> segments.open(indexInFirstSegment + 1))
+        .isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
+  void shouldDetectCorruptionInIntermediateSegments() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, recordDataWriter).index();
+    final var lastFlushedIndex = journal.append(2, recordDataWriter).index();
+    final var firstSegmentFile = journal.getFirstSegment().file().file();
+    journal.close();
+
+    LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
+
+    // when
+    segments = createSegmentsManager();
+
+    // then
+    assertThatException()
+        .isThrownBy(() -> segments.open(lastFlushedIndex))
+        .isInstanceOf(CorruptedJournalException.class);
+  }
+
+  @Test
+  void shouldNotDetectCorruptionWithUnflushedIndexInIntermediateSegments() throws Exception {
+    // given
+    final var journal = openJournal();
+    final var indexInFirstSegment = journal.append(1, recordDataWriter).index();
+    journal.append(2, recordDataWriter).index();
+    final var firstSegmentFile = journal.getFirstSegment().file().file();
+    journal.close();
+
+    LogCorrupter.corruptRecord(firstSegmentFile, indexInFirstSegment);
+
+    // when
+    segments = createSegmentsManager();
+
+    // then
+    assertThatNoException().isThrownBy(() -> segments.open(0));
   }
 
   @Test

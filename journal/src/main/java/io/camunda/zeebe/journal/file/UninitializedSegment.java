@@ -25,10 +25,7 @@ public record UninitializedSegment(
    * index.
    */
   public Segment initializeForUse(
-      final long index,
-      final long lastWrittenAsqn,
-      final long lastFlushedIndex,
-      final JournalMetrics metrics) {
+      final long index, final long lastWrittenAsqn, final JournalMetrics metrics) {
     final var updatedDescriptor =
         SegmentDescriptor.builder()
             .withId(segmentId)
@@ -36,7 +33,6 @@ public record UninitializedSegment(
             .withMaxSegmentSize(maxSegmentSize)
             .build();
     updatedDescriptor.copyTo(buffer);
-    return new Segment(
-        file, updatedDescriptor, buffer, lastFlushedIndex, lastWrittenAsqn, journalIndex, metrics);
+    return new Segment(file, updatedDescriptor, buffer, lastWrittenAsqn, journalIndex, metrics);
   }
 }
