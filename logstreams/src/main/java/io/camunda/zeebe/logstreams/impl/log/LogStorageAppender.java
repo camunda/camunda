@@ -11,16 +11,23 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppendErrorHandler;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderFlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.InFlightAppend;
+import io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import org.agrona.MutableDirectBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
@@ -34,6 +41,11 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   private final ActorFuture<Void> closeFuture;
   private final int partitionId;
 
+  private final int batchSize = 128 * 1024;
+  private final int linger = 5;
+  private long lastWriteTimestamp;
+  private SequencedBatches batches;
+
   LogStorageAppender(
       final String name,
       final int partitionId,
@@ -45,6 +57,8 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     this.sequencer = sequencer;
     flowControl = new AppenderFlowControl(this, partitionId);
     closeFuture = new CompletableActorFuture<>();
+    lastWriteTimestamp = System.currentTimeMillis();
+    batches = new SequencedBatches();
   }
 
   @Override
@@ -107,28 +121,82 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   }
 
   private void tryWriteBatch() {
-    final var inflightAppend = flowControl.tryAcquire();
-    if (inflightAppend.isEmpty()) {
-      actor.submit(this::tryWriteBatch);
-      return;
+    while (shouldContinueBatching()) {
+      final var batch = sequencer.tryRead();
+      batches.addSequencedBatch(batch);
     }
-    writeBatch(inflightAppend.get());
+
+    final var inflightAppend = tryAcquireWriteSlot();
+    if (inflightAppend.isPresent()) {
+      writeBatch(inflightAppend.get());
+      lastWriteTimestamp = ActorClock.currentTimeMillis();
+      batches = new SequencedBatches();
+    }
+
+    actor.submit(this::tryWriteBatch);
+  }
+
+  private boolean shouldContinueBatching() {
+    final var batchesFlushable = batches.isFlushable();
+    final var batchesLength = batches.getLength();
+
+    if (batchesFlushable || batchesLength >= batchSize) {
+      return false;
+    }
+
+    final var nextBatch = sequencer.tryPeek();
+    if (nextBatch == null) {
+      return false;
+    }
+
+    if (batchesLength > 0 && (batchesLength + nextBatch.getLength()) >= batchSize) {
+      batches.setFlushable(true);
+      return false;
+    }
+
+    return true;
+  }
+
+  private Optional<InFlightAppend> tryAcquireWriteSlot() {
+    final var isFlushable = batches.isFlushable();
+    final var length = batches.getLength();
+
+    if (length > 0) {
+      if (isFlushable || linger <= 0) {
+        return flowControl.tryAcquire();
+      }
+
+      final var currentTime = ActorClock.currentTimeMillis();
+      if ((currentTime - lastWriteTimestamp) >= linger) {
+        return flowControl.tryAcquire();
+      }
+    }
+
+    return Optional.empty();
   }
 
   private void writeBatch(final InFlightAppend append) {
-    final var sequencedBatch = sequencer.tryRead();
-    if (sequencedBatch == null) {
-      append.discard();
-      return;
-    }
+    final var lowestPosition = batches.getLowestPosition();
+    final var highestPosition = batches.getHighestPosition();
 
-    final var lowestPosition = sequencedBatch.firstPosition();
-    final var highestPosition =
-        sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
     append.start(highestPosition);
-    logStorage.append(lowestPosition, highestPosition, sequencedBatch, append);
-    actor.submit(this::tryWriteBatch);
+    logStorage.append(lowestPosition, highestPosition, batches, append);
   }
+
+  //  private void writeBatch(final InFlightAppend append) {
+  //    final var sequencedBatch = sequencer.tryRead();
+  //    if (sequencedBatch == null) {
+  //      append.discard();
+  //      return;
+  //    }
+  //
+  //    final var lowestPosition = sequencedBatch.firstPosition();
+  //    final var highestPosition =
+  //        sequencedBatch.firstPosition() + sequencedBatch.entries().size() - 1;
+  //    append.start(highestPosition);
+  //    logStorage.append(lowestPosition, highestPosition, sequencedBatch, append);
+  //    actor.submit(this::tryWriteBatch);
+  //  }
 
   private void onFailure(final Throwable error) {
     LOG.error("Actor {} failed in phase {}.", name, actor.getLifecyclePhase(), error);
@@ -145,5 +213,56 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   @Override
   public void onCommitError(final Throwable error) {
     actor.run(() -> onFailure(error));
+  }
+
+  private static class SequencedBatches implements BufferWriter {
+
+    private final List<SequencedBatch> batches = new ArrayList<>();
+    private long lowestPosition = Long.MAX_VALUE;
+    private long highestPosition = Long.MIN_VALUE;
+    private int length = 0;
+    private boolean flushable = false;
+
+    public void addSequencedBatch(final SequencedBatch batch) {
+      final var firstPosition = batch.firstPosition();
+      final var lastPosition = firstPosition + batch.entries().size() - 1;
+
+      lowestPosition = Math.min(lowestPosition, firstPosition);
+      highestPosition = Math.max(highestPosition, lastPosition);
+      length += batch.getLength();
+
+      batches.add(batch);
+    }
+
+    public long getLowestPosition() {
+      return lowestPosition;
+    }
+
+    public long getHighestPosition() {
+      return highestPosition;
+    }
+
+    public boolean isFlushable() {
+      return flushable;
+    }
+
+    public void setFlushable(boolean flushable) {
+      this.flushable = flushable;
+    }
+
+    @Override
+    public int getLength() {
+      return length;
+    }
+
+    @Override
+    public void write(final MutableDirectBuffer buffer, final int offset) {
+      var currentOffset = offset;
+      for (int i = 0; i < batches.size(); i++) {
+        final var batch = batches.get(i);
+        batch.write(buffer, currentOffset);
+        currentOffset += SequencedBatchSerializer.calculateBatchSize(batch.entries());
+      }
+    }
   }
 }
