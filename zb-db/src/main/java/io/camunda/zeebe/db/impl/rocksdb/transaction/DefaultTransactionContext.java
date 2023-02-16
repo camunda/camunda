@@ -13,8 +13,6 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
-import io.camunda.zeebe.util.exception.RecoverableException;
-import io.camunda.zeebe.util.exception.UnrecoverableException;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.Status;
 
@@ -34,8 +32,8 @@ public final class DefaultTransactionContext implements TransactionContext {
       } else {
         runInNewTransaction(operations);
       }
-    } catch (final RecoverableException | UnrecoverableException reportableException) {
-      throw reportableException;
+    } catch (final RuntimeException e) {
+      throw e;
     } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
