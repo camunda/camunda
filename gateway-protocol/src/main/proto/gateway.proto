@@ -549,6 +549,16 @@ message ModifyProcessInstanceResponse {
 
 }
 
+message DeleteResourceRequest {
+  // The key of the resource that should be deleted. This can either be the key
+  // of a process definition, or the key of a decision requirements definition.
+  int64 resourceKey = 1;
+}
+
+message DeleteResourceResponse {
+
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -768,6 +778,31 @@ service Gateway {
         - scope of variable is unknown
    */
   rpc ModifyProcessInstance (ModifyProcessInstanceRequest) returns (ModifyProcessInstanceResponse) {
+
+  }
+
+  /*
+    Deletes a resource from the state. Once a resource has been deleted it cannot
+    be recovered. If the resource needs to be available again, a new deployment
+    of the resource is required.
+
+    Deleting a process will cancel any running instances of this process
+    definition. New instances of a deleted process are created using
+    the lastest version that hasn't been deleted. Creating a new
+    process instance is impossible when all versions have been
+    deleted.
+
+    Deleting a decision requirement definitions could cause incidents in process
+    instances referencing these decisions in a business rule task. A decision
+    will be evaluated with the latest version that hasn't been deleted. If all
+    versions of a decision have been deleted the evaluation is rejected.
+
+    Errors:
+      NOT_FOUND:
+        - No resource exists with the given key
+
+   */
+  rpc DeleteResource (DeleteResourceRequest) returns (DeleteResourceResponse) {
 
   }
 }
