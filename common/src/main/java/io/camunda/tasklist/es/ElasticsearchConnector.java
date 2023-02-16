@@ -50,10 +50,7 @@ import org.apache.http.ssl.TrustStrategy;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,7 +103,10 @@ public class ElasticsearchConnector {
       restClientBuilder.setRequestConfigCallback(
           configCallback -> setTimeouts(configCallback, elsConfig));
     }
-    final RestHighLevelClient esClient = new RestHighLevelClient(restClientBuilder);
+    final RestHighLevelClient esClient =
+        new RestHighLevelClientBuilder(restClientBuilder.build())
+            .setApiCompatibilityMode(true)
+            .build();
     if (!checkHealth(esClient)) {
       LOGGER.warn("Elasticsearch cluster is not accessible");
     } else {

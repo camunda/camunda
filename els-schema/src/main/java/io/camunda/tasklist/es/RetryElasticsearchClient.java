@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
@@ -142,10 +143,19 @@ public class RetryElasticsearchClient {
     return this;
   }
 
-  public void refresh(String indexPattern) {
+  public void refresh(final String indexPattern) {
     executeWithRetries(
         "Refresh " + indexPattern,
-        () -> esClient.indices().refresh(new RefreshRequest(indexPattern), requestOptions));
+        () -> {
+          try {
+            for (var index : getFilteredIndices(indexPattern)) {
+              esClient.indices().refresh(new RefreshRequest(index), requestOptions);
+            }
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+          return true;
+        });
   }
 
   public long getNumberOfDocumentsFor(String... indexPatterns) {
@@ -292,15 +302,22 @@ public class RetryElasticsearchClient {
             requestOptions);
   }
 
+  private Set<String> getFilteredIndices(final String indexPattern) throws IOException {
+    return Arrays.stream(
+            esClient
+                .indices()
+                .get(new GetIndexRequest(indexPattern), RequestOptions.DEFAULT)
+                .getIndices())
+        .sequential()
+        .collect(Collectors.toSet());
+  }
+
   public boolean deleteIndicesFor(final String indexPattern) {
     return executeWithRetries(
         "DeleteIndices " + indexPattern,
         () -> {
-          if (indicesExist(indexPattern)) {
-            return esClient
-                .indices()
-                .delete(new DeleteIndexRequest(indexPattern), requestOptions)
-                .isAcknowledged();
+          for (var index : getFilteredIndices(indexPattern)) {
+            esClient.indices().delete(new DeleteIndexRequest(index), RequestOptions.DEFAULT);
           }
           return true;
         });

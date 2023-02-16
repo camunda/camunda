@@ -15,9 +15,10 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.PutComponentTemplateRequest;
 import org.elasticsearch.client.indices.PutComposableIndexTemplateRequest;
@@ -44,7 +45,6 @@ public class ElasticsearchSchemaManager {
 
   private static final String NUMBER_OF_SHARDS = "index.number_of_shards";
   private static final String NUMBER_OF_REPLICAS = "index.number_of_replicas";
-  private static final String ALIASES = "aliases";
 
   @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
 
@@ -105,11 +105,11 @@ public class ElasticsearchSchemaManager {
   private void createIndex(final IndexDescriptor indexDescriptor) {
     final String indexFilename =
         String.format("/schema/create/index/tasklist-%s.json", indexDescriptor.getIndexName());
-    final Map<String, Object> indexDescription =
-        prepareCreateIndex(indexFilename, indexDescriptor.getAlias());
+    final Map<String, Object> indexDescription = readJSONFileToMap(indexFilename);
     createIndex(
         new CreateIndexRequest(indexDescriptor.getFullQualifiedName())
             .source(indexDescription)
+            .aliases(Set.of(new Alias(indexDescriptor.getAlias()).writeIndex(false)))
             .settings(getIndexSettings()),
         indexDescriptor.getFullQualifiedName());
   }
@@ -147,13 +147,6 @@ public class ElasticsearchSchemaManager {
     } catch (IOException e) {
       throw new TasklistRuntimeException(e);
     }
-  }
-
-  private Map<String, Object> prepareCreateIndex(String fileName, String alias) {
-    final Map<String, Object> indexDescription = readJSONFileToMap(fileName);
-    // Adjust aliases in case of other configured indexNames, e.g. non-default prefix
-    indexDescription.put(ALIASES, Collections.singletonMap(alias, Collections.emptyMap()));
-    return indexDescription;
   }
 
   private Map<String, Object> readJSONFileToMap(final String filename) {
