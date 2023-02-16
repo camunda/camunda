@@ -32,9 +32,8 @@
     <version.config>1.4.2</version.config>
 
     <!-- maven plugin versions -->
-    <plugin.version.exec>1.6.0</plugin.version.exec>
-    <plugin.version.shade>3.2.1</plugin.version.shade>
     <plugin.version.license>3.0</plugin.version.license>
+    <plugin.version.jib>3.3.1</plugin.version.jib>
   </properties>
 
   <dependencies>
@@ -125,45 +124,49 @@
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
       </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>starter</id>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-              <finalName>starter</finalName>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>io.camunda.zeebe.Starter</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-          <execution>
-            <id>worker</id>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <createDependencyReducedPom>false</createDependencyReducedPom>
-              <finalName>worker</finalName>
-              <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>io.camunda.zeebe.Worker</mainClass>
-                </transformer>
-              </transformers>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>starter</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-maven-plugin</artifactId>
+            <version>${plugin.version.jib}</version>
+            <configuration>
+              <to>
+                <image>gcr.io/zeebe-io/starter</image>
+              </to>
+              <container>
+                <mainClass>io.camunda.zeebe.Starter</mainClass>
+              </container>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>worker</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.google.cloud.tools</groupId>
+            <artifactId>jib-maven-plugin</artifactId>
+            <version>${plugin.version.jib}</version>
+            <configuration>
+              <to>
+                <image>gcr.io/zeebe-io/worker</image>
+              </to>
+              <container>
+                <mainClass>io.camunda.zeebe.Worker</mainClass>
+              </container>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
