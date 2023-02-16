@@ -60,19 +60,11 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v1
+        id: auth
         with:
+          token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v2
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/products/zeebe/ci/zeebe ZEEBE_GCR_SERVICEACCOUNT_JSON;
       - name: Get image tag
         id: image-tag
         run: |
@@ -83,8 +75,8 @@ jobs:
         uses: docker/login-action@v2
         with:
           registry: gcr.io
-          username: _json_key
-          password: ${{ steps.secrets.outputs.ZEEBE_GCR_SERVICEACCOUNT_JSON }}
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       - uses: docker/build-push-action@v3
         with:
           context: .
