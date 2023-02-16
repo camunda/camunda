@@ -4,16 +4,11 @@ This project contains code for the starter and worker, which are used during our
 
 ## Build docker images for benchmark application
 
-### Update the Zeebe version (only required once a release cycle)
+To build the docker images for the benchmark application, run the following command:
 
-```
-mvn versions:set-property -DgenerateBackupPoms=false -Dproperty=version.zeebe -DnewVersion=X.Y.Z-SNAPSHOT
-```
-
-### Build and push the images
-
-```
-docker-compose build
-docker-compose push
+```bash
+./mvnw -am -pl benchmarks/project package -DskipTests -DskipChecks
+./mvnw -pl benchmarks/project jib:build -Pstarter
+./mvnw -pl benchmarks/project jib:build -Pworker
 ```
 
