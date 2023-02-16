@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 public class Starter extends App {
 
   private static final Logger LOG = LoggerFactory.getLogger(Starter.class);
-
+  private static final long NANOS_PER_SECOND = Duration.ofSeconds(1).toNanos();
   private final AppCfg appCfg;
 
   Starter(final AppCfg appCfg) {
@@ -62,8 +62,8 @@ public class Starter extends App {
     deployProcess(client, starterCfg.getBpmnXmlPath());
 
     // start instances
-    final int intervalMs = Math.floorDiv(1000, rate);
-    LOG.info("Creating an instance every {}ms", intervalMs);
+    final long intervalNanos = Math.floorDiv(NANOS_PER_SECOND, rate);
+    LOG.info("Creating an instance every {}ns", intervalNanos);
 
     final String variables = readVariables(starterCfg.getPayloadPath());
     final BooleanSupplier shouldContinue = createContinuationCondition(starterCfg);
@@ -82,8 +82,8 @@ public class Starter extends App {
                     shouldContinue,
                     countDownLatch),
             0,
-            intervalMs,
-            TimeUnit.MILLISECONDS);
+            intervalNanos,
+            TimeUnit.NANOSECONDS);
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
