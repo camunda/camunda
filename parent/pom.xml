@@ -79,7 +79,6 @@
     <version.sbe>1.27.0</version.sbe>
     <version.scala>2.13.10</version.scala>
     <version.slf4j>2.0.6</version.slf4j>
-    <version.snakeyaml>1.33</version.snakeyaml>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.35.0</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
@@ -690,12 +689,6 @@
         <groupId>org.objenesis</groupId>
         <artifactId>objenesis</artifactId>
         <version>${version.objenesis}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.yaml</groupId>
-        <artifactId>snakeyaml</artifactId>
-        <version>${version.snakeyaml}</version>
       </dependency>
 
       <dependency>
