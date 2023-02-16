@@ -43,7 +43,7 @@ public final class LogCompactor {
    * index. Compaction is performed asynchronously.
    */
   public void compact() {
-//    raft.checkThread();
+    //    raft.checkThread();
 
     try {
       final var startTime = System.currentTimeMillis();

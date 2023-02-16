@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /** Consume the write buffer and append the blocks to the distributedlog. */
@@ -129,7 +130,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     final var inflightAppend = tryAcquireWriteSlot();
     if (inflightAppend.isPresent()) {
       writeBatch(inflightAppend.get());
-      lastWriteTimestamp = ActorClock.currentTimeMillis();
+//      lastWriteTimestamp = ActorClock.currentTimeMillis();
       batches = new SequencedBatches();
     }
 
@@ -166,10 +167,10 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
         return flowControl.tryAcquire();
       }
 
-      final var currentTime = ActorClock.currentTimeMillis();
-      if ((currentTime - lastWriteTimestamp) >= linger) {
-        return flowControl.tryAcquire();
-      }
+//      final var currentTime = ActorClock.currentTimeMillis();
+//      if ((currentTime - lastWriteTimestamp) >= linger) {
+//        return flowControl.tryAcquire();
+//      }
     }
 
     return Optional.empty();
@@ -217,7 +218,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
 
   private static class SequencedBatches implements BufferWriter {
 
-    private final List<SequencedBatch> batches = new ArrayList<>();
+    private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[4 * 1024 * 1024]);
     private long lowestPosition = Long.MAX_VALUE;
     private long highestPosition = Long.MIN_VALUE;
     private int length = 0;
@@ -229,9 +230,9 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
 
       lowestPosition = Math.min(lowestPosition, firstPosition);
       highestPosition = Math.max(highestPosition, lastPosition);
-      length += batch.getLength();
 
-      batches.add(batch);
+      batch.write(buffer, length);
+      length += batch.getLength();
     }
 
     public long getLowestPosition() {
@@ -257,12 +258,7 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
 
     @Override
     public void write(final MutableDirectBuffer buffer, final int offset) {
-      var currentOffset = offset;
-      for (int i = 0; i < batches.size(); i++) {
-        final var batch = batches.get(i);
-        batch.write(buffer, currentOffset);
-        currentOffset += SequencedBatchSerializer.calculateBatchSize(batch.entries());
-      }
+      buffer.putBytes(offset, this.buffer, 0, length);
     }
   }
 }
