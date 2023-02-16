@@ -69,10 +69,16 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private Consumer<String> onJobsAvailableCallback;
 
+  private final DbString benchmarkTaskType = new DbString();
+  private long lastKey = Long.MIN_VALUE;
+
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
       final int partitionId) {
+
+    benchmarkTaskType.wrapString("benchmark-task");
+
     jobKey = new DbLong();
     fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
     jobsColumnFamily =
@@ -296,7 +302,13 @@ public final class DbJobState implements JobState, MutableJobState {
         ((compositeKey, zbNil) -> {
           final long jobKey = compositeKey.second().inner().getValue();
           // TODO #6521 reconsider race condition and whether or not the cleanup task is needed
-          return visitJob(jobKey, callback::apply, () -> {});
+          var shouldContinue = visitJob(jobKey, callback::apply, () -> {});
+
+          if (shouldContinue && benchmarkTaskType.getBuffer().equals(jobTypeKey.getBuffer())) {
+            shouldContinue = !(jobKey >= lastKey);
+          }
+
+          return shouldContinue;
         }));
   }
 
@@ -379,6 +391,9 @@ public final class DbJobState implements JobState, MutableJobState {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
+    if (benchmarkTaskType.getBuffer().equals(jobTypeKey.getBuffer())) {
+      lastKey = Math.max(key, lastKey);
+    }
 
     jobKey.wrapLong(key);
     // Need to upsert here because jobs can be marked as failed (and thus made activatable)
