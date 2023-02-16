@@ -20,6 +20,7 @@ import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.RecordMetadata;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.TestJournalRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
@@ -40,7 +41,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class JournalTest {
 
   @TempDir Path directory;
-
+  final JournalMetaStore metaStore = new MockJournalMetastore();
   private byte[] entry;
   private final DirectBufferWriter recordDataWriter = new DirectBufferWriter();
   private final DirectBufferWriter otherRecordDataWriter = new DirectBufferWriter();
@@ -385,6 +386,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
             .build();
     final var expected = journal.append(10, recordDataWriter);
 
@@ -415,6 +417,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
             .build();
     journal.append(1, recordDataWriter);
     final var record = journal.append(2, recordDataWriter);
@@ -448,6 +451,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data-2").toFile())
             .withJournalIndexDensity(5)
+            .withMetaStore(new MockJournalMetastore())
             .build();
     final var record = journal.append(1, recordDataWriter);
 
@@ -628,8 +632,8 @@ final class JournalTest {
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
 
     // then
-    assertThatThrownBy(
-            () -> journal = openJournal(b -> b.withLastFlushedIndex(secondRecord.index())))
+    metaStore.storeLastFlushedIndex(secondRecord.index());
+    assertThatThrownBy(() -> journal = openJournal(b -> b.withMetaStore(metaStore)))
         .isInstanceOf(CorruptedJournalException.class);
   }
 
@@ -645,7 +649,8 @@ final class JournalTest {
     // when
     journal.close();
     assertThat(LogCorrupter.corruptRecord(log, secondRecord.index())).isTrue();
-    journal = openJournal(b -> b.withLastFlushedIndex(firstRecord.index()));
+    metaStore.storeLastFlushedIndex(firstRecord.index());
+    journal = openJournal();
     recordDataWriter.wrap(new UnsafeBuffer("111".getBytes(StandardCharsets.UTF_8)));
     final var lastRecord = journal.append(recordDataWriter);
     final var reader = journal.openReader();
@@ -677,6 +682,7 @@ final class JournalTest {
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
             .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
+            .withMetaStore(metaStore)
             .withJournalIndexDensity(5);
     option.accept(builder);
 

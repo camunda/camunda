@@ -21,23 +21,29 @@ Zeebe provides visibility into and control over business processes that span mul
 
 Our release cadence within major releases is a minor release every six months, with an alpha release on each of the five months between minor releases. Releases happen on the second Tuesday of the month, Berlin time (CET).
 
-Minor releases are supported with patches for twelve months after their release.
+Minor releases are supported with patches for eighteen months after their release.
 
-Here is a diagram illustrating the lifecycle of minor releases over a 20-month period:
+Here is a diagram illustrating the lifecycle of minor releases over a 27-month period:
 
 ```
-1   2   3   4   5   6   7   8   9   10  11  12  13  14  15  16  17  18  19  20
-x.1---------------------------------------------|
-                        x.2---------------------------------------------|
-                                                x.3---------------------------
-                                                                        x.4---
+2022                       2023                                2024
+Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju Ju Au Se Oc No De Ja Fe Ma Ap Ma Ju
+8.0--------------------------------------------------|
+                  8.1--------------------------------------------------|
+                                    8.2-----------------------------------------
+                                                      8.3-----------------------
+                                                                        8.4-----
+1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
 ```
 
 Here is a diagram illustrating the release schedule of the five alpha releases prior to an upcoming minor release over a 7-month period:
 
 ```
+2022                                2023
+Oct       Nov          Dec          Jan          Feb          Mar          Apr
+8.1-----------------------------------------------------------------------------
+          8.2-alpha1   8.2-alpha2   8.2-alpha3   8.2-alpha4   8.2-alpha5   8.2-- 
 1         2            3            4            5            6            7
-x.1       x.2-alpha1   x.2-alpha2   x.2-alpha3   x.2-alpha4   x.2-alpha5   x.2
 ```
 
 ## Status

@@ -189,11 +189,7 @@ public final class PublishMessageTest {
             .withRecordKey(publishedRecord.getKey())
             .getFirst();
 
-    Assertions.assertThat(deletedEvent.getValue())
-        .hasName("order canceled")
-        .hasCorrelationKey("order-123")
-        .hasTimeToLive(100L)
-        .hasMessageId("");
+    Assertions.assertThat(deletedEvent).hasKey(publishedRecord.getKey());
   }
 
   @Test

@@ -55,4 +55,5 @@ jobs:
         \"businessKey\": \"${{ needs.prepare.outputs.buildUrl }}\",
         \"processId\": \"qa-protocol\"
         }
+      branch: ${{ inputs.branch }}
     secrets: inherit

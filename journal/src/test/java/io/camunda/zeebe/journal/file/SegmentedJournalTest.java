@@ -25,6 +25,7 @@ import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.journal.record.PersistedJournalRecord;
 import io.camunda.zeebe.journal.record.RecordData;
 import io.camunda.zeebe.journal.record.SBESerializer;
+import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -55,6 +56,7 @@ class SegmentedJournalTest {
   private final int entrySize = getSerializedSize(data);
 
   private SegmentedJournal journal;
+  private final MockJournalMetastore metaStore = new MockJournalMetastore();
 
   @AfterEach
   void teardown() {
@@ -641,7 +643,8 @@ class SegmentedJournalTest {
         SegmentedJournal.builder()
             .withPreallocateSegmentFiles(true)
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile());
+            .withDirectory(tmpDir.toFile())
+            .withMetaStore(new MockJournalMetastore());
     final File firstSegment;
 
     // when
@@ -661,7 +664,8 @@ class SegmentedJournalTest {
         SegmentedJournal.builder()
             .withPreallocateSegmentFiles(false)
             .withMaxSegmentSize(segmentSize)
-            .withDirectory(tmpDir.toFile());
+            .withDirectory(tmpDir.toFile())
+            .withMetaStore(new MockJournalMetastore());
     final File firstSegment;
 
     // when
@@ -821,17 +825,32 @@ class SegmentedJournalTest {
     journal.append(2, recordDataWriter);
   }
 
+  @Test
+  void shouldUpdateMetastoreAfterFlush() {
+    journal = openJournal(2);
+    journal.append(1, recordDataWriter);
+    final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
+  }
+
   private SegmentedJournal openJournal(final float entriesPerSegment) {
     return openJournal(entriesPerSegment, entrySize);
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
+
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(
             (int) (entrySize * entriesPerSegment) + SegmentDescriptor.getEncodingLength())
         .withJournalIndexDensity(journalIndexDensity)
         .withName(JOURNAL_NAME)
+        .withMetaStore(metaStore)
         .build();
   }
 

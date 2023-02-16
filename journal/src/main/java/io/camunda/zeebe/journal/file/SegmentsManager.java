@@ -51,15 +51,12 @@ final class SegmentsManager implements AutoCloseable {
 
   private final SegmentLoader segmentLoader;
 
-  private final long lastFlushedIndex;
-
   private final String name;
 
   SegmentsManager(
       final JournalIndex journalIndex,
       final int maxSegmentSize,
       final File directory,
-      final long lastFlushedIndex,
       final String name,
       final SegmentLoader segmentLoader,
       final JournalMetrics journalMetrics) {
@@ -67,7 +64,6 @@ final class SegmentsManager implements AutoCloseable {
     this.journalIndex = journalIndex;
     this.maxSegmentSize = maxSegmentSize;
     this.directory = directory;
-    this.lastFlushedIndex = lastFlushedIndex;
     this.segmentLoader = segmentLoader;
     this.journalMetrics = journalMetrics;
   }
@@ -126,10 +122,7 @@ final class SegmentsManager implements AutoCloseable {
     if (nextSegment != null) {
       try {
         currentSegment =
-            nextSegment
-                .join()
-                .initializeForUse(
-                    nextSegmentIndex, lastWrittenAsqn, lastFlushedIndex, journalMetrics);
+            nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         currentSegment = createSegment(descriptor, lastWrittenAsqn);
@@ -263,10 +256,10 @@ final class SegmentsManager implements AutoCloseable {
   }
 
   /** Loads existing segments from the disk * */
-  void open() {
+  void open(final long lastFlushedIndex) {
     final var openDurationTimer = journalMetrics.startJournalOpenDurationTimer();
     // Load existing log segments from disk.
-    for (final Segment segment : loadSegments()) {
+    for (final Segment segment : loadSegments(lastFlushedIndex)) {
       segments.put(segment.descriptor().index(), segment);
       journalMetrics.incSegmentCount();
     }
@@ -308,14 +301,13 @@ final class SegmentsManager implements AutoCloseable {
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
-    return segmentLoader.createUninitializedSegment(
-        segmentFile.toPath(), descriptor, lastFlushedIndex, journalIndex);
+    return segmentLoader.createUninitializedSegment(segmentFile.toPath(), descriptor, journalIndex);
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createSegment(
-        segmentFile.toPath(), descriptor, lastFlushedIndex, lastWrittenAsqn, journalIndex);
+        segmentFile.toPath(), descriptor, lastWrittenAsqn, journalIndex);
   }
 
   /**
@@ -323,7 +315,7 @@ final class SegmentsManager implements AutoCloseable {
    *
    * @return A collection of segments for the log.
    */
-  private Collection<Segment> loadSegments() {
+  private Collection<Segment> loadSegments(final long lastFlushedIndex) {
     // Ensure log directories are created.
     directory.mkdirs();
     final List<Segment> segments = new ArrayList<>();
@@ -338,18 +330,25 @@ final class SegmentsManager implements AutoCloseable {
         final Segment segment =
             segmentLoader.loadExistingSegment(
                 file.toPath(),
-                lastFlushedIndex,
                 previousSegment != null ? previousSegment.lastAsqn() : INITIAL_ASQN,
                 journalIndex);
 
         if (i > 0) {
+          // throws CorruptedJournalException if there is gap
           checkForIndexGaps(segments.get(i - 1), segment);
+        }
+
+        final boolean isLastSegment = i == files.size() - 1;
+        if (isLastSegment && segment.lastIndex() < lastFlushedIndex) {
+          throw new CorruptedJournalException(
+              "Expected to find records until index %d, but last index is %d"
+                  .formatted(lastFlushedIndex, segment.lastIndex()));
         }
 
         segments.add(segment);
         previousSegment = segment;
       } catch (final CorruptedJournalException e) {
-        if (handleSegmentCorruption(files, segments, i)) {
+        if (handleSegmentCorruption(files, segments, i, lastFlushedIndex)) {
           return segments;
         }
 
@@ -371,7 +370,10 @@ final class SegmentsManager implements AutoCloseable {
 
   /** Returns true if segments after corrupted segment were deleted; false, otherwise */
   private boolean handleSegmentCorruption(
-      final List<File> files, final List<Segment> segments, final int failedIndex) {
+      final List<File> files,
+      final List<Segment> segments,
+      final int failedIndex,
+      final long lastFlushedIndex) {
     long lastSegmentIndex = 0;
 
     if (!segments.isEmpty()) {

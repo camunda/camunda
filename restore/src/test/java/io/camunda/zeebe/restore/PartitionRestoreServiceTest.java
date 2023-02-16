@@ -9,12 +9,14 @@ package io.camunda.zeebe.restore;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -97,6 +99,7 @@ class PartitionRestoreServiceTest {
         SegmentedJournal.builder()
             .withDirectory(dataDirectory.toFile())
             .withName(raftPartition.name())
+            .withMetaStore(mock(JournalMetaStore.class))
             .build();
   }
 

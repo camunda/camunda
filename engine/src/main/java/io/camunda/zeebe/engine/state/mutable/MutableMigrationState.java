@@ -22,4 +22,6 @@ public interface MutableMigrationState {
       final MutableElementInstanceState elementInstanceState);
 
   void migrateDecisionsPopulateDecisionVersionByDecisionIdAndDecisionKey();
+
+  void migrateDrgPopulateDrgVersionByDrgIdAndKey();
 }

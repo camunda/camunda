@@ -23,7 +23,7 @@ jobs:
     if: github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
-    with:      
+    with:
       name: ${{github.event.pull_request.head.ref}}-benchmark
       cluster: zeebe-cluster
       cluster-region: europe-west1-b
@@ -34,14 +34,14 @@ jobs:
       (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
       || (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: zeebe-io
-          install_components: gke-gcloud-auth-plugin, kubectl
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v1.0.1
         with:
           cluster_name: zeebe-cluster

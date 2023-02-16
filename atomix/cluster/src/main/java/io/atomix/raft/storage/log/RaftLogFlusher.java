@@ -37,12 +37,12 @@ public interface RaftLogFlusher extends CloseableSilently {
    *
    * @param journal the journal to flush
    */
-  void flush(final Journal journal, final FlushMetaStore metaStore);
+  void flush(final Journal journal);
 
   /**
-   * If this returns true, then any calls to {@link #flush(Journal, FlushMetaStore)} are synchronous
-   * and immediate, and any guarantees offered by the implementation will hold after a call to
-   * {@link #flush(Journal, FlushMetaStore)}.
+   * If this returns true, then any calls to {@link #flush(Journal)} are synchronous and immediate,
+   * and any guarantees offered by the implementation will hold after a call to {@link
+   * #flush(Journal)}.
    */
   default boolean isDirect() {
     return false;
@@ -58,20 +58,19 @@ public interface RaftLogFlusher extends CloseableSilently {
   final class NoopFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal ignoredJournal, final FlushMetaStore ignoredMetaStore) {}
+    public void flush(final Journal ignoredJournal) {}
   }
 
   /**
    * An implementation of {@link RaftLogFlusher} which flushes immediately in a blocking fashion.
-   * After any calls to {@link #flush(Journal, FlushMetaStore)}, any data written before the call is
-   * guaranteed to be on disk.
+   * After any calls to {@link #flush(Journal)}, any data written before the call is guaranteed to
+   * be on disk.
    */
   final class DirectFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal journal, final FlushMetaStore metaStore) {
+    public void flush(final Journal journal) {
       journal.flush();
-      metaStore.storeLastFlushedIndex(journal.getLastIndex());
     }
 
     @Override
