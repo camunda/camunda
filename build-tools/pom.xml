@@ -41,7 +41,7 @@
     <dependency>
       <groupId>org.apache.maven.surefire</groupId>
       <artifactId>maven-surefire-common</artifactId>
-      <version>3.0.0-M8</version>
+      <version>3.0.0-M9</version>
     </dependency>
   </dependencies>
 
