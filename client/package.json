@@ -22,7 +22,7 @@
     "lodash": "4.17.21",
     "mixpanel-browser": "2.45.0",
     "mobx": "6.8.0",
-    "mobx-react": "7.5.3",
+    "mobx-react": "7.6.0",
     "polished": "4.2.2",
     "react": "18.2.0",
     "react-contenteditable": "3.3.6",
