@@ -123,6 +123,10 @@ final class Sequencer implements LogStreamWriter, Closeable {
     return queue.peek();
   }
 
+  int queueSize() {
+    return queue.size();
+  }
+
   /**
    * Closes the sequencer. After closing, writes are rejected but reads are still allowed to drain
    * the queue. Closing the sequencer is not atomic so some writes may occur shortly after closing.

@@ -122,9 +122,12 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
   }
 
   private void tryWriteBatch() {
-    while (shouldContinueBatching()) {
+    var currentQueueSize = sequencer.queueSize();
+
+    while (shouldContinueBatching(currentQueueSize)) {
       final var batch = sequencer.tryRead();
       batches.addSequencedBatch(batch);
+      currentQueueSize--;
     }
 
     final var inflightAppend = tryAcquireWriteSlot();
@@ -137,11 +140,11 @@ final class LogStorageAppender extends Actor implements HealthMonitorable, Appen
     actor.submit(this::tryWriteBatch);
   }
 
-  private boolean shouldContinueBatching() {
+  private boolean shouldContinueBatching(final int queueSize) {
     final var batchesFlushable = batches.isFlushable();
     final var batchesLength = batches.getLength();
 
-    if (batchesFlushable || batchesLength >= batchSize) {
+    if (batchesFlushable || batchesLength >= batchSize || queueSize <= 0) {
       return false;
     }
 
