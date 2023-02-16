@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceR
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeployResourceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerEvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionRequest;
@@ -193,6 +195,11 @@ public final class RequestMapper {
         .setProcessInstanceKey(grpcRequest.getProcessInstanceKey())
         .addActivateInstructions(grpcRequest.getActivateInstructionsList())
         .addTerminateInstructions(grpcRequest.getTerminateInstructionsList());
+  }
+
+  public static BrokerDeleteResourceRequest toDeleteResourceRequest(
+      final DeleteResourceRequest grpcRequest) {
+    return new BrokerDeleteResourceRequest().setResourceKey(grpcRequest.getResourceKey());
   }
 
   public static DirectBuffer ensureJsonSet(final String value) {
