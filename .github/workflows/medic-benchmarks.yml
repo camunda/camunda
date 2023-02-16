@@ -8,14 +8,14 @@ on:
 jobs:
   delete-old-benchmarks:
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: zeebe-io
-          install_components: gke-gcloud-auth-plugin, kubectl
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v1.0.1
         with:
           cluster_name: zeebe-cluster

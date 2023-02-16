@@ -52,60 +52,61 @@ jobs:
     timeout-minutes: 30
     outputs:
       image-tag: ${{ steps.image-tag.outputs.image-tag }}
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v1
+        id: auth
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: zeebe-io
-          install_components: gke-gcloud-auth-plugin, kubectl
-      - run: gcloud auth configure-docker
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          maven-cache: 'true'
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - name: Get image tag
         id: image-tag
         run: |
           echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - uses: ./.github/actions/build-zeebe
-        id: build-zeebe
+      - name: Setup BuildKit
+        uses: docker/setup-buildx-action@v2
+      - name: Login to GCR
+        uses: docker/login-action@v2
         with:
-          maven-extra-args: -T1C
-      - uses: ./.github/actions/build-docker
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: docker/build-push-action@v3
         with:
-          repository: gcr.io/zeebe-io/zeebe
-          version: ${{ steps.image-tag.outputs.image-tag }}
+          context: .
+          tags: gcr.io/zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           push: true
-          distball: ${{ steps.build-zeebe.outputs.distball }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: DIST=build
+          target: app
   deploy-benchmark-cluster:
     name: Deploy benchmark cluster
     needs:
       - build-zeebe-image
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - uses: actions/checkout@v3
         with:
           ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v1
         with:
-          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
-      - uses: google-github-actions/setup-gcloud@v1
-        with:
-          project_id: zeebe-io
-          install_components: gke-gcloud-auth-plugin, kubectl
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v1.0.1
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
-      - uses: azure/setup-helm@v3
       - name: Add camunda helm repo
         run: |
           helm repo add zeebe-benchmark https://zeebe-io.github.io/benchmark-helm
