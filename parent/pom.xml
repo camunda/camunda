@@ -144,7 +144,7 @@
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.3.0</plugin.version.spotbugs>
-    <plugin.version.surefire>3.0.0-M7</plugin.version.surefire>
+    <plugin.version.surefire>3.0.0-M9</plugin.version.surefire>
     <plugin.version.versions>2.14.2</plugin.version.versions>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
