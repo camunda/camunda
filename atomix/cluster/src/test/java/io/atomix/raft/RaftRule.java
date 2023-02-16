@@ -292,11 +292,11 @@ public final class RaftRule extends ExternalResource {
         .orElseThrow();
   }
 
-  public void doSnapshot(final long index) throws Exception {
+  public void doSnapshot(final long index) {
     doSnapshot(index, 1);
   }
 
-  public void doSnapshot(final long index, final int size) throws Exception {
+  public void doSnapshot(final long index, final int size) {
     awaitNewLeader();
 
     // we write on all nodes the same snapshot
@@ -308,19 +308,17 @@ public final class RaftRule extends ExternalResource {
     }
   }
 
-  public void doSnapshotOnMember(final RaftServer raftServer, final long index, final int size)
-      throws Exception {
+  public void doSnapshotOnMember(final RaftServer raftServer, final long index, final int size) {
     doSnapshotOnMember(raftServer, index, size, true);
   }
 
   public void doSnapshotOnMemberWithoutCompaction(
-      final RaftServer raftServer, final long index, final int size) throws Exception {
+      final RaftServer raftServer, final long index, final int size) {
     doSnapshotOnMember(raftServer, index, size, false);
   }
 
   private void doSnapshotOnMember(
-      final RaftServer raftServer, final long index, final int size, final boolean shouldCompact)
-      throws Exception {
+      final RaftServer raftServer, final long index, final int size, final boolean shouldCompact) {
     if (!raftServer.isRunning()) {
       return;
     }
@@ -335,14 +333,16 @@ public final class RaftRule extends ExternalResource {
     }
   }
 
-  private void compact(final MemberId memberId, final PersistedSnapshot persistedSnapshot)
-      throws Exception {
+  private void compact(final MemberId memberId, final PersistedSnapshot persistedSnapshot) {
     final var raftServer = servers.get(memberId.id());
     if (raftServer != null) {
       final var raftContext = raftServer.getContext();
       final var serviceManager = raftContext.getLogCompactor();
       serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
-      raftServer.compact().get();
+      raftContext
+          .getThreadContext()
+          .submit(serviceManager::compactIgnoringReplicationThreshold)
+          .join();
     }
   }
 

@@ -257,6 +257,28 @@ final class JournalTest {
   }
 
   @Test
+  void shouldCompact() {
+    // given
+    final var reader = journal.openReader();
+    final var firstIndex = journal.getFirstIndex();
+
+    // when - fill out until something can be deleted
+    long currentIndex = 0;
+    long position = 1;
+    while (!journal.deleteUntil(currentIndex)) {
+      currentIndex = journal.append(position++, recordDataWriter).index();
+    }
+
+    // then
+    assertThat(reader.seekToFirst())
+        .as(
+            "compacted if current index %d greater than first ever index %d",
+            currentIndex, firstIndex)
+        .isEqualTo(currentIndex)
+        .isNotEqualTo(firstIndex);
+  }
+
+  @Test
   void shouldNotReadTruncatedEntries() {
     // given
     final int totalWrites = 10;
@@ -659,6 +681,7 @@ final class JournalTest {
     final var builder =
         SegmentedJournal.builder()
             .withDirectory(directory.resolve("data").toFile())
+            .withMaxSegmentSize(1024 * 1024) // speeds up certain tests, e.g. shouldCompact
             .withMetaStore(metaStore)
             .withJournalIndexDensity(5);
     option.accept(builder);

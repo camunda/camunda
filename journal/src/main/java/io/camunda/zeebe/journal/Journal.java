@@ -67,8 +67,9 @@ public interface Journal extends AutoCloseable {
    *
    * @param indexExclusive the index until which will be deleted. The record at this index is not
    *     deleted.
+   * @return true if anything was deleted, false otherwise
    */
-  void deleteUntil(long indexExclusive);
+  boolean deleteUntil(long indexExclusive);
 
   /**
    * Delete all records in the journal and reset the next index to nextIndex. The following calls to

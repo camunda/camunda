@@ -21,12 +21,14 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.impl.LogCompactor;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.protocol.PersistedRaftRecord;
@@ -59,15 +61,18 @@ public class LeaderRoleTest {
   private LeaderRole leaderRole;
   private RaftContext context;
   private RaftLog log;
+  private LogCompactor logCompactor;
 
   @Before
   public void setup() {
     context = Mockito.mock(RaftContext.class, RETURNS_DEEP_STUBS);
+    logCompactor = mock(LogCompactor.class);
 
     when(context.getName()).thenReturn("leader");
     when(context.getElectionTimeout()).thenReturn(Duration.ofMillis(100));
     when(context.getHeartbeatInterval()).thenReturn(Duration.ofMillis(100));
     when(context.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
+    when(context.getLogCompactor()).thenReturn(logCompactor);
 
     final SingleThreadContext threadContext = new SingleThreadContext("leader");
     when(context.getThreadContext()).thenReturn(threadContext);
@@ -174,10 +179,48 @@ public class LeaderRoleTest {
   }
 
   @Test
-  public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
-    // given
+  public void shouldCompactOnOutOfDiskSpace() throws InterruptedException {
+    // given - fail once with OOD then accept the next entry
     when(log.append(any(RaftLogEntry.class)))
-        .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"));
+        .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"))
+        .then(
+            i -> {
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
+            });
+    // make sure we report something was deleted, otherwise the leader would step down
+    when(context.getLogCompactor().compactIgnoringReplicationThreshold()).thenReturn(true);
+
+    final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AppendListener listener =
+        new AppendListener() {
+          @Override
+          public void onWrite(final IndexedRaftLogEntry indexed) {
+            latch.countDown();
+          }
+        };
+
+    // when
+    leaderRole.appendEntry(0, 1, data, listener);
+
+    // then
+    assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(logCompactor, times(1)).compactIgnoringReplicationThreshold();
+  }
+
+  @Test
+  public void shouldStopAppendEntryOnOutOfDisk() throws InterruptedException {
+    // given - fail once with OOD then accept the next entry
+    when(log.append(any(RaftLogEntry.class)))
+        .thenThrow(new JournalException.OutOfDiskSpace("Boom file out"))
+        .then(
+            i -> {
+              final RaftLogEntry raftLogEntry = i.getArgument(0);
+              return new TestIndexedRaftLogEntry(1, 1, raftLogEntry.getApplicationEntry());
+            });
+    // make sure we report nothing was deleted, otherwise the leader would retry
+    when(context.getLogCompactor().compactIgnoringReplicationThreshold()).thenReturn(false);
 
     final AtomicReference<Throwable> caughtError = new AtomicReference<>();
     final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, 1);
@@ -196,10 +239,10 @@ public class LeaderRoleTest {
 
     // then
     assertThat(latch.await(10, TimeUnit.SECONDS)).isTrue();
+    assertThat(caughtError.get()).isInstanceOf(JournalException.OutOfDiskSpace.class);
+    verify(logCompactor, times(1)).compactIgnoringReplicationThreshold();
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(log, timeout(1000)).append(any(RaftLogEntry.class));
-
-    assertThat(caughtError.get()).isInstanceOf(JournalException.OutOfDiskSpace.class);
   }
 
   @Test
@@ -296,7 +339,7 @@ public class LeaderRoleTest {
     verify(log, timeout(1000).atLeast(3)).append(any(RaftLogEntry.class));
 
     assertThat(entries).hasSize(2);
-    assertThat(entries.get(0).highestPosition()).isEqualTo(1);
+    assertThat(entries.get(0).highestPosition()).isOne();
     assertThat(entries.get(1).highestPosition()).isEqualTo(2);
   }
 
@@ -343,32 +386,8 @@ public class LeaderRoleTest {
     verify(leaderRole.raft, timeout(2000).atLeast(1)).transition(Role.FOLLOWER);
   }
 
-  private static class TestIndexedRaftLogEntry implements IndexedRaftLogEntry {
-
-    private final long index;
-    private final long term;
-    private final RaftEntry entry;
-
-    public TestIndexedRaftLogEntry(final long index, final long term, final RaftEntry entry) {
-      this.index = index;
-      this.term = term;
-      this.entry = entry;
-    }
-
-    @Override
-    public long index() {
-      return index;
-    }
-
-    @Override
-    public long term() {
-      return term;
-    }
-
-    @Override
-    public RaftEntry entry() {
-      return entry;
-    }
+  private record TestIndexedRaftLogEntry(long index, long term, RaftEntry entry)
+      implements IndexedRaftLogEntry {
 
     @Override
     public boolean isApplicationEntry() {

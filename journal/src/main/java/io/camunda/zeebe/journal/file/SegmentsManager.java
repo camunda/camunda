@@ -162,36 +162,40 @@ final class SegmentsManager implements AutoCloseable {
     return firstSegment != null ? firstSegment.index() : 0;
   }
 
-  void deleteUntil(final long index) {
+  boolean deleteUntil(final long index) {
     final Map.Entry<Long, Segment> segmentEntry = segments.floorEntry(index);
-    if (segmentEntry != null) {
-      final SortedMap<Long, Segment> compactSegments =
-          segments.headMap(segmentEntry.getValue().index());
-      if (compactSegments.isEmpty()) {
-        LOG.debug(
-            "No segments can be deleted with index < {} (first log index: {})",
-            index,
-            getFirstIndex());
-        return;
-      }
-
-      LOG.debug(
-          "{} - Deleting log up from {} up to {} (removing {} segments)",
-          name,
-          getFirstIndex(),
-          compactSegments.get(compactSegments.lastKey()).index(),
-          compactSegments.size());
-      for (final Segment segment : compactSegments.values()) {
-        LOG.trace("{} - Deleting segment: {}", name, segment);
-        segment.delete();
-        journalMetrics.decSegmentCount();
-      }
-
-      // removes them from the segment map
-      compactSegments.clear();
-
-      journalIndex.deleteUntil(index);
+    if (segmentEntry == null) {
+      return false;
     }
+
+    final SortedMap<Long, Segment> compactSegments =
+        segments.headMap(segmentEntry.getValue().index());
+    if (compactSegments.isEmpty()) {
+      LOG.debug(
+          "No segments can be deleted with index < {} (first log index: {})",
+          index,
+          getFirstIndex());
+      return false;
+    }
+
+    LOG.debug(
+        "{} - Deleting log up from {} up to {} (removing {} segments)",
+        name,
+        getFirstIndex(),
+        compactSegments.get(compactSegments.lastKey()).index(),
+        compactSegments.size());
+    for (final Segment segment : compactSegments.values()) {
+      LOG.trace("{} - Deleting segment: {}", name, segment);
+      segment.delete();
+      journalMetrics.decSegmentCount();
+    }
+
+    // removes them from the segment map
+    compactSegments.clear();
+
+    journalIndex.deleteUntil(index);
+
+    return true;
   }
 
   /**
