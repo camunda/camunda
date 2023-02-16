@@ -291,6 +291,40 @@ public final class DbDecisionState implements MutableDecisionState {
     decisionKeyByDecisionIdAndVersion.deleteExisting(decisionIdAndVersion);
   }
 
+  @Override
+  public void deleteDecisionRequirements(final DecisionRequirementsRecord record) {
+    findLatestDecisionRequirementsById(record.getDecisionRequirementsIdBuffer())
+        .map(PersistedDecisionRequirements::getDecisionRequirementsVersion)
+        .ifPresent(
+            latestVersion -> {
+              if (latestVersion == record.getDecisionRequirementsVersion()) {
+                dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
+                findPreviousVersionDecisionRequirementsKey(
+                        record.getDecisionRequirementsIdBuffer(),
+                        record.getDecisionRequirementsVersion())
+                    .ifPresentOrElse(
+                        previousDrgKey -> {
+                          // Update the latest decision version
+                          dbDecisionRequirementsKey.wrapLong(previousDrgKey);
+                          latestDecisionRequirementsKeysById.update(
+                              dbDecisionRequirementsId, fkDecisionRequirements);
+                        },
+                        () -> {
+                          // Clear the latest decision version
+                          latestDecisionRequirementsKeysById.deleteExisting(
+                              dbDecisionRequirementsId);
+                        });
+              }
+            });
+
+    dbDecisionRequirementsKey.wrapLong(record.getDecisionRequirementsKey());
+    dbDecisionRequirementsId.wrapBuffer(record.getDecisionRequirementsIdBuffer());
+    dbDecisionRequirementsVersion.wrapInt(record.getDecisionRequirementsVersion());
+
+    decisionRequirementsByKey.deleteExisting(dbDecisionRequirementsKey);
+    decisionRequirementsKeyByIdAndVersion.deleteExisting(decisionRequirementsIdAndVersion);
+  }
+
   private void updateLatestDecisionVersion(final DecisionRecord record) {
     findLatestDecisionById(record.getDecisionIdBuffer())
         .ifPresentOrElse(

@@ -35,4 +35,12 @@ public interface MutableDecisionState extends DecisionState {
    * @param record the record of the decision
    */
   void deleteDecision(DecisionRecord record);
+
+  /**
+   * Deletes a decision requirements from the state. Updates the latest version of the decision
+   * requirements if the deleted version is the latest version and a previous version is available.
+   *
+   * @param record the record of the decision requirements
+   */
+  void deleteDecisionRequirements(DecisionRequirementsRecord record);
 }
