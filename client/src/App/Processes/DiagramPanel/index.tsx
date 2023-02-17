@@ -7,7 +7,12 @@
 
 import {SpinnerSkeleton} from 'modules/components/SpinnerSkeleton';
 import {Diagram} from 'modules/components/Diagram';
-import {DiagramContainer, DiagramEmptyMessage, Container} from './styled';
+import {
+  DiagramContainer,
+  DiagramEmptyMessage,
+  Container,
+  PanelHeader,
+} from './styled';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
@@ -17,10 +22,12 @@ import {
   deleteSearchParams,
 } from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
-import {PanelHeader} from 'modules/components/PanelHeader';
 import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
 import {useEffect} from 'react';
 import {processDiagramStore} from 'modules/stores/processDiagram';
+import {Restricted} from 'modules/components/Restricted';
+import {ProcessOperations} from '../ProcessOperations';
+import {IS_PROCESS_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
 
 type Props = {
   children: React.ReactNode;
@@ -53,8 +60,7 @@ const DiagramPanel: React.FC = observer(() => {
   const isNoProcessSelected =
     processDiagramStore.state.status !== 'error' && process === undefined;
 
-  const isNoVersionSelected =
-    processDiagramStore.state.status !== 'error' && version === 'all';
+  const isVersionSelected = version !== undefined && version !== 'all';
 
   const selectedProcess = processesStore.state.processes.find(
     ({bpmnProcessId}) => bpmnProcessId === process
@@ -92,7 +98,16 @@ const DiagramPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      <PanelHeader title={processName ?? 'Process'} />
+      <PanelHeader title={processName ?? 'Process'}>
+        {IS_PROCESS_DEFINITION_DELETION_ENABLED && isVersionSelected && (
+          <Restricted scopes={['write']}>
+            <ProcessOperations
+              processName={processName ?? 'Process'}
+              processVersion={version}
+            />
+          </Restricted>
+        )}
+      </PanelHeader>
 
       <DiagramContainer>
         {isDiagramLoading ? (
@@ -114,7 +129,7 @@ const DiagramPanel: React.FC = observer(() => {
             }
           </Message>
         )}
-        {isNoVersionSelected && processName !== undefined ? (
+        {!isVersionSelected && processName !== undefined ? (
           <Message>
             {`There is more than one Version selected for Process "${processName}"
                To see a Diagram, select a single Version`}

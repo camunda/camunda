@@ -14,7 +14,7 @@ import {
 } from 'modules/testing-library';
 import {Route, MemoryRouter, Routes, Link} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {Processes} from './index';
+import {Processes} from '../index';
 import {
   groupedProcessesMock,
   mockProcessStatistics,

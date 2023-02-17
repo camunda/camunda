@@ -7,6 +7,7 @@
 
 import styled, {css} from 'styled-components';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
+import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 
 const DiagramEmptyMessage = styled(EmptyMessage)`
   position: absolute;
@@ -36,4 +37,9 @@ const Container = styled.div`
   }}
 `;
 
-export {DiagramEmptyMessage, DiagramContainer, Container};
+const PanelHeader = styled(BasePanelHeader)`
+  justify-content: space-between;
+  padding-right: 8px;
+`;
+
+export {DiagramEmptyMessage, DiagramContainer, Container, PanelHeader};
