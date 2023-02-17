@@ -56,7 +56,7 @@
     <version.hamcrest>2.2</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpcomponents>4.4.15</version.httpcomponents>
+    <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.jackson>2.14.2</version.jackson>
     <version.java-grpc-prometheus>0.5.0</version.java-grpc-prometheus>
     <version.jna>5.12.1</version.jna>
@@ -72,7 +72,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.12</version.protobuf>
     <version.protobuf-common>2.9.6</version.protobuf-common>
-    <version.micrometer>1.9.4</version.micrometer>
+    <version.micrometer>1.9.8</version.micrometer>
     <version.rocksdbjni>7.5.3</version.rocksdbjni>
     <version.sbe>1.26.0</version.sbe>
     <version.scala>2.13.9</version.scala>
@@ -88,7 +88,7 @@
     <version.feel-scala>1.15.3</version.feel-scala>
     <version.dmn-scala>1.7.4</version.dmn-scala>
     <version.rest-assured>5.2.0</version.rest-assured>
-    <version.spring>5.3.23</version.spring>
+    <version.spring>5.3.25</version.spring>
     <version.spring-boot>2.7.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.3.0</version.kryo>
@@ -133,7 +133,7 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
-    <plugin.version.scala>4.7.1</plugin.version.scala>
+    <plugin.version.scala>4.7.2</plugin.version.scala>
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.7.3.0</plugin.version.spotbugs>
