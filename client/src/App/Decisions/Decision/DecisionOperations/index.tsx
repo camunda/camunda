@@ -6,11 +6,11 @@
  */
 
 import {useState} from 'react';
-import Modal from 'modules/components/Modal';
 import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
-import {DeleteButton, Description, Td, Th} from './styled';
+import {Td, Th} from './styled';
+import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 
 type Props = {
   decisionName: string;
@@ -33,15 +33,12 @@ const DecisionOperations: React.FC<Props> = ({
           onClick={() => setIsDeleteModalVisible(true)}
         />
       </OperationItems>
-      <Modal
-        onModalClose={() => setIsDeleteModalVisible(false)}
+
+      <DeleteDefinitionModal
+        title="Delete DRD"
+        description="You are about to delete the following DRD:"
         isVisible={isDeleteModalVisible}
-        size="CUSTOM"
-        width="755px"
-      >
-        <Modal.Header>Delete DRD</Modal.Header>
-        <Modal.Body>
-          <Description>You are about to delete the following DRD:</Description>
+        bodyContent={
           <table>
             <thead>
               <tr>
@@ -54,22 +51,10 @@ const DecisionOperations: React.FC<Props> = ({
               </tr>
             </tbody>
           </table>
-        </Modal.Body>
-        <Modal.Footer>
-          <Modal.SecondaryButton
-            title="Cancel"
-            onClick={() => setIsDeleteModalVisible(false)}
-          >
-            Cancel
-          </Modal.SecondaryButton>
-          <DeleteButton
-            appearance="danger"
-            label="Delete"
-            onCmPress={() => {}}
-            data-testid="delete-button"
-          />
-        </Modal.Footer>
-      </Modal>
+        }
+        onClose={() => setIsDeleteModalVisible(false)}
+        onDelete={() => {}}
+      />
     </>
   );
 };

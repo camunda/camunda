@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import {CmButton} from '@camunda-cloud/common-ui-react';
 import {bodyShort01, productiveHeading02} from '@carbon/elements';
 import styled, {css} from 'styled-components';
 
@@ -34,13 +33,4 @@ const Td = styled.td`
   }}
 `;
 
-const DeleteButton = styled(CmButton)`
-  margin-left: 15px;
-  width: 117px;
-`;
-
-const Description = styled.p`
-  margin: 10px 0 24px 0;
-`;
-
-export {Th, Td, DeleteButton, Description};
+export {Th, Td};
