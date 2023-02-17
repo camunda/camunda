@@ -24,7 +24,7 @@ RUN chmod +x -R ${TMP_DIR}/bin/ && \
 
 # Building application image
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
+FROM eclipse-temurin:17.0.6_10-jre-focal@sha256:${BASE_SHA} as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_SHA
