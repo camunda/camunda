@@ -7,7 +7,7 @@
     "@camunda-cloud/common-ui": "0.0.18-rc12",
     "@camunda-cloud/common-ui-react": "0.0.18-rc12",
     "@camunda/camunda-composite-components": "0.0.28",
-    "@carbon/elements": "11.17.0",
+    "@carbon/elements": "11.19.0",
     "@carbon/react": "1.22.0",
     "@devbookhq/splitter": "1.4.0",
     "@floating-ui/react-dom": "1.2.2",
