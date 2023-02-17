@@ -97,10 +97,50 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: DIST=build
           target: app
+  build-benchmark-images:
+    name: Build starter and worker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    outputs:
+      image-tag: ${{ steps.image-tag.outputs.image-tag }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v1
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v2
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - run: ./mvnw -B -D skipTests -D skipChecks -pl benchmarks/project -am package
+      - name: Build Starter Image
+        run: ./mvnw -pl benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
+      - name: Build Worker Image
+        run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
   deploy-benchmark-measurement:
     name: Measure network latency
     needs:
       - build-zeebe-image
+      - build-benchmark-images
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
     secrets: inherit
     with:
@@ -108,6 +148,7 @@ jobs:
       chaos: network-latency-5
       publish: ${{ inputs.publish }}
       helm-arguments: >
+        --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
         --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
         --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
         --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
@@ -117,6 +158,7 @@ jobs:
     name: Deploy benchmark cluster
     needs:
       - build-zeebe-image
+      - build-benchmark-images
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -143,6 +185,7 @@ jobs:
           helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark
           --namespace ${{ inputs.name }}
           --create-namespace
+          --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
           --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
