@@ -108,10 +108,9 @@ public final class CandidateRole extends ActiveRole {
 
     final AtomicBoolean complete = new AtomicBoolean();
     final Set<DefaultRaftMember> votingMembers =
-        new HashSet<>(
-            raft.getCluster().getActiveMemberStates().stream()
-                .map(RaftMemberContext::getMember)
-                .collect(Collectors.toList()));
+        raft.getCluster().getActiveMemberStates().stream()
+            .map(RaftMemberContext::getMember)
+            .collect(Collectors.toSet());
 
     // Send vote requests to all nodes. The vote request that is sent
     // to this node will be automatically successful.
@@ -120,7 +119,7 @@ public final class CandidateRole extends ActiveRole {
     final Quorum quorum =
         new Quorum(
             raft.getCluster().getQuorum(),
-            (elected) -> {
+            elected -> {
               if (!isRunning()) {
                 return;
               }
