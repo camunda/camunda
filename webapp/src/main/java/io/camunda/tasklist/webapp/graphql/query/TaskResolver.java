@@ -8,7 +8,6 @@ package io.camunda.tasklist.webapp.graphql.query;
 
 import static io.camunda.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.VARIABLE_DATA_LOADER;
 
-import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.SelectedField;
@@ -32,9 +31,7 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
   public CompletableFuture<List<VariableDTO>> getVariables(
       TaskDTO task, DataFetchingEnvironment dfe) {
     final DataLoader<GetVariablesRequest, List<VariableDTO>> dataloader =
-        ((GraphQLContext) dfe.getContext())
-            .getDataLoaderRegistry()
-            .getDataLoader(VARIABLE_DATA_LOADER);
+        dfe.getDataLoader(VARIABLE_DATA_LOADER);
     return dataloader.load(GetVariablesRequest.createFrom(task, getFieldNames(dfe)));
   }
 

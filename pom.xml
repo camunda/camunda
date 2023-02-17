@@ -41,9 +41,11 @@
     <version.byte.buddy>1.12.22</version.byte.buddy>
     <version.assertj-core>3.24.2</version.assertj-core>
     <version.jackson>2.14.1</version.jackson>
-    <version.graphql>11.1.0</version.graphql>
-    <version.graphql.tools>11.0.1</version.graphql.tools>
+    <version.graphql>13.0.1</version.graphql>
+    <version.graphql.tools>12.1.0</version.graphql.tools>
+    <version.graphql-java>18.3</version.graphql-java>
     <version.snakeyaml>1.32</version.snakeyaml>
+    <version.commons-text>1.10.0</version.commons-text>
     <version.failsafe>2.4.4</version.failsafe>
     <version.netty>4.1.87.Final</version.netty>
     <version.guava>31.1-jre</version.guava>
@@ -233,14 +235,20 @@
 
       <dependency>
         <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>playground-spring-boot-starter</artifactId>
-        <version>${version.graphql}</version>
+        <artifactId>graphql-java-tools</artifactId>
+        <version>${version.graphql.tools}</version>
       </dependency>
 
       <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-tools</artifactId>
-        <version>${version.graphql.tools}</version>
+        <groupId>com.graphql-java</groupId>
+        <artifactId>graphql-java</artifactId>
+        <version>${version.graphql-java}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.graphql-java</groupId>
+        <artifactId>graphql-java-extended-scalars</artifactId>
+        <version>${version.graphql-java}</version>
       </dependency>
 
       <dependency>
@@ -253,6 +261,12 @@
         <groupId>org.yaml</groupId>
         <artifactId>snakeyaml</artifactId>
         <version>${version.snakeyaml}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-text</artifactId>
+        <version>${version.commons-text}</version>
       </dependency>
 
     </dependencies>

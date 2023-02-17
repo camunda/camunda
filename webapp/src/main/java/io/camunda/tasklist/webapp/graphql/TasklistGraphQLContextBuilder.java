@@ -7,9 +7,7 @@
 package io.camunda.tasklist.webapp.graphql;
 
 import graphql.kickstart.execution.context.DefaultGraphQLContext;
-import graphql.kickstart.execution.context.GraphQLContext;
-import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
-import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
+import graphql.kickstart.execution.context.GraphQLKickstartContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
@@ -17,12 +15,13 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.VariableService;
 import io.camunda.tasklist.webapp.service.VariableService.GetVariablesRequest;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.websocket.Session;
 import javax.websocket.server.HandshakeRequest;
-import org.dataloader.DataLoader;
+import org.dataloader.DataLoaderFactory;
 import org.dataloader.DataLoaderRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -38,37 +37,38 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
   @Autowired private VariableService variableService;
 
   @Override
-  public GraphQLContext build(HttpServletRequest req, HttpServletResponse response) {
-    return DefaultGraphQLServletContext.createServletContext(buildDataLoaderRegistry(), null)
-        .with(req)
-        .with(response)
-        .build();
+  public GraphQLKickstartContext build(HttpServletRequest req, HttpServletResponse response) {
+    return GraphQLKickstartContext.of(
+        buildDataLoaderRegistry(),
+        Map.of(
+            HttpServletRequest.class, req,
+            HttpServletResponse.class, response));
   }
 
   @Override
-  public GraphQLContext build(Session session, HandshakeRequest request) {
-    return DefaultGraphQLWebSocketContext.createWebSocketContext(buildDataLoaderRegistry(), null)
-        .with(session)
-        .with(request)
-        .build();
+  public GraphQLKickstartContext build(Session session, HandshakeRequest request) {
+    return GraphQLKickstartContext.of(
+        buildDataLoaderRegistry(),
+        Map.of(
+            Session.class, session,
+            HandshakeRequest.class, request));
   }
 
   @Override
-  public GraphQLContext build() {
-    return new DefaultGraphQLContext(buildDataLoaderRegistry(), null);
+  public GraphQLKickstartContext build() {
+    return new DefaultGraphQLContext(buildDataLoaderRegistry());
   }
 
   private DataLoaderRegistry buildDataLoaderRegistry() {
-    final DataLoaderRegistry dataLoaderRegistry = new DataLoaderRegistry();
-    dataLoaderRegistry.register(
-        USER_DATA_LOADER,
-        new DataLoader<String, UserDTO>(
-            usernames ->
-                CompletableFuture.supplyAsync(() -> userReader.getUsersByUsernames(usernames))));
-    dataLoaderRegistry.register(
-        VARIABLE_DATA_LOADER,
-        new DataLoader<GetVariablesRequest, List<VariableDTO>>(
-            req -> CompletableFuture.supplyAsync(() -> variableService.getVariables(req))));
-    return dataLoaderRegistry;
+    return new DataLoaderRegistry()
+        .register(
+            USER_DATA_LOADER,
+            DataLoaderFactory.<String, UserDTO>newDataLoader(
+                usernames ->
+                    CompletableFuture.supplyAsync(() -> userReader.getUsersByUsernames(usernames))))
+        .register(
+            VARIABLE_DATA_LOADER,
+            DataLoaderFactory.<GetVariablesRequest, List<VariableDTO>>newDataLoader(
+                req -> CompletableFuture.supplyAsync(() -> variableService.getVariables(req))));
   }
 }
