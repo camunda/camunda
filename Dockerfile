@@ -1,5 +1,5 @@
 # Override this based on the architecture; this is currently pointing to amd64
-ARG BASE_SHA="00a5775f5eb7c24a19cb76ded742cbfcc50c61f062105af9730dadde217e4390"
+ARG BASE_SHA="b10df4660e02cf944260b13182e4815fc3e577ba510de7f4abccc797e93d9106"
 
 # Building builder image
 FROM ubuntu:jammy as builder
@@ -24,7 +24,7 @@ RUN chmod +x -R ${TMP_DIR}/bin/ && \
 
 # Building application image
 # hadolint ignore=DL3006
-FROM eclipse-temurin:17.0.5_8-jre-focal@sha256:${BASE_SHA} as app
+FROM eclipse-temurin:17-jre-focal@sha256:${BASE_SHA} as app
 
 # leave unset to use the default value at the top of the file
 ARG BASE_SHA
@@ -41,6 +41,9 @@ LABEL org.opencontainers.image.url="https://zeebe.io"
 LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/zeebe-deployment/"
 LABEL org.opencontainers.image.source="https://github.com/camunda/zeebe"
 LABEL org.opencontainers.image.version="${VERSION}"
+# According to https://github.com/opencontainers/image-spec/blob/main/annotations.md#pre-defined-annotation-keys
+# and given we set the base.name and base.digest, we reference the manifest of the base image here
+LABEL org.opencontainers.image.ref.name="eclipse-temurin:17-jre-focal"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
 LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Zeebe-Community-1.1)"
