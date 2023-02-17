@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
@@ -143,11 +144,16 @@ public final class CandidateRole extends ActiveRole {
                   if (!complete.get()) {
                     // When the election times out, clear the previous majority vote
                     // check and restart the election.
-                    log.debug("Election timed out");
+                    log.debug("Election timed out. Transitioning to follower");
                     quorum.cancel();
 
-                    sendVoteRequests();
-                    log.debug("Restarted election");
+                    // Transition to follower and re-send poll requests to become candidate again.
+                    // This delays the election because now this member has to wait for another
+                    // electionTimeout to send the poll requests. But assuming this is not the
+                    // common case, this delay is acceptable. The other option is to immediately
+                    // send new vote request here, but this resulted in an election loop in a very
+                    // specific scenario https://github.com/camunda/zeebe/issues/11665
+                    raft.transition(Role.FOLLOWER);
                   }
                 });
 
