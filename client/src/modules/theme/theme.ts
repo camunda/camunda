@@ -448,6 +448,13 @@ const theme = {
         borderColor: LIGHT_COLORS.ui06,
         color: LIGHT_COLORS.ui04,
       },
+      resourceDeletionModal: {
+        detailsTable: {
+          color: SEMANTIC_COLORS.white,
+          backgroundColor: DARK_COLORS.ui03,
+          border: DARK_COLORS.ui04,
+        },
+      },
       modules: {
         badge: {
           filters: {
@@ -1394,6 +1401,13 @@ const theme = {
         titleColor: DARK_COLORS.ui04,
         borderColor: LIGHT_COLORS.ui05,
         color: LIGHT_COLORS.ui06,
+      },
+      resourceDeletionModal: {
+        detailsTable: {
+          color: DARK_COLORS.ui04,
+          backgroundColor: LIGHT_COLORS.ui02,
+          border: LIGHT_COLORS.ui05,
+        },
       },
       modules: {
         badge: {

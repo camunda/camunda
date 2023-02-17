@@ -7,6 +7,7 @@
 
 import {logger} from 'modules/logger';
 import {Viewer} from './Viewer';
+import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 
 class DecisionViewer {
   #xml: string | null = null;
@@ -27,6 +28,7 @@ class DecisionViewer {
       this.#viewer = new Viewer('decision', {container});
 
       await this.#viewer.importXML(xml);
+      decisionDefinitionStore.setDefinition(this.#viewer?.getDefinitions());
     }
 
     if (this.#decisionViewId !== decisionViewId || this.#xml !== xml) {

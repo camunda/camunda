@@ -22,14 +22,17 @@ class Drd {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
+    makeAutoObservable(this);
+    this.init();
+  }
+
+  init = () => {
     const {drdPanelState = 'minimized', drdPanelWidth} =
       getStateLocally('panelStates');
 
     this.state.panelState = drdPanelState;
     this.state.panelWidth = drdPanelWidth ?? null;
-
-    makeAutoObservable(this);
-  }
+  };
 
   setPanelState = (state: State['panelState']) => {
     storeStateLocally({drdPanelState: state}, 'panelStates');

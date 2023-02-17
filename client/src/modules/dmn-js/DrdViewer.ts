@@ -8,13 +8,10 @@
 import {Event} from 'dmn-js-shared/lib/base/Manager';
 import {isEqual} from 'lodash';
 import {DECISION_STATE} from 'modules/bpmn-js/badgePositions';
+import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
-
-type Definitions = {
-  name: string;
-};
 
 type DecisionStates = {
   decisionId: string;
@@ -26,15 +23,10 @@ class DrdViewer {
   #selectableDecisions: string[] = [];
   #selectedDecision: string | null = null;
   #viewer: Viewer | null = null;
-  #onDefinitionsChange?: (definitions: Definitions) => void;
   #onDecisionSelection?: (decisionId: string) => void;
   #decisionStates: DecisionStates = [];
 
-  constructor(
-    onDefinitionsChange?: (definitions: Definitions) => void,
-    onDecisionSelection?: (decisionId: string) => void
-  ) {
-    this.#onDefinitionsChange = onDefinitionsChange;
+  constructor(onDecisionSelection?: (decisionId: string) => void) {
     this.#onDecisionSelection = onDecisionSelection;
   }
 
@@ -75,8 +67,7 @@ class DrdViewer {
 
       // Initialize after importing
       activeViewer.on('element.click', this.#handleDecisionSelection);
-
-      this.#onDefinitionsChange?.(this.#viewer.getDefinitions());
+      decisionDefinitionStore.setDefinition(this.#viewer.getDefinitions());
 
       const canvas = activeViewer.get('canvas');
       canvas.resized();

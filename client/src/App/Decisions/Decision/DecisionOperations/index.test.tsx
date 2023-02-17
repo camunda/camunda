@@ -5,15 +5,25 @@
  * except in compliance with the proprietary license.
  */
 
+import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {
   render,
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {useEffect} from 'react';
 import {DecisionOperations} from '.';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    decisionDefinitionStore.setDefinition({
+      name: 'My Definition',
+      id: 'myDefinition',
+    });
+
+    return decisionDefinitionStore.reset;
+  }, []);
   return <ThemeProvider>{children}</ThemeProvider>;
 };
 
@@ -42,5 +52,24 @@ describe('<DecisionOperations />', () => {
     );
 
     await waitForElementToBeRemoved(screen.getByTestId('modal'));
+  });
+
+  it('should open modal and show decision definition name', async () => {
+    const {user} = render(
+      <DecisionOperations decisionName="myDecision" decisionVersion="2" />,
+      {wrapper: Wrapper}
+    );
+
+    user.click(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    );
+
+    expect(await screen.findByTestId('modal')).toBeInTheDocument();
+    expect(
+      screen.getByText(/You are about to delete the following DRD:/)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/My Definition/)).toBeInTheDocument();
   });
 });

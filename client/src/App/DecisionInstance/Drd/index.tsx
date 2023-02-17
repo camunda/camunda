@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef} from 'react';
 import {autorun} from 'mobx';
 import {observer} from 'mobx-react';
 import {useNavigate} from 'react-router-dom';
@@ -20,6 +20,7 @@ import {ReactComponent as Close} from 'modules/components/Icon/close.svg';
 import {DecisionState} from './DecisionState';
 import {Container, PanelHeader, ButtonContainer, Button} from './styled';
 import {tracking} from 'modules/tracking';
+import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 
 const Drd: React.FC = observer(() => {
   const {
@@ -28,7 +29,6 @@ const Drd: React.FC = observer(() => {
   } = drdStore;
   const drdViewer = useRef<DrdViewer | null>(null);
   const drdViewerRef = useRef<HTMLDivElement | null>(null);
-  const [definitionsName, setDefinitionsName] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleDecisionSelection = (decisionId: string) => {
@@ -47,9 +47,7 @@ const Drd: React.FC = observer(() => {
   };
 
   if (drdViewer.current === null) {
-    drdViewer.current = new DrdViewer(({name}) => {
-      setDefinitionsName(name);
-    }, handleDecisionSelection);
+    drdViewer.current = new DrdViewer(handleDecisionSelection);
   }
 
   useEffect(() => {
@@ -76,7 +74,7 @@ const Drd: React.FC = observer(() => {
   return (
     <Container data-testid="drd">
       <PanelHeader>
-        <div>{definitionsName}</div>
+        <div>{decisionDefinitionStore.name}</div>
         <ButtonContainer>
           {panelState === 'minimized' && (
             <Button

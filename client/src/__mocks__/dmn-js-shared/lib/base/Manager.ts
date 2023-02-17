@@ -48,7 +48,7 @@ class Manager {
     off: jest.fn(),
   });
   getDefinitions = jest.fn(() => {
-    return {name: 'Definitions Name Mock'};
+    return {name: 'Definitions Name Mock', id: 'definitionId'};
   });
 }
 

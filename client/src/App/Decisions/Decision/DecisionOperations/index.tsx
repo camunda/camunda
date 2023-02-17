@@ -6,21 +6,16 @@
  */
 
 import {useState} from 'react';
-import styled from 'styled-components';
-import {CmButton} from '@camunda-cloud/common-ui-react';
-import Modal, {SIZES} from 'modules/components/Modal';
+import Modal from 'modules/components/Modal';
 import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
+import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
+import {DeleteButton, Description, Td, Th} from './styled';
 
 type Props = {
   decisionName: string;
   decisionVersion: string;
 };
-
-const DeleteButton = styled(CmButton)`
-  margin-left: 15px;
-  width: 117px;
-`;
 
 const DecisionOperations: React.FC<Props> = ({
   decisionName,
@@ -41,10 +36,25 @@ const DecisionOperations: React.FC<Props> = ({
       <Modal
         onModalClose={() => setIsDeleteModalVisible(false)}
         isVisible={isDeleteModalVisible}
-        size={SIZES.SMALL}
+        size="CUSTOM"
+        width="755px"
       >
         <Modal.Header>Delete DRD</Modal.Header>
-        <Modal.Body>You are about to delete the following DRD:</Modal.Body>
+        <Modal.Body>
+          <Description>You are about to delete the following DRD:</Description>
+          <table>
+            <thead>
+              <tr>
+                <Th>DRD</Th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <Td>{decisionDefinitionStore.name}</Td>
+              </tr>
+            </tbody>
+          </table>
+        </Modal.Body>
         <Modal.Footer>
           <Modal.SecondaryButton
             title="Cancel"

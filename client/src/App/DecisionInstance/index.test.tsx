@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {useEffect} from 'react';
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
@@ -21,6 +22,15 @@ import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fet
 const DECISION_INSTANCE_ID = '4294980768';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  useEffect(() => {
+    drdStore.init();
+
+    return () => {
+      decisionInstanceDetailsStore.reset();
+      drdStore.reset();
+    };
+  }, []);
+
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/decisions/${DECISION_INSTANCE_ID}`]}>
@@ -33,25 +43,10 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 };
 
 describe('<DecisionInstance />', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-  });
-
-  afterEach(() => {
-    decisionInstanceDetailsStore.reset();
-    drdStore.reset();
   });
 
   it('should set page title', async () => {

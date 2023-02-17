@@ -38,7 +38,12 @@ declare module 'dmn-js-shared/lib/base/Manager' {
     destroy(): void;
     getViews(): View[];
     open(view: View): void;
-    getDefinitions(): () => {name: string};
+    getDefinitions():
+      | {
+          id: string;
+          name: string;
+        }
+      | undefined;
   }
 
   export = Manager;
