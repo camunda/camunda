@@ -9,8 +9,12 @@ package io.camunda.zeebe.gateway.impl.probes.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.client.CredentialsProvider;
@@ -70,7 +74,7 @@ public class ResponsiveHealthIndicatorTest {
         new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     final var spyHealthIndicator = spy(healthIndicator);
-    when(spyHealthIndicator.supplyZeebeClient()).thenReturn(null);
+    doNothing().when(spyHealthIndicator).initZeebeClient();
 
     // when
     final var actualHealth = spyHealthIndicator.health();
@@ -96,7 +100,7 @@ public class ResponsiveHealthIndicatorTest {
     final var healthIndicator =
         new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
     final var spyHealthIndicator = spy(healthIndicator);
-    when(spyHealthIndicator.supplyZeebeClient()).thenReturn(mockZeebeClient);
+    when(spyHealthIndicator.getZeebeClient()).thenReturn(mockZeebeClient);
 
     // when
     final var actualHealth = spyHealthIndicator.health();
@@ -121,7 +125,13 @@ public class ResponsiveHealthIndicatorTest {
     final var healthIndicator =
         new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
     final var spyHealthIndicator = spy(healthIndicator);
-    when(spyHealthIndicator.supplyZeebeClient()).thenReturn(mockZeebeClient);
+    doAnswer(
+            invocation -> {
+              spyHealthIndicator.setZeebeClient(mockZeebeClient);
+              return null;
+            })
+        .when(spyHealthIndicator)
+        .initZeebeClient();
 
     // when
     final var actualHealth = spyHealthIndicator.health();
@@ -129,6 +139,35 @@ public class ResponsiveHealthIndicatorTest {
     // then
     assertThat(actualHealth).isNotNull();
     assertThat(actualHealth.getStatus()).isSameAs(Status.UP);
+  }
+
+  @Test
+  public void shouldNotCloseZeebeClientInHealthChecks() {
+    // given
+    final var mockZeebeClient = mock(ZeebeClient.class);
+    final var mockTopologyRequestStep1 = mock(TopologyRequestStep1.class);
+    final var mockZeebeFuture = mock(ZeebeFuture.class);
+
+    // build mock chain
+    when(mockZeebeClient.newTopologyRequest()).thenReturn(mockTopologyRequestStep1);
+    when(mockTopologyRequestStep1.send()).thenReturn(mockZeebeFuture);
+
+    final var healthIndicator =
+        new ResponsiveHealthIndicator(TEST_CFG, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
+    final var spyHealthIndicator = spy(healthIndicator);
+    doAnswer(
+            invocation -> {
+              spyHealthIndicator.setZeebeClient(mockZeebeClient);
+              return null;
+            })
+        .when(spyHealthIndicator)
+        .initZeebeClient();
+
+    // when
+    spyHealthIndicator.health();
+
+    // then
+    verify(mockZeebeClient, never()).close();
   }
 
   @Test
@@ -143,7 +182,7 @@ public class ResponsiveHealthIndicatorTest {
         new ResponsiveHealthIndicator(gatewayCfg, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
 
     // when
-    final var actualZeebeClient = healthIndicator.supplyZeebeClient();
+    final var actualZeebeClient = healthIndicator.getZeebeClient();
 
     // then
     assertThat(actualZeebeClient).isNull();
@@ -160,9 +199,10 @@ public class ResponsiveHealthIndicatorTest {
 
     final var healthIndicator =
         new ResponsiveHealthIndicator(gatewayCfg, ZEEBE_CLIENT_PROPERTIES_WITH_TEST_DURATION);
+    healthIndicator.initZeebeClient();
 
     // when
-    final var actualZeebeClient = healthIndicator.supplyZeebeClient();
+    final var actualZeebeClient = healthIndicator.getZeebeClient();
 
     // then
     assertThat(actualZeebeClient).isNotNull();

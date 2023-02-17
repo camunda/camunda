@@ -48,17 +48,16 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
   @Override
   public Health health() {
     Builder resultBuilder;
-    try (final var zeebeClient = supplyZeebeClient()) {
 
-      if (zeebeClient == null) {
-        resultBuilder = Health.unknown();
-      } else {
-        try {
-          zeebeClient.newTopologyRequest().send().get();
-          resultBuilder = Health.up();
-        } catch (final Throwable t) {
-          resultBuilder = Health.down().withException(t);
-        }
+    initZeebeClient();
+    if (zeebeClient == null) {
+      resultBuilder = Health.unknown();
+    } else {
+      try {
+        zeebeClient.newTopologyRequest().send().get();
+        resultBuilder = Health.up();
+      } catch (final Throwable t) {
+        resultBuilder = Health.down().withException(t);
       }
     }
 
@@ -72,12 +71,23 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
         .build();
   }
 
-  ZeebeClient supplyZeebeClient() {
+  void initZeebeClient() {
     if (zeebeClient == null && gatewayCfg.isInitialized()) {
       zeebeClient = createZeebeClient(gatewayCfg, healthZeebeClientProperties);
     }
+  }
 
+  public ZeebeClient getZeebeClient() {
     return zeebeClient;
+  }
+
+  /**
+   * Only for test purposes
+   *
+   * @param zeebeClient new ZeebeClient that should be set
+   */
+  void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
   }
 
   static ZeebeClient createZeebeClient(
