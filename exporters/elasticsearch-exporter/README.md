@@ -120,6 +120,7 @@ More specifically, each option configures the following:
 * `rejection` (`boolean`): if true, rejection records will be exported; if false, ignored.
 
 
+* `commandDistribution` (`boolean`): if true, records related to command distributions will be exported; if false, ignored.
 * `decisionRequirements` (`boolean`): if true, records related to decision requirements will be
   exported; if false, ignored.
 * `decision` (`boolean`): if true, records related to decisions will be exported; if false, ignored.
@@ -195,6 +196,7 @@ exporters:
         event: true
         rejection: false
 
+        commandDistribution: true
         decisionRequirements: true
         decision: true
         decisionEvaluation: true

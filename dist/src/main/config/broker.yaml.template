@@ -587,6 +587,7 @@
         #     event: true
         #     rejection: false
         #
+        #     commandDistribution: true
         #     decisionRequirements: true
         #     decision: true
         #     decisionEvaluation: true

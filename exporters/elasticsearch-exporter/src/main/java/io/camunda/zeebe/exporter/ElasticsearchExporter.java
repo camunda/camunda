@@ -272,6 +272,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.resourceDeletion) {
         createValueIndexTemplate(ValueType.RESOURCE_DELETION);
       }
+      if (index.commandDistribution) {
+        createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION);
+      }
     }
 
     indexTemplatesCreated = true;
