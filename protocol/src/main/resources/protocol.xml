@@ -47,6 +47,7 @@
       <validValue name="SIGNAL_SUBSCRIPTION">30</validValue>
       <validValue name="SIGNAL">31</validValue>
       <validValue name="RESOURCE_DELETION">32</validValue>
+      <validValue name="COMMAND_DISTRIBUTION">33</validValue>
 
       <!-- Management records / record not related to process automation -->
       <validValue name="CHECKPOINT">254</validValue>
