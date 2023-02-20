@@ -74,6 +74,10 @@ const InstancesCount = styled.div`
   }}
 `;
 
+const InstancesDeletedCount = styled.div`
+  ${styles.label02};
+`;
+
 const OperationIcon = styled.div`
   cursor: default;
   width: 16px;
@@ -128,4 +132,5 @@ export {
   Edit,
   Delete,
   Modify,
+  InstancesDeletedCount,
 };

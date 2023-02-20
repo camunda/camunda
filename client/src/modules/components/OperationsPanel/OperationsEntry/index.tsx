@@ -7,21 +7,39 @@
 
 import {LinkButton} from 'modules/components/LinkButton';
 import {formatDate} from 'modules/utils/date';
-import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {ProgressBar} from './ProgressBar';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useLoadingProgress} from './useLoadingProgress';
+import {
+  Cancel,
+  Delete,
+  Edit,
+  EndDate,
+  Entry,
+  EntryDetails,
+  EntryStatus,
+  Id,
+  InstancesDeletedCount,
+  Modify,
+  OperationIcon,
+  Retry,
+  Type,
+} from './styled';
 
-const TYPE_LABELS: Readonly<Record<OperationEntityType, string>> = {
+type OperationLabelType = 'Edit' | 'Retry' | 'Cancel' | 'Modify' | 'Delete';
+
+const TYPE_LABELS: Readonly<Record<OperationEntityType, OperationLabelType>> = {
   ADD_VARIABLE: 'Edit',
   UPDATE_VARIABLE: 'Edit',
   RESOLVE_INCIDENT: 'Retry',
   CANCEL_PROCESS_INSTANCE: 'Cancel',
   DELETE_PROCESS_INSTANCE: 'Delete',
   MODIFY_PROCESS_INSTANCE: 'Modify',
+  DELETE_PROCESS_DEFINITION: 'Delete',
+  DELETE_DECISION_DEFINITION: 'Delete',
 };
 
 type Props = {
@@ -32,6 +50,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
   const {
     id,
     type,
+    name,
     endDate,
     instancesCount,
     operationsTotalCount,
@@ -59,45 +78,55 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     );
   }
 
+  const label = TYPE_LABELS[type];
+
   return (
-    <Styled.Entry isRunning={!isComplete} data-testid="operations-entry">
-      <Styled.EntryStatus>
+    <Entry isRunning={!isComplete} data-testid="operations-entry">
+      <EntryStatus>
         <div>
-          <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
-          <Styled.Id data-testid="operation-id">{id}</Styled.Id>
+          <Type>
+            {label}
+            {[
+              'DELETE_PROCESS_DEFINITION',
+              'DELETE_DECISION_DEFINITION',
+            ].includes(type)
+              ? ` ${name}`
+              : ''}
+          </Type>
+          <Id data-testid="operation-id">{id}</Id>
         </div>
-        <Styled.OperationIcon>
-          {'RESOLVE_INCIDENT' === type && (
-            <Styled.Retry data-testid="operation-retry-icon" />
-          )}
-          {('UPDATE_VARIABLE' === type || 'ADD_VARIABLE' === type) && (
-            <Styled.Edit data-testid="operation-edit-icon" />
-          )}
-          {'CANCEL_PROCESS_INSTANCE' === type && (
-            <Styled.Cancel data-testid="operation-cancel-icon" />
-          )}
-          {'DELETE_PROCESS_INSTANCE' === type && (
-            <Styled.Delete data-testid="operation-delete-icon" />
-          )}
-          {'MODIFY_PROCESS_INSTANCE' === type && (
-            <Styled.Modify data-testid="operation-modify-icon" />
-          )}
-        </Styled.OperationIcon>
-      </Styled.EntryStatus>
+        <OperationIcon>
+          {label === 'Retry' && <Retry data-testid="operation-retry-icon" />}
+          {label === 'Edit' && <Edit data-testid="operation-edit-icon" />}
+          {label === 'Cancel' && <Cancel data-testid="operation-cancel-icon" />}
+          {label === 'Delete' && <Delete data-testid="operation-delete-icon" />}
+          {label === 'Modify' && <Modify data-testid="operation-modify-icon" />}
+        </OperationIcon>
+      </EntryStatus>
       {!isComplete && (
         <ProgressBar progressPercentage={fakeProgressPercentage} />
       )}
-      <Styled.EntryDetails>
-        {'DELETE_PROCESS_INSTANCE' !== type && (
+      <EntryDetails>
+        {label !== 'Delete' && (
           <LinkButton onClick={() => handleInstancesClick(id)}>
             {`${pluralSuffix(instancesCount, 'Instance')}`}
           </LinkButton>
         )}
-        {endDate !== null && isComplete && (
-          <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>
+
+        {['DELETE_PROCESS_DEFINITION', 'DELETE_DECISION_DEFINITION'].includes(
+          type
+        ) && (
+          <InstancesDeletedCount>{`${pluralSuffix(
+            operationsFinishedCount,
+            'instance'
+          )} deleted`}</InstancesDeletedCount>
         )}
-      </Styled.EntryDetails>
-    </Styled.Entry>
+
+        {endDate !== null && isComplete && (
+          <EndDate>{formatDate(endDate)}</EndDate>
+        )}
+      </EntryDetails>
+    </Entry>
   );
 };
 

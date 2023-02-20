@@ -97,9 +97,15 @@ describe('OperationsEntry', () => {
   });
 
   it('should render delete operation', () => {
-    render(<OperationsEntry {...mockProps} operation={OPERATIONS.DELETE} />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_PROCESS_INSTANCE}
+      />,
+      {
+        wrapper: createWrapper(),
+      }
+    );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
@@ -122,6 +128,52 @@ describe('OperationsEntry', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Modify')).toBeInTheDocument();
     expect(screen.getByTestId('operation-modify-icon')).toBeInTheDocument();
+  });
+
+  it('should render delete process definition operation', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_PROCESS_DEFINITION}
+      />,
+      {
+        wrapper: createWrapper(),
+      }
+    );
+
+    expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
+    expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
+    expect(
+      screen.getByText('5de66f22-a438-40f8-a89c-904g2dgfjm28')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Delete ProcessDefinitionA - version 1')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
+    expect(screen.getByText('1 instance deleted')).toBeInTheDocument();
+  });
+
+  it('should render delete decision definition operation', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_DECISION_DEFINITION}
+      />,
+      {
+        wrapper: createWrapper(),
+      }
+    );
+
+    expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
+    expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('5de66f22-a438-40f8-a89c-fn298fn23988')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Delete DecisionDefinitionA - version 1')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
+    expect(screen.getByText('10 instances deleted')).toBeInTheDocument();
   });
 
   it('should render instances count when there is one instance', () => {
@@ -152,7 +204,7 @@ describe('OperationsEntry', () => {
       <OperationsEntry
         {...mockProps}
         operation={{
-          ...OPERATIONS.DELETE,
+          ...OPERATIONS.DELETE_PROCESS_INSTANCE,
           instancesCount: 3,
         }}
       />,
