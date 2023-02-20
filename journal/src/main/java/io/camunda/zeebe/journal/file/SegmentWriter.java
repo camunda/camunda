@@ -52,7 +52,6 @@ final class SegmentWriter {
   private final long firstAsqn;
   private long lastAsqn;
   private JournalRecord lastEntry;
-  private boolean isOpen = true;
   private final JournalRecordReaderUtil recordUtil;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   private final JournalRecordSerializer serializer = new SBESerializer();
@@ -267,17 +266,6 @@ final class SegmentWriter {
     } else {
       reset(index, true);
       invalidateNextEntry(buffer.position());
-    }
-  }
-
-  void flush() {
-    buffer.force();
-  }
-
-  void close() {
-    if (isOpen) {
-      isOpen = false;
-      flush();
     }
   }
 }

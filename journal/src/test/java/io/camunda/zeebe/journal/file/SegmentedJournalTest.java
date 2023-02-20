@@ -34,8 +34,11 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
@@ -123,8 +126,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(journal.getJournalIndex().lookup(journalIndexDensity)).isNotNull();
-    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index())
-        .isEqualTo(journalIndexDensity);
+    assertThat(journal.getJournalIndex().lookup(2 * journalIndexDensity).index()).isOne();
   }
 
   @Test
@@ -227,7 +229,7 @@ class SegmentedJournalTest {
 
     // then
     assertThat(reader.hasNext()).isFalse();
-    assertThat(journal.getLastIndex()).isEqualTo(0);
+    assertThat(journal.getLastIndex()).isZero();
   }
 
   @Test
@@ -386,8 +388,7 @@ class SegmentedJournalTest {
     final var secondIndexedPosition = 2 * journalIndexDensity;
     final JournalIndex indexAfterRestart = journal.getJournalIndex();
 
-    assertThat(indexAfterRestart.lookup(firstIndexedPosition).index())
-        .isEqualTo(firstIndexedPosition);
+    assertThat(indexAfterRestart.lookup(firstIndexedPosition).index()).isOne();
     assertThat(indexAfterRestart.lookup(secondIndexedPosition).index())
         .isEqualTo(secondIndexedPosition);
     assertThat(indexAfterRestart.lookup(firstIndexedPosition).position())
@@ -452,7 +453,12 @@ class SegmentedJournalTest {
                 BufferUtil.cloneBuffer(firstRecord.data())));
     journal.append(recordDataWriter);
 
+    // close the journal before corrupting the segment; since we "flush" when closing, we need to
+    // restore the last flushed index to be before the first index of the second segment
+    final var lastFlushedIndex = journal.getFirstSegment().lastIndex();
     journal.close();
+    metaStore.storeLastFlushedIndex(lastFlushedIndex);
+
     final File dataFile = directory.resolve("data").toFile();
     final File logFile =
         Objects.requireNonNull(dataFile.listFiles(f -> f.getName().endsWith("2.log")))[0];
@@ -825,16 +831,31 @@ class SegmentedJournalTest {
     journal.append(2, recordDataWriter);
   }
 
+  // this test ensure that flushing is thread-safe w.r.t. write-exclusive methods such as
+  // deleteUntil, deleteAfter, and reset
   @Test
-  void shouldUpdateMetastoreAfterFlush() {
+  void shouldPreventWriteExclusiveOperationsWhileFlushing() {
+    // given
+    final var barrier = new Phaser(2);
     journal = openJournal(2);
     journal.append(1, recordDataWriter);
     final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
 
     // when
-    journal.flush();
+    metaStore.setOnStoreFlushedIndex(
+        () -> {
+          // two synchronization points ensure that we check the lock status strictly while the
+          // other thread is busy flushing, and not before or after
+          barrier.arriveAndAwaitAdvance();
+          barrier.arriveAndAwaitAdvance();
+        });
+    final var flushed = CompletableFuture.runAsync(journal::flush);
 
     // then
+    barrier.arriveAndAwaitAdvance();
+    assertThat(journal.rwlock().isReadLocked()).isTrue();
+    barrier.arrive();
+    assertThat(flushed).succeedsWithin(Duration.ofSeconds(5));
     assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
   }
 
@@ -843,7 +864,6 @@ class SegmentedJournalTest {
   }
 
   private SegmentedJournal openJournal(final float entriesPerSegment, final int entrySize) {
-
     return SegmentedJournal.builder()
         .withDirectory(directory.resolve("data").toFile())
         .withMaxSegmentSize(

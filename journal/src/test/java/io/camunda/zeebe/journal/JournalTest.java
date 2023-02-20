@@ -660,6 +660,19 @@ final class JournalTest {
     assertThat(reader.next()).isEqualTo(lastRecord);
   }
 
+  @Test
+  void shouldUpdateMetastoreAfterFlush() {
+    journal = openJournal();
+    journal.append(1, recordDataWriter);
+    final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
+  }
+
   // TODO: do not rely on implementation detail to compare records
   private PersistedJournalRecord copyRecord(final JournalRecord record) {
     final RecordData data =
