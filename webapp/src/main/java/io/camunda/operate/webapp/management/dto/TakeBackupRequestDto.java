@@ -8,13 +8,13 @@ package io.camunda.operate.webapp.management.dto;
 
 public class TakeBackupRequestDto {
 
-  private String backupId;
+  private Integer backupId;
 
-  public String getBackupId() {
+  public Integer getBackupId() {
     return backupId;
   }
 
-  public TakeBackupRequestDto setBackupId(String backupId) {
+  public TakeBackupRequestDto setBackupId(Integer backupId) {
     this.backupId = backupId;
     return this;
   }

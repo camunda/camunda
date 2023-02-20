@@ -11,7 +11,7 @@ import java.util.Objects;
 
 public class GetBackupStateResponseDto {
 
-  private String backupId;
+  private Integer backupId;
   private BackupStateDto state;
   private String failureReason;
   private List<GetBackupStateResponseDetailDto> details;
@@ -19,15 +19,15 @@ public class GetBackupStateResponseDto {
   public GetBackupStateResponseDto() {
   }
 
-  public GetBackupStateResponseDto(String backupId) {
+  public GetBackupStateResponseDto(Integer backupId) {
     this.backupId = backupId;
   }
 
-  public String getBackupId() {
+  public Integer getBackupId() {
     return backupId;
   }
 
-  public GetBackupStateResponseDto setBackupId(String backupId) {
+  public GetBackupStateResponseDto setBackupId(Integer backupId) {
     this.backupId = backupId;
     return this;
   }

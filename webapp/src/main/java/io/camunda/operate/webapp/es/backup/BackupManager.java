@@ -88,7 +88,7 @@ public class BackupManager {
 
   private String[][] indexPatternsOrdered;
 
-  public void deleteBackup(String backupId) {
+  public void deleteBackup(Integer backupId) {
     validateRepositoryExists();
     String repositoryName = getRepositoryName();
     int count = getIndexPatternsOrdered().length;
@@ -209,7 +209,7 @@ public class BackupManager {
     return esClient.snapshot().getRepository(getRepositoriesRequest, RequestOptions.DEFAULT);
   }
 
-  private void validateNoDuplicateBackupId(final String backupId) {
+  private void validateNoDuplicateBackupId(final Integer backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -321,13 +321,13 @@ public class BackupManager {
     };
   }
 
-  public GetBackupStateResponseDto getBackupState(String backupId) {
+  public GetBackupStateResponseDto getBackupState(Integer backupId) {
     List<SnapshotInfo> snapshots = findSnapshots(backupId);
     GetBackupStateResponseDto response = getBackupResponse(backupId, snapshots);
     return response;
   }
 
-  private GetBackupStateResponseDto getBackupResponse(String backupId, List<SnapshotInfo> snapshots) {
+  private GetBackupStateResponseDto getBackupResponse(Integer backupId, List<SnapshotInfo> snapshots) {
     GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     Metadata metadata = objectMapper.convertValue(snapshots.get(0).userMetadata(), Metadata.class);
     final Integer expectedSnapshotsCount = metadata.getPartCount();
@@ -380,7 +380,7 @@ public class BackupManager {
     return response;
   }
 
-  private List<SnapshotInfo> findSnapshots(String backupId) {
+  private List<SnapshotInfo> findSnapshots(Integer backupId) {
     final GetSnapshotsRequest snapshotsStatusRequest =
         new GetSnapshotsRequest()
             .repository(getRepositoryName())
@@ -424,7 +424,7 @@ public class BackupManager {
       List<SnapshotInfo> snapshots = response.getSnapshots().stream()
           .sorted(Comparator.comparing(SnapshotInfo::startTime).reversed()).collect(toList());
 
-      LinkedHashMap<String, List<SnapshotInfo>> groupedSnapshotInfos = snapshots.stream().collect(groupingBy(si -> {
+      LinkedHashMap<Integer, List<SnapshotInfo>> groupedSnapshotInfos = snapshots.stream().collect(groupingBy(si -> {
         Metadata metadata = objectMapper.convertValue(si.userMetadata(), Metadata.class);
         return metadata.getBackupId();
       }, LinkedHashMap::new, toList()));

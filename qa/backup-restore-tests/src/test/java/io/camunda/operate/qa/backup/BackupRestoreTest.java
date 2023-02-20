@@ -53,7 +53,7 @@ public class BackupRestoreTest {
   private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
   public static final String VERSION = "SNAPSHOT";
   public static final String REPOSITORY_NAME = "testRepository";
-  public static final String BACKUP_ID = "backup1";
+  public static final Integer BACKUP_ID = 123;
 
   @Autowired
   private OperateAPICaller operateAPICaller;

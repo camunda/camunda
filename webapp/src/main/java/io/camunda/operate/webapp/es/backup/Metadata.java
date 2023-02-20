@@ -14,16 +14,16 @@ public class Metadata {
   private final static String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
   private final static String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
 
-  private String backupId;
+  private Integer backupId;
   private String version;
   private Integer partNo;
   private Integer partCount;
 
-  public String getBackupId() {
+  public Integer getBackupId() {
     return backupId;
   }
 
-  public Metadata setBackupId(String backupId) {
+  public Metadata setBackupId(Integer backupId) {
     this.backupId = backupId;
     return this;
   }
@@ -63,8 +63,8 @@ public class Metadata {
         .replace("{count}", partCount + "");
   }
 
-  public static String buildSnapshotNamePrefix(String backupId) {
-  return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", backupId);
+  public static String buildSnapshotNamePrefix(Integer backupId) {
+  return SNAPSHOT_NAME_PREFIX_PATTERN.replace("{backupId}", String.valueOf(backupId));
   }
 
   @Override public boolean equals(Object o) {

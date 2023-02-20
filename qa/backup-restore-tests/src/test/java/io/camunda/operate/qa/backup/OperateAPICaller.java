@@ -69,13 +69,13 @@ public class OperateAPICaller {
         SequenceFlowDto[].class);
   }
 
-  public TakeBackupResponseDto backup(String backupId) {
+  public TakeBackupResponseDto backup(Integer backupId) {
     TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return restTemplate.postForObject(restTemplate.getURL("/actuator/backups"), takeBackupRequest,
         TakeBackupResponseDto.class);
   }
 
-  public GetBackupStateResponseDto getBackupState(String backupId) {
+  public GetBackupStateResponseDto getBackupState(Integer backupId) {
     return restTemplate.getForObject(restTemplate.getURL("/actuator/backups/" + backupId),
         GetBackupStateResponseDto.class);
   }
