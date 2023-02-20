@@ -120,7 +120,7 @@ public final class RaftPartitionGroupFactory {
         return RaftLogFlusher.Factory::direct;
       }
 
-      return context -> new DelayedFlusher(context, delayTime);
+      return threadFactory -> new DelayedFlusher(threadFactory.createContext(), delayTime);
     }
 
     Loggers.RAFT.warn(
