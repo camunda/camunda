@@ -58,7 +58,8 @@ public final class SegmentedJournal implements Journal {
 
     final var lastFlushedIndex = journalMetaStore.loadLastFlushedIndex();
     this.segments.open(lastFlushedIndex);
-    writer = new SegmentedJournalWriter(segments, lastFlushedIndex, journalMetrics);
+    writer =
+        new SegmentedJournalWriter(segments, new SegmentsFlusher(lastFlushedIndex), journalMetrics);
   }
 
   /**
@@ -155,7 +156,6 @@ public final class SegmentedJournal implements Journal {
     try (final var ignored = journalMetrics.observeJournalFlush()) {
       final var stamp = rwlock.readLock();
       try {
-        LOGGER.trace("Flushing journal up to {}", writer.getLastIndex());
         writer.flush(journalMetaStore);
       } finally {
         rwlock.unlockRead(stamp);

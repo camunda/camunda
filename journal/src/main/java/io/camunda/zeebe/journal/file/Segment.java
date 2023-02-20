@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-final class Segment implements AutoCloseable {
+final class Segment implements AutoCloseable, FlushableSegment {
 
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private static final Logger LOG = LoggerFactory.getLogger(Segment.class);
@@ -95,8 +95,49 @@ final class Segment implements AutoCloseable {
    *
    * @return The last index in the segment.
    */
-  long lastIndex() {
+  @Override
+  public long lastIndex() {
     return writer.getLastIndex();
+  }
+
+  /**
+   * It's safe to sync a buffer via {@link MappedByteBuffer#force()} even after it has been unmapped
+   * (e.g. via {@link IoUtil#unmap(ByteBuffer)}.
+   *
+   * <p>Calling {@code msync} or {@code FlushViewOfFile} on pages which are not mapped returns an
+   * error, but does not generate a SIGSEGV nor a SIGBUS. Instead, it returns an error code.
+   *
+   * <p>We verified that on OpenJDK, this is handled by throwing an {@link UncheckedIOException}
+   * with a message about being unable to allocate memory. There are no other exceptions (other than
+   * the usual suspects, like null pointers) possible, so it's safe to assume that if we get such an
+   * error on calling {@link MappedByteBuffer#force()}, but the segment is closed/deleted, then we
+   * can safely ignore it (as flushing doesn't matter in that case).
+   *
+   * <p>{@inheritDoc}
+   *
+   * @throws UncheckedIOException if the operation failed but the segment is live
+   */
+  @Override
+  public boolean flush() {
+    final long lastIndex = lastIndex();
+
+    try (final var ignored = metrics.observeSegmentFlush()) {
+      buffer.force();
+    } catch (final UncheckedIOException e) {
+      if (isOpen()) {
+        throw e;
+      }
+
+      LOG.debug("Flushing failed on a closed or deleted segment, and will be ignored");
+      return false;
+    }
+
+    LOG.trace(
+        "Flushed segment {} from index {} to index {}",
+        descriptor.id(),
+        descriptor.index(),
+        lastIndex);
+    return true;
   }
 
   /**
@@ -124,24 +165,6 @@ final class Segment implements AutoCloseable {
    */
   SegmentDescriptor descriptor() {
     return descriptor;
-  }
-
-  /**
-   * Returns a boolean value indicating whether the segment is empty.
-   *
-   * @return Indicates whether the segment is empty.
-   */
-  boolean isEmpty() {
-    return length() == 0;
-  }
-
-  /**
-   * Returns the segment length.
-   *
-   * @return The segment length.
-   */
-  long length() {
-    return writer.getNextIndex() - index();
   }
 
   /**
@@ -234,47 +257,6 @@ final class Segment implements AutoCloseable {
           file.getFileMarkedForDeletion(),
           e);
     }
-  }
-
-  /**
-   * It's safe to sync a buffer via {@link MappedByteBuffer#force()} even after it has been unmapped
-   * (e.g. via {@link IoUtil#unmap(ByteBuffer)}.
-   *
-   * <p>Calling {@code msync} or {@code FlushViewOfFile} on pages which are not mapped returns an
-   * error, but does not generate a SIGSEGV nor a SIGBUS. Instead, it returns an error code.
-   *
-   * <p>We verified that on OpenJDK, this is handled by throwing an {@link UncheckedIOException}
-   * with a message about being unable to allocate memory. There are no other exceptions (other than
-   * the usual suspects, like null pointers) possible, so it's safe to assume that if we get such an
-   * error on calling {@link MappedByteBuffer#force()}, but the segment is closed/deleted, then we
-   * can safely ignore it (as flushing doesn't matter in that case).
-   *
-   * <p>If the method returns true, then it is guaranteed that the modified pages for this segment
-   * have been flushed to disk (according to the underlying file system).
-   *
-   * @return true if the segment flushed successfully, false otherwise
-   * @throws UncheckedIOException if the operation failed but the segment is live
-   */
-  boolean flush() {
-    final long lastIndex = lastIndex();
-
-    try (final var ignored = metrics.observeSegmentFlush()) {
-      buffer.force();
-    } catch (final UncheckedIOException e) {
-      if (isOpen()) {
-        throw e;
-      }
-
-      LOG.debug("Flushing failed on a closed or deleted segment, and will be ignored");
-      return false;
-    }
-
-    LOG.trace(
-        "Flushed segment {} from index {} to index {}",
-        descriptor.id(),
-        descriptor.index(),
-        lastIndex);
-    return true;
   }
 
   @Override
