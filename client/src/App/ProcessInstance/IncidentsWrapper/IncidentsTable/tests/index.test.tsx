@@ -5,79 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
-import {IncidentsTable} from './index';
-import {ThemeProvider} from 'modules/theme/ThemeProvider';
-import {createIncident, mockCallActivityProcessXML} from 'modules/testUtils';
+import {IncidentsTable} from '../index';
+import {mockCallActivityProcessXML} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
-import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {render, screen, within} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
 import {incidentsStore} from 'modules/stores/incidents';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-
-const id = 'flowNodeInstanceIdB';
-const shortError = 'No data found for query $.orderId.';
-const longError =
-  'Cannot compare values of different types: INTEGER and BOOLEAN';
-
-const firstIncident = createIncident({
-  errorType: {name: 'Error A', id: 'ERROR_A'},
-  errorMessage: shortError,
-  flowNodeId: 'StartEvent_1',
-  flowNodeInstanceId: '18239123812938',
-  rootCauseInstance: {
-    instanceId: '111111111111111111',
-    processDefinitionId: 'calledInstance',
-    processDefinitionName: 'Called Instance',
-  },
-});
-
-const secondIncident = createIncident({
-  errorType: {name: 'Error B', id: 'ERROR_A'},
-  errorMessage: longError,
-  flowNodeId: 'Event_1db567d',
-  flowNodeInstanceId: id,
-});
-
-const incidentsMock = {
-  incidents: [firstIncident, secondIncident],
-  count: 2,
-  errorTypes: [],
-  flowNodes: [],
-};
-
-const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  return (
-    <ThemeProvider>
-      <MemoryRouter initialEntries={['/processes/1']}>
-        <Routes>
-          <Route path="/processes/:processInstanceId" element={children} />
-        </Routes>
-      </MemoryRouter>
-    </ThemeProvider>
-  );
-};
+import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 
 describe('IncidentsTable', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    incidentsStore.reset();
-    authenticationStore.reset();
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsDiagramStore.reset();
-  });
-
   it('should render the right column headers', async () => {
     mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
 
@@ -301,98 +239,5 @@ describe('IncidentsTable', () => {
     expect(
       within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`)
     ).toBeInTheDocument();
-  });
-
-  describe('Sorting', () => {
-    it('should enable sorting for all', () => {
-      incidentsStore.setIncidents(incidentsMock);
-      render(<IncidentsTable />, {wrapper: Wrapper});
-
-      expect(screen.getByText('Job Id')).toBeEnabled();
-      expect(screen.getByText('Incident Type')).toBeEnabled();
-      expect(screen.getByText('Failing Flow Node')).toBeEnabled();
-      expect(screen.getByText('Job Id')).toBeEnabled();
-      expect(screen.getByText('Creation Date')).toBeEnabled();
-      expect(screen.getByText('Error Message')).toBeEnabled();
-      expect(screen.getByText('Operations')).toBeEnabled();
-    });
-
-    it('should disable sorting for jobId', () => {
-      const incidents = [
-        createIncident({
-          errorType: {
-            name: 'Error A',
-            id: 'ERROR-A',
-          },
-          errorMessage: shortError,
-          flowNodeId: 'Task A',
-          flowNodeInstanceId: 'flowNodeInstanceIdA',
-          jobId: null,
-        }),
-      ];
-
-      incidentsStore.setIncidents({...incidentsMock, incidents, count: 1});
-
-      render(<IncidentsTable />, {wrapper: Wrapper});
-      expect(
-        screen.getByRole('button', {name: 'Sort by Job Id'})
-      ).toBeDisabled();
-    });
-  });
-
-  describe('Selection', () => {
-    it('should deselect selected incident', async () => {
-      incidentsStore.setIncidents({
-        ...incidentsMock,
-        incidents: [firstIncident],
-        count: 1,
-      });
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: firstIncident.flowNodeId,
-        isMultiInstance: false,
-      });
-
-      const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
-      expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
-
-      await user.click(screen.getByRole('row', {selected: true}));
-      expect(screen.getByRole('row', {selected: false})).toBeInTheDocument();
-    });
-
-    it('should select single incident when multiple incidents are selected', async () => {
-      const incidents = [
-        createIncident({flowNodeId: 'myTask'}),
-        createIncident({flowNodeId: 'myTask'}),
-      ];
-
-      incidentsStore.setIncidents({...incidentsMock, incidents});
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'myTask',
-        isMultiInstance: false,
-      });
-
-      const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
-      expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);
-
-      const [firstRow] = screen.getAllByRole('row', {
-        name: 'Incident Condition error',
-      });
-
-      expect(firstRow).toBeInTheDocument();
-      await user.click(firstRow!);
-
-      expect(
-        screen.getByRole('row', {
-          name: 'Incident Condition error',
-          selected: true,
-        })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByRole('row', {
-          name: 'Incident Condition error',
-          selected: false,
-        })
-      ).toBeInTheDocument();
-    });
   });
 });
