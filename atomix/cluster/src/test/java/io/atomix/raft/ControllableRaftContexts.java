@@ -114,7 +114,7 @@ public final class ControllableRaftContexts {
     tickHeartbeatTimeout(0);
   }
 
-  public void shudown() throws IOException {
+  public void shutdown() throws IOException {
     raftServers.forEach((m, c) -> c.close());
     raftServers.clear();
     serverProtocols.clear();

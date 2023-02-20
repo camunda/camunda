@@ -63,7 +63,7 @@ public class RandomizedRaftTest {
 
   @AfterTry
   public void shutDownRaftNodes() throws IOException {
-    raftContexts.shudown();
+    raftContexts.shutdown();
     FileUtil.deleteFolder(raftDataDirectory);
     raftDataDirectory = null;
   }

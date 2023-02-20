@@ -19,10 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.ControllableRaftContexts;
 import io.atomix.raft.RaftServer.Role;
-import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Random;
+import org.junit.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
@@ -43,7 +43,8 @@ class CandidateRoleTest {
     raftContexts.shutdown();
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/11665")
+  // Regression "https://github.com/camunda/zeebe/issues/11665"
+  @Test
   void shouldTransitionToFollowerWhenElectionTimesOut() {
     // given
     final var chosenCandidate = 0; // chose any member as candidate
