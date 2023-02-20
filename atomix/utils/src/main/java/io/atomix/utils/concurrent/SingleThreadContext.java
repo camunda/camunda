@@ -155,6 +155,13 @@ public class SingleThreadContext implements ThreadContext {
   @Override
   public void close() {
     executor.shutdownNow();
+
+    try {
+      //noinspection ResultOfMethodCallIgnored
+      executor.awaitTermination(30, TimeUnit.SECONDS);
+    } catch (final InterruptedException ignored) {
+      // as we're shutting down the thread, we can safely ignore this
+    }
   }
 
   class WrappedRunnable implements Runnable {

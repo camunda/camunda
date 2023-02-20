@@ -128,20 +128,20 @@ public class DefaultRaftServer implements RaftServer {
       return CompletableFuture.completedFuture(null);
     }
 
-    return context
-        .getThreadContext()
-        .submit(
-            () -> {
-              stopped = true;
-              started = false;
-              context.transition(Role.INACTIVE);
-              context.close();
-            });
+    return CompletableFuture.runAsync(
+        () -> {
+          stopped = true;
+          started = false;
+          context.transition(Role.INACTIVE);
+          context.close();
+        },
+        context.getThreadContext());
   }
 
   @Override
   public CompletableFuture<Void> goInactive() {
-    return context.getThreadContext().submit(() -> context.transition(Role.INACTIVE));
+    return CompletableFuture.runAsync(
+        () -> context.transition(Role.INACTIVE), context.getThreadContext());
   }
 
   @Override
@@ -171,7 +171,8 @@ public class DefaultRaftServer implements RaftServer {
 
   @Override
   public CompletableFuture<Void> stepDown() {
-    return context.getThreadContext().submit(() -> context.transition(Role.FOLLOWER));
+    return CompletableFuture.runAsync(
+        () -> context.transition(Role.FOLLOWER), context.getThreadContext());
   }
 
   /** Starts the server. */

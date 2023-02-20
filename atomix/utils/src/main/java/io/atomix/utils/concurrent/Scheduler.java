@@ -16,12 +16,13 @@
  */
 package io.atomix.utils.concurrent;
 
+import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /** Scheduler. */
 @FunctionalInterface
-public interface Scheduler {
+public interface Scheduler extends CloseableSilently {
 
   /**
    * Schedules a runnable after a delay.
@@ -75,4 +76,7 @@ public interface Scheduler {
    * @return the scheduled callback
    */
   Scheduled schedule(Duration initialDelay, Duration interval, Runnable callback);
+
+  @Override
+  default void close() {}
 }
