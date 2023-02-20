@@ -33,6 +33,7 @@ const ProcessOperations: React.FC<Props> = ({processName, processVersion}) => {
         description="You are about to delete the following process definition:"
         isVisible={isDeleteModalVisible}
         bodyContent=""
+        confirmationText="Yes, I confirm I want to delete this process definition."
         onClose={() => setIsDeleteModalVisible(false)}
         onDelete={() => {}}
       />

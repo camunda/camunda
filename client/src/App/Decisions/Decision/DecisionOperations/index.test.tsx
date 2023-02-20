@@ -54,7 +54,7 @@ describe('<DecisionOperations />', () => {
     await waitForElementToBeRemoved(screen.getByTestId('modal'));
   });
 
-  it('should open modal and show decision definition name', async () => {
+  it('should open modal and show content', async () => {
     const {user} = render(
       <DecisionOperations decisionName="myDecision" decisionVersion="2" />,
       {wrapper: Wrapper}
@@ -71,5 +71,10 @@ describe('<DecisionOperations />', () => {
       screen.getByText(/You are about to delete the following DRD:/)
     ).toBeInTheDocument();
     expect(screen.getByText(/My Definition/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /^Yes, I confirm I want to delete this DRD and all related instances.$/
+      )
+    );
   });
 });

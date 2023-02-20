@@ -37,6 +37,7 @@ const DecisionOperations: React.FC<Props> = ({
       <DeleteDefinitionModal
         title="Delete DRD"
         description="You are about to delete the following DRD:"
+        confirmationText="Yes, I confirm I want to delete this DRD and all related instances."
         isVisible={isDeleteModalVisible}
         bodyContent={
           <table>

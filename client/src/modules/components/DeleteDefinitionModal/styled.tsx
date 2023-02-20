@@ -5,9 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import styled from 'styled-components';
-import {CmButton} from '@camunda-cloud/common-ui-react';
+import styled, {css} from 'styled-components';
+import {
+  CmButton,
+  CmCheckbox as BaseCmCheckbox,
+} from '@camunda-cloud/common-ui-react';
 import {WarningMessage} from 'modules/components/Messages/WarningMessage';
+import Modal from 'modules/components/Modal';
 
 const WarningContainer = styled(WarningMessage)`
   display: flex;
@@ -23,4 +27,17 @@ const Description = styled.p`
   margin: 10px 0 24px 0;
 `;
 
-export {WarningContainer, DeleteButton, Description};
+const ModalBody = styled(Modal.Body)`
+  ${({theme}) => {
+    return css`
+      padding-bottom: 24px;
+      color: ${theme.colors.text01};
+    `;
+  }}
+`;
+
+const CmCheckbox = styled(BaseCmCheckbox)`
+  margin-top: 24px;
+`;
+
+export {WarningContainer, DeleteButton, Description, ModalBody, CmCheckbox};

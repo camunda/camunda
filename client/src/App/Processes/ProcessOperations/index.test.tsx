@@ -43,4 +43,25 @@ describe('<ProcessOperations />', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('modal'));
   });
+
+  it('should render confirmation checkbox', async () => {
+    const {user} = render(
+      <ProcessOperations processName="myProcess" processVersion="2" />,
+      {wrapper: Wrapper}
+    );
+
+    user.click(
+      screen.getByRole('button', {
+        name: /^delete process definition "myProcess - version 2"$/i,
+      })
+    );
+
+    expect(await screen.findByTestId('modal')).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('checkbox', {
+        name: /Yes, I confirm I want to delete this process definition./i,
+      })
+    ).toBeInTheDocument();
+  });
 });

@@ -15,27 +15,22 @@ type Props = {
   title?: string;
 };
 
-const Checkbox: React.FC<Props> = ({
-  onCmInput,
-  indeterminate,
-  label,
-  id,
-  title,
-  ...props
-}) => {
-  return (
-    <label htmlFor={id}>
-      {label ?? title}
-      <input
-        type="checkbox"
-        onChange={(event) => {
-          onCmInput({detail: {isChecked: event.target.checked}});
-        }}
-        id={id}
-        {...props}
-      />
-    </label>
-  );
-};
+const Checkbox = React.forwardRef<{renderValidity: () => Promise<void>}, Props>(
+  ({onCmInput, indeterminate, label, id, title, ...props}, ref) => {
+    return (
+      <label htmlFor={id}>
+        {label ?? title}
+        <input
+          type="checkbox"
+          onChange={(event) => {
+            onCmInput({detail: {isChecked: event.target.checked}});
+          }}
+          id={id}
+          {...props}
+        />
+      </label>
+    );
+  }
+);
 
 export {Checkbox};

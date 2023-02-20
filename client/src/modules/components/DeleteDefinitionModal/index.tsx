@@ -6,13 +6,15 @@
  */
 
 import Modal from 'modules/components/Modal';
-import {DeleteButton, Description} from './styled';
+import {useRef} from 'react';
+import {ModalBody, DeleteButton, Description, CmCheckbox} from './styled';
 
 type Props = {
   isVisible: boolean;
   title: string;
   description: string;
   bodyContent: React.ReactNode;
+  confirmationText: string;
   // warningContent: React.ReactNode; TODO: https://github.com/camunda/operate/issues/4020
   onClose: () => void;
   onDelete: () => void;
@@ -23,10 +25,13 @@ const DeleteDefinitionModal: React.FC<Props> = ({
   title,
   description,
   bodyContent,
+  confirmationText,
   // warningContent, TODO: https://github.com/camunda/operate/issues/4020
   onClose,
   onDelete,
 }) => {
+  const fieldRef = useRef<HTMLCmCheckboxElement | null>(null);
+
   return (
     <Modal
       onModalClose={onClose}
@@ -35,12 +40,12 @@ const DeleteDefinitionModal: React.FC<Props> = ({
       width="755px"
     >
       <Modal.Header>{title}</Modal.Header>
-      <Modal.Body>
+      <ModalBody>
         <Description>{description}</Description>
         {bodyContent}
         {/* <WarningContainer content={warningContent} />  TODO: https://github.com/camunda/operate/issues/4020 */}
-        {/* [Checkbox for confirmation] TODO: https://github.com/camunda/operate/issues/4025  */}
-      </Modal.Body>
+        <CmCheckbox ref={fieldRef} label={confirmationText} required />
+      </ModalBody>
       <Modal.Footer>
         <Modal.SecondaryButton title="Cancel" onClick={onClose}>
           Cancel
@@ -48,7 +53,10 @@ const DeleteDefinitionModal: React.FC<Props> = ({
         <DeleteButton
           appearance="danger"
           label="Delete"
-          onCmPress={onDelete}
+          onCmPress={() => {
+            fieldRef.current?.renderValidity();
+            onDelete();
+          }}
           data-testid="delete-button"
         />
       </Modal.Footer>
