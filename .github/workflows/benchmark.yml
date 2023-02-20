@@ -87,7 +87,7 @@ jobs:
           build-args: DIST=build
           target: app
   deploy-benchmark-measurement:
-    name: Deploy benchmark network latency measurement
+    name: Measure network latency
     needs:
       - build-zeebe-image
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
