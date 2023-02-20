@@ -24,6 +24,7 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogFlusher;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -181,7 +182,7 @@ public final class RaftStorage {
    *
    * @return The opened log.
    */
-  public RaftLog openLog(final MetaStore metaStore, final ThreadContext flushContext) {
+  public RaftLog openLog(final MetaStore metaStore, final ThreadContextFactory threadFactory) {
 
     return RaftLog.builder()
         .withName(prefix)
@@ -192,7 +193,7 @@ public final class RaftStorage {
         .withJournalIndexDensity(journalIndexDensity)
         .withPreallocateSegmentFiles(preallocateSegmentFiles)
         .withMetaStore(metaStore)
-        .withFlusher(flusherFactory.createFlusher(flushContext))
+        .withFlusher(flusherFactory.createFlusher(threadFactory))
         .build();
   }
 

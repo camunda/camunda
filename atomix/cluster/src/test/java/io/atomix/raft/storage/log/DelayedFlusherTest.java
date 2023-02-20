@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.Scheduler;
 import io.camunda.zeebe.journal.Journal;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,10 +59,9 @@ final class DelayedFlusherTest {
 
     // when
     flusher.flush(journal);
+    scheduler.runNext();
 
     // then
-    final var scheduled = scheduler.operations.get(0);
-    scheduled.operation.run();
     Mockito.verify(journal, Mockito.times(1)).flush();
   }
 
@@ -98,34 +99,52 @@ final class DelayedFlusherTest {
   }
 
   @Test
-  void shouldNotFlushWhenFlusherIsClosed() {
+  void shouldNotScheduleFlushWhenClosed() {
     // given
     final var journal = Mockito.mock(Journal.class);
     Mockito.when(journal.isOpen()).thenReturn(true);
 
     // when
-    flusher.flush(journal);
     flusher.close();
+    flusher.flush(journal);
 
     // then
-    final var scheduled = scheduler.operations.get(0);
-    scheduled.operation.run();
-    Mockito.verify(journal, Mockito.never()).flush();
+    assertThat(scheduler.operations).isEmpty();
   }
 
   @Test
-  void shouldNotFlushIfJournalIsClosed() {
+  void shouldRescheduleOnFlushError() {
     // given
     final var journal = Mockito.mock(Journal.class);
-    Mockito.when(journal.isOpen()).thenReturn(false);
+    Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
+        .when(journal)
+        .flush();
 
     // when
     flusher.flush(journal);
+    scheduler.runNext();
+    Mockito.doNothing().when(journal).flush();
+    scheduler.runNext();
 
     // then
-    final var scheduled = scheduler.operations.get(0);
-    scheduled.operation.run();
-    Mockito.verify(journal, Mockito.never()).flush();
+    Mockito.verify(journal, Mockito.times(2)).flush();
+  }
+
+  @Test
+  void shouldNotRescheduleOnFlushErrorIfClosed() {
+    // given
+    final var journal = Mockito.mock(Journal.class);
+    Mockito.doThrow(new UncheckedIOException(new IOException("Cannot allocate memory")))
+        .when(journal)
+        .flush();
+
+    // when
+    flusher.flush(journal);
+    flusher.close();
+    scheduler.runNext();
+
+    // then
+    assertThat(scheduler.operations).isEmpty();
   }
 
   private static final class TestScheduled implements Scheduled {
@@ -162,6 +181,10 @@ final class DelayedFlusherTest {
       final var scheduled = new TestScheduled(initialDelay, interval, callback);
       operations.add(scheduled);
       return scheduled;
+    }
+
+    private void runNext() {
+      operations.remove(0).operation.run();
     }
   }
 }
