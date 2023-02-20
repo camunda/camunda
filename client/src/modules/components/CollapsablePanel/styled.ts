@@ -10,6 +10,8 @@ import {rgba} from 'polished';
 import BasicCollapseButton from 'modules/components/CollapseButton';
 import {Panel as BasePanel} from 'modules/components/Panel';
 import {styles} from '@carbon/elements';
+import {PAGE_TOP_PADDING} from 'modules/constants';
+import {zOverlayCollapsable} from 'modules/constants/componentHierarchy';
 
 const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 type PanelPosition = 'RIGHT' | 'LEFT';
@@ -45,13 +47,14 @@ const Collapsable = styled.div<CollapsableProps>`
         : css`
             ${maxWidth}px
           `};
-      height: 100%;
       background-color: ${colors.backgroundColor};
 
       ${isOverlay
         ? css`
             position: absolute;
-            z-index: 2;
+            height: calc(100% - ${PAGE_TOP_PADDING}px);
+            top: ${PAGE_TOP_PADDING}px;
+            z-index: ${zOverlayCollapsable};
             box-shadow: 0 2px 4px 0 ${rgba(theme.colors.black, 0.5)};
             ${isRight
               ? css`

@@ -10,7 +10,6 @@ import {PAGE_TITLE} from 'modules/constants';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {DiagramPanel} from './DiagramPanel';
 import {ListPanel} from './ListPanel';
-import {OperationsPanel} from './OperationsPanel';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processesStore} from 'modules/stores/processes';
@@ -118,7 +117,6 @@ const Processes: React.FC = observer(() => {
           <ListFooter />
         </RightContainer>
       </Content>
-      <OperationsPanel />
     </Container>
   );
 });

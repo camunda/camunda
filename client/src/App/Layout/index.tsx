@@ -12,6 +12,7 @@ import {Copyright} from 'modules/components/Copyright';
 import {Paths} from 'modules/routes';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
+import {OperationsPanel} from 'modules/components/OperationsPanel';
 
 const Layout: React.FC = observer(() => {
   const instancesMatch = useMatch(Paths.processes());
@@ -21,10 +22,13 @@ const Layout: React.FC = observer(() => {
     instancesMatch === null &&
     decisionsMatch === null &&
     !modificationsStore.isModificationModeEnabled;
+  const showOperationsPanel =
+    instancesMatch !== null || decisionsMatch !== null;
 
   return (
     <Grid numberOfRows={showFooter ? 3 : 2}>
       <AppHeader />
+      {showOperationsPanel && <OperationsPanel />}
       <PageContent>
         <Outlet />
       </PageContent>

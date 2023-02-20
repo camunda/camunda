@@ -16,28 +16,13 @@ import {observer} from 'mobx-react';
 import {StatusMessage} from 'modules/components/StatusMessage';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
 import {panelStatesStore} from 'modules/stores/panelStates';
-import {useLocation, Location} from 'react-router-dom';
-
-type LocationType = Omit<Location, 'state'> & {
-  state: {refreshContent?: boolean};
-};
 
 const OperationsPanel: React.FC = observer(() => {
-  const location = useLocation() as LocationType;
   const {operations, status, hasMoreOperations} = operationsStore.state;
   const {
     state: {isOperationsCollapsed},
     toggleOperationsPanel,
   } = panelStatesStore;
-
-  useEffect(() => {
-    if (
-      operationsStore.state.status !== 'initial' &&
-      location.state?.refreshContent
-    ) {
-      operationsStore.fetchOperations();
-    }
-  }, [location.state]);
 
   useEffect(() => {
     operationsStore.init();

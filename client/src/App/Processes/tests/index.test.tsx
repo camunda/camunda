@@ -20,12 +20,10 @@ import {
   mockProcessStatistics,
   mockProcessXML,
   mockProcessInstances,
-  operations,
 } from 'modules/testUtils';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processDiagramStore} from 'modules/stores/processDiagram';
-import {operationsStore} from 'modules/stores/operations';
 import {processesStore} from 'modules/stores/processes';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {AppHeader} from 'App/Layout/AppHeader';
@@ -33,7 +31,6 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchGroupedProcesses} from 'modules/mocks/api/processes/fetchGroupedProcesses';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstancesStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
-import {mockFetchBatchOperations} from 'modules/mocks/api/fetchBatchOperations';
 
 jest.mock('modules/utils/bpmn');
 
@@ -75,14 +72,12 @@ describe('Instances', () => {
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     mockFetchProcessXML().withSuccess(mockProcessXML);
-    mockFetchBatchOperations().withSuccess(operations);
   });
 
   afterEach(() => {
     processInstancesSelectionStore.reset();
     processInstancesStore.reset();
     processDiagramStore.reset();
-    operationsStore.reset();
     processesStore.reset();
   });
 
@@ -119,11 +114,6 @@ describe('Instances', () => {
       screen.getByRole('heading', {name: /^process instances$/i})
     ).toBeInTheDocument();
     expect(await screen.findByText(/^912 results found$/i)).toBeInTheDocument();
-
-    // operations
-    expect(
-      screen.getByRole('button', {name: /expand operations/i})
-    ).toBeInTheDocument();
   });
 
   it('should reset selected instances when filters change', async () => {
@@ -238,8 +228,6 @@ describe('Instances', () => {
   });
 
   it('should refetch data when navigated from header', async () => {
-    mockFetchBatchOperations().withSuccess(operations);
-
     const {user} = render(
       <>
         <AppHeader />

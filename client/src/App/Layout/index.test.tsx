@@ -34,6 +34,12 @@ function getWrapper(initialPath: string = '/') {
   return Wrapper;
 }
 
+const OperationsPanelMock: React.FC = () => <div>OperationsPanelMock</div>;
+
+jest.mock('modules/components/OperationsPanel', () => ({
+  OperationsPanel: OperationsPanelMock,
+}));
+
 describe('Layout', () => {
   it('should not display footer when modification mode is enabled', async () => {
     render(<Layout />, {wrapper: getWrapper('/processes/1')});
@@ -47,33 +53,38 @@ describe('Layout', () => {
     expect(screen.queryByText(/All rights reserved/)).not.toBeInTheDocument();
   });
 
-  it('should not display footer in processes page', async () => {
+  it('should render processes page', async () => {
     render(<Layout />, {wrapper: getWrapper('/processes')});
 
     expect(screen.queryByText(/All rights reserved/)).not.toBeInTheDocument();
+    expect(screen.getByText('OperationsPanelMock')).toBeInTheDocument();
   });
 
-  it('should not display footer in decisions page', async () => {
+  it('should render decisions page', async () => {
     render(<Layout />, {wrapper: getWrapper('/decisions')});
 
     expect(screen.queryByText(/All rights reserved/)).not.toBeInTheDocument();
+    expect(screen.getByText('OperationsPanelMock')).toBeInTheDocument();
   });
 
-  it('should display footer in process instance page', async () => {
+  it('should render process instance page', async () => {
     render(<Layout />, {wrapper: getWrapper('/processes/1')});
 
     expect(screen.getByText(/All rights reserved/)).toBeInTheDocument();
+    expect(screen.queryByText('OperationsPanelMock')).not.toBeInTheDocument();
   });
 
-  it('should display footer in decision instance page', async () => {
+  it('should render decision instance page', async () => {
     render(<Layout />, {wrapper: getWrapper('/decisions/1')});
 
     expect(screen.getByText(/All rights reserved/)).toBeInTheDocument();
+    expect(screen.queryByText('OperationsPanelMock')).not.toBeInTheDocument();
   });
 
-  it('should display footer in dashboard page', async () => {
+  it('should render dashboard page', async () => {
     render(<Layout />, {wrapper: getWrapper()});
 
     expect(screen.getByText(/All rights reserved/)).toBeInTheDocument();
+    expect(screen.queryByText('OperationsPanelMock')).not.toBeInTheDocument();
   });
 });
