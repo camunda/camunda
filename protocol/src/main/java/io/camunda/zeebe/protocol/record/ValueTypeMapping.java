@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -43,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -189,6 +191,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.RESOURCE_DELETION,
         new Mapping<>(ResourceDeletionRecordValue.class, ResourceDeletionIntent.class));
+    mapping.put(
+        ValueType.COMMAND_DISTRIBUTION,
+        new Mapping<>(CommandDistributionRecordValue.class, CommandDistributionIntent.class));
 
     return mapping;
   }
