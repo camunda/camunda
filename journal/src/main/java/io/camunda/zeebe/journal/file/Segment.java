@@ -56,7 +56,7 @@ final class Segment implements AutoCloseable {
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
 
-  public Segment(
+  Segment(
       final SegmentFile file,
       final SegmentDescriptor descriptor,
       final MappedByteBuffer buffer,
@@ -77,7 +77,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment ID.
    */
-  public long id() {
+  long id() {
     return descriptor.id();
   }
 
@@ -86,7 +86,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment's starting index.
    */
-  public long index() {
+  long index() {
     return descriptor.index();
   }
 
@@ -95,7 +95,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The last index in the segment.
    */
-  public long lastIndex() {
+  long lastIndex() {
     return writer.getLastIndex();
   }
 
@@ -104,7 +104,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The last application sequence number in the segment.
    */
-  public long lastAsqn() {
+  long lastAsqn() {
     return writer.getLastAsqn();
   }
 
@@ -113,7 +113,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment file.
    */
-  public SegmentFile file() {
+  SegmentFile file() {
     return file;
   }
 
@@ -122,7 +122,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment descriptor.
    */
-  public SegmentDescriptor descriptor() {
+  SegmentDescriptor descriptor() {
     return descriptor;
   }
 
@@ -131,7 +131,7 @@ final class Segment implements AutoCloseable {
    *
    * @return Indicates whether the segment is empty.
    */
-  public boolean isEmpty() {
+  boolean isEmpty() {
     return length() == 0;
   }
 
@@ -140,7 +140,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment length.
    */
-  public long length() {
+  long length() {
     return writer.getNextIndex() - index();
   }
 
@@ -149,7 +149,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment writer.
    */
-  public SegmentWriter writer() {
+  SegmentWriter writer() {
     checkOpen();
     return writer;
   }
@@ -196,7 +196,7 @@ final class Segment implements AutoCloseable {
    *
    * @return indicates whether the segment is open
    */
-  public boolean isOpen() {
+  boolean isOpen() {
     return open;
   }
 
@@ -209,7 +209,7 @@ final class Segment implements AutoCloseable {
   }
 
   /** Deletes the segment. */
-  public void delete() {
+  void delete() {
     open = false;
     markForDeletion();
     if (readers.isEmpty()) {
