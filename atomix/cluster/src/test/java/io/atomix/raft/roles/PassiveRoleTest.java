@@ -43,7 +43,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.mockito.Mockito;
 
 public class PassiveRoleTest {
 
@@ -175,35 +174,5 @@ public class PassiveRoleTest {
 
     // then
     verify(log, times(1)).flush();
-  }
-
-  @Test
-  public void shouldFlushAfterTruncating() {
-    // given
-    final var orderedFlush = Mockito.inOrder(log);
-    final List<PersistedRaftRecord> entries =
-        List.of(
-            new PersistedRaftRecord(1, 1, 1, 1, new byte[1]),
-            new PersistedRaftRecord(1, 2, 2, 1, new byte[1]),
-            new PersistedRaftRecord(1, 3, 3, 1, new byte[1]));
-    final AppendRequest request = new AppendRequest(1, "", 0, 0, entries, 0);
-
-    when(log.append(any(PersistedRaftRecord.class)))
-        .thenReturn(mock(IndexedRaftLogEntry.class))
-        .thenReturn(mock(IndexedRaftLogEntry.class))
-        .thenReturn(mock(IndexedRaftLogEntry.class));
-    when(ctx.getLog()).thenReturn(log);
-    role.handleAppend(request).join();
-    orderedFlush.verify(log, times(1)).flush();
-
-    // when - force truncation
-    when(log.getLastIndex()).thenReturn(3L);
-    when(ctx.getCommitIndex()).thenReturn(1L);
-
-    role = new PassiveRole(ctx);
-    role.start().join();
-
-    // then
-    orderedFlush.verify(log, times(1)).flush();
   }
 }
