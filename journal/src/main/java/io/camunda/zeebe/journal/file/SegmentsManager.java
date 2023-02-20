@@ -45,10 +45,6 @@ final class SegmentsManager implements AutoCloseable {
   private volatile Segment currentSegment;
   private CompletableFuture<UninitializedSegment> nextSegment = null;
 
-  // this needs to be volatile as it can be accessed from more than one thread if flushing is
-  // performed asynchronously
-  private final long lastFlushedIndex = -1;
-
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
 
