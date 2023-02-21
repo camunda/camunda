@@ -24,12 +24,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.SortedMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Create new segments. Load existing segments from the disk. Keep track of all segments. */
-final class SegmentsManager {
+final class SegmentsManager implements AutoCloseable {
 
   private static final long FIRST_SEGMENT_ID = 1;
   private static final long INITIAL_INDEX = 1;
@@ -40,6 +42,7 @@ final class SegmentsManager {
   private final JournalMetrics journalMetrics;
   private final NavigableMap<Long, Segment> segments = new ConcurrentSkipListMap<>();
   private volatile Segment currentSegment;
+  private CompletableFuture<UninitializedSegment> nextSegment = null;
 
   private final JournalIndex journalIndex;
   private final int maxSegmentSize;
@@ -68,7 +71,8 @@ final class SegmentsManager {
     this.segmentLoader = segmentLoader;
   }
 
-  void close() {
+  @Override
+  public void close() {
     segments
         .values()
         .forEach(
@@ -76,6 +80,14 @@ final class SegmentsManager {
               LOG.debug("Closing segment: {}", segment);
               segment.close();
             });
+
+    try {
+      nextSegment.join();
+    } catch (final Exception e) {
+      LOG.warn("Next segment preparation failed during close, ignoring and proceeding to close", e);
+    }
+
+    nextSegment = null;
     currentSegment = null;
   }
 
@@ -102,15 +114,28 @@ final class SegmentsManager {
   Segment getNextSegment() {
 
     final Segment lastSegment = getLastSegment();
+    final var lastWrittenAsqn = lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN;
+    final var nextSegmentIndex = currentSegment.lastIndex() + 1;
     final SegmentDescriptor descriptor =
         SegmentDescriptor.builder()
             .withId(lastSegment != null ? lastSegment.descriptor().id() + 1 : 1)
-            .withIndex(currentSegment.lastIndex() + 1)
+            .withIndex(nextSegmentIndex)
             .withMaxSegmentSize(maxSegmentSize)
             .build();
-
-    currentSegment =
-        createSegment(descriptor, lastSegment != null ? lastSegment.lastAsqn() : INITIAL_ASQN);
+    if (nextSegment != null) {
+      try {
+        currentSegment =
+            nextSegment
+                .join()
+                .initializeForUse(nextSegmentIndex, lastWrittenAsqn, lastWrittenIndex);
+      } catch (final CompletionException e) {
+        LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
+        currentSegment = createSegment(descriptor, lastWrittenAsqn);
+      }
+    } else {
+      currentSegment = createSegment(descriptor, lastWrittenAsqn);
+    }
+    prepareNextSegment();
 
     segments.put(descriptor.index(), currentSegment);
     journalMetrics.incSegmentCount();
@@ -263,6 +288,22 @@ final class SegmentsManager {
     // node was stopped. It is safe to delete it now since there are no readers opened for these
     // segments.
     deleteDeferredFiles();
+  }
+
+  private void prepareNextSegment() {
+    final var descriptor =
+        SegmentDescriptor.builder()
+            .withId(currentSegment.id() + 1)
+            .withIndex(INITIAL_INDEX)
+            .withMaxSegmentSize(maxSegmentSize)
+            .build();
+    nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
+  }
+
+  private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
+    final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
+    return segmentLoader.createUninitializedSegment(
+        segmentFile.toPath(), descriptor, lastWrittenIndex, journalIndex);
   }
 
   private Segment createSegment(final SegmentDescriptor descriptor, final long lastWrittenAsqn) {

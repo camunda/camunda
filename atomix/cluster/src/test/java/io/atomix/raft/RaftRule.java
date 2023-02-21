@@ -49,6 +49,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -592,7 +593,21 @@ public final class RaftRule extends ExternalResource {
             .orElseThrow();
 
     final var memberDirectory = getMemberDirectory(directory, member);
-    FileUtil.deleteFolder(memberDirectory.toPath());
+
+    boolean deletedMemberDirectory = false;
+    while (!deletedMemberDirectory) {
+      try {
+        FileUtil.deleteFolderIfExists(memberDirectory.toPath());
+        deletedMemberDirectory = true;
+      } catch (final DirectoryNotEmptyException e) {
+        // Deleting the directory may fail when journal asynchronously creates the next segment. In
+        // that case we can simply retry deleting the directory. Eventually we should be able to
+        // delete during a timeframe where the journal is not concurrently creating the next
+        // segment.
+        FileUtil.deleteFolderIfExists(memberDirectory.toPath());
+      }
+    }
+
     // Clear in memory snapshots
     snapshots.remove(node);
   }
