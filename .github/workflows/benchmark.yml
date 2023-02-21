@@ -92,7 +92,7 @@ jobs:
       - build-zeebe-image
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
     with:
-      name: ${{ inputs.name }}-measurement
+      name: measurement-${{ github.run_id }}
       chaos: network-latency-5
       helm-arguments: >
         --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
