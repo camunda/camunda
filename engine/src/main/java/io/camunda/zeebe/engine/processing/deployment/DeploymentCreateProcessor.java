@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
+import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer.ResourceTransformationFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -86,37 +87,40 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
-    final boolean accepted = deploymentTransformer.transform(deploymentEvent);
-    if (accepted) {
-      final long key = keyGenerator.nextKey();
+    deploymentTransformer.transform(deploymentEvent);
 
-      try {
-        createTimerIfTimerStartEvent(command);
-      } catch (final RuntimeException e) {
-        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-        rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-        return;
-      }
-
-      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-
-      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
-
-      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
-      messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-          deploymentEvent, stateWriter);
-
-    } else {
-      responseWriter.writeRejectionOnCommand(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
-      rejectionWriter.appendRejection(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
+    try {
+      createTimerIfTimerStartEvent(command);
+    } catch (final RuntimeException e) {
+      final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+      rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+      return;
     }
+
+    final long key = keyGenerator.nextKey();
+
+    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+
+    deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
+    messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
+        deploymentEvent, stateWriter);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<DeploymentRecord> command, final Throwable error) {
+    if (error instanceof ResourceTransformationFailedException exception) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {
