@@ -17,7 +17,7 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
-import {capitalize} from 'lodash';
+import capitalize from 'lodash/capitalize';
 import {ArrowRight} from '@carbon/react/icons';
 import {themeStore} from 'modules/stores/theme';
 import {observer} from 'mobx-react-lite';

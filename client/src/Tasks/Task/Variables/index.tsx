@@ -8,7 +8,8 @@
 import {useRef, useState} from 'react';
 import {Field, Form} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
-import {get, intersection} from 'lodash';
+import intersection from 'lodash/intersection';
+import get from 'lodash/get';
 import arrayMutators from 'final-form-arrays';
 import {
   Table,

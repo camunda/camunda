@@ -23,7 +23,7 @@ import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
-import {noop} from 'lodash';
+import noop from 'lodash/noop';
 
 type Props = {
   children?: React.ReactNode;

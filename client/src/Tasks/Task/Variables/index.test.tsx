@@ -31,7 +31,7 @@ import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
-import {noop} from 'lodash';
+import noop from 'lodash/noop';
 import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
 type Props = {
