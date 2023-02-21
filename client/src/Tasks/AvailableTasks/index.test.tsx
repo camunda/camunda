@@ -123,7 +123,7 @@ describe('<Tasks />', () => {
         return res.once(ctx.data(mockGetClaimedByMe.result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
     );
 

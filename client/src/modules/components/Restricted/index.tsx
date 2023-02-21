@@ -10,18 +10,19 @@ import {usePermissions} from 'modules/hooks/usePermissions';
 import {Permissions} from 'modules/types';
 
 type Props = {
-  children: React.ReactElement;
+  children: React.ReactNode;
   scopes: Permissions;
+  fallback?: React.ReactNode;
 };
 
-const Restricted: React.FC<Props> = ({children, scopes}) => {
+const Restricted: React.FC<Props> = ({children, scopes, fallback}) => {
   const {hasPermission} = usePermissions(scopes);
 
   if (!hasPermission) {
-    return null;
+    return <>{fallback}</>;
   }
 
-  return children;
+  return <>{children}</>;
 };
 
 export {Restricted};

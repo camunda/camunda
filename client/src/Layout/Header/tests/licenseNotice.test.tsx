@@ -25,7 +25,7 @@ describe('license note', () => {
     });
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -62,7 +62,7 @@ describe('license note', () => {
     };
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -82,7 +82,7 @@ describe('license note', () => {
     };
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -104,7 +104,7 @@ describe('license note', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 

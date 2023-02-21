@@ -31,77 +31,35 @@ const GET_CURRENT_USER = gql`
   }
 `;
 
-const mockGetCurrentUser = {
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser,
-    },
-  },
-} as const;
+type GetCurrentUser = {
+  currentUser: User;
+};
 
-const mockGetCurrentUserWithC8Links = {
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser: currentUserWithC8Links,
-    },
-  },
-} as const;
+const mockGetCurrentUser: GetCurrentUser = {
+  currentUser,
+};
 
-const mockGetCurrentRestrictedUser = {
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser: currentRestrictedUser,
-    },
-  },
-} as const;
+const mockGetCurrentUserWithC8Links: GetCurrentUser = {
+  currentUser: currentUserWithC8Links,
+};
 
-const mockGetCurrentUserWithUnknownRole = {
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser: currentUserWithUnknownRole,
-    },
-  },
-} as const;
+const mockGetCurrentRestrictedUser: GetCurrentUser = {
+  currentUser: currentRestrictedUser,
+};
 
-const mockGetCurrentUserWithoutRole = {
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser: currentUserWithOutRole,
-    },
-  },
-} as const;
+const mockGetCurrentUserWithUnknownRole: GetCurrentUser = {
+  currentUser: currentUserWithUnknownRole,
+};
+
+const mockGetCurrentUserWithoutRole: GetCurrentUser = {
+  currentUser: currentUserWithOutRole,
+};
 
 const mockGetCurrentUserWithCustomSalesPlanType = (
   salesPlanType: User['salesPlanType'],
-) => ({
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser: {...currentUser, salesPlanType},
-    },
-  },
+): GetCurrentUser => ({
+  currentUser: {...currentUser, salesPlanType},
 });
-
-interface GetCurrentUser {
-  currentUser: User;
-}
 
 export type {GetCurrentUser};
 export {

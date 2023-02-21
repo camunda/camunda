@@ -32,8 +32,7 @@ import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import {noop} from 'lodash';
-
-const {currentUser} = mockGetCurrentUser.result.data;
+import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
 type Props = {
   children?: React.ReactNode;
@@ -49,7 +48,7 @@ describe('<Variables />', () => {
   beforeEach(() => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -548,11 +547,9 @@ describe('<Variables />', () => {
       return <div>{data?.currentUser.displayName}</div>;
     };
 
-    const restrictedUser = mockGetCurrentRestrictedUser.result.data;
-
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(restrictedUser));
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
@@ -566,7 +563,7 @@ describe('<Variables />', () => {
         <UserName />
         <Variables
           task={claimedTask()}
-          user={restrictedUser.currentUser}
+          user={currentUser}
           onSubmit={mockOnSubmit}
           onSubmitFailure={noop}
           onSubmitSuccess={noop}
@@ -726,7 +723,7 @@ describe('<Variables />', () => {
   it('should complete a task with a truncated variable', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(
@@ -785,7 +782,7 @@ describe('<Variables />', () => {
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(

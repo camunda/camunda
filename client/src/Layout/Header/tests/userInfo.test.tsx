@@ -23,7 +23,7 @@ describe('User info', () => {
   it('should render user display name', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -45,7 +45,7 @@ describe('User info', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -74,7 +74,7 @@ describe('User info', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
       rest.post('/api/logout', (_, res, ctx) =>
         res.once(ctx.status(204), ctx.json('')),
@@ -110,7 +110,7 @@ describe('User info', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -167,7 +167,7 @@ describe('User info', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 

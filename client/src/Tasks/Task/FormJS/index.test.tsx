@@ -25,8 +25,6 @@ import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {graphql} from 'msw';
 import {noop} from 'lodash';
 
-const {currentUser} = mockGetCurrentUser.result.data;
-
 type Props = {
   children?: React.ReactNode;
 };
@@ -55,7 +53,7 @@ describe('<FormJS />', () => {
         return res.once(ctx.data(mockGetForm.result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
     );
     jest.useFakeTimers();
@@ -93,7 +91,7 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={unclaimedTaskWithForm()}
-        user={currentUser}
+        user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -145,7 +143,7 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
-        user={currentUser}
+        user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -196,7 +194,7 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
-        user={currentUser}
+        user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -245,7 +243,7 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
-        user={currentUser}
+        user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -309,7 +307,7 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
-        user={currentUser}
+        user={mockGetCurrentUser.currentUser}
         onSubmit={mockOnSubmit}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}
@@ -382,7 +380,7 @@ describe('<FormJS />', () => {
         id="form-0"
         processDefinitionId="process"
         task={claimedTaskWithForm()}
-        user={currentUser}
+        user={mockGetCurrentUser.currentUser}
         onSubmit={() => Promise.resolve()}
         onSubmitFailure={noop}
         onSubmitSuccess={noop}

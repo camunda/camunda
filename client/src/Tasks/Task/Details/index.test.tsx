@@ -70,7 +70,7 @@ describe('<Details />', () => {
   it('should render completed task details', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskCompleted().result.data));
@@ -103,7 +103,7 @@ describe('<Details />', () => {
   it('should render unclaimed task details', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
@@ -135,7 +135,7 @@ describe('<Details />', () => {
   it('should render unclaimed task and claim it', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
@@ -181,7 +181,7 @@ describe('<Details />', () => {
   it('should render claimed task and unclaim it', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
@@ -229,7 +229,7 @@ describe('<Details />', () => {
   it('should not render `unclaim task` for restricted users', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
@@ -259,7 +259,7 @@ describe('<Details />', () => {
   it('should not render `claim task` for restricted users', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskUnclaimed().result.data));
@@ -278,13 +278,9 @@ describe('<Details />', () => {
 
     expect(await screen.findByText('Nice Process')).toBeInTheDocument();
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
-
     expect(
       screen.queryByRole('button', {name: /^claim$/i}),
     ).not.toBeInTheDocument();
-
-    expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
-      'Unassigned - claim task to work on this task.',
-    );
+    expect(screen.getByTestId('assignee-task-details')).toHaveTextContent('--');
   });
 });

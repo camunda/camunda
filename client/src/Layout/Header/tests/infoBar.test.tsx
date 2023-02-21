@@ -25,7 +25,7 @@ describe('Info bar', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -74,10 +74,7 @@ describe('Info bar', () => {
       nodeMockServer.use(
         graphql.query('GetCurrentUser', (_, res, ctx) => {
           return res(
-            ctx.data(
-              mockGetCurrentUserWithCustomSalesPlanType(salesPlanType).result
-                .data,
-            ),
+            ctx.data(mockGetCurrentUserWithCustomSalesPlanType(salesPlanType)),
           );
         }),
       );

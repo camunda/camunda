@@ -16,7 +16,7 @@ describe('<Header />', () => {
   it('should render a header', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUser.result.data));
+        return res(ctx.data(mockGetCurrentUser));
       }),
     );
 

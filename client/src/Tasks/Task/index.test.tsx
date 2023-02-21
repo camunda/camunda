@@ -89,7 +89,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res(ctx.data(mockGetTaskVariables().result.data));
@@ -111,7 +111,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskClaimedWithForm().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetForm', (_, res, ctx) => {
         return res.once(ctx.data(mockGetForm.result.data));
@@ -142,7 +142,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskCompleted().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
@@ -164,7 +164,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskCompletedWithForm().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetForm', (_, res, ctx) => {
         return res.once(ctx.data(mockGetForm.result.data));
@@ -189,7 +189,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.mutation('CompleteTask', (_, res, ctx) => {
         return res.once(ctx.data(mockCompleteTask().result.data));
@@ -239,7 +239,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.mutation('CompleteTask', (_, res) => {
         return res.networkError('Network error');
@@ -280,7 +280,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskVariables().result.data));
@@ -304,7 +304,7 @@ describe('<Task />', () => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
       }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
@@ -353,7 +353,7 @@ describe('<Task />', () => {
   it('should render created task with variables form', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) =>
-        res.once(ctx.data(mockGetCurrentUser.result.data)),
+        res.once(ctx.data(mockGetCurrentUser)),
       ),
       graphql.query('GetTask', (_, res, ctx) =>
         res.once(ctx.data(mockGetTaskClaimedWithForm().result.data)),

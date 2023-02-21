@@ -17,7 +17,6 @@ import {
   mockGetCurrentUserWithUnknownRole,
   mockGetCurrentUserWithoutRole,
 } from 'modules/queries/get-current-user';
-
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {ApolloProvider, useQuery} from '@apollo/client';
@@ -51,7 +50,7 @@ describe('Restricted', () => {
   it('should not render content that user has no permission for', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
     );
 
@@ -69,7 +68,7 @@ describe('Restricted', () => {
   it('should render content that user has permission for at least one scope', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentRestrictedUser.result.data));
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
       }),
     );
 
@@ -87,7 +86,7 @@ describe('Restricted', () => {
   it('should render content that user has permission for', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser.result.data));
+        return res.once(ctx.data(mockGetCurrentUser));
       }),
     );
 
@@ -105,9 +104,7 @@ describe('Restricted', () => {
   it('should not render content when API returns an unknown permission', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetCurrentUserWithUnknownRole.result.data),
-        );
+        return res.once(ctx.data(mockGetCurrentUserWithUnknownRole));
       }),
     );
 
@@ -125,7 +122,7 @@ describe('Restricted', () => {
   it('should not render content when API returns no permissions', async () => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUserWithoutRole.result.data));
+        return res.once(ctx.data(mockGetCurrentUserWithoutRole));
       }),
     );
 
@@ -137,6 +134,27 @@ describe('Restricted', () => {
     );
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(screen.queryByText('test content')).not.toBeInTheDocument();
+  });
+
+  it('should render a fallback', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      }),
+    );
+
+    const mockFallback = 'mock fallback';
+
+    render(
+      <Restricted scopes={['write']} fallback={mockFallback}>
+        <div>test content</div>
+      </Restricted>,
+      {wrapper: Wrapper},
+    );
+
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
+    expect(screen.getByText(mockFallback)).toBeInTheDocument();
     expect(screen.queryByText('test content')).not.toBeInTheDocument();
   });
 });

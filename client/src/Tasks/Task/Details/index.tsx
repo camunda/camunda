@@ -215,7 +215,7 @@ const Details: React.FC = () => {
                   {assignee ? (
                     assignee
                   ) : (
-                    <Restricted scopes={['write']}>
+                    <Restricted scopes={['write']} fallback="--">
                       <>
                         Unassigned
                         <HelperText>

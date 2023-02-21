@@ -28,7 +28,7 @@ describe('App switcher', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUserWithC8Links.result.data));
+        return res(ctx.data(mockGetCurrentUserWithC8Links));
       }),
     );
 
@@ -73,7 +73,7 @@ describe('App switcher', () => {
 
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res(ctx.data(mockGetCurrentUserWithC8Links.result.data));
+        return res(ctx.data(mockGetCurrentUserWithC8Links));
       }),
     );
 
