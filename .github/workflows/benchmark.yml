@@ -20,6 +20,12 @@ on:
       benchmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
         required: false
+      publish:
+        description: 'Where to publish the results, can be "slack" or "comment"'
+        default: ""
+        type: string
+        required: false
+
   workflow_call:
     inputs:
       name:
@@ -43,6 +49,11 @@ on:
         required: false
       benchmark-load:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
+        type: string
+        required: false
+      publish:
+        description: 'Where to publish the results, can be "slack" or "comment"'
+        default: ""
         type: string
         required: false
 jobs:
@@ -94,6 +105,7 @@ jobs:
     with:
       name: measurement-${{ github.run_id }}
       chaos: network-latency-5
+      publish: ${{ inputs.publish }}
       helm-arguments: >
         --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
         --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
