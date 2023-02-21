@@ -117,7 +117,7 @@
     <version.awssdk>2.19.5</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>2.0.1.Final</version.validation-api>
-    <version.jackson-databind-nullable>0.2.4</version.jackson-databind-nullable>
+    <version.jackson-databind-nullable>0.2.5</version.jackson-databind-nullable>
     <version.jackson-annotations>2.14.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.7</version.swagger-annotations>
 
