@@ -53,4 +53,8 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
   public boolean hasTimerStartEvent() {
     return startEvents.stream().anyMatch(ExecutableCatchEventElement::isTimer);
   }
+
+  public boolean hasSignalStartEvent() {
+    return startEvents.stream().anyMatch(ExecutableCatchEventElement::isSignal);
+  }
 }
