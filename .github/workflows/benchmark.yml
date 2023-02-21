@@ -102,6 +102,7 @@ jobs:
     needs:
       - build-zeebe-image
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
+    secrets: inherit
     with:
       name: measurement-${{ github.run_id }}
       chaos: network-latency-5
