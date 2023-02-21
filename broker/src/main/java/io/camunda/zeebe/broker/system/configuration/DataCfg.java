@@ -23,6 +23,8 @@ public final class DataCfg implements ConfigurationEntry {
 
   private String directory = DEFAULT_DIRECTORY;
 
+  private String runtimeDirectory = null;
+
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
   private Duration snapshotPeriod = Duration.ofMinutes(5);
@@ -85,6 +87,18 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setDirectory(final String directory) {
     this.directory = directory;
+  }
+
+  public String getRuntimeDirectory() {
+    return runtimeDirectory;
+  }
+
+  public void setRuntimeDirectory(final String runtimeDirectory) {
+    this.runtimeDirectory = runtimeDirectory;
+  }
+
+  public boolean useSeparateRuntimeDirectory() {
+    return runtimeDirectory != null && !runtimeDirectory.isEmpty();
   }
 
   public long getLogSegmentSizeInBytes() {
@@ -152,6 +166,9 @@ public final class DataCfg implements ConfigurationEntry {
     return "DataCfg{"
         + "directory='"
         + directory
+        + '\''
+        + ", stateDirectory='"
+        + runtimeDirectory
         + '\''
         + ", logSegmentSize="
         + logSegmentSize
