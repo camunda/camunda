@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.security.MessageDigest;
@@ -81,7 +82,7 @@ public final class DeploymentTransformer {
     return wrapArray(digestGenerator.digest(resource.getResource()));
   }
 
-  public boolean transform(final DeploymentRecord deploymentEvent) {
+  public void transform(final DeploymentRecord deploymentEvent) {
     final StringBuilder errors = new StringBuilder();
     boolean success = true;
 
@@ -89,7 +90,8 @@ public final class DeploymentTransformer {
     if (!resourceIterator.hasNext()) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = "Expected to deploy at least one resource, but none given";
-      return false;
+
+      throw new ResourceTransformationFailedException(rejectionReason);
     }
 
     while (resourceIterator.hasNext()) {
@@ -101,10 +103,11 @@ public final class DeploymentTransformer {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
-              "Expected to deploy new resources, but encountered the following errors:%s", errors);
-    }
+              "Expected to deploy new resources, but encountered the following errors:%s",
+              errors);
 
-    return success;
+      throw new ResourceTransformationFailedException(rejectionReason);
+    }
   }
 
   private boolean transformResource(
@@ -147,6 +150,19 @@ public final class DeploymentTransformer {
         .map(Entry::getValue)
         .findFirst()
         .orElse(UNKNOWN_RESOURCE);
+  }
+
+  /**
+   * Exception that can be thrown during processing of a command, in case the engine could not
+   * subscribe to an event. This exception can be handled by the processor in {@link
+   * io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor#tryHandleError(TypedRecord,
+   * Throwable)}.
+   */
+  public static final class ResourceTransformationFailedException extends RuntimeException {
+
+    public ResourceTransformationFailedException(final String message) {
+      super(message);
+    }
   }
 
   private static class UnknownResourceTransformer implements DeploymentResourceTransformer {
