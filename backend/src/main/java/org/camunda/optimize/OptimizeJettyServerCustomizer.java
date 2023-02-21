@@ -31,12 +31,13 @@ import static com.google.common.net.HttpHeaders.CONTENT_SECURITY_POLICY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_XSS_PROTECTION;
 import static org.camunda.optimize.JettyConfig.getResponseHeadersConfiguration;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
 @Component
 @RequiredArgsConstructor
 public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer<JettyServletWebServerFactory> {
   public static final String EXTERNAL_SUB_PATH = "/external";
-  public static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
+  private static final String SUB_PATH_PATTERN_TEMPLATE = "^%s(/?)(.*)$";
   private final ConfigurationService configurationService;
 
   @Override
@@ -51,7 +52,10 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
       // the external API path rewrite handler is wrapping the app context modifying any external api requests
       // before the appServletContextHandler receives them
       final Handler externalApiRewriteHandler = replacePathSectionRewriteHandler(
-        handler, EXTERNAL_SUB_PATH + "/api", "/api" + EXTERNAL_SUB_PATH
+        factory,
+        handler,
+        EXTERNAL_SUB_PATH + REST_API_PATH,
+        REST_API_PATH + EXTERNAL_SUB_PATH
       );
 
       // If running in cloud environment an additional rewrite handler is added to handle requests containing the
@@ -94,7 +98,6 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
         context = (WebAppContext) handlerWrapper;
       }
     }
-
     return Optional.ofNullable(context);
   }
 
@@ -120,13 +123,16 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
     return rewriteHandler;
   }
 
-  private Handler replacePathSectionRewriteHandler(final Handler handler,
-                                                   final String originalPath, final String replacementPath) {
+  private Handler replacePathSectionRewriteHandler(final JettyServletWebServerFactory factory,
+                                                   final Handler handler,
+                                                   final String originalPath,
+                                                   final String replacementPath) {
     final RewriteHandler rewriteHandler = new RewriteHandler();
     rewriteHandler.setRewriteRequestURI(true);
     rewriteHandler.setRewritePathInfo(true);
     final RewriteRegexRule alternativeRootPathEraserRegexRule = new RewriteRegexRule(
-      String.format(SUB_PATH_PATTERN_TEMPLATE, originalPath), replacementPath + "/$2"
+      String.format(SUB_PATH_PATTERN_TEMPLATE, factory.getContextPath() + originalPath),
+      factory.getContextPath() + replacementPath + "/$2"
     );
     rewriteHandler.addRule(alternativeRootPathEraserRegexRule);
     rewriteHandler.setHandler(handler);
@@ -159,6 +165,6 @@ public class OptimizeJettyServerCustomizer implements WebServerFactoryCustomizer
     public void configure(WebAppContext context) throws Exception {
       context.setErrorHandler(new NotFoundErrorHandler());
     }
-
   }
+
 }

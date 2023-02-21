@@ -6,6 +6,8 @@
 package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.AbstractIT;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,6 +24,16 @@ import static org.camunda.optimize.rest.EntitiesRestService.ENTITIES_PATH;
 import static org.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
 
 public class ExternalSubPathRewriteIT extends AbstractIT {
+
+  @BeforeEach
+  public void beforeEach() {
+    setContextPath(null);
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    setContextPath(null);
+  }
 
   @ParameterizedTest
   @MethodSource("publicResourcesGet")
@@ -48,6 +60,28 @@ public class ExternalSubPathRewriteIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
+  @Test
+  public void externalPrefixRequestServesPublicResourcesWithCustomContextPath() {
+    // given
+    final String contextPath = "/customContextPath";
+    setContextPath(contextPath);
+    startAndUseNewOptimizeInstance();
+
+    // then the request executor uses the custom context path
+    assertThat(embeddedOptimizeExtension.getRequestExecutor().getDefaultWebTarget().getUri().getPath()).contains(contextPath);
+
+    // given
+    publicResourcesGet()
+      .forEach(resourcePath -> {
+        Response response = embeddedOptimizeExtension
+          .rootTarget(resourcePath)
+          .request()
+          .get();
+        // then
+        assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+      });
+  }
+
   private static Stream<String> publicResourcesGet() {
     return Stream.of(
       // accessing the root of the webserver via the external sub-path should work
@@ -63,6 +97,10 @@ public class ExternalSubPathRewriteIT extends AbstractIT {
       // accessing an unsecured REST API endpoint via the external sub-path should work
       REST_API_PATH + EXTERNAL_SUB_PATH + CANDIDATE_GROUP_RESOURCE_PATH
     );
+  }
+
+  private static void setContextPath(final String path) {
+    embeddedOptimizeExtension.getConfigurationService().setContextPath(path);
   }
 
 }

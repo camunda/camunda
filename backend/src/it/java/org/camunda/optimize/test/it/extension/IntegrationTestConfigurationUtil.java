@@ -16,6 +16,8 @@ import org.springframework.context.ApplicationContext;
 
 import java.util.Properties;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationTestConfigurationUtil {
   private static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
@@ -82,7 +84,7 @@ public class IntegrationTestConfigurationUtil {
   }
 
   public static String getEmbeddedOptimizeRestApiEndpoint(ApplicationContext applicationContext) {
-    return getEmbeddedOptimizeEndpoint(applicationContext) + "/api";
+    return getEmbeddedOptimizeEndpoint(applicationContext) + REST_API_PATH;
   }
 
   public static ConfigurationService createItConfigurationService() {

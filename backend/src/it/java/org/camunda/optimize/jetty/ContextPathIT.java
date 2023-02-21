@@ -6,6 +6,7 @@
 package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.rest.UIConfigurationRestService;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,6 +17,8 @@ import javax.ws.rs.core.Response;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 
 public class ContextPathIT extends AbstractIT {
 
@@ -31,7 +34,7 @@ public class ContextPathIT extends AbstractIT {
     embeddedOptimizeExtension.getConfigurationService().setContextPath(customContextPath);
     startAndUseNewOptimizeInstance();
 
-    // then the request executor uses the custom context header
+    // then the request executor uses the custom context path
     assertThat(
       embeddedOptimizeExtension.getRequestExecutor().getDefaultWebTarget().getUri().getPath()).contains(customContextPath);
 
@@ -59,6 +62,15 @@ public class ContextPathIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+
+    // when a resource on the external subpath is requested
+    response = embeddedOptimizeExtension
+      .rootTarget(REST_API_PATH + EXTERNAL_SUB_PATH + UIConfigurationRestService.UI_CONFIGURATION_PATH)
+      .request()
+      .get();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     // when the custom path is not included as part of the request
     final String optimizeEndpoint =

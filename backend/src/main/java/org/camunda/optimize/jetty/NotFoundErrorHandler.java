@@ -19,9 +19,10 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+
 public class NotFoundErrorHandler extends ErrorHandler {
   private static final String INDEX_PAGE = "/index.html";
-  private static final String API_PATH = "/api";
   private static final Logger logger = Log.getLogger(NotFoundErrorHandler.class);
 
   @Override
@@ -31,7 +32,7 @@ public class NotFoundErrorHandler extends ErrorHandler {
     response.setHeader(HttpHeader.CONTENT_ENCODING.toString(), null);
 
     String requestUri = request.getRequestURI();
-    boolean notApiOrPage = !requestUri.startsWith(API_PATH) &&
+    boolean notApiOrPage = !requestUri.startsWith(REST_API_PATH) &&
       (requestUri.endsWith(".html") || requestUri.split("\\.").length == 1);
 
     if (notApiOrPage && Response.Status.NOT_FOUND.getStatusCode() == response.getStatus()) {

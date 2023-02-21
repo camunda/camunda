@@ -487,7 +487,6 @@ public class EmbeddedOptimizeExtension
       }
     }
 
-
     // warmup the elastic client with default options (to not make use of plugins)
     // this is done to fully initialize the client as the client does a version validation on the first request
     try {
