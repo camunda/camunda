@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import java.util.Iterator;
@@ -279,6 +281,11 @@ public final class ResponseMapper {
   public static ModifyProcessInstanceResponse toModifyProcessInstanceResponse(
       final long key, final ProcessInstanceModificationRecord brokerResponse) {
     return ModifyProcessInstanceResponse.getDefaultInstance();
+  }
+
+  public static DeleteResourceResponse toDeleteResourceResponse(
+      final long key, final ResourceDeletionRecord brokerResponse) {
+    return DeleteResourceResponse.getDefaultInstance();
   }
 
   private static String bufferAsJson(final DirectBuffer customHeaders) {

@@ -28,6 +28,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -336,6 +338,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toModifyProcessInstanceRequest,
         ResponseMapper::toModifyProcessInstanceResponse,
+        responseObserver);
+  }
+
+  public void deleteResource(
+      final DeleteResourceRequest request,
+      final ServerStreamObserver<DeleteResourceResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toDeleteResourceRequest,
+        ResponseMapper::toDeleteResourceResponse,
         responseObserver);
   }
 
