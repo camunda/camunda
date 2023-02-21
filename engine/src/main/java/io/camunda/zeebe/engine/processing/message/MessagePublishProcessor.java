@@ -51,8 +51,10 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
+  private final int currentPartitionId;
 
   public MessagePublishProcessor(
+      final int partitionId,
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final MessageStartEventSubscriptionState startEventSubscriptionState,
@@ -66,6 +68,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.startEventSubscriptionState = startEventSubscriptionState;
+    currentPartitionId = partitionId;
     this.commandSender = commandSender;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -118,7 +121,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     correlateToSubscriptions(messageKey, messageRecord);
     correlateToMessageStartEvents(messageRecord);
 
-    sideEffectWriter.appendSideEffect(this::sendCorrelateCommand);
+    sendCorrelateCommand();
 
     if (messageRecord.getTimeToLive() <= 0L) {
       // avoid that the message can be correlated again by writing the EXPIRED event as a follow-up

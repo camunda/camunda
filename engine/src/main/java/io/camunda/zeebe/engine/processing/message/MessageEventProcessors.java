@@ -45,6 +45,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
             new MessagePublishProcessor(
+                zeebeState.getPartitionId(),
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,
@@ -61,12 +62,21 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CREATE,
             new MessageSubscriptionCreateProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers, keyGenerator))
+                zeebeState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers,
+                keyGenerator))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
             new MessageSubscriptionCorrelateProcessor(
-                messageState, subscriptionState, subscriptionCommandSender, writers))
+                zeebeState.getPartitionId(),
+                messageState,
+                subscriptionState,
+                subscriptionCommandSender,
+                writers))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.DELETE,
