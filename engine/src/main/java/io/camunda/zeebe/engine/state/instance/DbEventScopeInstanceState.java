@@ -8,17 +8,21 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Collection;
-import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableInteger;
 
 public final class DbEventScopeInstanceState implements MutableEventScopeInstanceState {
+
+  private final DbElementInstanceState elementInstanceState;
 
   private final DbLong eventScopeKey;
   private final EventScopeInstance eventScopeInstance;
@@ -31,7 +35,9 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, EventTrigger> eventTriggerColumnFamily;
 
   public DbEventScopeInstanceState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final ElementInstanceState elementInstanceState) {
     eventScopeKey = new DbLong();
     eventScopeInstance = new EventScopeInstance();
     eventScopeInstanceColumnFamily =
@@ -45,6 +51,8 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
     eventTriggerColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.EVENT_TRIGGER, transactionContext, eventTriggerKey, eventTrigger);
+
+    this.elementInstanceState = (DbElementInstanceState) elementInstanceState;
   }
 
   @Override
@@ -70,12 +78,20 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
 
   @Override
   public void deleteInstance(final long eventScopeKey) {
-    eventTriggerScopeKey.wrapLong(eventScopeKey);
+    final var elementInstance = elementInstanceState.getInstance(eventScopeKey);
+    final var eventTriggers = elementInstance.getEventTriggers();
 
-    eventTriggerColumnFamily.whileEqualPrefix(
-        eventTriggerScopeKey,
-        (BiConsumer<DbCompositeKey<DbLong, DbLong>, EventTrigger>)
-            (key, value) -> deleteTrigger(key));
+    if (eventTriggers > 0) {
+      final MutableInteger triggerCount = new MutableInteger(eventTriggers);
+      eventTriggerScopeKey.wrapLong(eventScopeKey);
+      eventTriggerColumnFamily.whileEqualPrefix(
+          eventTriggerScopeKey,
+          (KeyValuePairVisitor<DbCompositeKey<DbLong, DbLong>, EventTrigger>)
+              (key, value) -> {
+                deleteTrigger(key);
+                return triggerCount.decrementAndGet() > 0;
+              });
+    }
 
     this.eventScopeKey.wrapLong(eventScopeKey);
     eventScopeInstanceColumnFamily.deleteIfExists(this.eventScopeKey);
@@ -149,14 +165,18 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
 
   @Override
   public EventTrigger peekEventTrigger(final long eventScopeKey) {
-    eventTriggerScopeKey.wrapLong(eventScopeKey);
+    final var elementInstance = elementInstanceState.getInstance(eventScopeKey);
+
     final EventTrigger[] next = new EventTrigger[1];
-    eventTriggerColumnFamily.whileEqualPrefix(
-        eventTriggerScopeKey,
-        (key, value) -> {
-          next[0] = new EventTrigger(value);
-          return false;
-        });
+    if (elementInstance != null && elementInstance.getEventTriggers() > 0) {
+      eventTriggerScopeKey.wrapLong(eventScopeKey);
+      eventTriggerColumnFamily.whileEqualPrefix(
+          eventTriggerScopeKey,
+          (key, value) -> {
+            next[0] = new EventTrigger(value);
+            return false;
+          });
+    }
 
     return next[0];
   }
@@ -197,6 +217,10 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
         .setProcessInstanceKey(processInstanceKey);
 
     eventTriggerColumnFamily.insert(eventTriggerKey, eventTrigger);
+
+    final var elementInstance = elementInstanceState.getInstance(eventScopeKey);
+    elementInstance.incrementEventTriggers();
+    elementInstanceState.updateInstance(elementInstance);
   }
 
   private void deleteTrigger(final DbCompositeKey<DbLong, DbLong> triggerKey) {

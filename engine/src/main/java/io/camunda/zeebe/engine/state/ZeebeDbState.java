@@ -90,7 +90,9 @@ public class ZeebeDbState implements MutableZeebeState {
     processState = new DbProcessState(zeebeDb, transactionContext);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
     elementInstanceState = new DbElementInstanceState(zeebeDb, transactionContext, variableState);
-    eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
+    ((DbVariableState) variableState).setElementInstanceState(elementInstanceState);
+    eventScopeInstanceState =
+        new DbEventScopeInstanceState(zeebeDb, transactionContext, elementInstanceState);
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     jobState = new DbJobState(zeebeDb, transactionContext, partitionId);

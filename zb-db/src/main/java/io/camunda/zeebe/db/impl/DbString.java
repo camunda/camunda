@@ -12,6 +12,7 @@ import static io.camunda.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -60,5 +61,25 @@ public final class DbString implements DbKey, DbValue {
 
   public DirectBuffer getBuffer() {
     return bytes;
+  }
+
+  @Override
+  public int hashCode() {
+    return bytes.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) {
+      return true;
+    }
+    if (obj == null) {
+      return false;
+    }
+    if (getClass() != obj.getClass()) {
+      return false;
+    }
+    final var other = (DbString) obj;
+    return Objects.equals(bytes, other.bytes);
   }
 }

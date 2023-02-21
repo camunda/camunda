@@ -63,7 +63,7 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .applyOutputMappings(context, element)
         .flatMap(
             ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
+              //              eventSubscriptionBehavior.unsubscribeFromEvents(context);
               return stateTransitionBehavior.transitionToCompleted(element, context);
             })
         .ifRightOrLeft(

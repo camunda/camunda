@@ -110,4 +110,6 @@ public enum ZbColumnFamilies {
   // signal subscription
   SIGNAL_SUBSCRIPTION_BY_NAME_AND_KEY,
   SIGNAL_SUBSCRIPTION_BY_KEY_AND_NAME,
+
+  JOB_STATS,
 }

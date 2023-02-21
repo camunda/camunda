@@ -63,7 +63,7 @@ public final class ProcessProcessor
   public void onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
 
-    eventSubscriptionBehavior.unsubscribeFromEvents(context);
+    // eventSubscriptionBehavior.unsubscribeFromEvents(context);
 
     // we need to send the result before we transition to completed, since the
     // event applier will delete the element instance

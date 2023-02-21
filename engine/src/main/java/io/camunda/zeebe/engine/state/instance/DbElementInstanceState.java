@@ -127,6 +127,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final ElementInstance instance;
     if (parent == null) {
       instance = new ElementInstance(key, state, value);
+      instance.setVariables(4);
     } else {
       instance = new ElementInstance(key, parent, state, value);
       updateInstance(parent);
@@ -146,10 +147,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     final long parent = instance.getParentKey();
     parentKey.inner().wrapLong(parent);
     parentChildColumnFamily.deleteIfExists(parentChildKey);
-    elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
     variableState.removeScope(key);
+    elementInstanceColumnFamily.deleteExisting(elementInstanceKey);
     awaitProcessInstanceResultMetadataColumnFamily.deleteIfExists(elementInstanceKey);
-    removeNumberOfTakenSequenceFlows(key);
+    // removeNumberOfTakenSequenceFlows(key);
 
     if (parent > 0) {
       elementInstanceKey.wrapLong(parent);
