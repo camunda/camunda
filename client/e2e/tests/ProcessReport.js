@@ -1238,7 +1238,7 @@ test('Display precision properly', async (t) => {
   // Default precision for duration is 3
   // shouldn't affect percentage values
   await t.expect(a.textContent).match(/\d+/);
-  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(b.textContent).match(/\d(\.\d)?%/);
   await t.expect(c.textContent).match(/\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*/);
 
   await t.click(e.configurationButton);
@@ -1250,7 +1250,7 @@ test('Display precision properly', async (t) => {
   c = e.tableCell(19, 3);
 
   await t.expect(a.textContent).match(/\d+/);
-  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(b.textContent).match(/\d(\.\d)?%/);
   await t.expect(c.textContent).match(/\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*.\d+.[a-zA-Z]*/);
 
   await t.typeText(e.limitPrecisionInput, '1', {replace: true});
@@ -1260,6 +1260,6 @@ test('Display precision properly', async (t) => {
   c = e.tableCell(19, 3);
 
   await t.expect(a.textContent).match(/\d+/);
-  await t.expect(b.textContent).match(/\d\.\d%/);
+  await t.expect(b.textContent).match(/\d(\.\d)?%/);
   await t.expect(c.textContent).match(/\d+.[a-zA-Z]*/);
 });

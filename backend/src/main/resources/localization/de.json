@@ -426,6 +426,13 @@
       "hour": "Stunde",
       "searchForVariable": "Suche nach Variablen…"
     },
+    "sorting": {
+      "label": "Sortierreihenfolge",
+      "order": {
+        "asc": "Aufsteigend",
+        "desc": "Absteigend"
+      }
+    },
     "visualization": {
       "label": "Visualisierung",
       "number": "Nummer",

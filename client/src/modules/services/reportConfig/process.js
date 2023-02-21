@@ -7,6 +7,8 @@
 
 import {t} from 'translation';
 
+import {getDefaultSorting} from './reportConfig';
+
 export const view = [
   {
     key: 'rawData',
@@ -383,5 +385,49 @@ export const visualization = [
     matcher: ({visualization}) => visualization === 'heat',
     payload: () => ({visualization: 'heat'}),
     priority: 1,
+  },
+];
+
+export const sortingOrder = [
+  {
+    key: 'asc',
+    label: () => t('report.sorting.order.asc'),
+    visible: ({visualization, groupBy, distributedBy}) =>
+      ['bar', 'barLine', 'line'].includes(visualization) &&
+      groupBy?.type.toLowerCase().includes('date') &&
+      !groupBy?.type.toLowerCase().includes('candidate') &&
+      distributedBy.type === 'none',
+    enabled: () => true,
+    payload: (report) => {
+      const {configuration} = report;
+      const {by: defaultBy} = getDefaultSorting({reportType: 'process', data: report});
+      return {
+        configuration: {
+          ...configuration,
+          sorting: {by: configuration.sorting?.by || defaultBy, order: 'asc'},
+        },
+      };
+    },
+    priority: 9,
+  },
+  {
+    key: 'desc',
+    label: () => t('report.sorting.order.desc'),
+    visible: ({visualization, groupBy, distributedBy}) =>
+      ['bar', 'barLine', 'line'].includes(visualization) &&
+      ['startDate', 'endDate', 'runningDate', 'evaluationDate'].includes(groupBy?.type) &&
+      distributedBy.type === 'none',
+    enabled: () => true,
+    payload: (report) => {
+      const {configuration} = report;
+      const {by: defaultBy} = getDefaultSorting({reportType: 'process', data: report});
+      return {
+        configuration: {
+          ...configuration,
+          sorting: {by: configuration.sorting?.by || defaultBy, order: 'desc'},
+        },
+      };
+    },
+    priority: 9,
   },
 ];

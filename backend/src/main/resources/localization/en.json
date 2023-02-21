@@ -426,6 +426,13 @@
       "hour": "Hour",
       "searchForVariable": "Search for variable…"
     },
+    "sorting": {
+      "label": "Sorting Order",
+      "order": {
+        "asc": "Ascending",
+        "desc": "Descending"
+      }
+    },
     "visualization": {
       "label": "Visualization",
       "number": "Number",

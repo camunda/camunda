@@ -752,3 +752,11 @@ it('should use key as a displayName for copied process when it has no displayNam
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].definitions.$splice[0][2].displayName).toBe('aKey (copy)');
 });
+
+it('should show Sorting with proper values for reports grouped by date', () => {
+  const reportWithGRoupByDate = update(report, {data: {groupBy: {$set: {type: 'startDate'}}}});
+  const node = shallow(<ReportControlPanel {...props} report={reportWithGRoupByDate} />);
+
+  expect(node.find('Sorting').prop('report')).toBe(reportWithGRoupByDate.data);
+  expect(node.find('Sorting').prop('type')).toBe('process');
+});

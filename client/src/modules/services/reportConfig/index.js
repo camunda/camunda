@@ -7,7 +7,7 @@
 
 import * as processOptions from './process';
 import * as decisionOptions from './decision';
-export {createReportUpdate} from './reportConfig';
+export {createReportUpdate, getDefaultSorting} from './reportConfig';
 
 const config = {
   process: processOptions,

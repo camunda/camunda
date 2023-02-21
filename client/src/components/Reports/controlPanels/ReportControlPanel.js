@@ -22,6 +22,7 @@ import DistributedBy from './DistributedBy';
 import AggregationType from './AggregationType';
 import View from './View';
 import GroupBy from './GroupBy';
+import Sorting from './Sorting';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 import {DefinitionList} from './DefinitionList';
@@ -415,6 +416,11 @@ export default withErrorHandling(
                   report={report.data}
                   onChange={(change) => updateReport(change, true)}
                   variables={variables}
+                />
+                <Sorting
+                  type="process"
+                  report={report.data}
+                  onChange={(change) => updateReport(change, true)}
                 />
                 {isDurationHeatmap(data) && (
                   <li className="select">

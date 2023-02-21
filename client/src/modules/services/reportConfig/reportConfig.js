@@ -16,14 +16,14 @@ import {isCategoricalBar, isCategorical} from '../reportService';
 import * as processOptions from './process';
 import * as decisionOptions from './decision';
 
-const config = {
+const reportOptionsMap = {
   process: processOptions,
   decision: decisionOptions,
 };
 
-export function createReportUpdate(reportType, report, type, newValue, payloadAdjustment) {
-  const options = config[reportType];
-  let newPayload = options[type].find(({key}) => key === newValue).payload(report);
+export function createReportUpdate(reportType, report, updateType, newValue, payloadAdjustment) {
+  const reportOptions = reportOptionsMap[reportType];
+  let newPayload = reportOptions[updateType].find(({key}) => key === newValue).payload(report);
 
   if (payloadAdjustment) {
     newPayload = update(newPayload, payloadAdjustment);
@@ -32,32 +32,31 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
   let newReport = {...structuredClone(report), ...newPayload};
 
   // ensure group is still valid
-  const oldGroup = options.group.find(({matcher}) => matcher(newReport));
-  if (!oldGroup || !oldGroup.visible(newReport) || !oldGroup.enabled(newReport)) {
-    const possibleGroups = options.group
+  const oldGroup = reportOptions.group.find(({matcher}) => matcher(newReport));
+  if (!oldGroup?.visible(newReport) || !oldGroup?.enabled(newReport)) {
+    const possibleGroups = reportOptions.group
       .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
       .sort((a, b) => a.priority - b.priority);
 
-    newReport = {...newReport, ...possibleGroups[0].payload(newReport)};
+    newReport = {...newReport, ...possibleGroups[0]?.payload(newReport)};
   }
 
   // ensure distribution is still valid
   if (reportType === 'process') {
-    const oldDistribution = options.distribution.find(({matcher}) => matcher(newReport));
+    const oldDistribution = reportOptions.distribution.find(({matcher}) => matcher(newReport));
     if (
-      !oldDistribution ||
-      !oldDistribution.visible(newReport) ||
-      !oldDistribution.enabled(newReport) ||
-      (type === 'view' &&
-        options.view.find(({matcher}) => matcher(report)) !==
-          options.view.find(({matcher}) => matcher(newReport)) &&
+      !oldDistribution?.visible(newReport) ||
+      !oldDistribution?.enabled(newReport) ||
+      (updateType === 'view' &&
+        reportOptions.view.find(({matcher}) => matcher(report)) !==
+          reportOptions.view.find(({matcher}) => matcher(newReport)) &&
         oldDistribution.key === 'none') || // try to find distribution when switching view
-      (type === 'group' &&
+      (updateType === 'group' &&
         ['flowNodes', 'userTasks'].includes(
-          options.group.find(({matcher}) => matcher(report))?.key
+          reportOptions.group.find(({matcher}) => matcher(report))?.key
         )) // try to find distribution when switching away from flowNodes
     ) {
-      const possibleDistributions = options.distribution
+      const possibleDistributions = reportOptions.distribution
         .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
         .sort((a, b) => a.priority - b.priority);
 
@@ -66,13 +65,9 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
   }
 
   // ensure visualization is still valid
-  const oldVisualization = options.visualization.find(({matcher}) => matcher(newReport));
-  if (
-    !oldVisualization ||
-    !oldVisualization.visible(newReport) ||
-    !oldVisualization.enabled(newReport)
-  ) {
-    const possibleVisualizations = options.visualization
+  const oldVisualization = reportOptions.visualization.find(({matcher}) => matcher(newReport));
+  if (!oldVisualization?.visible(newReport) || !oldVisualization?.enabled(newReport)) {
+    const possibleVisualizations = reportOptions.visualization
       .filter(({visible, enabled}) => visible(newReport) && enabled(newReport))
       .sort((a, b) => a.priority - b.priority);
 
@@ -81,8 +76,8 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
 
   // --- ensure configuration is still valid ---
   // update y label on view change
-  if (type === 'view' && ['duration', 'frequency'].includes(newReport.view.properties[0])) {
-    let label = options.view.find(({matcher}) => matcher(newReport)).label() + ' ';
+  if (updateType === 'view' && ['duration', 'frequency'].includes(newReport.view.properties[0])) {
+    let label = reportOptions.view.find(({matcher}) => matcher(newReport)).label() + ' ';
     if (reportType === 'process') {
       if (newReport.view.properties[0] === 'frequency') {
         label += t('report.view.count');
@@ -94,21 +89,25 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
   }
 
   // update x label on group and view update
-  if (['view', 'group'].includes(type)) {
+  if (['view', 'group'].includes(updateType)) {
     if (['variable', 'inputVariable', 'outputVariable'].includes(newReport.groupBy.type)) {
       const {name, type} = newReport.groupBy.value;
       newReport.configuration.xLabel = getVariableLabel(name, type);
     } else {
-      newReport.configuration.xLabel = options.group
+      newReport.configuration.xLabel = reportOptions.group
         .find(({matcher}) => matcher(newReport))
         .label();
     }
   }
 
-  // update sorting and tablecolumnorder
-  newReport.configuration.sorting = getDefaultSorting({reportType, data: newReport});
+  // set default sorting if not a sorting update
+  if (updateType !== 'sortingOrder') {
+    newReport.configuration.sorting = getDefaultSorting({reportType, data: newReport});
+  }
+
   newReport.configuration.horizontalBar = isCategoricalBar(newReport);
 
+  // reset tablecolumnorder
   newReport.configuration.tableColumns.columnOrder = [];
 
   if (reportType === 'process') {
@@ -164,7 +163,7 @@ export function createReportUpdate(reportType, report, type, newValue, payloadAd
 
     // disable bucket size config on group update
     // reason: group by variable bucket size does not make sense for group by duration
-    if (type === 'group') {
+    if (updateType === 'group') {
       newReport.configuration.customBucket.active = false;
       newReport.configuration.distributeByCustomBucket.active = false;
     }
@@ -194,7 +193,7 @@ function isProcessInstanceDuration({view}) {
   return view && view.entity === 'processInstance' && view.properties[0] === 'duration';
 }
 
-function getDefaultSorting({reportType, data}) {
+export function getDefaultSorting({reportType, data}) {
   const {view, groupBy, visualization} = data;
   if (visualization === 'table' && ['flowNodes', 'userTasks'].includes(groupBy?.type)) {
     return {by: 'label', order: 'asc'};
@@ -214,6 +213,10 @@ function getDefaultSorting({reportType, data}) {
     // Ascending for Integer, Double, Long
     const order = ['Date', 'Boolean'].includes(groupBy.value.type) ? 'desc' : 'asc';
     return {by: 'key', order};
+  }
+
+  if (groupBy?.type.toLowerCase().includes('date')) {
+    return {by: 'key', order: 'asc'};
   }
 
   return {by: 'key', order: 'desc'};

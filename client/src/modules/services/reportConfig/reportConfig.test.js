@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {createReportUpdate} from './reportConfig';
+import {createReportUpdate, getDefaultSorting} from './reportConfig';
 
 import {getVariableLabel} from 'variables';
 import {isCategoricalBar, isCategorical} from '../reportService';
@@ -183,6 +183,7 @@ describe('default sorting', () => {
     });
   });
 });
+
 describe('horizonalBarChart', () => {
   it('should keep horizontalBar config as false for non categorical reports', () => {
     isCategoricalBar.mockReturnValueOnce(false);
@@ -401,5 +402,71 @@ describe('process exclusive updates', () => {
       createReportUpdate('process', bucketSizeReport, 'group', 'duration').configuration.$set
         .distributeByCustomBucket
     ).toEqual({active: false});
+  });
+
+  it('should not set the default sorting for sorting update', () => {
+    expect(
+      createReportUpdate('process', report, 'sortingOrder', 'asc').configuration.$set.sorting
+    ).toEqual({
+      by: 'key',
+      order: 'asc',
+    });
+  });
+});
+
+describe('getDefaultSorting', () => {
+  it('should sort raw data a descending order by the start date', () => {
+    expect(
+      getDefaultSorting({reportType: 'process', data: {...report, view: {property: 'rawData'}}})
+    ).toEqual({
+      by: 'startDate',
+      order: 'desc',
+    });
+  });
+
+  it('should sort categorical chart reports by value in a descending order', () => {
+    isCategorical.mockReturnValueOnce(true);
+    expect(
+      getDefaultSorting({
+        reportType: 'process',
+        data: {...report, visualization: 'bar'},
+      })
+    ).toEqual({
+      by: 'value',
+      order: 'desc',
+    });
+  });
+
+  it('should sort number variable by key in ascending order', () => {
+    expect(
+      getDefaultSorting({
+        reportType: 'process',
+        data: {
+          ...report,
+          groupBy: {type: 'variable', value: {type: 'Double'}},
+          visualization: 'bar',
+        },
+      })
+    ).toEqual({
+      by: 'key',
+      order: 'asc',
+    });
+  });
+
+  it('should sort flow node table report by label in ascending order', () => {
+    expect(
+      getDefaultSorting({
+        reportType: 'process',
+        data: {
+          ...report,
+          view: {entity: 'flowNode', properties: ['frequency']},
+          groupBy: {type: 'flowNodes'},
+          visualization: 'table',
+        },
+      })
+    ).toEqual({
+      by: 'label',
+      order: 'asc',
+    });
   });
 });
