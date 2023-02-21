@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery, useMutation} from '@apollo/client';
-import {useParams, useLocation} from 'react-router-dom';
+import {useMutation} from '@apollo/client';
+import {useParams} from 'react-router-dom';
 import {GetTask, useTask} from 'modules/queries/get-task';
 import {CLAIM_TASK, ClaimTaskVariables} from 'modules/mutations/claim-task';
 import {
@@ -22,23 +22,10 @@ import {
   HelperText,
   AssigneeText,
 } from './styled';
-import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
-import {FilterValues} from 'modules/constants/filterValues';
-import {getSearchParam} from 'modules/utils/getSearchParam';
-import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import {shouldFetchMore} from './shouldFetchMore';
 import {shouldDisplayNotification} from './shouldDisplayNotification';
 import {getTaskAssignmentChangeErrorMessage} from './getTaskAssignmentChangeErrorMessage';
 import {Restricted} from 'modules/components/Restricted';
-import {
-  GET_CURRENT_USER,
-  GetCurrentUser,
-} from 'modules/queries/get-current-user';
-import {
-  MAX_TASKS_PER_REQUEST,
-  MAX_TASKS_DISPLAYED,
-} from 'modules/constants/tasks';
-import {getSortValues} from 'modules/utils/getSortValues';
 import {tracking} from 'modules/tracking';
 import {useState} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -62,39 +49,11 @@ const Details: React.FC = () => {
   const {id = ''} = useParams<{id: string}>();
   const [assignmentStatus, setAssignmentStatus] =
     useState<AssignmentStatus>('off');
-  const location = useLocation();
-  const filter =
-    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
-  const isClaimedByMeFilter = filter === FilterValues.ClaimedByMe;
-  const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
-    skip: !isClaimedByMeFilter,
-  });
-
-  const {data: dataFromCache} = useQuery<GetTasks>(GET_TASKS, {
-    fetchPolicy: 'cache-only',
-  });
-  const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
   const [claimTask, {loading: claimLoading}] = useMutation<
     GetTask,
     ClaimTaskVariables
   >(CLAIM_TASK, {
     variables: {id},
-    refetchQueries: [
-      {
-        query: GET_TASKS,
-        variables: {
-          ...getQueryVariables(filter, {
-            userId: userData?.currentUser.userId,
-            pageSize:
-              currentTaskCount <= MAX_TASKS_PER_REQUEST
-                ? MAX_TASKS_PER_REQUEST
-                : MAX_TASKS_DISPLAYED,
-            searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
-          }),
-          isRunAfterMutation: true,
-        },
-      },
-    ],
   });
 
   const [unclaimTask, {loading: unclaimLoading}] = useMutation<
@@ -102,22 +61,6 @@ const Details: React.FC = () => {
     UnclaimTaskVariables
   >(UNCLAIM_TASK, {
     variables: {id},
-    refetchQueries: [
-      {
-        query: GET_TASKS,
-        variables: {
-          ...getQueryVariables(filter, {
-            userId: userData?.currentUser.userId,
-            pageSize:
-              currentTaskCount <= MAX_TASKS_PER_REQUEST
-                ? MAX_TASKS_PER_REQUEST
-                : MAX_TASKS_DISPLAYED,
-            searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
-          }),
-          isRunAfterMutation: true,
-        },
-      },
-    ],
   });
 
   const {data, fetchMore} = useTask(id);

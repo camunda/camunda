@@ -12,7 +12,6 @@ import {Container} from './styled';
 import {OPTIONS} from './constants';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
-import {useTasks} from 'modules/hooks/useTasks';
 import {tracking} from 'modules/tracking';
 import {Dropdown} from '@carbon/react';
 import {useRef} from 'react';
@@ -27,10 +26,13 @@ type FormValues = {
   filter: FilterOption;
 };
 
-const Filters: React.FC = () => {
+type Props = {
+  disabled: boolean;
+};
+
+const Filters: React.FC<Props> = ({disabled}) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const {loading} = useTasks({withPolling: false});
   const selectedFilter = getSearchParam('filter', location.search);
   const dropdownRef = useRef<null | HTMLButtonElement>(null);
 
@@ -69,7 +71,7 @@ const Filters: React.FC = () => {
                   label="Filter options"
                   items={Object.values(OPTIONS)}
                   itemToString={(item) => (item ? item.text : '')}
-                  disabled={loading}
+                  disabled={disabled}
                   onChange={(event) => {
                     if (typeof event.selectedItem?.id === 'string') {
                       input.onChange(event.selectedItem.id);

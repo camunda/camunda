@@ -5,29 +5,18 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-  within,
-} from '@testing-library/react';
+import {render, screen, within} from '@testing-library/react';
 import {AvailableTasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {
   mockGetAllOpenTasks,
   mockGetEmptyTasks,
-  mockGetClaimedByMe,
-  mockGetUnclaimed,
-  mockGetCompleted,
 } from 'modules/queries/get-tasks';
-import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {FilterValues} from 'modules/constants/filterValues';
-import {ApolloProvider} from '@apollo/client';
-import {client} from 'modules/apollo-client';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {graphql} from 'msw';
-import userEvent from '@testing-library/user-event';
+
+function noop() {
+  return Promise.resolve([]);
+}
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
@@ -38,12 +27,10 @@ const getWrapper = (
     children?: React.ReactNode;
   }> = ({children}) => (
     <MockThemeProvider>
-      <ApolloProvider client={client}>
-        <MemoryRouter initialEntries={initialEntries}>
-          {children}
-          <Link to="/">go home</Link>
-        </MemoryRouter>
-      </ApolloProvider>
+      <MemoryRouter initialEntries={initialEntries}>
+        {children}
+        <Link to="/">go home</Link>
+      </MemoryRouter>
     </MockThemeProvider>
   );
 
@@ -52,31 +39,46 @@ const getWrapper = (
 
 describe('<Tasks />', () => {
   it('should not render when loading', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
-      }),
+    const {rerender} = render(
+      <AvailableTasks
+        loading
+        onScrollDown={noop}
+        onScrollUp={noop}
+        tasks={[]}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
     );
 
-    render(<AvailableTasks />, {wrapper: getWrapper()});
-
     expect(screen.queryByTestId('task-0')).not.toBeInTheDocument();
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
+    expect(screen.getByTestId('tasks-skeleton')).toBeInTheDocument();
+
+    rerender(
+      <AvailableTasks
+        loading={false}
+        onScrollDown={noop}
+        onScrollUp={noop}
+        tasks={mockGetAllOpenTasks}
+      />,
+    );
+
+    expect(screen.queryByTestId('tasks-skeleton')).not.toBeInTheDocument();
     expect(screen.getByTestId('task-0')).toBeInTheDocument();
   });
 
   it('should render tasks', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
-      }),
+    render(
+      <AvailableTasks
+        loading={false}
+        onScrollDown={noop}
+        onScrollUp={noop}
+        tasks={mockGetAllOpenTasks}
+      />,
+      {wrapper: getWrapper()},
     );
 
-    render(<AvailableTasks />, {wrapper: getWrapper()});
-
-    const [firstTask, secondTask] = mockGetAllOpenTasks().result.data.tasks;
-
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
+    const [firstTask, secondTask] = mockGetAllOpenTasks;
 
     const withinFirstTask = within(screen.getByTestId('task-0'));
     const withinSecondTask = within(screen.getByTestId('task-1'));
@@ -103,99 +105,19 @@ describe('<Tasks />', () => {
   });
 
   it('should render empty message when there are no tasks', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetEmptyTasks.result.data));
-      }),
+    render(
+      <AvailableTasks
+        loading={false}
+        onScrollDown={noop}
+        onScrollUp={noop}
+        tasks={mockGetEmptyTasks}
+      />,
+      {wrapper: getWrapper()},
     );
 
-    render(<AvailableTasks />, {wrapper: getWrapper()});
-
-    expect(await screen.findByText('No tasks found')).toBeInTheDocument();
+    expect(screen.getByText('No tasks found')).toBeInTheDocument();
     expect(
       screen.getByText('There are no tasks matching your filter criteria.'),
     ).toBeInTheDocument();
-  });
-
-  it('should show all tasks claimed by me', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetClaimedByMe.result.data));
-      }),
-      graphql.query('GetCurrentUser', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCurrentUser));
-      }),
-    );
-
-    render(<AvailableTasks />, {
-      wrapper: getWrapper([`/?filter=${FilterValues.ClaimedByMe}`]),
-    });
-
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
-
-    expect(screen.getByTestId('task-0')).toBeInTheDocument();
-    expect(screen.getByTestId('task-1')).toBeInTheDocument();
-    expect(screen.getByTestId('task-2')).toBeInTheDocument();
-  });
-
-  it('should show all unclaimed tasks', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetUnclaimed.result.data));
-      }),
-    );
-
-    render(<AvailableTasks />, {
-      wrapper: getWrapper([`/?filter=${FilterValues.Unclaimed}`]),
-    });
-
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
-
-    expect(screen.getByTestId('task-0')).toBeInTheDocument();
-    expect(screen.getByTestId('task-1')).toBeInTheDocument();
-    expect(screen.getByTestId('task-2')).toBeInTheDocument();
-  });
-
-  it('should show all completed tasks', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCompleted.result.data));
-      }),
-    );
-
-    render(<AvailableTasks />, {
-      wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
-    });
-
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
-
-    expect(screen.getByTestId('task-0')).toBeInTheDocument();
-    expect(screen.getByTestId('task-1')).toBeInTheDocument();
-    expect(screen.getByTestId('task-2')).toBeInTheDocument();
-  });
-
-  it('should show a skeleton while changing filters', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetCompleted.result.data));
-      }),
-    );
-
-    render(<AvailableTasks />, {
-      wrapper: getWrapper([`/?filter=${FilterValues.Completed}`]),
-    });
-
-    expect(screen.getByTestId('tasks-skeleton')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
-
-    userEvent.click(screen.getByRole('link', {name: /go home/i}));
-
-    expect(screen.getByTestId('tasks-skeleton')).toBeInTheDocument();
-
-    await waitForElementToBeRemoved(() => screen.getByTestId('tasks-skeleton'));
   });
 });

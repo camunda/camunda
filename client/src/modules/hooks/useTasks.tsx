@@ -5,29 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import {useQuery, useLazyQuery, NetworkStatus} from '@apollo/client';
-import {useLocation} from 'react-router-dom';
-
+import {NetworkStatus, useQuery, FetchMoreOptions} from '@apollo/client';
+import {FilterValues} from 'modules/constants/filterValues';
+import {
+  GetCurrentUser,
+  GET_CURRENT_USER,
+} from 'modules/queries/get-current-user';
 import {
   GET_TASKS,
   GetTasks,
   GetTasksVariables,
 } from 'modules/queries/get-tasks';
-import {
-  GET_CURRENT_USER,
-  GetCurrentUser,
-} from 'modules/queries/get-current-user';
-import {
-  MAX_TASKS_PER_REQUEST,
-  MAX_TASKS_DISPLAYED,
-} from 'modules/constants/tasks';
-import {getSearchParam} from 'modules/utils/getSearchParam';
-import {FilterValues} from 'modules/constants/filterValues';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {useEffect, useRef} from 'react';
-import {getSortValues} from 'modules/utils/getSortValues';
+import {getSearchParam} from 'modules/utils/getSearchParam';
+import {useEffect, useState} from 'react';
+import {useLocation} from 'react-router-dom';
 
-function useTasks({withPolling}: {withPolling?: boolean}) {
+const POLLING_INTERVAL = 5000;
+const MAX_TASKS_DISPLAYED = 200;
+const MAX_TASKS_PER_REQUEST = 50;
+
+type UpdateQuery = FetchMoreOptions<GetTasks, GetTasksVariables>['updateQuery'];
+
+function useTasks() {
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -35,122 +35,156 @@ function useTasks({withPolling}: {withPolling?: boolean}) {
   const currentUserResult = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
     skip: !isClaimedByMeFilter,
   });
-
-  let timeout = useRef<NodeJS.Timeout | undefined>();
-
-  const [fetchTasks, {data, networkStatus, fetchMore, called}] = useLazyQuery<
-    GetTasks,
-    GetTasksVariables
-  >(GET_TASKS, {
-    variables: getQueryVariables(filter, {
+  const [variables, setVariables] = useState(
+    getQueryVariables(filter, {
       userId: currentUserResult.data?.currentUser.userId,
       pageSize: MAX_TASKS_PER_REQUEST,
     }),
+  );
+
+  const {
+    data,
+    fetchMore,
+    stopPolling,
+    startPolling,
+    client,
+    refetch,
+    networkStatus,
+  } = useQuery<GetTasks, GetTasksVariables>(GET_TASKS, {
+    variables,
+    pollInterval: POLLING_INTERVAL,
+    skip:
+      isClaimedByMeFilter &&
+      (!currentUserResult.called || currentUserResult.loading),
     fetchPolicy: 'network-only',
-    nextFetchPolicy: 'cache-first',
-    notifyOnNetworkStatusChange: true,
+    nextFetchPolicy: 'cache-and-network',
     context: {
-      headers: withPolling
-        ? {
-            'x-is-polling': 'true',
-          }
-        : undefined,
+      headers: {
+        'x-is-polling': 'true',
+      },
     },
   });
 
-  const tasks = data?.tasks;
-  const fetchPreviousTasks = async () => {
-    if (fetchMore === undefined) {
-      return [];
-    }
+  const getUpdateQuery = (
+    mergeTasks: (
+      currentTasks: GetTasks['tasks'],
+      newTasks: GetTasks['tasks'],
+    ) => GetTasks['tasks'],
+  ): UpdateQuery => {
+    return (currentResult, {fetchMoreResult}) => {
+      if (!Array.isArray(fetchMoreResult?.tasks)) {
+        return currentResult;
+      }
 
-    try {
-      const {
-        data: {tasks: latestFetchedTasks},
-      } = await fetchMore({
-        variables: {
-          searchBefore: tasks?.[0]?.sortValues,
-          pageSize: MAX_TASKS_PER_REQUEST,
-        },
+      const newTasks = mergeTasks(
+        currentResult.tasks ?? [],
+        fetchMoreResult?.tasks ?? [],
+      );
+      const newVariables = getQueryVariables(filter, {
+        userId: currentUserResult.data?.currentUser.userId,
+        pageSize: newTasks.length,
+        searchAfterOrEqual: newTasks[0].sortValues,
       });
 
-      return latestFetchedTasks;
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
+      client.cache.writeQuery({
+        query: GET_TASKS,
+        data: {
+          tasks: newTasks,
+        },
+        variables: newVariables,
+      });
+
+      setVariables(newVariables);
+
+      return {
+        tasks: newTasks,
+      };
+    };
   };
+
+  useEffect(() => {
+    setVariables(
+      getQueryVariables(filter, {
+        userId: currentUserResult.data?.currentUser.userId,
+        pageSize: MAX_TASKS_PER_REQUEST,
+      }),
+    );
+  }, [filter, currentUserResult.data?.currentUser.userId]);
 
   const fetchNextTasks = async () => {
-    if (fetchMore === undefined) {
-      return;
+    const tasks = data?.tasks;
+    if (tasks === undefined) {
+      return [];
     }
 
-    try {
-      await fetchMore({
-        variables: {
-          searchAfter: tasks?.[tasks.length - 1]?.sortValues,
+    if (tasks.length > 0) {
+      const lastTask = tasks.at(-1)!;
+
+      stopPolling();
+
+      const newTasks = await fetchMore({
+        variables: getQueryVariables(filter, {
+          userId: currentUserResult.data?.currentUser.userId,
           pageSize: MAX_TASKS_PER_REQUEST,
-        },
+          searchAfter: lastTask.sortValues,
+        }),
+        updateQuery: getUpdateQuery((currentTasks, newTasks) => {
+          const mergedTasks = [...currentTasks, ...newTasks];
+          return mergedTasks.length > MAX_TASKS_DISPLAYED
+            ? mergedTasks.slice(mergedTasks.length - MAX_TASKS_DISPLAYED)
+            : mergedTasks;
+        }),
       });
-    } catch (error) {
-      console.error(error);
+
+      startPolling(POLLING_INTERVAL);
+
+      return newTasks.data?.tasks ?? [];
     }
+
+    return [];
   };
 
-  const shouldFetchMoreTasks =
-    fetchMore !== undefined && networkStatus === NetworkStatus.ready;
-
-  useEffect(() => {
-    if (currentUserResult.data === undefined && isClaimedByMeFilter) {
-      return;
-    }
-    fetchTasks();
-  }, [fetchTasks, currentUserResult, isClaimedByMeFilter]);
-
-  useEffect(() => {
-    if (
-      withPolling &&
-      networkStatus === NetworkStatus.ready &&
-      timeout.current === undefined
-    ) {
-      timeout.current = setTimeout(() => {
-        if (fetchMore !== undefined && timeout.current !== undefined) {
-          const taskLength = tasks?.length ?? 0;
-
-          fetchMore({
-            variables: {
-              pageSize:
-                taskLength <= MAX_TASKS_PER_REQUEST
-                  ? MAX_TASKS_PER_REQUEST
-                  : MAX_TASKS_DISPLAYED,
-              searchAfterOrEqual: getSortValues(tasks),
-              isPolling: true,
-            },
-          });
-        }
-      }, 5000);
+  const fetchPreviousTasks = async () => {
+    const tasks = data?.tasks;
+    if (tasks === undefined) {
+      return [];
     }
 
-    return () => {
-      if (withPolling && timeout.current !== undefined) {
-        clearTimeout(timeout.current);
-        timeout.current = undefined;
-      }
-    };
-  }, [withPolling, networkStatus, tasks, fetchMore]);
+    if (tasks.length > 0) {
+      const firstTask = tasks[0];
+
+      stopPolling();
+
+      const newTasks = await fetchMore({
+        variables: getQueryVariables(filter, {
+          userId: currentUserResult.data?.currentUser.userId,
+          pageSize: MAX_TASKS_PER_REQUEST,
+          searchBefore: firstTask.sortValues,
+        }),
+        updateQuery: getUpdateQuery((currentTasks, newTasks) => {
+          const mergedTasks = [...newTasks, ...currentTasks];
+          return mergedTasks.length > MAX_TASKS_DISPLAYED
+            ? mergedTasks.slice(0, MAX_TASKS_DISPLAYED)
+            : mergedTasks;
+        }),
+      });
+
+      startPolling(POLLING_INTERVAL);
+
+      return newTasks.data?.tasks ?? [];
+    }
+
+    return [];
+  };
 
   return {
-    tasks: tasks ?? [],
-    networkStatus,
-    shouldFetchMoreTasks,
+    tasks: data?.tasks ?? [],
+    loading: networkStatus === NetworkStatus.loading,
     fetchPreviousTasks,
     fetchNextTasks,
-    loading:
-      !called ||
-      networkStatus === NetworkStatus.loading ||
-      networkStatus === NetworkStatus.setVariables ||
-      currentUserResult.loading,
+    refetch: () => {
+      refetch(variables);
+    },
   };
 }
 

@@ -8,65 +8,34 @@
 /* istanbul ignore file */
 
 import {ApolloClient, InMemoryCache, HttpLink} from '@apollo/client';
-
+import {User} from 'modules/types';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mergePathname} from 'modules/utils/mergePathname';
-import {MAX_TASKS_DISPLAYED} from 'modules/constants/tasks';
+import uniqBy from 'lodash/uniqBy';
 
-type CreateApolloClientOptions = {maxTasksDisplayed: number};
-const defaultCreateApolloClient = {
-  maxTasksDisplayed: MAX_TASKS_DISPLAYED,
-} as const;
-function createApolloClient({
-  maxTasksDisplayed,
-}: CreateApolloClientOptions = defaultCreateApolloClient) {
+function createApolloClient() {
   return new ApolloClient({
     cache: new InMemoryCache({
       typePolicies: {
         Query: {
           fields: {
             currentUser: {
-              read(user) {
-                if (user === undefined || user.permissions === undefined) {
+              read(user: User | undefined) {
+                if (user?.permissions === undefined) {
                   return user;
                 }
 
                 return {
                   ...user,
-                  permissions: user?.permissions.map((permission: string) =>
+                  permissions: user.permissions.map((permission: string) =>
                     permission.toLowerCase(),
                   ),
                 };
               },
             },
             tasks: {
-              keyArgs: false,
-              merge(existing, incoming, {args}) {
-                let merged = existing ? existing.slice(0) : [];
-
-                let result;
-
-                // requesting next page
-                if (args?.query?.searchAfter !== undefined) {
-                  merged.push(...incoming);
-                  result = merged.slice(
-                    Math.max(merged.length - maxTasksDisplayed, 0),
-                  );
-                }
-                // requesting previous page
-                else if (args?.query?.searchBefore !== undefined) {
-                  if (incoming.length > 0) {
-                    merged.unshift(...incoming);
-                  }
-
-                  result = merged.slice(0, maxTasksDisplayed);
-                }
-                // initial request / polling / refreshing after mutations
-                else {
-                  result = incoming;
-                }
-
-                return result;
+              merge(_, incoming) {
+                return uniqBy(incoming, '__ref');
               },
             },
           },
@@ -103,4 +72,4 @@ async function clearClientCache() {
   await client.cache.reset();
 }
 
-export {client, resetApolloStore, clearClientCache, createApolloClient};
+export {client, resetApolloStore, clearClientCache};

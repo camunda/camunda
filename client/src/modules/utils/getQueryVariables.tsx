@@ -7,6 +7,7 @@
 
 import {FilterValues} from 'modules/constants/filterValues';
 import {TaskStates} from 'modules/constants/taskStates';
+import {GetTasksVariables} from 'modules/queries/get-tasks';
 
 const getQueryVariables = (
   filter: string,
@@ -23,46 +24,41 @@ const getQueryVariables = (
     searchAfter?: string[];
     searchAfterOrEqual?: string[];
   },
-) => {
+): GetTasksVariables => {
+  const BASE_QUERY_VARIABLES = {
+    pageSize,
+    searchBefore,
+    searchAfter,
+    searchAfterOrEqual,
+  } as const;
+
   switch (filter) {
     case FilterValues.ClaimedByMe: {
       return {
+        ...BASE_QUERY_VARIABLES,
         assigned: true,
-        assignee: userId,
+        assignee: userId!,
         state: TaskStates.Created,
-        pageSize,
-        searchBefore,
-        searchAfter,
-        searchAfterOrEqual,
       };
     }
     case FilterValues.Unclaimed: {
       return {
+        ...BASE_QUERY_VARIABLES,
         assigned: false,
         state: TaskStates.Created,
-        pageSize,
-        searchBefore,
-        searchAfter,
-        searchAfterOrEqual,
       };
     }
     case FilterValues.Completed: {
       return {
+        ...BASE_QUERY_VARIABLES,
         state: TaskStates.Completed,
-        pageSize,
-        searchBefore,
-        searchAfter,
-        searchAfterOrEqual,
       };
     }
     case FilterValues.AllOpen:
     default: {
       return {
+        ...BASE_QUERY_VARIABLES,
         state: TaskStates.Created,
-        pageSize,
-        searchBefore,
-        searchAfter,
-        searchAfterOrEqual,
       };
     }
   }

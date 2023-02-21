@@ -24,21 +24,13 @@ import {
 } from 'modules/queries/get-current-user';
 import {Pages} from 'modules/constants/pages';
 import {Task as TaskType, Variable} from 'modules/types';
-import {GetTasks, GET_TASKS} from 'modules/queries/get-tasks';
-import {getSearchParam} from 'modules/utils/getSearchParam';
-import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {FilterValues} from 'modules/constants/filterValues';
 import {FormJS} from './FormJS';
-
-import {
-  MAX_TASKS_PER_REQUEST,
-  MAX_TASKS_DISPLAYED,
-} from 'modules/constants/tasks';
-import {getSortValues} from 'modules/utils/getSortValues';
 import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Skeleton} from './Skeleton';
 import {storeStateLocally} from 'modules/utils/localStorage';
+import {FilterValues} from 'modules/constants/filterValues';
+import {getSearchParam} from 'modules/utils/getSearchParam';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -50,39 +42,27 @@ function getFormId(formKey: NonNullable<TaskType['formKey']>): string {
   return formKey.replace(CAMUNDA_FORMS_PREFIX, '');
 }
 
-const Task: React.FC = () => {
+type Props = {
+  hasRemainingTasks: boolean;
+  onCompleted?: () => void;
+};
+
+const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
   const {id = ''} = useParams<'id'>();
   const navigate = useNavigate();
   const location = useLocation();
-  const filter =
-    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
-  const {data: dataFromCache} = useQuery<GetTasks>(GET_TASKS, {
-    fetchPolicy: 'cache-only',
-  });
-  const currentTaskCount = dataFromCache?.tasks?.length ?? 0;
   const {fetchMore, data, loading} = useTask(id);
+
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
+
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
     {
-      refetchQueries: [
-        {
-          query: GET_TASKS,
-          variables: {
-            ...getQueryVariables(filter, {
-              userId: userData?.currentUser.userId,
-              pageSize:
-                currentTaskCount <= MAX_TASKS_PER_REQUEST
-                  ? MAX_TASKS_PER_REQUEST
-                  : MAX_TASKS_DISPLAYED,
-              searchAfterOrEqual: getSortValues(dataFromCache?.tasks),
-            }),
-            isRunAfterMutation: true,
-          },
-        },
-      ],
+      onCompleted,
     },
   );
+  const filter =
+    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
   const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
 
   useEffect(() => {
@@ -100,7 +80,6 @@ const Task: React.FC = () => {
         variables,
       },
     });
-    const hasRemainingTasks = (dataFromCache?.tasks?.length ?? 0) > 1;
 
     tracking.track({
       eventName: 'task-completed',

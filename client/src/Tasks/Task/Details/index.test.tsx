@@ -13,10 +13,6 @@ import {
   mockGetTaskCompleted,
   mockGetTaskClaimed,
 } from 'modules/queries/get-task';
-import {
-  mockGetAllOpenTasks,
-  mockGetAllOpenTasksUnclaimed,
-} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -143,9 +139,6 @@ describe('<Details />', () => {
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
-      }),
     );
 
     render(<Details />, {
@@ -188,11 +181,6 @@ describe('<Details />', () => {
       }),
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetAllOpenTasksUnclaimed(true).result.data),
-        );
       }),
     );
 
@@ -237,11 +225,6 @@ describe('<Details />', () => {
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetAllOpenTasksUnclaimed(true).result.data),
-        );
-      }),
     );
 
     render(<Details />, {
@@ -266,9 +249,6 @@ describe('<Details />', () => {
       }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
       }),
     );
 

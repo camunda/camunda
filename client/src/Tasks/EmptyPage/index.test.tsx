@@ -5,18 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import {graphql} from 'msw';
-import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {
-  mockGetAllOpenTasks,
-  mockGetEmptyTasks,
-} from 'modules/queries/get-tasks';
 import {EmptyPage} from './index';
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
@@ -37,19 +27,13 @@ const getWrapper = () => {
   return Wrapper;
 };
 
-describe('<EmptyPage />', () => {
+describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   afterEach(() => {
     clearStateLocally('hasCompletedTask');
   });
 
   it('should hide part of the empty message for new users', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetEmptyTasks.result.data));
-      }),
-    );
-
-    render(<EmptyPage />, {
+    render(<EmptyPage isLoadingTasks={false} hasNoTasks />, {
       wrapper: getWrapper(),
     });
 
@@ -65,13 +49,7 @@ describe('<EmptyPage />', () => {
   });
 
   it('should show an empty page message for new users', async () => {
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
-      }),
-    );
-
-    render(<EmptyPage />, {
+    render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
       wrapper: getWrapper(),
     });
 
@@ -100,13 +78,8 @@ describe('<EmptyPage />', () => {
 
   it('should show an empty page message for old users', async () => {
     storeStateLocally('hasCompletedTask', true);
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks().result.data));
-      }),
-    );
 
-    render(<EmptyPage />, {
+    render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
       wrapper: getWrapper(),
     });
 
@@ -119,18 +92,19 @@ describe('<EmptyPage />', () => {
 
   it('should not show an empty page message for old users', async () => {
     storeStateLocally('hasCompletedTask', true);
-    nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetEmptyTasks.result.data));
-      }),
+
+    const {container, rerender} = render(
+      <EmptyPage isLoadingTasks hasNoTasks />,
+      {
+        wrapper: getWrapper(),
+      },
     );
 
-    const {container} = render(<EmptyPage />, {
-      wrapper: getWrapper(),
-    });
+    expect(screen.getByTestId('loading-state')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(() => screen.getByTestId('loading-state'));
+    rerender(<EmptyPage isLoadingTasks={false} hasNoTasks />);
 
+    expect(screen.queryByTestId('loading-state')).not.toBeInTheDocument();
     expect(container).toBeEmptyDOMElement();
   });
 });

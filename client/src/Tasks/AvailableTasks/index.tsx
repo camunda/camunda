@@ -16,21 +16,26 @@ import {
   EmptyListIcon,
 } from './styled';
 import {Task} from './Task';
-import {useTasks} from 'modules/hooks/useTasks';
 import {useLocation} from 'react-router-dom';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
+import {QueryTask} from 'modules/queries/get-tasks';
 
-const AvailableTasks: React.FC = () => {
-  const {
-    fetchPreviousTasks,
-    fetchNextTasks,
-    shouldFetchMoreTasks,
-    loading,
-    tasks,
-  } = useTasks({withPolling: true});
+type Props = {
+  onScrollUp: () => Promise<ReadonlyArray<QueryTask>>;
+  onScrollDown: () => Promise<ReadonlyArray<QueryTask>>;
+  tasks: ReadonlyArray<QueryTask>;
+  loading: boolean;
+};
+
+const AvailableTasks: React.FC<Props> = ({
+  loading,
+  onScrollDown,
+  onScrollUp,
+  tasks,
+}) => {
   const taskRef = useRef<HTMLDivElement>(null);
   const scrollableListRef = useRef<HTMLUListElement>(null);
   const location = useLocation();
@@ -51,17 +56,13 @@ const AvailableTasks: React.FC = () => {
           onScroll={async (event) => {
             const target = event.target as HTMLDivElement;
 
-            if (!shouldFetchMoreTasks) {
-              return;
-            }
-
             if (
               target.scrollHeight - target.clientHeight - target.scrollTop <=
               0
             ) {
-              await fetchNextTasks();
+              await onScrollDown();
             } else if (target.scrollTop === 0) {
-              const previousTasks = await fetchPreviousTasks();
+              const previousTasks = await onScrollUp();
 
               target.scrollTop =
                 (taskRef?.current?.clientHeight ?? 0) * previousTasks.length;

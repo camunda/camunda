@@ -22,10 +22,6 @@ import {
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {mockCompleteTask} from 'modules/mutations/complete-task';
-import {
-  mockGetAllOpenTasks,
-  mockGetAllOpenTasksUnclaimed,
-} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import userEvent from '@testing-library/user-event';
@@ -96,7 +92,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -121,7 +117,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -149,7 +145,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -174,7 +170,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -194,27 +190,12 @@ describe('<Task />', () => {
       graphql.mutation('CompleteTask', (_, res, ctx) => {
         return res.once(ctx.data(mockCompleteTask().result.data));
       }),
-      graphql.query('GetTasks', (req, res, ctx) => {
-        const {state, assigned} = req.variables;
-
-        if (state === 'CREATED' && assigned === undefined) {
-          return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
-        }
-
-        return res.once(
-          ctx.errors([
-            {
-              message: 'Invalid query',
-            },
-          ]),
-        );
-      }),
       graphql.query('GetTaskVariables', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskEmptyVariables().result.data));
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -249,7 +230,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -287,7 +268,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -312,16 +293,8 @@ describe('<Task />', () => {
       graphql.mutation('UnclaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockUnclaimTask.result.data));
       }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data(mockGetAllOpenTasksUnclaimed(true).result.data),
-        );
-      }),
       graphql.mutation('ClaimTask', (_, res, ctx) => {
         return res.once(ctx.data(mockClaimTask.result.data));
-      }),
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(ctx.data(mockGetAllOpenTasks(true).result.data));
       }),
       graphql.query('GetTask', (_, res, ctx) => {
         return res.once(ctx.data(mockGetTaskClaimed().result.data));
@@ -331,7 +304,7 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
@@ -366,7 +339,7 @@ describe('<Task />', () => {
       ),
     );
 
-    render(<Task />, {
+    render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 

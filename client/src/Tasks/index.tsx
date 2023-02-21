@@ -12,18 +12,43 @@ import {AvailableTasks} from './AvailableTasks';
 import {EmptyPage} from './EmptyPage';
 import {Route, Routes} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
+import {useTasks} from 'modules/hooks/useTasks';
 
 const Tasks: React.FC = () => {
+  const {fetchPreviousTasks, fetchNextTasks, loading, tasks, refetch} =
+    useTasks();
+
   return (
     <Container>
       <TasksPanel title="Tasks">
-        <Filters />
-        <AvailableTasks />
+        <Filters disabled={loading} />
+        <AvailableTasks
+          loading={loading}
+          onScrollDown={fetchNextTasks}
+          onScrollUp={fetchPreviousTasks}
+          tasks={tasks}
+        />
       </TasksPanel>
       <DetailsPanel title="Details" variant="layer">
         <Routes>
-          <Route index element={<EmptyPage />} />
-          <Route path={Pages.TaskDetails()} element={<Task />} />
+          <Route
+            index
+            element={
+              <EmptyPage
+                hasNoTasks={tasks.length === 0}
+                isLoadingTasks={loading}
+              />
+            }
+          />
+          <Route
+            path={Pages.TaskDetails()}
+            element={
+              <Task
+                hasRemainingTasks={tasks.length > 0}
+                onCompleted={refetch}
+              />
+            }
+          />
         </Routes>
       </DetailsPanel>
     </Container>

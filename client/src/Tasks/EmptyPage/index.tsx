@@ -15,16 +15,16 @@ import {
 } from './styled';
 import CheckImage from './orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {useTasks} from 'modules/hooks/useTasks';
 
-const EmptyPage: React.FC = () => {
+type Props = {
+  isLoadingTasks: boolean;
+  hasNoTasks: boolean;
+};
+
+const EmptyPage: React.FC<Props> = ({hasNoTasks, isLoadingTasks}) => {
   const isOldUser = getStateLocally('hasCompletedTask') === true;
-  const {tasks, loading} = useTasks({
-    withPolling: false,
-  });
-  const hasNoTasks = tasks.length === 0;
 
-  if (loading) {
+  if (isLoadingTasks) {
     return <span data-testid="loading-state" />;
   }
 

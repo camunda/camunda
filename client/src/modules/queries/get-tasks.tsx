@@ -16,72 +16,33 @@ import {
 } from 'modules/mock-schema/mocks/tasks';
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
-import {MAX_TASKS_PER_REQUEST} from 'modules/constants/tasks';
+
+type QueryTask = Pick<
+  Task,
+  | 'id'
+  | 'name'
+  | 'assignee'
+  | 'processName'
+  | 'creationTime'
+  | 'taskState'
+  | 'sortValues'
+  | 'isFirst'
+>;
 
 interface GetTasks {
-  tasks: ReadonlyArray<
-    Pick<
-      Task,
-      | 'id'
-      | 'name'
-      | 'assignee'
-      | 'processName'
-      | 'creationTime'
-      | 'taskState'
-      | 'sortValues'
-      | 'isFirst'
-    >
-  >;
+  tasks: ReadonlyArray<QueryTask>;
 }
 
-interface GetAllOpenVariables {
+type GetTasksVariables = {
   searchBefore?: string[];
   searchAfter?: string[];
   searchAfterOrEqual?: readonly string[];
   pageSize?: number;
+  assigned?: boolean;
+  assignee?: string;
+  state?: (typeof TaskStates)[keyof typeof TaskStates];
   isPolling?: boolean;
-}
-
-interface GetClaimedByMeVariables {
-  searchBefore?: string[];
-  searchAfter?: string[];
-  searchAfterOrEqual?: readonly string[];
-  pageSize?: number;
-  assignee: string;
-  state: typeof TaskStates.Created;
-  isPolling?: boolean;
-}
-
-interface GetUnclaimedVariables {
-  searchBefore?: string[];
-  searchAfter?: string[];
-  searchAfterOrEqual?: readonly string[];
-  pageSize?: number;
-  assigned: false;
-  state: typeof TaskStates.Created;
-  isPolling?: boolean;
-}
-
-interface GetCompletedVariables {
-  searchBefore?: string[];
-  searchAfter?: string[];
-  searchAfterOrEqual?: readonly string[];
-  pageSize?: number;
-  state: typeof TaskStates.Completed;
-  isPolling?: boolean;
-}
-
-interface GetNewProcessInstanceTasksVariables {
-  state: typeof TaskStates.Created;
-  processInstanceId: string;
-}
-
-type GetTasksVariables =
-  | GetAllOpenVariables
-  | GetClaimedByMeVariables
-  | GetUnclaimedVariables
-  | GetCompletedVariables
-  | GetNewProcessInstanceTasksVariables;
+};
 
 const GET_TASKS = gql`
   query GetTasks(
@@ -120,138 +81,14 @@ const GET_TASKS = gql`
   }
 `;
 
-const mockGetAllOpenTasks = (isRunAfterMutation?: boolean) =>
-  ({
-    request: {
-      query: GET_TASKS,
-      variables: {
-        state: TaskStates.Created,
-        pageSize: MAX_TASKS_PER_REQUEST,
-        isRunAfterMutation,
-      },
-    },
-    result: {
-      data: {
-        tasks,
-      },
-    },
-  } as const);
+const mockGetAllOpenTasks: ReadonlyArray<QueryTask> = tasks;
+const mockGetAllOpenTasksUnclaimed: ReadonlyArray<QueryTask> = unclaimedTasks;
+const mockGetEmptyTasks: ReadonlyArray<QueryTask> = [];
+const mockGetClaimedByMe: ReadonlyArray<QueryTask> = tasksClaimedByDemoUser;
+const mockGetUnclaimed: ReadonlyArray<QueryTask> = unclaimedTasks;
+const mockGetCompleted: ReadonlyArray<QueryTask> = completedTasks;
 
-const mockFetchPreviousTasks = (sortValues = []) =>
-  ({
-    request: {
-      query: GET_TASKS,
-      variables: {
-        state: TaskStates.Created,
-        pageSize: MAX_TASKS_PER_REQUEST,
-        searchBefore: sortValues,
-      },
-    },
-    result: {
-      data: {
-        tasks,
-      },
-    },
-  } as const);
-
-const mockFetchNextTasks = (sortValues = []) =>
-  ({
-    request: {
-      query: GET_TASKS,
-      variables: {
-        state: TaskStates.Created,
-        pageSize: MAX_TASKS_PER_REQUEST,
-        searchAfter: sortValues,
-      },
-    },
-    result: {
-      data: {
-        tasks,
-      },
-    },
-  } as const);
-
-const mockGetAllOpenTasksUnclaimed = (isRunAfterMutation?: boolean) =>
-  ({
-    request: {
-      query: GET_TASKS,
-      variables: {
-        state: TaskStates.Created,
-        pageSize: MAX_TASKS_PER_REQUEST,
-        isRunAfterMutation,
-      },
-    },
-    result: {
-      data: {
-        tasks: unclaimedTasks,
-      },
-    },
-  } as const);
-
-const mockGetEmptyTasks = {
-  request: {
-    query: GET_TASKS,
-    variables: {
-      state: TaskStates.Created,
-      pageSize: MAX_TASKS_PER_REQUEST,
-    },
-  },
-  result: {
-    data: {
-      tasks: [],
-    },
-  },
-} as const;
-
-const mockGetClaimedByMe = {
-  request: {
-    query: GET_TASKS,
-    variables: {
-      assigned: true,
-      assignee: 'demo',
-      state: TaskStates.Created,
-      pageSize: MAX_TASKS_PER_REQUEST,
-    },
-  },
-  result: {
-    data: {
-      tasks: tasksClaimedByDemoUser,
-    },
-  },
-} as const;
-
-const mockGetUnclaimed = {
-  request: {
-    query: GET_TASKS,
-    variables: {
-      assigned: false,
-      state: TaskStates.Created,
-      pageSize: MAX_TASKS_PER_REQUEST,
-    },
-  },
-  result: {
-    data: {
-      tasks: unclaimedTasks,
-    },
-  },
-} as const;
-
-const mockGetCompleted = {
-  request: {
-    query: GET_TASKS,
-    variables: {
-      state: TaskStates.Completed,
-      pageSize: MAX_TASKS_PER_REQUEST,
-    },
-  },
-  result: {
-    data: {
-      tasks: completedTasks,
-    },
-  },
-} as const;
-
-export type {GetTasks, GetTasksVariables};
+export type {GetTasks, GetTasksVariables, QueryTask};
 export {
   GET_TASKS,
   mockGetAllOpenTasks,
@@ -260,6 +97,4 @@ export {
   mockGetUnclaimed,
   mockGetCompleted,
   mockGetAllOpenTasksUnclaimed,
-  mockFetchPreviousTasks,
-  mockFetchNextTasks,
 };

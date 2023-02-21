@@ -15,23 +15,24 @@
     "@jridgewell/gen-mapping" "^0.1.0"
     "@jridgewell/trace-mapping" "^0.3.9"
 
-"@apollo/client@3.4.17":
-  version "3.4.17"
-  resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.4.17.tgz#4972e19a49809e16d17c5adc67f45623a6dac135"
-  integrity sha512-MDt2rwMX1GqodiVEKJqmDmAz8xr0qJmq5PdWeIt0yDaT4GOkKYWZiWkyfhfv3raTk8PyJvbsNG9q2CqmUrlGfg==
+"@apollo/client@3.7.9":
+  version "3.7.9"
+  resolved "https://registry.yarnpkg.com/@apollo/client/-/client-3.7.9.tgz#459454dc4a7c81adaa66e13e626ce41f633dc862"
+  integrity sha512-YnJvrJOVWrp4y/zdNvUaM8q4GuSHCEIecsRDTJhK/veT33P/B7lfqGJ24NeLdKMj8tDEuXYF7V0t+th4+rgC+Q==
   dependencies:
-    "@graphql-typed-document-node/core" "^3.0.0"
-    "@wry/context" "^0.6.0"
+    "@graphql-typed-document-node/core" "^3.1.1"
+    "@wry/context" "^0.7.0"
     "@wry/equality" "^0.5.0"
     "@wry/trie" "^0.3.0"
-    graphql-tag "^2.12.3"
+    graphql-tag "^2.12.6"
     hoist-non-react-statics "^3.3.2"
     optimism "^0.16.1"
     prop-types "^15.7.2"
+    response-iterator "^0.2.6"
     symbol-observable "^4.0.0"
-    ts-invariant "^0.9.0"
+    ts-invariant "^0.10.3"
     tslib "^2.3.0"
-    zen-observable-ts "~1.1.0"
+    zen-observable-ts "^1.2.5"
 
 "@babel/code-frame@7.10.4":
   version "7.10.4"
@@ -1489,10 +1490,10 @@
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.2.tgz#30aa825f11d438671d585bd44e7fd564535fc210"
   integrity sha512-82cpyJyKRoQoRi+14ibCeGPu0CwypgtBAdBhq1WfvagpCZNKqwXbKwXllYSMG91DhmG4jt9gN8eP6lGOtozuaw==
 
-"@graphql-typed-document-node/core@^3.0.0":
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.1.0.tgz#0eee6373e11418bfe0b5638f654df7a4ca6a3950"
-  integrity sha512-wYn6r8zVZyQJ6rQaALBEln5B1pzxb9shV5Ef97kTvn6yVGrqyXVnDqnU24MXnFubR+rZjBY9NWuxX3FB2sTsjg==
+"@graphql-typed-document-node/core@^3.1.1":
+  version "3.1.1"
+  resolved "https://registry.yarnpkg.com/@graphql-typed-document-node/core/-/core-3.1.1.tgz#076d78ce99822258cf813ecc1e7fa460fa74d052"
+  integrity sha512-NQ17ii0rK1b34VZonlmT2QMJFI70m0TRwbknO/ihlbatXyaktDhN/98vBiUU6kNBPljqGqyIrl2T4nY2RpFANg==
 
 "@grpc/grpc-js@1.8.7":
   version "1.8.7"
@@ -2712,11 +2713,6 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@types/zen-observable@0.8.3":
-  version "0.8.3"
-  resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.8.3.tgz#781d360c282436494b32fe7d9f7f8e64b3118aa3"
-  integrity sha512-fbF6oTd4sGGy0xjHPKAt+eS2CrxJ3+6gQ3FGcBoIJR2TLAyCkCyI8JqZNy+FeON0AhVgNJoUumVoZQjBFUqHkw==
-
 "@typescript-eslint/eslint-plugin@^4.5.0":
   version "4.30.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-4.30.0.tgz#4a0c1ae96b953f4e67435e20248d812bfa55e4fb"
@@ -2972,6 +2968,13 @@
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/@wry/context/-/context-0.6.1.tgz#c3c29c0ad622adb00f6a53303c4f965ee06ebeb2"
   integrity sha512-LOmVnY1iTU2D8tv4Xf6MVMZZ+juIJ87Kt/plMijjN20NMAXGmH4u8bS1t0uT74cZ5gwpocYueV58YwyI8y+GKw==
+  dependencies:
+    tslib "^2.3.0"
+
+"@wry/context@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@wry/context/-/context-0.7.0.tgz#be88e22c0ddf62aeb0ae9f95c3d90932c619a5c8"
+  integrity sha512-LcDAiYWRtwAoSOArfk7cuYvFXytxfVrdX7yxoUmK7pPITLk5jYh2F8knCwS7LjgYL8u1eidPlKKV6Ikqq0ODqQ==
   dependencies:
     tslib "^2.3.0"
 
@@ -7191,10 +7194,10 @@ graphlib@^2.1.5:
   dependencies:
     lodash "^4.17.15"
 
-graphql-tag@^2.12.3:
-  version "2.12.5"
-  resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.12.5.tgz#5cff974a67b417747d05c8d9f5f3cb4495d0db8f"
-  integrity sha512-5xNhP4063d16Pz3HBtKprutsPrmHZi5IdUGOWRxA2B6VF7BIRGOHZ5WQvDmJXZuPcBg7rYwaFxvQYjqkSdR3TQ==
+graphql-tag@^2.12.6:
+  version "2.12.6"
+  resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.12.6.tgz#d441a569c1d2537ef10ca3d1633b48725329b5f1"
+  integrity sha512-FdSNcu2QQcWnM2VNvSCCDCVS5PpPqpzgFT8+GXzqJuoDd0CBncxCY278u4mhRO7tMgo2JjgJA5aZ+nWSQ/Z+xg==
   dependencies:
     tslib "^2.1.0"
 
@@ -12582,6 +12585,11 @@ resolve@^2.0.0-next.3:
     is-core-module "^2.2.0"
     path-parse "^1.0.6"
 
+response-iterator@^0.2.6:
+  version "0.2.6"
+  resolved "https://registry.yarnpkg.com/response-iterator/-/response-iterator-0.2.6.tgz#249005fb14d2e4eeb478a3f735a28fd8b4c9f3da"
+  integrity sha512-pVzEEzrsg23Sh053rmDUvLSkGXluZio0qu8VT6ukrYuvtjVfCbDZH9d6PGXb8HZfzdNZt8feXv/jvUzlhRgLnw==
+
 responselike@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/responselike/-/responselike-2.0.1.tgz#9a0bc8fdc252f3fb1cca68b016591059ba1422bc"
@@ -14278,10 +14286,10 @@ tryer@^1.0.1:
   resolved "https://registry.yarnpkg.com/tryer/-/tryer-1.0.1.tgz#f2c85406800b9b0f74c9f7465b81eaad241252f8"
   integrity sha512-c3zayb8/kWWpycWYg87P71E1S1ZL6b6IJxfb5fvsUgsf0S2MVGaDhDXXjDMpdCpfWXqptc+4mXwmiy1ypXqRAA==
 
-ts-invariant@^0.9.0:
-  version "0.9.1"
-  resolved "https://registry.yarnpkg.com/ts-invariant/-/ts-invariant-0.9.1.tgz#87dfde9894a4ce3c7711b02b1b449e7fd7384b13"
-  integrity sha512-hSeYibh29ULlHkuEfukcoiyTct+s2RzczMLTv4x3NWC/YrBy7x7ps5eYq/b4Y3Sb9/uAlf54+/5CAEMVxPhuQw==
+ts-invariant@^0.10.3:
+  version "0.10.3"
+  resolved "https://registry.yarnpkg.com/ts-invariant/-/ts-invariant-0.10.3.tgz#3e048ff96e91459ffca01304dbc7f61c1f642f6c"
+  integrity sha512-uivwYcQaxAucv1CzRp2n/QdYPo4ILf9VXgH19zEIjFx2EJufV16P0JtJVpYHy89DItG6Kwj2oIUjrcK5au+4tQ==
   dependencies:
     tslib "^2.1.0"
 
@@ -15490,12 +15498,11 @@ zeebe-node@8.1.5:
     typed-duration "^1.0.12"
     uuid "^3.3.2"
 
-zen-observable-ts@~1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/zen-observable-ts/-/zen-observable-ts-1.1.0.tgz#2d1aa9d79b87058e9b75698b92791c1838551f83"
-  integrity sha512-1h4zlLSqI2cRLPJUHJFL8bCWHhkpuXkF+dbGkRaWjgDIG26DmzyshUMrdV/rL3UnR+mhaX4fRq8LPouq0MYYIA==
+zen-observable-ts@^1.2.5:
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/zen-observable-ts/-/zen-observable-ts-1.2.5.tgz#6c6d9ea3d3a842812c6e9519209365a122ba8b58"
+  integrity sha512-QZWQekv6iB72Naeake9hS1KxHlotfRpe+WGNbNx5/ta+R3DNjVO2bswf63gXlWDcs+EMd7XY8HfVQyP1X6T4Zg==
   dependencies:
-    "@types/zen-observable" "0.8.3"
     zen-observable "0.8.15"
 
 zen-observable@0.8.15:

@@ -17,11 +17,9 @@ import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {Tasks} from './index';
 import {ApolloProvider} from '@apollo/client';
-import {createApolloClient} from 'modules/apollo-client';
+import {client} from 'modules/apollo-client';
 import {graphql} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-
-const mockApolloClient = createApolloClient({maxTasksDisplayed: 5});
 
 type Props = {
   children?: React.ReactNode;
@@ -29,7 +27,7 @@ type Props = {
 
 const Wrapper: React.FC<Props> = ({children}) => {
   return (
-    <ApolloProvider client={mockApolloClient}>
+    <ApolloProvider client={client}>
       <MemoryRouter initialEntries={['/']}>
         <MockThemeProvider>{children}</MockThemeProvider>
       </MemoryRouter>
@@ -40,34 +38,33 @@ const Wrapper: React.FC<Props> = ({children}) => {
 describe('<Layout />', () => {
   it('should load more tasks', async () => {
     nodeMockServer.use(
-      graphql.query('GetTasks', (_, res, ctx) => {
-        return res.once(
-          ctx.data({
-            tasks: [generateTask('1'), generateTask('2')],
-          }),
-        );
-      }),
       graphql.query('GetCurrentUser', (_, res, ctx) => {
         return res.once(ctx.data(mockGetCurrentUser));
       }),
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
-            tasks: [generateTask('3'), generateTask('4')],
+            tasks: Array.from({length: 50}).map((_, index) =>
+              generateTask(`${index}`),
+            ),
           }),
         );
       }),
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
-            tasks: [generateTask('5'), generateTask('6')],
+            tasks: Array.from({length: 50}).map((_, index) =>
+              generateTask(`${index + 50}`),
+            ),
           }),
         );
       }),
       graphql.query('GetTasks', (_, res, ctx) => {
         return res.once(
           ctx.data({
-            tasks: [generateTask('7'), generateTask('8')],
+            tasks: Array.from({length: 50}).map((_, index) =>
+              generateTask(`${index + 50}`),
+            ),
           }),
         );
       }),
@@ -81,35 +78,18 @@ describe('<Layout />', () => {
 
     await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
 
-    fireEvent.scroll(screen.getByTestId('scrollable-list'), {
-      target: {scrollY: 100},
-    });
-
-    expect(await screen.findByText('TASK 3')).toBeInTheDocument();
-    expect(screen.getByText('TASK 4')).toBeInTheDocument();
+    expect(await screen.findByText('TASK 0')).toBeInTheDocument();
+    expect(screen.getByText('TASK 49')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(50);
 
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},
     });
 
-    expect(await screen.findByText('TASK 5')).toBeInTheDocument();
-    expect(screen.queryByText('TASK 1')).not.toBeInTheDocument();
-    expect(screen.getByText('TASK 2')).toBeInTheDocument();
-    expect(screen.getByText('TASK 3')).toBeInTheDocument();
-    expect(screen.getByText('TASK 4')).toBeInTheDocument();
-    expect(screen.getByText('TASK 6')).toBeInTheDocument();
-
-    fireEvent.scroll(screen.getByTestId('scrollable-list'), {
-      target: {scrollY: 100},
-    });
-
-    expect(await screen.findByText('TASK 7')).toBeInTheDocument();
-    expect(screen.queryByText('TASK 1')).not.toBeInTheDocument();
-    expect(screen.queryByText('TASK 2')).not.toBeInTheDocument();
-    expect(screen.queryByText('TASK 3')).not.toBeInTheDocument();
-    expect(screen.getByText('TASK 4')).toBeInTheDocument();
-    expect(screen.getByText('TASK 5')).toBeInTheDocument();
-    expect(screen.getByText('TASK 6')).toBeInTheDocument();
-    expect(screen.getByText('TASK 8')).toBeInTheDocument();
+    expect(screen.getByText('TASK 0')).toBeInTheDocument();
+    expect(screen.getByText('TASK 49')).toBeInTheDocument();
+    expect(await screen.findByText('TASK 50')).toBeInTheDocument();
+    expect(screen.getByText('TASK 99')).toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')).toHaveLength(100);
   });
 });
