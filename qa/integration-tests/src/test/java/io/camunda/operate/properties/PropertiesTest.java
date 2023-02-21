@@ -48,6 +48,12 @@ public class PropertiesTest {
     assertThat(operateProperties.getOperationExecutor().getWorkerId()).isEqualTo("someWorker");
     assertThat(operateProperties.getOperationExecutor().getLockTimeout()).isEqualTo(15000);
     assertThat(operateProperties.getOperationExecutor().isExecutorEnabled()).isFalse();
+    assertThat(operateProperties.getIdentity().getIssuerUrl()).isEqualTo("https://issueUrl:555");
+    assertThat(operateProperties.getIdentity().getIssuerBackendUrl()).isEqualTo("https://issuerBackendUrl:555");
+    assertThat(operateProperties.getIdentity().getClientId()).isEqualTo("someClientId");
+    assertThat(operateProperties.getIdentity().getClientSecret()).isEqualTo("jahktewpofsdifhsdg");
+    assertThat(operateProperties.getIdentity().getAudience()).isEqualTo("operateAudience");
+    assertThat(operateProperties.getIdentity().isResourcePermissionsEnabled()).isTrue();
   }
 
 }

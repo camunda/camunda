@@ -20,5 +20,12 @@ camunda.operate:
     workerId: someWorker
     lockTimeout: 15000
     executorEnabled: false
+  identity:
+    issuerUrl: https://issueUrl:555
+    issuerBackendUrl: https://issuerBackendUrl:555
+    clientId: someClientId
+    clientSecret: jahktewpofsdifhsdg
+    audience: operateAudience
+    resourcePermissionsEnabled: true
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,usage-metrics
