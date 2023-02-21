@@ -9,7 +9,7 @@
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
-static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
+static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.6-openjdk-11-slim" }
 
 static String DIND_DOCKER_IMAGE() { return "docker:20.10.16-dind" }
 

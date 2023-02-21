@@ -5,11 +5,11 @@
 @Library(["camunda-ci", "optimize-jenkins-shared-library"]) _
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
-MAVEN_DOCKER_IMAGE = "maven:3.8.1-jdk-11-slim"
+MAVEN_DOCKER_IMAGE = "maven:3.8.6-openjdk-11-slim"
 
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-16-netssd-stable" }
-static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
+static String MAVEN_DOCKER_IMAGE() { return "maven:3.8.6-openjdk-11-slim" }
 static String TEAM_DOCKER_IMAGE() { return 'registry.camunda.cloud/team-optimize/optimize' }
 static String DOCKERHUB_IMAGE() { return 'camunda/optimize' }
 

@@ -14,7 +14,7 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch:${esVersion}"
 }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.8.6-openjdk-11-slim" }
 
 static String mavenIntegrationTestSpec(String cambpmVersion, String esVersion) {
   return """

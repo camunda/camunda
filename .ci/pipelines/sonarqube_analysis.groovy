@@ -6,7 +6,7 @@
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-16-netssd-preempt" }
 
-def static OPENJDK_MAVEN_DOCKER_IMAGE() { return "maven:3.8.1-jdk-11-slim" }
+def static OPENJDK_MAVEN_DOCKER_IMAGE() { return "maven:3.8.6-openjdk-11-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
