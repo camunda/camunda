@@ -15,7 +15,6 @@ import {getOptimizeProfile} from 'config';
 import {Processes} from './Processes';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
 import ConfigureProcessModal from './ConfigureProcessModal';
-import CreateDashboardModal from './CreateDashboardModal';
 
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
@@ -31,8 +30,6 @@ jest.mock('./service', () => ({
       processDefinitionName: 'defName',
       kpis: [],
       owner: {id: null},
-      linkToDashboard: 'dashboardLink',
-      hasDefaultDashboard: false,
     },
   ]),
   updateProcess: jest.fn(),
@@ -67,7 +64,7 @@ it('should load processes', async () => {
       meta: expect.any(Array),
       name: 'defName',
       type: 'Process',
-      onClick: expect.any(Function),
+      link: 'dashboard/instant/defKey/',
       actions: [
         {
           action: expect.any(Function),
@@ -172,7 +169,6 @@ it('should filter out invalid kpis', async () => {
         },
         validKpi,
       ],
-      linkToDashboard: 'dashboardLink',
     },
   ]);
   const node = shallow(<Processes {...props} />);
@@ -201,40 +197,4 @@ it('display the search info correctly', async () => {
 
   const textWithQuery = node.find(EntityList).prop('displaySearchInfo')('def', 1).props.children;
   expect(textWithQuery).toBe('1 of 1 process listed');
-});
-
-it('should show create default dashboard modal when there is no default dashboard yet', async () => {
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-
-  const evt = {target: {closest: () => false}};
-
-  node.find(EntityList).prop('data')[0].onClick(evt);
-
-  expect(node.find(CreateDashboardModal)).toExist();
-
-  node.find(CreateDashboardModal).simulate('confirm');
-
-  expect(node.find(CreateDashboardModal)).not.toExist();
-});
-
-it('should not show create dashboard modal when there is default dashboard', async () => {
-  loadProcesses.mockReturnValueOnce([
-    {
-      processDefinitionKey: 'defKey',
-      processDefinitionName: 'defName',
-      kpis: [],
-      owner: {id: null},
-      linkToDashboard: 'dashboardLink',
-      hasDefaultDashboard: true,
-    },
-  ]);
-  const node = shallow(<Processes {...props} />);
-
-  await runAllEffects();
-
-  node.find(EntityList).prop('data')[0].onClick();
-
-  expect(node.find(CreateDashboardModal)).not.toExist();
 });

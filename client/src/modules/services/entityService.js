@@ -8,8 +8,8 @@
 import {del, get, post, put} from 'request';
 import {track} from 'tracking';
 
-export async function loadEntity(type, id) {
-  const response = await get(`api/${type}/` + id);
+export async function loadEntity(type, id, query) {
+  const response = await get(`api/${type}/` + id, query);
 
   return await response.json();
 }

@@ -39,6 +39,7 @@ const props = {
   location: {},
   mightFail: (promise, cb) => cb(promise),
   getUser: () => ({id: 'demo', name: 'Demo Demo'}),
+  entity: 'dashboard',
 };
 
 const templateState = {
@@ -63,6 +64,11 @@ const templateState = {
 beforeEach(() => {
   props.match.params.viewMode = 'view';
   createEntity.mockClear();
+  loadEntity.mockClear();
+});
+
+afterEach(async () => {
+  await flushPromises();
 });
 
 it("should show an error page if dashboard doesn't exist", () => {
@@ -97,19 +103,21 @@ it('should display a loading indicator', () => {
 });
 
 it('should initially load data', async () => {
-  await shallow(<Dashboard {...props} />);
+  shallow(<Dashboard {...props} />);
 
-  expect(loadEntity).toHaveBeenCalledWith('dashboard', '1');
+  await flushPromises();
+
+  expect(loadEntity).toHaveBeenCalledWith('dashboard', '1', undefined);
 });
 
-it('should not load data when it is a new dashboard', async () => {
-  await shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
+it('should not load data when it is a new dashboard', () => {
+  shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
 
   expect(loadEntity).not.toHaveBeenCalledWith('dashboard', 'new');
 });
 
 it('should create a new dashboard when saving a new one', async () => {
-  const node = await shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
+  const node = shallow(<Dashboard {...props} match={{params: {id: 'new'}}} />);
 
   await node.instance().saveChanges('testname', [{id: 'reportID'}], [{type: 'state'}]);
 
@@ -122,7 +130,7 @@ it('should create a new dashboard when saving a new one', async () => {
 });
 
 it('should create a new dashboard in a collection', async () => {
-  const node = await shallow(
+  const node = shallow(
     <Dashboard
       {...props}
       location={{pathname: '/collection/123/dashboard/new/edit'}}
@@ -197,4 +205,30 @@ it('should save unsaved reports when saving dashboard', async () => {
   const firstSave = createEntity.mock.calls[0];
   expect(firstSave[0]).toBe('report/process/single');
   expect(firstSave[1].data).toEqual(node.find(DashboardEdit).prop('initialReports')[0].report.data);
+});
+
+it('should display DashboardView component when displaying instant dashboard', () => {
+  const node = shallow(
+    <Dashboard
+      {...props}
+      entity="dashboard/instant"
+      match={{params: {id: '1', viewMode: 'edit'}}}
+    />
+  );
+
+  expect(node.find('DashbaordView')).toBeDefined();
+});
+
+it('should call loadEntity with template param', async () => {
+  shallow(
+    <Dashboard
+      {...props}
+      entity="dashboard/instant"
+      location={{search: '?template=template.json'}}
+    />
+  );
+
+  await flushPromises();
+
+  expect(loadEntity).toHaveBeenCalledWith('dashboard/instant', '1', {template: 'template.json'});
 });

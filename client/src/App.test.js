@@ -34,7 +34,9 @@ it('should render the last component in the url', async () => {
 
   const renderedEntity = shallow(
     node
-      .find({path: '/(report|dashboard|collection|events/processes|processes/report)/*'})
+      .find({
+        path: '/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*',
+      })
       .prop('render')({
       location: {pathname: '/collection/cid/dashboard/did/report/rid'},
     })
@@ -42,4 +44,22 @@ it('should render the last component in the url', async () => {
 
   expect(renderedEntity.dive().name()).toBe('Report');
   expect(renderedEntity.props().match.params.id).toBe('rid');
+});
+
+it('should render dashboar for dashboard/instant route', async () => {
+  const node = shallow(<App {...props} />);
+  await node.update();
+
+  const renderedEntity = shallow(
+    node
+      .find({
+        path: '/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*',
+      })
+      .prop('render')({
+      location: {pathname: '/dashboard/instant/defKey'},
+    })
+  );
+
+  expect(renderedEntity.dive().name()).toBe('Dashboard');
+  expect(renderedEntity.props().match.params.id).toBe('defKey');
 });

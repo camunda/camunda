@@ -9,7 +9,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ListItem from './ListItem';
-import {Link} from 'react-router-dom';
 
 it('should match snapshot', () => {
   const node = shallow(
@@ -55,37 +54,4 @@ it('should add selectable class if there are actions and selectable prop is spec
   const node = shallow(<ListItem data={{actions: [{}]}} selectable />);
 
   expect(node.find('.ListItem')).toHaveClassName('selectable');
-});
-
-it('should attach onClick to item without link', () => {
-  const spy = jest.fn();
-  let node = shallow(
-    <ListItem
-      data={{
-        actions: [{}],
-        onClick: spy,
-      }}
-    />
-  );
-
-  node
-    .find('div')
-    .at(0)
-    .simulate('click', {target: {closest: () => false}});
-
-  expect(spy).toHaveBeenCalled();
-  expect(node.find(Link)).not.toExist();
-  expect(node.find('.ListItem')).toHaveClassName('clickable');
-
-  node = shallow(
-    <ListItem
-      data={{
-        link: 'link',
-        actions: [{}],
-        onClick: spy,
-      }}
-    />
-  );
-
-  expect(node.find(Link)).toBeDefined();
 });

@@ -18,7 +18,7 @@ import './ListItem.scss';
 export default function ListItem({
   isSelected,
   onSelectionChange,
-  data: {type, name, link, icon, meta = [], actions, warning, onClick},
+  data: {type, name, link, icon, meta = [], actions, warning},
   hasWarning,
   singleAction,
   selectable,
@@ -55,23 +55,10 @@ export default function ListItem({
       className={classnames('ListItem', {
         active: isSelected,
         selectable: selectable && actions?.length > 0,
-        clickable: onClick,
       })}
     >
       <Input type="checkbox" checked={isSelected} onChange={onSelectionChange} />
-      {link ? (
-        <Link to={link}>{content}</Link>
-      ) : (
-        <div
-          onClick={(evt) => {
-            if (!evt.target.closest('.ListItemAction')) {
-              onClick?.(evt);
-            }
-          }}
-        >
-          {content}
-        </div>
-      )}
+      {link ? <Link to={link}>{content}</Link> : <div>{content}</div>}
     </li>
   );
 }

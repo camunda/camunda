@@ -6,7 +6,6 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {useHistory} from 'react-router-dom';
 
 import {DocsLink, EntityList, PageTitle, Tooltip} from 'components';
 import {t} from 'translation';
@@ -20,7 +19,6 @@ import KpiSummary from './KpiSummary';
 import ConfigureProcessModal from './ConfigureProcessModal';
 import KpiTooltip from './KpiTooltip';
 import {loadProcesses, updateProcess, loadManagementDashboard} from './service';
-import CreateDashboardModal from './CreateDashboardModal';
 
 import './Processes.scss';
 
@@ -30,10 +28,6 @@ export function Processes({mightFail, user}) {
   const [editProcessConfig, setEditProcessConfig] = useState();
   const [optimizeProfile, setOptimizeProfile] = useState();
   const [dashboard, setDashboard] = useState();
-  const [linkToCreateDashboard, setLinkToCreateDashboard] = useState();
-  const [viewedProcesses, setViewedProcesses] = useState([]);
-
-  const history = useHistory();
 
   useEffect(() => {
     mightFail(loadManagementDashboard(), setDashboard, showError);
@@ -122,15 +116,7 @@ export function Processes({mightFail, user}) {
         onChange={loadProcessesList}
         forceActionsDropdown
         data={processes?.map(
-          ({
-            processDefinitionKey,
-            processDefinitionName,
-            owner,
-            digest,
-            kpis,
-            linkToDashboard,
-            hasDefaultDashboard,
-          }) => {
+          ({processDefinitionKey, processDefinitionName, owner, digest, kpis}) => {
             const kpisWithData = kpis.filter(({value, target}) => value && target);
             const timeKpis = kpisWithData?.filter((kpi) => kpi.type === 'time');
             const qualityKpis = kpisWithData?.filter((kpi) => kpi.type === 'quality');
@@ -165,16 +151,8 @@ export function Processes({mightFail, user}) {
               });
             }
 
-            const onItemClick = () => {
-              if (!hasDefaultDashboard && !viewedProcesses.includes(linkToDashboard)) {
-                setLinkToCreateDashboard(linkToDashboard);
-              } else {
-                history.push(linkToDashboard);
-              }
-            };
-
             if (user?.authorizations.includes('entity_editor')) {
-              listItem.onClick = onItemClick;
+              listItem.link = `dashboard/instant/${processDefinitionKey}/`;
             }
 
             return listItem;
@@ -200,16 +178,6 @@ export function Processes({mightFail, user}) {
               },
               showError
             );
-          }}
-        />
-      )}
-      {linkToCreateDashboard && (
-        <CreateDashboardModal
-          linkToDashboard={linkToCreateDashboard}
-          onClose={() => setLinkToCreateDashboard()}
-          onConfirm={() => {
-            setLinkToCreateDashboard();
-            setViewedProcesses((prev) => [...prev, linkToCreateDashboard]);
           }}
         />
       )}

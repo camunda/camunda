@@ -49,12 +49,20 @@ class App extends React.Component {
   renderEntity = (props) => {
     const components = {
       report: Report,
+      'dashboard/instant': Dashboard,
       dashboard: Dashboard,
       'events/processes': Process,
       'processes/report': ProcessReport,
       collection: Collection,
     };
-    const entities = ['processes/report', 'report', 'dashboard', 'collection', 'events/processes'];
+    const entities = [
+      'processes/report',
+      'report',
+      'dashboard/instant',
+      'dashboard',
+      'collection',
+      'events/processes',
+    ];
     let Component, newProps;
     for (let entity of entities) {
       const splitResult = props.location.pathname.split('/' + entity)[1];
@@ -63,6 +71,7 @@ class App extends React.Component {
         newProps = {
           ...props,
           match,
+          entity,
         };
         Component = components[entity];
         break;
@@ -104,7 +113,7 @@ class App extends React.Component {
                       <PrivateRoute path="/events/ingested" component={Events} />
                       <Route exact path="/share/:type/:id" component={Sharing} />
                       <PrivateRoute
-                        path="/(report|dashboard|collection|events/processes|processes/report)/*"
+                        path="/(report|dashboard/instant|dashboard|collection|events/processes|processes/report)/*"
                         render={this.renderEntity}
                       />
                       <PrivateRoute path="/processes" component={Processes} />

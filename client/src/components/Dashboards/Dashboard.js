@@ -30,6 +30,7 @@ export class Dashboard extends React.Component {
     super(props);
 
     this.state = {
+      id: this.props.match.params.id,
       name: null,
       lastModified: null,
       lastModifier: null,
@@ -46,8 +47,10 @@ export class Dashboard extends React.Component {
     };
   }
 
-  getId = () => this.props.match.params.id;
-  isNew = () => this.getId() === 'new';
+  isNew = () => this.state.id === 'new';
+  getTemplateParam = () => {
+    return new URLSearchParams(this.props.location.search).get('template');
+  };
 
   componentDidMount = async () => {
     this.setState({sharingEnabled: await isSharingEnabled()});
@@ -103,10 +106,16 @@ export class Dashboard extends React.Component {
   };
 
   loadDashboard = () => {
+    const templateName = this.getTemplateParam();
     this.props.mightFail(
-      loadEntity('dashboard', this.getId()),
+      loadEntity(
+        this.props.entity,
+        this.state.id,
+        templateName ? {template: templateName} : undefined
+      ),
       async (response) => {
         const {
+          id,
           name,
           lastModifier,
           currentUserRole,
@@ -118,6 +127,7 @@ export class Dashboard extends React.Component {
         } = response;
 
         this.setState({
+          id,
           lastModifier,
           lastModified,
           owner,
@@ -126,7 +136,7 @@ export class Dashboard extends React.Component {
           name,
           reports: reports || [],
           availableFilters: availableFilters || [],
-          isAuthorizedToShare: await isAuthorizedToShareDashboard(this.getId()),
+          isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
           refreshRateSeconds,
         });
       },
@@ -183,6 +193,7 @@ export class Dashboard extends React.Component {
     const redirect = this.isNew() ? `../${id}/` : './';
 
     const update = {
+      id,
       name,
       reports,
       availableFilters,
@@ -258,7 +269,7 @@ export class Dashboard extends React.Component {
       } else {
         resolve(
           this.updateDashboard(
-            this.getId(),
+            this.state.id,
             name,
             reports,
             availableFilters,
@@ -280,6 +291,7 @@ export class Dashboard extends React.Component {
     const {viewMode} = this.props.match.params;
 
     const {
+      id,
       loaded,
       redirect,
       serverError,
@@ -313,7 +325,7 @@ export class Dashboard extends React.Component {
       lastModified,
       lastModifier,
       owner,
-      id: this.getId(),
+      id,
     };
 
     return (

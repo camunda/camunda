@@ -134,7 +134,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
         name: t('navigation.collections'),
         linksTo: '/',
         active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
-        breadcrumbsEntities: ['collection', 'dashboard', 'report'],
+        breadcrumbsEntities: ['collection', 'instantDashboard', 'dashboard', 'report'],
       },
     },
 
