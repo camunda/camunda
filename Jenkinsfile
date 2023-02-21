@@ -46,9 +46,9 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-preempt
+    cloud.google.com/gke-nodepool: agents-n1-standard-32-netssd-stable
   tolerations:
-    - key: "agents-n1-standard-32-netssd-preempt"
+    - key: "agents-n1-standard-32-netssd-stable"
       operator: "Exists"
       effect: "NoSchedule"
   volumes:
@@ -461,7 +461,7 @@ String upgradeTestPodSpec(String camBpmVersion, String esVersion, String prevEsV
   return basePodSpec(1, 2) +
       camBpmContainerSpec(camBpmVersion) +
       elasticSearchUpgradeContainerSpec(prevEsVersion) +
-      elasticSearchContainerSpec(esVersion, 2, 2)
+      elasticSearchContainerSpec(esVersion, 4, 8)
 }
 
 String itLatestPodSpec(String camBpmVersion, String esVersion) {
@@ -473,7 +473,7 @@ String itLatestPodSpec(String camBpmVersion, String esVersion) {
 String itZeebePodSpec(String camBpmVersion, String esVersion) {
    return basePodSpec(6, 6) +
           camBpmContainerSpec(camBpmVersion, false, 2, 4) +
-          elasticSearchContainerSpec(esVersion, 6, 6) +
+          elasticSearchContainerSpec(esVersion, 6, 8) +
           dockerInDockerSpec(12);
 }
 
