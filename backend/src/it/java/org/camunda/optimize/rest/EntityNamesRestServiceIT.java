@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeTy
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -142,7 +141,7 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
   }
 
   @Test
-  public void getEntityNames_usingMagicLinkReturnsCollectionAndDashboardNames() {
+  public void getEntityNames_usingMagicLinkReturnsOnlyDashboardName() {
     // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram("aDefinitionKey"));
     importAllEngineEntitiesFromScratch();
@@ -151,28 +150,8 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     final EntityNameResponseDto response = entitiesClient.getEntityNames("aDefinitionKey", "aDefinitionKey", null, null);
 
     // then
-    assertThat(response.getCollectionName()).isNotNull();
-    assertThat(response.getCollectionName()).isEqualTo(response.getDashboardName());
-  }
-
-  @Test
-  public void getEntityNames_usingMagicLinkWithoutEntityEditorAuthorizationThrowsException() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService()
-      .getEntityConfiguration()
-      .setAuthorizedUserType(AuthorizedUserType.NONE);
-    embeddedOptimizeExtension.reloadConfiguration();
-    final String definitionKey = "aDefinitionKey";
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(definitionKey));
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(definitionKey, definitionKey, null, null))
-      .execute();
-
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+    assertThat(response.getCollectionName()).isNull();
+    assertThat(response.getDashboardName()).isNotBlank();
   }
 
   @SuppressWarnings(SAME_PARAM_VALUE)

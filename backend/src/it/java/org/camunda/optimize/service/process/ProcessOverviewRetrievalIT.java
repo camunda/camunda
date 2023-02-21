@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.process;
 
 import org.assertj.core.groups.Tuple;
-import org.awaitility.Awaitility;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
@@ -31,7 +30,6 @@ import javax.ws.rs.core.Response;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -308,41 +306,6 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
           new ProcessDigestResponseDto(false)
         )
       );
-  }
-
-  @Test
-  public void hasDefaultDashboardPropertyIsSetCorrectly() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(SECOND_PROCESS_DEFINITION_KEY));
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    List<ProcessOverviewResponseDto> overviews = processOverviewClient.getProcessOverviews();
-
-    // then
-    // Process has no dashboard yet
-    assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-        .equals(SECOND_PROCESS_DEFINITION_KEY))
-      .singleElement()
-      .satisfies(process -> assertThat(process.getHasDefaultDashboard()).isEqualTo(Boolean.FALSE));
-
-    // given
-    // "Click" the link once
-    entitiesClient.getEntityNames(SECOND_PROCESS_DEFINITION_KEY, SECOND_PROCESS_DEFINITION_KEY, null, null);
-    // Wait until everything is created
-    Awaitility.given().ignoreExceptions()
-      .timeout(5, TimeUnit.SECONDS)
-      .untilAsserted(() -> assertThat(collectionClient.getCollectionById(SECOND_PROCESS_DEFINITION_KEY)).isNotNull());
-
-    // when
-    overviews = processOverviewClient.getProcessOverviews();
-
-    // then
-    // Default dashboard has been created, so expecting true
-    assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-        .equals(SECOND_PROCESS_DEFINITION_KEY))
-      .singleElement()
-      .satisfies(process -> assertThat(process.getHasDefaultDashboard()).isEqualTo(Boolean.TRUE));
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinition(String definitionKey, String name) {
