@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -75,7 +76,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   protected long startTime;
   private AtomixCluster atomixCluster;
-  private File newTemporaryFolder;
+  private File brokerBase;
   private String dataDirectory;
   private SystemContext systemContext;
 
@@ -130,7 +131,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
 
   @Override
   public void before() {
-    newTemporaryFolder = Files.newTemporaryFolder();
+    brokerBase = Files.newTemporaryFolder();
     startTime = System.currentTimeMillis();
     startBroker();
     LOG.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
@@ -153,7 +154,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       }
     } finally {
       try {
-        FileUtil.deleteFolder(newTemporaryFolder.getAbsolutePath());
+        FileUtil.deleteFolder(brokerBase.getAbsolutePath());
       } catch (final IOException e) {
         LOG.error("Unexpected error on deleting data.", e);
       }
@@ -207,6 +208,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       systemContext = null;
       System.gc();
     }
+  }
+
+  public Path getBrokerBase() {
+    return brokerBase.toPath();
   }
 
   public void startBroker(final PartitionListener... listeners) {
@@ -285,7 +290,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     assignSocketAddresses(brokerCfg);
 
     // initialize configuration
-    brokerCfg.init(newTemporaryFolder.getAbsolutePath());
+    brokerCfg.init(brokerBase.getAbsolutePath());
   }
 
   public void purgeSnapshots() {
