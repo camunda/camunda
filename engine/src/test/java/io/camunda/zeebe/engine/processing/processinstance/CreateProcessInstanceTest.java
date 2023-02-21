@@ -151,6 +151,7 @@ public final class CreateProcessInstanceTest {
     processBuilder.startEvent("none-start").endEvent();
     processBuilder.startEvent("timer-start").timerWithCycle("R/PT1H").endEvent();
     processBuilder.startEvent("message-start").message("start").endEvent();
+    processBuilder.startEvent("signal-start").signal("signal").endEvent();
 
     ENGINE.deployment().withXmlResource(processBuilder.done()).deploy();
 
