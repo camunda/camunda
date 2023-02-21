@@ -33,13 +33,16 @@ import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.EntryValidator.NoopEntryValidator;
 import io.atomix.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -48,9 +51,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -87,8 +93,9 @@ public final class ControllableRaftContexts {
   private int nextEntry = 0;
 
   // Used only for verification. Map[term -> leader]
-  private final Map<Long, MemberId> leadersAtTerms = new HashMap<>();
+  private final NavigableMap<Long, MemberId> leadersAtTerms = new TreeMap<>();
   private final AppendListener appendListener = mock(AppendListener.class);
+  private final DataLossChecker dataLossChecker = new DataLossChecker(appendListener);
 
   public ControllableRaftContexts(final int nodeCount) {
     this.nodeCount = nodeCount;
@@ -157,16 +164,19 @@ public final class ControllableRaftContexts {
 
   private void createRaftContexts(final int nodeCount, final Random random) {
     for (int i = 0; i < nodeCount; i++) {
-      final var memberId = MemberId.from(String.valueOf(i));
-      final var snapshotStore = new TestSnapshotStore(new AtomicReference<>());
-      snapshotStores.put(memberId, snapshotStore);
-      raftServers.put(
-          memberId,
-          createRaftContext(
-              memberId,
-              random,
-              createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStore))));
+      createRaftContextForMember(random, i);
     }
+  }
+
+  private RaftContext createRaftContextForMember(final Random random, final int nodeId) {
+    final var memberId = MemberId.from(String.valueOf(nodeId));
+    final var snapshotStore = new TestSnapshotStore(new AtomicReference<>());
+    snapshotStores.put(memberId, snapshotStore);
+    final RaftContext raftContext =
+        createRaftContext(
+            memberId, random, createStorage(memberId, cfg -> cfg.withSnapshotStore(snapshotStore)));
+    raftServers.put(memberId, raftContext);
+    return raftContext;
   }
 
   public RaftContext createRaftContext(
@@ -310,7 +320,7 @@ public final class ControllableRaftContexts {
     if (role instanceof final LeaderRole leaderRole) {
       LoggerFactory.getLogger("TEST").info("Appending on leader {}", memberId.id());
       final ByteBuffer data = ByteBuffer.allocate(Integer.BYTES).putInt(0, nextEntry++);
-      leaderRole.appendEntry(nextEntry, nextEntry, data, appendListener);
+      leaderRole.appendEntry(nextEntry, nextEntry, data, dataLossChecker);
     }
   }
 
@@ -363,6 +373,78 @@ public final class ControllableRaftContexts {
     newContext.getCluster().bootstrap(raftServers.keySet());
 
     raftServers.put(memberId, newContext);
+  }
+
+  // This is a different from other operations, as it restarts the node and force operations on
+  // other
+  // nodes to wait until this node is ready. This is required because we can only tolerate data loss
+  // of one node at a time.
+  public void restartWithDataLoss(final MemberId memberId) {
+    LOG.info("Shutting down member {}", memberId.id());
+    raftServers.get(memberId).close();
+    deterministicExecutors.remove(memberId).close();
+    final var nodeBeforeRestart = raftServers.remove(memberId);
+
+    // Wait until the other two members become a quorum and elect a leader. Otherwise, the restarted
+    // node and the follower without the latest log can become a quorum and result in data loss.
+    waitUntilThereIsAnotherLeader(memberId);
+
+    // Restart the node with empty state
+    final var dataDirectory = nodeBeforeRestart.getStorage().directory().toPath();
+    LOG.info("Deleting directory {} of member {}", dataDirectory, memberId.id());
+    try {
+      FileUtil.deleteFolderIfExists(dataDirectory);
+    } catch (final IOException e) {
+      LOG.error("Failed to delete directory {} of member {}", dataDirectory, memberId.id());
+      throw new UncheckedIOException(e);
+    }
+    final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
+    newContext.getCluster().bootstrap(raftServers.keySet());
+
+    raftServers.put(memberId, newContext);
+
+    // Wait until member has recovered lost data and have caught up with the leader
+    waitUntilMembersIsReadyIn(newContext, 100);
+  }
+
+  private void waitUntilThereIsAnotherLeader(final MemberId memberId) {
+    int steps = 100;
+
+    while (steps-- > 0) {
+      final Entry<Long, MemberId> currentLeaderEntry = leadersAtTerms.lowerEntry(Long.MAX_VALUE);
+      final var currentLeader =
+          currentLeaderEntry != null ? currentLeaderEntry.getValue().id() : null;
+      // If the node was leader before restart, wait until new leader is elected &&
+      // Ensure that other nodes in the quorum is up-to-date. Otherwise, after restart this node
+      // can form a quorum with a follower which is not up-to-date.
+      if (!memberId.id().equals(currentLeader)
+          && hasLeaderAtTheLatestTerm()
+          && hasReplicatedAllEntries()) {
+        final var leader = leadersAtTerms.lowerEntry(Long.MAX_VALUE).getValue();
+        LOG.info("Current leader is {}. ", leader.id());
+        break;
+      } else {
+        tickHeartbeatTimeout();
+        processAllMessage();
+        runUntilDone();
+      }
+    }
+    assertThat(hasLeaderAtTheLatestTerm()).isTrue();
+    assertThat(hasReplicatedAllEntries()).isTrue();
+  }
+
+  private void waitUntilMembersIsReadyIn(final RaftContext member, final int steps) {
+    int iter = steps;
+    while (member.getState() != State.READY && iter-- > 0) {
+      runUntilDone();
+      processAllMessage();
+      tickHeartbeatTimeout();
+    }
+    assertThat(member.getState())
+        .describedAs(
+            "Member should be ready in %d steps, if there are no failures or timeouts"
+                .formatted(steps))
+        .isEqualTo(State.READY);
   }
 
   // ----------------------- Verifications -----------------------------
@@ -448,7 +530,17 @@ public final class ControllableRaftContexts {
   }
 
   boolean hasReplicatedAllEntries() {
-    return raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+    final boolean allReplicasHaveSameLastIndex =
+        raftServers.values().stream()
+                .map(RaftContext::getLog)
+                .map(RaftLog::getLastIndex)
+                .distinct()
+                .count()
+            == 1;
+    final boolean allReplicasHaveSameLastEntry =
+        raftServers.values().stream().map(this::getLastUncommittedEntry).distinct().count() == 1;
+    // should check both to cover cases where one log is empty
+    return allReplicasHaveSameLastIndex && allReplicasHaveSameLastEntry;
   }
 
   public void assertAllEntriesCommittedAndReplicatedToAll() {
@@ -524,5 +616,68 @@ public final class ControllableRaftContexts {
 
   public void assertNoJournalAppendErrors() {
     verify(appendListener, times(0)).onWriteError(any(JournalException.class));
+  }
+
+  public void assertNoDataLoss() {
+    assertThat(dataLossChecker.hasDataLoss())
+        .withFailMessage(dataLossChecker.getFailMessage())
+        .isFalse();
+  }
+
+  // AppendListener that verifies that no committed entries are overwritten. This checker keeps
+  // track of committed entries and its checksum. After a leader change or restart, if the new
+  // leader commits a new entry at the same index because it is missing already committed entries,
+  // the checker can detect it.
+  static class DataLossChecker implements AppendListener {
+
+    final AppendListener delegate;
+
+    // Keep track of committed entries and its checksum.
+    final Map<Long, Long> indexToChecksumMap = new HashMap<>();
+
+    private String failMessage = "";
+    private boolean dataloss = false;
+
+    DataLossChecker(final AppendListener delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void onWrite(final IndexedRaftLogEntry indexed) {
+      delegate.onWrite(indexed);
+    }
+
+    @Override
+    public void onWriteError(final Throwable error) {
+      delegate.onWriteError(error);
+    }
+
+    @Override
+    public void onCommit(final IndexedRaftLogEntry indexed) {
+      final var entryChecksum = indexed.getPersistedRaftRecord().checksum();
+      final long index = indexed.index();
+      if (indexToChecksumMap.containsKey(index) && indexToChecksumMap.get(index) != entryChecksum) {
+        failMessage =
+            "Committed entry at index %d checksum %d is being overwritten by entry with checksum %d"
+                .formatted(index, indexToChecksumMap.get(index), entryChecksum);
+        LOG.info(failMessage);
+        dataloss = true;
+      }
+      indexToChecksumMap.put(index, entryChecksum);
+      delegate.onCommit(indexed);
+    }
+
+    @Override
+    public void onCommitError(final IndexedRaftLogEntry indexed, final Throwable error) {
+      delegate.onCommitError(indexed, error);
+    }
+
+    public String getFailMessage() {
+      return failMessage;
+    }
+
+    public boolean hasDataLoss() {
+      return dataloss;
+    }
   }
 }

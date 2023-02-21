@@ -47,6 +47,7 @@ public class RandomizedRaftTest {
   private List<RaftOperation> operationsWithSnapshot;
   private List<RaftOperation> operationsWithRestarts;
   private List<RaftOperation> operationsWithSnapshotsAndRestarts;
+  private List<RaftOperation> operationsWithSnapshotsAndRestartsWithDataLoss;
 
   private List<MemberId> raftMembers;
   private Path raftDataDirectory;
@@ -63,6 +64,8 @@ public class RandomizedRaftTest {
     operationsWithSnapshot = RaftOperation.getRaftOperationsWithSnapshot();
     operationsWithRestarts = RaftOperation.getRaftOperationsWithRestarts();
     operationsWithSnapshotsAndRestarts = RaftOperation.getRaftOperationsWithSnapshotsAndRestarts();
+    operationsWithSnapshotsAndRestartsWithDataLoss =
+        RaftOperation.getRaftOperationsWithSnapshotsAndRestartsWithDataLoss();
     raftMembers = servers;
   }
 
@@ -106,6 +109,17 @@ public class RandomizedRaftTest {
   @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
   void consistencyTestWithSnapshotsAndRestarts(
       @ForAll("raftOperationsWithSnapshotsAndRestarts") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    consistencyTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 1, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void consistencyTestAfterDataLoss(
+      @ForAll("raftOperationsWithSnapshotsAndRestartsWithDataLoss")
+          final List<RaftOperation> raftOperations,
       @ForAll("raftMembers") final List<MemberId> raftMembers,
       @ForAll("seeds") final long seed)
       throws Exception {
@@ -175,6 +189,7 @@ public class RandomizedRaftTest {
     raftContexts.assertAllLogsEqual();
     raftContexts.assertNoGapsInLog();
     raftContexts.assertNoJournalAppendErrors();
+    raftContexts.assertNoDataLoss();
   }
 
   private void livenessTest(
@@ -195,32 +210,23 @@ public class RandomizedRaftTest {
 
     // when - no more message loss
 
-    // hoping that 100 iterations are enough to elect a new leader, since there are no more failures
-    int maxStepsUntilLeader = 100;
-    while (!raftContexts.hasLeaderAtTheLatestTerm() && maxStepsUntilLeader-- > 0) {
-      raftContexts.runUntilDone();
-      raftContexts.processAllMessage();
-      raftContexts.tickHeartbeatTimeout();
-      raftContexts.processAllMessage();
-      raftContexts.runUntilDone();
-    }
-
-    // then - eventually a leader should be elected
-    assertThat(raftContexts.hasLeaderAtTheLatestTerm())
-        .describedAs("Leader election should be completed if there are no messages lost.")
-        .isTrue();
-
-    // then - eventually all entries are replicated to all followers and all entries are committed
     // hoping that 2000 iterations are enough to replicate all entries
     int maxStepsToReplicateEntries = 2000;
-    while (!(raftContexts.hasReplicatedAllEntries() && raftContexts.hasCommittedAllEntries())
+    while (!(raftContexts.hasLeaderAtTheLatestTerm()
+            && raftContexts.hasReplicatedAllEntries()
+            && raftContexts.hasCommittedAllEntries())
         && maxStepsToReplicateEntries-- > 0) {
       raftContexts.runUntilDone();
       raftContexts.processAllMessage();
       raftContexts.tickHeartbeatTimeout();
-      raftContexts.processAllMessage();
-      raftContexts.runUntilDone();
     }
+
+    // then - eventually all entries are replicated to all followers and all entries are committed
+
+    // eventually a leader should be elected
+    assertThat(raftContexts.hasLeaderAtTheLatestTerm())
+        .describedAs("Leader election should be completed if there are no messages lost.")
+        .isTrue();
 
     // All member are be ready
     raftContexts.assertAllMembersAreReady();
@@ -230,6 +236,7 @@ public class RandomizedRaftTest {
     raftContexts.assertAllEntriesCommittedAndReplicatedToAll();
     raftContexts.assertNoGapsInLog();
     raftContexts.assertNoJournalAppendErrors();
+    raftContexts.assertNoDataLoss();
   }
 
   /** Basic raft operations without snapshotting, compaction or restart */
@@ -254,6 +261,13 @@ public class RandomizedRaftTest {
   @Provide
   Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestarts() {
     return Arbitraries.of(operationsWithSnapshotsAndRestarts).list().ofSize(OPERATION_SIZE);
+  }
+
+  @Provide
+  Arbitrary<List<RaftOperation>> raftOperationsWithSnapshotsAndRestartsWithDataLoss() {
+    return Arbitraries.of(operationsWithSnapshotsAndRestartsWithDataLoss)
+        .list()
+        .ofSize(OPERATION_SIZE);
   }
 
   @Provide
