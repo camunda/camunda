@@ -7,7 +7,7 @@
     "@bpmn-io/dmn-migrate": "^0.4.3",
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.0.28",
-    "@carbon/icons-react": "^11.14.0",
+    "@carbon/icons-react": "^11.16.1",
     "@carbon/react": "^1.22.0",
     "@ibm/plex": "^6.1.1",
     "@lexical/react": "^0.7.6",
