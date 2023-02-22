@@ -27,6 +27,10 @@ jobs:
             gh api $url > "$name.zip"
             unzip -d "$name" "$name.zip"
           done
+          # Mitigate to large test output files by deleting the system-out element using sed
+          # Note: we cannot use XML tools like xmlstarlet as they all suffer the same libxml2 limitation
+          # Related to https://github.com/camunda/zeebe/issues/9959
+          find . -iname TEST-*.xml -print0 | xargs -0 -r sed '/<system-out>/,/<\/system-out>/d' -i
 
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
