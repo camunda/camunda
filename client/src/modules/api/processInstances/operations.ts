@@ -6,18 +6,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
-
-type BatchOperationDto = {
-  id: string;
-  name: string | null;
-  type: OperationEntityType;
-  startDate: string;
-  endDate: string | null;
-  username: string;
-  instancesCount: number;
-  operationsTotalCount: number;
-  operationsFinishedCount: number;
-};
+import {BatchOperationDto} from '../sharedTypes';
 
 const applyBatchOperation = async (
   operationType: OperationEntityType,
@@ -60,4 +49,3 @@ const applyOperation = async (
 };
 
 export {applyBatchOperation, applyOperation};
-export type {BatchOperationDto};

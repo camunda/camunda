@@ -10,7 +10,7 @@ import {UserDto} from './api/getUser';
 import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
-import {BatchOperationDto} from './api/processInstances/operations';
+import {BatchOperationDto} from './api/sharedTypes';
 
 /**
  * @returns a jest mock function that resolves with given value

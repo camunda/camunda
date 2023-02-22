@@ -68,6 +68,36 @@ const mockGetRequest = function <Type extends DefaultBodyType>(url: string) {
   };
 };
 
+const mockDeleteRequest = function <Type extends DefaultBodyType>(url: string) {
+  return {
+    withSuccess: (responseData: Type) => {
+      mockServer.use(
+        rest.delete(url, (_, res, ctx) => res.once(ctx.json(responseData)))
+      );
+    },
+    withServerError: (statusCode: number = 500) => {
+      mockServer.use(
+        rest.delete(url, (_, res, ctx) =>
+          res.once(
+            ctx.status(statusCode),
+            ctx.json({error: 'an error occured'})
+          )
+        )
+      );
+    },
+    withNetworkError: () => {
+      mockServer.use(rest.delete(url, (_, res) => res.networkError('')));
+    },
+    withDelay: (responseData: Type) => {
+      mockServer.use(
+        rest.delete(url, (_, res, ctx) =>
+          res.once(ctx.delay(1000), ctx.json(responseData))
+        )
+      );
+    },
+  };
+};
+
 const mockXmlGetRequest = (url: string) => {
   return {
     withSuccess: (initialValue: string) => {
@@ -95,4 +125,4 @@ const mockXmlGetRequest = (url: string) => {
   };
 };
 
-export {mockGetRequest, mockPostRequest, mockXmlGetRequest};
+export {mockGetRequest, mockPostRequest, mockXmlGetRequest, mockDeleteRequest};

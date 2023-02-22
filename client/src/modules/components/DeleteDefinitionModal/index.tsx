@@ -53,9 +53,11 @@ const DeleteDefinitionModal: React.FC<Props> = ({
         <DeleteButton
           appearance="danger"
           label="Delete"
-          onCmPress={() => {
-            fieldRef.current?.renderValidity();
-            onDelete();
+          onCmPress={async () => {
+            await fieldRef.current?.renderValidity();
+            if (fieldRef.current?.checked === true) {
+              onDelete();
+            }
           }}
           data-testid="delete-button"
         />

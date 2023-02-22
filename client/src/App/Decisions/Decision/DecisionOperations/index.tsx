@@ -12,17 +12,25 @@ import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {Td, Th} from './styled';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {operationsStore} from 'modules/stores/operations';
+import {useNotifications} from 'modules/notifications';
+
 type Props = {
+  decisionDefinitionId: string;
   decisionName: string;
   decisionVersion: string;
 };
 
 const DecisionOperations: React.FC<Props> = ({
+  decisionDefinitionId,
   decisionName,
   decisionVersion,
 }) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] =
     useState<boolean>(false);
+
+  const notifications = useNotifications();
 
   return (
     <>
@@ -54,7 +62,18 @@ const DecisionOperations: React.FC<Props> = ({
           </table>
         }
         onClose={() => setIsDeleteModalVisible(false)}
-        onDelete={() => {}}
+        onDelete={() => {
+          setIsDeleteModalVisible(false);
+
+          operationsStore.applyDeleteDecisionDefinitionOperation({
+            decisionDefinitionId,
+            onSuccess: panelStatesStore.expandOperationsPanel,
+            onError: () =>
+              notifications.displayNotification('error', {
+                headline: 'Operation could not be created',
+              }),
+          });
+        }}
       />
     </>
   );

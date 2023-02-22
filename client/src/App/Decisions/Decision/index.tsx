@@ -30,6 +30,7 @@ const Decision: React.FC = observer(() => {
   const {
     state: {status, decisions},
     getDecisionName,
+    getDecisionDefinitionId,
   } = groupedDecisionsStore;
   const params = new URLSearchParams(location.search);
   const version = params.get('version');
@@ -40,16 +41,16 @@ const Decision: React.FC = observer(() => {
   const isDecisionSelected = decisionId !== null;
   const isVersionSelected = version !== null && version !== 'all';
   const decisionName = getDecisionName(decisionId);
+  const decisionDefinitionId =
+    isDecisionSelected && isVersionSelected
+      ? getDecisionDefinitionId({
+          decisionId,
+          version: Number(version),
+        })
+      : null;
 
   useEffect(() => {
     if (status === 'fetched' && isDecisionSelected) {
-      const decisionDefinitionId = isVersionSelected
-        ? groupedDecisionsStore.getDecisionDefinitionId({
-            decisionId,
-            version: Number(version),
-          })
-        : null;
-
       if (decisionDefinitionId === null) {
         decisionXmlStore.reset();
 
@@ -66,11 +67,10 @@ const Decision: React.FC = observer(() => {
       }
     }
   }, [
+    decisionDefinitionId,
     isDecisionSelected,
-    isVersionSelected,
     status,
     decisionId,
-    version,
     notifications,
     location,
     navigate,
@@ -99,14 +99,17 @@ const Decision: React.FC = observer(() => {
   return (
     <Container>
       <PanelHeader title={decisionName || 'Decision'}>
-        {IS_DECISION_DEFINITION_DELETION_ENABLED && isVersionSelected && (
-          <Restricted scopes={['write']}>
-            <DecisionOperations
-              decisionName={decisionName || 'Decision'}
-              decisionVersion={version}
-            />
-          </Restricted>
-        )}
+        {IS_DECISION_DEFINITION_DELETION_ENABLED &&
+          isVersionSelected &&
+          decisionDefinitionId !== null && (
+            <Restricted scopes={['write']}>
+              <DecisionOperations
+                decisionDefinitionId={decisionDefinitionId}
+                decisionName={decisionName || 'Decision'}
+                decisionVersion={version}
+              />
+            </Restricted>
+          )}
       </PanelHeader>
       {(() => {
         if (decisionXmlStore.state.status === 'error') {

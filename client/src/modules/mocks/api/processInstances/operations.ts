@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {BatchOperationDto} from 'modules/api/processInstances/operations';
+import {BatchOperationDto} from 'modules/api/sharedTypes';
 import {mockPostRequest} from '../mockRequest';
 
 const mockApplyBatchOperation = () =>

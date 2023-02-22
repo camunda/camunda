@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {useImperativeHandle, useState} from 'react';
 
 type Props = {
   onCmInput: (event: {detail: {isChecked: boolean}}) => {};
@@ -15,22 +15,32 @@ type Props = {
   title?: string;
 };
 
-const Checkbox = React.forwardRef<{renderValidity: () => Promise<void>}, Props>(
-  ({onCmInput, indeterminate, label, id, title, ...props}, ref) => {
-    return (
-      <label htmlFor={id}>
-        {label ?? title}
-        <input
-          type="checkbox"
-          onChange={(event) => {
-            onCmInput({detail: {isChecked: event.target.checked}});
-          }}
-          id={id}
-          {...props}
-        />
-      </label>
-    );
-  }
-);
+const Checkbox = React.forwardRef<
+  {renderValidity: () => Promise<void>; checked: boolean},
+  Props
+>(({onCmInput, indeterminate, label, id, title, ...props}, ref) => {
+  const [isChecked, setIsChecked] = useState<boolean>(false);
+
+  useImperativeHandle(ref, () => ({
+    renderValidity: () => Promise.resolve(),
+    checked: isChecked,
+  }));
+
+  return (
+    <label htmlFor={id}>
+      {label ?? title}
+      <input
+        type="checkbox"
+        onChange={(event) => {
+          setIsChecked(event.target.checked);
+          onCmInput?.({detail: {isChecked: event.target.checked}});
+        }}
+        id={id}
+        checked={isChecked}
+        {...props}
+      />
+    </label>
+  );
+});
 
 export {Checkbox};
