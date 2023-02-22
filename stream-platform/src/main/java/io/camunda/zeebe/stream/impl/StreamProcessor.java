@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -106,7 +107,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
-  private ProcessingScheduleServiceImpl scheduleService;
+  private ProcessingScheduleServiceImpl processorActorService;
+  private ProcessingScheduleServiceImpl differentScheduleService;
+  private DifferentProcessingScheduleServiceActor differentActor;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -157,12 +160,20 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       // the schedule service actor is only opened if the replay is done,
       // until then it is an unusable and closed schedule service
-      scheduleService =
+      processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter);
-      streamProcessorContext.scheduleService(scheduleService);
+      differentScheduleService =
+          new ProcessingScheduleServiceImpl(
+              streamProcessorContext::getStreamProcessorPhase, // this is volatile
+              () -> false, // we will just stop the actor in this case, no need to provide this
+              logStream::newLogStreamWriter);
+      final var extendedProcessingScheduleService =
+          new ExtendedProcessingScheduleServiceImpl(
+              processorActorService, differentScheduleService);
+      streamProcessorContext.scheduleService(extendedProcessingScheduleService);
 
       initRecordProcessors();
 
@@ -251,7 +262,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    scheduleService.close();
+    processorActorService.close();
+    differentActor.close();
+    differentScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -272,11 +285,31 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
 
-      final var scheduleServiceOpenFuture = scheduleService.open(actor);
+      final var scheduleServiceOpenFuture = processorActorService.open(actor);
       scheduleServiceOpenFuture.onComplete(
           (v, failure) -> {
             if (failure == null) {
-              startProcessing(lastProcessingPositions);
+
+              differentActor = new DifferentProcessingScheduleServiceActor();
+              final var submitActorFuture = actorSchedulingService.submitActor(differentActor);
+
+              submitActorFuture.onComplete(
+                  (v2, failure2) -> {
+                    if (failure2 == null) {
+                      final var differentScheduleServiceOpenFuture =
+                          differentScheduleService.open(differentActor.getActorControl());
+                      differentScheduleServiceOpenFuture.onComplete(
+                          (v3, failure3) -> {
+                            if (failure3 == null) {
+                              startProcessing(lastProcessingPositions);
+                            } else {
+                              onFailure(failure3);
+                            }
+                          });
+                    } else {
+                      onFailure(failure2);
+                    }
+                  });
             } else {
               onFailure(failure);
             }
@@ -533,5 +566,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     PROCESSING,
     FAILED,
     PAUSED,
+  }
+
+  private final class DifferentProcessingScheduleServiceActor extends Actor {
+    public ActorControl getActorControl() {
+      return actor;
+    }
   }
 }
