@@ -18,6 +18,7 @@ package io.atomix.raft.roles;
 
 import io.atomix.cluster.messaging.MessagingException.NoRemoteHandler;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
 import io.atomix.raft.impl.RaftContext;
@@ -30,7 +31,6 @@ import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.utils.Quorum;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,6 +40,8 @@ import java.util.stream.Collectors;
 public final class CandidateRole extends ActiveRole {
 
   private Scheduled currentTimer;
+
+  private int votingRound = 0;
 
   public CandidateRole(final RaftContext context) {
     super(context);
@@ -84,6 +86,7 @@ public final class CandidateRole extends ActiveRole {
 
   /** Resets the election timer. */
   private void sendVoteRequests() {
+    votingRound++;
     raft.checkThread();
 
     // Because of asynchronous execution, the candidate state could have already been closed. In
@@ -105,10 +108,9 @@ public final class CandidateRole extends ActiveRole {
 
     final AtomicBoolean complete = new AtomicBoolean();
     final Set<DefaultRaftMember> votingMembers =
-        new HashSet<>(
-            raft.getCluster().getActiveMemberStates().stream()
-                .map(RaftMemberContext::getMember)
-                .collect(Collectors.toList()));
+        raft.getCluster().getActiveMemberStates().stream()
+            .map(RaftMemberContext::getMember)
+            .collect(Collectors.toSet());
 
     // Send vote requests to all nodes. The vote request that is sent
     // to this node will be automatically successful.
@@ -117,7 +119,7 @@ public final class CandidateRole extends ActiveRole {
     final Quorum quorum =
         new Quorum(
             raft.getCluster().getQuorum(),
-            (elected) -> {
+            elected -> {
               if (!isRunning()) {
                 return;
               }
@@ -143,11 +145,26 @@ public final class CandidateRole extends ActiveRole {
                   if (!complete.get()) {
                     // When the election times out, clear the previous majority vote
                     // check and restart the election.
-                    log.debug("Election timed out");
                     quorum.cancel();
 
-                    sendVoteRequests();
-                    log.debug("Restarted election");
+                    final var shouldRetry = votingRound <= 1;
+                    if (shouldRetry) {
+                      // Attempt one more election to reduce election delay. If transition to
+                      // follower, then this member has to wait for another election timeout before
+                      // starting the election.
+                      log.debug("Election timed out. Restarting election.");
+                      sendVoteRequests();
+                      votingRound++;
+                    } else {
+                      // Transition to follower and re-send poll requests to become candidate again.
+                      // This delays the election because now this member has to wait for another
+                      // electionTimeout to send the poll requests. But assuming this is not the
+                      // common case, this delay is acceptable. The other option is to immediately
+                      // send new vote request here, but this resulted in an election loop in a very
+                      // specific scenario https://github.com/camunda/zeebe/issues/11665
+                      log.debug("Second round of election timed out. Transitioning to follower.");
+                      raft.transition(Role.FOLLOWER);
+                    }
                   }
                 });
 
