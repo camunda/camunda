@@ -197,7 +197,7 @@ public final class ZeebeRocksDbFactory<ColumnFamilyType extends Enum<ColumnFamil
         .setWriteBufferSize(memtableMemory)
         // compaction
         .setLevelCompactionDynamicLevelBytes(true)
-        .setCompactionPriority(CompactionPriority.OldestSmallestSeqFirst)
+        .setCompactionPriority(CompactionPriority.OldestLargestSeqFirst)
         .setCompactionStyle(CompactionStyle.LEVEL)
         // L-0 means immediately flushed memtables
         .setLevel0FileNumCompactionTrigger(maxConcurrentMemtableCount)
