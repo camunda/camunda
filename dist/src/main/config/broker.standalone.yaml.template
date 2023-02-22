@@ -900,8 +900,3 @@
         # Controls whether to collect metrics about actor usage such as actor job execution latencies
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEACTORMETRICS
         # enableActorMetrics: false
-
-        # When this feature is disabled, user requests to take backup or query backup will be rejected.
-        # To allow backups, enable this flag and configure zeebe.broker.data.backup.
-        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEBACKUP
-        # enableBackup: false
