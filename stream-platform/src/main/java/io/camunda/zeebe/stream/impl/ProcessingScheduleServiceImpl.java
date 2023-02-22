@@ -12,7 +12,7 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import java.time.Duration;
@@ -24,7 +24,8 @@ import org.slf4j.Logger;
  * Here the implementation is just a suggestion to amke the engine abstraction work. Can be whatever
  * PDT team thinks is best to work with
  */
-public class ProcessingScheduleServiceImpl implements ProcessingScheduleService, AutoCloseable {
+public class ProcessingScheduleServiceImpl
+    implements SimpleProcessingScheduleService, AutoCloseable {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
   private final Supplier<StreamProcessor.Phase> streamProcessorPhaseSupplier;
