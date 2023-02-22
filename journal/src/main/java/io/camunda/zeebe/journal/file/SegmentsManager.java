@@ -81,10 +81,13 @@ final class SegmentsManager implements AutoCloseable {
               segment.close();
             });
 
-    try {
-      nextSegment.join();
-    } catch (final Exception e) {
-      LOG.warn("Next segment preparation failed during close, ignoring and proceeding to close", e);
+    if (nextSegment != null) {
+      try {
+        nextSegment.join();
+      } catch (final Exception e) {
+        LOG.warn(
+            "Next segment preparation failed during close, ignoring and proceeding to close", e);
+      }
     }
 
     nextSegment = null;
