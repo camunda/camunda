@@ -241,17 +241,18 @@ public final class CreateDeploymentTest {
         Bpmn.createExecutableProcess(process2Id).startEvent().task().endEvent().done();
 
     // when
-    ENGINE.deployment()
-            .withXmlResource(process1)
-            .withXmlResource(process2)
-            .expectRejection()
-            .deploy();
+    ENGINE
+        .deployment()
+        .withXmlResource(process1)
+        .withXmlResource(process2)
+        .expectRejection()
+        .deploy();
 
     // then
     assertThat(
-        RecordingExporter.records()
-            .limit(r -> r.getRejectionType() == RejectionType.INVALID_ARGUMENT)
-            .collect(Collectors.toList()))
+            RecordingExporter.records()
+                .limit(r -> r.getRejectionType() == RejectionType.INVALID_ARGUMENT)
+                .collect(Collectors.toList()))
         .extracting(Record::getIntent, Record::getRecordType)
         .doesNotContain(
             tuple(ProcessIntent.CREATED, RecordType.EVENT),

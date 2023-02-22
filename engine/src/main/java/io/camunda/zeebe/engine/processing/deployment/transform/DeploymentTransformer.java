@@ -103,8 +103,7 @@ public final class DeploymentTransformer {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason =
           String.format(
-              "Expected to deploy new resources, but encountered the following errors:%s",
-              errors);
+              "Expected to deploy new resources, but encountered the following errors:%s", errors);
 
       throw new ResourceTransformationFailedException(rejectionReason);
     }
