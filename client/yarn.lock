@@ -1319,10 +1319,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@bpmn-io/diagram-js-ui@^0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.1.tgz#b1c26d58b382bc9548f5c2e487c0d4b244f1cdd3"
-  integrity sha512-8opVJ0MTc2T6T0/8mVSmnBvdIyYjygSahLZ394A9YprjuCoqnfhxQ4TKZ/M/oN2ynvGt6N2mQv6SOGnRhqUovA==
+"@bpmn-io/diagram-js-ui@^0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/diagram-js-ui/-/diagram-js-ui-0.2.2.tgz#f182476e820641901c10d0079dcfe7b5b022b9f6"
+  integrity sha512-IgOIxOwoqsFB2mMPdXtcbPVPjdYkZ3huW7ipowYLhg5jdRGHlBronQ+LER+lfWro6sPtzEsw7qX8D8Yq9M2S5g==
   dependencies:
     htm "^3.1.1"
     preact "^10.11.2"
@@ -3941,14 +3941,14 @@ bpmn-js-disable-collapsed-subprocess@^0.1.7:
   dependencies:
     min-dash "^4.0.0"
 
-bpmn-js@11.1.1:
-  version "11.1.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-11.1.1.tgz#b4033d61c32a851bdf5de0cda1a9193fb4372985"
-  integrity sha512-Co3RJ3eevmpfsUMm72ktdxUiXJeYp9Z+vdOgLT50lS0oz3x0FSxx7QVaAeKfjYumnEYd1V7a6csbduxzA8ZStQ==
+bpmn-js@11.4.1:
+  version "11.4.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-11.4.1.tgz#8032024bc68937c05d432a0eb5b0d4af17462ef0"
+  integrity sha512-nTnC7aw81kLet5AUIAsWO6X6nbNFY250x7mC1BLbVCSEg4+LNO5MXpmP6eQHW41j03UuqOIpvmR+a/0w2+FQjQ==
   dependencies:
     bpmn-moddle "^8.0.0"
     css.escape "^1.5.1"
-    diagram-js "^11.4.3"
+    diagram-js "^11.9.1"
     diagram-js-direct-editing "^2.0.0"
     ids "^1.0.0"
     inherits-browser "^0.1.0"
@@ -5382,12 +5382,12 @@ diagram-js-direct-editing@^2.0.0:
     min-dash "^4.0.0"
     min-dom "^4.0.2"
 
-diagram-js@^11.4.1, diagram-js@^11.4.3:
-  version "11.4.3"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-11.4.3.tgz#02a701ab073a7c8b1faadebe6fac83b56d252ad9"
-  integrity sha512-NbpqdcBQthcLiffhYghN8nsZOLEOMKcNnV19OUK0OG4XKDecYazcvOl6kcRFu29+/k4bmU+hkXY/fQylDpqd3A==
+diagram-js@^11.4.1, diagram-js@^11.9.1:
+  version "11.9.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-11.9.1.tgz#196dd2f2c81062b5c454ce9eaee521fdc890a2b7"
+  integrity sha512-qhqNSCq1k4ftHMJy0czNPlA5rFyccv/TakXrDYOtSpdrPJ0zHqWzZdw9/Of5UpixxPsMkoeu6U7Ox1sXLKRp3Q==
   dependencies:
-    "@bpmn-io/diagram-js-ui" "^0.2.1"
+    "@bpmn-io/diagram-js-ui" "^0.2.2"
     clsx "^1.2.1"
     css.escape "^1.5.1"
     didi "^9.0.0"
