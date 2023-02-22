@@ -401,7 +401,6 @@ final class SystemContextTest {
   void shouldThrowExceptionWhenS3BucketIsNotProvided() {
     // given
     final var brokerCfg = new BrokerCfg();
-    brokerCfg.getExperimental().getFeatures().setEnableBackup(true);
     brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
 
     // when - then
@@ -416,7 +415,6 @@ final class SystemContextTest {
   void shouldThrowExceptionWhenS3IsNotConfigured() {
     // given
     final var brokerCfg = new BrokerCfg();
-    brokerCfg.getExperimental().getFeatures().setEnableBackup(true);
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setStore(BackupStoreType.S3);
     backupCfg.getS3().setBucketName("bucket");

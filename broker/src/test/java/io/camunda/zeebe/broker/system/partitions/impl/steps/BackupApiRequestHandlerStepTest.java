@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -60,8 +59,6 @@ final class BackupApiRequestHandlerStepTest {
     transitionContext.setDiskSpaceUsageMonitor(diskSpaceUsageMonitor);
     transitionContext.setActorSchedulingService(actorSchedulingService);
     transitionContext.setBrokerCfg(brokerCfg);
-
-    lenient().when(brokerCfg.getExperimental().getFeatures().isEnableBackup()).thenReturn(true);
 
     step = new BackupApiRequestHandlerStep();
   }

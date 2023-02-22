@@ -50,11 +50,8 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
     if (shouldInstallOnTransition(context.getCurrentRole(), targetRole)
         || (context.getBackupStore() == null && targetRole != Role.INACTIVE)) {
 
-      final boolean isBackupFeatureDisabled =
-          !context.getBrokerCfg().getExperimental().getFeatures().isEnableBackup();
-
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
-      if (backupCfg.getStore() == BackupStoreType.NONE || isBackupFeatureDisabled) {
+      if (backupCfg.getStore() == BackupStoreType.NONE) {
         // No backup store is installed. BackupManager can handle this case
         context.setBackupStore(null);
         installed.complete(null);

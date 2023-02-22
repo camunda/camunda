@@ -52,10 +52,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
 
       final ActorFuture<Void> backupManagerInstalled;
 
-      final var isBackupFeatureEnabled =
-          context.getBrokerCfg().getExperimental().getFeatures().isEnableBackup();
-
-      if (context.getBackupStore() == null || !isBackupFeatureEnabled) {
+      if (context.getBackupStore() == null) {
         backupManagerInstalled =
             installNoopBackupManager(
                 context, "No BackupStore is configured. Backup operations cannot be executed.");
