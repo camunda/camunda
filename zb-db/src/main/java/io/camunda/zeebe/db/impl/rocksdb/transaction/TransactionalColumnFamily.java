@@ -329,7 +329,7 @@ class TransactionalColumnFamily<
         prefix,
         (prefixKey, prefixLength) -> {
           try (final RocksIterator iterator =
-              newIterator(context, transactionDb.getPrefixReadOptions())) {
+              newIterator(context, transactionDb.getPrefixReadOptions().setTailing(true))) {
 
             boolean shouldVisitNext = true;
 
