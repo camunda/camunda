@@ -169,6 +169,10 @@ class TransactionalColumnFamily<
   }
 
   @Override
+  public void whileTrue(
+      final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {}
+
+  @Override
   public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(new DbNullKey(), visitor));
   }
