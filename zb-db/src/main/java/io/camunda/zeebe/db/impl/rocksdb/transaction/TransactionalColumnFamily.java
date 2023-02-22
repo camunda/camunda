@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import io.camunda.zeebe.db.impl.DbLong;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -55,6 +56,8 @@ class TransactionalColumnFamily<
 
   private final ForeignKeyChecker foreignKeyChecker;
 
+  private long highestKeyInserted = Long.MIN_VALUE;
+
   TransactionalColumnFamily(
       final ZeebeTransactionDb<ColumnFamilyNames> transactionDb,
       final ConsistencyChecksSettings consistencyChecksSettings,
@@ -79,7 +82,16 @@ class TransactionalColumnFamily<
           columnFamilyContext.writeKey(key);
           columnFamilyContext.writeValue(value);
 
-          assertKeyDoesNotExist(transaction);
+          if (key instanceof DbLong newKey) {
+            if (newKey.getValue() > highestKeyInserted) {
+              highestKeyInserted = Math.max(highestKeyInserted, newKey.getValue());
+            } else {
+              assertKeyDoesNotExist(transaction);
+            }
+          } else {
+            assertKeyDoesNotExist(transaction);
+          }
+
           assertForeignKeysExist(transaction, key, value);
           transaction.put(
               transactionDb.getDefaultNativeHandle(),
