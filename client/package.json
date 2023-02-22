@@ -98,7 +98,7 @@
     "node-fetch": "^2.6.7",
     "old-bpmn-js": "npm:bpmn-js@8.10",
     "opn": "^6.0.0",
-    "prettier": "2.8.3",
+    "prettier": "2.8.4",
     "react-scripts": "5.0.0",
     "sass": "^1.58.3",
     "shelljs": "^0.8.5",
