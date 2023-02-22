@@ -105,7 +105,7 @@
     "testcafe": "^2.3.0",
     "testcafe-browser-provider-browserstack": "^1.14.1",
     "tree-kill": "^1.2.2",
-    "ws": "^8.12.0",
+    "ws": "^8.12.1",
     "xml2js": "^0.4.23"
   },
   "resolutions": {
