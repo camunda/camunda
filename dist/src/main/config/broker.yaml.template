@@ -123,19 +123,27 @@
       # This section allows to configure Zeebe's data storage. Data is stored in
       # "partition folders". A partition folder has the following structure:
       #
-      # partition-0                       (root partition folder)
-      # ├── partition.json                (metadata about the partition)
-      # ├── segments                      (the actual data as segment files)
-      # │   ├── 00.data
-      # │   └── 01.data
-      # └── state                     	(stream processor state and snapshots)
-      #     └── stream-processor
-      #		  ├── runtime
-      #		  └── snapshots
+      # partitions
+      #  └── 1                       (root partition folder)
+      #      ├── 1.log
+      #      ├── 2.log
+      #      └── snapshots
+      #          └── <snapshot-id>
+      #     		      └── xx.sst
+      #    	 └── runtime
+      #          └── yy.sst
 
       # Specify the directory in which data is stored.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DIRECTORY.
       # directory: data
+
+      # Specify the directory in which runtime is stored.
+      # By default runtime is stored in `directory` for data.
+      # If runtimeDirectory is configured, then the configured directory will be used. It will have a subdirectory for each partition to store its runtime.
+      # There is no need to store runtime in a persistent storage. This configuration allows to split runtime to another disk to optimize for performance and disk usage.
+      # Note: If runtime is another disk than the data directory, files need to be copied to data directory while taking snapshot. This may impact disk i/o or performance during snapshotting.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_RUNTIMEDIRECTORY.
+      # runtimeDirectory: null
 
       # The size of data log segment files.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_LOGSEGMENTSIZE.
