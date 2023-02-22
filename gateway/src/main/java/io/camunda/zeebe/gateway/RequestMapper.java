@@ -11,6 +11,7 @@ import static org.agrona.LangUtil.rethrowUnchecked;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerBroadcastSignalRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerThrowErrorRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -200,6 +202,12 @@ public final class RequestMapper {
   public static BrokerDeleteResourceRequest toDeleteResourceRequest(
       final DeleteResourceRequest grpcRequest) {
     return new BrokerDeleteResourceRequest().setResourceKey(grpcRequest.getResourceKey());
+  }
+
+  public static BrokerBroadcastSignalRequest toBroadcastSignalRequest(
+      final BroadcastSignalRequest grpcRequest) {
+    return new BrokerBroadcastSignalRequest(grpcRequest.getSignalName())
+        .setVariables(ensureJsonSet(grpcRequest.getVariables()));
   }
 
   public static DirectBuffer ensureJsonSet(final String value) {

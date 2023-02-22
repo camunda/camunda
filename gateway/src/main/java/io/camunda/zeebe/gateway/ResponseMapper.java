@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import java.util.Iterator;
@@ -286,6 +288,11 @@ public final class ResponseMapper {
   public static DeleteResourceResponse toDeleteResourceResponse(
       final long key, final ResourceDeletionRecord brokerResponse) {
     return DeleteResourceResponse.getDefaultInstance();
+  }
+
+  public static BroadcastSignalResponse toBroadcastSignalResponse(
+      final long key, final SignalRecord brokerResponse) {
+    return BroadcastSignalResponse.newBuilder().setKey(key).build();
   }
 
   private static String bufferAsJson(final DirectBuffer customHeaders) {
