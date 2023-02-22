@@ -94,7 +94,7 @@
     "jest-junit": "^15.0.0",
     "license-checker": "^25.0.1",
     "lint-staged": "^13.1.0",
-    "mock-socket": "^9.1.5",
+    "mock-socket": "^9.2.1",
     "node-fetch": "^2.6.7",
     "old-bpmn-js": "npm:bpmn-js@8.10",
     "opn": "^6.0.0",
