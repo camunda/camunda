@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -16,17 +17,24 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
 
   private final SimpleProcessingScheduleService processorActorService;
   private final SimpleProcessingScheduleService differentActorService;
+  private final ActorControl differentActor;
 
   public ExtendedProcessingScheduleServiceImpl(
       final SimpleProcessingScheduleService processorActorService,
-      final SimpleProcessingScheduleService differentActorService) {
+      final SimpleProcessingScheduleService differentActorService,
+      final ActorControl differentActor) {
     this.processorActorService = processorActorService;
     this.differentActorService = differentActorService;
+    this.differentActor = differentActor;
   }
 
   @Override
   public void runAtFixedRateAsync(final Duration delay, final Task task) {
-    differentActorService.runAtFixedRate(delay, task);
+    differentActor.call(
+        () -> {
+          // we must run in different actor in order to schedule task
+          differentActorService.runAtFixedRate(delay, task);
+        });
   }
 
   @Override

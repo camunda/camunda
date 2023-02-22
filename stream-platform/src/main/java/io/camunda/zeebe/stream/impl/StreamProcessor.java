@@ -170,9 +170,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               () -> false, // we will just stop the actor in this case, no need to provide this
               logStream::newLogStreamWriter);
+      differentActor = new DifferentProcessingScheduleServiceActor(differentScheduleService);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
-              processorActorService, differentScheduleService);
+              processorActorService, differentScheduleService, differentActor.getActorControl());
       streamProcessorContext.scheduleService(extendedProcessingScheduleService);
 
       initRecordProcessors();
@@ -263,7 +264,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void tearDown() {
     processorActorService.close();
-    differentActor.close();
+    differentActor.closeAsync();
     differentScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
@@ -273,6 +274,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
     actor.runDelayed(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+  }
+
+  void chainSteps(final int index, final Step[] steps, final Runnable last) {
+    if (index == steps.length) {
+      last.run();
+      return;
+    }
+
+    final Step step = steps[index];
+    step.run()
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                chainSteps(index + 1, steps, last);
+              } else {
+                onFailure(t);
+              }
+            });
   }
 
   private void onRetrievingWriter(
@@ -285,35 +304,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
 
-      final var scheduleServiceOpenFuture = processorActorService.open(actor);
-      scheduleServiceOpenFuture.onComplete(
-          (v, failure) -> {
-            if (failure == null) {
-
-              differentActor = new DifferentProcessingScheduleServiceActor();
-              final var submitActorFuture = actorSchedulingService.submitActor(differentActor);
-
-              submitActorFuture.onComplete(
-                  (v2, failure2) -> {
-                    if (failure2 == null) {
-                      final var differentScheduleServiceOpenFuture =
-                          differentScheduleService.open(differentActor.getActorControl());
-                      differentScheduleServiceOpenFuture.onComplete(
-                          (v3, failure3) -> {
-                            if (failure3 == null) {
-                              startProcessing(lastProcessingPositions);
-                            } else {
-                              onFailure(failure3);
-                            }
-                          });
-                    } else {
-                      onFailure(failure2);
-                    }
-                  });
-            } else {
-              onFailure(failure);
-            }
-          });
+      chainSteps(
+          0,
+          new Step[] {
+            () -> processorActorService.open(actor),
+            () -> actorSchedulingService.submitActor(differentActor)
+          },
+          () -> startProcessing(lastProcessingPositions));
     } else {
       onFailure(errorOnReceivingWriter);
     }
@@ -560,17 +557,41 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     actor.run(processingStateMachine::readNextRecord);
   }
 
+  private static final class DifferentProcessingScheduleServiceActor extends Actor {
+
+    private final ProcessingScheduleServiceImpl scheduleService;
+
+    public DifferentProcessingScheduleServiceActor(
+        final ProcessingScheduleServiceImpl scheduleService) {
+      this.scheduleService = scheduleService;
+    }
+
+    @Override
+    protected void onActorStarting() {
+      final ActorFuture<Void> actorFuture = scheduleService.open(actor);
+      actor.runOnCompletionBlockingCurrentPhase(
+          actorFuture,
+          (v, t) -> {
+            if (t != null) {
+              actor.fail(t);
+            }
+          });
+    }
+
+    public ActorControl getActorControl() {
+      return actor;
+    }
+  }
+
+  public interface Step {
+    ActorFuture<Void> run();
+  }
+
   public enum Phase {
     INITIAL,
     REPLAY,
     PROCESSING,
     FAILED,
     PAUSED,
-  }
-
-  private final class DifferentProcessingScheduleServiceActor extends Actor {
-    public ActorControl getActorControl() {
-      return actor;
-    }
   }
 }
