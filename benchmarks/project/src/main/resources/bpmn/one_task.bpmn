@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_19exoz2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.6.2">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_19exoz2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.5.0">
   <bpmn:process id="benchmark" name="One task process" isExecutable="true">
     <bpmn:startEvent id="start" name="start">
       <bpmn:outgoing>SequenceFlow_0xll35j</bpmn:outgoing>
@@ -13,9 +13,17 @@
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_0xll35j" sourceRef="start" targetRef="task" />
     <bpmn:endEvent id="end" name="end">
-      <bpmn:incoming>SequenceFlow_1wkb5x5</bpmn:incoming>
+      <bpmn:incoming>Flow_0kz7thj</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1wkb5x5" sourceRef="task" targetRef="end" />
+    <bpmn:sequenceFlow id="SequenceFlow_1wkb5x5" sourceRef="task" targetRef="Activity_1pe8g4m" />
+    <bpmn:sequenceFlow id="Flow_0kz7thj" sourceRef="Activity_1pe8g4m" targetRef="end" />
+    <bpmn:serviceTask id="Activity_1pe8g4m" name="Foo">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="benchmark-task-never-executed" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_1wkb5x5</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kz7thj</bpmn:outgoing>
+    </bpmn:serviceTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="benchmark">
@@ -28,19 +36,26 @@
       <bpmndi:BPMNShape id="ServiceTask_060uah3_di" bpmnElement="task">
         <dc:Bounds x="292" y="81" width="100" height="80" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_0hz2fmb_di" bpmnElement="end">
+        <dc:Bounds x="712" y="103" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="721" y="146" width="19" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1y839al_di" bpmnElement="Activity_1pe8g4m">
+        <dc:Bounds x="460" y="81" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0xll35j_di" bpmnElement="SequenceFlow_0xll35j">
         <di:waypoint x="215" y="121" />
         <di:waypoint x="292" y="121" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="EndEvent_0hz2fmb_di" bpmnElement="end">
-        <dc:Bounds x="464" y="103" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="473" y="146" width="19" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1wkb5x5_di" bpmnElement="SequenceFlow_1wkb5x5">
         <di:waypoint x="392" y="121" />
-        <di:waypoint x="464" y="121" />
+        <di:waypoint x="460" y="121" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kz7thj_di" bpmnElement="Flow_0kz7thj">
+        <di:waypoint x="560" y="121" />
+        <di:waypoint x="712" y="121" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
