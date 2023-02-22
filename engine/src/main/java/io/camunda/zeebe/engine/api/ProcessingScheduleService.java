@@ -7,13 +7,9 @@
  */
 package io.camunda.zeebe.engine.api;
 
-import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.time.Duration;
-import java.util.function.BiConsumer;
 
 public interface ProcessingScheduleService extends SimpleProcessingScheduleService {
-
-  <T> void runOnCompletion(ActorFuture<T> precedingTask, BiConsumer<T, Throwable> followUpTask);
 
   /**
    * Schedule a task to execute at a fixed rate. After an initial delay, the task is executed. Once
