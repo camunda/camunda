@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client;
 
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -227,6 +228,21 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   PublishMessageCommandStep1 newPublishMessageCommand();
+
+  /**
+   * Command to broadcast a signal.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newBroadcastSignalCommand()
+   *  .signalName("signal")
+   *  .variables(json)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  BroadcastSignalCommandStep1 newBroadcastSignalCommand();
 
   /**
    * Command to resolve an existing incident.
