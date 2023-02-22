@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
+import io.camunda.zeebe.engine.api.SimpleProcessingScheduleService;
 import io.camunda.zeebe.engine.api.Task;
 import io.camunda.zeebe.engine.api.TaskResult;
 import io.camunda.zeebe.engine.api.TaskResultBuilder;
@@ -315,7 +316,7 @@ class ProcessingScheduleServiceTest {
    * not thread safe, so this need to happen on the same thread, meaning on the same actor.
    */
   private static final class TestScheduleServiceActorDecorator extends Actor
-      implements ProcessingScheduleService {
+      implements SimpleProcessingScheduleService {
     private final ProcessingScheduleServiceImpl processingScheduleService;
 
     public TestScheduleServiceActorDecorator(
