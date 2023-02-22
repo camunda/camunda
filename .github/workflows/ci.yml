@@ -371,14 +371,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: hadolint/hadolint-action@v2.1.0
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml
           dockerfile: ./Dockerfile
           format: sarif
           output-file: ./hadolint.sarif
           no-color: true
+          verbose: true
       - name: Upload Hadolint Results
+        if: always()
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: ./hadolint.sarif
