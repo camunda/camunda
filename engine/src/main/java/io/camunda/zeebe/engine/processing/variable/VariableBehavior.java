@@ -79,6 +79,30 @@ public final class VariableBehavior {
     }
   }
 
+  public void initLocalDocument(
+      final long scopeKey,
+      final long processDefinitionKey,
+      final long processInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer document) {
+    indexedDocument.index(document);
+    if (indexedDocument.isEmpty()) {
+      return;
+    }
+
+    variableRecord
+        .setScopeKey(scopeKey)
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessInstanceKey(processInstanceKey)
+        .setBpmnProcessId(bpmnProcessId);
+
+    for (final DocumentEntry entry : indexedDocument) {
+      applyEntryToRecord(entry);
+      final long key = keyGenerator.nextKey();
+      stateWriter.appendFollowUpEvent(key, VariableIntent.CREATED, variableRecord);
+    }
+  }
+
   /**
    * Merges the given document, propagating its changes from the bottom to the top of the scope
    * hierarchy.
