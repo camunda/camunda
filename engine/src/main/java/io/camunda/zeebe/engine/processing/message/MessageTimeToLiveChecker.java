@@ -28,9 +28,10 @@ public final class MessageTimeToLiveChecker implements Task {
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    messageState.visitMessagesWithDeadlineBefore(
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
         ActorClock.currentTimeMillis(),
-        expiredMessageKey -> writeDeleteMessageCommand(expiredMessageKey, taskResultBuilder));
+        null,
+        ((deadline, expiredMessageKey) -> writeDeleteMessageCommand(expiredMessageKey, taskResultBuilder));
     return taskResultBuilder.build();
   }
 

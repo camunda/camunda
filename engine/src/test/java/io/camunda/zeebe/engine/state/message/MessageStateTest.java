@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -192,7 +194,8 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessage = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(1_000, readMessage::add);
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        1_000, null, (deadline, e) -> readMessage.add(e));
 
     assertThat(readMessage).isEmpty();
   }
@@ -208,7 +211,8 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessage = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(1_999, readMessage::add);
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        1_999, null, (deadline, e) -> readMessage.add(e));
 
     assertThat(readMessage.size()).isEqualTo(1);
     assertThat(readMessage.get(0)).isEqualTo(1L);
@@ -230,10 +234,44 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessage = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m));
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        deadline, null, (d, m) -> readMessage.add(m));
 
     assertThat(readMessage.size()).isEqualTo(2);
     assertThat(readMessage).containsExactly(1L, 2L);
+  }
+
+  @Test
+  public void shouldVisitMessagesBeforeTimeStartingAtIndex() {
+    // given four messages
+    final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
+    final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
+    final var message3 = createMessage("anotherName", "correlationKey", "{}", "nr3", 2500);
+    final var message4 = createMessage("yetAnotherName", "correlationKey", "{}", "nr4", 3456);
+
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
+    messageState.put(3L, message3);
+    messageState.put(4L, message4);
+
+    // and we've visited two
+    final MutableObject<MessageState.Index> lastIndex = new MutableObject<>();
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        2999,
+        null,
+        (deadline, key) -> {
+          final boolean shouldContinue = lastIndex.getValue() == null;
+          lastIndex.setValue(new MessageState.Index(key, deadline));
+          return shouldContinue;
+        });
+
+    // when we visit from the last index
+    final List<Long> readMessage = new ArrayList<>();
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        2999, lastIndex.getValue(), (deadline, e) -> readMessage.add(e));
+
+    // then we encounter the message from after that index and before the deadline
+    assertThat(readMessage).hasSize(2).containsExactly(2L, 3L).doesNotContain(1L, 4L);
   }
 
   @Test
@@ -250,7 +288,8 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessages = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        2000, null, (deadline, e) -> readMessages.add(e));
 
     assertThat(readMessages.size()).isEqualTo(0);
 
@@ -284,7 +323,8 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessages = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        2000, null, (deadline, e) -> readMessages.add(e));
 
     assertThat(readMessages.size()).isEqualTo(0);
 
@@ -309,7 +349,8 @@ public final class MessageStateTest {
 
     // then
     final List<Long> readMessages = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(2000, readMessages::add);
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        2000, null, (deadline, e) -> readMessages.add(e));
 
     assertThat(readMessages.size()).isEqualTo(0);
 
@@ -345,7 +386,8 @@ public final class MessageStateTest {
     // then
     final long deadline = ActorClock.currentTimeMillis() + 2_000L;
     final List<Long> readMessages = new ArrayList<>();
-    messageState.visitMessagesWithDeadlineBefore(deadline, readMessages::add);
+    messageState.visitMessagesWithDeadlineBeforeTimestamp(
+        deadline, null, (d, e) -> readMessages.add(e));
 
     assertThat(readMessages.size()).isEqualTo(1);
 
