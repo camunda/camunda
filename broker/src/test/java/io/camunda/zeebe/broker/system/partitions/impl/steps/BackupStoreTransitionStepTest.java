@@ -57,8 +57,6 @@ class BackupStoreTransitionStepTest {
     transitionContext.setConcurrencyControl(TEST_CONCURRENCY_CONTROL);
     transitionContext.setBrokerCfg(brokerCfg);
 
-    lenient().when(brokerCfg.getExperimental().getFeatures().isEnableBackup()).thenReturn(true);
-
     step = new BackupStoreTransitionStep();
   }
 

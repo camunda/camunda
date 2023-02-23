@@ -21,7 +21,6 @@ class FeatureFlagsTest {
     // then
     assertThat(sut.yieldingDueDateChecker()).isFalse();
     assertThat(sut.enableActorMetrics()).isFalse();
-    assertThat(sut.enableBackup()).isFalse();
   }
 
   @Test

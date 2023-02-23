@@ -66,8 +66,6 @@ class BackupServiceTransitionStepTest {
     transitionContext.setBrokerCfg(brokerCfg);
     transitionContext.setRaftPartition(raftPartition);
 
-    lenient().when(brokerCfg.getExperimental().getFeatures().isEnableBackup()).thenReturn(true);
-
     lenient().when(brokerCfg.getCluster().getPartitionsCount()).thenReturn(3);
     lenient()
         .when(raftPartition.members())

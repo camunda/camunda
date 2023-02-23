@@ -129,14 +129,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
 
-    final var isBackupFeatureEnabled =
-        context.getBrokerCfg().getExperimental().getFeatures().isEnableBackup();
-
     final Engine engine = new Engine(context.getTypedRecordProcessorFactory());
     final List<RecordProcessor> recordProcessors =
-        isBackupFeatureEnabled
-            ? List.of(engine, context.getCheckpointProcessor())
-            : List.of(engine);
+        List.of(engine, context.getCheckpointProcessor());
 
     return StreamProcessor.builder()
         .logStream(context.getLogStream())

@@ -199,7 +199,6 @@ final class BackupAcceptanceIT {
 
   private void configureBroker(final ZeebeBrokerNode<?> broker) {
     broker
-        .withEnv("ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEBACKUP", "true")
         .withEnv("ZEEBE_BROKER_DATA_BACKUP_STORE", "S3")
         .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", bucketName)
         .withEnv("ZEEBE_BROKER_DATA_BACKUP_S3_ENDPOINT", minio.internalEndpoint())

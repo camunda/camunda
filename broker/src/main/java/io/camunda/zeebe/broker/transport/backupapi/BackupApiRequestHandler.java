@@ -245,7 +245,7 @@ public final class BackupApiRequestHandler
     errorWriter
         .errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
         .errorMessage(
-            "Backup feature is disabled for this cluster. To use this feature, enable it in the broker configuration and restart the cluster.");
+            "Cannot process backup requests. No backup store is configured. To use this feature, configure backup in broker configuration.");
     return Either.left(errorWriter);
   }
 

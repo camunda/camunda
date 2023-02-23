@@ -46,7 +46,6 @@ class BackupReplicatedPartitionTest {
       new ClusteringRuleExtension(1, 3, 3, this::configureBackupStore);
 
   private void configureBackupStore(final BrokerCfg config) {
-    config.getExperimental().getFeatures().setEnableBackup(true);
 
     final var backupConfig = config.getData().getBackup();
     backupConfig.setStore(BackupStoreType.S3);

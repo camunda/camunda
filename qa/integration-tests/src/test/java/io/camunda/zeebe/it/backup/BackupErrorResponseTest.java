@@ -46,8 +46,6 @@ class BackupErrorResponseTest {
         new ClusteringRuleExtension(1, 1, 1, this::configureBackupStore);
 
     private void configureBackupStore(final BrokerCfg config) {
-      config.getExperimental().getFeatures().setEnableBackup(true);
-
       final var backupConfig = config.getData().getBackup();
       backupConfig.setStore(BackupStoreType.S3);
 
@@ -115,13 +113,9 @@ class BackupErrorResponseTest {
   final class BackupNotConfiguredTest {
     @RegisterExtension
     private final ClusteringRuleExtension clusteringRule =
-        new ClusteringRuleExtension(1, 1, 1, this::disableBackup);
+        new ClusteringRuleExtension(1, 1, 1, cfg -> {});
 
     private BackupEndpoint backupEndpoint;
-
-    private void disableBackup(final BrokerCfg config) {
-      config.getExperimental().getFeatures().setEnableBackup(false);
-    }
 
     @BeforeEach
     void setup() {

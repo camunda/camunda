@@ -72,8 +72,7 @@ public final class SystemContext {
 
     validateClusterConfig(cluster);
 
-    validateDataConfig(
-        brokerCfg.getData(), brokerCfg.getExperimental().getFeatures().isEnableBackup());
+    validateDataConfig(brokerCfg.getData());
 
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
 
@@ -133,7 +132,7 @@ public final class SystemContext {
     }
   }
 
-  private void validateDataConfig(final DataCfg dataCfg, final boolean backupFeatureEnabled) {
+  private void validateDataConfig(final DataCfg dataCfg) {
     final var snapshotPeriod = dataCfg.getSnapshotPeriod();
     if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
@@ -154,9 +153,7 @@ public final class SystemContext {
       }
     }
 
-    if (backupFeatureEnabled) {
-      validateBackupCfg(dataCfg.getBackup());
-    }
+    validateBackupCfg(dataCfg.getBackup());
   }
 
   private void validateBackupCfg(final BackupStoreCfg backup) {
