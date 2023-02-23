@@ -36,7 +36,7 @@ env:
 jobs:
   release:
     name: Maven & Go Release
-    runs-on: n1-standard-16-netssd-preempt-quick
+    runs-on: n1-standard-8-netssd-preempt-quick
     timeout-minutes: 30
     outputs:
       releaseTagRevision: ${{ steps.maven-release.outputs.tagRevision }}
