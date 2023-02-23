@@ -16,6 +16,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -32,10 +33,12 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.EmptyProcessingResult;
 import io.camunda.zeebe.stream.api.PostCommitTask;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -43,7 +46,10 @@ import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -62,6 +68,8 @@ public final class StreamProcessorTest {
 
   @SuppressWarnings("unused") // injected by the extension
   private StreamPlatform streamPlatform;
+
+  private ControlledActorClock actorClock;
 
   @Test
   public void shouldCallStreamProcessorLifecycle() throws Exception {
@@ -369,6 +377,145 @@ public final class StreamProcessorTest {
     assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
     assertThat(logStreamReader.hasNext()).isTrue();
     assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+  }
+
+  @Test
+  public void shouldBlockProcessingIfSchedulingBlocks() throws InterruptedException {
+    // given
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final CountDownLatch asyncServiceLatch = new CountDownLatch(1);
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    doAnswer(
+            (invocationOnMock) -> {
+              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
+
+              context
+                  .getScheduleService()
+                  .runAtFixedRate(
+                      Duration.ZERO,
+                      (taskResultBuilder) -> {
+                        try {
+                          asyncServiceLatch.countDown();
+                          countDownLatch.await();
+                        } catch (final InterruptedException e) {
+                          throw new RuntimeException(e);
+                        }
+                        return taskResultBuilder.build();
+                      });
+
+              return invocationOnMock.callRealMethod();
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    streamPlatform.startStreamProcessor();
+
+    // when
+    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultRecordProcessor, timeout(500).times(0)).process(any(), any());
+    // free processor
+    countDownLatch.countDown();
+  }
+
+  @Test
+  public void shouldProcessEvenIfAsyncSchedulingBlocks() throws InterruptedException {
+    // given
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final CountDownLatch asyncServiceLatch = new CountDownLatch(1);
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+    doAnswer(
+            (invocationOnMock) -> {
+              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
+
+              context
+                  .getScheduleService()
+                  .runAtFixedRateAsync(
+                      Duration.ZERO,
+                      (taskResultBuilder) -> {
+                        try {
+                          asyncServiceLatch.countDown();
+                          countDownLatch.await();
+                        } catch (final InterruptedException e) {
+                          throw new RuntimeException(e);
+                        }
+                        return taskResultBuilder.build();
+                      });
+
+              return invocationOnMock.callRealMethod();
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    streamPlatform.startStreamProcessor();
+
+    // when
+    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultRecordProcessor, TIMEOUT.times(1)).process(any(), any());
+    // free schedule service
+    countDownLatch.countDown();
+  }
+
+  @Test
+  public void shouldRunAsyncSchedulingEvenIfProcessingIsBlocked() throws InterruptedException {
+    // given
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final CountDownLatch asyncServiceLatch = new CountDownLatch(1);
+    final CountDownLatch processorLatch = new CountDownLatch(1);
+    final CountDownLatch waitLatch = new CountDownLatch(1);
+    doAnswer(
+            (invocationOnMock) -> {
+              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
+
+              context
+                  .getScheduleService()
+                  .runAtFixedRateAsync(
+                      Duration.ofMinutes(1),
+                      (taskResultBuilder) -> {
+                        asyncServiceLatch.countDown();
+                        return taskResultBuilder.build();
+                      });
+
+              return invocationOnMock.callRealMethod();
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    doAnswer(
+            (invocationOnMock -> {
+              try {
+                processorLatch.countDown();
+                waitLatch.await();
+              } catch (final InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+              return invocationOnMock.callRealMethod();
+            }))
+        .when(defaultRecordProcessor)
+        .process(any(), any());
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+    assertThat(processorLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    actorClock.addTime(Duration.ofMinutes(2));
+
+    // then
+    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+    verify(defaultRecordProcessor, TIMEOUT).process(any(), any());
+    // free schedule service
+    waitLatch.countDown();
   }
 
   @Test
