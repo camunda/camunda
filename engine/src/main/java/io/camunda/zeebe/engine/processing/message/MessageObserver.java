@@ -39,7 +39,7 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
     final var scheduleService = context.getScheduleService();
     // it is safe to reuse the write because we running in the same actor/thread
     final MessageTimeToLiveChecker timeToLiveChecker = new MessageTimeToLiveChecker(messageState);
-    scheduleService.runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    scheduleService.runAtFixedRateAsync(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
