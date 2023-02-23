@@ -79,10 +79,10 @@ spec:
     resources:
       limits:
         cpu: 4
-        memory: 2Gi
+        memory: 4Gi
       requests:
         cpu: 4
-        memory: 2Gi
+        memory: 4Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
