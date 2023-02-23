@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSen
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.KeyGenerator;
+import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
@@ -27,6 +28,7 @@ public final class MessageEventProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
+      final ScheduledTaskDbState scheduledTaskDbState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers) {
 
@@ -89,7 +91,7 @@ public final class MessageEventProcessors {
                 messageState, subscriptionState, subscriptionCommandSender, writers))
         .withListener(
             new MessageObserver(
-                messageState,
+                scheduledTaskDbState.getMessageState(),
                 processingState.getPendingMessageSubscriptionState(),
                 subscriptionCommandSender));
   }
