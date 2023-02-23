@@ -107,10 +107,10 @@ public final class DbStringColumnFamilyTest {
   public void shouldUseWhileTrue() {
     // given
     upsertKeyValuePair("foo", "baring");
-    upsertKeyValuePair("this is the one", "as you know");
     upsertKeyValuePair("hello", "world");
-    upsertKeyValuePair("another", "string");
     upsertKeyValuePair("might", "be good");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("this is the one", "as you know");
 
     // when
     final List<String> keys = new ArrayList<>();
@@ -120,12 +120,40 @@ public final class DbStringColumnFamilyTest {
           keys.add(key.toString());
           values.add(value.toString());
 
-          return !value.toString().equalsIgnoreCase("world");
+          return !value.toString().equalsIgnoreCase("string");
         });
 
     // then
-    assertThat(values).containsExactly("baring", "world");
-    assertThat(keys).containsExactly("foo", "hello");
+    assertThat(values).containsExactly("baring", "world", "be good", "string");
+    assertThat(keys).containsExactly("foo", "hello", "might", "another");
+  }
+
+  @Test
+  public void shouldUseWhileTrueWithStartAtKey() {
+    // given
+    upsertKeyValuePair("foo", "baring");
+    upsertKeyValuePair("hello", "world");
+    upsertKeyValuePair("might", "be good");
+    upsertKeyValuePair("another", "string");
+    upsertKeyValuePair("this is the one", "as you know");
+    final var startAtKey = new DbString();
+    startAtKey.wrapString("hello");
+
+    // when
+    final List<String> keys = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileTrue(
+        startAtKey,
+        (key, value) -> {
+          keys.add(key.toString());
+          values.add(value.toString());
+
+          return !value.toString().equalsIgnoreCase("string");
+        });
+
+    // then
+    assertThat(values).containsExactly("world", "be good", "string");
+    assertThat(keys).containsExactly("hello", "might", "another");
   }
 
   @Test

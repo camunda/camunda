@@ -317,6 +317,64 @@ public final class ColumnFamilyTest {
   }
 
   @Test
+  public void shouldUseWhileTrueWithStartAt() {
+    // given
+    final var startAt = new DbLong();
+    startAt.wrapLong(1213);
+
+    upsertKeyValuePair(4567, 123);
+    upsertKeyValuePair(6734, 921);
+    upsertKeyValuePair(1213, 255);
+    upsertKeyValuePair(1, Short.MAX_VALUE);
+    upsertKeyValuePair(Short.MAX_VALUE, 1);
+
+    // when
+    final List<Long> keys = new ArrayList<>();
+    final List<Long> values = new ArrayList<>();
+    columnFamily.whileTrue(
+        startAt,
+        (key, value) -> {
+          keys.add(key.getValue());
+          values.add(value.getValue());
+
+          return key.getValue() != 4567;
+        });
+
+    // then
+    assertThat(keys).containsExactly(1213L, 4567L);
+    assertThat(values).containsExactly(255L, 123L);
+  }
+
+  @Test
+  public void shouldUseWhileTrueWithStartAtMissingKey() {
+    // given
+    final var startAt = new DbLong();
+    startAt.wrapLong(1212);
+
+    upsertKeyValuePair(4567, 123);
+    upsertKeyValuePair(6734, 921);
+    upsertKeyValuePair(1213, 255);
+    upsertKeyValuePair(1, Short.MAX_VALUE);
+    upsertKeyValuePair(Short.MAX_VALUE, 1);
+
+    // when
+    final List<Long> keys = new ArrayList<>();
+    final List<Long> values = new ArrayList<>();
+    columnFamily.whileTrue(
+        startAt,
+        (key, value) -> {
+          keys.add(key.getValue());
+          values.add(value.getValue());
+
+          return key.getValue() != 4567;
+        });
+
+    // then
+    assertThat(keys).containsExactly(1213L, 4567L);
+    assertThat(values).containsExactly(255L, 123L);
+  }
+
+  @Test
   public void shouldCheckIfEmpty() {
     assertThat(columnFamily.isEmpty()).isTrue();
 
