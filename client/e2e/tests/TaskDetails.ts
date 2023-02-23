@@ -82,7 +82,7 @@ test('claim and unclaim task', async (t) => {
     .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
     .notOk()
     .click(screen.getByRole('button', {name: 'Claim'}))
-    .expect(screen.findByRole('button', {name: 'Unclaim'}).exists)
+    .expect(screen.queryByRole('button', {name: 'Unclaim'}).exists)
     .ok()
     .expect(
       within(screen.getByTestId('assignee-task-details')).getByText('demo')
@@ -92,7 +92,7 @@ test('claim and unclaim task', async (t) => {
     .expect(screen.getByRole('button', {name: 'Complete Task'}).exists)
     .ok()
     .click(screen.getByRole('button', {name: 'Unclaim'}))
-    .expect(screen.findByRole('button', {name: 'Claim'}).exists)
+    .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
     .ok()
     .expect(screen.getByText('Unassigned').exists)
     .ok()
@@ -140,69 +140,69 @@ test('complete task', async (t) => {
 
 test('task completion with form', async (t) => {
   await t
-    .click(screen.findAllByText(/^user registration$/i).nth(0))
-    .click(screen.findByRole('button', {name: /claim/i}))
-    .typeText(screen.findByLabelText(/name/i), 'Jon')
-    .typeText(screen.findByLabelText(/address/i), 'Earth')
-    .typeText(screen.findByLabelText(/age/i), '21')
+    .click(screen.queryAllByText(/^user registration$/i).nth(0))
+    .click(screen.queryByRole('button', {name: /claim/i}))
+    .typeText(screen.queryByLabelText(/name/i), 'Jon')
+    .typeText(screen.queryByLabelText(/address/i), 'Earth')
+    .typeText(screen.queryByLabelText(/age/i), '21')
     .click(screen.getByRole('button', {name: /complete task/i}))
-    .click(screen.findByText('All open'))
-    .click(screen.findByText('Completed'))
-    .click(screen.findByText(/^user registration$/i))
-    .expect(screen.findByLabelText(/name/i).value)
+    .click(screen.queryByText('All open'))
+    .click(screen.queryByText('Completed'))
+    .click(screen.queryByText(/^user registration$/i))
+    .expect(screen.queryByLabelText(/name/i).value)
     .eql('Jon')
-    .expect(screen.findByLabelText(/address/i).value)
+    .expect(screen.queryByLabelText(/address/i).value)
     .eql('Earth')
-    .expect(screen.findByLabelText(/age/i).value)
+    .expect(screen.queryByLabelText(/age/i).value)
     .eql('21');
 });
 
 test('task completion with form on Claimed by Me filter', async (t) => {
   await t
-    .click(screen.findByText(/^user registration$/i))
-    .click(screen.findByRole('button', {name: /claim/i}))
+    .click(screen.queryByText(/^user registration$/i))
+    .click(screen.queryByRole('button', {name: /claim/i}))
     .expect(
       screen
         .getByRole('button', {name: /complete task/i})
         .hasAttribute('disabled'),
     )
     .notOk()
-    .click(screen.findByText('All open'))
-    .click(screen.findByText('Claimed by me'))
-    .click(screen.findByText(/^user registration$/i))
-    .typeText(screen.findByLabelText(/name/i), 'Gaius Julius Caesar')
-    .typeText(screen.findByLabelText(/address/i), 'Rome')
-    .typeText(screen.findByLabelText(/age/i), '55')
+    .click(screen.queryByText('All open'))
+    .click(screen.queryByText('Claimed by me'))
+    .click(screen.queryByText(/^user registration$/i))
+    .typeText(screen.queryByLabelText(/name/i), 'Gaius Julius Caesar')
+    .typeText(screen.queryByLabelText(/address/i), 'Rome')
+    .typeText(screen.queryByLabelText(/age/i), '55')
     .click(screen.getByRole('button', {name: /complete task/i}))
-    .expect(screen.findByText(/^user registration$/i).exists)
+    .expect(screen.queryByText(/^user registration$/i).exists)
     .notOk();
 });
 
 test('task completion with prefilled form', async (t) => {
   await t
-    .click(screen.findByText(/user registration with vars/i))
-    .click(screen.findByRole('button', {name: /claim/i}))
-    .typeText(screen.findByDisplayValue(/jane/i), 'Jon', {replace: true})
-    .typeText(screen.findByLabelText(/address/i), 'Earth')
-    .typeText(screen.findByDisplayValue(/50/i), '21', {replace: true})
+    .click(screen.queryByText(/user registration with vars/i))
+    .click(screen.queryByRole('button', {name: /claim/i}))
+    .typeText(screen.queryByDisplayValue(/jane/i), 'Jon', {replace: true})
+    .typeText(screen.queryByLabelText(/address/i), 'Earth')
+    .typeText(screen.queryByDisplayValue(/50/i), '21', {replace: true})
     .click(screen.getByRole('button', {name: /complete task/i}))
-    .click(screen.findByText('All open'))
-    .click(screen.findByText('Completed'))
-    .click(screen.findByText(/user registration with vars/i))
-    .expect(screen.findByLabelText(/name/i).value)
+    .click(screen.queryByText('All open'))
+    .click(screen.queryByText('Completed'))
+    .click(screen.queryByText(/user registration with vars/i))
+    .expect(screen.queryByLabelText(/name/i).value)
     .eql('Jon')
-    .expect(screen.findByLabelText(/address/i).value)
+    .expect(screen.queryByLabelText(/address/i).value)
     .eql('Earth')
-    .expect(screen.findByLabelText(/age/i).value)
+    .expect(screen.queryByLabelText(/age/i).value)
     .eql('21');
 });
 
 test('should rerender forms properly', async (t) => {
   await t
-    .click(screen.findByText(/user task with form rerender 1/i))
-    .expect(screen.findByDisplayValue(/mary/i).exists)
+    .click(screen.queryByText(/user task with form rerender 1/i))
+    .expect(screen.queryByDisplayValue(/mary/i).exists)
     .ok()
-    .click(screen.findByText(/user task with form rerender 2/i))
-    .expect(screen.findByDisplayValue(/stuart/i).exists)
+    .click(screen.queryByText(/user task with form rerender 2/i))
+    .expect(screen.queryByDisplayValue(/stuart/i).exists)
     .ok();
 });

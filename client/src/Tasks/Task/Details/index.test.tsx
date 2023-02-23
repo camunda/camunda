@@ -6,7 +6,7 @@
  */
 
 import {Details} from '.';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
@@ -26,7 +26,6 @@ import {
   mockGetCurrentUser,
   mockGetCurrentRestrictedUser,
 } from 'modules/queries/get-current-user';
-import userEvent from '@testing-library/user-event';
 
 const UserName = () => {
   const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
@@ -54,6 +53,14 @@ const getWrapper = (id: string = '0') => {
 };
 
 describe('<Details />', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -141,7 +148,7 @@ describe('<Details />', () => {
       }),
     );
 
-    render(<Details />, {
+    const {user} = render(<Details />, {
       wrapper: getWrapper(),
     });
 
@@ -151,7 +158,7 @@ describe('<Details />', () => {
       ),
     );
 
-    userEvent.click(await screen.findByRole('button', {name: /^claim$/i}));
+    await user.click(await screen.findByRole('button', {name: /^claim$/i}));
 
     expect(
       screen.queryByRole('button', {name: /^claim$/i}),
@@ -184,7 +191,7 @@ describe('<Details />', () => {
       }),
     );
 
-    render(<Details />, {
+    const {user} = render(<Details />, {
       wrapper: getWrapper(),
     });
 
@@ -195,7 +202,7 @@ describe('<Details />', () => {
       'Unassigned - claim task to work on this task.',
     );
 
-    userEvent.click(screen.getByRole('button', {name: /^unclaim$/i}));
+    await user.click(screen.getByRole('button', {name: /^unclaim$/i}));
 
     expect(screen.getByText('Unclaiming...')).toBeInTheDocument();
     expect(

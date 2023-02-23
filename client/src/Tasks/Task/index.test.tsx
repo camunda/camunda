@@ -12,7 +12,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {
   mockGetTaskClaimed,
   mockGetTaskCompletedWithForm,
@@ -24,7 +24,6 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {mockCompleteTask} from 'modules/mutations/complete-task';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
-import userEvent from '@testing-library/user-event';
 import {mockGetForm, mockGetInvalidForm} from 'modules/queries/get-form';
 import {
   mockGetTaskVariables,
@@ -70,6 +69,14 @@ const getWrapper = (
 };
 
 describe('<Task />', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -195,11 +202,11 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task hasRemainingTasks />, {
+    const {user} = render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('button', {name: /complete task/i}),
     );
 
@@ -230,11 +237,11 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task hasRemainingTasks />, {
+    const {user} = render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('button', {name: /complete task/i}),
     );
 
@@ -304,18 +311,20 @@ describe('<Task />', () => {
       }),
     );
 
-    render(<Task hasRemainingTasks />, {
+    const {user} = render(<Task hasRemainingTasks />, {
       wrapper: getWrapper(['/0']),
     });
 
-    userEvent.click(await screen.findByRole('button', {name: /add variable/i}));
-    userEvent.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
-    userEvent.type(
+    await user.click(
+      await screen.findByRole('button', {name: /add variable/i}),
+    );
+    await user.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
-    userEvent.click(screen.getByRole('button', {name: /^unclaim$/i}));
-    userEvent.click(await screen.findByRole('button', {name: /^claim$/i}));
+    await user.click(screen.getByRole('button', {name: /^unclaim$/i}));
+    await user.click(await screen.findByRole('button', {name: /^claim$/i}));
 
     expect(
       await screen.findByRole('button', {name: /^unclaim$/i}),

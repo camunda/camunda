@@ -6,7 +6,7 @@
  */
 
 import {EmptyPage} from './index';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';

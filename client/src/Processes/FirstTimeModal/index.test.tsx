@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MemoryRouter} from 'react-router-dom';
 import {FirstTimeModal} from '.';
@@ -24,6 +23,14 @@ const Wrapper: React.FC<Props> = ({children}) => {
 };
 
 describe('FirstTimeModal', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should render an alpha notice modal', async () => {
     render(<FirstTimeModal />, {
       wrapper: Wrapper,
@@ -70,11 +77,11 @@ describe('FirstTimeModal', () => {
       value: jest.fn(),
     });
 
-    render(<FirstTimeModal />, {
+    const {user} = render(<FirstTimeModal />, {
       wrapper: Wrapper,
     });
 
-    userEvent.click(screen.getByRole('button', {name: 'Read consent'}));
+    await user.click(screen.getByRole('button', {name: 'Read consent'}));
 
     expect(window.open).toHaveBeenCalledWith(
       'https://docs.camunda.io/docs/reference/early-access/#alpha',
@@ -89,7 +96,7 @@ describe('FirstTimeModal', () => {
   });
 
   it('should save the consent', async () => {
-    render(<FirstTimeModal />, {
+    const {user} = render(<FirstTimeModal />, {
       wrapper: Wrapper,
     });
 
@@ -97,7 +104,7 @@ describe('FirstTimeModal', () => {
       window.localStorage.getItem('hasConsentedToStartProcess'),
     ).toBeNull();
 
-    userEvent.click(screen.getByRole('button', {name: 'Continue'}));
+    await user.click(screen.getByRole('button', {name: 'Continue'}));
 
     expect(window.localStorage.getItem('hasConsentedToStartProcess')).toEqual(
       'true',

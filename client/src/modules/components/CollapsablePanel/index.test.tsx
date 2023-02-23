@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent} from 'modules/testing-library';
 
 import {CollapsablePanel} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';

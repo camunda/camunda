@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {
   claimedTaskWithForm,
   unclaimedTaskWithForm,
@@ -47,6 +46,14 @@ function areArraysEqual(firstArray: unknown[], secondArray: unknown[]) {
 const REQUESTED_VARIABLES = ['myVar', 'isCool'];
 
 describe('<FormJS />', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     nodeMockServer.use(
       graphql.query('GetForm', (_, res, ctx) => {
@@ -238,7 +245,7 @@ describe('<FormJS />', () => {
     );
 
     const mockOnSubmit = jest.fn();
-    render(
+    const {user} = render(
       <FormJS
         id="form-0"
         processDefinitionId="process"
@@ -257,7 +264,7 @@ describe('<FormJS />', () => {
       expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /complete task/i,
       }),
@@ -302,7 +309,7 @@ describe('<FormJS />', () => {
     );
 
     const mockOnSubmit = jest.fn();
-    render(
+    const {user} = render(
       <FormJS
         id="form-0"
         processDefinitionId="process"
@@ -321,9 +328,9 @@ describe('<FormJS />', () => {
       expect(screen.getByLabelText(/my variable/i)).toHaveValue('0001'),
     );
 
-    userEvent.clear(screen.getByLabelText(/my variable/i));
-    userEvent.type(screen.getByLabelText(/my variable/i), 'new value');
-    userEvent.click(
+    await user.clear(screen.getByLabelText(/my variable/i));
+    await user.type(screen.getByLabelText(/my variable/i), 'new value');
+    await user.click(
       screen.getByRole('button', {
         name: /complete task/i,
       }),

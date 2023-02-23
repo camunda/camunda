@@ -6,7 +6,7 @@
  */
 
 import {Restricted} from './index';
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {graphql} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {

@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {
   mockGetCurrentUser,
@@ -18,6 +17,14 @@ import {Header} from '..';
 import {Wrapper} from './mocks';
 
 describe('Info bar', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   it('should render with correct links', async () => {
     const originalWindowOpen = window.open;
     const mockOpenFn = jest.fn();
@@ -29,31 +36,33 @@ describe('Info bar', () => {
       }),
     );
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('button', {
         name: /info/i,
       }),
     );
 
-    userEvent.click(await screen.findByRole('button', {name: 'Documentation'}));
+    await user.click(
+      await screen.findByRole('button', {name: 'Documentation'}),
+    );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://docs.camunda.io/',
       '_blank',
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Camunda Academy'}));
+    await user.click(screen.getByRole('button', {name: 'Camunda Academy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://academy.camunda.com/',
       '_blank',
     );
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {name: 'Slack Community Channel'}),
     );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
@@ -83,19 +92,19 @@ describe('Info bar', () => {
       const mockOpenFn = jest.fn();
       window.open = mockOpenFn;
 
-      render(<Header />, {
+      const {user} = render(<Header />, {
         wrapper: Wrapper,
       });
 
       expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-      userEvent.click(
+      await user.click(
         await screen.findByRole('button', {
           name: /info/i,
         }),
       );
 
-      userEvent.click(
+      await user.click(
         screen.getByRole('button', {name: 'Feedback and Support'}),
       );
       expect(mockOpenFn).toHaveBeenLastCalledWith(link, '_blank');

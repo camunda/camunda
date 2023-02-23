@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
@@ -16,6 +15,14 @@ import {Header} from '..';
 import {Wrapper} from './mocks';
 
 describe('User info', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
@@ -27,11 +34,11 @@ describe('User info', () => {
       }),
     );
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
       }),
@@ -49,11 +56,11 @@ describe('User info', () => {
       }),
     );
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /settings/i,
       }),
@@ -81,11 +88,11 @@ describe('User info', () => {
       ),
     );
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /settings/i,
       }),
@@ -93,7 +100,7 @@ describe('User info', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('button', {
         name: /log out/i,
       }),
@@ -114,11 +121,11 @@ describe('User info', () => {
       }),
     );
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {
         name: /settings/i,
       }),
@@ -126,19 +133,19 @@ describe('User info', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: 'Terms of use'}));
+    await user.click(screen.getByRole('button', {name: 'Terms of use'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/terms/camunda-platform/camunda-platform-8-saas-trial/',
       '_blank',
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Privacy policy'}));
+    await user.click(screen.getByRole('button', {name: 'Privacy policy'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/privacy/',
       '_blank',
     );
 
-    userEvent.click(screen.getByRole('button', {name: 'Imprint'}));
+    await user.click(screen.getByRole('button', {name: 'Imprint'}));
     expect(mockOpenFn).toHaveBeenLastCalledWith(
       'https://camunda.com/legal/imprint/',
       '_blank',
@@ -171,11 +178,11 @@ describe('User info', () => {
       }),
     );
 
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
 
-    userEvent.click(
+    await user.click(
       await screen.findByRole('button', {
         name: /settings/i,
       }),
@@ -183,7 +190,7 @@ describe('User info', () => {
 
     expect(await screen.findByText('Demo User')).toBeInTheDocument();
 
-    userEvent.click(screen.getByRole('button', {name: 'Cookie preferences'}));
+    await user.click(screen.getByRole('button', {name: 'Cookie preferences'}));
 
     expect(mockShowDrawer).toHaveBeenLastCalledWith(
       'osano-cm-dom-info-dialog-open',

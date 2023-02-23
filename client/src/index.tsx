@@ -7,8 +7,7 @@
 
 /* istanbul ignore file */
 
-import {StrictMode} from 'react';
-import {render} from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import {App} from './App';
 import {tracking} from 'modules/tracking';
 import './index.scss';
@@ -30,12 +29,10 @@ function mock(): Promise<void> {
     }
   });
 }
+const container = document.querySelector('#root');
+const root = createRoot(container!);
 
 Promise.all([tracking.loadAnalyticsToWillingUsers(), mock()]).then(() => {
-  render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-    document.querySelector('#root'),
-  );
+  // Add StrictMode again when this is fixed https://github.com/apollographql/apollo-client/issues/9819
+  root.render(<App />);
 });

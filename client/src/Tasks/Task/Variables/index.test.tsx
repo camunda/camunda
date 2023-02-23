@@ -10,7 +10,7 @@ import {
   screen,
   waitFor,
   waitForElementToBeRemoved,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {
   mockGetCurrentUser,
   mockGetCurrentRestrictedUser,
@@ -26,7 +26,6 @@ import {
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './index';
 import {claimedTask, unclaimedTask} from 'modules/mock-schema/mocks/task';
-import userEvent from '@testing-library/user-event';
 import {ApolloProvider, useQuery} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -45,6 +44,14 @@ const Wrapper: React.FC<Props> = ({children}) => (
 );
 
 describe('<Variables />', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   beforeEach(() => {
     nodeMockServer.use(
       graphql.query('GetCurrentUser', (_, res, ctx) => {
@@ -122,7 +129,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -138,8 +145,8 @@ describe('<Variables />', () => {
 
     expect(await screen.findByDisplayValue('"0001"')).toBeInTheDocument();
 
-    userEvent.clear(screen.getByDisplayValue('"0001"'));
-    userEvent.type(screen.getByLabelText('myVar'), newVariableValue);
+    await user.clear(screen.getByDisplayValue('"0001"'));
+    await user.type(screen.getByLabelText('myVar'), newVariableValue);
 
     expect(screen.getByDisplayValue(newVariableValue)).toBeInTheDocument();
 
@@ -155,7 +162,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -168,8 +175,8 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.click(screen.getByText(/add variable/i));
+    await user.click(await screen.findByText(/add variable/i));
+    await user.click(screen.getByText(/add variable/i));
 
     expect(screen.getAllByPlaceholderText(/^name$/i)).toHaveLength(2);
     expect(screen.getAllByPlaceholderText(/^value$/i)).toHaveLength(2);
@@ -180,7 +187,7 @@ describe('<Variables />', () => {
 
     expect(await screen.findByText(/complete task/i)).toBeDisabled();
 
-    userEvent.click(screen.getByLabelText(/remove 2nd new variable/i));
+    await user.click(screen.getByLabelText(/remove 2nd new variable/i));
 
     expect(screen.getAllByPlaceholderText(/^name$/i)).toHaveLength(1);
     expect(screen.getAllByPlaceholderText(/^value$/i)).toHaveLength(1);
@@ -202,7 +209,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -215,7 +222,7 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
+    await user.click(await screen.findByText(/add variable/i));
 
     expect(screen.getByLabelText(/1st variable name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/1st variable value/i)).toBeInTheDocument();
@@ -230,7 +237,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -243,8 +250,8 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
@@ -263,7 +270,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -276,9 +283,9 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText(/1st variable name/i), '"');
-    userEvent.type(
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(screen.getByLabelText(/1st variable name/i), '"');
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
@@ -289,7 +296,7 @@ describe('<Variables />', () => {
       ).toHaveAccessibleDescription(/name is invalid/i),
     );
 
-    userEvent.clear(screen.getByLabelText(/1st variable name/i));
+    await user.clear(screen.getByLabelText(/1st variable name/i));
 
     await waitFor(() =>
       expect(
@@ -297,7 +304,7 @@ describe('<Variables />', () => {
       ).not.toHaveAccessibleDescription(/name is invalid/i),
     );
 
-    userEvent.type(screen.getByLabelText(/1st variable name/i), 'test ');
+    await user.type(screen.getByLabelText(/1st variable name/i), 'test ');
 
     expect(await screen.findByText(/name is invalid/i)).toBeInTheDocument();
   });
@@ -309,7 +316,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -322,8 +329,8 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
 
     await waitFor(() =>
       expect(
@@ -339,7 +346,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -352,9 +359,9 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
+    await user.click(await screen.findByText(/add variable/i));
 
-    userEvent.type(
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       'invalid_value}}}',
     );
@@ -376,7 +383,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -389,9 +396,9 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
-    userEvent.type(
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(screen.getByLabelText(/1st variable name/i), 'valid_name');
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       '"valid_value"',
     );
@@ -421,7 +428,7 @@ describe('<Variables />', () => {
     );
 
     const mockOnSubmit = jest.fn();
-    const {rerender} = render(
+    const {rerender, user} = render(
       <Variables
         key="id_0"
         task={claimedTask()}
@@ -439,22 +446,22 @@ describe('<Variables />', () => {
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
 
-    userEvent.click(await screen.findByText(/complete task/i));
+    await user.click(await screen.findByText(/complete task/i));
 
     expect(screen.getByText('Completing task...'));
     expect(await screen.findByText('Completed')).toBeInTheDocument();
     expect(mockOnSubmit).toHaveBeenCalledTimes(1);
     expect(mockOnSubmit).toHaveBeenNthCalledWith(1, []);
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText(/1st variable name/i), 'var');
-    userEvent.type(screen.getByLabelText(/1st variable value/i), '1');
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(screen.getByLabelText(/1st variable name/i), 'var');
+    await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
 
-    userEvent.click(screen.getByText(/complete task/i));
+    await user.click(screen.getByText(/complete task/i));
 
     expect(screen.getByText('Completing task...'));
     expect(await screen.findByText('Completed')).toBeInTheDocument();
@@ -479,15 +486,15 @@ describe('<Variables />', () => {
 
     expect(await screen.findByLabelText('myVar')).toBeInTheDocument();
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(screen.getByLabelText(/1st variable name/i), 'name');
-    userEvent.type(screen.getByLabelText(/1st variable value/i), '"Jon"');
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(screen.getByLabelText(/1st variable name/i), 'name');
+    await user.type(screen.getByLabelText(/1st variable value/i), '"Jon"');
 
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
 
-    userEvent.click(screen.getByText(/complete task/i));
+    await user.click(screen.getByText(/complete task/i));
 
     expect(screen.getByText('Completing task...'));
     expect(await screen.findByText('Completed')).toBeInTheDocument();
@@ -509,7 +516,7 @@ describe('<Variables />', () => {
 
     const mockOnSubmit = jest.fn();
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -522,13 +529,13 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.clear(await screen.findByLabelText('myVar'));
-    userEvent.type(screen.getByLabelText('myVar'), '"newValue"');
+    await user.clear(await screen.findByLabelText('myVar'));
+    await user.type(screen.getByLabelText('myVar'), '"newValue"');
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
 
-    userEvent.click(screen.getByText(/complete task/i));
+    await user.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -591,7 +598,7 @@ describe('<Variables />', () => {
 
     const mockOnSubmit = jest.fn();
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -604,12 +611,12 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(
       screen.getByLabelText(/1st variable name/i),
       'newVariableName',
     );
-    userEvent.type(
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       '"newVariableValue"',
     );
@@ -617,7 +624,7 @@ describe('<Variables />', () => {
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
-    userEvent.click(screen.getByText(/complete task/i));
+    await user.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -636,7 +643,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -649,7 +656,7 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.type(await screen.findByLabelText('myVar'), '{{ invalid value');
+    await user.type(await screen.findByLabelText('myVar'), '{{ invalid value');
 
     await waitFor(() =>
       expect(screen.getByLabelText('myVar')).toHaveAccessibleDescription(
@@ -667,7 +674,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -680,8 +687,8 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
-    userEvent.type(
+    await user.click(await screen.findByText(/add variable/i));
+    await user.type(
       screen.getByLabelText(/1st variable value/i),
       '{{ invalid value',
     );
@@ -702,7 +709,7 @@ describe('<Variables />', () => {
       }),
     );
 
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -715,7 +722,7 @@ describe('<Variables />', () => {
       },
     );
 
-    userEvent.click(await screen.findByText(/add variable/i));
+    await user.click(await screen.findByText(/add variable/i));
 
     expect(await screen.findByText(/complete task/i)).toBeDisabled();
   });
@@ -735,7 +742,7 @@ describe('<Variables />', () => {
       }),
     );
     const mockOnSubmit = jest.fn();
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -750,7 +757,7 @@ describe('<Variables />', () => {
 
     expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();
 
-    userEvent.click(screen.getByDisplayValue('"000'));
+    await user.click(screen.getByDisplayValue('"000'));
 
     expect(screen.getByTestId('textarea-loading-overlay')).toBeInTheDocument();
 
@@ -760,12 +767,12 @@ describe('<Variables />', () => {
 
     expect(screen.getByDisplayValue('"0001"')).toBeInTheDocument();
 
-    userEvent.clear(screen.getByDisplayValue('"0001"'));
-    userEvent.type(screen.getByLabelText('myVar'), '"newVariableValue"');
+    await user.clear(screen.getByDisplayValue('"0001"'));
+    await user.type(screen.getByLabelText('myVar'), '"newVariableValue"');
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
-    userEvent.click(screen.getByText(/complete task/i));
+    await user.click(screen.getByText(/complete task/i));
 
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
@@ -798,7 +805,7 @@ describe('<Variables />', () => {
         );
       }),
     );
-    render(
+    const {user} = render(
       <Variables
         task={claimedTask()}
         user={currentUser}
@@ -814,7 +821,7 @@ describe('<Variables />', () => {
     expect(await screen.findByDisplayValue('"000')).toBeInTheDocument();
     expect(screen.getByDisplayValue('"111')).toBeInTheDocument();
 
-    userEvent.click(screen.getByDisplayValue('"000'));
+    await user.click(screen.getByDisplayValue('"000'));
 
     const firstVariableValueTextarea = await screen.findByDisplayValue(
       '"0001"',
@@ -822,9 +829,9 @@ describe('<Variables />', () => {
     expect(firstVariableValueTextarea).toBeInTheDocument();
     expect(screen.getByDisplayValue('"111')).toBeInTheDocument();
 
-    userEvent.clear(firstVariableValueTextarea);
-    userEvent.type(firstVariableValueTextarea, mockNewValue);
-    userEvent.click(screen.getByDisplayValue('"111'));
+    await user.clear(firstVariableValueTextarea);
+    await user.type(firstVariableValueTextarea, mockNewValue);
+    await user.click(screen.getByDisplayValue('"111'));
 
     expect(
       await screen.findByDisplayValue(mockVariable.value),
@@ -840,7 +847,7 @@ describe('<Variables />', () => {
         }),
       );
 
-      render(
+      const {user} = render(
         <Variables
           task={claimedTask()}
           user={currentUser}
@@ -853,8 +860,8 @@ describe('<Variables />', () => {
         },
       );
 
-      userEvent.click(await screen.findByText(/add variable/i));
-      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar');
+      await user.click(await screen.findByText(/add variable/i));
+      await user.type(screen.getByLabelText(/1st variable name/i), 'myVar');
 
       await waitFor(() =>
         expect(
@@ -873,7 +880,7 @@ describe('<Variables />', () => {
         }),
       );
 
-      render(
+      const {user} = render(
         <Variables
           task={claimedTask()}
           user={currentUser}
@@ -886,15 +893,15 @@ describe('<Variables />', () => {
         },
       );
 
-      userEvent.click(await screen.findByText(/add variable/i));
-      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
+      await user.click(await screen.findByText(/add variable/i));
+      await user.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
 
       expect(
         screen.getByLabelText(/1st variable name/i),
       ).not.toHaveAccessibleDescription(/name must be unique/i);
 
-      userEvent.click(screen.getByText(/add variable/i));
-      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
+      await user.click(screen.getByText(/add variable/i));
+      await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
 
       await waitFor(() =>
         expect(
@@ -902,13 +909,15 @@ describe('<Variables />', () => {
         ).toHaveAccessibleDescription(/name must be unique/i),
       );
 
-      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'foo');
+      await user.type(screen.getByLabelText(/2nd variable name/i), 'foo');
 
-      expect(
-        screen.getByLabelText(/2nd variable name/i),
-      ).not.toHaveAccessibleDescription(/name must be unique/i);
+      await waitFor(() =>
+        expect(
+          screen.getByLabelText(/2nd variable name/i),
+        ).not.toHaveAccessibleDescription(/name must be unique/i),
+      );
 
-      userEvent.type(screen.getByLabelText(/1st variable name/i), 'foo');
+      await user.type(screen.getByLabelText(/1st variable name/i), 'foo');
 
       await waitFor(() =>
         expect(
@@ -927,7 +936,7 @@ describe('<Variables />', () => {
         }),
       );
 
-      render(
+      const {user} = render(
         <Variables
           task={claimedTask()}
           user={currentUser}
@@ -940,19 +949,19 @@ describe('<Variables />', () => {
         },
       );
 
-      userEvent.click(await screen.findByText(/add variable/i));
+      await user.click(await screen.findByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
-      userEvent.type(screen.getByLabelText(/1st variable value/i), '1');
+      await user.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
+      await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
       await waitFor(() =>
         expect(screen.getByText(/complete task/i)).toBeEnabled(),
       );
 
-      userEvent.click(await screen.findByText(/add variable/i));
+      await user.click(await screen.findByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
-      userEvent.type(screen.getByLabelText(/2nd variable value/i), '2');
+      await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
+      await user.type(screen.getByLabelText(/2nd variable value/i), '2');
 
       await waitFor(() =>
         expect(
@@ -972,7 +981,7 @@ describe('<Variables />', () => {
         }),
       );
 
-      render(
+      const {user} = render(
         <Variables
           task={claimedTask()}
           user={currentUser}
@@ -985,19 +994,19 @@ describe('<Variables />', () => {
         },
       );
 
-      userEvent.click(await screen.findByText(/add variable/i));
+      await user.click(await screen.findByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
-      userEvent.type(screen.getByLabelText(/1st variable value/i), '1');
+      await user.type(screen.getByLabelText(/1st variable name/i), 'myVar2');
+      await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
       await waitFor(() =>
         expect(screen.getByText(/complete task/i)).toBeEnabled(),
       );
 
-      userEvent.click(screen.getByText(/add variable/i));
+      await user.click(screen.getByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
-      userEvent.type(screen.getByLabelText(/2nd variable value/i), '2');
+      await user.type(screen.getByLabelText(/2nd variable name/i), 'myVar2');
+      await user.type(screen.getByLabelText(/2nd variable value/i), '2');
 
       await waitFor(() =>
         expect(
@@ -1005,10 +1014,10 @@ describe('<Variables />', () => {
         ).toHaveAccessibleDescription(/name must be unique/i),
       );
 
-      userEvent.click(screen.getByText(/add variable/i));
+      await user.click(screen.getByText(/add variable/i));
 
-      userEvent.type(screen.getByLabelText(/3rd variable name/i), 'myVar2');
-      userEvent.type(screen.getByLabelText(/3rd variable value/i), '3');
+      await user.type(screen.getByLabelText(/3rd variable name/i), 'myVar2');
+      await user.type(screen.getByLabelText(/3rd variable value/i), '3');
 
       await waitFor(() =>
         expect(

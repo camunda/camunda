@@ -10,7 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   fireEvent,
-} from '@testing-library/react';
+} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {generateTask} from 'modules/mock-schema/mocks/tasks';

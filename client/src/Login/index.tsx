@@ -138,16 +138,6 @@ const Login: React.FC = () => {
                     {({input, meta}) => (
                       <TextInput
                         {...input}
-                        onBlur={(event) => {
-                          input.onBlur(
-                            event as React.FocusEvent<HTMLElement, Element>,
-                          );
-                        }}
-                        onFocus={(event) => {
-                          input.onFocus(
-                            event as React.FocusEvent<HTMLElement, Element>,
-                          );
-                        }}
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}
@@ -167,16 +157,6 @@ const Login: React.FC = () => {
                     {({input, meta}) => (
                       <PasswordInput
                         {...input}
-                        onBlur={(event) => {
-                          input.onBlur(
-                            event as React.FocusEvent<HTMLElement, Element>,
-                          );
-                        }}
-                        onFocus={(event) => {
-                          input.onFocus(
-                            event as React.FocusEvent<HTMLElement, Element>,
-                          );
-                        }}
                         name={input.name}
                         id={input.name}
                         onChange={input.onChange}

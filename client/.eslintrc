@@ -6,7 +6,7 @@
     "testing-library/await-async-query": "error",
     "testing-library/await-async-utils": "error",
     "testing-library/no-await-sync-query": "error",
-    "testing-library/no-debug": "error",
+    "testing-library/no-debugging-utils": "error",
     "testing-library/no-dom-import": "error",
     "testing-library/no-manual-cleanup": "error",
     "testing-library/no-wait-for-empty-callback": "error",

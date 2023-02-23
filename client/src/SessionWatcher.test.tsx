@@ -6,7 +6,7 @@
  */
 
 import {MemoryRouter} from 'react-router-dom';
-import {render, waitFor} from '@testing-library/react';
+import {render, waitFor} from 'modules/testing-library';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {authenticationStore} from 'modules/stores/authentication';
 import {SessionWatcher} from './SessionWatcher';
@@ -38,6 +38,14 @@ const getWrapper = ({initialEntries}: GetWrapperProps) => {
 };
 
 describe('SessionWatcher', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     authenticationStore.reset();
   });

@@ -31,7 +31,7 @@ test('display info message when task has no variables', async (t) => {
       .getAllByText('usertask_without_variables')
       .nth(0),
   );
-  await t.expect(screen.getByText('Task has no Variables').exists).ok();
+  await t.expect(screen.queryByText('Task has no Variables').exists).ok();
 });
 
 test('display variables when task has variables', async (t) => {

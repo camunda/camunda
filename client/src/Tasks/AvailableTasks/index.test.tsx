@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, within} from '@testing-library/react';
+import {render, screen, within} from 'modules/testing-library';
 import {AvailableTasks} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Link, MemoryRouter} from 'react-router-dom';

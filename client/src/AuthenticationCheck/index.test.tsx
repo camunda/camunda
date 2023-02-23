@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
+import {render, screen} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {AuthenticationCheck} from './index';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -30,6 +30,10 @@ const Wrapper: React.FC<Props> = ({children}) => {
 };
 
 describe('<AuthenticationCheck />', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
   afterEach(() => {
     fetchMock.mockClear();
     authenticationStore.reset();
@@ -37,6 +41,7 @@ describe('<AuthenticationCheck />', () => {
 
   afterAll(() => {
     fetchMock.mockRestore();
+    global.IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   it('should show the provided content', async () => {

@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
@@ -15,12 +14,20 @@ import {Header} from '..';
 import {Wrapper} from './mocks';
 
 describe('license note', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
+  afterAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
   afterEach(() => {
     window.clientConfig = DEFAULT_MOCK_CLIENT_CONFIG;
   });
 
   it('should show and hide license information', async () => {
-    render(<Header />, {
+    const {user} = render(<Header />, {
       wrapper: Wrapper,
     });
     nodeMockServer.use(
@@ -38,7 +45,7 @@ describe('license note', () => {
       }),
     ).toBeInTheDocument();
 
-    userEvent.click(
+    await user.click(
       screen.getByRole('button', {name: 'Non-Production License'}),
     );
 

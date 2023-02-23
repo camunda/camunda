@@ -12,7 +12,7 @@
 import '@testing-library/jest-dom/extend-expect';
 import {clearClientCache} from 'modules/apollo-client';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
-import {configure} from '@testing-library/react';
+import {configure} from 'modules/testing-library';
 import {DEFAULT_MOCK_CLIENT_CONFIG} from 'modules/mocks/window';
 
 function mockMatchMedia() {

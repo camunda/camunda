@@ -17,8 +17,8 @@
     "mobx": "6.8.0",
     "mobx-react-lite": "3.4.0",
     "polished": "4.2.2",
-    "react": "17.0.2",
-    "react-dom": "17.0.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-final-form": "6.5.9",
     "react-final-form-arrays": "3.1.4",
     "react-router-dom": "6.8.1",
@@ -56,9 +56,9 @@
   "devDependencies": {
     "@playwright/test": "1.31.0",
     "@testing-library/jest-dom": "5.16.5",
-    "@testing-library/react": "11.2.7",
+    "@testing-library/react": "14.0.0",
     "@testing-library/testcafe": "5.0.0",
-    "@testing-library/user-event": "13.5.0",
+    "@testing-library/user-event": "14.4.3",
     "@types/carbon-components-react": "7.55.2",
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.4.0",
@@ -79,7 +79,7 @@
     "monaco-editor": "0.35.0",
     "msw": "0.49.2",
     "prettier": "2.8.4",
-    "react-scripts": "4.0.3",
+    "react-scripts": "5.0.1",
     "source-map-explorer": "2.5.3",
     "testcafe": "2.3.1",
     "ts-toolbelt": "9.6.0",
@@ -110,9 +110,6 @@
   },
   "scarfSettings": {
     "enabled": false
-  },
-  "resolutions": {
-    "react-scripts/postcss-preset-env/postcss-custom-properties": "^12.0.0"
   },
   "msw": {
     "workerDirectory": "public"

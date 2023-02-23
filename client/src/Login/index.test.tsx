@@ -5,8 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Link, MemoryRouter} from 'react-router-dom';
 import {rest} from 'msw';
 import {Login} from './index';
@@ -46,6 +45,10 @@ function createWrapper(
 }
 
 describe('<Login />', () => {
+  beforeAll(() => {
+    global.IS_REACT_ACT_ENVIRONMENT = false;
+  });
+
   beforeEach(() => {
     authenticationStore.disableSession();
   });
@@ -57,6 +60,7 @@ describe('<Login />', () => {
 
   afterAll(() => {
     getFullYearMock.mockRestore();
+    global.IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   it('should redirect to the initial page on success', async () => {
@@ -64,32 +68,36 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
-    render(<Login />, {
+    const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
-    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText('Password'), 'demo');
+    await user.click(screen.getByRole('button', {name: 'Login'}));
 
-    await waitFor(() =>
-      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i),
-    );
+    expect(
+      screen.getByRole('button', {name: 'Logging in'}),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', {name: 'Login'}),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/$/i);
   });
 
   it('should redirect to the referrer page', async () => {
     nodeMockServer.use(
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
-    render(<Login />, {
+    const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.click(screen.getByRole('link', {name: /emulate redirection/i}));
+    await user.click(screen.getByRole('link', {name: /emulate redirection/i}));
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
-    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText('Password'), 'demo');
+    await user.click(screen.getByRole('button', {name: 'Login'}));
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent('/1'),
@@ -103,13 +111,13 @@ describe('<Login />', () => {
         res.once(ctx.status(401), ctx.text('')),
       ),
     );
-    render(<Login />, {
+    const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
-    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText('Password'), 'demo');
+    await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
       await screen.findByText('Username and password do not match'),
@@ -122,13 +130,13 @@ describe('<Login />', () => {
         res.once(ctx.status(404), ctx.text('')),
       ),
     );
-    render(<Login />, {
+    const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
-    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText('Password'), 'demo');
+    await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
       await screen.findByText('Credentials could not be verified'),
@@ -138,9 +146,9 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res) => res.networkError('A network error')),
     );
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
-    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText('Password'), 'demo');
+    await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
       await screen.findByText('Credentials could not be verified'),
@@ -152,13 +160,13 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
-    render(<Login />, {
+    const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.type(screen.getByLabelText('Password'), 'demo');
-    userEvent.click(screen.getByRole('button', {name: 'Login'}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.type(screen.getByLabelText('Password'), 'demo');
+    await user.click(screen.getByRole('button', {name: 'Login'}));
 
     expect(
       screen.getByRole('button', {
@@ -186,11 +194,11 @@ describe('<Login />', () => {
       rest.post('/api/login', (_, res, ctx) => res.once(ctx.text(''))),
     );
 
-    render(<Login />, {
+    const {user} = render(<Login />, {
       wrapper: createWrapper(),
     });
 
-    userEvent.click(screen.getByRole('button', {name: /login/i}));
+    await user.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByLabelText(/username/i)).toHaveAccessibleDescription(
       /username is required/i,
@@ -202,8 +210,8 @@ describe('<Login />', () => {
     expect(screen.getByLabelText(/password/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.click(screen.getByRole('button', {name: /login/i}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
       /username is required/i,
@@ -215,9 +223,9 @@ describe('<Login />', () => {
     expect(screen.getByLabelText(/password/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    userEvent.clear(screen.getByLabelText(/username/i));
-    userEvent.type(screen.getByLabelText(/password/i), 'demo');
-    userEvent.click(screen.getByRole('button', {name: /login/i}));
+    await user.clear(screen.getByLabelText(/username/i));
+    await user.type(screen.getByLabelText(/password/i), 'demo');
+    await user.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByLabelText(/password/i)).not.toHaveAccessibleDescription(
       /password is required/i,
@@ -229,8 +237,8 @@ describe('<Login />', () => {
     expect(screen.getByLabelText(/username/i)).toBeInvalid();
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
 
-    userEvent.type(screen.getByLabelText(/username/i), 'demo');
-    userEvent.click(screen.getByRole('button', {name: /login/i}));
+    await user.type(screen.getByLabelText(/username/i), 'demo');
+    await user.click(screen.getByRole('button', {name: /login/i}));
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/login');
     await waitFor(() =>
