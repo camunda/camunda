@@ -66,12 +66,15 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
+    final var zeebeDb = recordProcessorContext.getZeebeDb();
     processingState =
         new ProcessingDbState(
             recordProcessorContext.getPartitionId(),
-            recordProcessorContext.getZeebeDb(),
+            zeebeDb,
             recordProcessorContext.getTransactionContext(),
             recordProcessorContext.getKeyGenerator());
+    final var scheduledTaskDbState = new ScheduledTaskDbState(zeebeDb, zeebeDb.createContext());
+
     eventApplier = new EventAppliers(processingState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
@@ -81,6 +84,7 @@ public class Engine implements RecordProcessor {
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getScheduleService(),
             processingState,
+            scheduledTaskDbState,
             writers,
             recordProcessorContext.getPartitionCommandSender());
 

@@ -19,6 +19,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final int partitionId;
   private final ProcessingScheduleService scheduleService;
   private final ProcessingDbState processingState;
+  private final ScheduledTaskDbState scheduledTaskDbState;
   private final Writers writers;
   private final InterPartitionCommandSender partitionCommandSender;
 
@@ -26,11 +27,13 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
       final int partitionId,
       final ProcessingScheduleService scheduleService,
       final ProcessingDbState processingState,
+      final ScheduledTaskDbState scheduledTaskDbState,
       final Writers writers,
       final InterPartitionCommandSender partitionCommandSender) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.processingState = processingState;
+    this.scheduledTaskDbState = scheduledTaskDbState;
     this.writers = writers;
     this.partitionCommandSender = partitionCommandSender;
   }
@@ -58,5 +61,10 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   @Override
   public InterPartitionCommandSender getPartitionCommandSender() {
     return partitionCommandSender;
+  }
+
+  @Override
+  public ScheduledTaskDbState getScheduledTaskDbState() {
+    return scheduledTaskDbState;
   }
 }
