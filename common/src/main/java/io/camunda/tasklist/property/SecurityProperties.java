@@ -9,7 +9,7 @@ package io.camunda.tasklist.property;
 public class SecurityProperties {
 
   public static final String CONTENT_SECURITY_POLICY =
-      "default-src 'self';connect-src 'self' https: *.mixpanel.com cloudflareinsights.com *.appcues.net wss://api.appcues.net;script-src 'self' https: 'unsafe-inline' *.chargebee.com *.mixpanel.com ajax.cloudflare.com static.cloudflareinsights.com;style-src 'self' https: 'unsafe-inline' *.googleapis.com *.chargebee.com;img-src * data: ;font-src 'self' data: https://fonts.gstatic.com https://fonts.camunda.io https://cdn.jsdelivr.net;frame-ancestors;frame-src 'self' https: *.chargebee.com ;child-src;worker-src 'self' blob:;base-uri 'self';form-action 'self';object-src 'none';script-src-attr 'none';upgrade-insecure-requests";
+      "default-src 'self';connect-src 'self' https: *.mixpanel.com cloudflareinsights.com *.appcues.net wss://api.appcues.net;script-src 'self' https: 'unsafe-inline' *.chargebee.com *.mixpanel.com ajax.cloudflare.com static.cloudflareinsights.com;style-src 'self' https: 'unsafe-inline' *.googleapis.com *.chargebee.com;img-src * data: ;font-src 'self' data: https://fonts.gstatic.com https://fonts.camunda.io https://cdn.jsdelivr.net;frame-ancestors;frame-src 'self' https: *.chargebee.com ;child-src;worker-src 'self' blob:;base-uri 'self';form-action 'self';object-src 'none';script-src-attr 'none';";
   private String contentSecurityPolicy = CONTENT_SECURITY_POLICY;
 
   public String getContentSecurityPolicy() {
