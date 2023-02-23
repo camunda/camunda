@@ -479,8 +479,8 @@ String itZeebePodSpec(String camBpmVersion, String esVersion) {
 
 String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled headless Chrome and Maven
-  return basePodSpec(1, 6, 'markhobson/maven-chrome:jdk-11') +
-      camBpmContainerSpec(camBpmVersion, true, 2, 2, false) +
+  return basePodSpec(3, 3, 'markhobson/maven-chrome:jdk-11') +
+      camBpmContainerSpec(camBpmVersion, true, 2, 4, false) +
       elasticSearchContainerSpec(esVersion) +
       postgresContainerSpec() +
       gcloudContainerSpec()
