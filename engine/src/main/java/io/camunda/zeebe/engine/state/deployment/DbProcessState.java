@@ -52,6 +52,7 @@ public final class DbProcessState implements MutableProcessState {
       processesByProcessIdAndVersion = new HashMap<>();
   private final Long2ObjectHashMap<DeployedProcess> processesByKey;
 
+  private final Map<DirectBuffer, Long> versionMap = new HashMap<>();
   // process
   private final ColumnFamily<DbLong, PersistedProcess> processColumnFamily;
   private final DbLong processDefinitionKey;
@@ -155,6 +156,7 @@ public final class DbProcessState implements MutableProcessState {
 
     if (nextVersion > currentVersion) {
       versionManager.setValue(bpmnProcessId, nextVersion);
+      versionMap.put(processRecord.getBpmnProcessIdBuffer(), Long.valueOf(nextVersion));
     }
   }
 
@@ -210,7 +212,8 @@ public final class DbProcessState implements MutableProcessState {
         processesByProcessIdAndVersion.get(processIdBuffer);
 
     processId.wrapBuffer(processIdBuffer);
-    final long latestVersion = versionManager.getCurrentValue(processIdBuffer);
+//    final long latestVersion = versionManager.getCurrentValue(processIdBuffer);
+    final long latestVersion = getLatestVersion(processIdBuffer);
 
     DeployedProcess deployedProcess;
     if (versionMap == null) {
@@ -222,6 +225,12 @@ public final class DbProcessState implements MutableProcessState {
       }
     }
     return deployedProcess;
+  }
+
+  private long getLatestVersion(final DirectBuffer processId) {
+    return versionMap.computeIfAbsent(processId, (p) -> {
+      return versionManager.getCurrentValue(processId);
+    });
   }
 
   @Override
