@@ -70,7 +70,7 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * key. The visitor can indicate via the return value, whether the iteration should continue or
    * not. This means if the visitor returns false the iteration will stop.
    *
-   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exist it
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
    * the first key-value-pair will contain the equal key as {@code startAtKey}. If the key doesn't
    * exist it will start after.
    *
