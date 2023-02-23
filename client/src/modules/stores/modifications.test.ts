@@ -17,6 +17,8 @@ import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsSta
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
+import {processInstanceDetailsStore} from './processInstanceDetails';
+import {createInstance} from 'modules/testUtils';
 
 type AddModificationPayload = Extract<
   FlowNodeModification['payload'],
@@ -125,6 +127,7 @@ describe('stores/modifications', () => {
     modificationsStore.reset();
     processInstanceDetailsDiagramStore.reset();
     processInstanceDetailsStatisticsStore.reset();
+    processInstanceDetailsStore.reset();
   });
 
   it('should enable/disable modification mode', async () => {
@@ -818,6 +821,9 @@ describe('stores/modifications', () => {
   });
 
   it('should generate parent scope ids', async () => {
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({bpmnProcessId: 'nested_sub_process'})
+    );
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
@@ -841,6 +847,9 @@ describe('stores/modifications', () => {
   });
 
   it('should not generate parent scope id twice', async () => {
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({bpmnProcessId: 'nested_sub_process'})
+    );
     mockFetchProcessXML().withSuccess(mockNestedSubprocess);
 
     await processInstanceDetailsDiagramStore.fetchProcessXml(
@@ -1298,7 +1307,10 @@ describe('stores/modifications', () => {
         flowNode: {id: 'flow_node_11', name: 'flow node 11'},
         scopeId: 'random-scope-id-11',
         affectedTokenCount: 1,
-        ancestorElementInstanceKey: 'some-ancestor-instance-key',
+        ancestorElement: {
+          instanceKey: 'some-ancestor-instance-key',
+          flowNodeId: 'elementid',
+        },
         visibleAffectedTokenCount: 1,
         parentScopeIds: {},
       },
@@ -1498,7 +1510,10 @@ describe('stores/modifications', () => {
       'subprocess-service-task'
     );
 
-    modificationsStore.finishAddingToken('some-instance-key');
+    modificationsStore.finishAddingToken(
+      'multi-instance-subprocess',
+      'some-instance-key'
+    );
 
     expect(modificationsStore.modificationsByFlowNode).toEqual({
       'subprocess-service-task': {

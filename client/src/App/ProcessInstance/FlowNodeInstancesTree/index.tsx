@@ -46,12 +46,10 @@ const getVisibleChildPlaceholders = ({
     return [];
   }
 
-  if (isPlaceholder) {
-    return instanceHistoryModificationStore.getVisibleChildPlaceholders(id);
-  }
-
-  return (
-    instanceHistoryModificationStore.flowNodeInstancesByParent[flowNodeId] ?? []
+  return instanceHistoryModificationStore.getVisibleChildPlaceholders(
+    id,
+    flowNodeId,
+    isPlaceholder
   );
 };
 
@@ -186,7 +184,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
               data-testid={flowNodeInstance.id}
               onSelection={() => {
                 if (modificationsStore.state.status === 'adding-token') {
-                  modificationsStore.finishAddingToken(flowNodeInstance.id);
+                  modificationsStore.finishAddingToken(
+                    flowNodeInstance.flowNodeId,
+                    flowNodeInstance.id
+                  );
                 } else {
                   tracking.track({eventName: 'instance-history-item-clicked'});
                   flowNodeSelectionStore.selectFlowNode({

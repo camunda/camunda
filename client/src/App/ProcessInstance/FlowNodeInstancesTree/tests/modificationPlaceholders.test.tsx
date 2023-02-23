@@ -214,6 +214,11 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
   });
 
   it('should create new parent scopes for a new palceholder if there are no running scopes', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...multiInstanceProcessInstance,
+      bpmnProcessId: 'nested_sub_process',
+    });
+
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {
         activityId: 'parent_sub_process',

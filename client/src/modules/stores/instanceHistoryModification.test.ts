@@ -104,7 +104,10 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.addModification(endEvent2Modification);
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['process_1']
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'process_1'
+      )
     ).toEqual([
       {
         flowNodeId: 'startEvent_1',
@@ -119,7 +122,10 @@ describe('stores/instanceHistoryModification', () => {
     ]);
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['subprocess_1']
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'subprocess_1'
+      )
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
@@ -152,11 +158,17 @@ describe('stores/instanceHistoryModification', () => {
     );
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['process_1']
-    ).toBeUndefined();
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'process_1'
+      )
+    ).toEqual([]);
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['subprocess_1']
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'subprocess_1'
+      )
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',
@@ -185,7 +197,10 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.addModification(startEventModification);
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['process_1']
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'process_1'
+      )
     ).toEqual([
       {
         flowNodeId: 'startEvent_1',
@@ -202,15 +217,21 @@ describe('stores/instanceHistoryModification', () => {
     modificationsStore.reset();
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['process_1']
-    ).toBeUndefined();
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'process_1'
+      )
+    ).toEqual([]);
   });
 
   it('should not add multiple modifications when source is multi instance', () => {
     modificationsStore.addModification(subprocessModification);
 
     expect(
-      instanceHistoryModificationStore.flowNodeInstancesByParent['subprocess_1']
+      instanceHistoryModificationStore.getVisibleChildPlaceholders(
+        'id',
+        'subprocess_1'
+      )
     ).toEqual([
       {
         flowNodeId: 'endEvent_1',

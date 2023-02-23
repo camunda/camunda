@@ -373,6 +373,7 @@ describe('stores/processInstanceDiagram', () => {
         id: '123',
         state: 'ACTIVE',
         processId: '10',
+        bpmnProcessId: 'nested_sub_process',
       })
     );
 
@@ -383,26 +384,81 @@ describe('stores/processInstanceDiagram', () => {
     );
 
     expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.businessObjects['user_task']
-      )
+      processInstanceDetailsDiagramStore.getFlowNodeParents('user_task')
     ).toEqual(['inner_sub_process', 'parent_sub_process']);
 
     expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.businessObjects['inner_sub_process']
-      )
+      processInstanceDetailsDiagramStore.getFlowNodeParents('inner_sub_process')
     ).toEqual(['parent_sub_process']);
 
     expect(
       processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.businessObjects['parent_sub_process']
+        'parent_sub_process'
       )
     ).toEqual([]);
 
     expect(
-      processInstanceDetailsDiagramStore.getFlowNodeParents(
-        processInstanceDetailsDiagramStore.businessObjects['non_existing']
+      processInstanceDetailsDiagramStore.getFlowNodeParents('non_existing')
+    ).toEqual([]);
+  });
+
+  it('should get flow nodes in between two flow nodes', async () => {
+    mockFetchProcessXML().withSuccess(mockNestedSubprocess);
+
+    processInstanceDetailsStore.setProcessInstance(
+      createInstance({
+        id: '123',
+        state: 'ACTIVE',
+        processId: '10',
+        bpmnProcessId: 'nested_sub_process',
+      })
+    );
+
+    processInstanceDetailsDiagramStore.init();
+
+    await waitFor(() =>
+      expect(processInstanceDetailsDiagramStore.state.status).toEqual('fetched')
+    );
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        'user_task',
+        'nested_sub_process'
+      )
+    ).toEqual(['inner_sub_process', 'parent_sub_process']);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        'inner_sub_process',
+        'nested_sub_process'
+      )
+    ).toEqual(['parent_sub_process']);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        'parent_sub_process',
+        'nested_sub_process'
+      )
+    ).toEqual([]);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        'user_task',
+        'parent_sub_process'
+      )
+    ).toEqual(['inner_sub_process']);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        'inner_sub_process',
+        'parent_sub_process'
+      )
+    ).toEqual([]);
+
+    expect(
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        'user_task',
+        'inner_sub_process'
       )
     ).toEqual([]);
   });

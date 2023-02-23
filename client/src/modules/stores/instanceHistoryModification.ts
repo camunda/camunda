@@ -11,12 +11,13 @@ import {FlowNodeInstance} from './flowNodeInstance';
 import {modificationsStore, FlowNodeModification} from './modifications';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
+import {processInstanceDetailsStore} from './processInstanceDetails';
 
 type ModificationPlaceholder = {
   flowNodeInstance: FlowNodeInstance;
   parentFlowNodeId?: string;
   operation: FlowNodeModification['payload']['operation'];
-  parentPlaceholerInstanceId: string | null;
+  parentInstanceId?: string;
 };
 
 const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
@@ -30,6 +31,37 @@ const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
     default:
       return [];
   }
+};
+
+const getParentInstanceIdForPlaceholder = (
+  modificationPayload: FlowNodeModification['payload'],
+  parentFlowNodeId?: string
+) => {
+  if (
+    parentFlowNodeId === undefined ||
+    modificationPayload.operation === 'CANCEL_TOKEN'
+  ) {
+    return undefined;
+  }
+
+  if (
+    parentFlowNodeId ===
+    processInstanceDetailsStore.state.processInstance?.bpmnProcessId
+  ) {
+    return processInstanceDetailsStore.state.processInstance?.id;
+  }
+
+  if (
+    modificationPayload.ancestorElement !== undefined &&
+    parentFlowNodeId === modificationPayload.ancestorElement.flowNodeId
+  ) {
+    return modificationPayload.ancestorElement.instanceKey;
+  }
+
+  return (
+    modificationPayload.parentScopeIds[parentFlowNodeId] ??
+    modificationsStore.getParentScopeId(parentFlowNodeId)
+  );
 };
 
 const generateParentPlaceholders = (
@@ -49,10 +81,6 @@ const generateParentPlaceholders = (
   }
 
   const parentFlowNode = flowNode?.$parent;
-  const parentScopeId =
-    parentFlowNode !== undefined
-      ? modificationPayload.parentScopeIds[parentFlowNode.id] ?? null
-      : null;
 
   return [
     ...generateParentPlaceholders(modificationPayload, parentFlowNode),
@@ -67,9 +95,12 @@ const generateParentPlaceholders = (
         treePath: '',
         isPlaceholder: true,
       },
-      parentFlowNodeId: parentFlowNode?.id,
       operation: modificationPayload.operation,
-      parentPlaceholerInstanceId: parentScopeId,
+      parentFlowNodeId: parentFlowNode?.id,
+      parentInstanceId: getParentInstanceIdForPlaceholder(
+        modificationPayload,
+        parentFlowNode?.id
+      ),
     },
   ];
 };
@@ -101,10 +132,12 @@ const createModificationPlaceholders = ({
       treePath: '',
       isPlaceholder: true,
     },
-    parentFlowNodeId,
     operation: modificationPayload.operation,
-    parentPlaceholerInstanceId:
-      modificationsStore.getParentScopeId(parentFlowNodeId),
+    parentFlowNodeId,
+    parentInstanceId: getParentInstanceIdForPlaceholder(
+      modificationPayload,
+      parentFlowNodeId
+    ),
   }));
 };
 
@@ -163,26 +196,10 @@ class InstanceHistoryModification {
     }, []);
   }
 
-  get flowNodeInstancesByParent() {
-    return this.modificationPlaceholders.reduce<{
-      [parentFlowNodeId: string]: FlowNodeInstance[];
-    }>((flowNodeInstances, modification) => {
-      const {parentFlowNodeId} = modification;
-
-      if (parentFlowNodeId) {
-        flowNodeInstances[parentFlowNodeId] = [
-          ...(flowNodeInstances[parentFlowNodeId] ?? []),
-          modification.flowNodeInstance,
-        ];
-      }
-      return flowNodeInstances;
-    }, {});
-  }
-
   appendExpandedFlowNodeInstanceIds = (id: FlowNodeInstance['id']) => {
     if (
       !this.modificationPlaceholders.some(
-        ({parentPlaceholerInstanceId}) => parentPlaceholerInstanceId === id
+        ({parentInstanceId}) => parentInstanceId === id
       )
     ) {
       return;
@@ -198,21 +215,34 @@ class InstanceHistoryModification {
       );
   };
 
-  getVisibleChildPlaceholders = (id: FlowNodeInstance['id']) => {
-    if (!this.state.expandedFlowNodeInstanceIds.includes(id)) {
+  getVisibleChildPlaceholders = (
+    id: FlowNodeInstance['id'],
+    flowNodeId: FlowNodeInstance['flowNodeId'],
+    isPlaceholder?: boolean
+  ) => {
+    if (isPlaceholder && !this.state.expandedFlowNodeInstanceIds.includes(id)) {
       return [];
     }
 
-    return this.modificationPlaceholders
+    const placeholders = this.modificationPlaceholders
+      .filter(({parentInstanceId}) => parentInstanceId === id)
+      .map(({flowNodeInstance}) => flowNodeInstance);
+
+    if (placeholders.length > 0) {
+      return placeholders;
+    }
+
+    return instanceHistoryModificationStore.modificationPlaceholders
       .filter(
-        ({parentPlaceholerInstanceId}) => parentPlaceholerInstanceId === id
+        ({parentInstanceId, parentFlowNodeId}) =>
+          parentInstanceId === undefined && parentFlowNodeId === flowNodeId
       )
       .map(({flowNodeInstance}) => flowNodeInstance);
   };
 
   hasChildPlaceholders = (id: FlowNodeInstance['id']) => {
     return this.modificationPlaceholders.some(
-      ({parentPlaceholerInstanceId}) => parentPlaceholerInstanceId === id
+      ({parentInstanceId}) => parentInstanceId === id
     );
   };
 

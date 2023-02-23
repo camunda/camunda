@@ -142,15 +142,35 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
     return this.businessObjects[flowNodeId]?.name || flowNodeId;
   };
 
-  getFlowNodeParents = (flowNode?: BusinessObject): string[] => {
+  getFlowNodeParents = (flowNodeId: string): string[] => {
+    const bpmnProcessId =
+      processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
+
+    if (bpmnProcessId === undefined) {
+      return [];
+    }
+
+    return this.getFlowNodesInBetween(flowNodeId, bpmnProcessId);
+  };
+
+  getFlowNodesInBetween = (
+    fromFlowNodeId: string,
+    toFlowNodeId: string
+  ): string[] => {
+    const fromFlowNode =
+      processInstanceDetailsDiagramStore.businessObjects[fromFlowNodeId];
+
     if (
-      flowNode?.$parent === undefined ||
-      flowNode.$parent.$type === 'bpmn:Process'
+      fromFlowNode?.$parent === undefined ||
+      fromFlowNode.$parent.id === toFlowNodeId
     ) {
       return [];
     }
 
-    return [flowNode.$parent.id, ...this.getFlowNodeParents(flowNode.$parent)];
+    return [
+      fromFlowNode.$parent.id,
+      ...this.getFlowNodesInBetween(fromFlowNode.$parent.id, toFlowNodeId),
+    ];
   };
 
   hasMultipleScopes = (parentFlowNode?: BusinessObject): boolean => {
@@ -202,7 +222,8 @@ class ProcessInstanceDetailsDiagram extends NetworkReconnectionHandler {
           !flowNode.hasMultiInstanceParent &&
           !flowNode.isAttachedToAnEventBasedGateway &&
           flowNode.isAppendable &&
-          (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ||
+          ((IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED &&
+            modificationsStore.state.status !== 'moving-token') ||
             !flowNode.hasMultipleScopes)
       )
       .map(({id}) => id);

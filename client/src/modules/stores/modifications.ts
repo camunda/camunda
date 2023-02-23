@@ -26,7 +26,10 @@ type FlowNodeModificationPayload =
       flowNode: {id: string; name: string};
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
-      ancestorElementInstanceKey?: string;
+      ancestorElement?: {
+        instanceKey: string;
+        flowNodeId: string;
+      };
       parentScopeIds: {
         [flowNodeId: string]: string;
       };
@@ -46,6 +49,10 @@ type FlowNodeModificationPayload =
       visibleAffectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
       scopeIds: string[];
+      ancestorElement?: {
+        instanceKey: string;
+        flowNodeId: string;
+      };
       parentScopeIds: {
         [flowNodeId: string]: string;
       };
@@ -137,11 +144,8 @@ class Modifications {
   };
 
   generateParentScopeIds = (targetFlowNodeId: string) => {
-    const businessObject =
-      processInstanceDetailsDiagramStore.businessObjects[targetFlowNodeId];
-
     const parentFlowNodeIds =
-      processInstanceDetailsDiagramStore.getFlowNodeParents(businessObject);
+      processInstanceDetailsDiagramStore.getFlowNodeParents(targetFlowNodeId);
 
     return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
       (parentFlowNodeScopes, flowNodeId) => {
@@ -161,6 +165,25 @@ class Modifications {
         }
 
         return parentFlowNodeScopes;
+      },
+      {}
+    );
+  };
+
+  generateScopeIdsInBetween = (
+    targetFlowNodeId: string,
+    ancestorFlowNodeId: string
+  ) => {
+    const flowNodesInBetween =
+      processInstanceDetailsDiagramStore.getFlowNodesInBetween(
+        targetFlowNodeId,
+        ancestorFlowNodeId
+      );
+
+    return flowNodesInBetween.reduce<{[flowNodeId: string]: string}>(
+      (flowNodeScopes, flowNodeId) => {
+        flowNodeScopes[flowNodeId] = generateUniqueID();
+        return flowNodeScopes;
       },
       {}
     );
@@ -213,9 +236,13 @@ class Modifications {
     this.state.sourceFlowNodeInstanceKeyForMoveOperation = null;
   };
 
-  finishAddingToken = (ancestorElementInstanceKey?: string) => {
+  finishAddingToken = (
+    ancestorElementId?: string,
+    ancestorElementInstanceKey?: string
+  ) => {
     if (
       ancestorElementInstanceKey !== undefined &&
+      ancestorElementId !== undefined &&
       this.state.sourceFlowNodeIdForAddOperation !== null
     ) {
       modificationsStore.addModification({
@@ -231,9 +258,13 @@ class Modifications {
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
-          ancestorElementInstanceKey,
-          parentScopeIds: modificationsStore.generateParentScopeIds(
-            this.state.sourceFlowNodeIdForAddOperation
+          ancestorElement: {
+            instanceKey: ancestorElementInstanceKey,
+            flowNodeId: ancestorElementId,
+          },
+          parentScopeIds: modificationsStore.generateScopeIdsInBetween(
+            this.state.sourceFlowNodeIdForAddOperation,
+            ancestorElementId
           ),
         },
       });
@@ -595,7 +626,7 @@ class Modifications {
           {
             modification: payload.operation,
             toFlowNodeId: payload.flowNode.id,
-            ancestorElementInstanceKey: payload.ancestorElementInstanceKey,
+            ancestorElementInstanceKey: payload.ancestorElement?.instanceKey,
             variables:
               Object.keys(allVariables).length > 0 ? allVariables : undefined,
           },
@@ -705,11 +736,9 @@ class Modifications {
         modification.parentScopeIds[flowNodeId] !== undefined
     );
 
-    if (parentScope === undefined || !('parentScopeIds' in parentScope)) {
-      return null;
+    if (parentScope !== undefined && 'parentScopeIds' in parentScope) {
+      return parentScope.parentScopeIds[flowNodeId];
     }
-
-    return parentScope.parentScopeIds[flowNodeId] ?? null;
   };
 
   addCancelModification = ({
