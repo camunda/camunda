@@ -15,6 +15,7 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -106,7 +107,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
-  private ProcessingScheduleServiceImpl scheduleService;
+  private ProcessingScheduleServiceImpl processorActorService;
+  private ProcessingScheduleServiceImpl asyncScheduleService;
+  private AsyncProcessingScheduleServiceActor asyncActor;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -157,12 +160,21 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       // the schedule service actor is only opened if the replay is done,
       // until then it is an unusable and closed schedule service
-      scheduleService =
+      processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter);
-      streamProcessorContext.scheduleService(scheduleService);
+      asyncScheduleService =
+          new ProcessingScheduleServiceImpl(
+              streamProcessorContext::getStreamProcessorPhase, // this is volatile
+              () -> false, // we will just stop the actor in this case, no need to provide this
+              logStream::newLogStreamWriter);
+      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService);
+      final var extendedProcessingScheduleService =
+          new ExtendedProcessingScheduleServiceImpl(
+              processorActorService, asyncScheduleService, asyncActor.getActorControl());
+      streamProcessorContext.scheduleService(extendedProcessingScheduleService);
 
       initRecordProcessors();
 
@@ -251,7 +263,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void tearDown() {
-    scheduleService.close();
+    processorActorService.close();
+    asyncActor.closeAsync();
+    asyncScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -260,6 +274,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private void healthCheckTick() {
     lastTickTime = ActorClock.currentTimeMillis();
     actor.runDelayed(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
+  }
+
+  void chainSteps(final int index, final Step[] steps, final Runnable last) {
+    if (index == steps.length) {
+      last.run();
+      return;
+    }
+
+    final Step step = steps[index];
+    step.run()
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                chainSteps(index + 1, steps, last);
+              } else {
+                onFailure(t);
+              }
+            });
   }
 
   private void onRetrievingWriter(
@@ -272,15 +304,13 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
       streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
 
-      final var scheduleServiceOpenFuture = scheduleService.open(actor);
-      scheduleServiceOpenFuture.onComplete(
-          (v, failure) -> {
-            if (failure == null) {
-              startProcessing(lastProcessingPositions);
-            } else {
-              onFailure(failure);
-            }
-          });
+      chainSteps(
+          0,
+          new Step[] {
+            () -> processorActorService.open(actor),
+            () -> actorSchedulingService.submitActor(asyncActor)
+          },
+          () -> startProcessing(lastProcessingPositions));
     } else {
       onFailure(errorOnReceivingWriter);
     }
@@ -525,6 +555,36 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   public void onRecordAvailable() {
     actor.run(processingStateMachine::readNextRecord);
+  }
+
+  private static final class AsyncProcessingScheduleServiceActor extends Actor {
+
+    private final ProcessingScheduleServiceImpl scheduleService;
+
+    public AsyncProcessingScheduleServiceActor(
+        final ProcessingScheduleServiceImpl scheduleService) {
+      this.scheduleService = scheduleService;
+    }
+
+    @Override
+    protected void onActorStarting() {
+      final ActorFuture<Void> actorFuture = scheduleService.open(actor);
+      actor.runOnCompletionBlockingCurrentPhase(
+          actorFuture,
+          (v, t) -> {
+            if (t != null) {
+              actor.fail(t);
+            }
+          });
+    }
+
+    public ActorControl getActorControl() {
+      return actor;
+    }
+  }
+
+  public interface Step {
+    ActorFuture<Void> run();
   }
 
   public enum Phase {
