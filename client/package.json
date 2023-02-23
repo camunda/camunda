@@ -102,7 +102,7 @@
     "react-scripts": "5.0.0",
     "sass": "^1.58.3",
     "shelljs": "^0.8.5",
-    "testcafe": "^2.3.0",
+    "testcafe": "^2.3.1",
     "testcafe-browser-provider-browserstack": "^1.14.1",
     "tree-kill": "^1.2.2",
     "ws": "^8.12.1",
