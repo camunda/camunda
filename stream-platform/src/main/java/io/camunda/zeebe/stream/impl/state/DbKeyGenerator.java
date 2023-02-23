@@ -23,6 +23,8 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
   private final long keyStartValue;
   private final NextValueManager nextValueManager;
 
+  private long currentKey;
+
   /**
    * Initializes the key state with the corresponding partition id, so that unique keys are
    * generated over all partitions.
@@ -34,11 +36,19 @@ public final class DbKeyGenerator implements KeyGeneratorControls {
     keyStartValue = Protocol.encodePartitionId(partitionId, INITIAL_VALUE);
     nextValueManager =
         new NextValueManager(keyStartValue, zeebeDb, transactionContext, ZbColumnFamilies.KEY);
+    currentKey = Long.MIN_VALUE;
   }
 
   @Override
   public long nextKey() {
-    return nextValueManager.getNextValue(LATEST_KEY);
+    if (currentKey == Long.MIN_VALUE) {
+      currentKey = nextValueManager.getNextValue(LATEST_KEY);
+    } else {
+      currentKey = currentKey + 1;
+      nextValueManager.setValue(LATEST_KEY, currentKey);
+    }
+
+    return currentKey;
   }
 
   /**
