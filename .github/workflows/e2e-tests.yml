@@ -16,7 +16,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.1.7
+        image: camunda/zeebe:8.1.8
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -42,7 +42,7 @@ jobs:
       - name: Setup yarn cache
         uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "19"
           cache: "yarn"
           cache-dependency-path: client/yarn.lock
       - name: Install node dependencies

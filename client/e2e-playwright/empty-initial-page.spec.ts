@@ -30,7 +30,7 @@ test.describe('empty initial page', () => {
               },
             }),
           });
-        case 'GetTask':
+        case 'GetTasks':
           return route.fulfill({
             status: 200,
             body: JSON.stringify({
@@ -51,6 +51,6 @@ test.describe('empty initial page', () => {
 
     await page.goto('/');
 
-    await expect(page).toHaveScreenshot();
+    await expect(page.locator('body')).toHaveScreenshot();
   });
 });
