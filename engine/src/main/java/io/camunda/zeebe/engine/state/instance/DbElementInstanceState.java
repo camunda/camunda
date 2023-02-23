@@ -23,9 +23,12 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.LongLruCache;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -39,11 +42,22 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final DbLong elementInstanceKey;
   private final ElementInstance elementInstance;
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
-
+  private final Map<Long, ElementInstance> cachedElementInstance = new HashMap<>();
+  private final LongLruCache<Long> elementInstanceKeyLRU =
+      new LongLruCache<>(
+          2,
+          k -> {
+            final var instance = getElementInstance(k);
+            if (instance != null) {
+              cachedElementInstance.put(k, instance);
+              return k;
+            }
+            return null;
+          },
+          cachedElementInstance::remove);
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
       awaitProcessInstanceResultMetadataColumnFamily;
-
   private final DbLong flowScopeKey = new DbLong();
   private final DbString gatewayElementId = new DbString();
   private final DbString sequenceFlowElementId = new DbString();
@@ -163,6 +177,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       parentInstance.decrementChildCount();
       updateInstance(parentInstance);
     }
+
+    cachedElementInstance.remove(key);
   }
 
   @Override
@@ -180,6 +196,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceKey.wrapLong(scopeInstance.getKey());
     parentKey.inner().wrapLong(scopeInstance.getParentKey());
     elementInstanceColumnFamily.update(elementInstanceKey, scopeInstance);
+    cachedElementInstance.computeIfPresent(scopeInstance.getKey(), (k, v) -> scopeInstance);
   }
 
   @Override
@@ -239,13 +256,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   @Override
   public ElementInstance getInstance(final long key) {
-    if (key > 0) {
-      elementInstanceKey.wrapLong(key);
-      final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
-      return copyElementInstance(elementInstance);
-    } else {
-      return null;
-    }
+    elementInstanceKeyLRU.lookup(key);
+    return cachedElementInstance.get(key);
   }
 
   @Override
@@ -289,6 +301,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return count.get();
+  }
+
+  private ElementInstance getElementInstance(final long key) {
+    if (key > 0) {
+      elementInstanceKey.wrapLong(key);
+      final ElementInstance elementInstance = elementInstanceColumnFamily.get(elementInstanceKey);
+      return copyElementInstance(elementInstance);
+    } else {
+      return null;
+    }
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {

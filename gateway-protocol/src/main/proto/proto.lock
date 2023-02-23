@@ -1018,6 +1018,19 @@
           },
           {
             "name": "ModifyProcessInstanceResponse"
+          },
+          {
+            "name": "DeleteResourceRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "resourceKey",
+                "type": "int64"
+              }
+            ]
+          },
+          {
+            "name": "DeleteResourceResponse"
           }
         ],
         "services": [
@@ -1110,6 +1123,11 @@
                 "name": "ModifyProcessInstance",
                 "in_type": "ModifyProcessInstanceRequest",
                 "out_type": "ModifyProcessInstanceResponse"
+              },
+              {
+                "name": "DeleteResource",
+                "in_type": "DeleteResourceRequest",
+                "out_type": "DeleteResourceResponse"
               }
             ]
           }
