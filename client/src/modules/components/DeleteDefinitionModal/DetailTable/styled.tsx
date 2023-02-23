@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {bodyShort01, productiveHeading02} from '@carbon/elements';
+import {bodyShort01, productiveHeading01} from '@carbon/elements';
 import styled, {css} from 'styled-components';
 
 const Th = styled.th`
@@ -13,7 +13,8 @@ const Th = styled.th`
     const {color, backgroundColor} =
       theme.colors.resourceDeletionModal.detailsTable;
     return css`
-      ${productiveHeading02};
+      ${productiveHeading01};
+      font-weight: 500;
       padding: 20px 20px 4px 20px;
       text-align: left;
       color: ${color};
@@ -27,10 +28,15 @@ const Td = styled.td`
     const {border} = theme.colors.resourceDeletionModal.detailsTable;
     return css`
       ${bodyShort01};
+      vertical-align: top;
       padding: 11px 20px;
       border-bottom: 1px solid ${border};
     `;
   }}
 `;
 
-export {Th, Td};
+const Table = styled.table`
+  border-collapse: collapse;
+`;
+
+export {Table, Th, Td};

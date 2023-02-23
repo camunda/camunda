@@ -9,8 +9,8 @@ import {useState} from 'react';
 import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
-import {Td, Th} from './styled';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
+import {DetailTable} from 'modules/components/DeleteDefinitionModal/DetailTable';
 
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
@@ -48,18 +48,18 @@ const DecisionOperations: React.FC<Props> = ({
         confirmationText="Yes, I confirm I want to delete this DRD and all related instances."
         isVisible={isDeleteModalVisible}
         bodyContent={
-          <table>
-            <thead>
-              <tr>
-                <Th>DRD</Th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <Td>{decisionDefinitionStore.name}</Td>
-              </tr>
-            </tbody>
-          </table>
+          <DetailTable
+            headerColumns={[
+              {
+                cellContent: 'DRD name',
+              },
+            ]}
+            rows={[
+              {
+                columns: [{cellContent: decisionDefinitionStore.name}],
+              },
+            ]}
+          />
         }
         onClose={() => setIsDeleteModalVisible(false)}
         onDelete={() => {

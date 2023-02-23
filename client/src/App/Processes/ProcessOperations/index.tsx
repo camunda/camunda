@@ -9,6 +9,7 @@ import {useState} from 'react';
 import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
+import {DetailTable} from 'modules/components/DeleteDefinitionModal/DetailTable';
 
 type Props = {
   processName: string;
@@ -32,7 +33,22 @@ const ProcessOperations: React.FC<Props> = ({processName, processVersion}) => {
         title="Delete Process Definition"
         description="You are about to delete the following process definition:"
         isVisible={isDeleteModalVisible}
-        bodyContent=""
+        bodyContent={
+          <DetailTable
+            headerColumns={[
+              {
+                cellContent: 'Process Definition',
+              },
+            ]}
+            rows={[
+              {
+                columns: [
+                  {cellContent: `${processName} - Version ${processVersion}`},
+                ],
+              },
+            ]}
+          />
+        }
         confirmationText="Yes, I confirm I want to delete this process definition."
         onClose={() => setIsDeleteModalVisible(false)}
         onDelete={() => {}}
