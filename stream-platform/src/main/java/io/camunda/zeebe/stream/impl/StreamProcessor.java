@@ -108,8 +108,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();
   private ProcessingScheduleServiceImpl processorActorService;
-  private ProcessingScheduleServiceImpl differentScheduleService;
-  private DifferentProcessingScheduleServiceActor differentActor;
+  private ProcessingScheduleServiceImpl asyncScheduleService;
+  private AsyncProcessingScheduleServiceActor asyncActor;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -165,15 +165,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter);
-      differentScheduleService =
+      asyncScheduleService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               () -> false, // we will just stop the actor in this case, no need to provide this
               logStream::newLogStreamWriter);
-      differentActor = new DifferentProcessingScheduleServiceActor(differentScheduleService);
+      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
-              processorActorService, differentScheduleService, differentActor.getActorControl());
+              processorActorService, asyncScheduleService, asyncActor.getActorControl());
       streamProcessorContext.scheduleService(extendedProcessingScheduleService);
 
       initRecordProcessors();
@@ -264,8 +264,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void tearDown() {
     processorActorService.close();
-    differentActor.closeAsync();
-    differentScheduleService.close();
+    asyncActor.closeAsync();
+    asyncScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
     replayStateMachine.close();
@@ -308,7 +308,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           0,
           new Step[] {
             () -> processorActorService.open(actor),
-            () -> actorSchedulingService.submitActor(differentActor)
+            () -> actorSchedulingService.submitActor(asyncActor)
           },
           () -> startProcessing(lastProcessingPositions));
     } else {
@@ -557,11 +557,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     actor.run(processingStateMachine::readNextRecord);
   }
 
-  private static final class DifferentProcessingScheduleServiceActor extends Actor {
+  private static final class AsyncProcessingScheduleServiceActor extends Actor {
 
     private final ProcessingScheduleServiceImpl scheduleService;
 
-    public DifferentProcessingScheduleServiceActor(
+    public AsyncProcessingScheduleServiceActor(
         final ProcessingScheduleServiceImpl scheduleService) {
       this.scheduleService = scheduleService;
     }
