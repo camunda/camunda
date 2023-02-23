@@ -34,6 +34,26 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
 
+  private final Map<Long, ElementInstance> cachedElementInstance = new HashMap<>();
+  private final LongLruCache<Long> elementInstanceKeyLRU =
+      new LongLruCache<>(
+          2,
+          k -> {
+
+            var elementInstance = cachedElementInstance.get(k);
+            if (elementInstance != null) {
+              return k;
+            }
+
+            elementInstance = getElementInstance(k);
+            if (elementInstance != null) {
+              cachedElementInstance.put(k, elementInstance);
+              return k;
+            }
+            return null;
+          },
+          cachedElementInstance::remove);
+
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>>, DbNil>
       parentChildColumnFamily;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbForeignKey<DbLong>> parentChildKey;
@@ -42,19 +62,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final DbLong elementInstanceKey;
   private final ElementInstance elementInstance;
   private final ColumnFamily<DbLong, ElementInstance> elementInstanceColumnFamily;
-  private final Map<Long, ElementInstance> cachedElementInstance = new HashMap<>();
-  private final LongLruCache<Long> elementInstanceKeyLRU =
-      new LongLruCache<>(
-          2,
-          k -> {
-            final var instance = getElementInstance(k);
-            if (instance != null) {
-              cachedElementInstance.put(k, instance);
-              return k;
-            }
-            return null;
-          },
-          cachedElementInstance::remove);
+
   private final AwaitProcessInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitProcessInstanceResultMetadata>
       awaitProcessInstanceResultMetadataColumnFamily;
@@ -154,10 +162,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   @Override
   public void removeInstance(final long key) {
     elementInstanceKey.wrapLong(key);
-    final var instance = elementInstanceColumnFamily.get(elementInstanceKey);
+
+    elementInstanceKeyLRU.lookup(key);
+    final var instance = cachedElementInstance.get(key);
     if (instance == null) {
       return;
     }
+
     final long parent = instance.getParentKey();
     parentKey.inner().wrapLong(parent);
     parentChildColumnFamily.deleteIfExists(parentChildKey);
@@ -168,7 +179,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     if (parent > 0) {
       elementInstanceKey.wrapLong(parent);
-      final var parentInstance = elementInstanceColumnFamily.get(elementInstanceKey);
+
+      elementInstanceKeyLRU.lookup(parent);
+      final var parentInstance = cachedElementInstance.get(parent);
+
       if (parentInstance == null) {
         final var errorMsg =
             "Expected to find parent instance for element instance with key %d, but none was found.";
@@ -189,6 +203,10 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceColumnFamily.insert(elementInstanceKey, instance);
     parentChildColumnFamily.insert(parentChildKey, DbNil.INSTANCE);
     variableState.createScope(elementInstanceKey.getValue(), parentKey.inner().getValue());
+
+    final var copy = copyElementInstance(instance);
+    cachedElementInstance.put(instance.getKey(), copy);
+    elementInstanceKeyLRU.lookup(instance.getKey());
   }
 
   @Override
@@ -196,13 +214,13 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     elementInstanceKey.wrapLong(scopeInstance.getKey());
     parentKey.inner().wrapLong(scopeInstance.getParentKey());
     elementInstanceColumnFamily.update(elementInstanceKey, scopeInstance);
-    cachedElementInstance.computeIfPresent(scopeInstance.getKey(), (k, v) -> scopeInstance);
   }
 
   @Override
   public void updateInstance(final long key, final Consumer<ElementInstance> modifier) {
     elementInstanceKey.wrapLong(key);
-    final var scopeInstance = elementInstanceColumnFamily.get(elementInstanceKey);
+    elementInstanceKeyLRU.lookup(key);
+    final var scopeInstance = cachedElementInstance.get(key);
     modifier.accept(scopeInstance);
     updateInstance(scopeInstance);
   }
