@@ -15,6 +15,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.impl.DbLong;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
@@ -96,6 +97,10 @@ class TransactionalColumnFamily<
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
               value.getLength());
+
+          if (key instanceof DbLong newKey) {
+            highestKeyInserted = Math.max(highestKeyInserted, newKey.getValue());
+          }
         });
   }
 
@@ -129,6 +134,10 @@ class TransactionalColumnFamily<
               columnFamilyContext.getKeyLength(),
               columnFamilyContext.getValueBufferArray(),
               value.getLength());
+
+          if (key instanceof DbLong newKey) {
+            highestKeyInserted = Math.max(highestKeyInserted, newKey.getValue());
+          }
         });
   }
 
@@ -137,6 +146,14 @@ class TransactionalColumnFamily<
     ensureInOpenTransaction(
         transaction -> {
           columnFamilyContext.writeKey(key);
+
+          if (key instanceof DbLong newKey && highestKeyInserted != Long.MIN_VALUE) {
+            if (newKey.getValue() > highestKeyInserted) {
+              columnFamilyContext.wrapValueView(null);
+              return;
+            }
+          }
+
           final byte[] value =
               transaction.get(
                   transactionDb.getDefaultNativeHandle(),
