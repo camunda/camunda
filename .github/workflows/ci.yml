@@ -344,7 +344,7 @@ jobs:
       - name: Maven Test Build
         run: >
           ./mvnw -B --no-snapshot-updates
-          -P disableCheckstyle,extract-flaky-tests
+          -P disableCheckstyle,extract-flaky-tests,'!autoFormat'
           -D skipChecks -D skipITs
           -D surefire.rerunFailingTestsCount=3
           -pl clients/java
