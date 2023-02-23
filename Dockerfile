@@ -101,14 +101,17 @@ ENV PATH "${ZB_HOME}/bin:${PATH}"
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
 VOLUME ${ZB_HOME}/data
+VOLUME ${ZB_HOME}/logs
 
 RUN groupadd -g 1000 zeebe && \
     adduser -u 1000 zeebe --system --ingroup zeebe && \
     chmod g=u /etc/passwd && \
-    chown 1000:0 ${ZB_HOME} && \
-    chmod 0775 ${ZB_HOME} && \
+    # These directories are to be mounted by users, eagerly creating them and setting ownership
+    # helps to avoid potential permission issues due to default volume ownership.
     mkdir ${ZB_HOME}/data && \
-    chmod 0775 ${ZB_HOME}/data
+    mkdir ${ZB_HOME}/logs && \
+    chown -R 1000:0 ${ZB_HOME} && \
+    chmod -R 0775 ${ZB_HOME}
 
 COPY --from=init --chown=1000:0 /zeebe/tini ${ZB_HOME}/bin/
 COPY --from=init --chown=1000:0 /zeebe/startup.sh /usr/local/bin/startup.sh
