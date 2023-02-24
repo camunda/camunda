@@ -152,10 +152,11 @@ public final class DeploymentTransformer {
   }
 
   /**
-   * Exception that can be thrown during processing of a command, in case the engine could not
-   * subscribe to an event. This exception can be handled by the processor in {@link
-   * io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor#tryHandleError(TypedRecord,
-   * Throwable)}.
+   * Exception that can be thrown during processing of a command, in case the resource cannot
+   * be transformed successfully. This allows the platform to roll back any changes the engine made.
+   * This exception can be handled by the processor in {@link
+   * io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor#tryHandleError(
+   * TypedRecord, Throwable)}.
    */
   public static final class ResourceTransformationFailedException extends RuntimeException {
 
