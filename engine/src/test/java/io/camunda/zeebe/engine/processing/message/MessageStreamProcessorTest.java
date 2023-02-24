@@ -13,7 +13,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -31,8 +30,12 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
+import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -103,22 +106,24 @@ public final class MessageStreamProcessorTest {
         () -> rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).exists());
 
     // when
-    rule.getClock()
-        .addTime(
-            MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(MessageObserver.SUBSCRIPTION_TIMEOUT));
 
     // then
-    final long messageKey =
-        rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
-        .correlateProcessMessageSubscription(
-            subscription.getProcessInstanceKey(),
-            subscription.getElementInstanceKey(),
-            subscription.getBpmnProcessIdBuffer(),
-            subscription.getMessageNameBuffer(),
-            messageKey,
-            message.getVariablesBuffer(),
-            subscription.getCorrelationKeyBuffer());
+    // we need to enhance the clock on retry, since the next task is scheduled only after the first
+    // executed
+    Awaitility.await("retry correlation")
+        .untilAsserted(
+            () -> {
+              rule.getClock()
+                  .addTime(
+                      MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(
+                          MessageObserver.SUBSCRIPTION_TIMEOUT));
+              verify(mockInterpartitionCommandSender, timeout(100).times(2))
+                  .sendCommand(
+                      eq(0),
+                      eq(ValueType.PROCESS_MESSAGE_SUBSCRIPTION),
+                      eq(ProcessMessageSubscriptionIntent.CORRELATE),
+                      any());
+            });
   }
 
   @Test
@@ -138,23 +143,24 @@ public final class MessageStreamProcessorTest {
                 .exists());
 
     // when
-    rule.getClock()
-        .addTime(
-            MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(MessageObserver.SUBSCRIPTION_TIMEOUT));
 
     // then
-    final long messageKey =
-        rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
-
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
-        .correlateProcessMessageSubscription(
-            subscription.getProcessInstanceKey(),
-            subscription.getElementInstanceKey(),
-            subscription.getBpmnProcessIdBuffer(),
-            subscription.getMessageNameBuffer(),
-            messageKey,
-            message.getVariablesBuffer(),
-            subscription.getCorrelationKeyBuffer());
+    // we need to enhance the clock on retry, since the next task is scheduled only after the first
+    // executed
+    Awaitility.await("retry correlation")
+        .untilAsserted(
+            () -> {
+              rule.getClock()
+                  .addTime(
+                      MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(
+                          MessageObserver.SUBSCRIPTION_TIMEOUT));
+              verify(mockInterpartitionCommandSender, timeout(100).times(2))
+                  .sendCommand(
+                      eq(0),
+                      eq(ValueType.PROCESS_MESSAGE_SUBSCRIPTION),
+                      eq(ProcessMessageSubscriptionIntent.CORRELATE),
+                      any());
+            });
   }
 
   @Test
