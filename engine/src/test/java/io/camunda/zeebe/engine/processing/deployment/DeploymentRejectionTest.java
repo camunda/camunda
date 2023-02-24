@@ -229,22 +229,17 @@ public class DeploymentRejectionTest {
   @Test
   public void shouldDoAtomicDeployments() {
     // given
-    final String process1Id = "process1";
-    final BpmnModelInstance process1 =
-        Bpmn.createExecutableProcess(process1Id)
-            .startEvent()
-            .businessRuleTask("invalid_business_rule_task_id")
-            .endEvent()
-            .done();
-    final String process2Id = "process2";
-    final BpmnModelInstance process2 =
-        Bpmn.createExecutableProcess(process2Id).startEvent().manualTask().endEvent().done();
+    final String invalidProcessId = "invalid_process_without_start_event";
+    final BpmnModelInstance invalidProcess = Bpmn.createExecutableProcess(invalidProcessId).done();
+    final String validProcessId = "valid_process";
+    final BpmnModelInstance validProcess =
+        Bpmn.createExecutableProcess(validProcessId).startEvent().manualTask().endEvent().done();
 
     // when
     ENGINE
         .deployment()
-        .withXmlResource(process1)
-        .withXmlResource(process2)
+        .withXmlResource(invalidProcess)
+        .withXmlResource(validProcess)
         .expectRejection()
         .deploy();
 
