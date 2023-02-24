@@ -28,7 +28,9 @@ import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
 import io.grpc.ServerInterceptors;
 import io.grpc.Status;
+import io.grpc.internal.GrpcUtil;
 import io.grpc.testing.GrpcServerRule;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -174,5 +176,37 @@ public final class CredentialsTest {
 
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().containsKey(AUTH_KEY)).isFalse();
+  }
+
+  @Test
+  public void shouldCredentialsProviderRunFromGRPCThreadPool() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+
+    final AtomicReference<String> credentialsProviderThreadReference = new AtomicReference<>();
+    builder
+        .usePlaintext()
+        .credentialsProvider(
+            new CredentialsProvider() {
+              @Override
+              public void applyCredentials(final Metadata headers) {
+                credentialsProviderThreadReference.set(Thread.currentThread().getName());
+              }
+
+              @Override
+              public boolean shouldRetryRequest(final Throwable throwable) {
+                return false;
+              }
+            });
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    client.newTopologyRequest().send().join();
+
+    // then
+    assertThat(credentialsProviderThreadReference)
+        .hasValueMatching(
+            s -> s.startsWith(GrpcUtil.SHARED_CHANNEL_EXECUTOR.toString()),
+            "should be the GRPC's thread");
   }
 }
