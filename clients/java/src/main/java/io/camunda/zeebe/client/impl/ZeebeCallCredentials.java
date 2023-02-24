@@ -41,13 +41,16 @@ public final class ZeebeCallCredentials extends io.grpc.CallCredentials {
           "The request's security level does not guarantee that the credentials will be confidential.");
     }
 
-    try {
-      final Metadata headers = new Metadata();
-      credentialsProvider.applyCredentials(headers);
-      applier.apply(headers);
-    } catch (IOException e) {
-      applier.fail(Status.CANCELLED.withCause(e));
-    }
+    appExecutor.execute(
+        () -> {
+          try {
+            final Metadata headers = new Metadata();
+            credentialsProvider.applyCredentials(headers);
+            applier.apply(headers);
+          } catch (final IOException e) {
+            applier.fail(Status.CANCELLED.withCause(e));
+          }
+        });
   }
 
   @Override
