@@ -43,6 +43,8 @@ public class ClientConfig {
 
   public String tasklistUrl;
 
+  public boolean resourcePermissionsEnabled;
+
   public String asJson(){
     isEnterprise = operateProperties.isEnterprise();
     clusterId = operateProperties.getCloud().getClusterId();
@@ -53,6 +55,7 @@ public class ClientConfig {
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
+    resourcePermissionsEnabled = operateProperties.getIdentity().isResourcePermissionsEnabled();
     try {
       return String.format("window.clientConfig = %s;",
           new ObjectMapper().writeValueAsString(this));

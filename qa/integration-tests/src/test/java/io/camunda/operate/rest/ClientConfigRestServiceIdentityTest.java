@@ -59,7 +59,8 @@ public class ClientConfigRestServiceIdentityTest extends OperateIntegrationTest 
             + "\"mixpanelAPIHost\":null,"
             + "\"mixpanelToken\":null,"
             + "\"isLoginDelegated\":true,"
-            + "\"tasklistUrl\":null"
+            + "\"tasklistUrl\":null,"
+            + "\"resourcePermissionsEnabled\":false"
             + "};");
   }
 
