@@ -82,7 +82,7 @@ public final class DeploymentTransformer {
     return wrapArray(digestGenerator.digest(resource.getResource()));
   }
 
-  public void transform(final DeploymentRecord deploymentEvent) {
+  public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
     final StringBuilder errors = new StringBuilder();
     boolean success = true;
 
@@ -91,7 +91,7 @@ public final class DeploymentTransformer {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = "Expected to deploy at least one resource, but none given";
 
-      throw new ResourceTransformationFailedException(rejectionReason);
+      return Either.left(new Failure(rejectionReason));
     }
 
     while (resourceIterator.hasNext()) {
@@ -105,8 +105,10 @@ public final class DeploymentTransformer {
           String.format(
               "Expected to deploy new resources, but encountered the following errors:%s", errors);
 
-      throw new ResourceTransformationFailedException(rejectionReason);
+      return Either.left(new Failure(rejectionReason));
     }
+
+    return Either.right(null);
   }
 
   private boolean transformResource(
@@ -149,20 +151,6 @@ public final class DeploymentTransformer {
         .map(Entry::getValue)
         .findFirst()
         .orElse(UNKNOWN_RESOURCE);
-  }
-
-  /**
-   * Exception that can be thrown during processing of a command, in case the resource cannot
-   * be transformed successfully. This allows the platform to roll back any changes the engine made.
-   * This exception can be handled by the processor in {@link
-   * io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor#tryHandleError(
-   * TypedRecord, Throwable)}.
-   */
-  public static final class ResourceTransformationFailedException extends RuntimeException {
-
-    public ResourceTransformationFailedException(final String message) {
-      super(message);
-    }
   }
 
   private static class UnknownResourceTransformer implements DeploymentResourceTransformer {

@@ -20,7 +20,6 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
-import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer.ResourceTransformationFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -87,26 +86,30 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
     final DeploymentRecord deploymentEvent = command.getValue();
 
-    deploymentTransformer.transform(deploymentEvent);
+    final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
 
-    try {
-      createTimerIfTimerStartEvent(command);
-    } catch (final RuntimeException e) {
-      final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-      rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-      return;
+    if (result.isRight()) {
+      try {
+        createTimerIfTimerStartEvent(command);
+      } catch (final RuntimeException e) {
+        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        return;
+      }
+
+      final long key = keyGenerator.nextKey();
+
+      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+
+      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+
+      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
+      messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
+          deploymentEvent, stateWriter);
+    } else {
+      throw new ResourceTransformationFailedException(result.getLeft().getMessage());
     }
-
-    final long key = keyGenerator.nextKey();
-
-    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-
-    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
-
-    deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
-    messageStartEventSubscriptionManager.tryReOpenMessageStartEventSubscription(
-        deploymentEvent, stateWriter);
   }
 
   @Override
@@ -171,6 +174,20 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
     if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer);
+    }
+  }
+
+  /**
+   * Exception that can be thrown during processing of a command, in case the resource cannot be
+   * transformed successfully. This allows the platform to roll back any changes the engine made.
+   * This exception can be handled by the processor in {@link
+   * io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor#tryHandleError(
+   * TypedRecord, Throwable)}.
+   */
+  private static final class ResourceTransformationFailedException extends RuntimeException {
+
+    private ResourceTransformationFailedException(final String message) {
+      super(message);
     }
   }
 }
