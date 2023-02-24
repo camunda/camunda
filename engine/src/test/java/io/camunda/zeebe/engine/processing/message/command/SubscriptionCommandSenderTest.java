@@ -153,6 +153,29 @@ public class SubscriptionCommandSenderTest {
   }
 
   @Test
+  public void shouldSendDirectCloseMessageSubscription() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectCloseMessageSubscription(
+        DIFFERENT_PARTITION,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_MESSAGE_NAME);
+
+    // then
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.MESSAGE_SUBSCRIPTION),
+            eq(MessageSubscriptionIntent.DELETE),
+            any());
+    verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never())
+        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+  }
+
+  @Test
   public void shouldSentFollowUpCommandForOpenMessageSubscription() {
     // given
 

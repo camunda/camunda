@@ -111,10 +111,11 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private boolean sendCloseCommand(final ProcessMessageSubscription subscription) {
-    return commandSender.closeMessageSubscription(
+    commandSender.sendDirectCloseMessageSubscription(
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
         subscription.getRecord().getMessageNameBuffer());
+    return true;
   }
 }
