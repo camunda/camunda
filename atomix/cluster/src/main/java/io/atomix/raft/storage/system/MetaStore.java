@@ -58,6 +58,9 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   private final FileChannel metaFileChannel;
   private final MetaStoreMetrics metrics;
 
+  // volatile to avoid synchronizing on the whole meta store when reading this single value
+  private volatile long lastFlushedIndex;
+
   public MetaStore(final RaftStorage storage) throws IOException {
     if (!(storage.directory().isDirectory() || storage.directory().mkdirs())) {
       throw new IllegalArgumentException(
@@ -100,6 +103,7 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
     // Read existing meta info and rewrite with the current version
     initializeMetaBuffer();
+    lastFlushedIndex = readLastFlushedIndex();
   }
 
   private void initializeMetaBuffer() {
@@ -179,26 +183,25 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
 
   @Override
   public synchronized void storeLastFlushedIndex(final long index) {
-    log.trace("Store last flushed index {}", index);
+    if (index == lastFlushedIndex) {
+      log.trace("Skip storing same last flushed index {}", index);
+      return;
+    }
 
+    log.trace("Store last flushed index {}", index);
     try (final var ignored = metrics.observeLastFlushedIndexUpdate()) {
       serializer.writeLastFlushedIndex(index, new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
       metaFileChannel.write(metaBuffer, 0);
       metaBuffer.position(0);
+      lastFlushedIndex = index;
     } catch (final IOException e) {
       throw new StorageException(e);
     }
   }
 
   @Override
-  public synchronized long loadLastFlushedIndex() {
-    try {
-      metaFileChannel.read(metaBuffer, 0);
-      metaBuffer.position(0);
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
-    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
+  public long loadLastFlushedIndex() {
+    return lastFlushedIndex;
   }
 
   /**
@@ -253,5 +256,15 @@ public class MetaStore implements JournalMetaStore, AutoCloseable {
   @Override
   public String toString() {
     return toStringHelper(this).toString();
+  }
+
+  private long readLastFlushedIndex() {
+    try {
+      metaFileChannel.read(metaBuffer, 0);
+      metaBuffer.position(0);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+    return serializer.readLastFlushedIndex(new UnsafeBuffer(metaBuffer), VERSION_LENGTH);
   }
 }
