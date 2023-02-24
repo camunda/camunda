@@ -1,0 +1,126 @@
+version: "3.6"
+
+services:
+  optimize:
+    container_name: optimize
+    image: camunda/optimize:latest
+    ports:
+      - "8090:8090"
+      - "8092:8092"
+    environment:
+      - SPRING_PROFILES_ACTIVE=ccsm
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_ISSUER_BACKEND_URL=http://keycloak:8080/auth/realms/camunda-platform
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTID=optimize
+      - CAMUNDA_OPTIMIZE_IDENTITY_CLIENTSECRET=XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      - CAMUNDA_OPTIMIZE_IDENTITY_AUDIENCE=optimize-api
+      - OPTIMIZE_ELASTICSEARCH_HOST=elasticsearch
+      - OPTIMIZE_ELASTICSEARCH_HTTP_PORT=9200
+      - CAMUNDA_OPTIMIZE_SECURITY_AUTH_COOKIE_SAME_SITE_ENABLED=false
+      - CAMUNDA_OPTIMIZE_ENTERPRISE=false
+      - CAMUNDA_OPTIMIZE_ZEEBE_ENABLED=true
+      - CAMUNDA_OPTIMIZE_ZEEBE_NAME=zeebe-record
+      - CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT=1
+      - CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN=true
+      - CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED=true
+    networks:
+      - optimize
+      - identity-network
+  keycloak:
+    container_name: keycloak
+    # If you are on an M1 machine, you can use mrparkers/keycloak-m1:17.0.1
+    image: jboss/keycloak:16.1.1
+    ports:
+      - "18080:8080"
+    environment:
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    networks:
+      - identity-network
+  identity:
+    depends_on:
+      - keycloak
+    restart: on-failure
+    container_name: identity
+    image: camunda/identity:SNAPSHOT
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      KEYCLOAK_URL: http://keycloak:8080/auth
+      IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      KEYCLOAK_INIT_OPTIMIZE_SECRET: XALaRPl5qwTEItdwCMiPS62nVpKs7dL7
+      KEYCLOAK_INIT_OPTIMIZE_ROOT_URL: http://localhost:8090
+      KEYCLOAK_USERS_0_USERNAME: "demo"
+      KEYCLOAK_USERS_0_PASSWORD: "demo"
+      KEYCLOAK_USERS_0_FIRST_NAME: "demo"
+      KEYCLOAK_USERS_0_ROLES_0: "Identity"
+      KEYCLOAK_USERS_0_ROLES_1: "Optimize"
+    networks:
+      - identity-network
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-7.17.0}
+    container_name: elasticsearch
+    environment:
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    restart: always
+    cpu_count: 4
+    mem_limit: 2g
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - optimize
+  zeebe:
+    image: camunda/zeebe:latest
+    container_name: zeebe
+    environment:
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
+    ports:
+      - "26500:26500"
+      - "9600:9600"
+    restart: always
+    volumes:
+      - ./zeebe-application.yml:/usr/local/zeebe/config/application.yaml
+    depends_on:
+      - elasticsearch
+    networks:
+      - optimize
+# We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
+  operate:
+    image: camunda/operate:latest
+    container_name: operate
+    environment:
+        - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
+        - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
+        - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+        - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
+        - SPRING_PROFILES_ACTIVE=dev-data
+        - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
+        - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
+        - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
+        - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
+        - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+        - management.endpoint.health.group.liveness.include=elsIndicesCheck
+    ports:
+      - "8080:8080"
+    depends_on:
+      - elasticsearch
+      - zeebe
+    networks:
+      - optimize
+networks:
+  optimize: { }
+  identity-network: { }

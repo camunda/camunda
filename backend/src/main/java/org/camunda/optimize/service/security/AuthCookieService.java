@@ -27,6 +27,7 @@ import java.util.function.Function;
 
 import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_SERVICE_TOKEN;
 import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
 import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_STRICT_VALUE;
@@ -49,6 +50,13 @@ public class AuthCookieService {
     );
   }
 
+  public NewCookie createDeleteOptimizeRefreshCookie(final boolean secure) {
+    log.trace("Deleting Optimize refresh cookie.");
+    return new NewCookie(
+      OPTIMIZE_REFRESH_TOKEN, "", getCookiePath(), null, "delete cookie", 0, secure, true
+    );
+  }
+
   public String createNewOptimizeAuthCookie(final String optimizeAuthCookieToken, final String requestScheme) {
     return createNewOptimizeAuthCookie(
       optimizeAuthCookieToken,
@@ -65,6 +73,19 @@ public class AuthCookieService {
     return createCookie(
       OPTIMIZE_AUTHORIZATION,
       AuthCookieService.createOptimizeAuthCookieValue(optimizeAuthCookieToken),
+      requestScheme,
+      convertInstantToDate(expiresAt)
+    );
+  }
+
+  public String createNewOptimizeRefreshCookie(final String cookieValue,
+                                               final Instant expiresAt,
+                                               final String requestScheme) {
+    log.trace("Creating Optimize authentication cookie.");
+
+    return createCookie(
+      OPTIMIZE_REFRESH_TOKEN,
+      AuthCookieService.createOptimizeAuthCookieValue(cookieValue),
       requestScheme,
       convertInstantToDate(expiresAt)
     );
@@ -106,8 +127,8 @@ public class AuthCookieService {
     return getTokenAttribute(token, DecodedJWT::getSubject);
   }
 
-  public static String createOptimizeAuthCookieValue(final String securityToken) {
-    return AUTH_COOKIE_TOKEN_VALUE_PREFIX + securityToken;
+  public static String createOptimizeAuthCookieValue(final String tokenValue) {
+    return AUTH_COOKIE_TOKEN_VALUE_PREFIX + tokenValue;
   }
 
   private Date convertInstantToDate(final Instant expiresAt) {

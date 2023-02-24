@@ -62,7 +62,11 @@ docker-compose down
 You can also run Optimize in CCSM mode by running the following command
 
 ```
-docker-compose -f docker-compose.ccsm.yml up -d
+docker-compose -f docker-compose.ccsm-with-optimize.yml up -d
+```
+or optionally without Optimize using:
+```
+docker-compose -f docker-compose.ccsm-without-optimize.yml up -d
 ```
 
 This will start all the components of Identity, Elasticsearch, Zeebe, and Optimize. Optimize will be available at localhost:8090. 

@@ -3,19 +3,13 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.rest.security.cloud;
+package org.camunda.optimize.rest.security.ccsm;
 
-import io.camunda.identity.sdk.Identity;
-import io.camunda.identity.sdk.IdentityConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.camunda.optimize.rest.security.AuthenticationCookieFilter;
-import org.camunda.optimize.rest.security.AuthenticationCookieRefreshFilter;
 import org.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
-import org.camunda.optimize.service.security.SessionService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.security.CCSMTokenService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
-import org.camunda.optimize.service.util.configuration.security.CCSMAuthConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +28,6 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
 
 import static org.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
@@ -53,9 +46,7 @@ import static org.camunda.optimize.rest.security.platform.PlatformWebSecurityCon
 @Conditional(CCSMCondition.class)
 @Order(2)
 public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapter {
-  private final SessionService sessionService;
-  private final ConfigurationService configurationService;
-  private final AuthenticationCookieRefreshFilter authenticationCookieRefreshFilter;
+  private final CCSMTokenService ccsmTokenService;
   private final CustomPreAuthenticatedAuthenticationProvider preAuthenticatedAuthenticationProvider;
 
   @Override
@@ -64,13 +55,8 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
   }
 
   @Bean
-  public AuthenticationCookieFilter authenticationCookieFilter() throws Exception {
-    return new AuthenticationCookieFilter(sessionService, authenticationManager());
-  }
-
-  @Bean
-  public Identity identity() {
-    return new Identity(identityConfiguration());
+  public CCSMAuthenticationCookieFilter ccsmAuthenticationCookieFilter() throws Exception {
+    return new CCSMAuthenticationCookieFilter(ccsmTokenService, authenticationManager());
   }
 
   @SneakyThrows
@@ -109,7 +95,7 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
       .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
       .anyRequest().authenticated()
       .and()
-      .addFilterBefore(authenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
+      .addFilterBefore(ccsmAuthenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)
       .exceptionHandling()
         .defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED), new AntPathRequestMatcher(REST_API_PATH + "/**"))
         .defaultAuthenticationEntryPointFor(this::redirectToIdentity, new AntPathRequestMatcher("/**"));
@@ -118,13 +104,11 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
 
   private void redirectToIdentity(final HttpServletRequest request, final HttpServletResponse response,
                                   final AuthenticationException e) throws IOException {
-    final URI authorizeUri = identity()
-      .authentication()
-      .authorizeUriBuilder(
-        buildAuthorizeCallbackUri(request, createApiPath(AUTHENTICATION_PATH + CALLBACK))
-      )
-      .build();
-    response.sendRedirect(authorizeUri.toString());
+    final String authorizeUri = ccsmTokenService.buildAuthorizeUri(buildAuthorizeCallbackUri(
+      request,
+      createApiPath(AUTHENTICATION_PATH + CALLBACK)
+    )).toString();
+    response.sendRedirect(authorizeUri);
   }
 
   private static String buildAuthorizeCallbackUri(final HttpServletRequest req, String subPath) {
@@ -138,18 +122,6 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
 
   private String createApiPath(final String... subPath) {
     return REST_API_PATH + String.join("", subPath);
-  }
-
-  private IdentityConfiguration identityConfiguration() {
-    final CCSMAuthConfiguration ccsmAuthConfig = getCcsmAuthConfiguration();
-    return new IdentityConfiguration(
-      ccsmAuthConfig.getIssuerUrl(), ccsmAuthConfig.getIssuerBackendUrl(),
-      ccsmAuthConfig.getClientId(), ccsmAuthConfig.getClientSecret(), ccsmAuthConfig.getAudience()
-    );
-  }
-
-  private CCSMAuthConfiguration getCcsmAuthConfiguration() {
-    return configurationService.getAuthConfiguration().getCcsmAuthConfiguration();
   }
 
 }
