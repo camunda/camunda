@@ -99,8 +99,8 @@ final class SegmentedJournalWriter {
 
     // Truncate down to the current index, such that the last index is `index`, and the next index
     // `index + 1`
-    currentWriter.truncate(index);
     flusher.setLastFlushedIndex(index);
+    currentWriter.truncate(index);
   }
 
   void flush() {
