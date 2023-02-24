@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -84,7 +85,47 @@ class UserTaskBuilderTest {
   }
 
   @Test
-  void testUserTaskAssigneeAndCandidateGroupsAndCandidateUsersCanAllBeSet() {
+  void shouldSetDueDateOnUserTask() {
+    final String dueDate = "2023-02-24T14:29:00Z";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1", task -> task.zeebeDueDate(dueDate))
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskSchedule.class))
+        .hasSize(1)
+        .extracting(ZeebeTaskSchedule::getDueDate)
+        .containsExactly(dueDate);
+  }
+
+  @Test
+  void shouldSetFollowUpDateOnUserTask() {
+    final String followUpDate = "2023-02-24T14:29:00Z";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1", task -> task.zeebeFollowUpDate(followUpDate))
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskSchedule.class))
+        .hasSize(1)
+        .extracting(ZeebeTaskSchedule::getFollowUpDate)
+        .containsExactly(followUpDate);
+  }
+
+  @Test
+  void shouldSetAllExistingUserTaskProperties() {
+    final String dueDate = "2023-02-24T14:29:00Z";
+    final String followUpDate = "2023-02-24T14:29:00Z";
     final BpmnModelInstance instance =
         Bpmn.createExecutableProcess("process")
             .startEvent()
@@ -94,6 +135,8 @@ class UserTaskBuilderTest {
                     b.zeebeAssignee("user1")
                         .zeebeCandidateGroups("role1")
                         .zeebeCandidateUsers("user2"))
+            .zeebeDueDate(dueDate)
+            .zeebeFollowUpDate(followUpDate)
             .endEvent()
             .done();
 
@@ -107,6 +150,10 @@ class UserTaskBuilderTest {
             ZeebeAssignmentDefinition::getCandidateGroups,
             ZeebeAssignmentDefinition::getCandidateUsers)
         .containsExactly(tuple("user1", "role1", "user2"));
+    assertThat(extensionElements.getChildElementsByType(ZeebeTaskSchedule.class))
+        .hasSize(1)
+        .extracting(ZeebeTaskSchedule::getDueDate, ZeebeTaskSchedule::getFollowUpDate)
+        .containsExactly(tuple(dueDate, followUpDate));
   }
 
   @Test
