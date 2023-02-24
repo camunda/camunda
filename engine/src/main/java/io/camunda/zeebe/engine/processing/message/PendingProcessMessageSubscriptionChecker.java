@@ -100,7 +100,7 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private boolean sendOpenCommand(final ProcessMessageSubscription subscription) {
-    return commandSender.openMessageSubscription(
+    commandSender.sendDirectOpenMessageSubscription(
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
@@ -108,6 +108,7 @@ public final class PendingProcessMessageSubscriptionChecker
         subscription.getRecord().getMessageNameBuffer(),
         subscription.getRecord().getCorrelationKeyBuffer(),
         subscription.getRecord().isInterrupting());
+    return true;
   }
 
   private boolean sendCloseCommand(final ProcessMessageSubscription subscription) {

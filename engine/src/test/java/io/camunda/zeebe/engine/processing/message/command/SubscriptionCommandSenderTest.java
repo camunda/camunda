@@ -215,6 +215,32 @@ public class SubscriptionCommandSenderTest {
   }
 
   @Test
+  public void shouldSendDirectOpenMessageSubscription() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectOpenMessageSubscription(
+        DIFFERENT_PARTITION,
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_CORRELATION_KEY,
+        true);
+
+    // then
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.MESSAGE_SUBSCRIPTION),
+            eq(MessageSubscriptionIntent.CREATE),
+            any());
+    verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never())
+        .appendRecord(anyLong(), any(), any(), any(), any(), any());
+  }
+
+  @Test
   public void shouldSentFollowUpCommandForOpenProcessMessageSubscription() {
     // given
 
