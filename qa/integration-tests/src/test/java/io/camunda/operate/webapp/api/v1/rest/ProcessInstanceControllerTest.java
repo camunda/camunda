@@ -20,11 +20,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
+import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort.Order;
+import io.camunda.operate.webapp.api.v1.entities.Results;
+import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import org.junit.Before;
@@ -39,6 +42,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -55,6 +60,9 @@ public class ProcessInstanceControllerTest {
 
   @MockBean
   private ProcessInstanceDao processInstanceDao;
+
+  @MockBean
+  private SequenceFlowDao sequenceFlowDao;
 
   @Before
   public void setupMockMvc() {
@@ -166,6 +174,29 @@ public class ProcessInstanceControllerTest {
         .andExpect(content().string(expectedJSONContent));
   }
 
+  @Test
+  public void shouldReturnEmptyListWhenNoSequenceFlows() throws Exception {
+    final String expectedJSONContent = "[]";
+    final Long processInstanceKey = 123L;
+    // given
+    Results<SequenceFlow> results = new Results<>();
+    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)))).thenReturn(results);
+    // then
+    assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
+  }
+
+  @Test
+  public void shouldReturnSequenceFlows() throws Exception {
+    final String expectedJSONContent = "[\"SF1\",\"SF2\"]";
+    final Long processInstanceKey = 123L;
+    // given
+    Results<SequenceFlow> results = new Results<>();
+    results.getItems().addAll(Arrays.asList(new SequenceFlow().setActivityId("SF1"), new SequenceFlow().setActivityId("SF2")));
+    when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)))).thenReturn(results);
+    // then
+    assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
+  }
+
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {
     return mockMvc.perform(get(endpoint))
         .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE));
@@ -178,6 +209,12 @@ public class ProcessInstanceControllerTest {
         .contentType(MediaType.APPLICATION_JSON));
   }
 
+  protected ResultActions assertGetWithSucceed(final String endpoint)
+      throws Exception {
+    return mockMvc.perform(get(endpoint))
+        .andExpect(status().isOk());
+  }
+
   protected ResultActions assertPostToWithSucceed(final String endpoint, final String content)
       throws Exception {
     return mockMvc.perform(post(endpoint)
@@ -185,5 +222,4 @@ public class ProcessInstanceControllerTest {
             .contentType(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk());
   }
-
 }

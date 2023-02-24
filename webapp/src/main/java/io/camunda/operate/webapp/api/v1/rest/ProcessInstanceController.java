@@ -9,12 +9,14 @@ package io.camunda.operate.webapp.api.v1.rest;
 import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.URI;
 
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
+import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.Error;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
 import io.camunda.operate.webapp.api.v1.entities.Results;
+import io.camunda.operate.webapp.api.v1.entities.SequenceFlow;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -33,11 +35,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController("ProcessInstanceControllerV1")
 @RequestMapping(URI)
@@ -49,6 +55,9 @@ public class ProcessInstanceController extends ErrorController implements Search
 
   @Autowired
   private ProcessInstanceDao processInstanceDao;
+
+  @Autowired
+  private SequenceFlowDao sequenceFlowDao;
 
   private final QueryValidator<ProcessInstance> queryValidator = new QueryValidator<>();
 
@@ -164,5 +173,39 @@ public class ProcessInstanceController extends ErrorController implements Search
   @DeleteMapping(value = BY_KEY, produces = {MediaType.APPLICATION_JSON_VALUE})
   public ChangeStatus delete(@Parameter(description = "Key of process instance",required = true) @Valid @PathVariable final Long key) {
     return processInstanceDao.delete(key);
+  }
+
+  @Operation(
+      summary = "Get sequence flows of process instance by key",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      responses = {
+          @ApiResponse(
+              description = "Success",
+              responseCode = "200"
+          ),
+          @ApiResponse(
+              description = ServerException.TYPE,
+              responseCode = "500",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ClientException.TYPE,
+              responseCode = "400",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ResourceNotFoundException.TYPE,
+              responseCode = "404",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          )
+      })
+  @GetMapping(value = BY_KEY + "/sequence-flows")
+  public List<String> sequenceFlowsByKey(@Parameter(description = "Key of process instance",required = true) @PathVariable final Long key) {
+    Query<SequenceFlow> query = new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(key));
+    logger.debug("search for query {}", query);
+    QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
+    queryValidator.validate(query, SequenceFlow.class);
+    Results<SequenceFlow> results = sequenceFlowDao.search(query);
+    return results.getItems().stream().map(SequenceFlow::getActivityId).collect(Collectors.toList());
   }
 }
