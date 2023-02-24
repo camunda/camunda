@@ -84,9 +84,9 @@ final class SegmentedJournalWriter {
   }
 
   void reset(final long index) {
+    flusher.setLastFlushedIndex(index - 1);
     currentSegment = segments.resetSegments(index);
     currentWriter = currentSegment.writer();
-    flusher.setLastFlushedIndex(index - 1);
   }
 
   void deleteAfter(final long index) {
