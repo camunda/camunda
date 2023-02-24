@@ -80,7 +80,7 @@ public final class ProtocolFactory {
    */
   public ProtocolFactory(final long seed) {
     randomizerRegistry = new CustomRandomizerRegistry();
-    parameters = getDefaultParameters().seed(seed);
+    parameters = getDefaultParameters().seed(seed).scanClasspathForConcreteTypes(true);
     random = new EasyRandom(parameters);
     registerRandomizers();
   }
