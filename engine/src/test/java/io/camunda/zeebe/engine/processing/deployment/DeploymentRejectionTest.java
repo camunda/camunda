@@ -281,9 +281,9 @@ public class DeploymentRejectionTest {
 
     // then
     assertThat(
-        RecordingExporter.records()
-            .limit(r -> r.getRejectionType() == RejectionType.INVALID_ARGUMENT)
-            .collect(Collectors.toList()))
+          RecordingExporter.records()
+              .limit(r -> r.getRejectionType() == RejectionType.INVALID_ARGUMENT)
+              .collect(Collectors.toList()))
         .extracting(Record::getIntent, Record::getRecordType)
         .doesNotContain(
             tuple(ProcessIntent.CREATED, RecordType.EVENT),
