@@ -149,6 +149,42 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey));
   }
 
+  /**
+   * Sends the correlate process message subscription command directly to the subscribed partition.
+   * This differs to ${link correlateProcessMessageSubscription}, as the sending/writing is not
+   * delayed. Usually useful or used in scheduled tasks, which want to directly send commands.
+   *
+   * @param processInstanceKey the related process instance key
+   * @param elementInstanceKey the related element instance key
+   * @param bpmnProcessId the related process id
+   * @param messageName the name of the message for which the subscription should be correlated
+   * @param messageKey the key of the message for which the subscription should be correlated
+   * @param variables the variables of the message
+   * @param correlationKey the correlation key for which the message should be correlated
+   */
+  public void sendDirectCorrelateProcessMessageSubscription(
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final long messageKey,
+      final DirectBuffer variables,
+      final DirectBuffer correlationKey) {
+    interPartitionCommandSender.sendCommand(
+        Protocol.decodePartitionId(processInstanceKey),
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        ProcessMessageSubscriptionIntent.CORRELATE,
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(senderPartition)
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageKey(messageKey)
+            .setMessageName(messageName)
+            .setVariables(variables)
+            .setCorrelationKey(correlationKey));
+  }
+
   public boolean correlateMessageSubscription(
       final int subscriptionPartitionId,
       final long processInstanceKey,

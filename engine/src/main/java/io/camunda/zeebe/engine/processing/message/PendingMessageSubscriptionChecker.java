@@ -36,22 +36,19 @@ public final class PendingMessageSubscriptionChecker implements Runnable {
   private boolean sendCommand(final MessageSubscription subscription) {
     final var record = subscription.getRecord();
 
-    final boolean success =
-        commandSender.correlateProcessMessageSubscription(
-            record.getProcessInstanceKey(),
-            record.getElementInstanceKey(),
-            record.getBpmnProcessIdBuffer(),
-            record.getMessageNameBuffer(),
-            record.getMessageKey(),
-            record.getVariablesBuffer(),
-            record.getCorrelationKeyBuffer());
+    commandSender.sendDirectCorrelateProcessMessageSubscription(
+        record.getProcessInstanceKey(),
+        record.getElementInstanceKey(),
+        record.getBpmnProcessIdBuffer(),
+        record.getMessageNameBuffer(),
+        record.getMessageKey(),
+        record.getVariablesBuffer(),
+        record.getCorrelationKeyBuffer());
 
-    if (success) {
-      // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
-      final var sentTime = ActorClock.currentTimeMillis();
-      transientState.updateCommandSentTime(subscription.getRecord(), sentTime);
-    }
+    // TODO (saig0): the state change of the sent time should be reflected by a record (#6364)
+    final var sentTime = ActorClock.currentTimeMillis();
+    transientState.updateCommandSentTime(subscription.getRecord(), sentTime);
 
-    return success;
+    return true; // to continue visiting
   }
 }

@@ -9,12 +9,16 @@ package io.camunda.zeebe.engine.processing.message.command;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -117,6 +121,32 @@ public class SubscriptionCommandSenderTest {
     // then
     verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
     verify(mockProcessingResultBuilder).appendRecord(anyLong(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  public void shouldSendDirectCorrelateProcessMessageSubscription() {
+    // given
+
+    // when
+    subscriptionCommandSender.sendDirectCorrelateProcessMessageSubscription(
+        DIFFERENT_RECEIVER_PARTITION_KEY,
+        DEFAULT_ELEMENT_INSTANCE_KEY,
+        DEFAULT_PROCESS_ID,
+        DEFAULT_MESSAGE_NAME,
+        DEFAULT_MESSAGE_KEY,
+        DEFAULT_VARIABLES,
+        DEFAULT_CORRELATION_KEY);
+
+    // then
+    verify(mockInterPartitionCommandSender)
+        .sendCommand(
+            eq(DIFFERENT_PARTITION),
+            eq(ValueType.PROCESS_MESSAGE_SUBSCRIPTION),
+            eq(ProcessMessageSubscriptionIntent.CORRELATE),
+            any());
+    verify(mockProcessingResultBuilder, never()).appendPostCommitTask(any());
+    verify(mockProcessingResultBuilder, never())
+        .appendRecord(anyLong(), any(), any(), any(), any(), any());
   }
 
   @Test
