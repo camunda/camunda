@@ -18,6 +18,7 @@ package io.camunda.zeebe.client;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
@@ -345,4 +346,18 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   ActivateJobsCommandStep1 newActivateJobsCommand();
+
+  /**
+   * Command to delete a resource.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newDeleteResourceCommand(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param resourceKey the key of the resource
+   * @return the builder for the command
+   */
+  DeleteResourceCommandStep1 newDeleteResourceCommand(long resourceKey);
 }
