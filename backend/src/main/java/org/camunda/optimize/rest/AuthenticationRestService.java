@@ -21,10 +21,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-/**
- * Basic implementation of authentication tokens creation based on user credentials.
- * Please note that authentication token validation/refresh is performed in request filters.
- */
 @AllArgsConstructor
 @Path(AuthenticationRestService.AUTHENTICATION_PATH)
 @Component
@@ -37,13 +33,6 @@ public class AuthenticationRestService {
 
   private final AbstractAuthenticationService authenticationService;
 
-  /**
-   * Authenticate a user given their credentials.
-   *
-   * @param credentials the credentials of the user.
-   * @return Response code 200 (OK) if it was possible to authenticate the user, otherwise status code 401
-   * (Unauthorized).
-   */
   @POST
   @Produces("application/json")
   @Consumes("application/json")
@@ -52,11 +41,6 @@ public class AuthenticationRestService {
     return authenticationService.authenticateUser(requestContext, credentials);
   }
 
-  /**
-   * An endpoint to test if you are authenticated.
-   *
-   * @return Status code 200 (OK) if you are authenticated.
-   */
   @GET
   @Path(TEST)
   public Response testAuthentication() {
@@ -72,11 +56,6 @@ public class AuthenticationRestService {
     return authenticationService.loginCallback(requestContext, new AuthCodeDto(code, state, error));
   }
 
-  /**
-   * Logout yourself from Optimize.
-   *
-   * @return Status code 200 (OK) if the logout was successful.
-   */
   @GET
   @Path(LOGOUT)
   public Response logoutUser(@Context ContainerRequestContext requestContext) {

@@ -70,7 +70,6 @@ const cloudEnv = {
   CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE: 'optimize.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL: 'https://accounts.cloud.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE: 'cloud.dev.ultrawombat.com',
-  CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN: 'true',
 };
 
 const selfManagedEnv = {
@@ -86,7 +85,6 @@ const selfManagedEnv = {
   CAMUNDA_OPTIMIZE_ENTERPRISE: 'false',
   CAMUNDA_OPTIMIZE_ZEEBE_NAME: 'zeebe-record',
   CAMUNDA_OPTIMIZE_ZEEBE_PARTITION_COUNT: '1',
-  CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN: 'true',
 };
 
 const server = createServer(

@@ -274,7 +274,7 @@ import:
   customer-onboarding: false
   # Some data can no longer be imported to a given document if its number of nested documents has reached the configured
   # limit. Enable this setting to skip this data during import if the nested document limit has been reached.
-  skipDataAfterNestedDocLimitReached: false
+  skipDataAfterNestedDocLimitReached: ${CAMUNDA_OPTIMIZE_IMPORT_DATA_SKIP_DATA_AFTER_NESTED_DOC_LIMIT_REACHED:false}
   # Number of threads being used to process the import jobs per data type that are writing data to elasticsearch.
   elasticsearchJobExecutorThreadCount: 1
   # Adjust the queue size of the import jobs per data type that store data to elasticsearch.
