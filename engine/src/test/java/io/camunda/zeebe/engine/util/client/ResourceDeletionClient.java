@@ -22,11 +22,17 @@ public class ResourceDeletionClient {
           RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
               .withSourceRecordPosition(position)
               .getFirst();
+  private static final Function<Long, Record<ResourceDeletionRecordValue>> REJECTION_EXPECTATION =
+      (position) ->
+          RecordingExporter.resourceDeletionRecords()
+              .onlyCommandRejections()
+              .withIntent(ResourceDeletionIntent.DELETE)
+              .withSourceRecordPosition(position)
+              .getFirst();
 
   private final StreamProcessorRule environmentRule;
   private final ResourceDeletionRecord resourceDeletionRecord = new ResourceDeletionRecord();
-  private final Function<Long, Record<ResourceDeletionRecordValue>> expectation =
-      SUCCESS_EXPECTATION;
+  private Function<Long, Record<ResourceDeletionRecordValue>> expectation = SUCCESS_EXPECTATION;
 
   public ResourceDeletionClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
@@ -41,5 +47,10 @@ public class ResourceDeletionClient {
     final long position =
         environmentRule.writeCommand(ResourceDeletionIntent.DELETE, resourceDeletionRecord);
     return expectation.apply(position);
+  }
+
+  public ResourceDeletionClient expectRejection() {
+    expectation = REJECTION_EXPECTATION;
+    return this;
   }
 }
