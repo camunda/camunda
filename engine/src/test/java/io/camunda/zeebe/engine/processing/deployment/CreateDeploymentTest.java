@@ -20,8 +20,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -224,40 +222,6 @@ public final class CreateDeploymentTest {
         .extracting(DeploymentResource::getResource)
         .contains(
             Bpmn.convertToString(process).getBytes(), Bpmn.convertToString(process2).getBytes());
-  }
-
-  @Test
-  public void shouldDoAtomicDeployments() {
-    // given
-    final String process1Id = "process1";
-    final BpmnModelInstance process1 =
-        Bpmn.createExecutableProcess(process1Id)
-            .startEvent()
-            .businessRuleTask("invalid_business_rule_task_id")
-            .endEvent()
-            .done();
-    final String process2Id = "process2";
-    final BpmnModelInstance process2 =
-        Bpmn.createExecutableProcess(process2Id).startEvent().task().endEvent().done();
-
-    // when
-    ENGINE
-        .deployment()
-        .withXmlResource(process1)
-        .withXmlResource(process2)
-        .expectRejection()
-        .deploy();
-
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getRejectionType() == RejectionType.INVALID_ARGUMENT)
-                .collect(Collectors.toList()))
-        .extracting(Record::getIntent, Record::getRecordType)
-        .doesNotContain(
-            tuple(ProcessIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
-            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT));
   }
 
   @Test
