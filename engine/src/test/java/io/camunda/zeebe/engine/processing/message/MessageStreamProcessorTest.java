@@ -16,17 +16,19 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import java.time.Duration;
@@ -34,30 +36,23 @@ import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 
 public final class MessageStreamProcessorTest {
 
   @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 
-  @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
+  private SubscriptionCommandSender spySubscriptionCommandSender;
+  private InterPartitionCommandSender mockInterpartitionCommandSender;
 
   @Before
   public void setup() {
-    MockitoAnnotations.initMocks(this);
-
-    when(mockSubscriptionCommandSender.openProcessMessageSubscription(
-            anyLong(), anyLong(), any(), anyBoolean()))
-        .thenReturn(true);
-
-    when(mockSubscriptionCommandSender.correlateProcessMessageSubscription(
-            anyLong(), anyLong(), any(), any(), anyLong(), any(), any()))
-        .thenReturn(true);
-
-    when(mockSubscriptionCommandSender.closeProcessMessageSubscription(
-            anyLong(), anyLong(), any(DirectBuffer.class)))
-        .thenReturn(true);
+    mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
+    final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
+    final var writers =
+        new Writers(() -> mockProcessingResultBuilder, (key, intent, recordValue) -> {});
+    spySubscriptionCommandSender =
+        spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
+    spySubscriptionCommandSender.setWriters(writers);
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
@@ -66,7 +61,7 @@ public final class MessageStreamProcessorTest {
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
               zeebeState,
-              mockSubscriptionCommandSender,
+              spySubscriptionCommandSender,
               processingContext.getWriters());
           return typedRecordProcessors;
         });
@@ -88,7 +83,7 @@ public final class MessageStreamProcessorTest {
     assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CREATE);
     assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_STATE);
 
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+    verify(spySubscriptionCommandSender, timeout(5_000).times(2))
         .openProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
@@ -213,7 +208,7 @@ public final class MessageStreamProcessorTest {
 
     // cannot verify messageName buffer since it is a view around another buffer which is changed
     // by the time we perform the verification.
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+    verify(spySubscriptionCommandSender, timeout(5_000).times(2))
         .closeProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
@@ -237,7 +232,7 @@ public final class MessageStreamProcessorTest {
     final long messageKey =
         rule.events().onlyMessageRecords().withIntent(MessageIntent.PUBLISHED).getFirst().getKey();
 
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(1))
+    verify(spySubscriptionCommandSender, timeout(5_000).times(1))
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
@@ -276,7 +271,7 @@ public final class MessageStreamProcessorTest {
             .getFirst()
             .getKey();
 
-    verify(mockSubscriptionCommandSender, timeout(5_000))
+    verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
@@ -286,7 +281,7 @@ public final class MessageStreamProcessorTest {
             any(),
             any());
 
-    verify(mockSubscriptionCommandSender, timeout(5_000))
+    verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
@@ -376,7 +371,7 @@ public final class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.REJECT, firstSubscription);
 
     // then
-    verify(mockSubscriptionCommandSender, timeout(5_000))
+    verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
             eq(firstSubscription.getProcessInstanceKey()),
             eq(firstSubscription.getElementInstanceKey()),
@@ -386,7 +381,7 @@ public final class MessageStreamProcessorTest {
             any(DirectBuffer.class),
             eq(firstSubscription.getCorrelationKeyBuffer()));
 
-    verify(mockSubscriptionCommandSender, timeout(5_000))
+    verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
             eq(secondSubscription.getProcessInstanceKey()),
             eq(secondSubscription.getElementInstanceKey()),
@@ -412,7 +407,7 @@ public final class MessageStreamProcessorTest {
             .getFirst()
             .getKey();
 
-    verify(mockSubscriptionCommandSender, timeout(5_000))
+    verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
@@ -422,7 +417,7 @@ public final class MessageStreamProcessorTest {
             any(),
             eq(subscription.getCorrelationKeyBuffer()));
 
-    verify(mockSubscriptionCommandSender, timeout(5_000))
+    verify(spySubscriptionCommandSender, timeout(5_000))
         .correlateProcessMessageSubscription(
             eq(subscription.getProcessInstanceKey()),
             eq(subscription.getElementInstanceKey()),
