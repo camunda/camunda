@@ -54,6 +54,30 @@
         },
         {
           "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeDueDate(java.lang.String)",
+          "justification": "Ignore new methods for user task properties builder."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeDueDateExpression(java.lang.String)",
+          "justification": "Ignore new methods for user task properties builder."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeFollowUpDate(java.lang.String)",
+          "justification": "Ignore new methods for user task properties builder."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.addedToInterface",
+          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeFollowUpDateExpression(java.lang.String)",
+          "justification": "Ignore new methods for user task properties builder."
+        },
+        {
+          "ignore": true,
           "code": "java.method.removed",
           "old": "method void io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder<B extends io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder<B, E>, E extends io.camunda.zeebe.model.bpmn.instance.BaseElement>::resizeSubProcess(io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape)",
           "justification": "change the name to reuse for SubProcess and Link Events"
