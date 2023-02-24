@@ -17,7 +17,6 @@
 package io.camunda.zeebe.journal.file;
 
 import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
-import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
@@ -87,7 +86,7 @@ final class SegmentedJournalWriter {
   void reset(final long index) {
     currentSegment = segments.resetSegments(index);
     currentWriter = currentSegment.writer();
-    flusher.resetLastFlushedIndex(index - 1);
+    flusher.setLastFlushedIndex(index - 1);
   }
 
   void deleteAfter(final long index) {
@@ -98,13 +97,17 @@ final class SegmentedJournalWriter {
       currentWriter = currentSegment.writer();
     }
 
-    // Truncate the current index.
+    // Truncate down to the current index, such that the last index is `index`, and the next index
+    // `index + 1`
     currentWriter.truncate(index);
-    flusher.resetLastFlushedIndex(index - 1);
+    flusher.setLastFlushedIndex(index);
   }
 
-  void flush(final JournalMetaStore metaStore) {
-    flusher.flush(metaStore, segments.getSegments(flusher.nextFlushIndex()));
+  void flush() {
+    // even if the next flush index has not been written, this will always flush at least the last
+    // segment if only to cover cases such as truncating the log, where the next flush index may not
+    // have been written yet but we still want to flush that segment after modifying it
+    flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()));
   }
 
   private void createNewSegment() {

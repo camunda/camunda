@@ -82,10 +82,6 @@ final class SegmentWriter {
     return lastEntry != null ? lastEntry.index() : segment.index() - 1;
   }
 
-  JournalRecord getLastEntry() {
-    return lastEntry;
-  }
-
   long getNextIndex() {
     if (lastEntry != null) {
       return lastEntry.index() + 1;

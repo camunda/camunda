@@ -18,7 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 final class SegmentedJournalWriterTest {
   private final TestJournalFactory journalFactory = new TestJournalFactory();
-  private final SegmentsFlusher flusher = new SegmentsFlusher(-1L);
+  private final SegmentsFlusher flusher = new SegmentsFlusher(journalFactory.metaStore());
 
   private SegmentsManager segments;
   private SegmentedJournalWriter writer;
@@ -42,13 +42,14 @@ final class SegmentedJournalWriterTest {
     writer.append(2, journalFactory.entry());
     writer.append(3, journalFactory.entry());
     writer.append(4, journalFactory.entry());
-    writer.flush(journalFactory.metaStore());
+    writer.flush();
 
     // when
     writer.deleteAfter(2);
 
     // then
-    assertThat(flusher.nextFlushIndex()).isEqualTo(2L);
+    assertThat(flusher.nextFlushIndex()).isEqualTo(3L);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(2L);
   }
 
   @Test
@@ -56,12 +57,13 @@ final class SegmentedJournalWriterTest {
     // given
     writer.append(1, journalFactory.entry());
     writer.append(2, journalFactory.entry());
-    writer.flush(journalFactory.metaStore());
+    writer.flush();
 
     // when
     writer.reset(8);
 
     // then
     assertThat(flusher.nextFlushIndex()).isEqualTo(8L);
+    assertThat(journalFactory.metaStore().loadLastFlushedIndex()).isEqualTo(7L);
   }
 }

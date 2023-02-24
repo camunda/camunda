@@ -304,7 +304,7 @@ final class SegmentsManager implements AutoCloseable {
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
   }
 
-  Collection<Segment> getSegments(final long index) {
+  Collection<Segment> getTailSegments(final long index) {
     final var segment = getSegment(index);
     if (segment == null) {
       return Collections.emptySet();

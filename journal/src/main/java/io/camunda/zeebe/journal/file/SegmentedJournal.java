@@ -43,8 +43,6 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
 
-  private final JournalMetaStore journalMetaStore;
-
   SegmentedJournal(
       final JournalIndex journalIndex,
       final SegmentsManager segments,
@@ -53,13 +51,11 @@ public final class SegmentedJournal implements Journal {
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
-    this.journalMetaStore =
-        Objects.requireNonNull(journalMetaStore, "must specify a journal meta store");
 
-    final var lastFlushedIndex = journalMetaStore.loadLastFlushedIndex();
-    this.segments.open(lastFlushedIndex);
+    Objects.requireNonNull(journalMetaStore, "must specify a journal meta store");
+    this.segments.open(journalMetaStore.loadLastFlushedIndex());
     writer =
-        new SegmentedJournalWriter(segments, new SegmentsFlusher(lastFlushedIndex), journalMetrics);
+        new SegmentedJournalWriter(segments, new SegmentsFlusher(journalMetaStore), journalMetrics);
   }
 
   /**
@@ -154,9 +150,15 @@ public final class SegmentedJournal implements Journal {
     }
 
     try (final var ignored = journalMetrics.observeJournalFlush()) {
+      // grabbing the read lock here will prevent write-exclusive operations such as deleteAfter and
+      // reset from modifying the segments, allowing us to properly determine which segments must be
+      // flushed. contention is quite low as it only contends with deleteAfter, deleteUntil, and
+      // reset, all operations which do not run often, and not on the hot path. in the case where
+      // flushing is synchronous on the raft thread (the default), then all these operations run
+      // sequentially anyway, meaning there is virtually no contention
       final var stamp = rwlock.readLock();
       try {
-        writer.flush(journalMetaStore);
+        writer.flush();
       } finally {
         rwlock.unlockRead(stamp);
       }

@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 
 final class SegmentsFlusherTest {
   private final MockJournalMetastore metaStore = new MockJournalMetastore();
-  private final SegmentsFlusher flusher = new SegmentsFlusher(-1);
+  private final SegmentsFlusher flusher = new SegmentsFlusher(metaStore);
 
   @Test
   void shouldFlushAllSegments() {
@@ -27,7 +27,7 @@ final class SegmentsFlusherTest {
     final var secondSegment = new TestSegment(30);
 
     // when
-    flusher.flush(metaStore, List.of(firstSegment, secondSegment));
+    flusher.flush(List.of(firstSegment, secondSegment));
 
     // then
     assertThat(firstSegment.flushed).isTrue();
@@ -41,7 +41,7 @@ final class SegmentsFlusherTest {
     final var dirtySegments = List.of(new TestSegment(15), new TestSegment(30, false));
 
     // when
-    flusher.flush(metaStore, dirtySegments);
+    flusher.flush(dirtySegments);
 
     // then
     assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(15L);
@@ -54,7 +54,7 @@ final class SegmentsFlusherTest {
     final var dirtySegments = List.of(new TestSegment(15), new TestSegment(30, error));
 
     // when
-    assertThatCode(() -> flusher.flush(metaStore, dirtySegments)).isSameAs(error);
+    assertThatCode(() -> flusher.flush(dirtySegments)).isSameAs(error);
 
     // then
     assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(15L);
