@@ -34,6 +34,12 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     RECORDS_BY_TYPE.put(ValueType.DEPLOYMENT, DeploymentRecord::new);
   }
 
+  /*
+   NOTE! When adding a new property here it must also be added to the ProtocolFactory! This class
+   contains a randomizer implementation which is used to generate a random
+   CommandDistributionRecord. The new property must be added there. Without it we won't generate a
+   complete record.
+  */
   private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class);
