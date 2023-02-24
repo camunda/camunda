@@ -148,6 +148,32 @@ public class SubscriptionCommandSender {
             .setMessageName(messageName));
   }
 
+  /**
+   * Sends the close message subscription command directly to the subscription partition. This
+   * differs to ${link closeMessageSubscription}, as the sending/writing is not delayed. Usually
+   * useful or used in scheduled tasks, which want to directly send commands.
+   *
+   * @param subscriptionPartitionId the partition Id which should receive the command
+   * @param processInstanceKey the related process instance key
+   * @param elementInstanceKey the related element instance key
+   * @param messageName the name of the message for which the subscription should be closed
+   */
+  public void sendDirectCloseMessageSubscription(
+      final int subscriptionPartitionId,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer messageName) {
+    interPartitionCommandSender.sendCommand(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.DELETE,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setMessageKey(-1L)
+            .setMessageName(messageName));
+  }
+
   public boolean closeProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
