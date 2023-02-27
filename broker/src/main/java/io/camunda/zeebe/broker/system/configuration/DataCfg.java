@@ -42,6 +42,9 @@ public final class DataCfg implements ConfigurationEntry {
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
+    if (runtimeDirectory != null) {
+      runtimeDirectory = ConfigurationUtil.toAbsolutePath(runtimeDirectory, brokerBase);
+    }
 
     backup.init(globalConfig, brokerBase);
 
