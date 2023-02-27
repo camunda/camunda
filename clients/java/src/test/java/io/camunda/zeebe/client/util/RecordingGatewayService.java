@@ -32,6 +32,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstance
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionRequirementsMetadata;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceRequest;
@@ -109,6 +111,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
         r -> ModifyProcessInstanceResponse.getDefaultInstance());
     addRequestHandler(
         EvaluateDecisionRequest.class, r -> EvaluateDecisionResponse.getDefaultInstance());
+    addRequestHandler(
+        DeleteResourceRequest.class, r -> DeleteResourceResponse.getDefaultInstance());
   }
 
   public static Partition partition(
@@ -310,6 +314,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
   public void modifyProcessInstance(
       final ModifyProcessInstanceRequest request,
       final StreamObserver<ModifyProcessInstanceResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void deleteResource(
+      final DeleteResourceRequest request,
+      final StreamObserver<DeleteResourceResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
