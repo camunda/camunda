@@ -1053,6 +1053,13 @@
         <artifactId>gson</artifactId>
         <version>${version.gson}</version>
       </dependency>
+
+      <!-- for dependency convergence between byte-budy and byte-buddy-agent -->
+      <dependency>
+        <groupId>net.java.dev.jna</groupId>
+        <artifactId>jna-platform</artifactId>
+        <version>5.12.1</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
