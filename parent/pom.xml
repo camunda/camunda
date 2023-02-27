@@ -1018,6 +1018,13 @@
         <version>${version.cron-utils}</version>
       </dependency>
 
+      <!-- between testcontainers and zeebe-test-container - can likely be removed soon -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-compress</artifactId>
+        <version>1.22</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
