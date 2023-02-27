@@ -83,7 +83,7 @@
     <version.conscrypt>2.5.2</version.conscrypt>
     <version.asm>9.3</version.asm>
     <version.testcontainers>1.17.3</version.testcontainers>
-    <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
+    <version.netflix.concurrency>0.3.9</version.netflix.concurrency>
     <version.zeebe-test-container>3.5.1</version.zeebe-test-container>
     <version.feel-scala>1.15.3</version.feel-scala>
     <version.dmn-scala>1.7.4</version.dmn-scala>
@@ -136,7 +136,7 @@
     <plugin.version.scala>4.7.2</plugin.version.scala>
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.7.3.0</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.7.3.2</plugin.version.spotbugs>
     <plugin.version.surefire>3.0.0-M7</plugin.version.surefire>
     <plugin.version.versions>2.12.0</plugin.version.versions>
 
