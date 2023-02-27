@@ -78,6 +78,7 @@ public final class ColumnFamilyTest {
 
   @Test
   public void shouldPutMultipleValues() {
+    zeebeDb.startTracing();
     // given
     upsertKeyValuePair(1213, 255);
 
@@ -97,10 +98,12 @@ public final class ColumnFamilyTest {
 
     assertThat(longValue).isNotNull();
     assertThat(longValue.getValue()).isEqualTo(12345);
+    zeebeDb.endTracing();
   }
 
   @Test
   public void shouldPutAndGetMultipleValues() {
+
     // given
     upsertKeyValuePair(1213, 255);
 

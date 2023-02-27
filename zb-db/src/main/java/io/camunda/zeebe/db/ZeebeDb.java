@@ -21,6 +21,10 @@ import java.util.Optional;
  */
 public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extends AutoCloseable {
 
+  void startTracing();
+
+  void endTracing();
+
   /**
    * Creates an instance of a specific column family to access and store key-value pairs in that
    * column family. The key and value instances are used to ensure type safety.

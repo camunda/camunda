@@ -18,6 +18,8 @@ import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import java.io.File;
+import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -28,6 +30,7 @@ import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
+import org.rocksdb.TraceOptions;
 import org.rocksdb.Transaction;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
@@ -46,6 +49,7 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   private final ColumnFamilyHandle defaultHandle;
   private final long defaultNativeHandle;
   private final ConsistencyChecksSettings consistencyChecksSettings;
+  private final FileTraceWriter tracer;
 
   protected ZeebeTransactionDb(
       final ColumnFamilyHandle defaultHandle,
@@ -72,52 +76,26 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
     closables.add(defaultReadOptions);
     defaultWriteOptions = new WriteOptions().setDisableWAL(rocksDbConfiguration.isWalDisabled());
     closables.add(defaultWriteOptions);
+
+    tracer = new FileTraceWriter(Path.of("rocksdb-%s.trace".formatted(Instant.now())));
   }
 
-  public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
-      ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
-          final Options options,
-          final String path,
-          final List<AutoCloseable> closables,
-          final RocksDbConfiguration rocksDbConfiguration,
-          final ConsistencyChecksSettings consistencyChecksSettings)
-          throws RocksDBException {
-    final OptimisticTransactionDB optimisticTransactionDB =
-        OptimisticTransactionDB.open(options, path);
-    closables.add(optimisticTransactionDB);
-    final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
-
-    return new ZeebeTransactionDb<>(
-        defaultColumnFamilyHandle,
-        optimisticTransactionDB,
-        closables,
-        rocksDbConfiguration,
-        consistencyChecksSettings);
-  }
-
-  static long getNativeHandle(final RocksObject object) {
+  @Override
+  public void startTracing() {
     try {
-      return RocksDbInternal.nativeHandle.getLong(object);
-    } catch (final IllegalAccessException e) {
-      throw new RuntimeException(
-          "Unexpected error occurred trying to access private nativeHandle_ field", e);
+      optimisticTransactionDB.startTrace(new TraceOptions(), tracer);
+    } catch (final RocksDBException e) {
+      LOG.warn("", e);
     }
   }
 
-  protected ReadOptions getPrefixReadOptions() {
-    return prefixReadOptions;
-  }
-
-  protected ColumnFamilyHandle getDefaultHandle() {
-    return defaultHandle;
-  }
-
-  protected long getReadOptionsNativeHandle() {
-    return getNativeHandle(defaultReadOptions);
-  }
-
-  protected long getDefaultNativeHandle() {
-    return defaultNativeHandle;
+  @Override
+  public void endTracing() {
+    try {
+      optimisticTransactionDB.endTrace();
+    } catch (final RocksDBException e) {
+      LOG.warn("", e);
+    }
   }
 
   @Override
@@ -167,6 +145,52 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
       final ColumnFamilyNames columnFamilyName, final TransactionContext context) {
     return createColumnFamily(columnFamilyName, context, DbNullKey.INSTANCE, DbNil.INSTANCE)
         .isEmpty();
+  }
+
+  public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
+      ZeebeTransactionDb<ColumnFamilyNames> openTransactionalDb(
+          final Options options,
+          final String path,
+          final List<AutoCloseable> closables,
+          final RocksDbConfiguration rocksDbConfiguration,
+          final ConsistencyChecksSettings consistencyChecksSettings)
+          throws RocksDBException {
+    final OptimisticTransactionDB optimisticTransactionDB =
+        OptimisticTransactionDB.open(options, path);
+    closables.add(optimisticTransactionDB);
+    final var defaultColumnFamilyHandle = optimisticTransactionDB.getDefaultColumnFamily();
+
+    return new ZeebeTransactionDb<>(
+        defaultColumnFamilyHandle,
+        optimisticTransactionDB,
+        closables,
+        rocksDbConfiguration,
+        consistencyChecksSettings);
+  }
+
+  static long getNativeHandle(final RocksObject object) {
+    try {
+      return RocksDbInternal.nativeHandle.getLong(object);
+    } catch (final IllegalAccessException e) {
+      throw new RuntimeException(
+          "Unexpected error occurred trying to access private nativeHandle_ field", e);
+    }
+  }
+
+  protected ReadOptions getPrefixReadOptions() {
+    return prefixReadOptions;
+  }
+
+  protected ColumnFamilyHandle getDefaultHandle() {
+    return defaultHandle;
+  }
+
+  protected long getReadOptionsNativeHandle() {
+    return getNativeHandle(defaultReadOptions);
+  }
+
+  protected long getDefaultNativeHandle() {
+    return defaultNativeHandle;
   }
 
   @Override

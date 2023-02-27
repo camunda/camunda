@@ -86,6 +86,7 @@ public class StateControllerImpl implements StateController {
     try {
       if (db != null) {
         final var dbToClose = db;
+        dbToClose.endTracing();
         db = null;
         dbToClose.close();
 
@@ -215,6 +216,7 @@ public class StateControllerImpl implements StateController {
         db = zeebeDbFactory.createDb(runtimeDirectory.toFile());
         LOG.debug("Opened database from '{}'.", runtimeDirectory);
         future.complete(db);
+        db.startTracing();
       }
     } catch (final Exception error) {
       future.completeExceptionally(new RuntimeException("Failed to open database", error));
