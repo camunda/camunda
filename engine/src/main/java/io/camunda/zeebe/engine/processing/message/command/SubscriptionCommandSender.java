@@ -73,6 +73,41 @@ public class SubscriptionCommandSender {
             .setInterrupting(closeOnCorrelate));
   }
 
+  /**
+   * Sends the open message subscription command directly to the subscription partition. This
+   * differs to ${link openMessageSubscription}, as the sending/writing is not delayed. Usually
+   * useful or used in scheduled tasks, which want to directly send commands.
+   *
+   * @param subscriptionPartitionId the partition Id which should receive the command
+   * @param processInstanceKey the related process instance key
+   * @param elementInstanceKey the related element instance key
+   * @param bpmnProcessId the related process id
+   * @param messageName the name of the message for which the subscription should be correlated
+   * @param correlationKey the correlation key for which the message should be correlated
+   * @param closeOnCorrelate indicates whether the subscription should be closed after correlation
+   */
+  public void sendDirectOpenMessageSubscription(
+      final int subscriptionPartitionId,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final boolean closeOnCorrelate) {
+    interPartitionCommandSender.sendCommand(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.CREATE,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageKey(-1)
+            .setMessageName(messageName)
+            .setCorrelationKey(correlationKey)
+            .setInterrupting(closeOnCorrelate));
+  }
+
   public boolean openProcessMessageSubscription(
       final long processInstanceKey,
       final long elementInstanceKey,
@@ -114,6 +149,42 @@ public class SubscriptionCommandSender {
             .setCorrelationKey(correlationKey));
   }
 
+  /**
+   * Sends the correlate process message subscription command directly to the subscribed partition.
+   * This differs to ${link correlateProcessMessageSubscription}, as the sending/writing is not
+   * delayed. Usually useful or used in scheduled tasks, which want to directly send commands.
+   *
+   * @param processInstanceKey the related process instance key
+   * @param elementInstanceKey the related element instance key
+   * @param bpmnProcessId the related process id
+   * @param messageName the name of the message for which the subscription should be correlated
+   * @param messageKey the key of the message for which the subscription should be correlated
+   * @param variables the variables of the message
+   * @param correlationKey the correlation key for which the message should be correlated
+   */
+  public void sendDirectCorrelateProcessMessageSubscription(
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final long messageKey,
+      final DirectBuffer variables,
+      final DirectBuffer correlationKey) {
+    interPartitionCommandSender.sendCommand(
+        Protocol.decodePartitionId(processInstanceKey),
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        ProcessMessageSubscriptionIntent.CORRELATE,
+        new ProcessMessageSubscriptionRecord()
+            .setSubscriptionPartitionId(senderPartition)
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setBpmnProcessId(bpmnProcessId)
+            .setMessageKey(messageKey)
+            .setMessageName(messageName)
+            .setVariables(variables)
+            .setCorrelationKey(correlationKey));
+  }
+
   public boolean correlateMessageSubscription(
       final int subscriptionPartitionId,
       final long processInstanceKey,
@@ -138,6 +209,32 @@ public class SubscriptionCommandSender {
       final long elementInstanceKey,
       final DirectBuffer messageName) {
     return handleFollowUpCommandBasedOnPartition(
+        subscriptionPartitionId,
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.DELETE,
+        new MessageSubscriptionRecord()
+            .setProcessInstanceKey(processInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
+            .setMessageKey(-1L)
+            .setMessageName(messageName));
+  }
+
+  /**
+   * Sends the close message subscription command directly to the subscription partition. This
+   * differs to ${link closeMessageSubscription}, as the sending/writing is not delayed. Usually
+   * useful or used in scheduled tasks, which want to directly send commands.
+   *
+   * @param subscriptionPartitionId the partition Id which should receive the command
+   * @param processInstanceKey the related process instance key
+   * @param elementInstanceKey the related element instance key
+   * @param messageName the name of the message for which the subscription should be closed
+   */
+  public void sendDirectCloseMessageSubscription(
+      final int subscriptionPartitionId,
+      final long processInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer messageName) {
+    interPartitionCommandSender.sendCommand(
         subscriptionPartitionId,
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.DELETE,

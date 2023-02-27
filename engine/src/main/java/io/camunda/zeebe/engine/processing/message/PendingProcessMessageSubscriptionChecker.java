@@ -82,25 +82,21 @@ public final class PendingProcessMessageSubscriptionChecker
   }
 
   private boolean sendPendingCommand(final ProcessMessageSubscription subscription) {
-    final boolean success;
-
     // can only be opening/closing as an opened subscription is not indexed in the sent time column
     if (subscription.isOpening()) {
-      success = sendOpenCommand(subscription);
+      sendOpenCommand(subscription);
     } else {
-      success = sendCloseCommand(subscription);
+      sendCloseCommand(subscription);
     }
 
-    if (success) {
-      final var sentTime = ActorClock.currentTimeMillis();
-      pendingState.updateSentTime(subscription.getRecord(), sentTime);
-    }
+    final var sentTime = ActorClock.currentTimeMillis();
+    pendingState.updateSentTime(subscription.getRecord(), sentTime);
 
-    return success;
+    return true; // to continue visiting
   }
 
-  private boolean sendOpenCommand(final ProcessMessageSubscription subscription) {
-    return commandSender.openMessageSubscription(
+  private void sendOpenCommand(final ProcessMessageSubscription subscription) {
+    commandSender.sendDirectOpenMessageSubscription(
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
@@ -110,8 +106,8 @@ public final class PendingProcessMessageSubscriptionChecker
         subscription.getRecord().isInterrupting());
   }
 
-  private boolean sendCloseCommand(final ProcessMessageSubscription subscription) {
-    return commandSender.closeMessageSubscription(
+  private void sendCloseCommand(final ProcessMessageSubscription subscription) {
+    commandSender.sendDirectCloseMessageSubscription(
         subscription.getRecord().getSubscriptionPartitionId(),
         subscription.getRecord().getProcessInstanceKey(),
         subscription.getRecord().getElementInstanceKey(),
