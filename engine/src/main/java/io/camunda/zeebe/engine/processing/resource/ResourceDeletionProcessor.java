@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.resource;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
@@ -26,8 +28,12 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceDeletionRecord> {
 
+  private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
+      "Expected to delete resource but no resource found with key `%d`";
+
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
+  private final TypedRejectionWriter rejectionWriter;
   private final KeyGenerator keyGenerator;
   private final DecisionState decisionState;
 
@@ -35,6 +41,7 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
       final Writers writers, final KeyGenerator keyGenerator, final DecisionState decisionState) {
     stateWriter = writers.state();
     responseWriter = writers.response();
+    rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.decisionState = decisionState;
   }
@@ -46,6 +53,12 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
     final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
     if (drgOptional.isPresent()) {
       deleteDecisionRequirements(drgOptional.get());
+    } else {
+      final var rejectionReason =
+          ERROR_MESSAGE_RESOURCE_NOT_FOUND.formatted(value.getResourceKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionReason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionReason);
+      return;
     }
 
     final long eventKey = keyGenerator.nextKey();
