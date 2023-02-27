@@ -15,6 +15,7 @@ import {
 } from './styled';
 import CheckImage from './orange-check-mark.svg';
 import {getStateLocally} from 'modules/utils/localStorage';
+import {Restricted} from 'modules/components/Restricted';
 
 type Props = {
   isLoadingTasks: boolean;
@@ -60,7 +61,12 @@ const EmptyPage: React.FC<Props> = ({hasNoTasks, isLoadingTasks}) => {
         as={isOldUser ? OldUserTextContainer : NewUserTextContainer}
       >
         {isOldUser ? (
-          <h3>Pick a task to work on.</h3>
+          <Restricted
+            fallback={<h3>Pick a task to view details</h3>}
+            scopes={['write']}
+          >
+            <h3>Pick a task to work on</h3>
+          </Restricted>
         ) : (
           <>
             <h3>Welcome to Tasklist</h3>

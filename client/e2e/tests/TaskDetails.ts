@@ -123,7 +123,7 @@ test('complete task', async (t) => {
 
   await t
     .expect(
-      screen.queryByRole('heading', {name: 'Pick a task to work on.'}).exists,
+      screen.queryByRole('heading', {name: 'Pick a task to work on'}).exists,
     )
     .ok();
 

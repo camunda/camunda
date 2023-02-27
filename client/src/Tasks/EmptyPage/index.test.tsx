@@ -12,6 +12,12 @@ import {ApolloProvider} from '@apollo/client';
 import {client} from 'modules/apollo-client';
 import {MemoryRouter} from 'react-router-dom';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {graphql} from 'msw';
+import {
+  mockGetCurrentRestrictedUser,
+  mockGetCurrentUser,
+} from 'modules/queries/get-current-user';
 
 const getWrapper = () => {
   const Wrapper: React.FC<{
@@ -33,6 +39,12 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   });
 
   it('should hide part of the empty message for new users', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser));
+      }),
+    );
+
     render(<EmptyPage isLoadingTasks={false} hasNoTasks />, {
       wrapper: getWrapper(),
     });
@@ -49,6 +61,12 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   });
 
   it('should show an empty page message for new users', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser));
+      }),
+    );
+
     render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
       wrapper: getWrapper(),
     });
@@ -77,6 +95,12 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
   });
 
   it('should show an empty page message for old users', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser));
+      }),
+    );
+
     storeStateLocally('hasCompletedTask', true);
 
     render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
@@ -85,12 +109,18 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
     expect(
       await screen.findByRole('heading', {
-        name: 'Pick a task to work on.',
+        name: 'Pick a task to work on',
       }),
     ).toBeInTheDocument();
   });
 
   it('should not show an empty page message for old users', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser));
+      }),
+    );
+
     storeStateLocally('hasCompletedTask', true);
 
     const {container, rerender} = render(
@@ -106,5 +136,25 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
 
     expect(screen.queryByTestId('loading-state')).not.toBeInTheDocument();
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('should show an empty page message for old readonly users', async () => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentRestrictedUser));
+      }),
+    );
+
+    storeStateLocally('hasCompletedTask', true);
+
+    render(<EmptyPage isLoadingTasks={false} hasNoTasks={false} />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Pick a task to view details',
+      }),
+    ).toBeInTheDocument();
   });
 });
