@@ -49,7 +49,8 @@ public interface Intent {
           ProcessInstanceModificationIntent.class,
           SignalIntent.class,
           SignalSubscriptionIntent.class,
-          ResourceDeletionIntent.class);
+          ResourceDeletionIntent.class,
+          CommandDistributionIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN =
       new Intent() {
@@ -125,6 +126,8 @@ public interface Intent {
         return SignalSubscriptionIntent.from(intent);
       case RESOURCE_DELETION:
         return ResourceDeletionIntent.from(intent);
+      case COMMAND_DISTRIBUTION:
+        return CommandDistributionIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -34,4 +34,8 @@ abstract class RecordMixin<T extends RecordValue> {
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
   @JsonTypeIdResolver(RecordValueTypeIdResolver.class)
   private T value;
+
+  @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
+  @JsonTypeIdResolver(RecordValueTypeIdResolver.class)
+  private T commandValue;
 }

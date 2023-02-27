@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
+import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -80,7 +81,7 @@ public final class ProtocolFactory {
    */
   public ProtocolFactory(final long seed) {
     randomizerRegistry = new CustomRandomizerRegistry();
-    parameters = getDefaultParameters().seed(seed);
+    parameters = getDefaultParameters().seed(seed).scanClasspathForConcreteTypes(true);
     random = new EasyRandom(parameters);
     registerRandomizers();
   }
@@ -231,6 +232,18 @@ public final class ProtocolFactory {
     final var recordTypes = EnumSet.complementOf(excludedRecordTypes);
     randomizerRegistry.registerRandomizer(
         RecordType.class, new EnumRandomizer<>(getSeed(), recordTypes.toArray(RecordType[]::new)));
+
+    randomizerRegistry.registerRandomizer(
+        ImmutableCommandDistributionRecordValue.class,
+        () -> {
+          final var valueType = random.nextObject(ValueType.class);
+          final var typeInfo = ValueTypeMapping.get(valueType);
+          return ImmutableCommandDistributionRecordValue.builder()
+              .withPartitionId(random.nextInt())
+              .withValueType(valueType)
+              .withCommandValue(generateObject(typeInfo.getValueClass()))
+              .build();
+        });
   }
 
   private void registerProtocolType(final ClassInfo abstractType) {
