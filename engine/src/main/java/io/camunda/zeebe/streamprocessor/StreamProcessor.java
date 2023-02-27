@@ -288,7 +288,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     actor.runDelayed(HEALTH_CHECK_TICK_DURATION, this::healthCheckTick);
   }
 
-  void chainSteps(final int index, final Step[] steps, final Runnable last) {
+  private void chainSteps(final int index, final Step[] steps, final Runnable last) {
     if (index == steps.length) {
       last.run();
       return;
@@ -594,7 +594,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     }
   }
 
-  public interface Step {
+  private interface Step {
     ActorFuture<Void> run();
   }
 
