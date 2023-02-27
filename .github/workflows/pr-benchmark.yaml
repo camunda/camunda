@@ -10,18 +10,9 @@ on:
 jobs:
   create-benchmark:
     name: Benchmark
-    if: github.event.action == 'labeled' && github.event.label.name == 'benchmark'
-    uses: ./.github/workflows/benchmark.yml
-    secrets: inherit
-    with:
-      name: ${{github.event.pull_request.head.ref}}-benchmark
-      cluster: zeebe-cluster
-      cluster-region: europe-west1-b
-      ref: ${{ github.event.pull_request.head.ref }}
-      publish: "comment"
-  update-benchmark:
-    name: Update
-    if: github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark')
+      || (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
