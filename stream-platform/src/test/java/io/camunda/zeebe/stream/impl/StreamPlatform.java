@@ -321,6 +321,10 @@ public final class StreamPlatform {
     processorContext.close();
   }
 
+  public ZeebeDb getZeebeDb() {
+    return processorContext.zeebeDb;
+  }
+
   public record LogContext(SynchronousLogStream logStream) implements AutoCloseable {
 
     public LogStreamWriter setupWriter() {
