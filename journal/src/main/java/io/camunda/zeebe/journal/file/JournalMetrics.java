@@ -47,6 +47,14 @@ final class JournalMetrics {
           .labelNames(PARTITION_LABEL)
           .register();
 
+  private static final Histogram JOURNAL_FLUSH_TIME =
+      Histogram.build()
+          .namespace(NAMESPACE)
+          .name("journal_flush_time")
+          .help("Time spend to flush all dirty segments to disk")
+          .labelNames(PARTITION_LABEL)
+          .register();
+
   private static final Gauge SEGMENT_COUNT =
       Gauge.build()
           .namespace(NAMESPACE)
@@ -97,6 +105,7 @@ final class JournalMetrics {
   private final Histogram.Child segmentCreationTime;
   private final Histogram.Child segmentTruncateTime;
   private final Histogram.Child segmentFlushTime;
+  private final Histogram.Child journalFlushTime;
   private final Gauge.Child segmentCount;
   private final Gauge.Child journalOpenTime;
   private final Histogram.Child segmentAllocationTime;
@@ -108,6 +117,7 @@ final class JournalMetrics {
     segmentCreationTime = SEGMENT_CREATION_TIME.labels(partitionId);
     segmentTruncateTime = SEGMENT_TRUNCATE_TIME.labels(partitionId);
     segmentFlushTime = SEGMENT_FLUSH_TIME.labels(partitionId);
+    journalFlushTime = JOURNAL_FLUSH_TIME.labels(partitionId);
     segmentCount = SEGMENT_COUNT.labels(partitionId);
     journalOpenTime = JOURNAL_OPEN_DURATION.labels(partitionId);
     segmentAllocationTime = SEGMENT_ALLOCATION_TIME.labels(partitionId);
@@ -120,8 +130,12 @@ final class JournalMetrics {
     segmentCreationTime.time(segmentCreation);
   }
 
-  void observeSegmentFlush(final Runnable segmentFlush) {
-    segmentFlushTime.time(segmentFlush);
+  Histogram.Timer observeSegmentFlush() {
+    return segmentFlushTime.startTimer();
+  }
+
+  Histogram.Timer observeJournalFlush() {
+    return journalFlushTime.startTimer();
   }
 
   void observeSegmentTruncation(final Runnable segmentTruncation) {

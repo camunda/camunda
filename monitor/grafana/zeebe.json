@@ -132,8 +132,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "orange",
-                    "value": null
+                    "color": "orange"
                   }
                 ]
               }
@@ -287,8 +286,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -780,8 +778,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "#EAB839",
@@ -955,8 +952,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1032,8 +1028,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1199,8 +1194,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1642,8 +1636,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1740,8 +1733,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1992,8 +1984,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2319,8 +2310,7 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -8592,7 +8582,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 20
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 278,
@@ -8715,7 +8705,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -8731,7 +8722,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 19
           },
           "id": 373,
           "options": {
@@ -8810,7 +8801,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -8826,7 +8818,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 27
           },
           "id": 363,
           "options": {
@@ -8905,7 +8897,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -8921,7 +8914,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 27
           },
           "id": 406,
           "options": {
@@ -9000,7 +8993,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -9016,7 +9010,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 42
+            "y": 34
           },
           "id": 368,
           "options": {
@@ -9095,7 +9089,8 @@
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -9111,7 +9106,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 42
+            "y": 34
           },
           "id": 411,
           "options": {
@@ -9177,7 +9172,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 49
+            "y": 41
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9272,7 +9267,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 49
+            "y": 41
           },
           "hiddenSeries": false,
           "id": 416,
@@ -9412,7 +9407,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 56
+            "y": 48
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9523,7 +9518,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 56
+            "y": 48
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9551,7 +9546,8 @@
               "color": "rgba(255,0,255,0.7)"
             },
             "filterValues": {
-              "le": 1e-9
+              "ge": 2,
+              "le": 0
             },
             "legend": {
               "show": false
@@ -9634,7 +9630,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 62
+            "y": 54
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9745,7 +9741,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 62
+            "y": 54
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9840,7 +9836,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 68
+            "y": 60
           },
           "hiddenSeries": false,
           "id": 283,
@@ -9935,7 +9931,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 75
+            "y": 67
           },
           "hiddenSeries": false,
           "id": 79,
@@ -10028,7 +10024,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 75
+            "y": 67
           },
           "hiddenSeries": false,
           "id": 114,
@@ -10108,8 +10104,10 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
+          "description": "Overall latency distribution to flush the journal",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -10129,12 +10127,233 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 82
+            "y": 74
           },
           "heatmap": {},
           "hideZeroBuckets": true,
           "highlightCards": true,
           "id": 89,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "scheme",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Spectral",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "show": true,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "9.3.6",
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le)",
+              "format": "heatmap",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Journal Flush Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "yAxis": {
+            "format": "dtdurations",
+            "logBase": 1,
+            "show": true
+          },
+          "yBucketBound": "auto"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "Overall latency to flush the complete journal",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 74
+          },
+          "id": 300,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "9.3.6",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(atomix_journal_flush_time_sum{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (pod) / sum(rate(atomix_journal_flush_time_count{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m]))  by (pod)",
+              "interval": "",
+              "legendFormat": "Avg {{ pod }}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.50, sum(rate(atomix_journal_flush_time_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Median",
+              "range": true,
+              "refId": "C"
+            }
+          ],
+          "title": "Journal Flush Latency",
+          "type": "timeseries"
+        },
+        {
+          "cards": {},
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Overall latency distribution to flush a single segment",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 81
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 426,
           "legend": {
             "show": false
           },
@@ -10207,48 +10426,84 @@
           "yBucketBound": "auto"
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
           "datasource": {
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "fill": 1,
-          "fillGradient": 0,
+          "description": "Overall latency of flushing a single segment",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 82
+            "y": 81
           },
-          "hiddenSeries": false,
-          "id": 300,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
+          "id": 427,
           "options": {
-            "alertThreshold": true
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
           },
-          "percentage": false,
           "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
           "targets": [
             {
               "datasource": {
@@ -10272,35 +10527,8 @@
               "refId": "C"
             }
           ],
-          "thresholds": [],
-          "timeRegions": [],
           "title": "Segment Flush Latency",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "s",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
+          "type": "timeseries"
         },
         {
           "cards": {},
@@ -10334,7 +10562,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 89
+            "y": 88
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10427,7 +10655,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 89
+            "y": 88
           },
           "hiddenSeries": false,
           "id": 305,
@@ -10540,7 +10768,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 96
+            "y": 95
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -10639,7 +10867,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 96
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 72,
@@ -10735,7 +10963,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 104
+            "y": 103
           },
           "hiddenSeries": false,
           "id": 95,
@@ -10822,98 +11050,6 @@
           }
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 104
-          },
-          "hiddenSeries": false,
-          "id": 180,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "9.3.6",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${DS_PROMETHEUS}"
-              },
-              "expr": "atomix_segment_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
-              "interval": "",
-              "legendFormat": "{{pod}} {{partition}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeRegions": [],
-          "title": "Number of log segements",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "mode": "time",
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            },
-            {
-              "format": "short",
-              "logBase": 1,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false
-          }
-        },
-        {
           "columns": [
             {
               "text": "Current",
@@ -10928,7 +11064,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 112
+            "y": 111
           },
           "id": 205,
           "maxPerRow": 6,
@@ -10996,7 +11132,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 117
+            "y": 116
           },
           "id": 209,
           "maxPerRow": 6,
@@ -11077,7 +11213,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 122
+            "y": 121
           },
           "id": 215,
           "options": {
@@ -11111,6 +11247,98 @@
           "type": "gauge"
         },
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 121
+          },
+          "hiddenSeries": false,
+          "id": 180,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "9.3.6",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "expr": "atomix_segment_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeRegions": [],
+          "title": "Number of log segements",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "mode": "time",
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            },
+            {
+              "format": "short",
+              "logBase": 1,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false
+          }
+        },
+        {
           "datasource": {
             "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
@@ -11138,7 +11366,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 122
+            "y": 129
           },
           "id": 396,
           "options": {
@@ -14603,6 +14831,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 8,
+  "version": 9,
   "weekStart": ""
 }

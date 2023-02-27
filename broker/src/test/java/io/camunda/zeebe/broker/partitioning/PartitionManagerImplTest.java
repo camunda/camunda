@@ -74,7 +74,7 @@ final class PartitionManagerImplTest {
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(NoopContext::new))
         .isInstanceOf(DelayedFlusher.class)
         .asInstanceOf(InstanceOfAssertFactories.type(DelayedFlusher.class))
         .hasFieldOrPropertyWithValue("delayTime", Duration.ofSeconds(5));
@@ -102,7 +102,7 @@ final class PartitionManagerImplTest {
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(() -> null))
         .isInstanceOf(DirectFlusher.class);
   }
 
@@ -128,7 +128,7 @@ final class PartitionManagerImplTest {
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(() -> null))
         .isInstanceOf(NoopFlusher.class);
   }
 
@@ -155,7 +155,7 @@ final class PartitionManagerImplTest {
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
-    assertThat(config.getStorageConfig().flusherFactory().createFlusher(new NoOpContext()))
+    assertThat(config.getStorageConfig().flusherFactory().createFlusher(() -> null))
         .isInstanceOf(NoopFlusher.class);
   }
 
@@ -171,15 +171,16 @@ final class PartitionManagerImplTest {
     return config;
   }
 
-  private static class NoOpContext implements ThreadContext {
-
+  private static final class NoopContext implements ThreadContext {
     @Override
     public Scheduled schedule(
         final Duration initialDelay, final Duration interval, final Runnable callback) {
-      return null;
+      throw new UnsupportedOperationException();
     }
 
     @Override
-    public void execute(final Runnable command) {}
+    public void execute(final Runnable command) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

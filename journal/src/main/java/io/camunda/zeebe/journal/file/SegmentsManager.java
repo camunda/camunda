@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -85,9 +86,9 @@ final class SegmentsManager implements AutoCloseable {
         LOG.warn(
             "Next segment preparation failed during close, ignoring and proceeding to close", e);
       }
+      nextSegment = null;
     }
 
-    nextSegment = null;
     currentSegment = null;
   }
 
@@ -232,6 +233,7 @@ final class SegmentsManager implements AutoCloseable {
    * @param segment The segment to remove.
    */
   void removeSegment(final Segment segment) {
+    //noinspection resource
     segments.remove(segment.index());
     journalMetrics.decSegmentCount();
     segment.delete();
@@ -302,6 +304,15 @@ final class SegmentsManager implements AutoCloseable {
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
   }
 
+  Collection<Segment> getTailSegments(final long index) {
+    final var segment = getSegment(index);
+    if (segment == null) {
+      return Collections.emptySet();
+    }
+
+    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)).values();
+  }
+
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {
     final var segmentFile = SegmentFile.createSegmentFile(name, directory, descriptor.id());
     return segmentLoader.createUninitializedSegment(segmentFile.toPath(), descriptor, journalIndex);
@@ -320,6 +331,7 @@ final class SegmentsManager implements AutoCloseable {
    */
   private Collection<Segment> loadSegments(final long lastFlushedIndex) {
     // Ensure log directories are created.
+    //noinspection ResultOfMethodCallIgnored
     directory.mkdirs();
     final List<Segment> segments = new ArrayList<>();
 

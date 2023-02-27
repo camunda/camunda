@@ -36,6 +36,7 @@ import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
 import io.camunda.zeebe.journal.Journal;
+import io.camunda.zeebe.journal.JournalMetaStore;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -61,15 +62,17 @@ class RaftLogTest {
       ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN).putInt(0, 123456);
   private final ApplicationEntry firstApplicationEntry = createApplicationEntry(1);
   private RaftLog raftlog;
+  private JournalMetaStore metaStore;
   private RaftLogReader reader;
 
   @BeforeEach
   void setup(@TempDir final File directory) {
+    metaStore = new MockJournalMetaStore();
     raftlog =
         RaftLog.builder()
             .withDirectory(directory)
             .withName("test")
-            .withMetaStore(new MockJournalMetaStore())
+            .withMetaStore(metaStore)
             .build();
     reader = raftlog.openUncommittedReader();
   }
@@ -183,6 +186,7 @@ class RaftLogTest {
     // then
     assertThat(raftlog.getLastIndex()).isEqualTo(secondEntry.index());
     assertThat(raftlog.getLastEntry()).isEqualTo(secondEntry);
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(secondEntry.index());
   }
 
   @Test

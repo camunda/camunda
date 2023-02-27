@@ -23,18 +23,19 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.io.File;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.locks.StampedLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** A file based journal. The journal is split into multiple segments files. */
 public final class SegmentedJournal implements Journal {
   public static final long ASQN_IGNORE = -1;
+  private static final Logger LOGGER = LoggerFactory.getLogger(SegmentedJournal.class);
   private final JournalMetrics journalMetrics;
-  private final File directory;
-  private final int maxSegmentSize;
   private final Collection<SegmentedJournalReader> readers = Sets.newConcurrentHashSet();
   private volatile boolean open = true;
   private final JournalIndex journalIndex;
@@ -42,25 +43,19 @@ public final class SegmentedJournal implements Journal {
   private final StampedLock rwlock = new StampedLock();
   private final SegmentsManager segments;
 
-  private final JournalMetaStore journalMetaStore;
-
   SegmentedJournal(
-      final File directory,
-      final int maxSegmentSize,
       final JournalIndex journalIndex,
       final SegmentsManager segments,
       final JournalMetrics journalMetrics,
       final JournalMetaStore journalMetaStore) {
-    this.directory = Objects.requireNonNull(directory, "must specify a journal directory");
-    this.maxSegmentSize = maxSegmentSize;
     this.journalMetrics = Objects.requireNonNull(journalMetrics, "must specify journal metrics");
     this.journalIndex = Objects.requireNonNull(journalIndex, "must specify a journal index");
     this.segments = Objects.requireNonNull(segments, "must specify a journal segments manager");
-    this.journalMetaStore =
-        Objects.requireNonNull(journalMetaStore, "must specify a journal meta store");
 
+    Objects.requireNonNull(journalMetaStore, "must specify a journal meta store");
     this.segments.open(journalMetaStore.loadLastFlushedIndex());
-    writer = new SegmentedJournalWriter(this);
+    writer =
+        new SegmentedJournalWriter(segments, new SegmentsFlusher(journalMetaStore), journalMetrics);
   }
 
   /**
@@ -122,6 +117,10 @@ public final class SegmentedJournal implements Journal {
     try {
       journalIndex.clear();
       writer.reset(nextIndex);
+      // no need to update the meta store's last flushed index as usage is that we always reset
+      // with a greater index than what we previously had. it's fine if the stored last flushed
+      // index is lower than the real flushed index. every thing will be treated as a partial write
+      // until the next flush, which is fine
     } finally {
       rwlock.unlockWrite(stamp);
     }
@@ -145,8 +144,25 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void flush() {
-    writer.flush();
-    journalMetaStore.storeLastFlushedIndex(getLastIndex());
+    if (!isOpen() || isEmpty()) {
+      LOGGER.debug("Skipped journal flush as it is either closed or empty");
+      return;
+    }
+
+    try (final var ignored = journalMetrics.observeJournalFlush()) {
+      // grabbing the read lock here will prevent write-exclusive operations such as deleteAfter and
+      // reset from modifying the segments, allowing us to properly determine which segments must be
+      // flushed. contention is quite low as it only contends with deleteAfter, deleteUntil, and
+      // reset, all operations which do not run often, and not on the hot path. in the case where
+      // flushing is synchronous on the raft thread (the default), then all these operations run
+      // sequentially anyway, meaning there is virtually no contention
+      final var stamp = rwlock.readLock();
+      try {
+        writer.flush();
+      } finally {
+        rwlock.unlockRead(stamp);
+      }
+    }
   }
 
   @Override
@@ -168,6 +184,7 @@ public final class SegmentedJournal implements Journal {
 
   @Override
   public void close() {
+    flush();
     segments.close();
     open = false;
   }
@@ -179,14 +196,6 @@ public final class SegmentedJournal implements Journal {
    */
   private void assertOpen() {
     checkState(segments.getCurrentSegment() != null, "journal not open");
-  }
-
-  private long maxSegmentSize() {
-    return maxSegmentSize;
-  }
-
-  private File directory() {
-    return directory;
   }
 
   /**
@@ -207,11 +216,6 @@ public final class SegmentedJournal implements Journal {
   Segment getLastSegment() {
     assertOpen();
     return segments.getLastSegment();
-  }
-
-  Segment getNextSegment() {
-    assertOpen();
-    return segments.getNextSegment();
   }
 
   /**
@@ -240,24 +244,6 @@ public final class SegmentedJournal implements Journal {
   }
 
   /**
-   * Resets and returns the first segment in the journal.
-   *
-   * @param index the starting index of the journal
-   * @return the first segment
-   */
-  Segment resetSegments(final long index) {
-    return segments.resetSegments(index);
-  }
-
-  /**
-   * Removes a segment.
-   *
-   * @param segment The segment to remove.
-   */
-  synchronized void removeSegment(final Segment segment) {
-    segments.removeSegment(segment);
-  }
-  /**
    * Resets journal readers to the given index, if they are at a larger index.
    *
    * @param index The index at which to reset readers.
@@ -270,10 +256,6 @@ public final class SegmentedJournal implements Journal {
     }
   }
 
-  public JournalMetrics getJournalMetrics() {
-    return journalMetrics;
-  }
-
   public JournalIndex getJournalIndex() {
     return journalIndex;
   }
@@ -284,5 +266,11 @@ public final class SegmentedJournal implements Journal {
 
   void releaseReadlock(final long stamp) {
     rwlock.unlockRead(stamp);
+  }
+
+  @VisibleForTesting(
+      "The simplest way to guarantee certain methods acquire/release the write lock is to access directly")
+  StampedLock rwlock() {
+    return rwlock;
   }
 }

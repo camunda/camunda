@@ -27,9 +27,13 @@ import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.io.Closeable;
 import org.agrona.CloseHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** Raft log. */
 public final class RaftLog implements Closeable {
+  private static final Logger LOGGER = LoggerFactory.getLogger(RaftLog.class);
+
   private final RaftEntrySerializer serializer = new RaftEntrySBESerializer();
   private final Journal journal;
   private final RaftLogFlusher flusher;
@@ -167,6 +171,9 @@ public final class RaftLog implements Closeable {
     }
     journal.deleteAfter(index);
     lastAppendedEntry = null;
+
+    // we have to flush here to ensure the truncated log is represented properly
+    flush();
   }
 
   /**
@@ -190,7 +197,10 @@ public final class RaftLog implements Closeable {
 
   @Override
   public void close() {
-    CloseHelper.close(journal);
+    CloseHelper.closeAll(
+        error -> LOGGER.warn("Unexpected error while closing the Raft log", error),
+        journal,
+        flusher);
   }
 
   @Override

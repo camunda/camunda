@@ -191,6 +191,7 @@ final class JournalTest {
     assertThat(journal.getLastIndex()).isEqualTo(1);
     final var record = journal.append(asqn, recordDataWriter);
     assertThat(record.index()).isEqualTo(2);
+    assertThat(metaStore.loadLastFlushedIndex()).isOne();
   }
 
   @Test
@@ -253,6 +254,7 @@ final class JournalTest {
 
     // then
     assertThat(journal.getLastIndex()).isEqualTo(1);
+    assertThat(metaStore.loadLastFlushedIndex()).isOne();
     assertThat(reader.hasNext()).isFalse();
   }
 
@@ -658,6 +660,19 @@ final class JournalTest {
     // then
     assertThat(reader.next()).isEqualTo(firstRecord);
     assertThat(reader.next()).isEqualTo(lastRecord);
+  }
+
+  @Test
+  void shouldUpdateMetastoreAfterFlush() {
+    journal = openJournal();
+    journal.append(1, recordDataWriter);
+    final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
+
+    // when
+    journal.flush();
+
+    // then
+    assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(lastWrittenIndex);
   }
 
   // TODO: do not rely on implementation detail to compare records

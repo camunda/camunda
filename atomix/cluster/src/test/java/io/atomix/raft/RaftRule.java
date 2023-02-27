@@ -339,9 +339,8 @@ public final class RaftRule extends ExternalResource {
       final var raftContext = raftServer.getContext();
       final var serviceManager = raftContext.getLogCompactor();
       serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
-      raftContext
-          .getThreadContext()
-          .submit(serviceManager::compactIgnoringReplicationThreshold)
+      CompletableFuture.runAsync(
+              serviceManager::compactIgnoringReplicationThreshold, raftContext.getThreadContext())
           .join();
     }
   }

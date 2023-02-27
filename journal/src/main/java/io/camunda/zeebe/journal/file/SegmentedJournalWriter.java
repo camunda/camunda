@@ -20,32 +20,35 @@ import io.camunda.zeebe.journal.JournalException.SegmentSizeTooSmall;
 import io.camunda.zeebe.journal.JournalRecord;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 
-class SegmentedJournalWriter {
-  private final SegmentedJournal journal;
+final class SegmentedJournalWriter {
+  private final SegmentsManager segments;
+  private final SegmentsFlusher flusher;
   private final JournalMetrics journalMetrics;
+
   private Segment currentSegment;
   private SegmentWriter currentWriter;
 
-  public SegmentedJournalWriter(final SegmentedJournal journal) {
-    this.journal = journal;
-    journalMetrics = journal.getJournalMetrics();
-    currentSegment = journal.getLastSegment();
+  SegmentedJournalWriter(
+      final SegmentsManager segments,
+      final SegmentsFlusher flusher,
+      final JournalMetrics journalMetrics) {
+    this.segments = segments;
+    this.flusher = flusher;
+    this.journalMetrics = journalMetrics;
+
+    currentSegment = segments.getLastSegment();
     currentWriter = currentSegment.writer();
   }
 
-  public long getLastIndex() {
+  long getLastIndex() {
     return currentWriter.getLastIndex();
   }
 
-  public JournalRecord getLastEntry() {
-    return currentWriter.getLastEntry();
-  }
-
-  public long getNextIndex() {
+  long getNextIndex() {
     return currentWriter.getNextIndex();
   }
 
-  public JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
+  JournalRecord append(final long asqn, final BufferWriter recordDataWriter) {
     final var appendResult = currentWriter.append(asqn, recordDataWriter);
     if (appendResult.isRight()) {
       return appendResult.get();
@@ -63,7 +66,7 @@ class SegmentedJournalWriter {
     return appendResultOnNewSegment.get();
   }
 
-  public void append(final JournalRecord record) {
+  void append(final JournalRecord record) {
     final var appendResult = currentWriter.append(record);
     if (appendResult.isRight()) {
       return;
@@ -80,34 +83,35 @@ class SegmentedJournalWriter {
     }
   }
 
-  public void reset(final long index) {
-    currentSegment = journal.resetSegments(index);
+  void reset(final long index) {
+    flusher.setLastFlushedIndex(index - 1);
+    currentSegment = segments.resetSegments(index);
     currentWriter = currentSegment.writer();
   }
 
-  public void deleteAfter(final long index) {
+  void deleteAfter(final long index) {
     // Delete all segments with first indexes greater than the given index.
-    while (index < currentSegment.index() && currentSegment != journal.getFirstSegment()) {
-      journal.removeSegment(currentSegment);
-      currentSegment = journal.getLastSegment();
+    while (index < currentSegment.index() && currentSegment != segments.getFirstSegment()) {
+      segments.removeSegment(currentSegment);
+      currentSegment = segments.getLastSegment();
       currentWriter = currentSegment.writer();
     }
 
-    // Truncate the current index.
+    // Truncate down to the current index, such that the last index is `index`, and the next index
+    // `index + 1`
+    flusher.setLastFlushedIndex(index);
     currentWriter.truncate(index);
   }
 
-  public void flush() {
-    journalMetrics.observeSegmentFlush(currentWriter::flush);
-  }
-
-  public void close() {
-    currentWriter.close();
+  void flush() {
+    // even if the next flush index has not been written, this will always flush at least the last
+    // segment if only to cover cases such as truncating the log, where the next flush index may not
+    // have been written yet but we still want to flush that segment after modifying it
+    flusher.flush(segments.getTailSegments(flusher.nextFlushIndex()));
   }
 
   private void createNewSegment() {
-    currentWriter.flush();
-    currentSegment = journal.getNextSegment();
+    currentSegment = segments.getNextSegment();
     currentWriter = currentSegment.writer();
   }
 }

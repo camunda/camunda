@@ -176,12 +176,11 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
           "Failed to acquire storage lock; ensure each Raft server is configured with a distinct storage directory");
     }
 
-    final String baseThreadName = String.format("raft-server-%s-%s", localMemberId.id(), name);
     threadContext =
-        threadContextFactory.createContext(
-            namedThreads(baseThreadName, log), this::onUncaughtException);
-    // in order to set the partition id once in the raft thread
-    threadContext.execute(() -> MDC.put("partitionId", Integer.toString(partitionId)));
+        createThreadContext(
+            "raft-server-%s-%s".formatted(localMemberId.id(), name),
+            partitionId,
+            threadContextFactory);
 
     // Open the metadata store.
     meta = storage.openMetaStore();
@@ -191,7 +190,14 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     lastVotedFor = meta.loadVote();
 
     // Construct the core log, reader, writer, and compactor.
-    raftLog = storage.openLog(meta, threadContext);
+    raftLog =
+        storage.openLog(
+            meta,
+            () ->
+                createThreadContext(
+                    "raft-log-%s-%s".formatted(localMemberId.id(), name),
+                    partitionId,
+                    threadContextFactory));
 
     // Open the snapshot store.
     persistedSnapshotStore = storage.getPersistedSnapshotStore();
@@ -225,6 +231,17 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     started = true;
 
     addCommitListener(new AwaitingReadyCommitListener());
+  }
+
+  private ThreadContext createThreadContext(
+      final String name,
+      final int partitionId,
+      final RaftThreadContextFactory threadContextFactory) {
+    final var context =
+        threadContextFactory.createContext(namedThreads(name, log), this::onUncaughtException);
+    // in order to set the partition id once in the raft thread
+    context.execute(() -> MDC.put("partitionId", String.valueOf(partitionId)));
+    return context;
   }
 
   private void setSnapshot(final PersistedSnapshot persistedSnapshot) {
@@ -512,7 +529,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * @return a future to be completed once the logs have been compacted
    */
   public CompletableFuture<Void> compact() {
-    return threadContext.submit(logCompactor::compact);
+    return CompletableFuture.runAsync(logCompactor::compact, threadContext);
   }
 
   /**
@@ -530,7 +547,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return CompletableFuture.completedFuture(null);
     }
 
-    return threadContext.submit(raftLog::forceFlush);
+    return CompletableFuture.runAsync(raftLog::forceFlush, threadContext);
   }
 
   /** Attempts to become the leader. */

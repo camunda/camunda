@@ -7,7 +7,7 @@
  */
 package io.atomix.raft.storage.log;
 
-import io.atomix.utils.concurrent.ThreadContext;
+import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.util.CloseableSilently;
 
@@ -80,22 +80,6 @@ public interface RaftLogFlusher extends CloseableSilently {
   }
 
   /**
-   * Temporary interface to allow the flusher to update the last flushed index once we know a flush
-   * operation occurred. Ideally we will push this down into the journal, such that it becomes
-   * unnecessary in a later iteration.
-   */
-  @FunctionalInterface
-  interface FlushMetaStore {
-
-    /**
-     * Sets the last guaranteed flush index.
-     *
-     * @param lastIndex the last guaranteed flushed index
-     */
-    void storeLastFlushedIndex(final long lastIndex);
-  }
-
-  /**
    * Factory methods to create a new {@link RaftLogFlusher}. This is unfortunately required due to
    * the blackbox instantiation of the {@link io.atomix.raft.impl.RaftContext}.
    */
@@ -110,20 +94,21 @@ public interface RaftLogFlusher extends CloseableSilently {
 
     /**
      * Creates a new {@link RaftLogFlusher} which should use the given thread context for
-     * synchronization.
+     * synchronization. If any {@link io.atomix.utils.concurrent.ThreadContext} are created, they
+     * should be closed by the flusher.
      *
-     * @param flushContext the thread context for asynchronous operations
+     * @param threadFactory the thread context factory for asynchronous operations
      * @return a configured Flusher
      */
-    RaftLogFlusher createFlusher(final ThreadContext flushContext);
+    RaftLogFlusher createFlusher(final ThreadContextFactory threadFactory);
 
     /** Preset factory method which returns a shared {@link DirectFlusher} instance. */
-    static DirectFlusher direct(final ThreadContext ignored) {
+    static DirectFlusher direct(final ThreadContextFactory ignored) {
       return DIRECT;
     }
 
     /** Preset factory method which returns a shared {@link NoopFlusher} instance. */
-    static NoopFlusher noop(final ThreadContext ignored) {
+    static NoopFlusher noop(final ThreadContextFactory ignored) {
       return NOOP;
     }
   }

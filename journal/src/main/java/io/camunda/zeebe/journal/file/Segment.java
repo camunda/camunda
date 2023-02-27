@@ -23,6 +23,8 @@ import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.file.Files;
@@ -36,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
-final class Segment implements AutoCloseable {
+final class Segment implements AutoCloseable, FlushableSegment {
 
   private static final ByteOrder ENDIANNESS = ByteOrder.LITTLE_ENDIAN;
   private static final Logger LOG = LoggerFactory.getLogger(Segment.class);
@@ -46,12 +48,15 @@ final class Segment implements AutoCloseable {
   private final JournalIndex index;
   private final SegmentWriter writer;
   private final Set<SegmentReader> readers = Sets.newConcurrentHashSet();
-  private boolean open = true;
   private final MappedByteBuffer buffer;
+  private final JournalMetrics metrics;
+
+  // This needs to be volatile in case the flushing is asynchronous
+  private volatile boolean open = true;
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
 
-  public Segment(
+  Segment(
       final SegmentFile file,
       final SegmentDescriptor descriptor,
       final MappedByteBuffer buffer,
@@ -62,6 +67,7 @@ final class Segment implements AutoCloseable {
     this.descriptor = descriptor;
     this.buffer = buffer;
     this.index = index;
+    this.metrics = metrics;
 
     writer = createWriter(lastWrittenAsqn, metrics);
   }
@@ -71,7 +77,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment ID.
    */
-  public long id() {
+  long id() {
     return descriptor.id();
   }
 
@@ -80,7 +86,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment's starting index.
    */
-  public long index() {
+  long index() {
     return descriptor.index();
   }
 
@@ -89,8 +95,49 @@ final class Segment implements AutoCloseable {
    *
    * @return The last index in the segment.
    */
+  @Override
   public long lastIndex() {
     return writer.getLastIndex();
+  }
+
+  /**
+   * It's safe to sync a buffer via {@link MappedByteBuffer#force()} even after it has been unmapped
+   * (e.g. via {@link IoUtil#unmap(ByteBuffer)}.
+   *
+   * <p>Calling {@code msync} or {@code FlushViewOfFile} on pages which are not mapped returns an
+   * error, but does not generate a SIGSEGV nor a SIGBUS. Instead, it returns an error code.
+   *
+   * <p>We verified that on OpenJDK, this is handled by throwing an {@link UncheckedIOException}
+   * with a message about being unable to allocate memory. There are no other exceptions (other than
+   * the usual suspects, like null pointers) possible, so it's safe to assume that if we get such an
+   * error on calling {@link MappedByteBuffer#force()}, but the segment is closed/deleted, then we
+   * can safely ignore it (as flushing doesn't matter in that case).
+   *
+   * <p>{@inheritDoc}
+   *
+   * @throws UncheckedIOException if the operation failed but the segment is live
+   */
+  @Override
+  public boolean flush() {
+    final long lastIndex = lastIndex();
+
+    try (final var ignored = metrics.observeSegmentFlush()) {
+      buffer.force();
+    } catch (final UncheckedIOException e) {
+      if (isOpen()) {
+        throw e;
+      }
+
+      LOG.debug("Flushing failed on a closed or deleted segment, and will be ignored");
+      return false;
+    }
+
+    LOG.trace(
+        "Flushed segment {} from index {} to index {}",
+        descriptor.id(),
+        descriptor.index(),
+        lastIndex);
+    return true;
   }
 
   /**
@@ -98,7 +145,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The last application sequence number in the segment.
    */
-  public long lastAsqn() {
+  long lastAsqn() {
     return writer.getLastAsqn();
   }
 
@@ -107,7 +154,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment file.
    */
-  public SegmentFile file() {
+  SegmentFile file() {
     return file;
   }
 
@@ -116,26 +163,8 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment descriptor.
    */
-  public SegmentDescriptor descriptor() {
+  SegmentDescriptor descriptor() {
     return descriptor;
-  }
-
-  /**
-   * Returns a boolean value indicating whether the segment is empty.
-   *
-   * @return Indicates whether the segment is empty.
-   */
-  public boolean isEmpty() {
-    return length() == 0;
-  }
-
-  /**
-   * Returns the segment length.
-   *
-   * @return The segment length.
-   */
-  public long length() {
-    return writer.getNextIndex() - index();
   }
 
   /**
@@ -143,7 +172,7 @@ final class Segment implements AutoCloseable {
    *
    * @return The segment writer.
    */
-  public SegmentWriter writer() {
+  SegmentWriter writer() {
     checkOpen();
     return writer;
   }
@@ -190,7 +219,7 @@ final class Segment implements AutoCloseable {
    *
    * @return indicates whether the segment is open
    */
-  public boolean isOpen() {
+  boolean isOpen() {
     return open;
   }
 
@@ -203,7 +232,7 @@ final class Segment implements AutoCloseable {
   }
 
   /** Deletes the segment. */
-  public void delete() {
+  void delete() {
     open = false;
     markForDeletion();
     if (readers.isEmpty()) {
@@ -240,7 +269,6 @@ final class Segment implements AutoCloseable {
       return;
     }
 
-    writer.close();
     final var target = file.getFileMarkedForDeletion();
     try {
       FileUtil.moveDurably(file.file().toPath(), target);

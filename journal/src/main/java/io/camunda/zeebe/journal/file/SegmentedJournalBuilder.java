@@ -171,7 +171,6 @@ public class SegmentedJournalBuilder {
         new SegmentsManager(
             journalIndex, maxSegmentSize, directory, name, segmentLoader, journalMetrics);
 
-    return new SegmentedJournal(
-        directory, maxSegmentSize, journalIndex, segmentsManager, journalMetrics, journalMetaStore);
+    return new SegmentedJournal(journalIndex, segmentsManager, journalMetrics, journalMetaStore);
   }
 }
