@@ -50,6 +50,7 @@ function useTasks() {
     client,
     refetch,
     networkStatus,
+    previousData,
   } = useQuery<GetTasks, GetTasksVariables>(GET_TASKS, {
     variables,
     pollInterval: POLLING_INTERVAL,
@@ -178,7 +179,7 @@ function useTasks() {
   };
 
   return {
-    tasks: data?.tasks ?? [],
+    tasks: data?.tasks ?? previousData?.tasks ?? [],
     loading: networkStatus === NetworkStatus.loading,
     fetchPreviousTasks,
     fetchNextTasks,
