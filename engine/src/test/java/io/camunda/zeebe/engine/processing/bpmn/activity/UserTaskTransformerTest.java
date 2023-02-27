@@ -136,4 +136,73 @@ class UserTaskTransformerTest {
       }
     }
   }
+
+  @Nested
+  class TaskScheduleTests {
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    class DueDateTests {
+
+      Stream<Arguments> dueDates() {
+        return Stream.of(
+            Arguments.of(null, null),
+            Arguments.of("", null),
+            Arguments.of(" ", null),
+            Arguments.of("2023-02-27T14:35:00Z", "2023-02-27T14:35:00Z"),
+            Arguments.of("2023-02-27T14:35:00+02:00", "2023-02-27T14:35:00+02:00"),
+            Arguments.of(
+                "2023-02-27T14:35:00+02:00[Europe/Berlin]",
+                "2023-02-27T14:35:00+02:00[Europe/Berlin]"),
+            Arguments.of("=dueDateSchedule", "dueDateSchedule"),
+            Arguments.of("=schedule.dueDate", "schedule.dueDate"));
+      }
+
+      @DisplayName("Should transform user task with dueDate")
+      @ParameterizedTest
+      @MethodSource("dueDates")
+      void shouldTransform(final String dueDate, final String parsedExpression) {
+        final var userTask = transformUserTask(processWithUserTask(b -> b.zeebeDueDate(dueDate)));
+        if (parsedExpression == null) {
+          assertThat(userTask.getJobWorkerProperties().getDueDate()).isNull();
+        } else {
+          assertThat(userTask.getJobWorkerProperties().getDueDate().getExpression())
+              .isEqualTo(parsedExpression);
+        }
+      }
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  class FollowUpDateTests {
+
+    Stream<Arguments> followUpDates() {
+      return Stream.of(
+          Arguments.of(null, null),
+          Arguments.of("", null),
+          Arguments.of(" ", null),
+          Arguments.of("2023-02-27T14:35:00Z", "2023-02-27T14:35:00Z"),
+          Arguments.of("2023-02-27T14:35:00+02:00", "2023-02-27T14:35:00+02:00"),
+          Arguments.of(
+              "2023-02-27T14:35:00+02:00[Europe/Berlin]",
+              "2023-02-27T14:35:00+02:00[Europe/Berlin]"),
+          Arguments.of("=followUpDateSchedule", "followUpDateSchedule"),
+          Arguments.of("=schedule.followUpDate", "schedule.followUpDate"));
+    }
+
+    @DisplayName("Should transform user task with followUpDate")
+    @ParameterizedTest
+    @MethodSource("followUpDates")
+    void shouldTransform(final String followUpDate, final String parsedExpression) {
+      final var userTask =
+          transformUserTask(processWithUserTask(b -> b.zeebeFollowUpDate(followUpDate)));
+      if (parsedExpression == null) {
+        assertThat(userTask.getJobWorkerProperties().getFollowUpDate()).isNull();
+      } else {
+        assertThat(userTask.getJobWorkerProperties().getFollowUpDate().getExpression())
+            .isEqualTo(parsedExpression);
+      }
+    }
+  }
 }
