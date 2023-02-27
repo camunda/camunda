@@ -25,6 +25,11 @@ on:
         default: ""
         type: string
         required: false
+      measure:
+        description: 'If enabled, impact of network latency is measured.'
+        type: string
+        required: false
+        default: 'true'
 
   workflow_call:
     inputs:
@@ -51,6 +56,11 @@ on:
         description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitary helm arguments, like --set starter.rate=100'
         type: string
         required: false
+      measure:
+        description: 'If enabled, impact of network latency is measured.'
+        type: string
+        required: false
+        default: 'true'
       publish:
         description: 'Where to publish the results, can be "slack" or "comment"'
         default: ""
@@ -58,7 +68,7 @@ on:
         required: false
 jobs:
   build-zeebe-image:
-    name: Build zeebe image
+    name: Build Zeebe
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -98,7 +108,7 @@ jobs:
           build-args: DIST=build
           target: app
   build-benchmark-images:
-    name: Build starter and worker images
+    name: Build Starter and Worker
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -137,12 +147,13 @@ jobs:
       - name: Build Worker Image
         run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
   deploy-benchmark-measurement:
-    name: Measure network latency
+    name: Measure
     needs:
       - build-zeebe-image
       - build-benchmark-images
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
     secrets: inherit
+    if: inputs.measure == 'true'
     with:
       name: measurement-${{ github.run_id }}
       chaos: network-latency-5
@@ -155,7 +166,7 @@ jobs:
         --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
         ${{ inputs.benchmark-load }}
   deploy-benchmark-cluster:
-    name: Deploy benchmark cluster
+    name: Deploy
     needs:
       - build-zeebe-image
       - build-benchmark-images

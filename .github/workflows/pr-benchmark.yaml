@@ -9,19 +9,10 @@ on:
 
 jobs:
   create-benchmark:
-    name: Create PR benchmark
-    if: github.event.action == 'labeled' && github.event.label.name == 'benchmark'
-    uses: ./.github/workflows/benchmark.yml
-    secrets: inherit
-    with:
-      name: ${{github.event.pull_request.head.ref}}-benchmark
-      cluster: zeebe-cluster
-      cluster-region: europe-west1-b
-      ref: ${{ github.event.pull_request.head.ref }}
-      publish: "comment"
-  update-benchmark:
-    name: Update PR benchmark
-    if: github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')
+    name: Benchmark
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark')
+      || (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     with:
@@ -31,7 +22,7 @@ jobs:
       ref: ${{ github.event.pull_request.head.ref }}
       publish: "comment"
   delete-benchmark:
-    name: Delete PR benchmark
+    name: Benchmark Cleanup
     if: >
       (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
       || (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
