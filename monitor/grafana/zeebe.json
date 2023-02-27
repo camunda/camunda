@@ -115,151 +115,127 @@
       "id": 56,
       "panels": [
         {
+          "id": 68,
+          "gridPos": {
+            "x": 0,
+            "y": 1,
+            "w": 8,
+            "h": 6
+          },
+          "type": "table",
+          "title": "Topology",
+          "transformations": [
+            {
+              "id": "joinByLabels",
+              "options": {
+                "join": [
+                  "pod"
+                ],
+                "value": "partition"
+              }
+            },
+            {
+              "id": "seriesToRows",
+              "options": {}
+            }
+          ],
           "datasource": {
+            "type": "prometheus",
             "uid": "$DS_PROMETHEUS"
           },
-          "description": "Shows for each partition which broker is the leader",
+          "pluginVersion": "9.3.6",
+          "interval": "1s",
+          "description": "Displays the roles of each node per partition.",
+          "links": [],
           "fieldConfig": {
             "defaults": {
               "custom": {
                 "align": "auto",
-                "displayMode": "auto",
-                "filterable": false,
+                "displayMode": "color-background-solid",
                 "inspect": false
               },
-              "mappings": [],
+              "mappings": [
+                {
+                  "options": {
+                    "1": {
+                      "color": "super-light-orange",
+                      "index": 0,
+                      "text": "Follower"
+                    },
+                    "2": {
+                      "color": "super-light-purple",
+                      "index": 1,
+                      "text": "Candidate"
+                    },
+                    "3": {
+                      "color": "light-green",
+                      "index": 2,
+                      "text": "Leader"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "orange"
+                    "color": "red",
+                    "value": null
                   }
                 ]
-              }
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "links": []
             },
             "overrides": [
               {
                 "matcher": {
                   "id": "byName",
-                  "options": "Partition"
+                  "options": "pod"
                 },
                 "properties": [
                   {
-                    "id": "custom.width",
-                    "value": 76
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Role"
-                },
-                "properties": [
-                  {
-                    "id": "custom.width",
-                    "value": 96
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "Broker"
-                },
-                "properties": [
-                  {
-                    "id": "custom.width"
+                    "id": "custom.displayMode",
+                    "value": "auto"
                   }
                 ]
               }
             ]
           },
-          "gridPos": {
-            "h": 6,
-            "w": 8,
-            "x": 0,
-            "y": 1
-          },
-          "id": 68,
-          "links": [],
           "options": {
+            "showHeader": true,
             "footer": {
-              "fields": "",
+              "show": false,
               "reducer": [
                 "sum"
               ],
-              "show": false
+              "fields": "",
+              "enablePagination": false
             },
-            "showHeader": true,
-            "sortBy": [
-              {
-                "desc": false,
-                "displayName": "Partition"
-              }
-            ]
+            "frameIndex": 0,
+            "sortBy": []
           },
-          "pluginVersion": "9.3.6",
           "targets": [
             {
               "datasource": {
                 "uid": "$DS_PROMETHEUS"
               },
-              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"} >= 3",
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
               "format": "time_series",
+              "hide": false,
               "instant": true,
               "interval": "",
               "intervalFactor": 1,
-              "legendFormat": "{{pod}} {{partitionGroupName}} {{partition}}",
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "range": false,
               "refId": "A"
             }
-          ],
-          "title": "Current Partition Leader",
-          "transformations": [
-            {
-              "id": "labelsToFields",
-              "options": {}
-            },
-            {
-              "id": "merge",
-              "options": {}
-            },
-            {
-              "id": "organize",
-              "options": {
-                "excludeByName": {
-                  "Time": true,
-                  "Value": true,
-                  "__name__": true,
-                  "endpoint": true,
-                  "instance": true,
-                  "job": true,
-                  "namespace": true,
-                  "partitionGroupName": true,
-                  "service": true
-                },
-                "indexByName": {
-                  "Time": 0,
-                  "Value": 10,
-                  "__name__": 1,
-                  "endpoint": 2,
-                  "instance": 3,
-                  "job": 4,
-                  "namespace": 5,
-                  "partition": 7,
-                  "partitionGroupName": 6,
-                  "pod": 8,
-                  "service": 9
-                },
-                "renameByName": {
-                  "Value": "Role",
-                  "partition": "Partition",
-                  "pod": "Broker"
-                }
-              }
-            }
-          ],
-          "type": "table"
+          ]
         },
         {
           "datasource": {
