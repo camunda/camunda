@@ -11,15 +11,25 @@ import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {DetailTable} from 'modules/components/DeleteDefinitionModal/DetailTable';
 import {Warning, Information, Ul, Link} from './styled';
+import {operationsStore} from 'modules/stores/operations';
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {useNotifications} from 'modules/notifications';
 
 type Props = {
+  processDefinitionId: string;
   processName: string;
   processVersion: string;
 };
 
-const ProcessOperations: React.FC<Props> = ({processName, processVersion}) => {
+const ProcessOperations: React.FC<Props> = ({
+  processDefinitionId,
+  processName,
+  processVersion,
+}) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] =
     useState<boolean>(false);
+
+  const notifications = useNotifications();
 
   return (
     <>
@@ -85,7 +95,18 @@ const ProcessOperations: React.FC<Props> = ({processName, processVersion}) => {
         }
         confirmationText="Yes, I confirm I want to delete this process definition."
         onClose={() => setIsDeleteModalVisible(false)}
-        onDelete={() => {}}
+        onDelete={() => {
+          setIsDeleteModalVisible(false);
+
+          operationsStore.applyDeleteProcessDefinitionOperation({
+            processDefinitionId,
+            onSuccess: panelStatesStore.expandOperationsPanel,
+            onError: () =>
+              notifications.displayNotification('error', {
+                headline: 'Operation could not be created',
+              }),
+          });
+        }}
       />
     </>
   );

@@ -99,8 +99,31 @@ const mockDeleteDecisionDefinition = IS_DECISION_DEFINITION_DELETION_ENABLED
     ]
   : [];
 
+const mockDeleteProcessDefinition = IS_PROCESS_DEFINITION_DELETION_ENABLED
+  ? [
+      rest.delete(
+        '/api/processes/:processDefinitionId',
+        async (_, res, ctx) => {
+          return res(
+            ctx.json({
+              id: '5de66f22-a438-40f8-a89c-2983fhn283h8',
+              name: 'MyProcessDefinition - Version 1',
+              type: 'DELETE_PROCESS_DEFINITION',
+              startDate: '2023-02-16T14:23:45.306+0100',
+              endDate: null,
+              instancesCount: 23,
+              operationsTotalCount: 23,
+              operationsFinishedCount: 0,
+            })
+          );
+        }
+      ),
+    ]
+  : [];
+
 const handlers: RequestHandler[] = [
   ...mockBatchOperations,
   ...mockDeleteDecisionDefinition,
+  ...mockDeleteProcessDefinition,
 ];
 export {handlers};

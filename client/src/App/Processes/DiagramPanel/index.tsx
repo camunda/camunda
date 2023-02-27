@@ -99,14 +99,17 @@ const DiagramPanel: React.FC = observer(() => {
   return (
     <Container>
       <PanelHeader title={processName ?? 'Process'}>
-        {IS_PROCESS_DEFINITION_DELETION_ENABLED && isVersionSelected && (
-          <Restricted scopes={['write']}>
-            <ProcessOperations
-              processName={processName ?? 'Process'}
-              processVersion={version}
-            />
-          </Restricted>
-        )}
+        {IS_PROCESS_DEFINITION_DELETION_ENABLED &&
+          isVersionSelected &&
+          processId !== undefined && (
+            <Restricted scopes={['write']}>
+              <ProcessOperations
+                processDefinitionId={processId}
+                processName={processName ?? 'Process'}
+                processVersion={version}
+              />
+            </Restricted>
+          )}
       </PanelHeader>
 
       <DiagramContainer>

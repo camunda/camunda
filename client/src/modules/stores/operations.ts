@@ -24,6 +24,7 @@ import {sortOperations} from './utils/sortOperations';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {deleteDecisionDefinition} from 'modules/api/decisions/operations';
+import {deleteProcessDefinition} from 'modules/api/processes/operations';
 
 type Query = Parameters<typeof applyBatchOperation>['1'];
 type OperationPayload = Parameters<typeof applyOperation>['1'];
@@ -163,6 +164,25 @@ class Operations extends NetworkReconnectionHandler {
     onSuccess?: () => void;
   }) => {
     const response = await deleteDecisionDefinition(decisionDefinitionId);
+
+    if (response.isSuccess) {
+      this.prependOperations(response.data);
+      onSuccess?.();
+    } else {
+      onError?.();
+    }
+  };
+
+  applyDeleteProcessDefinitionOperation = async ({
+    processDefinitionId,
+    onError,
+    onSuccess,
+  }: {
+    processDefinitionId: string;
+    onError?: () => void;
+    onSuccess?: () => void;
+  }) => {
+    const response = await deleteProcessDefinition(processDefinitionId);
 
     if (response.isSuccess) {
       this.prependOperations(response.data);
