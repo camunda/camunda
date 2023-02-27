@@ -10918,6 +10918,120 @@
           }
         },
         {
+          "id": 432,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 103
+          },
+          "type": "state-timeline",
+          "title": "Role changes over time",
+          "transformations": [
+            {
+              "id": "convertFieldType",
+              "options": {
+                "conversions": [
+                  {
+                    "destinationType": "string",
+                    "targetField": "Value"
+                  }
+                ],
+                "fields": {}
+              }
+            }
+          ],
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "pluginVersion": "9.3.6",
+          "interval": "1s",
+          "description": "Shows when a role change has happened",
+          "links": [],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "lineWidth": 1,
+                "fillOpacity": 70,
+                "spanNulls": false
+              },
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "light-red",
+                      "index": 3,
+                      "text": "Inactive"
+                    },
+                    "1": {
+                      "color": "super-light-orange",
+                      "index": 2,
+                      "text": "Follower"
+                    },
+                    "2": {
+                      "color": "super-light-purple",
+                      "index": 1,
+                      "text": "Candidate"
+                    },
+                    "3": {
+                      "color": "light-green",
+                      "index": 0,
+                      "text": "Leader"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  }
+                ]
+              },
+              "links": []
+            },
+            "overrides": []
+          },
+          "options": {
+            "mergeValues": true,
+            "showValue": "auto",
+            "alignValue": "center",
+            "rowHeight": 0.9,
+            "legend": {
+              "showLegend": false,
+              "displayMode": "list",
+              "placement": "bottom"
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "atomix_role{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ]
+        },
+        {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
@@ -10938,7 +11052,7 @@
           "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 0,
+            "x": 12,
             "y": 103
           },
           "hiddenSeries": false,
@@ -11040,7 +11154,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 111
+            "y": 112
           },
           "id": 205,
           "maxPerRow": 6,
@@ -11108,7 +11222,7 @@
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 116
+            "y": 117
           },
           "id": 209,
           "maxPerRow": 6,
@@ -11189,7 +11303,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 121
+            "y": 122
           },
           "id": 215,
           "options": {
@@ -11242,9 +11356,9 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 121
+            "w": 24,
+            "x": 0,
+            "y": 104
           },
           "hiddenSeries": false,
           "id": 180,
@@ -11286,7 +11400,7 @@
           ],
           "thresholds": [],
           "timeRegions": [],
-          "title": "Number of log segements",
+          "title": "Number of log segments",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -11342,7 +11456,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 129
+            "y": 122
           },
           "id": 396,
           "options": {
