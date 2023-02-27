@@ -58,7 +58,7 @@ on:
         required: false
 jobs:
   build-zeebe-image:
-    name: Build zeebe image
+    name: Build Zeebe
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -98,7 +98,7 @@ jobs:
           build-args: DIST=build
           target: app
   build-benchmark-images:
-    name: Build starter and worker images
+    name: Build Starter and Worker
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -137,7 +137,7 @@ jobs:
       - name: Build Worker Image
         run: ./mvnw -pl benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
   deploy-benchmark-measurement:
-    name: Measure network latency
+    name: Measure
     needs:
       - build-zeebe-image
       - build-benchmark-images
@@ -155,7 +155,7 @@ jobs:
         --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
         ${{ inputs.benchmark-load }}
   deploy-benchmark-cluster:
-    name: Deploy benchmark cluster
+    name: Deploy
     needs:
       - build-zeebe-image
       - build-benchmark-images

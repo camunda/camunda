@@ -45,7 +45,7 @@ jobs:
           echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
 
   setup-normal-benchmark:
-    name: Setup normal benchmark
+    name: Normal Benchmark
     needs:
       - benchmark-data
       - delete-old-benchmarks
@@ -58,7 +58,7 @@ jobs:
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       publish: "slack"
   setup-mixed-benchmark:
-    name: Setup mixed benchmark
+    name: Mixed Benchmark
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     needs:
@@ -76,7 +76,7 @@ jobs:
         --set publisher.replica=1
         --set publisher.rate=25
   setup-latency-benchmark:
-    name: Setup latency benchmark
+    name: Latency Benchmark
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
     needs:

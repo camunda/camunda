@@ -9,7 +9,7 @@ on:
 
 jobs:
   create-benchmark:
-    name: Create PR benchmark
+    name: Benchmark
     if: github.event.action == 'labeled' && github.event.label.name == 'benchmark'
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
@@ -20,7 +20,7 @@ jobs:
       ref: ${{ github.event.pull_request.head.ref }}
       publish: "comment"
   update-benchmark:
-    name: Update PR benchmark
+    name: Update
     if: github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark')
     uses: ./.github/workflows/benchmark.yml
     secrets: inherit
@@ -31,7 +31,7 @@ jobs:
       ref: ${{ github.event.pull_request.head.ref }}
       publish: "comment"
   delete-benchmark:
-    name: Delete PR benchmark
+    name: Benchmark Cleanup
     if: >
       (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
       || (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
