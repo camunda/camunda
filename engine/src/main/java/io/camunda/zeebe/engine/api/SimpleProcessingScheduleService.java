@@ -9,15 +9,15 @@ package io.camunda.zeebe.engine.api;
 
 import java.time.Duration;
 
-public interface ProcessingScheduleService extends SimpleProcessingScheduleService {
+public interface SimpleProcessingScheduleService {
+
+  void runDelayed(Duration delay, Runnable task);
+
+  void runDelayed(Duration delay, Task task);
 
   /**
    * Schedule a task to execute at a fixed rate. After an initial delay, the task is executed. Once
    * the task is executed, it is rescheduled with the same delay again.
-   *
-   * <p>The execution of the scheduled task is running asynchron/concurrent to other scheduled
-   * tasks. Other methods will guarantee ordering of scheduled tasks and running always in same
-   * thread, these guarantees don't apply to this method.
    *
    * <p>Note that time-traveling in tests only affects the delay of the currently scheduled next
    * task and not any of the iterations after. This is because the next task is scheduled with the
@@ -27,5 +27,17 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @param delay The delay to wait initially and between each run
    * @param task The task to execute at the fixed rate
    */
-  void runAtFixedRateAsync(final Duration delay, final Task task);
+  default void runAtFixedRate(final Duration delay, final Runnable task) {
+    runDelayed(
+        delay,
+        () -> {
+          try {
+            task.run();
+          } finally {
+            runAtFixedRate(delay, task);
+          }
+        });
+  }
+
+  void runAtFixedRate(final Duration delay, final Task task);
 }
