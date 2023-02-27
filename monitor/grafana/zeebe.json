@@ -163,19 +163,24 @@
               "mappings": [
                 {
                   "options": {
+                    "0": {
+                      "color": "super-light-red",
+                      "index": 0,
+                      "text": "Inactive"
+                    },
                     "1": {
                       "color": "super-light-orange",
-                      "index": 0,
+                      "index": 1,
                       "text": "Follower"
                     },
                     "2": {
                       "color": "super-light-purple",
-                      "index": 1,
+                      "index": 2,
                       "text": "Candidate"
                     },
                     "3": {
                       "color": "light-green",
-                      "index": 2,
+                      "index": 3,
                       "text": "Leader"
                     }
                   },
