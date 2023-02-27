@@ -40,6 +40,12 @@ public final class SystemContext {
       "Node id %s needs to be non negative and smaller then cluster size %s.";
   private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
+  private static final String REPLICATION_FACTOR_WARN_MSG =
+      "Expected to have odd replication factor, but was even ({}). Even replication factor has no benefit over "
+          + "the previous odd value and is weaker than next odd. Quorum is calculated as:"
+          + " quorum = floor(replication factor / 2) + 1. In this current case the quorum will be"
+          + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
+          + " make sure to use an odd replication factor.";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
@@ -98,6 +104,10 @@ public final class SystemContext {
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
+    }
+
+    if (replicationFactor % 2 == 0) {
+      LOG.warn(REPLICATION_FACTOR_WARN_MSG, replicationFactor, (replicationFactor / 2) + 1);
     }
 
     final var heartbeatInterval = cluster.getHeartbeatInterval();
