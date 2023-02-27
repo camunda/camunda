@@ -963,7 +963,7 @@
       <dependency>
         <groupId>com.amazonaws</groupId>
         <artifactId>aws-java-sdk-core</artifactId>
-        <version>1.12.410</version>
+        <version>1.12.415</version>
         <scope>test</scope>
         <exclusions>
           <exclusion>
