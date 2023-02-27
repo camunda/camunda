@@ -7,7 +7,13 @@
 
 import Modal from 'modules/components/Modal';
 import {useRef} from 'react';
-import {ModalBody, DeleteButton, Description, CmCheckbox} from './styled';
+import {
+  WarningContainer,
+  ModalBody,
+  DeleteButton,
+  Description,
+  CmCheckbox,
+} from './styled';
 
 type Props = {
   isVisible: boolean;
@@ -15,7 +21,7 @@ type Props = {
   description: string;
   bodyContent: React.ReactNode;
   confirmationText: string;
-  // warningContent: React.ReactNode; TODO: https://github.com/camunda/operate/issues/4020
+  warningContent?: React.ReactNode; //TODO: make mandatory after https://github.com/camunda/operate/issues/4020
   onClose: () => void;
   onDelete: () => void;
 };
@@ -26,7 +32,7 @@ const DeleteDefinitionModal: React.FC<Props> = ({
   description,
   bodyContent,
   confirmationText,
-  // warningContent, TODO: https://github.com/camunda/operate/issues/4020
+  warningContent,
   onClose,
   onDelete,
 }) => {
@@ -43,7 +49,7 @@ const DeleteDefinitionModal: React.FC<Props> = ({
       <ModalBody>
         <Description>{description}</Description>
         {bodyContent}
-        {/* <WarningContainer content={warningContent} />  TODO: https://github.com/camunda/operate/issues/4020 */}
+        {warningContent && <WarningContainer content={warningContent} />}
         <CmCheckbox ref={fieldRef} label={confirmationText} required />
       </ModalBody>
       <Modal.Footer>

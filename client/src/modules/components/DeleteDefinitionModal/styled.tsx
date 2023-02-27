@@ -15,7 +15,8 @@ import Modal from 'modules/components/Modal';
 
 const WarningContainer = styled(WarningMessage)`
   display: flex;
-  margin: 24px 0;
+  margin: 24px 0 0 0;
+  padding: 16px 10px;
 `;
 
 const DeleteButton = styled(CmButton)`

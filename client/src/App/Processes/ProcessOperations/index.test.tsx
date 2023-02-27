@@ -63,10 +63,42 @@ describe('<ProcessOperations />', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByText(/myProcess - Version 2/)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /Deleting a process definition will permanently remove it and will impact the following:/i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /All the deleted process definition’s running process instances will be immediately canceled and deleted./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /All the deleted process definition’s finished process instances will be deleted from the application./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /All decision and process instances referenced by the deleted process instances will be deleted./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /If a process definition contains user tasks, they will be canceled and deleted from Tasklist./i
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /For a detailed overview, please view our guide on deleting a process definition/i
+      )
+    ).toBeInTheDocument();
+
     expect(
       screen.getByText(
         /Yes, I confirm I want to delete this process definition./i
       )
-    );
+    ).toBeInTheDocument();
   });
 });
