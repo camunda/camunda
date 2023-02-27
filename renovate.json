@@ -31,5 +31,6 @@
       "groupName": "Apollo GraphQL packages"
     }
   ],
-  "branchPrefix": "fe-renovate/"
+  "branchPrefix": "fe-renovate/",
+  "ignoreDeps": ["docker.elastic.co/elasticsearch/elasticsearch"]
 }
