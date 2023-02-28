@@ -130,7 +130,7 @@
       #      └── snapshots
       #          └── <snapshot-id>
       #     		      └── xx.sst
-      #    	 └── runtime
+      #      └── runtime
       #          └── yy.sst
 
       # Specify the directory in which data is stored.
