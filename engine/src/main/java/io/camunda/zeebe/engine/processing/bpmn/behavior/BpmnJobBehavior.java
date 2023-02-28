@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -97,7 +98,9 @@ public final class BpmnJobBehavior {
         .flatMap(p -> evalRetriesExp(jobWorkerProps, scopeKey).map(p::retries))
         .flatMap(p -> evalAssigneeExp(jobWorkerProps, scopeKey).map(p::assignee))
         .flatMap(p -> evalCandidateGroupsExp(jobWorkerProps, scopeKey).map(p::candidateGroups))
-        .flatMap(p -> evalCandidateUsersExp(jobWorkerProps, scopeKey).map(p::candidateUsers));
+        .flatMap(p -> evalCandidateUsersExp(jobWorkerProps, scopeKey).map(p::candidateUsers))
+        .flatMap(p -> evalDateExp(jobWorkerProps.getDueDate(), scopeKey).map(p::dueDate))
+        .flatMap(p -> evalDateExp(jobWorkerProps.getFollowUpDate(), scopeKey).map(p::followUpDate));
   }
 
   private Either<Failure, String> evalTypeExp(
@@ -143,6 +146,15 @@ public final class BpmnJobBehavior {
         .map(ExpressionTransformer::asListLiteral);
   }
 
+  private Either<Failure, String> evalDateExp(final Expression date, final long scopeKey) {
+    if (date == null) {
+      return Either.right(null);
+    }
+    return expressionBehavior
+        .evaluateDateTimeExpression(date, scopeKey, true)
+        .map(optionalDate -> optionalDate.map(ZonedDateTime::toString).orElse(null));
+  }
+
   private void writeJobCreatedEvent(
       final BpmnElementContext context,
       final ExecutableJobWorkerElement jobWorkerElement,
@@ -172,6 +184,8 @@ public final class BpmnJobBehavior {
     final String assignee = props.getAssignee();
     final String candidateGroups = props.getCandidateGroups();
     final String candidateUsers = props.getCandidateUsers();
+    final String dueDate = props.getDueDate();
+    final String followUpDate = props.getFollowUpDate();
     if (assignee != null && !assignee.isEmpty()) {
       headers.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
     }
@@ -180,6 +194,12 @@ public final class BpmnJobBehavior {
     }
     if (candidateUsers != null && !candidateUsers.isEmpty()) {
       headers.put(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, candidateUsers);
+    }
+    if (dueDate != null && !dueDate.isEmpty()) {
+      headers.put(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, dueDate);
+    }
+    if (followUpDate != null && !followUpDate.isEmpty()) {
+      headers.put(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, followUpDate);
     }
     return headerEncoder.encode(headers);
   }
@@ -215,6 +235,8 @@ public final class BpmnJobBehavior {
     private String assignee;
     private String candidateGroups;
     private String candidateUsers;
+    private String dueDate;
+    private String followUpDate;
 
     public JobProperties type(final String type) {
       this.type = type;
@@ -259,6 +281,24 @@ public final class BpmnJobBehavior {
 
     public String getCandidateUsers() {
       return candidateUsers;
+    }
+
+    public JobProperties dueDate(final String dueDate) {
+      this.dueDate = dueDate;
+      return this;
+    }
+
+    public String getDueDate() {
+      return dueDate;
+    }
+
+    public JobProperties followUpDate(final String followUpDate) {
+      this.followUpDate = followUpDate;
+      return this;
+    }
+
+    public String getFollowUpDate() {
+      return followUpDate;
     }
   }
 
