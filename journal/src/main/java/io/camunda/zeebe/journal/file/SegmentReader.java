@@ -106,8 +106,8 @@ final class SegmentReader implements Iterator<JournalRecord> {
 
   void close() {
     segment.onReaderClosed(this);
-    posixFs.madvise(
-        (MappedByteBuffer) buffer, segment.descriptor().length(), Advice.POSIX_MADV_DONTNEED);
+    // posixFs.madvise(
+    //    (MappedByteBuffer) buffer, segment.descriptor().length(), Advice.POSIX_MADV_DONTNEED);
   }
 
   long getNextIndex() {
