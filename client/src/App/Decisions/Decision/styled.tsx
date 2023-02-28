@@ -25,7 +25,6 @@ const Container = styled.div`
 
 const PanelHeader = styled(BasePanelHeader)`
   justify-content: space-between;
-  padding-right: 8px;
 `;
 
 export {Container, PanelHeader};

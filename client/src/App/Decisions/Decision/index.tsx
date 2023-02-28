@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {useEffect, useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {reaction} from 'mobx';
 import {observer} from 'mobx-react';
 import {useLocation, useNavigate} from 'react-router-dom';
@@ -21,6 +21,8 @@ import {useNotifications} from 'modules/notifications';
 import {IS_DECISION_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
 import {Restricted} from 'modules/components/Restricted';
 import {DecisionOperations} from './DecisionOperations';
+import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -96,9 +98,15 @@ const Decision: React.FC = observer(() => {
     return decisionXmlStore.reset;
   }, []);
 
+  const panelHeaderRef = useRef<HTMLDivElement>(null);
+
+  useOperationsPanelResize(panelHeaderRef, (target, width) => {
+    target.style['marginRight'] = `${width - COLLAPSABLE_PANEL_MIN_WIDTH}px`;
+  });
+
   return (
     <Container>
-      <PanelHeader title={decisionName || 'Decision'}>
+      <PanelHeader title={decisionName || 'Decision'} ref={panelHeaderRef}>
         {IS_DECISION_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
           decisionDefinitionId !== null && (

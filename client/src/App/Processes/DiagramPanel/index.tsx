@@ -23,11 +23,13 @@ import {
 } from 'modules/utils/filter';
 import {processesStore} from 'modules/stores/processes';
 import {StatisticsOverlay} from 'modules/components/StatisticsOverlay';
-import {useEffect} from 'react';
+import {useEffect, useRef} from 'react';
 import {processDiagramStore} from 'modules/stores/processDiagram';
 import {Restricted} from 'modules/components/Restricted';
 import {ProcessOperations} from '../ProcessOperations';
 import {IS_PROCESS_DEFINITION_DELETION_ENABLED} from 'modules/feature-flags';
+import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
 type Props = {
   children: React.ReactNode;
@@ -96,9 +98,15 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {xml} = processDiagramStore.state;
 
+  const panelHeaderRef = useRef<HTMLDivElement>(null);
+
+  useOperationsPanelResize(panelHeaderRef, (target, width) => {
+    target.style['marginRight'] = `${width - COLLAPSABLE_PANEL_MIN_WIDTH}px`;
+  });
+
   return (
     <Container>
-      <PanelHeader title={processName ?? 'Process'}>
+      <PanelHeader title={processName ?? 'Process'} ref={panelHeaderRef}>
         {IS_PROCESS_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
           processId !== undefined && (

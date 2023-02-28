@@ -5,6 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
+import {forwardRef} from 'react';
 import {Container, InstancesCount, Title} from './styled';
 
 type Props = {
@@ -14,23 +15,20 @@ type Props = {
   className?: string;
 };
 
-const PanelHeader: React.FC<Props> = ({
-  title,
-  count = 0,
-  children,
-  className,
-}) => {
-  return (
-    <Container className={className}>
-      <Title>{title}</Title>
-      {count > 0 && (
-        <InstancesCount data-testid="result-count">
-          {count} results found
-        </InstancesCount>
-      )}
-      {children}
-    </Container>
-  );
-};
+const PanelHeader = forwardRef<HTMLDivElement, Props>(
+  ({title, count = 0, children, className}, ref) => {
+    return (
+      <Container className={className} ref={ref}>
+        <Title>{title}</Title>
+        {count > 0 && (
+          <InstancesCount data-testid="result-count">
+            {count} results found
+          </InstancesCount>
+        )}
+        {children}
+      </Container>
+    );
+  }
+);
 
 export {PanelHeader};

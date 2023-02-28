@@ -19,7 +19,7 @@ const Container = styled.div`
       max-height: 37px;
       align-items: center;
       background-color: ${colors.backgroundColor};
-      padding: 8px 0 8px 19px;
+      padding: 8px 8px 8px 19px;
       border-bottom: solid 1px ${theme.colors.borderColor};
     `;
   }}

@@ -7,17 +7,18 @@
 
 import styled from 'styled-components';
 import {Copyright as BaseCopyright} from 'modules/components/Copyright';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 
 const Container = styled.main`
   display: flex;
   width: 100%;
   height: 100%;
+  width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH}px);
 `;
 
 const RightContainer = styled.div`
   width: 100%;
   height: 100%;
-  margin-right: 56px;
   overflow: hidden;
   display: flex;
   flex-direction: column;

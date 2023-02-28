@@ -13,7 +13,7 @@ import {styles} from '@carbon/elements';
 import {PAGE_TOP_PADDING} from 'modules/constants';
 import {zOverlayCollapsable} from 'modules/constants/componentHierarchy';
 
-const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
+const COLLAPSABLE_PANEL_MIN_WIDTH = 56;
 type PanelPosition = 'RIGHT' | 'LEFT';
 
 type CollapsableProps = {
@@ -43,7 +43,7 @@ const Collapsable = styled.div<CollapsableProps>`
       flex-direction: column;
       overflow: hidden;
       min-width: ${isCollapsed
-        ? COLLAPSABLE_PANEL_MIN_WIDTH
+        ? `${COLLAPSABLE_PANEL_MIN_WIDTH}px`
         : css`
             ${maxWidth}px
           `};

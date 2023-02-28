@@ -30,6 +30,13 @@ const OperationsPanel: React.FC = observer(() => {
   }, []);
 
   const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
+  const collapsablePanelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (collapsablePanelRef.current !== null) {
+      panelStatesStore.setOperationsPanelRef(collapsablePanelRef);
+    }
+  }, []);
 
   return (
     <CollapsablePanel
@@ -43,6 +50,7 @@ const OperationsPanel: React.FC = observer(() => {
       verticalLabelOffset={27}
       scrollable
       ref={scrollableContainerRef}
+      collapsablePanelRef={collapsablePanelRef}
     >
       <InfiniteScroller
         onVerticalScrollEndReach={() => {

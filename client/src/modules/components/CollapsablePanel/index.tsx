@@ -33,6 +33,7 @@ type Props = {
   hasBackgroundColor?: boolean;
   scrollable?: boolean;
   maxWidth?: number;
+  collapsablePanelRef?: React.RefObject<HTMLDivElement>;
 };
 
 const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
@@ -48,6 +49,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
       verticalLabelOffset = 0,
       hasBackgroundColor,
       scrollable,
+      collapsablePanelRef,
       ...props
     },
     ref
@@ -79,6 +81,7 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
         panelPosition={panelPosition}
         isOverlay={isOverlay}
         transitionTimeout={TRANSITION_TIMEOUT}
+        ref={collapsablePanelRef}
       >
         {isCollapsed ? (
           <CollapsedPanel data-testid="collapsed-panel">

@@ -8,14 +8,18 @@
 import {makeAutoObservable} from 'mobx';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 
+type OperationsPanelRef = React.RefObject<HTMLElement> | null;
+
 type State = {
   isFiltersCollapsed: boolean;
   isOperationsCollapsed: boolean;
+  operationsPanelRef: OperationsPanelRef;
 };
 
 const DEFAULT_STATE: State = {
   isFiltersCollapsed: false,
   isOperationsCollapsed: true,
+  operationsPanelRef: null,
 };
 
 class PanelStates {
@@ -29,6 +33,10 @@ class PanelStates {
     this.state.isOperationsCollapsed = isOperationsCollapsed;
     makeAutoObservable(this);
   }
+
+  setOperationsPanelRef = (ref: OperationsPanelRef) => {
+    this.state.operationsPanelRef = ref;
+  };
 
   toggleFiltersPanel = () => {
     storeStateLocally(
