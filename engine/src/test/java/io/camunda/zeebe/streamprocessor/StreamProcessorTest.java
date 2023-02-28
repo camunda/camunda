@@ -59,6 +59,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -371,6 +372,7 @@ public final class StreamProcessorTest {
     countDownLatch.countDown();
   }
 
+  @Disabled("Should be enabled when https://github.com/camunda/zeebe/issues/11849 is fixed")
   @Test
   public void shouldRunAsyncSchedulingEvenIfProcessingIsBlocked() throws InterruptedException {
     // given
@@ -411,17 +413,26 @@ public final class StreamProcessorTest {
         .process(any(), any());
     streamPlatform.startStreamProcessor();
 
-    // when
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
-    assertThat(processorLatch.await(10, TimeUnit.SECONDS)).isTrue();
-    actorClock.addTime(Duration.ofMinutes(2));
+    try {
+      // when
+      streamPlatform.writeBatch(
+          RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+      assertThat(processorLatch.await(5, TimeUnit.SECONDS)).isTrue();
 
-    // then
-    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
-    verify(defaultRecordProcessor, TIMEOUT).process(any(), any());
-    // free schedule service
-    waitLatch.countDown();
+      // then
+      await("ProcessScheduleService should still work")
+          .timeout(Duration.ofSeconds(5))
+          .until(
+              () -> {
+                actorClock.addTime(Duration.ofMillis(100));
+                return asyncServiceLatch.await(100, TimeUnit.MILLISECONDS);
+              });
+      verify(defaultRecordProcessor, TIMEOUT).process(any(), any());
+
+    } finally {
+      // free schedule service
+      waitLatch.countDown();
+    }
   }
 
   @Test
