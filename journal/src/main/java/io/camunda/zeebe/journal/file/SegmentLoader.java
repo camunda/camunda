@@ -40,7 +40,15 @@ final class SegmentLoader {
   }
 
   SegmentLoader(
-      final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator, final PosixFs posixFs) {
+      final long minFreeDiskSpace, final JournalMetrics metrics, final SegmentAllocator allocator) {
+    this(minFreeDiskSpace, metrics, allocator, PosixFs.defaultInstance());
+  }
+
+  SegmentLoader(
+      final long minFreeDiskSpace,
+      final JournalMetrics metrics,
+      final SegmentAllocator allocator,
+      final PosixFs posixFs) {
     this.minFreeDiskSpace = minFreeDiskSpace;
     this.metrics = metrics;
     this.allocator = allocator;
