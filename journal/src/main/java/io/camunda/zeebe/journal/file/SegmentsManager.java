@@ -126,7 +126,10 @@ final class SegmentsManager implements AutoCloseable {
     if (nextSegment != null) {
       try {
         currentSegment =
-            nextSegment.join().initializeForUse(nextSegmentIndex, lastWrittenAsqn, journalMetrics);
+            nextSegment
+                .join()
+                .initializeForUse(
+                    nextSegmentIndex, lastWrittenAsqn, journalMetrics, segmentLoader.getPosixfs());
       } catch (final CompletionException e) {
         LOG.error("Failed to acquire next segment, retrying synchronously now.", e);
         currentSegment = createSegment(descriptor, lastWrittenAsqn);

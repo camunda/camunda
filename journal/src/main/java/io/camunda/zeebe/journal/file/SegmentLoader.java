@@ -147,7 +147,8 @@ final class SegmentLoader {
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
-    return new Segment(segmentFile, descriptor, buffer, lastWrittenAsqn, journalIndex, metrics);
+    return new Segment(
+        segmentFile, descriptor, buffer, lastWrittenAsqn, journalIndex, metrics, posixFs);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -256,5 +257,9 @@ final class SegmentLoader {
     try (final var ignored = metrics.observeSegmentAllocation()) {
       allocator.allocate(channel, maxSegmentSize);
     }
+  }
+
+  public PosixFs getPosixfs() {
+    return posixFs;
   }
 }

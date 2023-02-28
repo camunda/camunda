@@ -21,6 +21,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
 import io.camunda.zeebe.journal.JournalException;
+import io.camunda.zeebe.journal.fs.PosixFs;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -55,6 +56,7 @@ final class Segment implements AutoCloseable, FlushableSegment {
   private volatile boolean open = true;
   // This need to be volatile because both the writer and the readers access it concurrently
   private volatile boolean markedForDeletion = false;
+  private final PosixFs posixFs;
 
   Segment(
       final SegmentFile file,
@@ -62,12 +64,14 @@ final class Segment implements AutoCloseable, FlushableSegment {
       final MappedByteBuffer buffer,
       final long lastWrittenAsqn,
       final JournalIndex index,
-      final JournalMetrics metrics) {
+      final JournalMetrics metrics,
+      final PosixFs posixFs) {
     this.file = file;
     this.descriptor = descriptor;
     this.buffer = buffer;
     this.index = index;
     this.metrics = metrics;
+    this.posixFs = posixFs;
 
     writer = createWriter(lastWrittenAsqn, metrics);
   }
@@ -185,7 +189,8 @@ final class Segment implements AutoCloseable, FlushableSegment {
   SegmentReader createReader() {
     checkOpen();
     final SegmentReader reader =
-        new SegmentReader(buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index);
+        new SegmentReader(
+            buffer.asReadOnlyBuffer().position(0).order(ENDIANNESS), this, index, posixFs);
     readers.add(reader);
     return reader;
   }

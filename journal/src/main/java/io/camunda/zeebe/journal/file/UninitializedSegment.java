@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.fs.PosixFs;
 import java.nio.MappedByteBuffer;
 
 /**
@@ -25,7 +26,10 @@ public record UninitializedSegment(
    * index.
    */
   public Segment initializeForUse(
-      final long index, final long lastWrittenAsqn, final JournalMetrics metrics) {
+      final long index,
+      final long lastWrittenAsqn,
+      final JournalMetrics metrics,
+      final PosixFs posixFs) {
     final var updatedDescriptor =
         SegmentDescriptor.builder()
             .withId(segmentId)
@@ -33,6 +37,7 @@ public record UninitializedSegment(
             .withMaxSegmentSize(maxSegmentSize)
             .build();
     updatedDescriptor.copyTo(buffer);
-    return new Segment(file, updatedDescriptor, buffer, lastWrittenAsqn, journalIndex, metrics);
+    return new Segment(
+        file, updatedDescriptor, buffer, lastWrittenAsqn, journalIndex, metrics, posixFs);
   }
 }

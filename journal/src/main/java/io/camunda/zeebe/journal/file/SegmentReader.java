@@ -18,9 +18,12 @@ package io.camunda.zeebe.journal.file;
 
 import com.google.common.base.Preconditions;
 import io.camunda.zeebe.journal.JournalRecord;
+import io.camunda.zeebe.journal.fs.PosixFs;
+import io.camunda.zeebe.journal.fs.PosixFs.Advice;
 import io.camunda.zeebe.journal.record.JournalRecordReaderUtil;
 import io.camunda.zeebe.journal.record.SBESerializer;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -33,13 +36,21 @@ final class SegmentReader implements Iterator<JournalRecord> {
   private long currentIndex;
   private final JournalRecordReaderUtil recordReader;
   private final int descriptorLength;
+  private final PosixFs posixFs;
 
-  SegmentReader(final ByteBuffer buffer, final Segment segment, final JournalIndex index) {
+  SegmentReader(
+      final ByteBuffer buffer,
+      final Segment segment,
+      final JournalIndex index,
+      final PosixFs posixFs) {
     this.index = index;
     this.segment = segment;
     descriptorLength = segment.descriptor().length();
+    this.posixFs = posixFs;
     recordReader = new JournalRecordReaderUtil(new SBESerializer());
     this.buffer = buffer;
+    posixFs.madvise(
+        (MappedByteBuffer) buffer, segment.descriptor().length(), Advice.POSIX_MADV_WILLNEED);
     reset();
   }
 
@@ -95,6 +106,8 @@ final class SegmentReader implements Iterator<JournalRecord> {
 
   void close() {
     segment.onReaderClosed(this);
+    posixFs.madvise(
+        (MappedByteBuffer) buffer, segment.descriptor().length(), Advice.POSIX_MADV_DONTNEED);
   }
 
   long getNextIndex() {
