@@ -6,9 +6,9 @@
  */
 
 import {rem} from '@carbon/elements';
-import styled from 'styled-components';
-import {CollapsablePanel} from 'modules/components/CollapsablePanel';
+import styled, {css} from 'styled-components';
 import {Panel} from 'modules/components/Panel';
+import {Stack} from '@carbon/react';
 
 const Container = styled.main`
   display: flex;
@@ -17,8 +17,13 @@ const Container = styled.main`
   box-sizing: border-box;
 `;
 
-const TasksPanel = styled(CollapsablePanel)`
-  height: 100%;
+const TasksPanel = styled(Stack)`
+  ${() => css`
+    align-content: flex-start;
+    min-width: ${rem(300)};
+    max-width: ${rem(300)};
+    height: 100%;
+  `}
 `;
 
 const DetailsPanel = styled(Panel)`

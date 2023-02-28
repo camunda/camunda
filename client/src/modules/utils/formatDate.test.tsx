@@ -11,22 +11,12 @@ describe('formatDate', () => {
   it('should format date correctly', () => {
     const formattedDate = formatDate('2020-06-02T15:29:12.766');
 
-    expect(formattedDate).toEqual('2020-06-02 15:29:12');
+    expect(formattedDate).toEqual('02 Jun 2020 - 03:29 PM');
   });
 
   it('should return empty string and log error on invalid date string', () => {
-    // mock error function
-    const originalConsoleError = global.console.error;
-    global.console.error = jest.fn();
-
-    // when
     const formattedDate = formatDate('invalid date');
 
-    // then
     expect(formattedDate).toEqual('');
-    expect(global.console.error).toHaveBeenCalled();
-
-    // restore original error function
-    global.console.error = originalConsoleError;
   });
 });

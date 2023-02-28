@@ -13,9 +13,9 @@ const demoUser = Role(
   `${config.endpoint}/login`,
   async (t) => {
     await t
-      .typeText(screen.getByLabelText('Username'), 'demo')
-      .typeText(screen.getByLabelText('Password'), 'demo')
-      .click(screen.getByRole('button', {name: 'Login'}));
+      .typeText(screen.queryByLabelText('Username'), 'demo')
+      .typeText(screen.queryByLabelText('Password'), 'demo')
+      .click(screen.queryByRole('button', {name: 'Login'}));
   },
   {preserveUrl: true},
 );

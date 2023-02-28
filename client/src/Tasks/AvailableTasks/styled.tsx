@@ -17,7 +17,7 @@ const EmptyMessage = styled.div`
     color: var(--cds-text-primary);
     background-color: var(--cds-layer);
     padding: ${theme.spacing05};
-    grid-template-columns: min-content max-content;
+    grid-template-columns: min-content 1fr;
   `}
 `;
 
@@ -39,7 +39,7 @@ const EmptyMessageSecondLine = styled.p`
   `}
 `;
 
-const UL = styled.ul`
+const ListContainer = styled.div`
   overflow-y: auto;
   width: 100%;
   height: 100%;
@@ -71,7 +71,7 @@ const EmptyListIcon = styled(Search)`
 
 export {
   EmptyMessage,
-  UL,
+  ListContainer,
   Container,
   EmptyMessageFirstLine,
   EmptyMessageSecondLine,

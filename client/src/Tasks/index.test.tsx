@@ -10,6 +10,7 @@ import {
   screen,
   waitForElementToBeRemoved,
   fireEvent,
+  waitFor,
 } from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -74,13 +75,13 @@ describe('<Layout />', () => {
       wrapper: Wrapper,
     });
 
-    expect(screen.getByTitle('All open')).toBeDisabled();
+    await waitFor(() => expect(screen.getByTitle('All open')).toBeDisabled());
 
     await waitForElementToBeRemoved(screen.getByTestId('tasks-skeleton'));
 
     expect(await screen.findByText('TASK 0')).toBeInTheDocument();
     expect(screen.getByText('TASK 49')).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(50);
+    expect(screen.getAllByRole('article')).toHaveLength(50);
 
     fireEvent.scroll(screen.getByTestId('scrollable-list'), {
       target: {scrollY: 100},
@@ -90,6 +91,6 @@ describe('<Layout />', () => {
     expect(screen.getByText('TASK 49')).toBeInTheDocument();
     expect(await screen.findByText('TASK 50')).toBeInTheDocument();
     expect(screen.getByText('TASK 99')).toBeInTheDocument();
-    expect(screen.getAllByRole('listitem')).toHaveLength(100);
+    expect(screen.getAllByRole('article')).toHaveLength(100);
   });
 });

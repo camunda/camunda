@@ -12,7 +12,7 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/common';
 import {ClientFunction} from 'testcafe';
 
-fixture('Task Details')
+fixture('Task details')
   .page(config.endpoint)
   .before(async () => {
     await setup();
@@ -25,7 +25,7 @@ fixture('Task Details')
 const getURL = ClientFunction(() => window.location.href);
 
 test('load task details when a task is selected', async (t) => {
-  const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
+  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
 
   await t.click(
     withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
@@ -63,13 +63,13 @@ test('load task details when a task is selected', async (t) => {
     .ok()
     .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(screen.getByText('Unassigned').exists)
+    .expect(withinDetailsTable.getByText('Unassigned').exists)
     .ok();
 });
 
 test('claim and unclaim task', async (t) => {
   await t.click(
-    within(screen.getByTestId('expanded-panel'))
+    within(screen.getByTitle('Left panel'))
       .getAllByText('usertask_to_be_completed')
       .nth(0),
   );
@@ -94,14 +94,17 @@ test('claim and unclaim task', async (t) => {
     .click(screen.getByRole('button', {name: 'Unclaim'}))
     .expect(screen.queryByRole('button', {name: 'Claim'}).exists)
     .ok()
-    .expect(screen.getByText('Unassigned').exists)
+    .expect(
+      within(screen.queryByTestId('details-table')).getByText('Unassigned')
+        .exists,
+    )
     .ok()
     .expect(screen.queryByRole('button', {name: 'Complete Task'}).exists)
     .notOk();
 });
 
 test('complete task', async (t) => {
-  const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
+  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
 
   await t.click(withinExpandedPanel.getByText('usertask_to_be_completed'));
 

@@ -5,13 +5,20 @@
  * except in compliance with the proprietary license.
  */
 
-import {Assignee, CreationTime, SkeletonLi, Name, Process, Row} from './styled';
+import {
+  Assignee,
+  CreationTime,
+  SkeletonContainer,
+  Name,
+  Process,
+  Row,
+} from './styled';
 import {SkeletonText, Stack} from '@carbon/react';
 
 const TaskSkeleton: React.FC = () => {
   return (
-    <SkeletonLi>
-      <Stack gap={5}>
+    <SkeletonContainer>
+      <Stack gap={3}>
         <Row>
           <Name>
             <SkeletonText width="250px" />
@@ -24,12 +31,14 @@ const TaskSkeleton: React.FC = () => {
           <Assignee>
             <SkeletonText width="50px" />
           </Assignee>
+        </Row>
+        <Row>
           <CreationTime>
             <SkeletonText width="100px" />
           </CreationTime>
         </Row>
       </Stack>
-    </SkeletonLi>
+    </SkeletonContainer>
   );
 };
 

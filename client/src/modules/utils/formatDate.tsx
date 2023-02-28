@@ -6,12 +6,13 @@
  */
 
 import {format, parseISO} from 'date-fns';
+import {logger} from './logger';
 
 const formatDate = (dateString: string) => {
   try {
-    return format(parseISO(dateString), 'yyyy-MM-dd HH:mm:ss');
+    return format(parseISO(dateString), 'dd MMM yyyy - hh:mm a');
   } catch (error) {
-    console.error(error);
+    logger.error(error);
     return '';
   }
 };

@@ -92,12 +92,8 @@ describe('<Details />', () => {
     expect(
       screen.queryByRole('button', {name: /^unclaim$/i}),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/2020-01-01 \d{2}:\d{2}:\d{2}/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('01 Jan 2019 - 12:00 AM')).toBeInTheDocument();
+    expect(screen.getByText('01 Jan 2020 - 12:00 AM')).toBeInTheDocument();
     expect(screen.getByTestId('assignee-task-details')).not.toHaveTextContent(
       'Unassigned - claim task to work on this task.',
     );
@@ -126,9 +122,7 @@ describe('<Details />', () => {
     expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
       'Unassigned - claim task to work on this task.',
     );
-    expect(
-      screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
-    ).toBeInTheDocument();
+    expect(screen.getByText('01 Jan 2019 - 12:00 AM')).toBeInTheDocument();
     expect(screen.queryByText('Completion Time')).not.toBeInTheDocument();
     expect(screen.getByTestId('assignee-task-details')).toHaveTextContent(
       'Unassigned - claim task to work on this task.',

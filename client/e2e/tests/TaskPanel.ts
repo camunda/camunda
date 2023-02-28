@@ -12,7 +12,7 @@ import {demoUser} from './utils/Roles';
 import {ClientFunction} from 'testcafe';
 import {wait} from './utils/common';
 
-fixture('Task Panel')
+fixture('Left panel')
   .page(config.endpoint)
   .before(async () => {
     await setup();
@@ -26,7 +26,15 @@ fixture('Task Panel')
 const getURL = ClientFunction(() => window.location.href);
 
 test('filter selection', async (t) => {
-  const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
+  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
+
+  await t
+    .expect(
+      screen
+        .getByRole('button', {name: 'Filter options'})
+        .hasAttribute('disabled'),
+    )
+    .notOk();
 
   await t
     .click(withinExpandedPanel.getByText('All open'))
@@ -45,12 +53,12 @@ test('filter selection', async (t) => {
   await t
     .expect(withinExpandedPanel.queryByText('No tasks found').exists)
     .notOk()
-    .expect(withinExpandedPanel.getByRole('list').exists)
-    .ok();
+    .expect(withinExpandedPanel.getAllByRole('article').count)
+    .eql(50);
 });
 
-test.skip('update task list according to user actions', async (t) => {
-  const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
+test('update task list according to user actions', async (t) => {
+  const withinExpandedPanel = within(screen.getByTitle('Left panel'));
 
   await t
     .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
@@ -88,7 +96,7 @@ test.skip('update task list according to user actions', async (t) => {
 
   await t
     .expect(
-      within(screen.getByTestId('expanded-panel'))
+      within(screen.getByTitle('Left panel'))
         .getAllByText('usertask_to_be_claimed')
         .nth(0).exists,
     )
@@ -96,48 +104,50 @@ test.skip('update task list according to user actions', async (t) => {
 });
 
 test('scrolling', async (t) => {
+  const availableTasks = screen.queryByTitle('Available tasks');
+
   await t
-    .expect(screen.getAllByTestId(/task-/).count)
+    .expect(within(availableTasks).getAllByRole('article').count)
     .eql(50)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(screen.getAllByTestId(/task-/).nth(49));
+  await t.hover(within(availableTasks).getAllByRole('article').nth(49));
   await t
-    .expect(screen.getAllByTestId(/task-/).count)
+    .expect(within(availableTasks).queryAllByRole('link').count)
     .eql(100)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(screen.getAllByTestId(/task-/).nth(99));
+  await t.hover(within(availableTasks).getAllByRole('article').nth(99));
   await t
-    .expect(screen.getAllByTestId(/task-/).count)
+    .expect(within(availableTasks).queryAllByRole('link').count)
     .eql(150)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(screen.getAllByTestId(/task-/).nth(149));
+  await t.hover(within(availableTasks).getAllByRole('article').nth(149));
   await t
-    .expect(screen.getAllByTestId(/task-/).count)
+    .expect(within(availableTasks).queryAllByRole('link').count)
     .eql(200)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(screen.getAllByTestId(/task-/).nth(199));
+  await t.hover(within(availableTasks).getAllByRole('article').nth(199));
   await t
     .expect(screen.getByText('usertask_for_scrolling_3').exists)
     .ok()
     .expect(screen.queryByText('usertask_for_scrolling_1').exists)
     .notOk()
-    .expect(screen.getAllByTestId(/task-/).count)
+    .expect(within(availableTasks).queryAllByRole('link').count)
     .eql(200);
 
-  await t.hover(screen.getAllByTestId(/task-/).nth(0));
+  await t.hover(within(availableTasks).getAllByRole('article').nth(0));
   await t
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok()
     .expect(screen.queryByText('usertask_for_scrolling_3').exists)
     .notOk()
-    .expect(screen.getAllByTestId(/task-/).count)
+    .expect(within(availableTasks).queryAllByRole('link').count)
     .eql(200);
 });

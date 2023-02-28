@@ -8,7 +8,7 @@
 import {useEffect, useRef} from 'react';
 import {
   EmptyMessage,
-  UL,
+  ListContainer,
   Container,
   EmptyMessageFirstLine,
   EmptyMessageSecondLine,
@@ -37,7 +37,7 @@ const AvailableTasks: React.FC<Props> = ({
   tasks,
 }) => {
   const taskRef = useRef<HTMLDivElement>(null);
-  const scrollableListRef = useRef<HTMLUListElement>(null);
+  const scrollableListRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
@@ -47,10 +47,13 @@ const AvailableTasks: React.FC<Props> = ({
   }, [filter]);
 
   return (
-    <Container $enablePadding={tasks.length === 0 && !loading}>
+    <Container
+      $enablePadding={tasks.length === 0 && !loading}
+      title="Available tasks"
+    >
       {loading && <Skeleton />}
       {tasks.length > 0 && (
-        <UL
+        <ListContainer
           data-testid="scrollable-list"
           ref={scrollableListRef}
           onScroll={async (event) => {
@@ -83,7 +86,7 @@ const AvailableTasks: React.FC<Props> = ({
               />
             );
           })}
-        </UL>
+        </ListContainer>
       )}
       {tasks.length === 0 && !loading && (
         <Stack as={EmptyMessage} gap={5} orientation="horizontal">

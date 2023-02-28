@@ -5,16 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {UL} from './styled';
+import {ListContainer} from './styled';
 import {TaskSkeleton} from './Task/TaskSkeleton';
 
 const Skeleton: React.FC = () => {
   return (
-    <UL data-testid="tasks-skeleton">
+    <ListContainer data-testid="tasks-skeleton">
       {Array.from({length: 50}).map((_, index) => (
         <TaskSkeleton key={index} />
       ))}
-    </UL>
+    </ListContainer>
   );
 };
 

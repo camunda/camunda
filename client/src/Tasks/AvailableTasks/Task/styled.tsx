@@ -8,7 +8,7 @@
 /* istanbul ignore file */
 
 import {rem} from '@carbon/elements';
-import {Stack as BaseStack} from '@carbon/react';
+import {Stack as BaseStack, Tag as BaseTag} from '@carbon/react';
 import {NavLink} from 'react-router-dom';
 import styled, {css} from 'styled-components';
 
@@ -54,32 +54,28 @@ const Assignee = styled.span`
   ${({theme}) =>
     css`
       color: var(--cds-text-secondary);
-      ${theme.bodyShort01};
+      ${theme.label01};
     `}
 `;
 
 const CreationTime = styled.span`
   ${({theme}) =>
     css`
-      color: var(--cds-text-secondary);
+      color: var(--cds-text-primary);
       ${theme.label01};
     `}
 `;
 
 const Row = styled.div`
-  &:nth-child(1) {
-    display: flex;
-    flex-direction: column;
-  }
-
-  &:nth-child(2) {
-    display: flex;
-    justify-content: space-between;
-  }
+  min-height: ${rem(20)};
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 `;
 
 const TaskLink = styled(NavLink)`
   all: unset;
+  height: 100%;
   display: flex;
   align-items: stretch;
   box-sizing: border-box;
@@ -87,10 +83,12 @@ const TaskLink = styled(NavLink)`
 
 const Stack = styled(BaseStack)`
   width: 100%;
+  height: 100%;
 `;
 
-const Li = styled.li`
+const Container = styled.article`
   cursor: pointer;
+  height: ${rem(136)};
 
   &.active ${TaskLink} {
     background-color: var(--cds-layer-selected);
@@ -151,9 +149,9 @@ const Li = styled.li`
   }
 `;
 
-const SkeletonLi = styled.li`
-  min-height: ${rem(128)};
-  max-height: ${rem(128)};
+const SkeletonContainer = styled.article`
+  min-height: ${rem(136)};
+  max-height: ${rem(136)};
 
   &:last-child > * {
     border-bottom: ${ENTRY_DEFAULT_BORDER_WIDTH}px solid
@@ -173,6 +171,11 @@ const SkeletonLi = styled.li`
   }
 `;
 
+const Tag = styled(BaseTag)`
+  margin: 0;
+  cursor: pointer;
+`;
+
 export {
   Row,
   Name,
@@ -181,6 +184,7 @@ export {
   CreationTime,
   TaskLink,
   Stack,
-  Li,
-  SkeletonLi,
+  Container,
+  SkeletonContainer,
+  Tag,
 };

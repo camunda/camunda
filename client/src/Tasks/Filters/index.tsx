@@ -37,7 +37,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
   const dropdownRef = useRef<null | HTMLButtonElement>(null);
 
   return (
-    <Container>
+    <Container title="Filters">
       <Form<FormValues>
         onSubmit={(values) => {
           const searchParams = new URLSearchParams(location.search);
@@ -82,6 +82,7 @@ const Filters: React.FC<Props> = ({disabled}) => {
                   selectedItem={OPTIONS[input.value]}
                   onBlur={input.onBlur}
                   onFocus={input.onFocus}
+                  size="sm"
                 />
               )}
             </Field>

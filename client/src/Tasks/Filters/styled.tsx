@@ -7,7 +7,7 @@
 
 import styled, {css} from 'styled-components';
 
-const Container = styled.div`
+const Container = styled.section`
   ${({theme}) =>
     css`
       padding: ${theme.spacing04} ${theme.spacing05};

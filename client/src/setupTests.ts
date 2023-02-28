@@ -85,9 +85,6 @@ afterEach(async () => {
 
 afterAll(() => nodeMockServer.close());
 
-// mock app version
-process.env.REACT_APP_VERSION = '1.2.3';
-
 jest.mock('@bpmn-io/form-js-viewer/dist/assets/form-js.css', () => undefined);
 
 configure({

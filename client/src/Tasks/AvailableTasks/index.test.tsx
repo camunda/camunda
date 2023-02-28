@@ -13,6 +13,11 @@ import {
   mockGetAllOpenTasks,
   mockGetEmptyTasks,
 } from 'modules/queries/get-tasks';
+import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
+import {graphql} from 'msw';
+import {mockGetCurrentUser} from 'modules/queries/get-current-user';
+import {ApolloProvider} from '@apollo/client';
+import {client} from 'modules/apollo-client';
 
 function noop() {
   return Promise.resolve([]);
@@ -26,18 +31,28 @@ const getWrapper = (
   const Wrapper: React.FC<{
     children?: React.ReactNode;
   }> = ({children}) => (
-    <MockThemeProvider>
-      <MemoryRouter initialEntries={initialEntries}>
-        {children}
-        <Link to="/">go home</Link>
-      </MemoryRouter>
-    </MockThemeProvider>
+    <ApolloProvider client={client}>
+      <MockThemeProvider>
+        <MemoryRouter initialEntries={initialEntries}>
+          {children}
+          <Link to="/">go home</Link>
+        </MemoryRouter>
+      </MockThemeProvider>
+    </ApolloProvider>
   );
 
   return Wrapper;
 };
 
 describe('<Tasks />', () => {
+  beforeEach(() => {
+    nodeMockServer.use(
+      graphql.query('GetCurrentUser', (_, res, ctx) => {
+        return res.once(ctx.data(mockGetCurrentUser));
+      }),
+    );
+  });
+
   it('should not render when loading', async () => {
     const {rerender} = render(
       <AvailableTasks
@@ -88,20 +103,20 @@ describe('<Tasks />', () => {
       withinFirstTask.getByText(firstTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinFirstTask.getByText(firstTask.creationTime),
+      withinFirstTask.getByTitle('Created at 28 May 2020 - 10:11 AM'),
     ).toBeInTheDocument();
-    expect(withinFirstTask.getByText(firstTask.assignee!)).toBeInTheDocument();
+    expect(
+      await withinFirstTask.findByText('Assigned to me'),
+    ).toBeInTheDocument();
 
     expect(withinSecondTask.getByText(secondTask.name)).toBeInTheDocument();
     expect(
       withinSecondTask.getByText(secondTask.processName),
     ).toBeInTheDocument();
     expect(
-      withinSecondTask.getByText(secondTask.creationTime),
+      withinSecondTask.getByTitle('Created at 29 May 2020 - 01:14 PM'),
     ).toBeInTheDocument();
-    expect(
-      withinSecondTask.getByText(secondTask.assignee!),
-    ).toBeInTheDocument();
+    expect(withinSecondTask.getByText('Assigned')).toBeInTheDocument();
   });
 
   it('should render empty message when there are no tasks', async () => {

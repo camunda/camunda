@@ -31,10 +31,7 @@ function useTasks() {
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
-  const isClaimedByMeFilter = filter === FilterValues.ClaimedByMe;
-  const currentUserResult = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
-    skip: !isClaimedByMeFilter,
-  });
+  const currentUserResult = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const [variables, setVariables] = useState(
     getQueryVariables(filter, {
       userId: currentUserResult.data?.currentUser.userId,
@@ -54,9 +51,7 @@ function useTasks() {
   } = useQuery<GetTasks, GetTasksVariables>(GET_TASKS, {
     variables,
     pollInterval: POLLING_INTERVAL,
-    skip:
-      isClaimedByMeFilter &&
-      (!currentUserResult.called || currentUserResult.loading),
+    skip: currentUserResult.data === undefined,
     fetchPolicy: 'network-only',
     nextFetchPolicy: 'cache-and-network',
     context: {
