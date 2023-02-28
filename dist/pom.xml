@@ -244,7 +244,7 @@
               <goal>assemble</goal>
             </goals>
             <phase>package</phase>
-            <configuration />
+            <configuration></configuration>
           </execution>
         </executions>
       </plugin>

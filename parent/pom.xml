@@ -148,7 +148,7 @@
     <plugin.version.sortpom>3.0.1</plugin.version.sortpom>
     <plugin.version.spotbugs>4.5.3.0</plugin.version.spotbugs>
     <plugin.version.spotless>2.21.0</plugin.version.spotless>
-    <plugin.version.surefire>3.0.0-M5</plugin.version.surefire>
+    <plugin.version.surefire>3.0.0-M9</plugin.version.surefire>
     <plugin.version.versions>2.10.0</plugin.version.versions>
 
     <!-- maven extensions -->
@@ -1247,7 +1247,7 @@
                 <goal>check</goal>
               </goals>
               <phase>validate</phase>
-              <configuration />
+              <configuration></configuration>
             </execution>
           </executions>
         </plugin>
@@ -1430,7 +1430,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore></ignore>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1523,7 +1523,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence></dependencyConvergence>
                 </rules>
               </configuration>
             </execution>
@@ -1534,7 +1534,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions></banDuplicatePomDependencyVersions>
                 </rules>
               </configuration>
             </execution>
