@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.test.util.BufferAssert;
@@ -35,15 +35,15 @@ import org.junit.Test;
 
 public final class JobStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableJobState jobState;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    zeebeState = stateRule.getZeebeState();
-    jobState = zeebeState.getJobState();
+    processingState = stateRule.getProcessingState();
+    jobState = processingState.getJobState();
   }
 
   @Test

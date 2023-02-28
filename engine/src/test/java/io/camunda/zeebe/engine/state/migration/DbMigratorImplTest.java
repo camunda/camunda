@@ -13,7 +13,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,48 +24,48 @@ public class DbMigratorImplTest {
   @Test
   void shouldRunMigrationThatNeedsToBeRun() {
     // given
-    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockZeebeState)).thenReturn(true);
+    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockZeebeState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
 
     // then
-    verify(mockMigration).runMigration(mockZeebeState);
+    verify(mockMigration).runMigration(mockProcessingState);
   }
 
   @Test
   void shouldNotRunMigrationThatDoesNotNeedToBeRun() {
     // given
-    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockZeebeState)).thenReturn(false);
+    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(mockZeebeState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
 
     // then
-    verify(mockMigration, never()).runMigration(mockZeebeState);
+    verify(mockMigration, never()).runMigration(mockProcessingState);
   }
 
   @Test
   void shouldRunMigrationsInOrder() {
     // given
-    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockZeebeState)).thenReturn(true);
+    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
     final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockZeebeState)).thenReturn(true);
+    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockZeebeState, () -> List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(mockProcessingState, () -> List.of(mockMigration1, mockMigration2));
 
     // when
     sut.runMigrations();
@@ -73,19 +73,19 @@ public class DbMigratorImplTest {
     // then
     final var inOrder = Mockito.inOrder(mockMigration1, mockMigration2);
 
-    inOrder.verify(mockMigration1).runMigration(mockZeebeState);
-    inOrder.verify(mockMigration2).runMigration(mockZeebeState);
+    inOrder.verify(mockMigration1).runMigration(mockProcessingState);
+    inOrder.verify(mockMigration2).runMigration(mockProcessingState);
   }
 
   @Test
   void shouldNotRunAnyMigrationIfAbortSignalWasReceivedInTheVeryBeginning() {
     // given
-    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockZeebeState)).thenReturn(false);
+    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
 
     final var sut =
-        new DbMigratorImpl(mockZeebeState, () -> Collections.singletonList(mockMigration));
+        new DbMigratorImpl(mockProcessingState, () -> Collections.singletonList(mockMigration));
 
     // when
     sut.abort();
@@ -99,14 +99,14 @@ public class DbMigratorImplTest {
   @Test
   void shouldNotRunSubsequentMigrationsAfterAbortSignalWasReceived() {
     // given
-    final var mockZeebeState = mock(MutableZeebeState.class);
+    final var mockProcessingState = mock(MutableProcessingState.class);
     final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockZeebeState)).thenReturn(true);
+    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
     final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockZeebeState)).thenReturn(true);
+    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
 
     final var sut =
-        new DbMigratorImpl(mockZeebeState, () -> List.of(mockMigration1, mockMigration2));
+        new DbMigratorImpl(mockProcessingState, () -> List.of(mockMigration1, mockMigration2));
 
     doAnswer(
             (invocationOnMock) -> {
@@ -115,13 +115,13 @@ public class DbMigratorImplTest {
               return null;
             })
         .when(mockMigration1)
-        .runMigration(mockZeebeState);
+        .runMigration(mockProcessingState);
 
     // when
     sut.runMigrations();
 
     // then
-    verify(mockMigration1).runMigration(mockZeebeState);
-    verify(mockMigration2, never()).runMigration(mockZeebeState);
+    verify(mockMigration1).runMigration(mockProcessingState);
+    verify(mockMigration2, never()).runMigration(mockProcessingState);
   }
 }

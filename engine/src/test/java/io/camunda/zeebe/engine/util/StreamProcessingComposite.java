@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -33,7 +33,7 @@ public class StreamProcessingComposite {
   private final TestStreams streams;
   private final int partitionId;
   private final ZeebeDbFactory<?> zeebeDbFactory;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
   private final WriteActor writeActor = new WriteActor();
 
   public StreamProcessingComposite(
@@ -67,11 +67,11 @@ public class StreamProcessingComposite {
   private TypedRecordProcessors createTypedRecordProcessors(
       final StreamProcessorTestFactory factory,
       final TypedRecordProcessorContext typedRecordProcessorContext) {
-    zeebeState = typedRecordProcessorContext.getZeebeState();
+    processingState = typedRecordProcessorContext.getProcessingState();
 
     return factory.build(
         TypedRecordProcessors.processors(
-            zeebeState.getKeyGenerator(), typedRecordProcessorContext.getWriters()),
+            processingState.getKeyGenerator(), typedRecordProcessorContext.getWriters()),
         typedRecordProcessorContext);
   }
 
@@ -90,7 +90,7 @@ public class StreamProcessingComposite {
             getLogName(partitionId),
             zeebeDbFactory,
             (processingContext -> {
-              zeebeState = processingContext.getZeebeState();
+              processingState = processingContext.getProcessingState();
 
               return factory.createProcessors(processingContext);
             }),
@@ -123,8 +123,8 @@ public class StreamProcessingComposite {
     return streams.getStreamProcessor(getLogName(partitionId));
   }
 
-  public MutableZeebeState getZeebeState() {
-    return zeebeState;
+  public MutableProcessingState getProcessingState() {
+    return processingState;
   }
 
   public RecordStream events() {

@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -41,7 +41,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   public JobBatchActivateProcessor(
       final Writers writers,
-      final ZeebeState state,
+      final ProcessingState state,
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics) {
 

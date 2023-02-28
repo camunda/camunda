@@ -30,9 +30,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorCo
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.DbMigrationController;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -55,32 +55,32 @@ public final class EngineProcessors {
       final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
-    final MutableZeebeState zeebeState = typedRecordProcessorContext.getZeebeState();
+    final var processingState = typedRecordProcessorContext.getProcessingState();
     final var writers = typedRecordProcessorContext.getWriters();
     final TypedRecordProcessors typedRecordProcessors =
-        TypedRecordProcessors.processors(zeebeState.getKeyGenerator(), writers);
+        TypedRecordProcessors.processors(processingState.getKeyGenerator(), writers);
 
     // register listener that handles migrations immediately, so it is the first to be called
-    typedRecordProcessors.withListener(new DbMigrationController(zeebeState));
+    typedRecordProcessors.withListener(new DbMigrationController(processingState));
 
-    typedRecordProcessors.withListener(zeebeState);
+    typedRecordProcessors.withListener(processingState);
 
     final int partitionId = typedRecordProcessorContext.getPartitionId();
 
     final DueDateTimerChecker timerChecker =
-        new DueDateTimerChecker(zeebeState.getTimerState(), featureFlags);
+        new DueDateTimerChecker(processingState.getTimerState(), featureFlags);
 
     final var jobMetrics = new JobMetrics(partitionId);
-    final var processEngineMetrics = new ProcessEngineMetrics(zeebeState.getPartitionId());
+    final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
     subscriptionCommandSender.setWriters(writers);
 
     final var decisionBehavior =
         new DecisionBehavior(
-            DecisionEngineFactory.createDecisionEngine(), zeebeState, processEngineMetrics);
+            DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
-            zeebeState,
+            processingState,
             writers,
             subscriptionCommandSender,
             partitionsCount,
@@ -90,42 +90,42 @@ public final class EngineProcessors {
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
-        zeebeState,
+        processingState,
         typedRecordProcessors,
         writers,
         partitionsCount,
         deploymentDistributionCommandSender,
-        zeebeState.getKeyGenerator());
+        processingState.getKeyGenerator());
     addMessageProcessors(
-        bpmnBehaviors, subscriptionCommandSender, zeebeState, typedRecordProcessors, writers);
+        bpmnBehaviors, subscriptionCommandSender, processingState, typedRecordProcessors, writers);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
-            zeebeState,
+            processingState,
             bpmnBehaviors,
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
             timerChecker);
 
-    addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, zeebeState);
+    addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
     JobEventProcessors.addJobProcessors(
         typedRecordProcessors,
-        zeebeState,
+        processingState,
         onJobsAvailableCallback,
         bpmnBehaviors,
         writers,
         jobMetrics);
 
-    addIncidentProcessors(zeebeState, bpmnStreamProcessor, typedRecordProcessors, writers);
-    addResourceDeletionProcessors(typedRecordProcessors, writers, zeebeState);
+    addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
+    addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
 
     return typedRecordProcessors;
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final Writers writers,
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
@@ -133,7 +133,7 @@ public final class EngineProcessors {
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior) {
     return new BpmnBehaviorsImpl(
-        zeebeState,
+        processingState,
         writers,
         jobMetrics,
         decisionBehavior,
@@ -143,14 +143,14 @@ public final class EngineProcessors {
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
       final DueDateTimerChecker timerChecker) {
     return ProcessEventProcessors.addProcessProcessors(
-        zeebeState,
+        processingState,
         bpmnBehaviors,
         typedRecordProcessors,
         subscriptionCommandSender,
@@ -160,7 +160,7 @@ public final class EngineProcessors {
 
   private static void addDeploymentRelatedProcessorAndServices(
       final BpmnBehaviorsImpl bpmnBehaviors,
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final int partitionsCount,
@@ -171,7 +171,7 @@ public final class EngineProcessors {
     // it will cause a distribution to other partitions
     final var processor =
         new DeploymentCreateProcessor(
-            zeebeState,
+            processingState,
             bpmnBehaviors,
             partitionsCount,
             writers,
@@ -182,19 +182,19 @@ public final class EngineProcessors {
     // periodically retries deployment distribution
     final var deploymentRedistributor =
         new DeploymentRedistributor(
-            deploymentDistributionCommandSender, zeebeState.getDeploymentState());
+            deploymentDistributionCommandSender, processingState.getDeploymentState());
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            zeebeState, deploymentDistributionCommandSender, writers, keyGenerator);
+            processingState, deploymentDistributionCommandSender, writers, keyGenerator);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
 
     // completes the deployment distribution
     final var completeDeploymentDistributionProcessor =
-        new CompleteDeploymentDistributionProcessor(zeebeState.getDeploymentState(), writers);
+        new CompleteDeploymentDistributionProcessor(processingState.getDeploymentState(), writers);
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT_DISTRIBUTION,
         DeploymentDistributionIntent.COMPLETE,
@@ -202,32 +202,32 @@ public final class EngineProcessors {
   }
 
   private static void addIncidentProcessors(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     IncidentEventProcessors.addProcessors(
-        typedRecordProcessors, zeebeState, bpmnStreamProcessor, writers);
+        typedRecordProcessors, processingState, bpmnStreamProcessor, writers);
   }
 
   private static void addMessageProcessors(
       final BpmnBehaviorsImpl bpmnBehaviors,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers) {
     MessageEventProcessors.addMessageProcessors(
-        bpmnBehaviors, typedRecordProcessors, zeebeState, subscriptionCommandSender, writers);
+        bpmnBehaviors, typedRecordProcessors, processingState, subscriptionCommandSender, writers);
   }
 
   private static void addDecisionProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final DecisionBehavior decisionBehavior,
       final Writers writers,
-      final MutableZeebeState zeebeState) {
+      final MutableProcessingState processingState) {
 
     final EvaluateDecisionProcessor evaluateDecisionProcessor =
-        new EvaluateDecisionProcessor(decisionBehavior, zeebeState.getKeyGenerator(), writers);
+        new EvaluateDecisionProcessor(decisionBehavior, processingState.getKeyGenerator(), writers);
     typedRecordProcessors.onCommand(
         ValueType.DECISION_EVALUATION,
         DecisionEvaluationIntent.EVALUATE,
@@ -237,10 +237,10 @@ public final class EngineProcessors {
   private static void addResourceDeletionProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final MutableZeebeState zeebeState) {
+      final MutableProcessingState processingState) {
     final var resourceDeletionProcessor =
         new ResourceDeletionProcessor(
-            writers, zeebeState.getKeyGenerator(), zeebeState.getDecisionState());
+            writers, processingState.getKeyGenerator(), processingState.getDecisionState());
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
   }

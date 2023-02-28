@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -38,7 +38,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 /**
- * Applies state changes from events to the {@link MutableZeebeState}.
+ * Applies state changes from events to the {@link MutableProcessingState}.
  *
  * <p>Finds the correct {@link TypedEventApplier} and delegates.
  */
@@ -49,7 +49,7 @@ public final class EventAppliers implements EventApplier {
 
   private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
 
-  public EventAppliers(final MutableZeebeState state) {
+  public EventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
     registerProcessInstanceCreationAppliers(state);
     registerProcessInstanceModificationAppliers(state);
@@ -76,13 +76,13 @@ public final class EventAppliers implements EventApplier {
     registerSignalSubscriptionAppliers(state);
   }
 
-  private void registerTimeEventAppliers(final MutableZeebeState state) {
+  private void registerTimeEventAppliers(final MutableProcessingState state) {
     register(TimerIntent.CREATED, new TimerCreatedApplier(state.getTimerState()));
     register(TimerIntent.CANCELED, new TimerCancelledApplier(state.getTimerState()));
     register(TimerIntent.TRIGGERED, new TimerTriggeredApplier(state.getTimerState()));
   }
 
-  private void registerDeploymentAppliers(final MutableZeebeState state) {
+  private void registerDeploymentAppliers(final MutableProcessingState state) {
     register(DeploymentDistributionIntent.DISTRIBUTING, new DeploymentDistributionApplier(state));
     register(
         DeploymentDistributionIntent.COMPLETED,
@@ -97,13 +97,13 @@ public final class EventAppliers implements EventApplier {
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
   }
 
-  private void registerVariableEventAppliers(final MutableZeebeState state) {
+  private void registerVariableEventAppliers(final MutableProcessingState state) {
     final VariableApplier variableApplier = new VariableApplier(state.getVariableState());
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
   }
 
-  private void registerProcessInstanceEventAppliers(final MutableZeebeState state) {
+  private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {
     final var elementInstanceState = state.getElementInstanceState();
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
     final var processState = state.getProcessState();
@@ -141,7 +141,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
   }
 
-  private void registerProcessInstanceCreationAppliers(final MutableZeebeState state) {
+  private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
     final var processState = state.getProcessState();
     final var elementInstanceState = state.getElementInstanceState();
 
@@ -150,14 +150,14 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceCreationCreatedApplier(processState, elementInstanceState));
   }
 
-  private void registerProcessInstanceModificationAppliers(final MutableZeebeState state) {
+  private void registerProcessInstanceModificationAppliers(final MutableProcessingState state) {
     register(
         ProcessInstanceModificationIntent.MODIFIED,
         new ProcessInstanceModifiedEventApplier(
             state.getElementInstanceState(), state.getProcessState()));
   }
 
-  private void registerJobIntentEventAppliers(final MutableZeebeState state) {
+  private void registerJobIntentEventAppliers(final MutableProcessingState state) {
     register(JobIntent.CANCELED, new JobCanceledApplier(state));
     register(JobIntent.COMPLETED, new JobCompletedApplier(state));
     register(JobIntent.CREATED, new JobCreatedApplier(state));
@@ -168,12 +168,12 @@ public final class EventAppliers implements EventApplier {
     register(JobIntent.RECURRED_AFTER_BACKOFF, new JobRecurredApplier(state));
   }
 
-  private void registerMessageAppliers(final MutableZeebeState state) {
+  private void registerMessageAppliers(final MutableProcessingState state) {
     register(MessageIntent.PUBLISHED, new MessagePublishedApplier(state.getMessageState()));
     register(MessageIntent.EXPIRED, new MessageExpiredApplier(state.getMessageState()));
   }
 
-  private void registerMessageSubscriptionAppliers(final MutableZeebeState state) {
+  private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {
     register(
         MessageSubscriptionIntent.CREATED,
         new MessageSubscriptionCreatedApplier(state.getMessageSubscriptionState()));
@@ -192,7 +192,7 @@ public final class EventAppliers implements EventApplier {
         new MessageSubscriptionDeletedApplier(state.getMessageSubscriptionState()));
   }
 
-  private void registerMessageStartEventSubscriptionAppliers(final MutableZeebeState state) {
+  private void registerMessageStartEventSubscriptionAppliers(final MutableProcessingState state) {
     register(
         MessageStartEventSubscriptionIntent.CREATED,
         new MessageStartEventSubscriptionCreatedApplier(
@@ -206,7 +206,7 @@ public final class EventAppliers implements EventApplier {
             state.getMessageStartEventSubscriptionState()));
   }
 
-  private void registerIncidentEventAppliers(final MutableZeebeState state) {
+  private void registerIncidentEventAppliers(final MutableProcessingState state) {
     register(
         IncidentIntent.CREATED,
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
@@ -216,7 +216,7 @@ public final class EventAppliers implements EventApplier {
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
   }
 
-  private void registerProcessMessageSubscriptionEventAppliers(final MutableZeebeState state) {
+  private void registerProcessMessageSubscriptionEventAppliers(final MutableProcessingState state) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         state.getProcessMessageSubscriptionState();
 
@@ -237,7 +237,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessMessageSubscriptionDeletedApplier(subscriptionState));
   }
 
-  private void registerProcessEventAppliers(final MutableZeebeState state) {
+  private void registerProcessEventAppliers(final MutableProcessingState state) {
     register(
         ProcessEventIntent.TRIGGERING,
         new ProcessEventTriggeringApplier(
@@ -249,7 +249,7 @@ public final class EventAppliers implements EventApplier {
         new ProcessEventTriggeredApplier(state.getEventScopeInstanceState()));
   }
 
-  private void registerSignalSubscriptionAppliers(final MutableZeebeState state) {
+  private void registerSignalSubscriptionAppliers(final MutableProcessingState state) {
     register(
         SignalSubscriptionIntent.CREATED,
         new SignalSubscriptionCreatedApplier(state.getSignalSubscriptionState()));
@@ -258,12 +258,12 @@ public final class EventAppliers implements EventApplier {
         new SignalSubscriptionDeletedApplier(state.getSignalSubscriptionState()));
   }
 
-  private void registerDecisionAppliers(final MutableZeebeState state) {
+  private void registerDecisionAppliers(final MutableProcessingState state) {
     register(DecisionIntent.CREATED, new DecisionCreatedApplier(state.getDecisionState()));
     register(DecisionIntent.DELETED, new DecisionDeletedApplier(state.getDecisionState()));
   }
 
-  private void registerDecisionRequirementsAppliers(final MutableZeebeState state) {
+  private void registerDecisionRequirementsAppliers(final MutableProcessingState state) {
     register(
         DecisionRequirementsIntent.CREATED,
         new DecisionRequirementsCreatedApplier(state.getDecisionState()));

@@ -11,8 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
@@ -24,15 +24,15 @@ import org.junit.Test;
 
 public final class MessageStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageState messageState;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    zeebeState = stateRule.getZeebeState();
-    messageState = zeebeState.getMessageState();
+    processingState = stateRule.getProcessingState();
+    messageState = processingState.getMessageState();
   }
 
   @Test

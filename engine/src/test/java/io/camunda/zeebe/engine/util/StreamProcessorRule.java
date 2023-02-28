@@ -12,7 +12,7 @@ import static io.camunda.zeebe.engine.util.StreamProcessingComposite.getLogName;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
@@ -169,8 +169,8 @@ public final class StreamProcessorRule implements TestRule {
     return clock;
   }
 
-  public MutableZeebeState getZeebeState() {
-    return streamProcessingComposite.getZeebeState();
+  public MutableProcessingState getProcessingState() {
+    return streamProcessingComposite.getProcessingState();
   }
 
   public RecordStream events() {

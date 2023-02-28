@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -31,19 +31,19 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final EventHandle eventHandle;
 
   public BpmnBufferedMessageStartEventBehavior(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final Writers writers) {
-    messageState = zeebeState.getMessageState();
-    processState = zeebeState.getProcessState();
-    messageStartEventSubscriptionState = zeebeState.getMessageStartEventSubscriptionState();
+    messageState = processingState.getMessageState();
+    processState = processingState.getProcessState();
+    messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
 
     eventHandle =
         new EventHandle(
             keyGenerator,
-            zeebeState.getEventScopeInstanceState(),
+            processingState.getEventScopeInstanceState(),
             writers,
             processState,
             eventTriggerBehavior,

@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 
@@ -18,8 +18,8 @@ public class DeploymentDistributionApplier
 
   private final MutableDeploymentState deploymentState;
 
-  public DeploymentDistributionApplier(final MutableZeebeState zeebeState) {
-    deploymentState = zeebeState.getDeploymentState();
+  public DeploymentDistributionApplier(final MutableProcessingState processingState) {
+    deploymentState = processingState.getDeploymentState();
   }
 
   @Override

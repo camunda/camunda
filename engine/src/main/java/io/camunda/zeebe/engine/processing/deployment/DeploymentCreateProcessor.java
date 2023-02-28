@@ -25,8 +25,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -57,14 +57,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final TypedResponseWriter responseWriter;
 
   public DeploymentCreateProcessor(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final int partitionsCount,
       final Writers writers,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator) {
-    processState = zeebeState.getProcessState();
-    timerInstanceState = zeebeState.getTimerState();
+    processState = processingState.getProcessState();
+    timerInstanceState = processingState.getTimerState();
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -72,8 +72,9 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     deploymentTransformer =
-        new DeploymentTransformer(stateWriter, zeebeState, expressionProcessor, keyGenerator);
-    startEventSubscriptionManager = new StartEventSubscriptionManager(zeebeState, keyGenerator);
+        new DeploymentTransformer(stateWriter, processingState, expressionProcessor, keyGenerator);
+    startEventSubscriptionManager =
+        new StartEventSubscriptionManager(processingState, keyGenerator);
     deploymentDistributionBehavior =
         new DeploymentDistributionBehavior(
             writers, partitionsCount, deploymentDistributionCommandSender);

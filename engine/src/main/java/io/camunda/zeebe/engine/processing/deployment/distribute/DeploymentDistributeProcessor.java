@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManag
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -25,12 +25,13 @@ public final class DeploymentDistributeProcessor implements TypedRecordProcessor
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
 
   public DeploymentDistributeProcessor(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final Writers writers,
       final KeyGenerator keyGenerator) {
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
-    startEventSubscriptionManager = new StartEventSubscriptionManager(zeebeState, keyGenerator);
+    startEventSubscriptionManager =
+        new StartEventSubscriptionManager(processingState, keyGenerator);
     stateWriter = writers.state();
   }
 

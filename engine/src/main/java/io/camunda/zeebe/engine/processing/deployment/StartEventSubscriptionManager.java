@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
@@ -41,10 +41,10 @@ public class StartEventSubscriptionManager {
   private final KeyGenerator keyGenerator;
 
   public StartEventSubscriptionManager(
-      final ZeebeState zeebeState, final KeyGenerator keyGenerator) {
-    processState = zeebeState.getProcessState();
-    messageStartEventSubscriptionState = zeebeState.getMessageStartEventSubscriptionState();
-    signalSubscriptionState = zeebeState.getSignalSubscriptionState();
+      final ProcessingState processingState, final KeyGenerator keyGenerator) {
+    processState = processingState.getProcessState();
+    messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
+    signalSubscriptionState = processingState.getSignalSubscriptionState();
     this.keyGenerator = keyGenerator;
   }
 

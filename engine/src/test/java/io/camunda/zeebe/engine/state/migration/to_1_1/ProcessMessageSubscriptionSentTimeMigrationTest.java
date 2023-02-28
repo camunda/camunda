@@ -16,10 +16,10 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.ProcessMessageSubscriptionSentTimeMigration;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -37,11 +37,11 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
     @Test
     public void noMigrationNeededWhenColumnIsEmpty() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME))
+      final var mockProcessingState = mock(ProcessingState.class);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME))
           .thenReturn(true);
       // when
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isFalse();
@@ -50,12 +50,12 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
     @Test
     public void migrationNeededWhenColumnIsNotEmpty() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME))
+      final var mockProcessingState = mock(ProcessingState.class);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.PROCESS_SUBSCRIPTION_BY_SENT_TIME))
           .thenReturn(false);
 
       // when
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isTrue();
@@ -64,30 +64,30 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
     @Test
     public void migrationCallsMethodInMigrationState() {
       // given
-      final var mockZeebeState = mock(MutableZeebeState.class, RETURNS_DEEP_STUBS);
+      final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(mockZeebeState);
+      sutMigration.runMigration(mockProcessingState);
 
       // then
-      verify(mockZeebeState.getMigrationState())
+      verify(mockProcessingState.getMigrationState())
           .migrateProcessMessageSubscriptionSentTime(
-              mockZeebeState.getProcessMessageSubscriptionState(),
-              mockZeebeState.getPendingProcessMessageSubscriptionState());
+              mockProcessingState.getProcessMessageSubscriptionState(),
+              mockProcessingState.getPendingProcessMessageSubscriptionState());
 
-      verifyNoMoreInteractions(mockZeebeState.getMigrationState());
+      verifyNoMoreInteractions(mockProcessingState.getMigrationState());
     }
   }
 
   @Nested
-  @ExtendWith(ZeebeStateExtension.class)
+  @ExtendWith(ProcessingStateExtension.class)
   public class BlackboxTest {
 
     private static final long TEST_SENT_TIME = 1000L;
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-    private MutableZeebeState zeebeState;
+    private MutableProcessingState processingState;
 
     private TransactionContext transactionContext;
 
@@ -96,7 +96,7 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       // given database with legacy records
       final var legacySubscriptionState =
           new LegacyDbProcessMessageSubscriptionState(zeebeDb, transactionContext);
-      final var subscriptionState = zeebeState.getProcessMessageSubscriptionState();
+      final var subscriptionState = processingState.getProcessMessageSubscriptionState();
 
       final var openingProcessMessageSubscription =
           TestUtilities.createLegacyProcessMessageSubscription(100, 1);
@@ -111,7 +111,7 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       // given database with legacy records
 
       // when
-      final var actual = sutMigration.needsToRun(zeebeState);
+      final var actual = sutMigration.needsToRun(processingState);
 
       // then
       assertThat(actual).describedAs("Migration should run").isTrue();
@@ -122,8 +122,8 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       // given database with legacy records
 
       // when
-      sutMigration.runMigration(zeebeState);
-      final var actual = sutMigration.needsToRun(zeebeState);
+      sutMigration.runMigration(processingState);
+      final var actual = sutMigration.needsToRun(processingState);
 
       // then
       assertThat(actual).describedAs("Migration should run").isFalse();
