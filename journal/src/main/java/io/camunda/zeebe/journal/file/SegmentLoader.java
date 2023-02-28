@@ -10,7 +10,6 @@ package io.camunda.zeebe.journal.file;
 import io.camunda.zeebe.journal.CorruptedJournalException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.fs.PosixFs;
-import io.camunda.zeebe.journal.fs.PosixFs.Advice;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -156,7 +155,7 @@ final class SegmentLoader {
     final var mappedSegment = channel.map(MapMode.READ_WRITE, 0, segmentSize);
     mappedSegment.order(ENDIANNESS);
 
-    posixFs.madvise(mappedSegment, segmentSize, Advice.POSIX_MADV_SEQUENTIAL);
+    // posixFs.madvise(mappedSegment, segmentSize, Advice.POSIX_MADV_SEQUENTIAL);
     return mappedSegment;
   }
 

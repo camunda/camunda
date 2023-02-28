@@ -75,6 +75,7 @@ final class SegmentWriter {
     firstAsqn = lastWrittenAsqn + 1;
     lastAsqn = lastWrittenAsqn;
     this.metrics = metrics;
+    buffer.load();
     reset(0, false);
   }
 
