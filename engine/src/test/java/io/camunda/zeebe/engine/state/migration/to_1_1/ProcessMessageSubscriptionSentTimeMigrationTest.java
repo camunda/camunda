@@ -96,7 +96,6 @@ public class ProcessMessageSubscriptionSentTimeMigrationTest {
       // given database with legacy records
       final var legacySubscriptionState =
           new LegacyDbProcessMessageSubscriptionState(zeebeDb, transactionContext);
-      final var subscriptionState = processingState.getProcessMessageSubscriptionState();
 
       final var openingProcessMessageSubscription =
           TestUtilities.createLegacyProcessMessageSubscription(100, 1);
