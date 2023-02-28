@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ACTIVATE_ELEMENT;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
@@ -130,12 +131,14 @@ public final class StreamProcessorContinouslyReplayModeTest {
   public void shouldPauseReplay() {
     // given
     final var streamProcessor = streamPlatform.startStreamProcessorInReplayOnlyMode();
-    streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
-        RecordToWrite.event()
-            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
-            .causedBy(0));
+    final long position =
+        streamPlatform.writeBatch(
+            RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+            RecordToWrite.event()
+                .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+                .causedBy(0));
 
+    assertThat(position).as("records were successfully written").isGreaterThan(0);
     await("should have replayed first events")
         .until(() -> streamProcessor.getLastProcessedPositionAsync().join(), (pos) -> pos > 0L);
 
