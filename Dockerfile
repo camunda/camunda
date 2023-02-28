@@ -11,14 +11,11 @@ ENV TMP_ARCHIVE=/tmp/zeebe.tar.gz \
 COPY ${DISTBALL} ${TMP_ARCHIVE}
 
 RUN mkdir -p ${TMP_DIR} && \
-    tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR} && \
-    # already create volume dir to later have correct rights
-    mkdir ${TMP_DIR}/data
+    tar xfvz ${TMP_ARCHIVE} --strip 1 -C ${TMP_DIR}
 
 ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini ${TMP_DIR}/bin/tini
 COPY docker/utils/startup.sh ${TMP_DIR}/bin/startup.sh
 RUN chmod +x -R ${TMP_DIR}/bin/
-RUN chmod 0775 ${TMP_DIR} ${TMP_DIR}/data
 
 # Building prod image
 FROM eclipse-temurin:17.0.6_10-jre-focal as prod
@@ -40,14 +37,20 @@ ENV PATH "${ZB_HOME}/bin:${PATH}"
 WORKDIR ${ZB_HOME}
 EXPOSE 26500 26501 26502
 VOLUME ${ZB_HOME}/data
+VOLUME ${ZB_HOME}/logs
+
+COPY --from=builder --chown=1000:0 /tmp/zeebe ${ZB_HOME}
 
 RUN groupadd -g 1000 zeebe && \
     adduser -u 1000 zeebe --system --ingroup zeebe && \
     chmod g=u /etc/passwd && \
-    chown 1000:0 ${ZB_HOME} && \
-    chmod 0775 ${ZB_HOME}
+    # These directories are to be mounted by users, eagerly creating them and setting ownership
+    # helps to avoid potential permission issues due to default volume ownership.
+    mkdir ${ZB_HOME}/data && \
+    mkdir ${ZB_HOME}/logs && \
+    chown -R 1000:0 ${ZB_HOME} && \
+    chmod -R 0775 ${ZB_HOME}
 
 COPY --from=builder --chown=1000:0 /tmp/zeebe/bin/startup.sh /usr/local/bin/startup.sh
-COPY --from=builder --chown=1000:0 /tmp/zeebe ${ZB_HOME}
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
