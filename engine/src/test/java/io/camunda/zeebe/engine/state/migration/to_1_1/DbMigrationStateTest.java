@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.state.message.MessageSubscription;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import java.util.ArrayList;
@@ -26,14 +26,14 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ZeebeStateExtension.class)
+@ExtendWith(ProcessingStateExtension.class)
 public class DbMigrationStateTest {
 
   private static final long TEST_SENT_TIME = 1000L;
 
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
 
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   private TransactionContext transactionContext;
 
@@ -56,9 +56,10 @@ public class DbMigrationStateTest {
     transactionContext.getCurrentTransaction().commit();
 
     // when
-    final var migrationState = zeebeState.getMigrationState();
+    final var migrationState = processingState.getMigrationState();
     migrationState.migrateMessageSubscriptionSentTime(
-        zeebeState.getMessageSubscriptionState(), zeebeState.getPendingMessageSubscriptionState());
+        processingState.getMessageSubscriptionState(),
+        processingState.getPendingMessageSubscriptionState());
 
     // then
 
@@ -68,7 +69,7 @@ public class DbMigrationStateTest {
         .describedAs("Column family MESSAGE_SUBSCRIPTION_BY_SENT_TIME is empty")
         .isTrue();
 
-    final var subscriptionState = zeebeState.getMessageSubscriptionState();
+    final var subscriptionState = processingState.getMessageSubscriptionState();
 
     // the correlating subscription has correlating = true in persistent state
     final var migratedSubscriptionInCorrelation =
@@ -96,7 +97,7 @@ public class DbMigrationStateTest {
   }
 
   private void assertThaRecordIsPresentInTransientState(final MessageSubscriptionRecord record) {
-    final var transientSubscriptionState = zeebeState.getPendingMessageSubscriptionState();
+    final var transientSubscriptionState = processingState.getPendingMessageSubscriptionState();
 
     final var correlatingSubscriptions = new ArrayList<MessageSubscriptionRecord>();
 
@@ -119,7 +120,7 @@ public class DbMigrationStateTest {
     // given database with legacy records
     final var legacySubscriptionState =
         new LegacyDbProcessMessageSubscriptionState(zeebeDb, transactionContext);
-    final var subscriptionState = zeebeState.getProcessMessageSubscriptionState();
+    final var subscriptionState = processingState.getProcessMessageSubscriptionState();
 
     final var openingProcessMessageSubscription =
         TestUtilities.createLegacyProcessMessageSubscription(100, 1);
@@ -146,10 +147,10 @@ public class DbMigrationStateTest {
         closingProcessMessageSubscription.getRecord(), TEST_SENT_TIME);
 
     // when
-    final var migrationState = zeebeState.getMigrationState();
+    final var migrationState = processingState.getMigrationState();
     migrationState.migrateProcessMessageSubscriptionSentTime(
-        zeebeState.getProcessMessageSubscriptionState(),
-        zeebeState.getPendingProcessMessageSubscriptionState());
+        processingState.getProcessMessageSubscriptionState(),
+        processingState.getPendingProcessMessageSubscriptionState());
 
     // then
     // the sent time column family is empty
@@ -195,7 +196,8 @@ public class DbMigrationStateTest {
 
   private void assertThatRecordsArePresentInTransientState(
       final ProcessMessageSubscriptionRecord... subscriptionRecords) {
-    final var transientSubscriptionState = zeebeState.getPendingProcessMessageSubscriptionState();
+    final var transientSubscriptionState =
+        processingState.getPendingProcessMessageSubscriptionState();
 
     final var correlatingSubscriptions = new ArrayList<ProcessMessageSubscriptionRecord>();
 

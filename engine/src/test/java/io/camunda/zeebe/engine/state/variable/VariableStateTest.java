@@ -19,9 +19,9 @@ import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Arrays;
@@ -35,7 +35,7 @@ import org.junit.Test;
 
 public final class VariableStateTest {
 
-  @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
+  @ClassRule public static final ProcessingStateRule ZEEBE_STATE_RULE = new ProcessingStateRule();
   private static final long PROCESS_KEY = 123;
   private static final AtomicLong PARENT_KEY = new AtomicLong(0);
   private static final AtomicLong CHILD_KEY = new AtomicLong(1);
@@ -49,9 +49,9 @@ public final class VariableStateTest {
 
   @BeforeClass
   public static void setUp() {
-    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
-    elementInstanceState = zeebeState.getElementInstanceState();
-    variableState = zeebeState.getVariableState();
+    final MutableProcessingState processingState = ZEEBE_STATE_RULE.getProcessingState();
+    elementInstanceState = processingState.getElementInstanceState();
+    variableState = processingState.getVariableState();
   }
 
   @Before

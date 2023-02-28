@@ -9,29 +9,29 @@ package io.camunda.zeebe.engine.state.migration;
 
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.function.Function;
 
 public final class DbMigrationController implements StreamProcessorLifecycleAware {
 
   private DbMigrator dbMigrator;
-  private final Function<MutableZeebeState, DbMigrator> migratorFactory;
-  private final MutableZeebeState mutableZeebeState;
+  private final Function<MutableProcessingState, DbMigrator> migratorFactory;
+  private final MutableProcessingState mutableProcessingState;
 
-  public DbMigrationController(final MutableZeebeState mutableZeebeState) {
-    this(mutableZeebeState, DbMigratorImpl::new);
+  public DbMigrationController(final MutableProcessingState mutableProcessingState) {
+    this(mutableProcessingState, DbMigratorImpl::new);
   }
 
   DbMigrationController(
-      final MutableZeebeState mutableZeebeState,
-      final Function<MutableZeebeState, DbMigrator> migratorFactory) {
-    this.mutableZeebeState = mutableZeebeState;
+      final MutableProcessingState mutableProcessingState,
+      final Function<MutableProcessingState, DbMigrator> migratorFactory) {
+    this.mutableProcessingState = mutableProcessingState;
     this.migratorFactory = migratorFactory;
   }
 
   @Override
-  public final void onRecovered(final ReadonlyStreamProcessorContext context) {
-    final var migrator = migratorFactory.apply(mutableZeebeState);
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    final var migrator = migratorFactory.apply(mutableProcessingState);
 
     synchronized (this) {
       dbMigrator = migrator;
@@ -46,12 +46,12 @@ public final class DbMigrationController implements StreamProcessorLifecycleAwar
   }
 
   @Override
-  public final void onClose() {
+  public void onClose() {
     abortMigrationIfRunning();
   }
 
   @Override
-  public final void onFailed() {
+  public void onFailed() {
     abortMigrationIfRunning();
   }
 

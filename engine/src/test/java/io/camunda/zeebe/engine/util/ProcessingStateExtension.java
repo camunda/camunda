@@ -14,9 +14,9 @@ import static org.junit.platform.commons.util.ReflectionUtils.makeAccessible;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.protocol.Protocol;
 import java.io.IOException;
@@ -44,7 +44,7 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
  * <ul>
  *   <li>{@code ZeebeDb} (exact type match)
  *   <li>{@code TransactionContext} (exact type match)
- *   <li>{@code MutableZeebeState} (exact type match or supertypes)
+ *   <li>{@code MutableProcessingState} (exact type match or supertypes)
  * </ul>
  *
  * on fields with the corresponding type.
@@ -52,11 +52,11 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
  * <p>Usage:
  *
  * <pre>{@code
- * @ExtendWith(ZeebeStateExtension)
+ * @ExtendWith(ProcessingStateExtension)
  * public class Test {
  *   private ZeebeDb db; //will be injected
  *   private TransactionContext txContext; //will be injected
- *   private MutableZeebeState state //will be injected
+ *   private MutableProcessingState state //will be injected
  *
  *   ...
  * }
@@ -69,7 +69,7 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
  * private ZeebeDb db2; // will be injected, but will be the same instance as db1
  * }</pre>
  */
-public class ZeebeStateExtension implements BeforeEachCallback {
+public class ProcessingStateExtension implements BeforeEachCallback {
 
   private static final String FIELD_STATE = "state";
 
@@ -81,11 +81,11 @@ public class ZeebeStateExtension implements BeforeEachCallback {
         .forEach(instance -> injectFields(context, instance, instance.getClass()));
   }
 
-  public ZeebeStateExtensionState lookupOrCreate(final ExtensionContext extensionContext) {
+  public ProcessingStateExtensionState lookupOrCreate(final ExtensionContext extensionContext) {
     final var store = getStore(extensionContext);
 
-    return (ZeebeStateExtensionState)
-        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new ZeebeStateExtensionState());
+    return (ProcessingStateExtensionState)
+        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new ProcessingStateExtensionState());
   }
 
   private void injectFields(
@@ -123,12 +123,13 @@ public class ZeebeStateExtension implements BeforeEachCallback {
             testClass,
             field ->
                 ReflectionUtils.isNotStatic(field)
-                    && field.getType().isAssignableFrom(MutableZeebeState.class),
+                    && field.getType().isAssignableFrom(MutableProcessingState.class),
             HierarchyTraversalMode.TOP_DOWN)
         .forEach(
             field -> {
               try {
-                makeAccessible(field).set(testInstance, lookupOrCreate(context).getZeebeState());
+                makeAccessible(field)
+                    .set(testInstance, lookupOrCreate(context).getProcessingState());
               } catch (final Throwable t) {
                 ExceptionUtils.throwAsUncheckedException(t);
               }
@@ -139,13 +140,13 @@ public class ZeebeStateExtension implements BeforeEachCallback {
     return context.getStore(Namespace.create(getClass(), context.getUniqueId()));
   }
 
-  private static final class ZeebeStateExtensionState implements CloseableResource {
+  private static final class ProcessingStateExtensionState implements CloseableResource {
     private Path tempFolder;
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
     private TransactionContext transactionContext;
-    private MutableZeebeState zeebeState;
+    private MutableProcessingState processingState;
 
-    private ZeebeStateExtensionState() {
+    private ProcessingStateExtensionState() {
 
       final var factory = DefaultZeebeDbFactory.defaultFactory();
       try {
@@ -154,8 +155,8 @@ public class ZeebeStateExtension implements BeforeEachCallback {
         transactionContext = zeebeDb.createContext();
         final var keyGenerator =
             new DbKeyGenerator(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
-        zeebeState =
-            new ZeebeDbState(
+        processingState =
+            new ProcessingDbState(
                 Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext, keyGenerator);
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
@@ -227,8 +228,8 @@ public class ZeebeStateExtension implements BeforeEachCallback {
       return zeebeDb;
     }
 
-    private MutableZeebeState getZeebeState() {
-      return zeebeState;
+    private MutableProcessingState getProcessingState() {
+      return processingState;
     }
 
     private TransactionContext getTransactionContext() {

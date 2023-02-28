@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
+import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -47,7 +47,7 @@ public class Engine implements RecordProcessor {
 
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
-  private ZeebeDbState zeebeState;
+  private ProcessingDbState processingState;
 
   private final ErrorRecord errorRecord = new ErrorRecord();
 
@@ -65,13 +65,13 @@ public class Engine implements RecordProcessor {
 
   @Override
   public void init(final RecordProcessorContext recordProcessorContext) {
-    zeebeState =
-        new ZeebeDbState(
+    processingState =
+        new ProcessingDbState(
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getZeebeDb(),
             recordProcessorContext.getTransactionContext(),
             recordProcessorContext.getKeyGenerator());
-    eventApplier = recordProcessorContext.getEventApplierFactory().apply(zeebeState);
+    eventApplier = recordProcessorContext.getEventApplierFactory().apply(processingState);
 
     writers = new Writers(resultBuilderMutex, eventApplier);
 
@@ -79,7 +79,7 @@ public class Engine implements RecordProcessor {
         new TypedRecordProcessorContextImpl(
             recordProcessorContext.getPartitionId(),
             recordProcessorContext.getScheduleService(),
-            zeebeState,
+            processingState,
             writers,
             recordProcessorContext.getPartitionCommandSender());
 
@@ -122,7 +122,8 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      final boolean isNotOnBlacklist = !zeebeState.getBlackListState().isOnBlacklist(typedCommand);
+      final boolean isNotOnBlacklist =
+          !processingState.getBlackListState().isOnBlacklist(typedCommand);
       if (isNotOnBlacklist) {
         currentProcessor.processRecord(record);
       }

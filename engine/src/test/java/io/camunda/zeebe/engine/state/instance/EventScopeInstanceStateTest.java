@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ZeebeStateExtension.class)
+@ExtendWith(ProcessingStateExtension.class)
 public final class EventScopeInstanceStateTest {
 
   private static final int SCOPE_KEY = 123;
@@ -32,13 +32,13 @@ public final class EventScopeInstanceStateTest {
       Collections.emptySet();
   private static final Collection<DirectBuffer> NO_BOUNDARY_ELEMENT_IDS = Collections.emptySet();
 
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   private MutableEventScopeInstanceState state;
 
   @BeforeEach
   void setUp() {
-    state = zeebeState.getEventScopeInstanceState();
+    state = processingState.getEventScopeInstanceState();
   }
 
   @Test

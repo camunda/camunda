@@ -13,8 +13,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,15 +22,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ZeebeStateExtension.class)
+@ExtendWith(ProcessingStateExtension.class)
 public final class DecisionStateTest {
 
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
   private MutableDecisionState decisionState;
 
   @BeforeEach
   public void setup() {
-    decisionState = zeebeState.getDecisionState();
+    decisionState = processingState.getDecisionState();
   }
 
   @DisplayName("should return empty if no decision is deployed")

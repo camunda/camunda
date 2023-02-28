@@ -13,7 +13,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,7 +32,8 @@ public class DbMigrationControllerTest {
     mockDbMigrator = mock(DbMigrator.class);
 
     sutMigrationController =
-        new DbMigrationController(mock(MutableZeebeState.class), zeebeState -> mockDbMigrator);
+        new DbMigrationController(
+            mock(MutableProcessingState.class), processingState -> mockDbMigrator);
   }
 
   @Test

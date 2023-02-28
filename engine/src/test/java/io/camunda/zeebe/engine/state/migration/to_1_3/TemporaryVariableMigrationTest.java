@@ -17,13 +17,13 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.migration.TemporaryVariableMigration;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -47,11 +47,11 @@ public class TemporaryVariableMigrationTest {
     @Test
     public void noMigrationNeededWhenColumnIsEmpty() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
+      final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE)).thenReturn(true);
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE)).thenReturn(true);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isFalse();
@@ -60,11 +60,12 @@ public class TemporaryVariableMigrationTest {
     @Test
     public void migrationNeededWhenColumnIsNotEmpty() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
+      final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE)).thenReturn(false);
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE))
+          .thenReturn(false);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isTrue();
@@ -73,27 +74,27 @@ public class TemporaryVariableMigrationTest {
     @Test
     public void migrationCallsMethodInMigrationState() {
       // given
-      final var mockZeebeState = mock(MutableZeebeState.class, RETURNS_DEEP_STUBS);
+      final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(mockZeebeState);
+      sutMigration.runMigration(mockProcessingState);
 
       // then
-      verify(mockZeebeState.getMigrationState())
+      verify(mockProcessingState.getMigrationState())
           .migrateTemporaryVariables(
-              mockZeebeState.getEventScopeInstanceState(),
-              mockZeebeState.getElementInstanceState());
+              mockProcessingState.getEventScopeInstanceState(),
+              mockProcessingState.getElementInstanceState());
 
-      verifyNoMoreInteractions(mockZeebeState.getMigrationState());
+      verifyNoMoreInteractions(mockProcessingState.getMigrationState());
     }
   }
 
   @Nested
-  @ExtendWith(ZeebeStateExtension.class)
+  @ExtendWith(ProcessingStateExtension.class)
   public class BlackboxTest {
 
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
-    private MutableZeebeState zeebeState;
+    private MutableProcessingState processingState;
     private TransactionContext transactionContext;
     private LegacyDbTemporaryVariablesState legacyTemporaryVariablesState;
     private DbVariableState variableState;
@@ -114,7 +115,7 @@ public class TemporaryVariableMigrationTest {
       // given database with legacy records
 
       // when
-      final var actual = sutMigration.needsToRun(zeebeState);
+      final var actual = sutMigration.needsToRun(processingState);
 
       // then
       assertThat(actual).describedAs("Migration should run").isTrue();
@@ -126,14 +127,14 @@ public class TemporaryVariableMigrationTest {
       // given database with legacy records
 
       // when
-      sutMigration.runMigration(zeebeState);
-      final var actual = sutMigration.needsToRun(zeebeState);
+      sutMigration.runMigration(processingState);
+      final var actual = sutMigration.needsToRun(processingState);
 
       // then
       assertThat(actual).describedAs("Migration should run").isFalse();
       assertThat(legacyTemporaryVariablesState.isEmpty()).isTrue();
       final EventTrigger eventTrigger =
-          zeebeState.getEventScopeInstanceState().peekEventTrigger(EVENT_SCOPE_KEY);
+          processingState.getEventScopeInstanceState().peekEventTrigger(EVENT_SCOPE_KEY);
       assertThat(eventTrigger.getVariables()).isEqualTo(VARIABLES);
       assertThat(eventTrigger.getEventKey()).isEqualTo(-1L);
       assertThat(eventTrigger.getElementId())
@@ -151,13 +152,13 @@ public class TemporaryVariableMigrationTest {
           EVENT_SCOPE_KEY, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
 
       // when
-      sutMigration.runMigration(zeebeState);
+      sutMigration.runMigration(processingState);
 
       // then
       final EventTrigger oldEventTrigger =
-          zeebeState.getEventScopeInstanceState().peekEventTrigger(EVENT_SCOPE_KEY);
+          processingState.getEventScopeInstanceState().peekEventTrigger(EVENT_SCOPE_KEY);
       final EventTrigger newEventTrigger =
-          zeebeState.getEventScopeInstanceState().peekEventTrigger(flowScopeKey);
+          processingState.getEventScopeInstanceState().peekEventTrigger(flowScopeKey);
       assertThat(oldEventTrigger).isNull();
       assertThat(newEventTrigger).isNotNull();
       assertThat(newEventTrigger.getEventKey()).isEqualTo(-1L);

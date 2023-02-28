@@ -11,8 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,15 +22,15 @@ import org.junit.Test;
 
 public final class MessageSubscriptionStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageSubscriptionState state;
 
   @Before
   public void setUp() {
 
-    final MutableZeebeState zeebeState = stateRule.getZeebeState();
-    state = zeebeState.getMessageSubscriptionState();
+    final MutableProcessingState processingState = stateRule.getProcessingState();
+    state = processingState.getMessageSubscriptionState();
   }
 
   @Test

@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
@@ -88,7 +88,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private final ActorSchedulingService actorSchedulingService;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<StreamProcessorLifecycleAware> lifecycleAwareListeners;
-  private final Function<MutableZeebeState, EventApplier> eventApplierFactory;
+  private final Function<MutableProcessingState, EventApplier> eventApplierFactory;
   private final Set<FailureListener> failureListeners = new HashSet<>();
   private final StreamProcessorMetrics metrics;
 

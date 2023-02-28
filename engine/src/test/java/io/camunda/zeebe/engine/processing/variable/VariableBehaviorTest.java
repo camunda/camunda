@@ -11,11 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValueAssert;
@@ -29,13 +29,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-@ExtendWith(ZeebeStateExtension.class)
+@ExtendWith(ProcessingStateExtension.class)
 final class VariableBehaviorTest {
 
   private final RecordingTypedEventWriter eventWriter = new RecordingTypedEventWriter();
 
   @SuppressWarnings("unused") // injected by the extension
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   private MutableVariableState state;
   private VariableBehavior behavior;
@@ -43,10 +43,10 @@ final class VariableBehaviorTest {
   @BeforeEach
   void beforeEach() {
     final var stateWriter =
-        new EventApplyingStateWriter(eventWriter, new EventAppliers(zeebeState));
+        new EventApplyingStateWriter(eventWriter, new EventAppliers(processingState));
 
-    state = zeebeState.getVariableState();
-    behavior = new VariableBehavior(state, stateWriter, zeebeState.getKeyGenerator());
+    state = processingState.getVariableState();
+    behavior = new VariableBehavior(state, stateWriter, processingState.getKeyGenerator());
   }
 
   @Test

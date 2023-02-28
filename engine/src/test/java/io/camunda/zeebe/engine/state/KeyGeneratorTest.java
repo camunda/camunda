@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.Protocol;
 import org.junit.Before;
 import org.junit.Rule;
@@ -19,13 +19,13 @@ import org.junit.Test;
 
 public final class KeyGeneratorTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private KeyGenerator keyGenerator;
 
   @Before
   public void setUp() throws Exception {
-    keyGenerator = stateRule.getZeebeState().getKeyGenerator();
+    keyGenerator = stateRule.getProcessingState().getKeyGenerator();
   }
 
   @Test

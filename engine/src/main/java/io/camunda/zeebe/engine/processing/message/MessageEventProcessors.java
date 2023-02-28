@@ -16,7 +16,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -26,26 +26,26 @@ public final class MessageEventProcessors {
   public static void addMessageProcessors(
       final BpmnBehaviors bpmnBehaviors,
       final TypedRecordProcessors typedRecordProcessors,
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers) {
 
-    final MutableMessageState messageState = zeebeState.getMessageState();
+    final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
-        zeebeState.getMessageSubscriptionState();
+        processingState.getMessageSubscriptionState();
     final MutableMessageStartEventSubscriptionState startEventSubscriptionState =
-        zeebeState.getMessageStartEventSubscriptionState();
+        processingState.getMessageStartEventSubscriptionState();
     final MutableEventScopeInstanceState eventScopeInstanceState =
-        zeebeState.getEventScopeInstanceState();
-    final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
-    final var processState = zeebeState.getProcessState();
+        processingState.getEventScopeInstanceState();
+    final KeyGenerator keyGenerator = processingState.getKeyGenerator();
+    final var processState = processingState.getProcessState();
 
     typedRecordProcessors
         .onCommand(
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
             new MessagePublishProcessor(
-                zeebeState.getPartitionId(),
+                processingState.getPartitionId(),
                 messageState,
                 subscriptionState,
                 startEventSubscriptionState,
@@ -62,7 +62,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CREATE,
             new MessageSubscriptionCreateProcessor(
-                zeebeState.getPartitionId(),
+                processingState.getPartitionId(),
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
@@ -72,7 +72,7 @@ public final class MessageEventProcessors {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
             new MessageSubscriptionCorrelateProcessor(
-                zeebeState.getPartitionId(),
+                processingState.getPartitionId(),
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
@@ -90,7 +90,7 @@ public final class MessageEventProcessors {
         .withListener(
             new MessageObserver(
                 messageState,
-                zeebeState.getPendingMessageSubscriptionState(),
+                processingState.getPendingMessageSubscriptionState(),
                 subscriptionCommandSender));
   }
 }

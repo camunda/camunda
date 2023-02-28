@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -34,13 +34,13 @@ public final class BpmnVariableMappingBehavior {
 
   public BpmnVariableMappingBehavior(
       final ExpressionProcessor expressionProcessor,
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final VariableBehavior variableBehavior) {
     this.expressionProcessor = expressionProcessor;
-    elementInstanceState = zeebeState.getElementInstanceState();
-    variablesState = zeebeState.getVariableState();
+    elementInstanceState = processingState.getElementInstanceState();
+    variablesState = processingState.getVariableState();
     this.variableBehavior = variableBehavior;
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    eventScopeInstanceState = processingState.getEventScopeInstanceState();
   }
 
   /**
@@ -141,9 +141,16 @@ public final class BpmnVariableMappingBehavior {
   }
 
   private boolean isConnectedToEventBasedGateway(final ExecutableFlowNode element) {
-    if (element instanceof ExecutableCatchEventElement) {
-      final var catchEvent = (ExecutableCatchEventElement) element;
+    if (element instanceof final ExecutableCatchEventElement catchEvent) {
       return catchEvent.isConnectedToEventBasedGateway();
+    } else {
+      return false;
+    }
+  }
+
+  private boolean isErrorEvent(final ExecutableFlowNode element) {
+    if (element instanceof final ExecutableCatchEventElement catchEvent) {
+      return catchEvent.isError();
     } else {
       return false;
     }

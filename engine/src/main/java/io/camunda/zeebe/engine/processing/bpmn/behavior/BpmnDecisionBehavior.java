@@ -28,8 +28,8 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -60,15 +60,15 @@ public final class BpmnDecisionBehavior {
 
   public BpmnDecisionBehavior(
       final DecisionEngine decisionEngine,
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final EventTriggerBehavior eventTriggerBehavior,
       final StateWriter stateWriter,
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionBehavior,
       final ProcessEngineMetrics metrics) {
     this.decisionEngine = decisionEngine;
-    decisionState = zeebeState.getDecisionState();
-    variableState = zeebeState.getVariableState();
+    decisionState = processingState.getDecisionState();
+    variableState = processingState.getVariableState();
     this.eventTriggerBehavior = eventTriggerBehavior;
     this.stateWriter = stateWriter;
     this.keyGenerator = keyGenerator;

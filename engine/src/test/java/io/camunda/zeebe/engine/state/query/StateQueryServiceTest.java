@@ -14,9 +14,9 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.Records;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -30,12 +30,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-@ExtendWith(ZeebeStateExtension.class)
+@ExtendWith(ProcessingStateExtension.class)
 final class StateQueryServiceTest {
 
   private StateQueryService sut;
   private ZeebeDb<ZbColumnFamilies> db;
-  private MutableZeebeState state;
+  private MutableProcessingState state;
   private TransactionContext transactionContext;
 
   @BeforeEach

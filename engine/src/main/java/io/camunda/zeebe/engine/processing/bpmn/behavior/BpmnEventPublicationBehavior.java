@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTuple;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
@@ -30,21 +30,22 @@ public final class BpmnEventPublicationBehavior {
   private final CatchEventAnalyzer catchEventAnalyzer;
 
   public BpmnEventPublicationBehavior(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final Writers writers) {
-    elementInstanceState = zeebeState.getElementInstanceState();
+    elementInstanceState = processingState.getElementInstanceState();
     eventHandle =
         new EventHandle(
             keyGenerator,
-            zeebeState.getEventScopeInstanceState(),
+            processingState.getEventScopeInstanceState(),
             writers,
-            zeebeState.getProcessState(),
+            processingState.getProcessState(),
             eventTriggerBehavior,
             stateBehavior);
-    catchEventAnalyzer = new CatchEventAnalyzer(zeebeState.getProcessState(), elementInstanceState);
+    catchEventAnalyzer =
+        new CatchEventAnalyzer(processingState.getProcessState(), elementInstanceState);
   }
 
   /**
