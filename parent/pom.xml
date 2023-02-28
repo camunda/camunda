@@ -91,7 +91,7 @@
     <version.dmn-scala>1.7.4</version.dmn-scala>
     <version.rest-assured>5.3.0</version.rest-assured>
     <version.spring>5.3.23</version.spring>
-    <version.spring-boot>2.7.5</version.spring-boot>
+    <version.spring-boot>3.0.3</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.4.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
