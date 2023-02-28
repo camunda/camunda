@@ -11,7 +11,7 @@
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.50.v20221201</jetty.version>
+    <jetty.version>9.4.51.v20230217</jetty.version>
     <jersey.version>2.35</jersey.version>
     <spring.security.version>5.7.5</spring.security.version>
     <it.test.excludedGroups />
