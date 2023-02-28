@@ -41,6 +41,8 @@ public final class UserTaskTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   private static final String PROCESS_ID = "process";
+  private static final String FOLLOW_UP_DATE = "2023-02-28T08:16:23+02:00";
+  private static final String DUE_DATE = "2023-02-28T09:16:23+02:00";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -416,6 +418,232 @@ public final class UserTaskTest {
     assertThat(customHeaders)
         .hasSize(1)
         .containsEntry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"jack\",\"rose\"]");
+  }
+
+  @Test
+  public void shouldCreateJobWithDueDateHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDate(DUE_DATE))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, DUE_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedDueDateExpressionHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDateExpression("dueDate"))).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("dueDate", DUE_DATE))
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, DUE_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyDueDateHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDate(""))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders).hasSize(0).doesNotContainKey(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyEvaluatedDueDateExpressionHeader() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeDueDateExpression("=dueDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("dueDate", ""))
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders).hasSize(0).doesNotContainKey(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreNullEvaluatedDueDateExpressionHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeDueDateExpression("=null"))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders).hasSize(0).doesNotContainKey(Protocol.USER_TASK_DUE_DATE_HEADER_NAME);
+  }
+
+  @Test
+  public void shouldCreateJobWithFollowUpDateHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(FOLLOW_UP_DATE))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, FOLLOW_UP_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobWithEvaluatedFollowUpDateExpressionHeader() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("followUpDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("followUpDate", FOLLOW_UP_DATE))
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(1)
+        .containsEntry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, FOLLOW_UP_DATE);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyFollowUpDateHeader() {
+    // given
+    ENGINE.deployment().withXmlResource(process(t -> t.zeebeFollowUpDate(""))).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(0)
+        .doesNotContainKey(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreEmptyEvaluatedFollowUpDateExpressionHeader() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("=followUpDate")))
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("followUpDate", ""))
+            .create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(0)
+        .doesNotContainKey(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
+  }
+
+  @Test
+  public void shouldCreateJobAndIgnoreNullEvaluatedFollowUpDateExpressionHeader() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(process(t -> t.zeebeFollowUpDateExpression("=null")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<JobRecordValue> job =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Map<String, String> customHeaders = job.getValue().getCustomHeaders();
+    assertThat(customHeaders)
+        .hasSize(0)
+        .doesNotContainKey(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME);
   }
 
   @Test

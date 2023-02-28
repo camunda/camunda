@@ -435,4 +435,269 @@ public class UserTaskIncidentTest {
 
     assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
   }
+
+  // --------------------------------------------------------------------------
+  // ----- TaskSchedule related tests
+
+  @Test
+  public void shouldCreateIncidentIfDueDateExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeDueDateExpression("MISSING_VAR")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDueDateExpressionOfInvalidType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeDueDateExpression("[1,2,3]")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '[1,2,3]' to be one of '[DATE_TIME, STRING]', but was 'ARRAY'");
+  }
+
+  @Test
+  public void shouldResolveIncidentAndCreateNewIncidentWhenContinuationFailsOnDueDate() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(t -> t.zeebeDueDateExpression("MISSING_VAR")))
+        .deploy();
+
+    // and an instance of that process is created without a variable for the dueDate expression
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // and an incident created
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when we try to resolve the incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(incidentCreated.getKey())
+                .exists())
+        .describedAs("original incident is resolved")
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(i -> i.getKey() != incidentCreated.getKey())
+                .exists())
+        .describedAs("a new incident is created")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterDueDateExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(t -> t.zeebeDueDateExpression("MISSING_VAR")))
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... update state to resolve issue
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("MISSING_VAR", "2023-02-28T10:39:23+02:00")))
+        .update();
+
+    // ... resolve incident
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfFollowUpDateExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeFollowUpDateExpression("MISSING_VAR")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'MISSING_VAR': no variable found for name 'MISSING_VAR'");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfFollowUpDateExpressionOfInvalidType() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(u -> u.zeebeFollowUpDateExpression("[1,2,3]")))
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var userTaskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.USER_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, userTaskActivating.getKey())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '[1,2,3]' to be one of '[DATE_TIME, STRING]', but was 'ARRAY'");
+  }
+
+  @Test
+  public void shouldResolveIncidentAndCreateNewIncidentWhenContinuationFailsOnFollowUpDate() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(t -> t.zeebeFollowUpDateExpression("MISSING_VAR")))
+        .deploy();
+
+    // and an instance of that process is created without a variable for the followUpDate expression
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // and an incident created
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when we try to resolve the incident
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incidentCreated.getKey()).resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withRecordKey(incidentCreated.getKey())
+                .exists())
+        .describedAs("original incident is resolved")
+        .isTrue();
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .filter(i -> i.getKey() != incidentCreated.getKey())
+                .exists())
+        .describedAs("a new incident is created")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldResolveIncidentAfterFollowUpDateExpressionEvaluationFailed() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(processWithUserTask(t -> t.zeebeFollowUpDateExpression("MISSING_VAR")))
+        .deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var incidentCreated =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+
+    // ... update state to resolve issue
+    ENGINE
+        .variables()
+        .ofScope(incidentCreated.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("MISSING_VAR", "2023-02-28T10:39:23+02:00")))
+        .update();
+
+    // ... resolve incident
+    final var incidentResolved =
+        ENGINE
+            .incident()
+            .ofInstance(processInstanceKey)
+            .withKey(incidentCreated.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId(TASK_ELEMENT_ID)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolved.getKey()).isEqualTo(incidentCreated.getKey());
+  }
 }
