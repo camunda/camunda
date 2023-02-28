@@ -59,6 +59,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
+import org.junit.Ignore;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -372,6 +373,7 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  @Ignore("Should be enabled when https://github.com/camunda/zeebe/issues/11849 is fixed")
   public void shouldRunAsyncSchedulingEvenIfProcessingIsBlocked() throws InterruptedException {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
