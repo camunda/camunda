@@ -28,22 +28,37 @@ inputs:
     required: false
   secret_vault_address:
     description: 'secret vault url'
-    required: true
+    required: false
   secret_vault_roleId:
     description: 'secret vault roleId'
-    required: true
+    required: false
   secret_vault_secretId:
     description: 'secret valut secret id'
-    required: true
+    required: false
 
 outputs: {}
 
 runs:
   using: composite
   steps:
+    - name: Secrets check
+      if: |
+        github.event.name == 'pull_request'
+        && github.event.pull_request.head.repo.full_name == 'camunda/zeebe'
+        && (inputs.secret_vault_address == ''
+        || inputs.secret_vault_roleId == ''
+        || inputs.secret_vault_secretId == '')
+      shell: bash
+      run: |
+        echo "We will fail the action if it's an internal PR without the secrets. If this occurs it indicates a configuration failure that needs to be fixed."
+        exit 1
     - name: Import Secrets
       id: secrets
       uses: hashicorp/vault-action@v2.4.3
+      if: |
+        inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
       with:
         url: ${{ inputs.secret_vault_address }}
         method: approle
@@ -63,6 +78,10 @@ runs:
     # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
     - name: 'Create settings.xml'
       uses: s4u/maven-settings-action@v2.8.0
+      if: |
+        inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
       with:
         githubServer: false
         servers: |
