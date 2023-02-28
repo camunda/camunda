@@ -59,6 +59,11 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -186,7 +191,19 @@ final class PartitionFactory {
       final RaftPartition raftPartition,
       final ConstructableSnapshotStore snapshotStore,
       final ConcurrencyControl concurrencyControl) {
-    final var runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
+    final Path runtimeDirectory;
+    if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
+      final Path rootRuntimeDirectory = Paths.get(brokerCfg.getData().getRuntimeDirectory());
+      try {
+        FileUtil.ensureDirectoryExists(rootRuntimeDirectory);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(
+            "Runtime directory %s does not exist".formatted(rootRuntimeDirectory), e);
+      }
+      runtimeDirectory = rootRuntimeDirectory.resolve(String.valueOf(raftPartition.id().id()));
+    } else {
+      runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
+    }
     final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
     final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
 
