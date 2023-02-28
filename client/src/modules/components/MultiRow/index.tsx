@@ -8,7 +8,7 @@
 import React from 'react';
 
 type Props = {
-  Component?: React.ComponentType;
+  Component: React.ComponentType;
   rowsToDisplay?: number;
   children?: React.ReactNode;
 };
@@ -17,8 +17,7 @@ const MultiRow: React.FC<Props> = ({Component, rowsToDisplay, children}) => {
   function rowMultiplier(rowsToDisplay: number) {
     const rows = [];
 
-    for (var i = 0; i < rowsToDisplay; i++) {
-      // @ts-expect-error ts-migrate(2604) FIXME: JSX element type 'Component' does not have any con... Remove this comment to see the full error message
+    for (let i = 0; i < rowsToDisplay; i++) {
       rows.push(<Component key={i} />);
     }
     return rows;
@@ -27,9 +26,11 @@ const MultiRow: React.FC<Props> = ({Component, rowsToDisplay, children}) => {
   return (
     <>
       {children}
-      {rowsToDisplay && rowMultiplier(rowsToDisplay)}
+      {rowsToDisplay !== undefined &&
+        rowsToDisplay !== 0 &&
+        rowMultiplier(rowsToDisplay)}
     </>
   );
 };
 
-export default MultiRow;
+export {MultiRow};

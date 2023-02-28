@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import MultiRow from './index';
+import {MultiRow} from './index';
 import {render, screen} from 'modules/testing-library';
 
 const MOCK_CONTENT = 'Row';

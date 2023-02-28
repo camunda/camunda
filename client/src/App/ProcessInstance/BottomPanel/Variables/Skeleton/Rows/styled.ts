@@ -6,7 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import BasicMultiRow from 'modules/components/MultiRow';
+import {MultiRow as BasicMultiRow} from 'modules/components/MultiRow';
 import {BaseBlock} from 'modules/components/Skeleton';
 
 const MultiRow = styled(BasicMultiRow)`
