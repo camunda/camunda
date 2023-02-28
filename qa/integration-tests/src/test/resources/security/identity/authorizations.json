@@ -1,0 +1,17 @@
+[ {
+  "resourceKey" : "*",
+  "resourceType" : "process-definition",
+  "permissions" : [ "READ" ]
+}, {
+  "resourceKey" : "orderProcess",
+  "resourceType" : "process-definition",
+  "permissions" : [ "UPDATE_PROCESS_INSTANCE", "DELETE_PROCESS_INSTANCE" ]
+}, {
+  "resourceKey" : "*",
+  "resourceType" : "decision-definition",
+  "permissions" : [ "READ" ]
+}, {
+  "resourceKey" : "invoice",
+  "resourceType" : "process-definition",
+  "permissions" : [ "UPDATE_PROCESS_INSTANCE", "DELETE_PROCESS_INSTANCE" ]
+} ]

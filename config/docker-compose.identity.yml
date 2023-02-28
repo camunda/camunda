@@ -19,45 +19,68 @@ services:
       - 9200:9200
       - 9300:9300
     restart: always
-    networks:
-      - identity-network
     volumes:
       - ./els-snapshots:/usr/local/els-snapshots
-
+  postgres:
+    container_name: postgres
+    image: postgres:15.1-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: identity
+      POSTGRES_USER: identity
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
   keycloak:
+    depends_on:
+      - postgres
     container_name: keycloak
-    image: jboss/keycloak:16.1.1
+    image: bitnami/keycloak:19.0.3
+    volumes:
+      - keycloak-theme:/opt/bitnami/keycloak/themes/identity
     ports:
       - "18080:8080"
     environment:
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
-    networks:
-      - identity-network
+      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_DATABASE_HOST: postgres
+      KEYCLOAK_DATABASE_NAME: identity
+      KEYCLOAK_DATABASE_USER: identity
+      KEYCLOAK_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+      KEYCLOAK_ADMIN_USER: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/auth" ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
   identity:
     depends_on:
       - keycloak
-    restart: on-failure
     container_name: identity
-    image: camunda/identity:8.2.0-alpha4
+    image: camunda/identity:SNAPSHOT
     ports:
-      - "8084:8084"
+      - "8080:8080"
+    volumes:
+      - keycloak-theme:/app/keycloak-theme
     environment:
-      SERVER_PORT: 8084
       KEYCLOAK_URL: http://keycloak:8080/auth
       IDENTITY_AUTH_PROVIDER_BACKEND_URL: http://keycloak:8080/auth/realms/camunda-platform
+      IDENTITY_DATABASE_HOST: postgres
+      IDENTITY_DATABASE_PORT: 5432
+      IDENTITY_DATABASE_NAME: identity
+      IDENTITY_DATABASE_USERNAME: identity
+      IDENTITY_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
       KEYCLOAK_INIT_OPERATE_SECRET: the-cake-is-alive
       KEYCLOAK_INIT_OPERATE_ROOT_URL: http://localhost:8081/operate
       KEYCLOAK_INIT_TASKLIST_SECRET: the-cake-is-alive
       KEYCLOAK_INIT_TASKLIST_ROOT_URL: http://localhost:8082/tasklist
-      KEYCLOAK_USERS_0_USERNAME: "demo"
-      KEYCLOAK_USERS_0_PASSWORD: "demo"
-      KEYCLOAK_USERS_0_ROLES_0: "Identity"
-      KEYCLOAK_USERS_0_ROLES_1: "Operate"
-      KEYCLOAK_USERS_0_ROLES_2: "Tasklist"
-    networks:
-      - identity-network
-
+    env_file: .env.test
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/actuator/health" ]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 30s
   zeebe:
     container_name: zeebe
     image: camunda/zeebe:8.2.0-alpha4
@@ -73,9 +96,6 @@ services:
       - 26500:26500
       - 8000:8000
     restart: always
-    networks:
-      - identity-network
-
   operate:
     image: camunda/operate:8.2.0-alpha4
     container_name: operate
@@ -90,6 +110,8 @@ services:
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
       - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
       - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
+      - CAMUNDA_OPERATE_IDENTITY_BASEURL=http://localhost:8080
+      - CAMUNDA_OPERATE_IDENTITY_RESOURCEPERMISSIONSENABLED=true
       - CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8082/tasklist
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
@@ -101,9 +123,6 @@ services:
       - elasticsearch
       - zeebe
       - identity
-    networks:
-      - identity-network
-
   tasklist:
     image: camunda/tasklist:8.2.0-alpha4
     container_name: tasklist
@@ -128,8 +147,5 @@ services:
       - elasticsearch
       - zeebe
       - identity
-    networks:
-      - identity-network
-
-networks:
-  identity-network: { }
+volumes:
+  keycloak-theme:

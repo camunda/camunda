@@ -7,12 +7,17 @@
 package io.camunda.operate.webapp.security.identity;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
+import io.camunda.identity.sdk.impl.rest.exception.RestException;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
+
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.util.StringUtils;
 
 public class IdentityAuthentication extends AbstractAuthenticationToken {
@@ -31,6 +35,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
   private String id;
   private String name;
   private List<String> permissions;
+  @JsonIgnore
+  private List<IdentityAuthorization> authorizations;
   private String subject;
   private Date expires;
 
@@ -99,6 +105,29 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     return permissions.stream().map(PermissionConverter.getInstance()::convert).collect(Collectors.toList());
   }
 
+  public List<IdentityAuthorization> getAuthorizations() {
+    if (authorizations == null) {
+      synchronized (this) {
+        if (authorizations == null) {
+          retrieveResourcePermissions();
+        }
+      }
+    }
+    return authorizations;
+  }
+
+  private void retrieveResourcePermissions() {
+    if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()) {
+      try {
+        authorizations = IdentityAuthorization.createFrom(
+            getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
+      } catch (RestException ex) {
+        logger.warn("Unable to retrieve resource base permissions from Identity. Error: " + ex.getMessage(), ex);
+        authorizations = new ArrayList<>();
+      }
+    }
+  }
+
   public void authenticate(final Tokens tokens) {
     if (tokens != null) {
       this.tokens = tokens;
@@ -109,6 +138,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
     id = userDetails.getId();
     retrieveName(userDetails);
     permissions = accessToken.getPermissions();
+    retrieveResourcePermissions();
     if (!getPermissions().contains(Permission.READ)) {
       throw new InsufficientAuthenticationException("No read permissions");
     }
@@ -150,6 +180,10 @@ public class IdentityAuthentication extends AbstractAuthenticationToken {
 
   private Identity getIdentity() {
     return SpringContextHolder.getBean(Identity.class);
+  }
+
+  private OperateProperties getOperateProperties() {
+    return SpringContextHolder.getBean(OperateProperties.class);
   }
 
 }

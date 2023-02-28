@@ -7,6 +7,7 @@
 package io.camunda.operate.property;
 
 public class IdentityProperties {
+  private String baseUrl;
   private String issuerUrl;
   private String issuerBackendUrl;
   private String clientId;
@@ -14,6 +15,14 @@ public class IdentityProperties {
   private String audience;
   private boolean resourcePermissionsEnabled = false;
 
+  public String getBaseUrl() {
+    return baseUrl;
+  }
+
+  public IdentityProperties setBaseUrl(String baseUrl) {
+    this.baseUrl = baseUrl;
+    return this;
+  }
   public String getIssuerUrl() {
     return issuerUrl;
   }

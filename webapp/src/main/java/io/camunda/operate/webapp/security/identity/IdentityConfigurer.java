@@ -24,12 +24,12 @@ public class IdentityConfigurer {
 
   @Bean
   public Identity getIdentity() {
-    return new Identity(new IdentityConfiguration(
-        operateProperties.getIdentity().getIssuerUrl(),
-        operateProperties.getIdentity().getIssuerBackendUrl(),
-        operateProperties.getIdentity().getClientId(),
-        operateProperties.getIdentity().getClientSecret(),
-        operateProperties.getIdentity().getAudience()));
+    return new Identity(new IdentityConfiguration.Builder().withBaseUrl(operateProperties.getIdentity().getBaseUrl())
+        .withIssuer(operateProperties.getIdentity().getIssuerUrl())
+        .withIssuerBackendUrl(operateProperties.getIdentity().getIssuerBackendUrl())
+        .withClientId(operateProperties.getIdentity().getClientId())
+        .withClientSecret(operateProperties.getIdentity().getClientSecret())
+        .withAudience(operateProperties.getIdentity().getAudience()).build());
   }
 
 }
