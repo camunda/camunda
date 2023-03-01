@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.engine.state.migration.DbMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableBlackListState;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
@@ -74,6 +76,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
+  private final MutableDistributionState distributionState;
 
   private final int partitionId;
 
@@ -104,6 +107,7 @@ public class ProcessingDbState implements MutableProcessingState {
     blackListState = new DbBlackListState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
+    distributionState = new DbDistributionState(zeebeDb, transactionContext);
 
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
   }
@@ -185,6 +189,16 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableSignalSubscriptionState getSignalSubscriptionState() {
+    return signalSubscriptionState;
+  }
+
+  @Override
+  public MutableDistributionState getDistributionState() {
+    return distributionState;
+  }
+
+  @Override
   public MutableMigrationState getMigrationState() {
     return mutableMigrationState;
   }
@@ -202,11 +216,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableSignalSubscriptionState getSignalSubscriptionState() {
-    return signalSubscriptionState;
   }
 
   @Override
