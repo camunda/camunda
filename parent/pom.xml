@@ -69,7 +69,7 @@
     <version.mockito>4.10.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.3</version.msgpack>
-    <version.netty>4.1.86.Final</version.netty>
+    <version.netty>4.1.89.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.11</version.protobuf>
