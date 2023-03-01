@@ -24,9 +24,11 @@ public class DbDistributionState implements MutableDistributionState {
   private final DbLong distributionKey;
   private final DbInt partitionKey;
   private final DbCompositeKey<DbLong, DbInt> distributionPartitionKey;
+  /** [distribution key | partition id] => [pending distributions] */
   private final ColumnFamily<DbCompositeKey<DbLong, DbInt>, DbNil> pendingDistributionColumnFamily;
 
   private final CommandValueAndValueTypeWrapper commandValueAndValueTypeWrapper;
+  /** [distribution key] => [ValueType and RecordValue of distributed command] */
   private final ColumnFamily<DbLong, CommandValueAndValueTypeWrapper>
       commandDistributionRecordColumnFamily;
 
