@@ -43,6 +43,9 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_CANDIDATE_GROUPS = "candidateGroups";
   public static final String ATTRIBUTE_CANDIDATE_USERS = "candidateUsers";
 
+  public static final String ATTRIBUTE_DUE_DATE = "dueDate";
+  public static final String ATTRIBUTE_FOLLOW_UP_DATE = "followUpDate";
+
   public static final String ATTRIBUTE_DECISION_ID = "decisionId";
 
   public static final String ATTRIBUTE_ERROR_CODE_VARIABLE = "errorCodeVariable";
@@ -69,6 +72,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_USER_TASK_FORM = "userTaskForm";
 
   public static final String ELEMENT_ASSIGNMENT_DEFINITION = "assignmentDefinition";
+
+  public static final String ELEMENT_SCHEDULE_DEFINITION = "taskSchedule";
 
   public static final String ELEMENT_LOOP_CHARACTERISTICS = "loopCharacteristics";
 

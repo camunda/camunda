@@ -25,6 +25,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 
 /**
@@ -118,6 +119,32 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   @Override
   public B zeebeCandidateUsersExpression(final String expression) {
     return zeebeCandidateUsers(asZeebeExpression(expression));
+  }
+
+  @Override
+  public B zeebeDueDate(final String dueDate) {
+    final ZeebeTaskSchedule taskSchedule =
+        myself.getCreateSingleExtensionElement(ZeebeTaskSchedule.class);
+    taskSchedule.setDueDate(dueDate);
+    return myself;
+  }
+
+  @Override
+  public B zeebeDueDateExpression(final String expression) {
+    return zeebeDueDate(asZeebeExpression(expression));
+  }
+
+  @Override
+  public B zeebeFollowUpDate(final String followUpDate) {
+    final ZeebeTaskSchedule taskSchedule =
+        myself.getCreateSingleExtensionElement(ZeebeTaskSchedule.class);
+    taskSchedule.setFollowUpDate(followUpDate);
+    return myself;
+  }
+
+  @Override
+  public B zeebeFollowUpDateExpression(final String expression) {
+    return zeebeFollowUpDate(asZeebeExpression(expression));
   }
 
   public B zeebeTaskHeader(final String key, final String value) {

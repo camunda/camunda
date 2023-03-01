@@ -102,4 +102,36 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeCandidateUsersExpression(String expression);
+
+  /**
+   * Sets a static dueDate for the user task
+   *
+   * @param dueDate the dueDate of the user task
+   * @return the builder object
+   */
+  B zeebeDueDate(String dueDate);
+
+  /**
+   * Sets a dynamic dueDate for the user task that is retrieved from the given expression
+   *
+   * @param expression the expression for the dueDate of the user task
+   * @return the builder object
+   */
+  B zeebeDueDateExpression(String expression);
+
+  /**
+   * Sets a static followUpDate for the user task
+   *
+   * @param followUpDate the followUpDate of the user task
+   * @return the builder object
+   */
+  B zeebeFollowUpDate(String followUpDate);
+
+  /**
+   * Sets a dynamic followUpDate for the user task that is retrieved from the given expression
+   *
+   * @param expression the expression for the followUpDate of the user task
+   * @return the builder object
+   */
+  B zeebeFollowUpDateExpression(String expression);
 }
