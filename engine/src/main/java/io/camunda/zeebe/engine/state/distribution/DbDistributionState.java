@@ -106,7 +106,6 @@ public class DbDistributionState implements MutableDistributionState {
   public CommandDistributionRecord getCommandDistributionRecord(
       final long distributionKey, final int partition) {
     this.distributionKey.wrapLong(distributionKey);
-    partitionKey.wrapInt(partition);
 
     final var storedDistribution = commandDistributionRecordColumnFamily.get(this.distributionKey);
 
