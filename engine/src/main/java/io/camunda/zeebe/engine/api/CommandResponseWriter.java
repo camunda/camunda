@@ -32,5 +32,5 @@ public interface CommandResponseWriter {
 
   CommandResponseWriter valueWriter(BufferWriter value);
 
-  boolean tryWriteResponse(int requestStreamId, long requestId);
+  void tryWriteResponse(int requestStreamId, long requestId);
 }

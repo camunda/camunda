@@ -95,7 +95,7 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
   }
 
   @Override
-  public boolean tryWriteResponse(final int remoteStreamId, final long requestId) {
+  public void tryWriteResponse(final int remoteStreamId, final long requestId) {
     Objects.requireNonNull(valueWriter);
 
     try {
@@ -105,7 +105,6 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
     } finally {
       reset();
     }
-    return true;
   }
 
   @Override

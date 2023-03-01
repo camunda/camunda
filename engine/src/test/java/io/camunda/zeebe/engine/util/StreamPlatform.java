@@ -99,7 +99,6 @@ public final class StreamPlatform {
     when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     actorScheduler.submitActor(writeActor);
 
     defaultMockedRecordProcessor = mock(RecordProcessor.class);

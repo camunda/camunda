@@ -527,23 +527,17 @@ public final class ProcessingStateMachine {
 
                 final var responseValue = processingResponse.responseValue();
                 final var recordMetadata = responseValue.recordMetadata();
-                final boolean responseSent =
-                    responseWriter
-                        .intent(recordMetadata.getIntent())
-                        .key(responseValue.key())
-                        .recordType(recordMetadata.getRecordType())
-                        .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                        .rejectionType(recordMetadata.getRejectionType())
-                        .partitionId(context.getPartitionId())
-                        .valueType(recordMetadata.getValueType())
-                        .valueWriter(responseValue.recordValue())
-                        .tryWriteResponse(
-                            processingResponse.requestStreamId(), processingResponse.requestId());
-                if (!responseSent) {
-                  return false;
-                } else {
-                  return executePostCommitTasks();
-                }
+                responseWriter
+                    .intent(recordMetadata.getIntent())
+                    .key(responseValue.key())
+                    .recordType(recordMetadata.getRecordType())
+                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                    .rejectionType(recordMetadata.getRejectionType())
+                    .partitionId(context.getPartitionId())
+                    .valueType(recordMetadata.getValueType())
+                    .valueWriter(responseValue.recordValue())
+                    .tryWriteResponse(
+                        processingResponse.requestStreamId(), processingResponse.requestId());
               }
               return executePostCommitTasks();
             },

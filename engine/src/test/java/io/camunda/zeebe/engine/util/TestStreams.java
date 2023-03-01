@@ -111,7 +111,6 @@ public final class TestStreams {
     when(mockCommandResponseWriter.valueType(any())).thenReturn(mockCommandResponseWriter);
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     mockStreamProcessorListener = mock(StreamProcessorListener.class);
   }
 
