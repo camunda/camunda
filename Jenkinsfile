@@ -486,6 +486,12 @@ String e2eTestPodSpec(String camBpmVersion, String esVersion) {
       gcloudContainerSpec()
 }
 
+String e2eCloudTestPodSpec(String esVersion) {
+  // use Docker image with preinstalled headless Chrome and Maven
+  return basePodSpec(1, 6, 'markhobson/maven-chrome:jdk-11') +
+      elasticSearchContainerSpec(esVersion)
+}
+
 pipeline {
   agent {
     kubernetes {
@@ -505,6 +511,9 @@ pipeline {
     ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
     PREV_ES_VERSION = mavenProps.getProperty(PREV_ES_TEST_VERSION_POM_PROPERTY)
     CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+    AUTH0_CLIENTSECRET = credentials('auth0-clientsecret')
+    AUTH0_USEREMAIL = credentials('auth0-useremail')
+    AUTH0_USERPASSWORD = credentials('auth0-userpassword')
   }
 
   options {
@@ -700,6 +709,28 @@ pipeline {
             unstash name: 'optimize-stash-client'
             unstash name: 'optimize-stash-backend'
             e2eTestSteps()
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: 'client/build/*.log'
+            }
+          }
+        }
+        stage('E2E-cloud') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-e2e-cloud_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml e2eCloudTestPodSpec(env.ES_VERSION)
+            }
+          }
+          steps {
+            unstash name: 'optimize-stash-client'
+            unstash name: 'optimize-stash-backend'
+            container('maven') {
+              runMaven('test -pl client -Pclient.e2etests-cloud-chromeheadless -Dskip.yarn.build')
+            }
           }
           post {
             always {

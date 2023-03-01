@@ -48,6 +48,8 @@
     "test:ci": "CI=true react-scripts --expose-gc --max_old_space_size=1024 test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "screenshots": "testcafe chrome e2e/tests/*.js -s thumbnails=false,path=../../camunda-platform-docs/docs/components/optimize/userguide ",
     "e2e": "testcafe -c 3 chrome e2e/tests/*.js --disable-screenshots",
+    "e2e:cloud": "testcafe chrome e2e/cloud-tests/smokeTest.js",
+    "e2e:cloud:ci-chromeheadless": "node scripts/e2e.mjs cloud ci chromeheadless",
     "e2e:local": "node scripts/e2e.mjs",
     "e2e:ci-browserstack": "node scripts/e2e.mjs ci browserstack",
     "e2e:ci-chromeheadless": "node scripts/e2e.mjs ci chromeheadless",

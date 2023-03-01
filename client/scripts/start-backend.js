@@ -96,7 +96,9 @@ setVersionInfo()
   .then(setupEnvironment)
   .then(startBackend)
   .then(setLicense)
-  .then(() => Promise.all([setWhatsNewSeenStateForAllUsers(), ingestEventData()]));
+  .then(
+    () => mode === 'platform' && Promise.all([setWhatsNewSeenStateForAllUsers(), ingestEventData()])
+  );
 
 function startBackend() {
   return new Promise((resolve, reject) => {

@@ -18,6 +18,7 @@ import {fileURLToPath} from 'url';
 
 // argument to determine if we are in CI mode
 const ciMode = process.argv.indexOf('ci') > -1;
+const cloudMode = process.argv.indexOf('cloud') > -1;
 
 // argument to determine if we want to use headlessChrome instead of default Browserstack
 const chromeheadlessMode = process.argv.indexOf('chromeheadless') > -1;
@@ -75,7 +76,11 @@ const browsers = chromeheadlessMode
   ? ['chrome:headless']
   : ['browserstack:Edge', 'browserstack:Firefox', 'browserstack:Chrome'];
 
-const backendProcess = spawn('yarn', ['run', 'start-backend', ciMode ? 'ci' : undefined]);
+const backendProcess = spawn('yarn', [
+  'run',
+  cloudMode ? 'start-backend-cloud' : 'start-backend',
+  ciMode ? 'ci' : undefined,
+]);
 const frontendProcess = spawn('yarn', ['start']);
 
 if (ciMode) {
@@ -89,7 +94,9 @@ if (ciMode) {
 let dataInterval;
 const connectionInterval = setInterval(async () => {
   const backendDone = await checkHttpPort(8090);
-  const frontendDone = await checkHttpPort(3000);
+  // checking 3000 will not work in the cloud because our proxy server
+  // starts before the front-end start (see setupProxy.js)
+  const frontendDone = await checkHttpPort('3000/ready');
 
   console.log(
     `waiting for servers to be started: backend = ${
@@ -100,7 +107,11 @@ const connectionInterval = setInterval(async () => {
   if (backendDone && frontendDone) {
     console.log(chalk.green.bold('Servers Started!'));
     clearInterval(connectionInterval);
-    dataInterval = setInterval(waitForData, 1000);
+    if (cloudMode) {
+      startTest();
+    } else {
+      dataInterval = setInterval(waitForData, 1000);
+    }
   }
 }, 5000);
 
@@ -151,7 +162,7 @@ async function startTest() {
       if (
         await testCafe
           .createRunner()
-          .src('e2e/tests/*.js')
+          .src(cloudMode ? 'e2e/cloud-tests/smokeTest.js' : 'e2e/tests/*.js')
           .browsers(browsers[i])
           .run({
             skipJsErrors: true,
