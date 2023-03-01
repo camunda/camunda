@@ -62,7 +62,15 @@ public final class MessageTimeToLiveChecker implements Task {
             ActorClock.currentTimeMillis(),
             lastIndex,
             (deadline, expiredMessageKey) -> {
-              lastIndex = new Index(expiredMessageKey, deadline);
+              final var newIndex = new Index(expiredMessageKey, deadline);
+              final boolean wasIndexAlreadyVisitedLastTime = newIndex.equals(lastIndex);
+              lastIndex = newIndex;
+
+              if (wasIndexAlreadyVisitedLastTime) {
+                // skip this entry
+                return true;
+              }
+
               final boolean stillFitsInResult =
                   taskResultBuilder.appendCommandRecord(
                       expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND);
