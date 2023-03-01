@@ -45,6 +45,7 @@ public final class DistributionStateTest {
     // given
     final var distributionKey = 10L;
     final var partition = 1;
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
 
     // when
     distributionState.addPendingDistribution(distributionKey, partition);
@@ -56,15 +57,16 @@ public final class DistributionStateTest {
   @Test
   public void shouldRemovePendingDistribution() {
     // given
-    final var deploymentKey = 10L;
+    final var distributionKey = 10L;
     final var partition = 1;
-    distributionState.addPendingDistribution(deploymentKey, partition);
+    distributionState.addCommandDistribution(distributionKey, createCommandDistributionRecord());
+    distributionState.addPendingDistribution(distributionKey, partition);
 
     // when
-    distributionState.removePendingDistribution(deploymentKey, partition);
+    distributionState.removePendingDistribution(distributionKey, partition);
 
     // then
-    assertThat(distributionState.hasPendingDistribution(deploymentKey)).isFalse();
+    assertThat(distributionState.hasPendingDistribution(distributionKey)).isFalse();
   }
 
   @Test
