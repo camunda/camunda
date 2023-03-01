@@ -78,21 +78,15 @@ public class CCSMWebSecurityConfigurerAdapter extends WebSecurityConfigurerAdapt
         // Identity callback request handling is public
         .antMatchers(createApiPath(AUTHENTICATION_PATH + CALLBACK)).permitAll()
         // public share resources
-        .antMatchers(
-          EXTERNAL_SUB_PATH + "/",
-          EXTERNAL_SUB_PATH + "/index*",
-          EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
-          EXTERNAL_SUB_PATH + "/*.js",
-          EXTERNAL_SUB_PATH + "/*.ico")
-      .permitAll()
+        .antMatchers(EXTERNAL_SUB_PATH + "/",
+                     EXTERNAL_SUB_PATH + "/index*",
+                     EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**",
+                     EXTERNAL_SUB_PATH + "/*.js", EXTERNAL_SUB_PATH + "/*.ico").permitAll()
         // public share related resources (API)
         .antMatchers(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)).permitAll()
         // common public api resources
-        .antMatchers(
-          createApiPath(UI_CONFIGURATION_PATH),
-          createApiPath(LOCALIZATION_PATH)
-        ).permitAll()
-      .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
+        .antMatchers(createApiPath(UI_CONFIGURATION_PATH), createApiPath(LOCALIZATION_PATH)).permitAll()
+        .antMatchers(ACTUATOR_ENDPOINT + "/**").permitAll()
       .anyRequest().authenticated()
       .and()
       .addFilterBefore(ccsmAuthenticationCookieFilter(), AbstractPreAuthenticatedProcessingFilter.class)

@@ -23,7 +23,6 @@ import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.NotSupportedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.util.Map;
@@ -67,8 +66,8 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
         .build();
     }
     final Response.ResponseBuilder responseBuilder = Response.seeOther(URI.create(buildRootRedirect(requestContext)));
-    ccsmTokenService.createOptimizeAuthCookies(tokens, accessToken, requestContext.getUriInfo().getRequestUri().getScheme())
-      .forEach(cookie -> responseBuilder.header(HttpHeaders.SET_COOKIE, cookie));
+    ccsmTokenService.createOptimizeAuthNewCookies(tokens, accessToken, requestContext.getUriInfo().getRequestUri().getScheme())
+      .forEach(responseBuilder::cookie);
     return responseBuilder.build();
   }
 
@@ -83,8 +82,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       } catch (IdentityException exception) {
         // We catch the exception even if the token revoke failed, so we can still delete the Optimize cookies
       } finally {
-        ccsmTokenService.createOptimizeDeleteAuthCookies()
-          .forEach(cookie -> responseBuilder.header(HttpHeaders.SET_COOKIE, cookie));
+        ccsmTokenService.createOptimizeDeleteAuthNewCookies().forEach(responseBuilder::cookie);
       }
     }
     return responseBuilder.build();

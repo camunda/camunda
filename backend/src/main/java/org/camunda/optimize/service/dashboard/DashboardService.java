@@ -564,7 +564,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private void validateEntityCanBeDeletedByUser(final DashboardDefinitionRestDto dashboardDefinitionDto) {
     if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
-      throw new OptimizeValidationException("Instant preview dashboards cannot be deleted");
+      throw new OptimizeValidationException("Management Dashboards and Instant preview dashboards cannot be deleted");
     }
   }
 

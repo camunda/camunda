@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.NewCookie;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -40,17 +41,27 @@ public class AuthCookieService {
   private final ConfigurationService configurationService;
 
   public NewCookie createDeleteOptimizeAuthCookie(final String requestScheme) {
-    return createDeleteOptimizeAuthCookie(isSecureScheme(requestScheme));
+    return createDeleteOptimizeAuthNewCookie(isSecureScheme(requestScheme));
   }
 
-  public NewCookie createDeleteOptimizeAuthCookie(final boolean secure) {
+  public javax.servlet.http.Cookie createDeleteOptimizeAuthCookie() {
+    log.trace("Deleting Optimize authentication cookie.");
+    return createDeleteCookie(OPTIMIZE_AUTHORIZATION, "", "https");
+  }
+
+  public NewCookie createDeleteOptimizeAuthNewCookie(final boolean secure) {
     log.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION, "", getCookiePath(), null, "delete cookie", 0, secure, true
     );
   }
 
-  public NewCookie createDeleteOptimizeRefreshCookie(final boolean secure) {
+  public javax.servlet.http.Cookie createDeleteOptimizeRefreshCookie() {
+    log.trace("Deleting Optimize refresh cookie.");
+    return createDeleteCookie(OPTIMIZE_REFRESH_TOKEN, "", "https");
+  }
+
+  public NewCookie createDeleteOptimizeRefreshNewCookie(final boolean secure) {
     log.trace("Deleting Optimize refresh cookie.");
     return new NewCookie(
       OPTIMIZE_REFRESH_TOKEN, "", getCookiePath(), null, "delete cookie", 0, secure, true
@@ -78,19 +89,6 @@ public class AuthCookieService {
     );
   }
 
-  public String createNewOptimizeRefreshCookie(final String cookieValue,
-                                               final Instant expiresAt,
-                                               final String requestScheme) {
-    log.trace("Creating Optimize authentication cookie.");
-
-    return createCookie(
-      OPTIMIZE_REFRESH_TOKEN,
-      AuthCookieService.createOptimizeAuthCookieValue(cookieValue),
-      requestScheme,
-      convertInstantToDate(expiresAt)
-    );
-  }
-
   public String createOptimizeServiceTokenCookie(final OAuth2AccessToken accessToken,
                                                  final Instant expiresAt,
                                                  final String requestScheme) {
@@ -110,8 +108,42 @@ public class AuthCookieService {
   }
 
   public static Optional<String> getAuthCookieToken(ContainerRequestContext requestContext) {
-    return extractCookieValue(requestContext)
-      .flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
+    return extractCookieValue(requestContext).flatMap(AuthCookieService::extractTokenFromAuthorizationValue);
+  }
+
+  public javax.servlet.http.Cookie createDeleteCookie(final String cookieName, final String cookieValue,
+                                                      final String requestScheme) {
+    return createCookie(cookieName, cookieValue, Instant.now(), requestScheme, true);
+  }
+
+  public javax.servlet.http.Cookie createCookie(final String cookieName, final String cookieValue,
+                                                final Instant expiresAt, final String requestScheme) {
+    return createCookie(cookieName, cookieValue, expiresAt, requestScheme, false);
+  }
+
+  private javax.servlet.http.Cookie createCookie(final String cookieName, final String cookieValue,
+                                                 final Instant expiresAt, final String requestScheme, final boolean isDelete) {
+    String cookiePath = getCookiePath();
+    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
+      cookiePath = addSameSiteCookieFlag(cookiePath);
+    }
+    final javax.servlet.http.Cookie cookie = new javax.servlet.http.Cookie(cookieName, cookieValue);
+    cookie.setPath(cookiePath);
+    cookie.setVersion(1);
+    cookie.setComment(null);
+    cookie.setMaxAge(isDelete ? 0 : (int) Duration.between(Instant.now(), expiresAt).toSeconds());
+    cookie.setHttpOnly(true);
+    cookie.setSecure(isSecureScheme(requestScheme));
+    return cookie;
+  }
+
+  public NewCookie createCookie(final String cookieName, final String cookieValue,
+                                final Date expiresAt, final String requestScheme) {
+    String cookiePath = getCookiePath();
+    if (getAuthConfiguration().getCookieConfiguration().isSameSiteFlagEnabled()) {
+      cookiePath = addSameSiteCookieFlag(cookiePath);
+    }
+    return new NewCookie(cookieName, cookieValue, cookiePath, null, 1, null, -1, expiresAt, isSecureScheme(requestScheme), true);
   }
 
   public static Optional<String> getAuthCookieToken(HttpServletRequest servletRequest) {
@@ -206,9 +238,9 @@ public class AuthCookieService {
   }
 
   private static Optional<String> extractTokenFromAuthorizationValue(final String authCookieValue) {
-    return Optional.ofNullable(authCookieValue)
-      .filter(value -> value.length() > AUTH_COOKIE_TOKEN_VALUE_PREFIX.length())
-      .map(value -> value.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim())
-      .filter(token -> !token.isEmpty());
+    if (authCookieValue != null && authCookieValue.startsWith(AUTH_COOKIE_TOKEN_VALUE_PREFIX)) {
+      return Optional.of(authCookieValue.substring(AUTH_COOKIE_TOKEN_VALUE_PREFIX.length()).trim());
+    }
+    return Optional.ofNullable(authCookieValue);
   }
 }

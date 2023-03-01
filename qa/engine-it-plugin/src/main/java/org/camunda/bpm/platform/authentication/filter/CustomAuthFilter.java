@@ -25,7 +25,7 @@ public class CustomAuthFilter extends ProcessEngineAuthenticationFilter {
     
     String customToken = req.getHeader("Custom-Token");
     
-    if (! "SomeCustomToken".equals(customToken)) {
+    if (!"SomeCustomToken".equals(customToken)) {
       resp.setStatus(Status.UNAUTHORIZED.getStatusCode());
     } else {
       super.doFilter(request, response, chain);

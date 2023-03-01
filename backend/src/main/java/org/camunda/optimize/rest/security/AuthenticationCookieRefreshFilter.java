@@ -10,6 +10,8 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.condition.CamundaPlatformCondition;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -30,6 +32,7 @@ import java.util.Optional;
 
 @AllArgsConstructor
 @Component
+@Conditional(CamundaPlatformCondition.class)
 @Order
 public class AuthenticationCookieRefreshFilter extends GenericFilterBean {
 

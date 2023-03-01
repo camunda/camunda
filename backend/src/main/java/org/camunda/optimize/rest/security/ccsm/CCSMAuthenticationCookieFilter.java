@@ -10,6 +10,7 @@ import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.exception.IdentityException;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.CCSMTokenService;
 import org.camunda.optimize.service.util.configuration.condition.CCSMCondition;
 import org.springframework.context.annotation.Conditional;
@@ -24,7 +25,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
@@ -91,7 +91,7 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
         .filter(cookie -> cookie.getName().equals(OPTIMIZE_AUTHORIZATION))
         .findFirst()
         .map(accessToken -> ccsmTokenService.getSubjectFromToken(accessToken.getValue())))
-      .orElse(null);
+      .orElseGet(() -> AuthCookieService.getAuthCookieToken(request).map(ccsmTokenService::getSubjectFromToken).orElse(null));
   }
 
   @Override
@@ -101,7 +101,7 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
         .filter(cookie -> cookie.getName().equals(OPTIMIZE_AUTHORIZATION))
         .findFirst()
         .map(Cookie::getValue))
-      .orElse(null);
+      .orElseGet(() -> AuthCookieService.getAuthCookieToken(request).orElse(null));
   }
 
   private void tryCookieRenewal(final ServletRequest request, final ServletResponse response,
@@ -110,14 +110,16 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
       .ifPresent(refreshTokenCookie -> {
         final Tokens tokens = ccsmTokenService.renewToken(refreshTokenCookie.getValue());
         final AccessToken accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
+        // We set the auth token as an attribute on this request so that it can be picked up when extracting the principal
+        // and credentials later
+        request.setAttribute(OPTIMIZE_AUTHORIZATION, accessToken.getToken().getToken());
         ccsmTokenService.createOptimizeAuthCookies(tokens, accessToken, request.getScheme())
-          .forEach(cookieValue -> ((HttpServletResponse) response).setHeader(HttpHeaders.SET_COOKIE, cookieValue));
+          .forEach(((HttpServletResponse) response)::addCookie);
       });
   }
 
   private void deleteCookies(final ServletResponse response) {
-    ccsmTokenService.createOptimizeDeleteAuthCookies()
-      .forEach(deleteCookie -> ((HttpServletResponse) response).setHeader(HttpHeaders.SET_COOKIE, deleteCookie));
+    ccsmTokenService.createOptimizeDeleteAuthCookies().forEach(((HttpServletResponse) response)::addCookie);
   }
 
 }
