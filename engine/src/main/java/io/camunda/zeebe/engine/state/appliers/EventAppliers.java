@@ -280,6 +280,9 @@ public final class EventAppliers implements EventApplier {
     register(
         CommandDistributionIntent.STARTED,
         new CommandDistributionStartedApplier(distributionState));
+    register(
+        CommandDistributionIntent.FINISHED,
+        new CommandDistributionFinishedApplier(distributionState));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
