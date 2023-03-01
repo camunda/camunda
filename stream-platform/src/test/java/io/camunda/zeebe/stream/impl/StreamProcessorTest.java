@@ -891,6 +891,63 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldWriteOnlyErrorResponseOnFailedEventProcessing() {
+    // given
+    final var successResultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    successResultBuilder
+        .withResponse(
+            RecordType.EVENT,
+            3,
+            ELEMENT_ACTIVATING,
+            Records.processInstance(1),
+            ValueType.PROCESS_INSTANCE,
+            RejectionType.NULL_VAL,
+            "",
+            1,
+            12)
+        .appendRecord(
+            4,
+            RecordType.COMMAND,
+            ELEMENT_ACTIVATING,
+            RejectionType.NULL_VAL,
+            "",
+            Records.processInstance(1));
+
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any()))
+        .thenReturn(successResultBuilder.build())
+        .thenThrow(new RuntimeException());
+
+    final var errorResultBuilder = new BufferedProcessingResultBuilder((c, s) -> true);
+    errorResultBuilder.withResponse(
+        RecordType.EVENT,
+        4,
+        ELEMENT_ACTIVATING,
+        Records.processInstance(1),
+        ValueType.PROCESS_INSTANCE,
+        RejectionType.NULL_VAL,
+        "",
+        1,
+        12);
+    when(defaultMockedRecordProcessor.onProcessingError(any(), any(), any()))
+        .thenReturn(errorResultBuilder.build());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(2)).process(any(), any());
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(1)).onProcessingError(any(), any(), any());
+
+    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
+
+    verify(commandResponseWriter, TIMEOUT.times(1)).key(4);
+  }
+
+  @Test
   public void shouldContinueProcessingAfterFailedProcessing() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
