@@ -37,8 +37,6 @@ public final class MessageSubscriptionCreateProcessor
 
   private MessageSubscriptionRecord subscriptionRecord;
   private final TypedRejectionWriter rejectionWriter;
-  private final SideEffectWriter sideEffectWriter;
-  private final int currentPartitionId;
 
   public MessageSubscriptionCreateProcessor(
       final int partitionId,
@@ -51,12 +49,11 @@ public final class MessageSubscriptionCreateProcessor
     this.commandSender = commandSender;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    sideEffectWriter = writers.sideEffect();
+    final SideEffectWriter sideEffectWriter = writers.sideEffect();
     this.keyGenerator = keyGenerator;
     messageCorrelator =
         new MessageCorrelator(
             partitionId, messageState, commandSender, stateWriter, sideEffectWriter);
-    currentPartitionId = partitionId;
   }
 
   @Override
@@ -77,10 +74,10 @@ public final class MessageSubscriptionCreateProcessor
       return;
     }
 
-    handleNewSubscription(sideEffectWriter);
+    handleNewSubscription();
   }
 
-  private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {
+  private void handleNewSubscription() {
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
