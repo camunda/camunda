@@ -123,24 +123,24 @@
     <version.feign>11.9.1</version.feign>
 
     <!-- maven plugins -->
-    <plugin.version.antrun>3.0.0</plugin.version.antrun>
+    <plugin.version.antrun>3.1.0</plugin.version.antrun>
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.1.2</plugin.version.checkstyle>
     <plugin.version.compiler>3.10.1</plugin.version.compiler>
-    <plugin.version.dependency-analyzer>1.12.0</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.3.0</plugin.version.dependency>
-    <plugin.version.enforcer>3.0.0</plugin.version.enforcer>
-    <plugin.version.exec>3.0.0</plugin.version.exec>
+    <plugin.version.dependency-analyzer>1.13.0</plugin.version.dependency-analyzer>
+    <plugin.version.dependency>3.4.0</plugin.version.dependency>
+    <plugin.version.enforcer>3.2.1</plugin.version.enforcer>
+    <plugin.version.exec>3.1.0</plugin.version.exec>
     <plugin.version.failsafe>3.0.0-M9</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.8</plugin.version.jacoco>
     <plugin.version.license>4.1</plugin.version.license>
-    <plugin.version.maven-jar>3.2.2</plugin.version.maven-jar>
+    <plugin.version.maven-jar>3.3.0</plugin.version.maven-jar>
     <plugin.version.proto-backwards-compatibility>1.0.7</plugin.version.proto-backwards-compatibility>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
-    <plugin.version.resources>3.2.0</plugin.version.resources>
+    <plugin.version.resources>3.3.0</plugin.version.resources>
     <plugin.version.revapi>0.14.7</plugin.version.revapi>
     <plugin.version.scala>4.6.3</plugin.version.scala>
     <plugin.version.shade>3.2.4</plugin.version.shade>
