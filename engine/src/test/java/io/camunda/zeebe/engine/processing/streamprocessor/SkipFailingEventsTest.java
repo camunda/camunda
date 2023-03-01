@@ -10,13 +10,10 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.api.CommandResponseWriter;
 import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
@@ -257,8 +254,6 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldBlacklistInstanceOnReplay() throws Exception {
     // given
-    when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
@@ -311,7 +306,6 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldNotBlacklistInstanceOnJobCommand() {
     // given
-    when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
     final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef =
         new AtomicReference<>();
@@ -397,7 +391,6 @@ public final class SkipFailingEventsTest {
   @Test
   public void shouldNotBlacklistInstanceAndIgnoreTimerStartEvents() {
     // given
-    when(commandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
 
     final BpmnModelInstance process =

@@ -10,6 +10,7 @@ package io.camunda.zeebe.streamprocessor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.engine.api.EmptyProcessingResult;
+import io.camunda.zeebe.engine.api.ProcessingResponse;
 import io.camunda.zeebe.engine.api.ProcessingResult;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.api.RecordProcessor;
@@ -38,6 +39,7 @@ import io.prometheus.client.Histogram;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -139,6 +141,7 @@ public final class ProcessingStateMachine {
   private final StreamProcessorContext context;
   private final List<RecordProcessor> recordProcessors;
   private ProcessingResult currentProcessingResult;
+  private Collection<ProcessingResponse> pendingResponses;
 
   private RecordProcessor currentProcessor;
   private final LogStreamBatchWriter logStreamBatchWriter;
@@ -317,6 +320,7 @@ public final class ProcessingStateMachine {
     final var currentProcessingBatchLimit =
         processedCommandsCount > 0 ? processedCommandsCount : maxCommandsInBatch;
     processedCommandsCount = 0;
+    pendingResponses = new ArrayList<>();
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);
 
@@ -341,6 +345,7 @@ public final class ProcessingStateMachine {
                 currentProcessingBatchLimit);
 
         pendingCommands.addAll(nextToProcessCommands);
+        currentProcessingResult.getProcessingResponse().ifPresent(pendingResponses::add);
       }
 
       lastProcessingResultSize = currentProcessingResult.getRecordBatch().entries().size();
@@ -446,6 +451,7 @@ public final class ProcessingStateMachine {
                       .sourceIndex(entry.sourceIndex())
                       .valueWriter(entry.recordValue())
                       .done());
+          pendingResponses = currentProcessingResult.getProcessingResponse().stream().toList();
         });
   }
 
@@ -517,33 +523,22 @@ public final class ProcessingStateMachine {
             () -> {
               // TODO refactor this into two parallel tasks, which are then combined, and on the
               // completion of which the process continues
-
-              final var processingResponseOptional =
-                  currentProcessingResult.getProcessingResponse();
-
-              if (processingResponseOptional.isPresent()) {
-                final var processingResponse = processingResponseOptional.get();
+              for (final var processingResponse : pendingResponses) {
                 final var responseWriter = context.getCommandResponseWriter();
 
                 final var responseValue = processingResponse.responseValue();
                 final var recordMetadata = responseValue.recordMetadata();
-                final boolean responseSent =
-                    responseWriter
-                        .intent(recordMetadata.getIntent())
-                        .key(responseValue.key())
-                        .recordType(recordMetadata.getRecordType())
-                        .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
-                        .rejectionType(recordMetadata.getRejectionType())
-                        .partitionId(context.getPartitionId())
-                        .valueType(recordMetadata.getValueType())
-                        .valueWriter(responseValue.recordValue())
-                        .tryWriteResponse(
-                            processingResponse.requestStreamId(), processingResponse.requestId());
-                if (!responseSent) {
-                  return false;
-                } else {
-                  return executePostCommitTasks();
-                }
+                responseWriter
+                    .intent(recordMetadata.getIntent())
+                    .key(responseValue.key())
+                    .recordType(recordMetadata.getRecordType())
+                    .rejectionReason(BufferUtil.wrapString(recordMetadata.getRejectionReason()))
+                    .rejectionType(recordMetadata.getRejectionType())
+                    .partitionId(context.getPartitionId())
+                    .valueType(recordMetadata.getValueType())
+                    .valueWriter(responseValue.recordValue())
+                    .tryWriteResponse(
+                        processingResponse.requestStreamId(), processingResponse.requestId());
               }
               return executePostCommitTasks();
             },
