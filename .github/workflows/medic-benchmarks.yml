@@ -74,7 +74,7 @@ jobs:
         --set starter.rate=25
         --set timer.replicas=1
         --set timer.rate=25
-        --set publisher.replica=1
+        --set publisher.replicas=1
         --set publisher.rate=25
   setup-latency-benchmark:
     name: Latency Benchmark
