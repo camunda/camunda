@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionProcessor;
+import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -40,6 +41,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.function.Consumer;
@@ -126,6 +128,7 @@ public final class EngineProcessors {
 
     addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
+    addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
 
     return typedRecordProcessors;
   }
@@ -255,5 +258,23 @@ public final class EngineProcessors {
             writers, processingState.getKeyGenerator(), processingState.getDecisionState());
     typedRecordProcessors.onCommand(
         ValueType.RESOURCE_DELETION, ResourceDeletionIntent.DELETE, resourceDeletionProcessor);
+  }
+
+  private static void addSignalBroadcastProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final BpmnBehaviorsImpl bpmnBehaviors,
+      final Writers writers,
+      final MutableProcessingState processingState) {
+    final var signalBroadcastProcessor =
+        new SignalBroadcastProcessor(
+            writers,
+            processingState.getKeyGenerator(),
+            processingState.getEventScopeInstanceState(),
+            processingState.getProcessState(),
+            bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.eventTriggerBehavior(),
+            processingState.getSignalSubscriptionState());
+    typedRecordProcessors.onCommand(
+        ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
   }
 }

@@ -94,7 +94,9 @@ public final class ProcessProcessor
 
   private void activateStartEvent(
       final ExecutableFlowElementContainer element, final BpmnElementContext activated) {
-    if (element.hasMessageStartEvent() || element.hasTimerStartEvent()) {
+    if (element.hasMessageStartEvent()
+        || element.hasTimerStartEvent()
+        || element.hasSignalStartEvent()) {
       eventSubscriptionBehavior
           .getEventTriggerForProcessDefinition(activated.getProcessDefinitionKey())
           .filter(
