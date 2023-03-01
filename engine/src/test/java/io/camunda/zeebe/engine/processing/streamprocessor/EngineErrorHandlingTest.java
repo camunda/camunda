@@ -11,14 +11,11 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -331,8 +328,6 @@ public final class EngineErrorHandlingTest {
   @Test
   public void shouldBlacklistInstanceOnReplay() throws Exception {
     // given
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
-
     final long failedPos =
         streams
             .newRecord(STREAM_NAME)
@@ -385,7 +380,6 @@ public final class EngineErrorHandlingTest {
   @Test
   public void shouldNotBlacklistInstanceOnJobCommand() {
     // given
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
     final AtomicReference<TypedRecordProcessor<JobRecord>> dumpProcessorRef =
         new AtomicReference<>();
@@ -471,7 +465,6 @@ public final class EngineErrorHandlingTest {
   @Test
   public void shouldNotBlacklistInstanceAndIgnoreTimerStartEvents() {
     // given
-    when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
     final List<Long> processedInstances = new ArrayList<>();
 
     final BpmnModelInstance process =
