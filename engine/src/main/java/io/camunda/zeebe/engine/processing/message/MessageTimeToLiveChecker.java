@@ -31,13 +31,9 @@ public final class MessageTimeToLiveChecker implements Task {
     messageState.visitMessagesWithDeadlineBeforeTimestamp(
         ActorClock.currentTimeMillis(),
         null,
-        ((deadline, expiredMessageKey) -> writeDeleteMessageCommand(expiredMessageKey, taskResultBuilder));
+        ((deadline, expiredMessageKey) -> taskResultBuilder.appendCommandRecord(
+            expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND));
     return taskResultBuilder.build();
   }
 
-  private boolean writeDeleteMessageCommand(
-      final long expiredMessageKey, final TaskResultBuilder taskResultBuilder) {
-    return taskResultBuilder.appendCommandRecord(
-        expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND);
-  }
 }
