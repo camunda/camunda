@@ -94,7 +94,7 @@ public final class MessageCorrelationMultiplePartitionsTest {
   }
 
   @Test
-  public void shouldCorrelateMessageOnDifferentPartitions() {
+  public void shouldCorrelateMessageOnDifferentPartitions() throws InterruptedException {
     // given
     engine.forEachPartition(
         partitionId ->

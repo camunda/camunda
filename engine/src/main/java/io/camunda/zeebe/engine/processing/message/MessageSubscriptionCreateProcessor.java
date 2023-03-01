@@ -37,9 +37,9 @@ public final class MessageSubscriptionCreateProcessor
 
   private MessageSubscriptionRecord subscriptionRecord;
   private final TypedRejectionWriter rejectionWriter;
-  private final SideEffectWriter sideEffectWriter;
 
   public MessageSubscriptionCreateProcessor(
+      final int partitionId,
       final MessageState messageState,
       final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender,
@@ -49,10 +49,11 @@ public final class MessageSubscriptionCreateProcessor
     this.commandSender = commandSender;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    sideEffectWriter = writers.sideEffect();
+    final SideEffectWriter sideEffectWriter = writers.sideEffect();
     this.keyGenerator = keyGenerator;
     messageCorrelator =
-        new MessageCorrelator(messageState, commandSender, stateWriter, sideEffectWriter);
+        new MessageCorrelator(
+            partitionId, messageState, commandSender, stateWriter, sideEffectWriter);
   }
 
   @Override
@@ -61,7 +62,7 @@ public final class MessageSubscriptionCreateProcessor
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
-      sideEffectWriter.appendSideEffect(this::sendAcknowledgeCommand);
+      sendAcknowledgeCommand();
 
       rejectionWriter.appendRejection(
           record,
@@ -73,10 +74,10 @@ public final class MessageSubscriptionCreateProcessor
       return;
     }
 
-    handleNewSubscription(sideEffectWriter);
+    handleNewSubscription();
   }
 
-  private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {
+  private void handleNewSubscription() {
 
     final var subscriptionKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(
@@ -86,7 +87,7 @@ public final class MessageSubscriptionCreateProcessor
         messageCorrelator.correlateNextMessage(subscriptionKey, subscriptionRecord);
 
     if (!isMessageCorrelated) {
-      sideEffectWriter.appendSideEffect(this::sendAcknowledgeCommand);
+      sendAcknowledgeCommand();
     }
   }
 
