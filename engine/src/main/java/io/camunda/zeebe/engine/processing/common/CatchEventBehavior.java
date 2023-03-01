@@ -21,8 +21,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -60,7 +60,7 @@ public final class CatchEventBehavior {
   private final int currentPartitionId;
 
   public CatchEventBehavior(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -74,14 +74,14 @@ public final class CatchEventBehavior {
     this.sideEffectWriter = sideEffectWriter;
     this.partitionsCount = partitionsCount;
 
-    timerInstanceState = zeebeState.getTimerState();
-    processMessageSubscriptionState = zeebeState.getProcessMessageSubscriptionState();
-    processState = zeebeState.getProcessState();
+    timerInstanceState = processingState.getTimerState();
+    processMessageSubscriptionState = processingState.getProcessMessageSubscriptionState();
+    processState = processingState.getProcessState();
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
 
-    currentPartitionId = zeebeState.getPartitionId();
+    currentPartitionId = processingState.getPartitionId();
   }
 
   /**

@@ -11,8 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -30,15 +30,15 @@ public final class NumberOfTakenSequenceFlowsStateTest {
   private static final DirectBuffer SEQUENCE_FLOW_ELEMENT_ID = wrapString("flow-1");
   private static final DirectBuffer OTHER_SEQUENCE_FLOW_ELEMENT_ID = wrapString("flow-2");
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableElementInstanceState elementInstanceState;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    zeebeState = stateRule.getZeebeState();
-    elementInstanceState = zeebeState.getElementInstanceState();
+    processingState = stateRule.getProcessingState();
+    elementInstanceState = processingState.getElementInstanceState();
   }
 
   @Test
@@ -162,7 +162,7 @@ public final class NumberOfTakenSequenceFlowsStateTest {
         elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
     assertThat(number).isZero();
 
-    assertThat(zeebeState.isEmpty(ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS))
+    assertThat(processingState.isEmpty(ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS))
         .describedAs("Expected the entries to be removed")
         .isTrue();
   }
@@ -185,7 +185,7 @@ public final class NumberOfTakenSequenceFlowsStateTest {
         elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
     assertThat(number).isZero();
 
-    assertThat(zeebeState.isEmpty(ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS))
+    assertThat(processingState.isEmpty(ZbColumnFamilies.NUMBER_OF_TAKEN_SEQUENCE_FLOWS))
         .describedAs("Expected the entries to be removed")
         .isTrue();
   }

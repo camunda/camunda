@@ -19,8 +19,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.model.bpmn.util.time.Interval;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -55,7 +55,7 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
   private final EventHandle eventHandle;
 
   public TriggerTimerProcessor(
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
@@ -63,14 +63,14 @@ public final class TriggerTimerProcessor implements TypedRecordProcessor<TimerRe
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
 
-    processState = zeebeState.getProcessState();
-    elementInstanceState = zeebeState.getElementInstanceState();
-    timerInstanceState = zeebeState.getTimerState();
-    keyGenerator = zeebeState.getKeyGenerator();
+    processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
+    timerInstanceState = processingState.getTimerState();
+    keyGenerator = processingState.getKeyGenerator();
     eventHandle =
         new EventHandle(
             keyGenerator,
-            zeebeState.getEventScopeInstanceState(),
+            processingState.getEventScopeInstanceState(),
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),

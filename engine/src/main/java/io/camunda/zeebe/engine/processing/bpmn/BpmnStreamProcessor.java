@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -40,17 +40,17 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final Writers writers,
       final ProcessEngineMetrics processEngineMetrics) {
-    processState = zeebeState.getProcessState();
+    processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
     stateTransitionBehavior =
         new BpmnStateTransitionBehavior(
-            zeebeState.getKeyGenerator(),
+            processingState.getKeyGenerator(),
             bpmnBehaviors.stateBehavior(),
             processEngineMetrics,
             this::getContainerProcessor,

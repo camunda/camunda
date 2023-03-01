@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTupl
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -54,7 +54,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
   private final JobMetrics jobMetrics;
 
   public JobThrowErrorProcessor(
-      final ZeebeState state,
+      final ProcessingState state,
       final BpmnEventPublicationBehavior eventPublicationBehavior,
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics) {

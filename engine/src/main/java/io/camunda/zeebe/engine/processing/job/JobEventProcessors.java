@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -24,21 +24,21 @@ public final class JobEventProcessors {
 
   public static void addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final Consumer<String> onJobsAvailableCallback,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobMetrics jobMetrics) {
 
-    final var jobState = zeebeState.getJobState();
-    final var keyGenerator = zeebeState.getKeyGenerator();
+    final var jobState = processingState.getJobState();
+    final var keyGenerator = processingState.getKeyGenerator();
 
     final EventHandle eventHandle =
         new EventHandle(
             keyGenerator,
-            zeebeState.getEventScopeInstanceState(),
+            processingState.getEventScopeInstanceState(),
             writers,
-            zeebeState.getProcessState(),
+            processingState.getProcessState(),
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
 
@@ -47,14 +47,14 @@ public final class JobEventProcessors {
         .onCommand(
             ValueType.JOB,
             JobIntent.COMPLETE,
-            new JobCompleteProcessor(zeebeState, jobMetrics, eventHandle))
+            new JobCompleteProcessor(processingState, jobMetrics, eventHandle))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
             new JobFailProcessor(
-                zeebeState,
+                processingState,
                 writers,
-                zeebeState.getKeyGenerator(),
+                processingState.getKeyGenerator(),
                 jobMetrics,
                 jobBackoffChecker,
                 bpmnBehaviors.variableBehavior()))
@@ -62,18 +62,23 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.THROW_ERROR,
             new JobThrowErrorProcessor(
-                zeebeState, bpmnBehaviors.eventPublicationBehavior(), keyGenerator, jobMetrics))
+                processingState,
+                bpmnBehaviors.eventPublicationBehavior(),
+                keyGenerator,
+                jobMetrics))
         .onCommand(
-            ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(zeebeState, jobMetrics))
+            ValueType.JOB, JobIntent.TIME_OUT, new JobTimeOutProcessor(processingState, jobMetrics))
         .onCommand(
-            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(zeebeState))
-        .onCommand(ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(zeebeState, jobMetrics))
-        .onCommand(ValueType.JOB, JobIntent.RECUR_AFTER_BACKOFF, new JobRecurProcessor(zeebeState))
+            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(processingState))
+        .onCommand(
+            ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
+        .onCommand(
+            ValueType.JOB, JobIntent.RECUR_AFTER_BACKOFF, new JobRecurProcessor(processingState))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                writers, zeebeState, zeebeState.getKeyGenerator(), jobMetrics))
+                writers, processingState, processingState.getKeyGenerator(), jobMetrics))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(jobBackoffChecker)
         .withListener(

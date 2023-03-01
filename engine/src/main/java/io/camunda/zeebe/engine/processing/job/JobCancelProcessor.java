@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -23,7 +23,7 @@ public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final JobMetrics jobMetrics;
 
-  public JobCancelProcessor(final ZeebeState state, final JobMetrics jobMetrics) {
+  public JobCancelProcessor(final ProcessingState state, final JobMetrics jobMetrics) {
     jobState = state.getJobState();
     this.jobMetrics = jobMetrics;
   }

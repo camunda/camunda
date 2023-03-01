@@ -9,26 +9,26 @@ package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.ProcessingDbState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public final class ZeebeStateRule extends ExternalResource {
+public final class ProcessingStateRule extends ExternalResource {
 
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final int partition;
   private ZeebeDb<ZbColumnFamilies> db;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
-  public ZeebeStateRule() {
+  public ProcessingStateRule() {
     this(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public ZeebeStateRule(final int partition) {
+  public ProcessingStateRule(final int partition) {
     this.partition = partition;
   }
 
@@ -39,7 +39,7 @@ public final class ZeebeStateRule extends ExternalResource {
 
     final var context = db.createContext();
     final var keyGenerator = new DbKeyGenerator(partition, db, context);
-    zeebeState = new ZeebeDbState(partition, db, context, keyGenerator);
+    processingState = new ProcessingDbState(partition, db, context, keyGenerator);
   }
 
   @Override
@@ -52,8 +52,8 @@ public final class ZeebeStateRule extends ExternalResource {
     tempFolder.delete();
   }
 
-  public MutableZeebeState getZeebeState() {
-    return zeebeState;
+  public MutableProcessingState getProcessingState() {
+    return processingState;
   }
 
   public ZeebeDb<ZbColumnFamilies> createNewDb() {

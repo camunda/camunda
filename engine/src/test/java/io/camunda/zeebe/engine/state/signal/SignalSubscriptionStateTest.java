@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
@@ -27,13 +27,13 @@ import org.junit.Test;
 
 public final class SignalSubscriptionStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableSignalSubscriptionState state;
 
   @Before
   public void setUp() {
-    state = stateRule.getZeebeState().getSignalSubscriptionState();
+    state = stateRule.getProcessingState().getSignalSubscriptionState();
   }
 
   @Test

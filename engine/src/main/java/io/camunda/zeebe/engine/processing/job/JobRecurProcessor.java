@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -22,8 +22,8 @@ public class JobRecurProcessor implements CommandProcessor<JobRecord> {
       "Expected to back off failed job with key '%d', but %s";
   private final JobState jobState;
 
-  public JobRecurProcessor(final ZeebeState zeebeState) {
-    jobState = zeebeState.getJobState();
+  public JobRecurProcessor(final ProcessingState processingState) {
+    jobState = processingState.getJobState();
   }
 
   @Override

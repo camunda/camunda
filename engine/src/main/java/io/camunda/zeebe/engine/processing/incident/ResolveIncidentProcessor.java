@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -42,15 +42,15 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
 
   public ResolveIncidentProcessor(
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
-    incidentState = zeebeState.getIncidentState();
-    elementInstanceState = zeebeState.getElementInstanceState();
+    incidentState = processingState.getIncidentState();
+    elementInstanceState = processingState.getElementInstanceState();
   }
 
   @Override

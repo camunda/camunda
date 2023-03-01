@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;
@@ -83,7 +83,7 @@ public final class EngineErrorHandlingTest {
   private TestStreams streams;
   private KeyGenerator keyGenerator;
   private CommandResponseWriter mockCommandResponseWriter;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
@@ -184,9 +184,9 @@ public final class EngineErrorHandlingTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
+          processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters())
+                  processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -224,9 +224,9 @@ public final class EngineErrorHandlingTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
+          processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters())
+                  processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
                   ValueType.PROCESS_INSTANCE,
                   ProcessInstanceIntent.ACTIVATE_ELEMENT,
@@ -271,9 +271,9 @@ public final class EngineErrorHandlingTest {
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           dumpProcessorRef.set(spy(new DumpProcessor(processingContext.getWriters())));
-          zeebeState = processingContext.getZeebeState();
+          processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters())
+                  processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
                   ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.ACTIVATE_ELEMENT, processor)
               .onCommand(
@@ -319,7 +319,8 @@ public final class EngineErrorHandlingTest {
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isTrue();
+    Assertions.assertThat(processingState.getBlackListState().isOnBlacklist(mockTypedRecord))
+        .isTrue();
 
     verify(dumpProcessorRef.get(), times(1)).processRecord(any());
     assertThat(dumpProcessorRef.get().processedInstances).containsExactly(2L);
@@ -350,9 +351,9 @@ public final class EngineErrorHandlingTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
+          processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters())
+                  processingState.getKeyGenerator(), processingContext.getWriters())
               .withListener(
                   new StreamProcessorLifecycleAware() {
                     @Override
@@ -374,7 +375,7 @@ public final class EngineErrorHandlingTest {
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    waitUntil(() -> zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord));
+    waitUntil(() -> processingState.getBlackListState().isOnBlacklist(mockTypedRecord));
   }
 
   @Test
@@ -396,7 +397,7 @@ public final class EngineErrorHandlingTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
+          processingState = processingContext.getProcessingState();
           dumpProcessorRef.set(
               spy(
                   new TypedRecordProcessor<>() {
@@ -416,7 +417,7 @@ public final class EngineErrorHandlingTest {
                   }));
 
           return TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters())
+                  processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(ValueType.JOB, JobIntent.COMPLETE, errorProneProcessor)
               .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, dumpProcessorRef.get());
         });
@@ -456,7 +457,8 @@ public final class EngineErrorHandlingTest {
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     final MockTypedRecord<ProcessInstanceRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.processInstance(1));
-    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
+    Assertions.assertThat(processingState.getBlackListState().isOnBlacklist(mockTypedRecord))
+        .isFalse();
 
     verify(dumpProcessorRef.get(), timeout(1000).times(2)).processRecord(any());
     assertThat(processedInstances).containsExactly(1L, 2L);
@@ -484,9 +486,9 @@ public final class EngineErrorHandlingTest {
         STREAM_NAME,
         DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
+          processingState = processingContext.getProcessingState();
           return TypedRecordProcessors.processors(
-                  zeebeState.getKeyGenerator(), processingContext.getWriters())
+                  processingState.getKeyGenerator(), processingContext.getWriters())
               .onCommand(
                   ValueType.DEPLOYMENT,
                   DeploymentIntent.CREATE,
@@ -531,7 +533,8 @@ public final class EngineErrorHandlingTest {
     metadata.valueType(ValueType.TIMER);
     final MockTypedRecord<TimerRecord> mockTypedRecord =
         new MockTypedRecord<>(0, metadata, Records.timer(TimerInstance.NO_ELEMENT_INSTANCE));
-    Assertions.assertThat(zeebeState.getBlackListState().isOnBlacklist(mockTypedRecord)).isFalse();
+    Assertions.assertThat(processingState.getBlackListState().isOnBlacklist(mockTypedRecord))
+        .isFalse();
     assertThat(processedInstances).containsExactly(TimerInstance.NO_ELEMENT_INSTANCE);
   }
 

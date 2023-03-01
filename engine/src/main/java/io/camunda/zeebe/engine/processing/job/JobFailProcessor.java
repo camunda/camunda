@@ -17,7 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -42,7 +42,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
   private final SideEffectWriter sideEffectWriter;
 
   public JobFailProcessor(
-      final ZeebeState state,
+      final ProcessingState state,
       final Writers writers,
       final KeyGenerator keyGenerator,
       final JobMetrics jobMetrics,

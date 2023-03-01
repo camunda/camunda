@@ -23,9 +23,9 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateExtension;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,15 +42,16 @@ public class DecisionRequirementsMigrationTest {
     @Test
     public void noMigrationNeededWhenDecisionsRequirementsColumnFamilyIsEmpty() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
+      final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS)).thenReturn(true);
-      when(mockZeebeState.isEmpty(
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS))
+          .thenReturn(true);
+      when(mockProcessingState.isEmpty(
               ZbColumnFamilies
                   .DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(true);
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isFalse();
@@ -59,15 +60,16 @@ public class DecisionRequirementsMigrationTest {
     @Test
     public void noMigrationNeededWhenVersionColumnFamilyIsPopulated() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
+      final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS)).thenReturn(false);
-      when(mockZeebeState.isEmpty(
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS))
+          .thenReturn(false);
+      when(mockProcessingState.isEmpty(
               ZbColumnFamilies
                   .DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(false);
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isFalse();
@@ -76,15 +78,16 @@ public class DecisionRequirementsMigrationTest {
     @Test
     public void migrationNeededWhenDecisionHaveNotBeenMigratedYet() {
       // given
-      final var mockZeebeState = mock(ZeebeState.class);
+      final var mockProcessingState = mock(ProcessingState.class);
 
       // when
-      when(mockZeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS)).thenReturn(false);
-      when(mockZeebeState.isEmpty(
+      when(mockProcessingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS))
+          .thenReturn(false);
+      when(mockProcessingState.isEmpty(
               ZbColumnFamilies
                   .DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION))
           .thenReturn(true);
-      final var actual = sutMigration.needsToRun(mockZeebeState);
+      final var actual = sutMigration.needsToRun(mockProcessingState);
 
       // then
       assertThat(actual).isTrue();
@@ -93,23 +96,23 @@ public class DecisionRequirementsMigrationTest {
     @Test
     public void migrationCallsMethodInMigrationState() {
       // given
-      final var mockZeebeState = mock(MutableZeebeState.class, RETURNS_DEEP_STUBS);
+      final var mockProcessingState = mock(MutableProcessingState.class, RETURNS_DEEP_STUBS);
 
       // when
-      sutMigration.runMigration(mockZeebeState);
+      sutMigration.runMigration(mockProcessingState);
 
       // then
-      verify(mockZeebeState.getMigrationState()).migrateDrgPopulateDrgVersionByDrgIdAndKey();
+      verify(mockProcessingState.getMigrationState()).migrateDrgPopulateDrgVersionByDrgIdAndKey();
 
-      verifyNoMoreInteractions(mockZeebeState.getMigrationState());
+      verifyNoMoreInteractions(mockProcessingState.getMigrationState());
     }
   }
 
   @Nested
-  @ExtendWith(ZeebeStateExtension.class)
+  @ExtendWith(ProcessingStateExtension.class)
   public class BlackboxTest {
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
-    private MutableZeebeState zeebeState;
+    private MutableProcessingState processingState;
     private TransactionContext transactionContext;
     private LegacyDecisionState legacyDecisionState;
 
@@ -147,8 +150,8 @@ public class DecisionRequirementsMigrationTest {
           key, sampleDecisionRequirementsRecord().setDecisionRequirementsKey(key));
 
       // when
-      sutMigration.runMigration(zeebeState);
-      final var shouldRun = sutMigration.needsToRun(zeebeState);
+      sutMigration.runMigration(processingState);
+      final var shouldRun = sutMigration.needsToRun(processingState);
 
       // then
       assertThat(shouldRun).isFalse();
@@ -169,7 +172,7 @@ public class DecisionRequirementsMigrationTest {
       legacyDecisionState.putDecisionRequirements(drg2.getDecisionRequirementsKey(), drg2);
 
       // when
-      sutMigration.runMigration(zeebeState);
+      sutMigration.runMigration(processingState);
 
       // then
       assertContainsDecisionRequirements(drg1);

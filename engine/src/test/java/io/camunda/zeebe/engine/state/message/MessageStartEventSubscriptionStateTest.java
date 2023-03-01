@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
@@ -27,13 +27,13 @@ import org.junit.Test;
 
 public final class MessageStartEventSubscriptionStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageStartEventSubscriptionState state;
 
   @Before
   public void setUp() {
-    state = stateRule.getZeebeState().getMessageStartEventSubscriptionState();
+    state = stateRule.getProcessingState().getMessageStartEventSubscriptionState();
   }
 
   @Test

@@ -18,7 +18,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
@@ -45,17 +45,17 @@ public class EventTriggerBehavior {
       final KeyGenerator keyGenerator,
       final CatchEventBehavior catchEventBehavior,
       final Writers writers,
-      final ZeebeState zeebeState) {
+      final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
     this.catchEventBehavior = catchEventBehavior;
     commandWriter = writers.command();
     stateWriter = writers.state();
 
-    elementInstanceState = zeebeState.getElementInstanceState();
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    elementInstanceState = processingState.getElementInstanceState();
+    eventScopeInstanceState = processingState.getEventScopeInstanceState();
 
     variableBehavior =
-        new VariableBehavior(zeebeState.getVariableState(), writers.state(), keyGenerator);
+        new VariableBehavior(processingState.getVariableState(), writers.state(), keyGenerator);
   }
 
   public void triggerEventSubProcess(

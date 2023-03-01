@@ -21,7 +21,7 @@ import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.EvaluatedDecisionRecord;
@@ -43,10 +43,10 @@ public class DecisionBehavior {
 
   public DecisionBehavior(
       final DecisionEngine decisionEngine,
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final ProcessEngineMetrics metrics) {
 
-    decisionState = zeebeState.getDecisionState();
+    decisionState = processingState.getDecisionState();
     this.decisionEngine = decisionEngine;
     this.metrics = metrics;
   }

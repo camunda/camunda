@@ -11,7 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -26,14 +26,14 @@ import org.junit.Test;
 
 public class DeploymentStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableDeploymentState deploymentState;
 
   @Before
   public void setUp() {
-    final var zeebeState = stateRule.getZeebeState();
-    deploymentState = zeebeState.getDeploymentState();
+    final var processingState = stateRule.getProcessingState();
+    deploymentState = processingState.getDeploymentState();
   }
 
   @Test

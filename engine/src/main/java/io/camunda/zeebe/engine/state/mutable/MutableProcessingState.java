@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public interface MutableZeebeState extends ZeebeState {
+public interface MutableProcessingState extends ProcessingState {
 
   @Override
   MutableDeploymentState getDeploymentState();

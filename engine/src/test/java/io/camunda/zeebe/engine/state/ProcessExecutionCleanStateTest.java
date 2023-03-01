@@ -11,7 +11,7 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.processing.message.MessageObserver;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -47,11 +47,11 @@ public final class ProcessExecutionCleanStateTest {
 
   @Rule public EngineRule engineRule = EngineRule.singlePartition();
 
-  private ZeebeState zeebeState;
+  private ProcessingState processingState;
 
   @Before
   public void init() {
-    zeebeState = engineRule.getZeebeState();
+    processingState = engineRule.getProcessingState();
 
     assertThatStateIsEmpty();
   }
@@ -789,7 +789,7 @@ public final class ProcessExecutionCleanStateTest {
               final var nonEmptyColumns =
                   Arrays.stream(ZbColumnFamilies.values())
                       .filter(not(IGNORE_NON_EMPTY_COLUMNS::contains))
-                      .filter(not(zeebeState::isEmpty))
+                      .filter(not(processingState::isEmpty))
                       .collect(Collectors.toList());
 
               assertThat(nonEmptyColumns).describedAs("Expected all columns to be empty").isEmpty();

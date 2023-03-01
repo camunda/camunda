@@ -9,9 +9,9 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.ArrayList;
@@ -23,14 +23,14 @@ import org.junit.Test;
 
 public final class TimerInstanceStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableTimerInstanceState state;
 
   @Before
   public void setUp() {
-    final MutableZeebeState zeebeState = stateRule.getZeebeState();
-    state = zeebeState.getTimerState();
+    final MutableProcessingState processingState = stateRule.getProcessingState();
+    state = processingState.getTimerState();
   }
 
   @Test
@@ -214,7 +214,7 @@ public final class TimerInstanceStateTest {
 
   private void createElementInstance(final long key) {
     stateRule
-        .getZeebeState()
+        .getProcessingState()
         .getElementInstanceState()
         .createInstance(
             new ElementInstance(

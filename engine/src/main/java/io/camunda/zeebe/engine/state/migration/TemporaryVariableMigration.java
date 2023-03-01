@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 /** Reads out the temporary variable column and creates an EventTrigger for reach of them. */
@@ -20,15 +20,16 @@ public class TemporaryVariableMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ZeebeState zeebeState) {
-    return !zeebeState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE);
+  public boolean needsToRun(final ProcessingState processingState) {
+    return !processingState.isEmpty(ZbColumnFamilies.TEMPORARY_VARIABLE_STORE);
   }
 
   @Override
-  public void runMigration(final MutableZeebeState zeebeState) {
-    zeebeState
+  public void runMigration(final MutableProcessingState processingState) {
+    processingState
         .getMigrationState()
         .migrateTemporaryVariables(
-            zeebeState.getEventScopeInstanceState(), zeebeState.getElementInstanceState());
+            processingState.getEventScopeInstanceState(),
+            processingState.getElementInstanceState());
   }
 }

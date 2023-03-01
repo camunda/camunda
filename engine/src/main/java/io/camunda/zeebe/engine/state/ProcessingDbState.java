@@ -39,10 +39,10 @@ import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
 import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
@@ -52,7 +52,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
-public class ZeebeDbState implements MutableZeebeState {
+public class ProcessingDbState implements MutableProcessingState {
 
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyGenerator keyGenerator;
@@ -77,7 +77,7 @@ public class ZeebeDbState implements MutableZeebeState {
 
   private final int partitionId;
 
-  public ZeebeDbState(
+  public ProcessingDbState(
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,

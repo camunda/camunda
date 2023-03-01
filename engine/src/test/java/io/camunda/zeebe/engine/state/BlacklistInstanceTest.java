@@ -12,8 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -47,7 +47,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public final class BlacklistInstanceTest {
 
-  @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
+  @ClassRule public static final ProcessingStateRule ZEEBE_STATE_RULE = new ProcessingStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);
 
   @Parameter(0)
@@ -214,14 +214,14 @@ public final class BlacklistInstanceTest {
     typedEvent.wrap(loggedEvent, metadata, new Value());
 
     // when
-    final MutableZeebeState zeebeState = ZEEBE_STATE_RULE.getZeebeState();
-    zeebeState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
+    final MutableProcessingState processingState = ZEEBE_STATE_RULE.getProcessingState();
+    processingState.getBlackListState().tryToBlacklist(typedEvent, (processInstanceKey) -> {});
 
     // then
     metadata.intent(ProcessInstanceIntent.ELEMENT_ACTIVATING);
     metadata.valueType(ValueType.PROCESS_INSTANCE);
     typedEvent.wrap(null, metadata, new Value());
-    assertThat(zeebeState.getBlackListState().isOnBlacklist(typedEvent))
+    assertThat(processingState.getBlackListState().isOnBlacklist(typedEvent))
         .isEqualTo(expectedToBlacklist);
   }
 

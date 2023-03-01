@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.migration.to_8_2;
 
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.migration.MigrationTask;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 
 public class DecisionRequirementsMigration implements MigrationTask {
@@ -20,14 +20,14 @@ public class DecisionRequirementsMigration implements MigrationTask {
   }
 
   @Override
-  public boolean needsToRun(final ZeebeState zeebeState) {
-    return zeebeState.isEmpty(
+  public boolean needsToRun(final ProcessingState processingState) {
+    return processingState.isEmpty(
             ZbColumnFamilies.DMN_DECISION_REQUIREMENTS_KEY_BY_DECISION_REQUIREMENT_ID_AND_VERSION)
-        && !zeebeState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
+        && !processingState.isEmpty(ZbColumnFamilies.DMN_DECISION_REQUIREMENTS);
   }
 
   @Override
-  public void runMigration(final MutableZeebeState zeebeState) {
-    zeebeState.getMigrationState().migrateDrgPopulateDrgVersionByDrgIdAndKey();
+  public void runMigration(final MutableProcessingState processingState) {
+    processingState.getMigrationState().migrateDrgPopulateDrgVersionByDrgIdAndKey();
   }
 }
