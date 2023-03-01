@@ -9,26 +9,32 @@ package io.camunda.zeebe.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebeGatewayContainer;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/** Tests a small deployment of one standalone broker and gateway, running "rootless". */
+/** Tests a deployment of one standalone broker and gateway with varying docker container config. */
 @Testcontainers
-public class RootlessImageTest {
+public class NonDefaultContainerSetupTest {
 
-  @ParameterizedTest
-  @ValueSource(
-      strings = {
+  private static Stream<Arguments> containerModifiers() {
+    return Stream.of(
         /* Tests running with the default unprivileged user. */
-        "zeebe",
+        Arguments.arguments(
+            Named.of("user[zeebe]", (Consumer<CreateContainerCmd>) cmd -> cmd.withUser("zeebe"))),
         /*
          * Runs with a random uid and guid of 0 as common for Openshift.
          * While this cannot guarantee OpenShift compatibility, it's a common compatibility issue.
@@ -47,16 +53,28 @@ public class RootlessImageTest {
          * <p>You can read more about UIDs/GIDs <a
          * href="https://cloud.redhat.com/blog/a-guide-to-openshift-and-uids">here</a>.
          */
-        "1000620000:0"
-      })
-  void runWithUnprivilegedUser(final String user) {
+        Arguments.arguments(
+            Named.of(
+                "user[1000620000:0]",
+                (Consumer<CreateContainerCmd>) cmd -> cmd.withUser("1000620000:0"))),
+        /* Tests running with a read only root file system. */
+        Arguments.arguments(
+            Named.of(
+                "readOnlyRootFileSystem[true]",
+                (Consumer<CreateContainerCmd>)
+                    cmd -> Objects.requireNonNull(cmd.getHostConfig()).withReadonlyRootfs(true))));
+  }
+
+  @ParameterizedTest
+  @MethodSource("containerModifiers")
+  void runWithContainerSetup(final Consumer<CreateContainerCmd> containerModifier) {
     try (final ZeebeBrokerContainer broker =
             new ZeebeBrokerContainer(ZeebeTestContainerDefaults.defaultTestImage())
-                .withCreateContainerCmdModifier(cmd -> cmd.withUser(user));
+                .withCreateContainerCmdModifier(containerModifier);
         final ZeebeGatewayContainer gateway =
             new ZeebeGatewayContainer(ZeebeTestContainerDefaults.defaultTestImage())
                 .withNetwork(broker.getNetwork())
-                .withCreateContainerCmdModifier(cmd -> cmd.withUser(user))
+                .withCreateContainerCmdModifier(containerModifier)
                 .dependsOn(broker)
                 .withEnv(
                     "ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())) {
