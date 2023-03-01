@@ -70,6 +70,22 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * key. The visitor can indicate via the return value, whether the iteration should continue or
    * not. This means if the visitor returns false the iteration will stop.
    *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key-value-pair will contain the equal key as {@code startAtKey}. If the key doesn't
+   * exist it will start after.
+   *
+   * <p>Similar to {@link #whileTrue(KeyValuePairVisitor)}}.
+   *
+   * @param startAtKey indicates on which key the iteration should start
+   * @param visitor the visitor which visits the key-value pairs
+   */
+  void whileTrue(KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
+
+  /**
+   * Visits the key-value pairs, which are stored in the column family. The ordering depends on the
+   * key. The visitor can indicate via the return value, whether the iteration should continue or
+   * not. This means if the visitor returns false the iteration will stop.
+   *
    * <p>Similar to {@link #forEach(BiConsumer)}.
    *
    * @param visitor the visitor which visits the key-value pairs

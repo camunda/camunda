@@ -168,6 +168,12 @@ class TransactionalColumnFamily<
   }
 
   @Override
+  public void whileTrue(
+      final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    ensureInOpenTransaction(transaction -> forEachInPrefix(startAtKey, new DbNullKey(), visitor));
+  }
+
+  @Override
   public void whileTrue(final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     ensureInOpenTransaction(transaction -> forEachInPrefix(new DbNullKey(), visitor));
   }
@@ -315,6 +321,20 @@ class TransactionalColumnFamily<
    */
   private void forEachInPrefix(
       final DbKey prefix, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    forEachInPrefix(prefix, prefix, visitor);
+  }
+  /**
+   * This is the preferred method to implement methods that iterate over a column family.
+   *
+   * @param startAt seek to this key before starting iteration.
+   * @param prefix of all keys that are iterated over.
+   * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
+   *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
+   */
+  private void forEachInPrefix(
+      final DbKey startAt,
+      final DbKey prefix,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
     /*
      * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
      * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
@@ -332,11 +352,7 @@ class TransactionalColumnFamily<
 
             boolean shouldVisitNext = true;
 
-            for (RocksDbInternal.seek(
-                    iterator,
-                    ZeebeTransactionDb.getNativeHandle(iterator),
-                    prefixKey,
-                    prefixLength);
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(startAt));
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
               final byte[] keyBytes = iterator.key();

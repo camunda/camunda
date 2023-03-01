@@ -223,6 +223,46 @@ public final class DbCompositeKeyColumnFamilyTest {
   }
 
   @Test
+  public void shouldUseWhileTrueWithStartAt() {
+    // given
+    final var firstKey = new DbString();
+    firstKey.wrapString("foo");
+    final var secondKey = new DbLong();
+    secondKey.wrapLong(13);
+    final var startAt = new DbCompositeKey<>(firstKey, secondKey);
+
+    upsertKeyValuePair("foo", 12, "baring");
+    upsertKeyValuePair("foo", 13, "different value");
+    upsertKeyValuePair("this is the one", 255, "as you know");
+    upsertKeyValuePair("hello", 34, "world");
+    upsertKeyValuePair("another", 923113, "string");
+    upsertKeyValuePair("might", 37426, "be good");
+
+    // when
+    final List<String> firstKeyParts = new ArrayList<>();
+    final List<Long> secondKeyParts = new ArrayList<>();
+    final List<String> values = new ArrayList<>();
+    columnFamily.whileTrue(
+        startAt,
+        (key, value) -> {
+          final DbString firstPart = key.first();
+          firstKeyParts.add(firstPart.toString());
+
+          final DbLong secondPart = key.second();
+          secondKeyParts.add(secondPart.getValue());
+
+          values.add(value.toString());
+
+          return !value.toString().equalsIgnoreCase("world");
+        });
+
+    // then
+    assertThat(values).containsExactly("different value", "world");
+    assertThat(firstKeyParts).containsExactly("foo", "hello");
+    assertThat(secondKeyParts).containsExactly(13L, 34L);
+  }
+
+  @Test
   public void shouldUseWhileEqualPrefix() {
     // given
     upsertKeyValuePair("foo", 12, "baring");
