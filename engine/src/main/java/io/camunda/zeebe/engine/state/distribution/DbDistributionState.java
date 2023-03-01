@@ -16,6 +16,8 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import org.agrona.collections.MutableBoolean;
 
 public class DbDistributionState implements MutableDistributionState {
 
@@ -47,5 +49,67 @@ public class DbDistributionState implements MutableDistributionState {
             transactionContext,
             distributionKey,
             commandValueAndValueTypeWrapper);
+  }
+
+  @Override
+  public void addCommandDistribution(
+      final long distributionKey, final CommandDistributionRecord commandDistributionRecord) {
+    this.distributionKey.wrapLong(distributionKey);
+    commandDistributionRecordColumnFamily.insert(
+        this.distributionKey,
+        new CommandValueAndValueTypeWrapper().wrap(commandDistributionRecord));
+  }
+
+  @Override
+  public void removeCommandDistribution(final long distributionKey) {
+    this.distributionKey.wrapLong(distributionKey);
+    commandDistributionRecordColumnFamily.deleteIfExists(this.distributionKey);
+  }
+
+  @Override
+  public void addPendingDistribution(final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    pendingDistributionColumnFamily.insert(distributionPartitionKey, DbNil.INSTANCE);
+  }
+
+  @Override
+  public void removePendingDistribution(final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    pendingDistributionColumnFamily.deleteExisting(distributionPartitionKey);
+  }
+
+  @Override
+  public boolean hasPendingDistribution(final long distributionKey) {
+    this.distributionKey.wrapLong(distributionKey);
+
+    final var hasPending = new MutableBoolean();
+    pendingDistributionColumnFamily.whileEqualPrefix(
+        this.distributionKey,
+        (compositeKey, dbNil) -> {
+          hasPending.set(true);
+          return false;
+        });
+
+    return hasPending.get();
+  }
+
+  @Override
+  public CommandDistributionRecord getCommandDistributionRecord(
+      final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+
+    final var storedDistribution = commandDistributionRecordColumnFamily.get(this.distributionKey);
+
+    if (storedDistribution == null) {
+      return null;
+    }
+
+    return new CommandDistributionRecord()
+        .setPartitionId(partition)
+        .setValueType(storedDistribution.getValueType())
+        .setRecordValue(storedDistribution.getCommandValue());
   }
 }
