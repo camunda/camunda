@@ -229,11 +229,10 @@ public class DeploymentRejectionTest {
   @Test
   public void shouldDoAtomicDeployments() {
     // given
-    final String invalidProcessId = "invalid_process_without_start_event";
-    final BpmnModelInstance invalidProcess = Bpmn.createExecutableProcess(invalidProcessId).done();
-    final String validProcessId = "valid_process";
+    final BpmnModelInstance invalidProcess =
+        Bpmn.createExecutableProcess("invalid_process_without_start_event").done();
     final BpmnModelInstance validProcess =
-        Bpmn.createExecutableProcess(validProcessId).startEvent().manualTask().endEvent().done();
+        Bpmn.createExecutableProcess("valid_process").startEvent().manualTask().endEvent().done();
 
     // when
     ENGINE
