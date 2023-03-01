@@ -111,20 +111,21 @@ public final class DistributionStateTest {
   @Test
   public void shouldRemoveDifferentDistributions() {
     // given
-    final var distributionRecord = createCommandDistributionRecord();
-    distributionState.addCommandDistribution(1, distributionRecord);
-    distributionState.addCommandDistribution(2, distributionRecord);
+    final var distributionRecord1 = createCommandDistributionRecord();
+    final var distributionRecord2 = createCommandDistributionRecord();
+    distributionState.addCommandDistribution(1, distributionRecord1);
+    distributionState.addCommandDistribution(2, distributionRecord2);
 
     // when
     distributionState.removeCommandDistribution(1);
 
     // then
     var storedDistribution =
-        distributionState.getCommandDistributionRecord(1, distributionRecord.getPartitionId());
+        distributionState.getCommandDistributionRecord(1, distributionRecord1.getPartitionId());
     assertThat(storedDistribution).isNull();
     storedDistribution =
-        distributionState.getCommandDistributionRecord(2, distributionRecord.getPartitionId());
-    assertThat(storedDistribution).isNotNull().isEqualTo(distributionRecord);
+        distributionState.getCommandDistributionRecord(2, distributionRecord2.getPartitionId());
+    assertThat(storedDistribution).isNotNull().isEqualTo(distributionRecord2);
   }
 
   @Test
