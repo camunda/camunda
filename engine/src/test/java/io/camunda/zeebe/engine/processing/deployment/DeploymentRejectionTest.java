@@ -282,7 +282,7 @@ public class DeploymentRejectionTest {
     // then
     assertThat(
             RecordingExporter.records()
-                .limit(r -> r.getRejectionType() == RejectionType.INVALID_ARGUMENT)
+                .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent, Record::getRecordType)
         .doesNotContain(
