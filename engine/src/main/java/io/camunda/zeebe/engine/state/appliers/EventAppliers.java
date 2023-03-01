@@ -284,6 +284,9 @@ public final class EventAppliers implements EventApplier {
         CommandDistributionIntent.DISTRIBUTING,
         new CommandDistributionDistributingApplier(distributionState));
     register(
+        CommandDistributionIntent.ACKNOWLEDGED,
+        new CommandDistributionAcknowledgedApplier(distributionState));
+    register(
         CommandDistributionIntent.FINISHED,
         new CommandDistributionFinishedApplier(distributionState));
   }
