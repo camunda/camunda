@@ -69,7 +69,7 @@
     <version.mockito>4.10.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.9.3</version.msgpack>
-    <version.netty>4.1.86.Final</version.netty>
+    <version.netty>4.1.89.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.11</version.protobuf>
@@ -103,7 +103,7 @@
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.154</version.classgraph>
+    <version.classgraph>4.8.155</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -114,7 +114,7 @@
     <version.jnr-posix>3.1.16</version.jnr-posix>
     <version.zpt>8.1.8</version.zpt>
     <version.feign>12.1</version.feign>
-    <version.awssdk>2.20.8</version.awssdk>
+    <version.awssdk>2.20.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>2.0.1.Final</version.validation-api>
     <version.jackson-databind-nullable>0.2.5</version.jackson-databind-nullable>
