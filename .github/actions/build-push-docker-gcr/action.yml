@@ -43,7 +43,7 @@ runs:
     # The version is necessary, since CC Saas only accepts SemVer for docker image tags (need to start with a version tag)
     - uses: actions/checkout@v3
       with:
-        ref: "${{ github.event.inputs.branch }}"
+        ref: "${{ inputs.branch }}"
     # Also setup java
     - uses: ./.github/actions/setup-zeebe
       with:
