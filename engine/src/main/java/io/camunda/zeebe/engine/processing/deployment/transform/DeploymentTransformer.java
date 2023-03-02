@@ -81,7 +81,7 @@ public final class DeploymentTransformer {
     return wrapArray(digestGenerator.digest(resource.getResource()));
   }
 
-  public boolean transform(final DeploymentRecord deploymentEvent) {
+  public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
     final StringBuilder errors = new StringBuilder();
     boolean success = true;
 
@@ -89,7 +89,8 @@ public final class DeploymentTransformer {
     if (!resourceIterator.hasNext()) {
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = "Expected to deploy at least one resource, but none given";
-      return false;
+
+      return Either.left(new Failure(rejectionReason));
     }
 
     while (resourceIterator.hasNext()) {
@@ -102,9 +103,11 @@ public final class DeploymentTransformer {
       rejectionReason =
           String.format(
               "Expected to deploy new resources, but encountered the following errors:%s", errors);
+
+      return Either.left(new Failure(rejectionReason));
     }
 
-    return success;
+    return Either.right(null);
   }
 
   private boolean transformResource(

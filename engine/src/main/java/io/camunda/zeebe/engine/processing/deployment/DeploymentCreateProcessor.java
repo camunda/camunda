@@ -84,38 +84,44 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   public void processRecord(final TypedRecord<DeploymentRecord> command) {
 
     final DeploymentRecord deploymentEvent = command.getValue();
+    final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
 
-    final boolean accepted = deploymentTransformer.transform(deploymentEvent);
-    if (accepted) {
-      final long key = keyGenerator.nextKey();
-
-      try {
-        createTimerIfTimerStartEvent(command);
-      } catch (final RuntimeException e) {
-        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-        rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-        return;
-      }
-
-      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-
-      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
-
-      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
-      // manage the top-level start event subscriptions except for timers
-      startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
-
-    } else {
-      responseWriter.writeRejectionOnCommand(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
-      rejectionWriter.appendRejection(
-          command,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason());
+    if (result.isLeft()) {
+      throw new ResourceTransformationFailedException(result.getLeft().getMessage());
     }
+
+    try {
+      createTimerIfTimerStartEvent(command);
+    } catch (final RuntimeException e) {
+      final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+      responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+      rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+      return;
+    }
+
+    final long key = keyGenerator.nextKey();
+
+    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+
+    deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
+    // manage the top-level start event subscriptions except for timers
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
+  }
+
+  @Override
+  public ProcessingError tryHandleError(
+      final TypedRecord<DeploymentRecord> command, final Throwable error) {
+    if (error instanceof ResourceTransformationFailedException exception) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
+    }
+
+    return ProcessingError.UNEXPECTED_ERROR;
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {
@@ -166,6 +172,20 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
     if (timerBpmnId.equals(processMetadata.getBpmnProcessIdBuffer())) {
       catchEventBehavior.unsubscribeFromTimerEvent(timer);
+    }
+  }
+
+  /**
+   * Exception that can be thrown during processing of a command, in case the resource cannot be
+   * transformed successfully. This allows the platform to roll back any changes the engine made.
+   * This exception can be handled by the processor in {@link
+   * io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor#tryHandleError(
+   * TypedRecord, Throwable)}.
+   */
+  private static final class ResourceTransformationFailedException extends RuntimeException {
+
+    private ResourceTransformationFailedException(final String message) {
+      super(message);
     }
   }
 }
