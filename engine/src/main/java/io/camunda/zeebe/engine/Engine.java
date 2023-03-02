@@ -56,9 +56,7 @@ public class Engine implements RecordProcessor {
       new ProcessingResultBuilderMutex();
 
   private Writers writers;
-  private TypedRecordProcessorFactory typedRecordProcessorFactory;
-
-  public Engine() {}
+  private final TypedRecordProcessorFactory typedRecordProcessorFactory;
 
   public Engine(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
