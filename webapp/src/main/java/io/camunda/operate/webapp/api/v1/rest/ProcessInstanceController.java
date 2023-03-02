@@ -201,6 +201,7 @@ public class ProcessInstanceController extends ErrorController implements Search
       })
   @GetMapping(value = BY_KEY + "/sequence-flows")
   public List<String> sequenceFlowsByKey(@Parameter(description = "Key of process instance",required = true) @PathVariable final Long key) {
+    processInstanceDao.byKey(key); // this is just to throw error if not found
     Query<SequenceFlow> query = new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(key));
     logger.debug("search for query {}", query);
     QueryValidator<SequenceFlow> queryValidator = new QueryValidator<>();
