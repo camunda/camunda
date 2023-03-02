@@ -43,6 +43,7 @@
       <artifactId>maven-surefire-common</artifactId>
       <version>3.0.0-M9</version>
       <exclusions>
+        <!-- the following are licensed under EPL, which is not compatible with our license policy -->
         <exclusion>
           <groupId>org.eclipse.aether</groupId>
           <artifactId>aether-api</artifactId>
