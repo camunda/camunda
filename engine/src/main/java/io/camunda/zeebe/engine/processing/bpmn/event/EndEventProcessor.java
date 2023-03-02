@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnSignalBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -32,7 +33,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           new ErrorEndEventBehavior(),
           new MessageEndEventBehavior(),
           new TerminateEndEventBehavior(),
-          new EscalationEndEventBehavior());
+          new EscalationEndEventBehavior(),
+          new SignalEndEventBehavior());
 
   private final ExpressionProcessor expressionProcessor;
   private final BpmnEventPublicationBehavior eventPublicationBehavior;
@@ -40,6 +42,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnJobBehavior jobBehavior;
+  private final BpmnSignalBehavior signalBehavior;
   private final BpmnStateBehavior stateBehavior;
 
   public EndEventProcessor(
@@ -52,6 +55,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
+    signalBehavior = bpmnBehaviors.signalBehavior();
   }
 
   @Override
@@ -165,7 +169,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
-      return element.isMessageEventEvent();
+      return element.isMessageEndEvent();
     }
 
     @Override
@@ -263,6 +267,36 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
       return expressionProcessor.evaluateStringExpressionAsDirectBuffer(
           escalation.getEscalationCodeExpression(), context.getElementInstanceKey());
+    }
+  }
+
+  private class SignalEndEventBehavior implements EndEventBehavior {
+    @Override
+    public boolean isSuitableForEvent(final ExecutableEndEvent element) {
+      return element.isSignalEndEvent();
+    }
+
+    @Override
+    public void onActivate(final ExecutableEndEvent element, final BpmnElementContext activating) {
+      variableMappingBehavior
+          .applyInputMappings(activating, element)
+          .flatMap(ok -> signalBehavior.broadcastNewSignal(activating, element))
+          .ifRightOrLeft(
+              ok -> {
+                final var activated = stateTransitionBehavior.transitionToActivated(activating);
+                stateTransitionBehavior.completeElement(activated);
+              },
+              failure -> incidentBehavior.createIncident(failure, activating));
+    }
+
+    @Override
+    public void onComplete(final ExecutableEndEvent element, final BpmnElementContext completing) {
+      variableMappingBehavior
+          .applyOutputMappings(completing, element)
+          .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing))
+          .ifRightOrLeft(
+              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed),
+              failure -> incidentBehavior.createIncident(failure, completing));
     }
   }
 }
