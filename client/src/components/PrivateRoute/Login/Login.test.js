@@ -5,77 +5,36 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {runAllEffects} from 'react';
 import {shallow} from 'enzyme';
 
-import {Button} from 'components';
+import {getOptimizeProfile} from 'config';
 
-import {Login} from './Login';
+import Login from './Login';
+import PlatformLogin from './PlatformLogin';
 
-import {login} from './service';
+jest.mock('config', () => ({
+  getOptimizeProfile: jest.fn(),
+}));
 
-jest.mock('./service', () => {
-  return {
-    login: jest.fn().mockReturnValue({token: 'authToken'}),
-  };
+it('should display the Optimize default login page in platform mode', async () => {
+  getOptimizeProfile.mockReturnValueOnce('platform');
+  const node = shallow(<Login />);
+
+  await runAllEffects();
+
+  expect(node.find(PlatformLogin)).toExist();
 });
 
-const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-};
+it('should do a whole page refresh in C8 mode to reinitialize login flow', async () => {
+  getOptimizeProfile.mockReturnValueOnce('cloud');
 
-it('renders without crashing', () => {
-  shallow(<Login {...props} />);
-});
+  delete window.location;
+  window.location = {reload: jest.fn()};
+  const node = shallow(<Login />);
 
-it('should have entered values in the input fields', () => {
-  const node = shallow(<Login {...props} />);
-  const input = 'asdf';
-  const field = 'username';
+  await runAllEffects();
 
-  node.find(`[name="${field}"]`).simulate('change', {target: {value: input}});
-
-  expect(node.find('[name="username"]')).toHaveValue(input);
-});
-
-it('should call the login function when submitting the form', async () => {
-  const node = shallow(<Login {...props} onLogin={jest.fn()} />);
-
-  const username = 'david';
-  const password = 'dennis';
-
-  node.find(`[name="username"]`).simulate('change', {target: {value: username}});
-  node.find(`[name="password"]`).simulate('change', {target: {value: password}});
-
-  await node.find(Button).simulate('click', {preventDefault: jest.fn()});
-
-  expect(login).toHaveBeenCalledWith(username, password);
-});
-
-it('should call the onLogin callback after login', async () => {
-  const spy = jest.fn();
-  const node = shallow(<Login {...props} onLogin={spy} />);
-
-  await node.find(Button).simulate('click', {preventDefault: jest.fn()});
-
-  expect(spy).toHaveBeenCalled();
-});
-
-it('should display error message on failed login', async () => {
-  const mightFail = (promise, cb, err) => err({status: 400, message: 'test error'});
-  const node = shallow(<Login {...props} mightFail={mightFail} />);
-
-  login.mockReturnValueOnce({errorMessage: 'Failed'});
-
-  await node.find(Button).simulate('click', {preventDefault: jest.fn()});
-
-  expect(node.find('MessageBox[type="error"]')).toExist();
-});
-
-it('should disable the login button when waiting for server response', () => {
-  const node = shallow(<Login {...props} mightFail={() => {}} onLogin={jest.fn()} />);
-
-  node.find(Button).simulate('click', {preventDefault: jest.fn()});
-
-  expect(node.find(Button)).toBeDisabled();
+  expect(node.find(PlatformLogin)).not.toExist();
+  expect(window.location.reload).toHaveBeenCalled();
 });

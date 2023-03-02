@@ -13,7 +13,6 @@ import {nowPristine} from 'saveGuard';
 import {withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
-import {getOptimizeProfile} from 'config';
 
 import {Header, Footer} from '..';
 
@@ -41,10 +40,6 @@ export function PrivateRoute({user: oldUser, refreshUser, component: Component, 
     const handleResponse = async (response, payload) => {
       if (response.status === 401) {
         if (isLoggedIn.current) {
-          // we need to reload in cloud mode to reinitialise the OAuth login flow
-          if ((await getOptimizeProfile()) === 'cloud') {
-            return window.location.reload();
-          }
           showError(t('login.timeout'));
         }
         setShowLogin(true);

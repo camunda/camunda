@@ -70,6 +70,7 @@ const cloudEnv = {
   CAMUNDA_OPTIMIZE_CLIENT_AUDIENCE: 'optimize.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_URL: 'https://accounts.cloud.dev.ultrawombat.com',
   CAMUNDA_OPTIMIZE_M2M_ACCOUNTS_AUTH0_AUDIENCE: 'cloud.dev.ultrawombat.com',
+  CAMUNDA_OPTIMIZE_UI_LOGOUT_HIDDEN: 'true',
 };
 
 const selfManagedEnv = {

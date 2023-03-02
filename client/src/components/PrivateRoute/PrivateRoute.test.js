@@ -10,7 +10,6 @@ import {shallow} from 'enzyme';
 
 import {addHandler, removeHandler} from 'request';
 import {showError} from 'notifications';
-import {getOptimizeProfile} from 'config';
 
 import {Header, Footer} from '..';
 
@@ -28,10 +27,6 @@ jest.mock('request', () => {
 
 jest.mock('notifications', () => ({
   showError: jest.fn(),
-}));
-
-jest.mock('config', () => ({
-  getOptimizeProfile: jest.fn().mockReturnValue('platform'),
 }));
 
 beforeEach(() => {
@@ -66,21 +61,6 @@ it('should render the login component', () => {
 
   const wrapper = node.renderProp('render')({});
   expect(wrapper.find(Login)).toExist();
-});
-
-it('should reload the page when recieving 401 in the cloud', async () => {
-  getOptimizeProfile.mockReturnValueOnce('cloud');
-  delete window.location;
-  window.location = {reload: jest.fn()};
-  shallow(<PrivateRoute component={TestComponent} />);
-
-  runAllEffects();
-
-  const handler = addHandler.mock.calls[0][0];
-  await handler({status: 200}, {url: 'api/entities'});
-  await handler({status: 401}, {url: 'api/entities'});
-
-  expect(window.location.reload).toHaveBeenCalled();
 });
 
 it('should register a response handler', () => {
