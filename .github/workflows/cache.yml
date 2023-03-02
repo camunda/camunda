@@ -8,6 +8,7 @@ on:
 jobs:
   cache-maven-dependencies:
     runs-on: ${{ matrix.runner }}
+    concurrency: cache-maven
     strategy:
       fail-fast: false
       matrix:
