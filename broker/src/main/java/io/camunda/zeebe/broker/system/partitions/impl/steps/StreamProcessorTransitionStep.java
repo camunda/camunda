@@ -132,8 +132,9 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
 
     final var isBackupFeatureEnabled =
         context.getBrokerCfg().getExperimental().getFeatures().isEnableBackup();
+    final var engineCfg = context.getBrokerCfg().getEngine().createEngineConfiguration();
 
-    final Engine engine = new Engine(context.getTypedRecordProcessorFactory());
+    final var engine = new Engine(context.getTypedRecordProcessorFactory(), engineCfg);
     final List<RecordProcessor> recordProcessors =
         isBackupFeatureEnabled
             ? List.of(engine, context.getCheckpointProcessor())
