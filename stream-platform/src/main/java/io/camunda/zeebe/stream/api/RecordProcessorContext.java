@@ -12,7 +12,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.List;
-import java.util.Optional;
 
 public interface RecordProcessorContext {
 
@@ -32,5 +31,5 @@ public interface RecordProcessorContext {
 
   KeyGenerator getKeyGenerator();
 
-  Optional<GatewayStreamer<JobActivationProperties, ActivatedJob>> jobStreamer();
+  GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer();
 }

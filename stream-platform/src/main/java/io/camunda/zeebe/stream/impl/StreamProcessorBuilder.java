@@ -10,8 +10,11 @@ package io.camunda.zeebe.stream.impl;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.RecordProcessor;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.util.ArrayList;
@@ -133,6 +136,12 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder maxCommandsInBatch(final int maxCommandsInBatch) {
     streamProcessorContext.maxCommandsInBatch(maxCommandsInBatch);
+    return this;
+  }
+
+  public StreamProcessorBuilder jobStreamer(
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+    streamProcessorContext.jobStreamer(jobStreamer);
     return this;
   }
 }
