@@ -47,6 +47,9 @@ import io.camunda.zeebe.engine.state.processing.DbBlackListState;
 import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.variable.DbVariableState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Objects;
@@ -81,7 +84,8 @@ public class ProcessingDbState implements MutableProcessingState {
       final int partitionId,
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
     this.partitionId = partitionId;
     this.zeebeDb = zeebeDb;
     this.keyGenerator = Objects.requireNonNull(keyGenerator);
@@ -93,7 +97,7 @@ public class ProcessingDbState implements MutableProcessingState {
     eventScopeInstanceState = new DbEventScopeInstanceState(zeebeDb, transactionContext);
 
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
-    jobState = new DbJobState(zeebeDb, transactionContext, partitionId);
+    jobState = new DbJobState(zeebeDb, transactionContext, partitionId, jobStreamer);
     messageState = new DbMessageState(zeebeDb, transactionContext);
     messageSubscriptionState = new DbMessageSubscriptionState(zeebeDb, transactionContext);
     messageStartEventSubscriptionState =
@@ -185,6 +189,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableSignalSubscriptionState getSignalSubscriptionState() {
+    return signalSubscriptionState;
+  }
+
+  @Override
   public MutableMigrationState getMigrationState() {
     return mutableMigrationState;
   }
@@ -202,11 +211,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
-  }
-
-  @Override
-  public MutableSignalSubscriptionState getSignalSubscriptionState() {
-    return signalSubscriptionState;
   }
 
   @Override

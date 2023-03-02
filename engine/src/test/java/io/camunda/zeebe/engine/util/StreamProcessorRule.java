@@ -21,7 +21,10 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
@@ -139,6 +142,11 @@ public final class StreamProcessorRule implements TestRule {
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
     return streamProcessingComposite.startTypedStreamProcessor(
         partitionId, factory, streamProcessorListenerOpt);
+  }
+
+  public void setJobStreamer(
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+    streamProcessingComposite.setJobStreamer(jobStreamer);
   }
 
   public void pauseProcessing(final int partitionId) {

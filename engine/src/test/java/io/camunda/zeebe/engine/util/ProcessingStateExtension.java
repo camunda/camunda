@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -157,7 +158,11 @@ public class ProcessingStateExtension implements BeforeEachCallback {
             new DbKeyGenerator(Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext);
         processingState =
             new ProcessingDbState(
-                Protocol.DEPLOYMENT_PARTITION, zeebeDb, transactionContext, keyGenerator);
+                Protocol.DEPLOYMENT_PARTITION,
+                zeebeDb,
+                transactionContext,
+                keyGenerator,
+                GatewayStreamer.noop());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }
