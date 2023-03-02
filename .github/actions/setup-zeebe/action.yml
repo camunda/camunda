@@ -89,9 +89,9 @@ runs:
       uses: actions/cache/restore@v3
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        key: ${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          ${{ runner.os }}-maven-
+          ${{ runner.os }}-mvn-
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
