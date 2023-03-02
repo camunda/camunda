@@ -28,7 +28,6 @@ import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -312,9 +311,6 @@ public final class DbJobState implements JobState, MutableJobState {
     final JobRecordValue jobState = jobsColumnFamily.get(jobKey);
     return jobState == null ? null : jobState.getRecord();
   }
-
-  @Override
-  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {}
 
   @Override
   public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {

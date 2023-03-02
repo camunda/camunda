@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.partitioning;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -138,7 +137,7 @@ final class PartitionFactory {
             .map(RaftPartition.class::cast)
             .toList();
 
-    final var typedRecordProcessorsFactory = createFactory(localBroker, eventService, featureFlags);
+    final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
     final var jobStreamer = new LongPollingJobNotification(eventService);
 
     for (final RaftPartition owningPartition : owningPartitions) {
@@ -220,9 +219,7 @@ final class PartitionFactory {
   }
 
   private TypedRecordProcessorsFactory createFactory(
-      final BrokerInfo localBroker,
-      final ClusterEventService eventService,
-      final FeatureFlags featureFlags) {
+      final BrokerInfo localBroker, final FeatureFlags featureFlags) {
     return recordProcessorContext -> {
       final InterPartitionCommandSender partitionCommandSender =
           recordProcessorContext.getPartitionCommandSender();
