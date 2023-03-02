@@ -7,6 +7,9 @@
 package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,8 +23,10 @@ import io.camunda.operate.webapp.es.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -37,6 +42,9 @@ public class ProcessIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private ProcessReader processReader;
+
+  @MockBean
+  private PermissionsService permissionsService;
 
   @Test
   public void testProcessCreated() {
@@ -138,6 +146,8 @@ public class ProcessIT extends OperateZeebeIntegrationTest {
     assertThat(loanProcessProcessGroup.getName()).isNull();
     assertThat(loanProcessProcessGroup.getProcesses()).hasSize(1);
     assertThat(loanProcessProcessGroup.getProcesses().get(0).getId()).isEqualTo(loanProcessV1Id.toString());
+
+    verify(permissionsService, times(3)).getProcessDefinitionPermission(anyString());
   }
 
   private Long createAndDeployProcess(ZeebeClient zeebeClient, String bpmnProcessId, String name) {

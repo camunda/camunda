@@ -10,6 +10,7 @@ import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -37,6 +38,9 @@ public class ProcessRestService extends InternalAPIErrorController {
   @Autowired
   protected ProcessInstanceReader processInstanceReader;
 
+  @Autowired(required = false)
+  protected PermissionsService permissionsService;
+
   public static final String PROCESS_URL = "/api/processes";
 
   @Operation(summary = "Get process BPMN XML")
@@ -56,7 +60,6 @@ public class ProcessRestService extends InternalAPIErrorController {
   @GetMapping(path = "/grouped")
   public List<ProcessGroupDto> getProcessesGrouped() {
     final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped();
-    return ProcessGroupDto.createFrom(processesGrouped);
+    return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
   }
-
 }

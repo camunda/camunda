@@ -9,8 +9,11 @@ package io.camunda.operate.webapp.rest.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.entities.ProcessEntity;
 
 @Schema(name="Process group object", description = "Group of processes with the same bpmnProcessId with all versions included")
@@ -19,6 +22,8 @@ public class ProcessGroupDto {
   private String bpmnProcessId;
 
   private String name;
+
+  private Set<String> permissions;
 
   private List<ProcessDto> processes;
 
@@ -38,6 +43,14 @@ public class ProcessGroupDto {
     this.name = name;
   }
 
+  public Set<String> getPermissions() {
+    return permissions;
+  }
+
+  public void setPermissions(Set<String> permissions) {
+    this.permissions = permissions;
+  }
+
   public List<ProcessDto> getProcesses() {
     return processes;
   }
@@ -47,11 +60,16 @@ public class ProcessGroupDto {
   }
 
   public static List<ProcessGroupDto> createFrom(Map<String, List<ProcessEntity>> processesGrouped) {
+    return createFrom(processesGrouped, null);
+  }
+
+  public static List<ProcessGroupDto> createFrom(Map<String, List<ProcessEntity>> processesGrouped, PermissionsService permissionsService) {
     List<ProcessGroupDto> groups = new ArrayList<>();
     processesGrouped.entrySet().stream().forEach(groupEntry -> {
         ProcessGroupDto groupDto = new ProcessGroupDto();
         groupDto.setBpmnProcessId(groupEntry.getKey());
         groupDto.setName(groupEntry.getValue().get(0).getName());
+        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getProcessDefinitionPermission(groupEntry.getKey()));
         groupDto.setProcesses(DtoCreator.create(groupEntry.getValue(), ProcessDto.class));
         groups.add(groupDto);
       }
