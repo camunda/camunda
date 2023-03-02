@@ -1130,10 +1130,10 @@
   resolved "https://registry.yarnpkg.com/@bpmn-io/snarkdown/-/snarkdown-2.2.0.tgz#a7f65f50f34442b521bc47efbef110e415893f7b"
   integrity sha512-bVD7FIoaBDZeCJkMRgnBPDeptPlto87wt2qaCjf5t8iLaevDmTPaREd6FpBEGsHlUdHFFZWRk4qAoEC5So2M0Q==
 
-"@camunda/camunda-composite-components@0.0.28":
-  version "0.0.28"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.28.tgz#71e4ea35b38272107951b4504c9048f749971c0d"
-  integrity sha512-2idzIi4OFEPBGraYUI38oXeM+6pclX5YtIPMXT007yC4a+AfrD1EzLs91I6m2345umqg8cc3yNLtGR4bwfziGg==
+"@camunda/camunda-composite-components@0.0.30":
+  version "0.0.30"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.0.30.tgz#f46f3532a772da33500b33f318f0f30886bfa726"
+  integrity sha512-UI65gsNC/NvpYuACbCmfp5KGQUHfAhCfwbsvYFjbDTAsIPDxYDW4eC/PVxKw7Bq9bGeOoe9xGDnztTZ+ztPuRw==
 
 "@carbon/colors@^11.12.0":
   version "11.12.0"

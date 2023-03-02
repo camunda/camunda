@@ -5,7 +5,7 @@
   "dependencies": {
     "@apollo/client": "3.7.9",
     "@bpmn-io/form-js-viewer": "0.12.1",
-    "@camunda/camunda-composite-components": "0.0.28",
+    "@camunda/camunda-composite-components": "0.0.30",
     "@carbon/elements": "11.19.1",
     "@carbon/react": "1.23.1",
     "@monaco-editor/react": "4.4.6",
