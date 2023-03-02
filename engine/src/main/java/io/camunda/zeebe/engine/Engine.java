@@ -57,9 +57,13 @@ public class Engine implements RecordProcessor {
 
   private Writers writers;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final EngineConfiguration config;
 
-  public Engine(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+  public Engine(
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final EngineConfiguration config) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+    this.config = config;
   }
 
   @Override

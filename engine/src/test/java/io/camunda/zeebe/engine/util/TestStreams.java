@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.engine.Engine;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
@@ -261,7 +262,7 @@ public final class TestStreams {
             .actorSchedulingService(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .listener(new StreamProcessorListenerRelay(streamProcessorListeners))
-            .recordProcessors(List.of(new Engine(wrappedFactory)))
+            .recordProcessors(List.of(new Engine(wrappedFactory, new EngineConfiguration())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
             .jobStreamer(id -> Optional.ofNullable(jobStreamer).flatMap(s -> s.streamFor(id)))
