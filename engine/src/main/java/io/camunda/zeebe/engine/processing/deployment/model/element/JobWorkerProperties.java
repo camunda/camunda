@@ -21,6 +21,8 @@ public class JobWorkerProperties {
   private Expression assignee;
   private Expression candidateGroups;
   private Expression candidateUsers;
+  private Expression dueDate;
+  private Expression followUpDate;
   private Map<String, String> taskHeaders = Map.of();
 
   public Expression getType() {
@@ -61,6 +63,22 @@ public class JobWorkerProperties {
 
   public void setCandidateUsers(final Expression candidateUsers) {
     this.candidateUsers = candidateUsers;
+  }
+
+  public Expression getDueDate() {
+    return dueDate;
+  }
+
+  public void setDueDate(final Expression dueDate) {
+    this.dueDate = dueDate;
+  }
+
+  public Expression getFollowUpDate() {
+    return followUpDate;
+  }
+
+  public void setFollowUpDate(final Expression followUpDate) {
+    this.followUpDate = followUpDate;
   }
 
   public Map<String, String> getTaskHeaders() {

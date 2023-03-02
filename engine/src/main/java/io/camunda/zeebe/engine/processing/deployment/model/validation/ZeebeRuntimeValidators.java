@@ -24,6 +24,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -122,6 +123,12 @@ public final class ZeebeRuntimeValidators {
                         .satisfiesIfStatic(
                             ZeebeExpressionValidator::isListOfCsv,
                             "be a list of comma-separated values, e.g. 'a,b,c'"))
+            .build(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeTaskSchedule.class)
+            .hasValidExpression(ZeebeTaskSchedule::getDueDate, ExpressionVerification::isOptional)
+            .hasValidExpression(
+                ZeebeTaskSchedule::getFollowUpDate, ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // ----------------------------------------
         new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor),

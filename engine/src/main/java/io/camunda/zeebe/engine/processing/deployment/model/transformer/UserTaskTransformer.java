@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +55,7 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
 
     transformTaskDefinition(jobWorkerProperties);
     transformAssignmentDefinition(element, jobWorkerProperties);
+    transformTaskSchedule(element, jobWorkerProperties);
     transformTaskHeaders(element, jobWorkerProperties);
   }
 
@@ -102,6 +104,25 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       } else {
         jobWorkerProperties.setCandidateUsers(candidateUsersExpression);
       }
+    }
+  }
+
+  private void transformTaskSchedule(
+      final UserTask element, final JobWorkerProperties jobWorkerProperties) {
+
+    final var taskSchedule = element.getSingleExtensionElement(ZeebeTaskSchedule.class);
+    if (taskSchedule == null) {
+      return;
+    }
+
+    final var dueDate = taskSchedule.getDueDate();
+    if (dueDate != null && !dueDate.isBlank()) {
+      jobWorkerProperties.setDueDate(expressionLanguage.parseExpression(dueDate));
+    }
+
+    final var followUpDate = taskSchedule.getFollowUpDate();
+    if (followUpDate != null && !followUpDate.isBlank()) {
+      jobWorkerProperties.setFollowUpDate(expressionLanguage.parseExpression(followUpDate));
     }
   }
 

@@ -27,6 +27,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.protocol.Protocol;
@@ -381,6 +382,22 @@ public final class ZeebeRuntimeValidationTest {
             expect(
                 ZeebeAssignmentDefinition.class,
                 "Expected static value to be a list of comma-separated values, e.g. 'a,b,c', but found '1,,'"))
+      },
+      {
+        /* invalid dueDate expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeDueDateExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeTaskSchedule.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /* invalid followUpDate expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeFollowUpDateExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebeTaskSchedule.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
         /* reserved header key */
