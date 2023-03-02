@@ -103,6 +103,13 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
+  public boolean hasPendingDistribution(final long distributionKey, final int partition) {
+    this.distributionKey.wrapLong(distributionKey);
+    partitionKey.wrapInt(partition);
+    return pendingDistributionColumnFamily.exists(distributionPartitionKey);
+  }
+
+  @Override
   public CommandDistributionRecord getCommandDistributionRecord(
       final long distributionKey, final int partition) {
     this.distributionKey.wrapLong(distributionKey);
