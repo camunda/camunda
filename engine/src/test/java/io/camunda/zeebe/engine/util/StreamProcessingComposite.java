@@ -20,6 +20,9 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import java.util.Arrays;
@@ -97,6 +100,11 @@ public class StreamProcessingComposite {
             streamProcessorListenerOpt);
 
     return result;
+  }
+
+  public void setJobStreamer(
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+    streams.setJobStreamer(jobStreamer);
   }
 
   public void pauseProcessing(final int partitionId) {

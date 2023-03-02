@@ -44,7 +44,6 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
-import java.util.function.Consumer;
 
 public final class EngineProcessors {
 
@@ -55,7 +54,6 @@ public final class EngineProcessors {
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final Consumer<String> onJobsAvailableCallback,
       final FeatureFlags featureFlags) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
@@ -119,12 +117,7 @@ public final class EngineProcessors {
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors,
-        processingState,
-        onJobsAvailableCallback,
-        bpmnBehaviors,
-        writers,
-        jobMetrics);
+        typedRecordProcessors, processingState, bpmnBehaviors, writers, jobMetrics);
 
     addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);

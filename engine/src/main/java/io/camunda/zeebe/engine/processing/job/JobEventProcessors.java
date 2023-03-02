@@ -16,16 +16,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
-import java.util.function.Consumer;
 
 public final class JobEventProcessors {
 
   public static void addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
-      final Consumer<String> onJobsAvailableCallback,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobMetrics jobMetrics) {
@@ -80,13 +76,6 @@ public final class JobEventProcessors {
             new JobBatchActivateProcessor(
                 writers, processingState, processingState.getKeyGenerator(), jobMetrics))
         .withListener(new JobTimeoutTrigger(jobState))
-        .withListener(jobBackoffChecker)
-        .withListener(
-            new StreamProcessorLifecycleAware() {
-              @Override
-              public void onRecovered(final ReadonlyStreamProcessorContext context) {
-                jobState.setJobsAvailableCallback(onJobsAvailableCallback);
-              }
-            });
+        .withListener(jobBackoffChecker);
   }
 }

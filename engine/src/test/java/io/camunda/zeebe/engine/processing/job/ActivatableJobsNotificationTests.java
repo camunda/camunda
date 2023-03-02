@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIMED_OUT;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -16,19 +17,24 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 
 public final class ActivatableJobsNotificationTests {
@@ -41,12 +47,15 @@ public final class ActivatableJobsNotificationTests {
               .serviceTask("task", b -> b.zeebeJobType(type).done())
               .endEvent("end")
               .done();
-  private static final Consumer<String> JOB_AVAILABLE_CALLBACK =
-      (Consumer<String>) Mockito.spy(Consumer.class);
+
+  private static final GatewayStreamer<JobActivationProperties, ActivatedJob>
+      JOB_AVAILABLE_CALLBACK =
+          (GatewayStreamer<JobActivationProperties, ActivatedJob>)
+              Mockito.spy(GatewayStreamer.class);
 
   @ClassRule
   public static final EngineRule ENGINE =
-      EngineRule.singlePartition().withJobsAvailableCallback(JOB_AVAILABLE_CALLBACK);
+      EngineRule.singlePartition().withJobStreamer(JOB_AVAILABLE_CALLBACK);
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -69,7 +78,8 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(3);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -82,7 +92,8 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(1);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -95,7 +106,8 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(1);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -109,7 +121,8 @@ public final class ActivatableJobsNotificationTests {
     RecordingExporter.jobRecords(TIMED_OUT).withType(taskType).getFirst();
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -125,7 +138,8 @@ public final class ActivatableJobsNotificationTests {
     createProcessInstanceAndJobs(1);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(3))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -139,7 +153,8 @@ public final class ActivatableJobsNotificationTests {
     ENGINE.job().withKey(jobKey).withRetries(10).fail();
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -161,7 +176,8 @@ public final class ActivatableJobsNotificationTests {
     ENGINE.incident().ofInstance(job.getProcessInstanceKey()).resolve();
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2)).accept(taskType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(2))
+        .streamFor(argThat(new TaskTypeMatcher(taskType)));
   }
 
   @Test
@@ -175,8 +191,10 @@ public final class ActivatableJobsNotificationTests {
     ENGINE.createJob(secondType, PROCESS_ID);
 
     // then
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).accept(firstType);
-    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1)).accept(secondType);
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1))
+        .streamFor(argThat(new TaskTypeMatcher(firstType)));
+    Mockito.verify(JOB_AVAILABLE_CALLBACK, times(1))
+        .streamFor(argThat(new TaskTypeMatcher(secondType)));
   }
 
   private List<Long> createProcessInstanceAndJobs(final int amount) {
@@ -200,5 +218,13 @@ public final class ActivatableJobsNotificationTests {
         .withTimeout(timeout.toMillis())
         .withMaxJobsToActivate(amount)
         .activate();
+  }
+
+  private record TaskTypeMatcher(String expected) implements ArgumentMatcher<DirectBuffer> {
+
+    @Override
+    public boolean matches(final DirectBuffer actual) {
+      return expected.equals(BufferUtil.bufferAsString(actual));
+    }
   }
 }
