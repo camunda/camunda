@@ -27,7 +27,12 @@ jobs:
             ${{ runner.os }}-maven-
       - name: Download dependencies
         if: steps.restore.outputs.cache-hit != 'true'
-        run: ./mvnw dependency:go-offline
+        run: ./mvnw -B -T1C dependency:go-offline
+      - name: Run package goal
+        if: steps.restore.outputs.cache-hit != 'true'
+        # Run the package goal but skip all tests while still using failsafe and surefire
+        run: |
+          ./mvnw -B -T1C package -DskipTests -DskipChecks
       # Saves what the setup-zeebe action restores
       - name: Save dependencies to cache
         if: steps.restore.outputs.cache-hit != 'true'
