@@ -7,4 +7,33 @@
  */
 package io.camunda.zeebe.engine;
 
-public final class EngineConfiguration {}
+import java.time.Duration;
+
+public final class EngineConfiguration {
+
+  public static final int DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT = 10;
+  public static final Duration DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL = Duration.ofMinutes(1);
+
+  private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
+  private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
+
+  public int getMessagesTtlCheckerBatchLimit() {
+    return messagesTtlCheckerBatchLimit;
+  }
+
+  public EngineConfiguration setMessagesTtlCheckerBatchLimit(
+      final int messagesTtlCheckerBatchLimit) {
+    this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
+    return this;
+  }
+
+  public Duration getMessagesTtlCheckerInterval() {
+    return messagesTtlCheckerInterval;
+  }
+
+  public EngineConfiguration setMessagesTtlCheckerInterval(
+      final Duration messagesTtlCheckerInterval) {
+    this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
+    return this;
+  }
+}
