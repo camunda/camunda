@@ -397,6 +397,19 @@
           </executions>
         </plugin>
 
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>3.3.0</version>
+          <configuration>
+            <nonFilteredFileExtensions>
+              <nonFilteredFileExtension>p12</nonFilteredFileExtension>
+              <nonFilteredFileExtension>crt</nonFilteredFileExtension>
+              <nonFilteredFileExtension>pem</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+          </configuration>
+        </plugin>
+
         <!-- LICENSE PLUGIN -->
         <plugin>
           <groupId>com.mycila</groupId>
