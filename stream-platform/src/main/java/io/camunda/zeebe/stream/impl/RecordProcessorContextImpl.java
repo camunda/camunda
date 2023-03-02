@@ -9,7 +9,10 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
@@ -17,6 +20,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
@@ -81,5 +85,10 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public Optional<GatewayStreamer<JobActivationProperties, ActivatedJob>> jobStreamer() {
+    return Optional.empty();
   }
 }
