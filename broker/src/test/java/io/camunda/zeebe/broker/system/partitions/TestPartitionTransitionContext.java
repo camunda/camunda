@@ -34,7 +34,10 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -70,6 +73,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
+  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer =
+      GatewayStreamer.noop();
 
   @Override
   public int getPartitionId() {
@@ -253,6 +258,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
+    return jobStreamer;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {

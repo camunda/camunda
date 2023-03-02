@@ -37,7 +37,10 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -98,6 +101,7 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private final TopologyManager topologyManager;
+  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   private BackupStore backupStore;
 
@@ -118,7 +122,8 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionProcessingState partitionProcessingState,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
-      final TopologyManager topologyManager) {
+      final TopologyManager topologyManager,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
     this.nodeId = nodeId;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
@@ -138,6 +143,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
+    this.jobStreamer = jobStreamer;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -334,6 +340,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
+    return jobStreamer;
   }
 
   @Override

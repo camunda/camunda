@@ -139,6 +139,7 @@ final class PartitionFactory {
             .toList();
 
     final var typedRecordProcessorsFactory = createFactory(localBroker, eventService, featureFlags);
+    final var jobStreamer = new LongPollingJobNotification(eventService);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
@@ -170,7 +171,8 @@ final class PartitionFactory {
               new PartitionProcessingState(owningPartition),
               diskSpaceUsageMonitor,
               gatewayBrokerTransport,
-              topologyManager);
+              topologyManager,
+              jobStreamer);
 
       final PartitionTransition newTransitionBehavior =
           new PartitionTransitionImpl(TRANSITION_STEPS);
@@ -231,15 +233,11 @@ final class PartitionFactory {
           new DeploymentDistributionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
 
-      final LongPollingJobNotification jobsAvailableNotification =
-          new LongPollingJobNotification(eventService);
-
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
           localBroker.getPartitionsCount(),
           subscriptionCommandSender,
           deploymentDistributionCommandSender,
-          jobsAvailableNotification::onJobsAvailable,
           featureFlags);
     };
   }
