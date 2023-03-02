@@ -359,7 +359,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getPartitionCommandSender(),
-            streamProcessorContext.getKeyGeneratorControls());
+            streamProcessorContext.getKeyGeneratorControls(),
+            streamProcessorContext.jobStreamer());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 

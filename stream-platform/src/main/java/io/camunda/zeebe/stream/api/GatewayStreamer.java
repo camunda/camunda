@@ -29,7 +29,11 @@ import org.agrona.DirectBuffer;
  * @param <Metadata> associated metadata with a single stream
  * @param <Payload> the payload type that can be pushed to the stream
  */
+@FunctionalInterface
 public interface GatewayStreamer<Metadata extends BufferReader, Payload extends BufferWriter> {
+  static <M extends BufferReader, P extends BufferWriter> GatewayStreamer<M, P> noop() {
+    return streamId -> Optional.empty();
+  }
 
   /** Returns a valid stream for the given ID, or {@link Optional#empty()} if there is none. */
   Optional<GatewayStream<Metadata, Payload>> streamFor(final DirectBuffer streamId);
