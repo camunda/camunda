@@ -851,6 +851,69 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldWriteResponseOnlyOnce() {
+    // given
+    final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+    when(defaultMockedRecordProcessor.process(any(), any()))
+        .thenAnswer(
+            invocation ->
+                ((ProcessingResultBuilder) invocation.getArgument(1))
+                    .withResponse(
+                        RecordType.EVENT,
+                        3,
+                        ELEMENT_ACTIVATING,
+                        Records.processInstance(1),
+                        ValueType.PROCESS_INSTANCE,
+                        RejectionType.NULL_VAL,
+                        "",
+                        1,
+                        12)
+                    .appendRecord(
+                        4,
+                        RecordType.COMMAND,
+                        ELEMENT_ACTIVATING,
+                        RejectionType.NULL_VAL,
+                        "",
+                        Records.processInstance(1))
+                    .build())
+        .thenAnswer(
+            invocation ->
+                ((ProcessingResultBuilder) invocation.getArgument(1))
+                    .appendRecord(
+                        5,
+                        RecordType.COMMAND,
+                        ELEMENT_ACTIVATING,
+                        RejectionType.NULL_VAL,
+                        "",
+                        Records.processInstance(2))
+                    .build())
+        .thenAnswer(
+            invocation ->
+                ((ProcessingResultBuilder) invocation.getArgument(1))
+                    .appendRecord(
+                        6,
+                        RecordType.EVENT,
+                        ELEMENT_ACTIVATING,
+                        RejectionType.NULL_VAL,
+                        "",
+                        Records.processInstance(2))
+                    .build());
+
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(defaultMockedRecordProcessor, TIMEOUT.times(3)).process(any(), any());
+
+    final var commandResponseWriter = streamPlatform.getMockCommandResponseWriter();
+
+    verify(commandResponseWriter, TIMEOUT.times(1)).tryWriteResponse(eq(12), eq(1L));
+  }
+
+  @Test
   public void shouldWriteResponseOnFailedEventProcessing() {
     // given
     final var defaultMockedRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
