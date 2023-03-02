@@ -14,9 +14,6 @@ jobs:
         runner: [ macos-latest, windows-latest, ubuntu-latest ]
     steps:
       - uses: actions/checkout@v3
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          go: false
       - name: Restore maven cache
         id: restore
         uses: actions/cache/restore@v3
@@ -25,6 +22,10 @@ jobs:
           key: ${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
+      - uses: ./.github/actions/setup-zeebe
+        if: steps.restore.outputs.cache-hit != 'true'
+        with:
+          go: false
       - name: Download dependencies
         if: steps.restore.outputs.cache-hit != 'true'
         run: ./mvnw -B -T1C dependency:go-offline
