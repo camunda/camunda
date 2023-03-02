@@ -1,0 +1,37 @@
+name: Cache
+
+on:
+  push:
+    branches:
+      - main
+      - stable/*
+jobs:
+  cache-maven-dependencies:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ macos-latest, windows-latest, ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup-zeebe
+        with:
+          go: false
+      - name: Restore maven cache
+        id: restore
+        uses: actions/cache/restore@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-mvn-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Download dependencies
+        if: steps.restore.outputs.cache-hit != 'true'
+        run: ./mvnw dependency:go-offline
+      # Saves what the setup-zeebe action restores
+      - name: Save dependencies to cache
+        if: steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}

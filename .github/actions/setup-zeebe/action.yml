@@ -18,14 +18,6 @@ inputs:
     description: The JDK version to setup
     default: "17"
     required: false
-  maven-cache:
-    description: A modifier key used to toggle the usage of a maven repo cache.
-    default: "false"
-    required: false
-  maven-cache-key-modifier:
-    description: A modifier key used for the maven cache, can be used to create isolated caches for certain jobs.
-    default: "default"
-    required: false
   secret_vault_address:
     description: 'secret vault url'
     required: false
@@ -91,14 +83,15 @@ runs:
             "password": "${{ steps.secrets.outputs.ARTIFACTS_PSW }}"
           }]
         mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "zeebe,zeebe-snapshots", "name": "camunda Nexus"}]'
-    - if: ${{ inputs.maven-cache == 'true' }}
-      name: Cache local Maven repository
-      uses: actions/cache@v3
+    # Restores what the maven-cache job saved
+    - name: Restore maven cache
+      if: inputs.java == 'true'
+      uses: actions/cache/restore@v3
       with:
         path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-${{ hashFiles('**/pom.xml') }}
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
-          ${{ runner.os }}-maven-${{ inputs.maven-cache-key-modifier }}-
+          ${{ runner.os }}-maven-
     - if: ${{ inputs.go == 'true' }}
       uses: actions/setup-go@v3
       with:
