@@ -40,6 +40,8 @@ import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
@@ -320,7 +322,7 @@ public final class ProcessingStateMachine {
     final var currentProcessingBatchLimit =
         processedCommandsCount > 0 ? processedCommandsCount : maxCommandsInBatch;
     processedCommandsCount = 0;
-    pendingResponses = new ArrayList<>();
+    pendingResponses = Collections.newSetFromMap(new IdentityHashMap<>(2));
     final var pendingCommands = new ArrayDeque<TypedRecord<?>>();
     pendingCommands.addLast(initialCommand);
 
