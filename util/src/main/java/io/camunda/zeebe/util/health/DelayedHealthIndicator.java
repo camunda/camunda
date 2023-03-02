@@ -78,7 +78,7 @@ public class DelayedHealthIndicator implements HealthIndicator {
     final long now = clock.get();
 
     if (lastHealthStatus == null) { // was never checked
-      responseBuilder = Health.unknown();
+      responseBuilder = Health.down();
     } else {
       if (lastTimeUp == null) { // was never up
         responseBuilder = Health.status(lastHealthStatus.getStatus());
