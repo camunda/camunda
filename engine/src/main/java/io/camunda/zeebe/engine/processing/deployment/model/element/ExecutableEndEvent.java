@@ -13,6 +13,8 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
   private ExecutableError error;
   private ExecutableEscalation escalation;
 
+  private ExecutableSignal signal;
+
   private boolean isTerminateEndEvent;
 
   public ExecutableEndEvent(final String id) {
@@ -35,6 +37,14 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
     this.escalation = escalation;
   }
 
+  public ExecutableSignal getSignal() {
+    return signal;
+  }
+
+  public void setSignal(final ExecutableSignal signal) {
+    this.signal = signal;
+  }
+
   @Override
   public JobWorkerProperties getJobWorkerProperties() {
     return jobWorkerProperties;
@@ -47,9 +57,10 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
 
   public boolean isNoneEndEvent() {
     return !isErrorEndEvent()
-        && !isMessageEventEvent()
+        && !isMessageEndEvent()
         && !isTerminateEndEvent
-        && !isEscalationEndEvent();
+        && !isEscalationEndEvent()
+        && !isSignalEndEvent();
   }
 
   public boolean isErrorEndEvent() {
@@ -60,7 +71,7 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
     return escalation != null;
   }
 
-  public boolean isMessageEventEvent() {
+  public boolean isMessageEndEvent() {
     return jobWorkerProperties != null;
   }
 
@@ -70,5 +81,9 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
 
   public void setTerminateEndEvent(final boolean isTerminateEndEvent) {
     this.isTerminateEndEvent = isTerminateEndEvent;
+  }
+
+  public boolean isSignalEndEvent() {
+    return signal != null;
   }
 }
