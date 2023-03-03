@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Optional;
@@ -26,32 +27,32 @@ import org.agrona.DirectBuffer;
  * the initial call. Callers should be careful with the state they close on in the implementations
  * of their {@link ErrorHandler}.
  *
- * @param <Metadata> associated metadata with a single stream
- * @param <Payload> the payload type that can be pushed to the stream
+ * @param <M> associated metadata with a single stream
+ * @param <P> the payload type that can be pushed to the stream
  */
 @FunctionalInterface
-public interface GatewayStreamer<Metadata extends BufferReader, Payload extends BufferWriter> {
-  static <M extends BufferReader, P extends BufferWriter> GatewayStreamer<M, P> noop() {
+public interface GatewayStreamer<M extends Metadata, P extends BufferWriter> {
+  static <M extends Metadata, P extends BufferWriter> GatewayStreamer<M, P> noop() {
     return streamId -> Optional.empty();
   }
 
   /** Returns a valid stream for the given ID, or {@link Optional#empty()} if there is none. */
-  Optional<GatewayStream<Metadata, Payload>> streamFor(final DirectBuffer streamId);
+  Optional<GatewayStream<M, P>> streamFor(final DirectBuffer streamId);
 
   /**
-   * A {@link GatewayStream} allows consumers to push out {@link Payload} types to a stream with the
-   * given {@link #metadata()} associated.
+   * A {@link GatewayStream} allows consumers to push out {@link P} types to a stream with the given
+   * {@link #metadata()} associated.
    *
    * <p>NOTE: it's up to consumers of this API to interpret the metadata and its relation to the
    * payload.
    *
-   * @param <Metadata> associated metadata with the stream
-   * @param <Payload> the payload type that can be pushed to the stream
+   * @param <M> associated metadata with the stream
+   * @param <P> the payload type that can be pushed to the stream
    */
-  interface GatewayStream<Metadata extends BufferReader, Payload extends BufferWriter> {
+  interface GatewayStream<M extends Metadata, P extends BufferWriter> {
 
     /** Returns the stream's metadata */
-    Metadata metadata();
+    M metadata();
 
     /**
      * Pushes the given payload to the stream. Implementations of this are likely asynchronous; it's
@@ -61,16 +62,23 @@ public interface GatewayStreamer<Metadata extends BufferReader, Payload extends 
      * @param payload the data to push to the remote gateway
      * @param errorHandler logic to execute if the data could not be pushed to the underlying stream
      */
-    void push(final Payload payload, ErrorHandler<Payload> errorHandler);
+    void push(final P payload, ErrorHandler<P> errorHandler);
   }
 
   /**
    * Allows consumers of this API to specify error handling logic when a payload cannot be pushed
    * out.
    *
-   * @param <Payload> the payload type
+   * @param <P> the payload type
    */
-  interface ErrorHandler<Payload> {
-    void handleError(final Throwable error, Payload data);
+  interface ErrorHandler<P> {
+    void handleError(final Throwable error, P data);
+  }
+
+  interface Metadata extends BufferReader {
+    boolean tryWrap(DirectBuffer buffer);
+
+    // Immutable copy
+    <M extends Metadata> M copy();
   }
 }

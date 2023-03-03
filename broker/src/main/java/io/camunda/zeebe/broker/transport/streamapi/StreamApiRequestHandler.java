@@ -14,23 +14,31 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.jobstream.StreamRegistry;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
+import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class StreamApiRequestHandler extends Actor implements ClusterMembershipEventListener {
+// Instantiate in broker with concrete types. We already know that it is job stream.
+public final class StreamApiRequestHandler<M extends Metadata, P extends BufferWriter> extends Actor
+    implements ClusterMembershipEventListener {
   private static final String TOPIC_ADD_STREAM = "job-stream-api-add";
 
   private final ClusterCommunicationService communicationService;
   private final ClusterMembershipService membershipService;
-  private final StreamRegistry streamRegistry;
+  private final StreamRegistry<M, P> streamRegistry;
+
+  private final M metadataReader;
 
   public StreamApiRequestHandler(
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService membershipService,
-      final StreamRegistry streamRegistry) {
+      final StreamRegistry streamRegistry,
+      final M metadataReader) {
     this.communicationService = communicationService;
     this.membershipService = membershipService;
     this.streamRegistry = streamRegistry;
+    this.metadataReader = metadataReader;
   }
 
   @Override
@@ -54,7 +62,16 @@ public final class StreamApiRequestHandler extends Actor implements ClusterMembe
 
     // TODO: validate stream type (that there is one)
     // TODO: validate the metadata (at least that you can deserialize it in the expected type)
-    streamRegistry.add(request.streamType(), request.id(), sender, request.metadata());
+
+    if (!metadataReader.tryWrap(request.metadata())) {
+      // not valid
+      // return error
+      return;
+    }
+
+    metadataReader.wrap(request.metadata(), 0, request.metadata().capacity());
+    final M metadata = metadataReader.copy();
+    streamRegistry.add(request.streamType(), request.id(), sender, metadata);
   }
 
   private ApiRequestReader decodeRequest(final byte[] bytes) {
