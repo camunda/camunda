@@ -15,7 +15,7 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * Schedule a task to execute at a fixed rate. After an initial delay, the task is executed. Once
    * the task is executed, it is rescheduled with the same delay again.
    *
-   * <p>The execution of the scheduled task is running asynchron/concurrent to other scheduled
+   * <p>The execution of the scheduled task is running asynchronously/concurrent to other scheduled
    * tasks. Other methods will guarantee ordering of scheduled tasks and running always in same
    * thread, these guarantees don't apply to this method.
    *
@@ -28,4 +28,16 @@ public interface ProcessingScheduleService extends SimpleProcessingScheduleServi
    * @param task The task to execute at the fixed rate
    */
   void runAtFixedRateAsync(final Duration delay, final Task task);
+
+  /**
+   * Schedule a task to execute with a specific delay. After that delay, the task is executed.
+   *
+   * <p>The execution of the scheduled task is running asynchronously/concurrent to other scheduled
+   * tasks. Other methods will guarantee ordering of scheduled tasks and running always in same
+   * thread, these guarantees don't apply to this method.
+   *
+   * @param delay The delay to wait before executing the task
+   * @param task The task to execute after the delay
+   */
+  void runDelayedAsync(final Duration delay, final Task task);
 }

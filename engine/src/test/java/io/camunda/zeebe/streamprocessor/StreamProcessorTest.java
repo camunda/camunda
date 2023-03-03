@@ -287,6 +287,35 @@ public final class StreamProcessorTest {
   }
 
   @Test
+  public void shouldBeAbleToSchedulingTaskAsync() throws InterruptedException {
+    // given
+    final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    final CountDownLatch asyncServiceLatch = new CountDownLatch(1);
+    doAnswer(
+            (invocationOnMock) -> {
+              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
+              context
+                  .getScheduleService()
+                  .runDelayedAsync(
+                      Duration.ZERO,
+                      (taskResultBuilder) -> {
+                        asyncServiceLatch.countDown();
+                        return taskResultBuilder.build();
+                      });
+
+              return invocationOnMock.callRealMethod();
+            })
+        .when(mockProcessorLifecycleAware)
+        .onRecovered(any());
+
+    // when
+    streamPlatform.startStreamProcessor();
+
+    // then
+    assertThat(asyncServiceLatch.await(10, TimeUnit.SECONDS)).isTrue();
+  }
+
+  @Test
   public void shouldBlockProcessingIfSchedulingBlocks() throws InterruptedException {
     // given
     final var mockProcessorLifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
