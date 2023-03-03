@@ -189,6 +189,19 @@ var tests = []testCase{
 		goldenFile: "testdata/publish_message_with_variables_file.golden",
 		jsonOutput: true,
 	},
+	{
+		name:       "broadcast signal with a space and json string as variables",
+		setupCmds:  [][]string{strings.Fields("--insecure deploy testdata/signal_start_event.bpmn")},
+		cmd:        []string{"--insecure", "broadcast", "signal", "Start Process", "--variables", "{\"FOO\":\"BAR\"}"},
+		goldenFile: "testdata/broadcast_signal_with_space.golden",
+		jsonOutput: true,
+	},
+	{
+		name:       "broadcast signal with a json file as variables",
+		cmd:        []string{"--insecure", "broadcast", "signal", "Start Process", "--variables", "testdata/signal_variables.json"},
+		goldenFile: "testdata/broadcast_signal_with_variables_file.golden",
+		jsonOutput: true,
+	},
 }
 
 func TestZbctlWithInsecureGateway(t *testing.T) {
