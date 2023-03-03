@@ -392,12 +392,38 @@ public final class ZeebeRuntimeValidationTest {
         List.of(expect(ZeebeTaskSchedule.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
+        /* invalid dueDate static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeDueDate("12345"))
+            .done(),
+        List.of(
+            expect(
+                ZeebeTaskSchedule.class,
+                """
+                Expected static value to be a valid DateTime String, e.g. \
+                '2023-03-02T15:35+02:00', but found '12345'."""))
+      },
+      {
         /* invalid followUpDate expression */
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .userTask("task", b -> b.zeebeFollowUpDateExpression(INVALID_EXPRESSION))
             .done(),
         List.of(expect(ZeebeTaskSchedule.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /* invalid followUpDate static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeFollowUpDate("12345"))
+            .done(),
+        List.of(
+            expect(
+                ZeebeTaskSchedule.class,
+                """
+                Expected static value to be a valid DateTime String, e.g. \
+                '2023-03-02T15:35+02:00', but found '12345'."""))
       },
       {
         /* reserved header key */
