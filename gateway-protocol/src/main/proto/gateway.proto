@@ -559,6 +559,20 @@ message DeleteResourceResponse {
 
 }
 
+message BroadcastSignalRequest {
+  // The name of the signal
+  string signalName = 1;
+
+  // the signal variables as a JSON document; to be valid, the root of the document must be an
+  // object, e.g. { "a": "foo" }. [ "foo" ] would not be valid.
+  string variables = 2;
+}
+
+message BroadcastSignalResponse {
+  // the unique ID of the signal that was broadcasted.
+  int64 key = 1;
+}
+
 service Gateway {
   /*
     Iterates through all known partitions round-robin and activates up to the requested
@@ -803,6 +817,13 @@ service Gateway {
 
    */
   rpc DeleteResource (DeleteResourceRequest) returns (DeleteResourceResponse) {
+
+  }
+
+  /*
+    Broadcasts a signal.
+   */
+  rpc BroadcastSignal (BroadcastSignalRequest) returns (BroadcastSignalResponse) {
 
   }
 }

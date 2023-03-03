@@ -18,6 +18,8 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
@@ -348,6 +350,16 @@ public final class EndpointManager {
         request,
         RequestMapper::toDeleteResourceRequest,
         ResponseMapper::toDeleteResourceResponse,
+        responseObserver);
+  }
+
+  public void broadcastSignal(
+      final BroadcastSignalRequest request,
+      final ServerStreamObserver<BroadcastSignalResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toBroadcastSignalRequest,
+        ResponseMapper::toBroadcastSignalResponse,
         responseObserver);
   }
 

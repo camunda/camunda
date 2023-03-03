@@ -11,6 +11,8 @@ import io.camunda.zeebe.gateway.grpc.ErrorMappingStreamObserver;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -180,6 +182,14 @@ public class GatewayGrpcService extends GatewayImplBase {
       final DeleteResourceRequest request,
       final StreamObserver<DeleteResourceResponse> responseObserver) {
     endpointManager.deleteResource(
+        request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
+  }
+
+  @Override
+  public void broadcastSignal(
+      final BroadcastSignalRequest request,
+      final StreamObserver<BroadcastSignalResponse> responseObserver) {
+    endpointManager.broadcastSignal(
         request, ErrorMappingStreamObserver.ofStreamObserver(responseObserver));
   }
 }

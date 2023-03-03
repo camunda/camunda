@@ -1031,6 +1031,24 @@
           },
           {
             "name": "DeleteResourceResponse"
+          },
+          {
+            "name": "BroadcastSignalRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "signalName",
+                "type": "string"
+              },
+              {
+                "id": 2,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "name": "BroadcastSignalResponse"
           }
         ],
         "services": [
@@ -1128,6 +1146,11 @@
                 "name": "DeleteResource",
                 "in_type": "DeleteResourceRequest",
                 "out_type": "DeleteResourceResponse"
+              },
+              {
+                "name": "BroadcastSignal",
+                "in_type": "BroadcastSignalRequest",
+                "out_type": "BroadcastSignalResponse"
               }
             ]
           }
