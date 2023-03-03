@@ -38,6 +38,15 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
+  public void runDelayedAsync(final Duration delay, final Task task) {
+    concurrencyControl.run(
+        () -> {
+          // we must run in different actor in order to schedule task
+          asyncActorService.runDelayed(delay, task);
+        });
+  }
+
+  @Override
   public void runDelayed(final Duration delay, final Runnable task) {
     processorActorService.runDelayed(delay, task);
   }
