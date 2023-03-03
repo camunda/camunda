@@ -86,6 +86,9 @@ public class ZeebeClientCloudBuilderImpl
     if (properties.containsKey(ClientProperties.CLOUD_CLIENT_SECRET)) {
       withClientSecret(properties.getProperty(ClientProperties.CLOUD_CLIENT_SECRET));
     }
+    if (properties.containsKey(ClientProperties.CLOUD_REGION)) {
+      withRegion(properties.getProperty(ClientProperties.CLOUD_REGION));
+    }
     innerBuilder.withProperties(properties);
     return this;
   }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
@@ -456,6 +457,23 @@ public final class DbTransactionTest {
     assertThat(oneColumnFamily.exists(oneKey)).isFalse();
     assertThat(twoColumnFamily.exists(twoKey)).isTrue();
     assertThat(threeColumnFamily.exists(threeKey)).isFalse();
+  }
+
+  @Test
+  // See https://github.com/camunda/zeebe/issues/11681, this test is to ensure that we don't
+  // hide exceptions from the `ProcessingStateMachine`.
+  public void shouldNotWrapRuntimeExceptions() {
+    // given
+    final var exception = new RuntimeException("expected");
+
+    // then
+    assertThatThrownBy(
+            () ->
+                transactionContext.runInTransaction(
+                    () -> {
+                      throw exception;
+                    }))
+        .isSameAs(exception);
   }
 
   private enum ColumnFamilies {

@@ -219,9 +219,8 @@ public final class DbStringColumnFamilyTest {
                             columnFamily.whileEqualPrefix(key, (k2, v2) -> {});
                           });
                     }))
-        .hasRootCauseInstanceOf(IllegalStateException.class)
-        .hasMessage("Unexpected error occurred during zeebe db transaction operation.")
-        .hasStackTraceContaining(
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessage(
             "Currently nested prefix iterations are not supported! This will cause unexpected behavior.");
   }
 

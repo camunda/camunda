@@ -74,5 +74,8 @@ public final class ClientProperties {
    */
   public static final String CLOUD_CLIENT_SECRET = "zeebe.client.cloud.secret";
 
+  /** @see ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep4#withRegion(java.lang.String) */
+  public static final String CLOUD_REGION = "zeebe.client.cloud.region";
+
   private ClientProperties() {}
 }
