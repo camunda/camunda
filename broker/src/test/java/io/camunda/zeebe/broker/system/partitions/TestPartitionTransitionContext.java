@@ -261,7 +261,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
+  public GatewayStreamer<JobActivationProperties, ActivatedJob> getJobStreamer() {
     return jobStreamer;
   }
 

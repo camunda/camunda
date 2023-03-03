@@ -217,7 +217,7 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
     return this;
   }
 
-  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
+  public GatewayStreamer<JobActivationProperties, ActivatedJob> getJobStreamer() {
     return jobStreamer;
   }
 }

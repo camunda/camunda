@@ -343,7 +343,7 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
+  public GatewayStreamer<JobActivationProperties, ActivatedJob> getJobStreamer() {
     return jobStreamer;
   }
 

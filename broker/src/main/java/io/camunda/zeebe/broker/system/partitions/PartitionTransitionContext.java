@@ -132,5 +132,5 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setBackupStore(BackupStore backupStore);
 
-  GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer();
+  GatewayStreamer<JobActivationProperties, ActivatedJob> getJobStreamer();
 }
