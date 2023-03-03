@@ -31,7 +31,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import javax.annotation.concurrent.ThreadSafe;
 
+@ThreadSafe
 public final class OAuthCredentialsCache {
 
   private static final String KEY_AUTH = "auth";
@@ -48,7 +50,7 @@ public final class OAuthCredentialsCache {
     audiences = new HashMap<>();
   }
 
-  public OAuthCredentialsCache readCache() throws IOException {
+  public synchronized OAuthCredentialsCache readCache() throws IOException {
     if (!cacheFile.exists() || cacheFile.length() == 0) {
       return this;
     }
@@ -60,7 +62,7 @@ public final class OAuthCredentialsCache {
     return this;
   }
 
-  public void writeCache() throws IOException {
+  public synchronized void writeCache() throws IOException {
     final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(audiences.size());
     for (final Entry<String, OAuthCachedCredentials> audience : audiences.entrySet()) {
       cache.put(audience.getKey(), Collections.singletonMap(KEY_AUTH, audience.getValue()));
@@ -70,17 +72,17 @@ public final class OAuthCredentialsCache {
     MAPPER.writer().writeValue(cacheFile, cache);
   }
 
-  public Optional<ZeebeClientCredentials> get(final String endpoint) {
+  public synchronized Optional<ZeebeClientCredentials> get(final String endpoint) {
     return Optional.ofNullable(audiences.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
-  public OAuthCredentialsCache put(
+  public synchronized OAuthCredentialsCache put(
       final String endpoint, final ZeebeClientCredentials credentials) {
     audiences.put(endpoint, new OAuthCachedCredentials(credentials));
     return this;
   }
 
-  public int size() {
+  public synchronized int size() {
     return audiences.size();
   }
 

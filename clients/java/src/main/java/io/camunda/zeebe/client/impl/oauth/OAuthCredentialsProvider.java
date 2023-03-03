@@ -41,10 +41,20 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+import javax.annotation.concurrent.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is thread-safe in terms of the next: 1. If you are trying to modify headers of your
+ * request from the several threads there would be sequential calls to the cache 2. If the cache
+ * hasn't a valid token and you are calling from several threads there would be just one call to the
+ * Auth server
+ */
+@ThreadSafe
 public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -62,6 +72,9 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final Duration readTimeout;
 
   private ZeebeClientCredentials credentials;
+
+  private final Lock fetchCredentialsLock = new ReentrantLock();
+  private final Lock cacheLock = new ReentrantLock();
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
@@ -108,17 +121,22 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private void loadCredentials() throws IOException {
     Optional<ZeebeClientCredentials> cachedCredentials;
 
+    cacheLock.lock();
     try {
-      cachedCredentials = credentialsCache.readCache().get(endpoint);
-    } catch (final IOException e) {
-      LOG.debug("Failed to read credentials cache", e);
-      cachedCredentials = Optional.empty();
-    }
+      try {
+        cachedCredentials = credentialsCache.readCache().get(endpoint);
+      } catch (final IOException e) {
+        LOG.debug("Failed to read credentials cache", e);
+        cachedCredentials = Optional.empty();
+      }
 
-    if (cachedCredentials.isPresent() && cachedCredentials.get().isValid()) {
-      credentials = cachedCredentials.get();
-    } else {
-      refreshCredentials();
+      if (cachedCredentials.isPresent() && cachedCredentials.get().isValid()) {
+        credentials = cachedCredentials.get();
+      } else {
+        refreshCredentials();
+      }
+    } finally {
+      cacheLock.unlock();
     }
   }
 
@@ -129,8 +147,21 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
    *     otherwise returns false.
    */
   private boolean refreshCredentials() throws IOException {
-    final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
-    credentialsCache.put(endpoint, fetchedCredentials).writeCache();
+    fetchCredentialsLock.lock();
+    final ZeebeClientCredentials fetchedCredentials;
+    try {
+      fetchedCredentials = fetchCredentials();
+    } finally {
+      fetchCredentialsLock.unlock();
+    }
+    final boolean isNewLockCreated = cacheLock.tryLock();
+    try {
+      credentialsCache.put(endpoint, fetchedCredentials).writeCache();
+    } finally {
+      if (isNewLockCreated) {
+        cacheLock.unlock();
+      }
+    }
 
     if (credentials == null || !credentials.isValid() || !fetchedCredentials.equals(credentials)) {
       credentials = fetchedCredentials;

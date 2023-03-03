@@ -26,16 +26,21 @@ import static io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder;
+import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsCache;
+import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.client.impl.util.Environment;
 import io.camunda.zeebe.client.impl.util.EnvironmentRule;
@@ -60,7 +65,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.junit.After;
@@ -278,7 +287,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(0, postRequestedFor(WireMock.urlPathEqualTo("/oauth/token")));
+    verify(0, oauthRequestMatcher());
   }
 
   @Test
@@ -300,7 +309,7 @@ public final class OAuthCredentialsProviderTest {
 
     // when
     client.newTopologyRequest().send().join();
-    verify(1, postRequestedFor(WireMock.urlPathEqualTo("/oauth/token")));
+    verify(1, oauthRequestMatcher());
 
     builder.usePlaintext().credentialsProvider(credsBuilder.build());
     client = new ZeebeClientImpl(builder, serverRule.getChannel());
@@ -309,7 +318,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, postRequestedFor(WireMock.urlPathEqualTo("/oauth/token")));
+    verify(1, oauthRequestMatcher());
     assertCacheContents(cachePath);
   }
 
@@ -349,7 +358,7 @@ public final class OAuthCredentialsProviderTest {
     // then
     assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
         .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
-    verify(1, postRequestedFor(WireMock.urlPathEqualTo("/oauth/token")));
+    verify(1, oauthRequestMatcher());
     assertCacheContents(cachePath);
   }
 
@@ -509,6 +518,42 @@ public final class OAuthCredentialsProviderTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
+  @Test
+  public void shouldCallOauthServerOnlyOnceInMultithreadMode() throws IOException {
+    // given
+    mockCredentials(ACCESS_TOKEN);
+
+    final OAuthCredentialsProvider credentialsProvider =
+        spy(
+            new OAuthCredentialsProviderBuilder()
+                .clientId(CLIENT_ID)
+                .clientSecret(SECRET)
+                .audience(AUDIENCE)
+                .authorizationServerUrl("http://localhost:" + wireMockRule.port() + "/oauth/token")
+                .credentialsCachePath(tempFolder.newFile().getPath())
+                .build());
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.usePlaintext().credentialsProvider(credentialsProvider);
+    client = new ZeebeClientImpl(builder, serverRule.getChannel());
+
+    // when
+    final List<ZeebeFuture<Topology>> responses = new ArrayList<>(10);
+    for (int count = 0; count < 10; count++) {
+      responses.add(client.newTopologyRequest().send());
+    }
+    CompletableFuture.allOf(
+            responses.stream()
+                .map(CompletionStage::toCompletableFuture)
+                .collect(Collectors.toList())
+                .toArray(new CompletableFuture[] {}))
+        .join();
+
+    // then
+    assertThat(recordingInterceptor.getCapturedHeaders().get(AUTH_KEY))
+        .isEqualTo(TOKEN_TYPE + " " + ACCESS_TOKEN);
+    verify(1, oauthRequestMatcher());
+  }
+
   /**
    * Mocks an authorization server that returns credentials with the provided access token. Returns
    * the credentials to be return by the server.
@@ -563,6 +608,10 @@ public final class OAuthCredentialsProviderTest {
                             + "\"}")
                     .withFixedDelay(replyDelay)
                     .withStatus(200)));
+  }
+
+  private static RequestPatternBuilder oauthRequestMatcher() {
+    return postRequestedFor(WireMock.urlPathEqualTo("/oauth/token"));
   }
 
   private static String encode(final String param) {
