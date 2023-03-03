@@ -38,6 +38,8 @@ import io.camunda.zeebe.engine.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.RecordProcessorContext;
 import io.camunda.zeebe.engine.api.TypedRecord;
+import io.camunda.zeebe.engine.api.records.RecordBatch.ExceededBatchRecordSizeException;
+import io.camunda.zeebe.engine.api.records.RecordBatchEntry;
 import io.camunda.zeebe.engine.state.processing.DbKeyGenerator;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.Records;
@@ -1166,6 +1168,46 @@ public final class StreamProcessorTest {
             () ->
                 assertThat(streamPlatform.getStreamProcessor().getLastWrittenPositionAsync().join())
                     .isEqualTo(-1));
+  }
+
+  @Test
+  public void shouldCallOnErrorWhenProcessingFailsWithExceedingBatchInTransaction() {
+    // given
+    final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
+
+    final var processingError =
+        new ExceededBatchRecordSizeException(mock(RecordBatchEntry.class), 10, 1, 1);
+
+    when(defaultRecordProcessor.process(any(), any()))
+        .then(
+            (invocationOnMock -> {
+              streamPlatform
+                  .getZeebeDb()
+                  .createContext()
+                  .runInTransaction(
+                      () -> {
+                        throw processingError;
+                      });
+              return null;
+            }));
+    streamPlatform.startStreamProcessor();
+
+    // when
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)),
+        RecordToWrite.event()
+            .processInstance(ELEMENT_ACTIVATING, Records.processInstance(1))
+            .causedBy(0));
+
+    // then
+    final var inOrder = inOrder(defaultRecordProcessor);
+    inOrder.verify(defaultRecordProcessor, TIMEOUT).init(any());
+    inOrder.verify(defaultRecordProcessor, TIMEOUT).accepts(ValueType.PROCESS_INSTANCE);
+    inOrder.verify(defaultRecordProcessor, TIMEOUT).process(any(), any());
+    inOrder
+        .verify(defaultRecordProcessor, TIMEOUT)
+        .onProcessingError(eq(processingError), any(), any());
+    inOrder.verifyNoMoreInteractions();
   }
 
   private static final class TestProcessor implements RecordProcessor {

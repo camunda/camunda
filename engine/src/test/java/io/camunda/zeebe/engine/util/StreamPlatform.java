@@ -297,6 +297,10 @@ public final class StreamPlatform {
     processorContext.close();
   }
 
+  public ZeebeDb getZeebeDb() {
+    return processorContext.zeebeDb;
+  }
+
   /** Used to run writes within an actor thread. */
   private static final class WriteActor extends Actor {
     public ActorFuture<Long> submit(final Callable<Long> write) {
