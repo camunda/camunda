@@ -26,7 +26,7 @@ public class DbDistributionState implements MutableDistributionState {
   private final DbForeignKey<DbLong> fkDistribution;
   private final DbInt partitionKey;
   private final DbCompositeKey<DbForeignKey<DbLong>, DbInt> distributionPartitionKey;
-  /** [distribution key | partition id] => [pending distributions] */
+  /** [distribution key | partition id] => [DbNil] */
   private final ColumnFamily<DbCompositeKey<DbForeignKey<DbLong>, DbInt>, DbNil>
       pendingDistributionColumnFamily;
 

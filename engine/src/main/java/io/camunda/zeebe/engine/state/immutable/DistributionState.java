@@ -20,7 +20,10 @@ public interface DistributionState {
   boolean hasPendingDistribution(long distributionKey);
 
   /**
-   * Returns the {@link CommandDistributionRecord} for the given distribution key
+   * Returns the {@link CommandDistributionRecord} for the given distribution key. This method takes
+   * a partition id. This is only used to set the partition property in the {@link
+   * CommandDistributionRecord}. Doing so allows us to return a whole record, without the need to
+   * remember setting the partition everytime this method is called.
    *
    * @param distributionKey the key of the distribution
    * @param partition the partition to distribute to
