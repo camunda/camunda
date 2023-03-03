@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client;
 
+import static io.camunda.zeebe.client.ClientProperties.CLOUD_REGION;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
 import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
@@ -280,6 +281,49 @@ public final class ZeebeClientTest extends ClientTest {
       final ZeebeClientConfiguration configuration = client.getConfiguration();
       assertThat(configuration.getGatewayAddress()).isEqualTo(gatewayAddress);
       assertThat(configuration.getCredentialsProvider()).isEqualTo(credentialsProvider);
+    }
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClientWithRegionPropertyProvided() {
+    // given
+    final String region = "asdf-123";
+    final Properties properties = new Properties();
+    properties.putIfAbsent(CLOUD_REGION, region);
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .withProperties(properties)
+            .build()) {
+      // when
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGatewayAddress())
+          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", region));
+    }
+  }
+
+  @Test
+  public void shouldCloudBuilderBuildProperClientWithRegionPropertyNotProvided() {
+    // given
+    final String defaultRegion = "bru-2";
+    try (final ZeebeClient client =
+        ZeebeClient.newCloudClientBuilder()
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .build()) {
+      // when
+      final ZeebeClientConfiguration clientConfiguration = client.getConfiguration();
+      // then
+      assertThat(clientConfiguration.getCredentialsProvider())
+          .isInstanceOf(OAuthCredentialsProvider.class);
+      assertThat(clientConfiguration.getGatewayAddress())
+          .isEqualTo(String.format("clusterId.%s.zeebe.camunda.io:443", defaultRegion));
     }
   }
 }
