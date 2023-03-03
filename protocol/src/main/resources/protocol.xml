@@ -168,4 +168,15 @@
     <data name="version" id="14" type="varDataEncoding"/>
   </sbe:message>
 
+  <!-- L3 Gateway Stream messages 400-499 -->
+  <sbe:message name="AddGatewayStreamRequest" id="400" description="Adds a gateway stream to a broker">
+    <field name="id" id="1" type="uint64" sinceVersion="4" />
+    <data name="streamType" id="2" type="varDataEncoding" />
+    <data name="metadata" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="RemoveGatewayStreamRequest" id="401" description="Removes a gateway stream from a broker">
+    <field name="id" id="1" type="uint64" sinceVersion="4" />
+  </sbe:message>
+
 </sbe:messageSchema>

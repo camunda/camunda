@@ -138,7 +138,7 @@ final class PartitionFactory {
             .toList();
 
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
-    final var jobStreamer = new LongPollingJobNotification(eventService);
+    final var jobStreamer = new LongPollingJobNotification(eventService, registry);
 
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();

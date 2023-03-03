@@ -25,7 +25,7 @@
   <properties>
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <protocol.version>3</protocol.version>
+    <protocol.version>4</protocol.version>
   </properties>
 
   <dependencies>

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.camunda.zeebe.broker.jobstream.StreamRegistry;
 import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.JobActivationProperties;
@@ -19,16 +20,23 @@ public final class LongPollingJobNotification
     implements GatewayStreamer<JobActivationProperties, ActivatedJob> {
   private static final String TOPIC = "jobsAvailable";
   private final ClusterEventService eventService;
+  private final StreamRegistry registry;
 
-  public LongPollingJobNotification(final ClusterEventService eventService) {
+  public LongPollingJobNotification(
+      final ClusterEventService eventService, final StreamRegistry registry) {
     this.eventService = eventService;
+    this.registry = registry;
   }
 
   @Override
   public Optional<GatewayStream<JobActivationProperties, ActivatedJob>> streamFor(
       final DirectBuffer streamId) {
-    onJobsAvailable(BufferUtil.bufferAsString(streamId));
+    final GatewayStream<JobActivationProperties, ActivatedJob> stream = registry.get(streamId);
+    if (stream != null) {
+      return Optional.of(stream);
+    }
 
+    onJobsAvailable(BufferUtil.bufferAsString(streamId));
     return Optional.empty();
   }
 
