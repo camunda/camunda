@@ -19,6 +19,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -186,26 +187,43 @@ public final class ExpressionProcessor {
    */
   public Either<Failure, ZonedDateTime> evaluateDateTimeExpression(
       final Expression expression, final Long scopeKey) {
+    return evaluateDateTimeExpression(expression, scopeKey, false)
+        .flatMap(optionalDateTime -> Either.right(optionalDateTime.get()));
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as <code>Optional<ZonedDateTime></code>.
+   * By using the <code>isNullable</code> flag, it is also possible to control the behavior if a
+   * given expression evaluates to an empty String or null.
+   *
+   * <p>A failure is returned if the expression evaluation fails, or the result is not a valid
+   * ZonedDateTime String. If the <code>isNullable</code> flag is set to <code>true</code>, an
+   * expression that evaluated to empty String or null is not considered a failure, but returns an
+   * <code>Optional.empty()</code> that needs to be handled by the caller of this method.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @param isNullable set to <code>true</code> to ignore empty String or null values instead of
+   *     returning a failure
+   * @return either the evaluation result as ZonedDateTime or a failure
+   * @throws EvaluationException if expression evaluation failed
+   */
+  public Either<Failure, Optional<ZonedDateTime>> evaluateDateTimeExpression(
+      final Expression expression, final Long scopeKey, final boolean isNullable) {
     final var result = evaluateExpression(expression, scopeKey);
     if (result.isFailure()) {
       return Either.left(
           new Failure(result.getFailureMessage(), ErrorType.EXTRACT_VALUE_ERROR, scopeKey));
     }
+    if (isNullable && result.getType() == ResultType.NULL) {
+      return Either.right(Optional.empty());
+    }
     if (result.getType() == ResultType.DATE_TIME) {
-      return Either.right(result.getDateTime());
+      return Either.right(Optional.of(result.getDateTime()));
     }
     if (result.getType() == ResultType.STRING) {
-      try {
-        return Either.right(ZonedDateTime.parse(result.getString()));
-      } catch (final DateTimeParseException e) {
-        return Either.left(
-            new Failure(
-                String.format(
-                    "Invalid date-time format '%s' for expression '%s'",
-                    result.getString(), expression.getExpression()),
-                ErrorType.EXTRACT_VALUE_ERROR,
-                scopeKey));
-      }
+      return evaluateDateTimeExpressionString(result, scopeKey, isNullable);
     }
     final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
     return Either.left(
@@ -393,6 +411,27 @@ public final class ExpressionProcessor {
   private DirectBuffer wrapResult(final String result) {
     resultView.wrap(result.getBytes());
     return resultView;
+  }
+
+  private Either<Failure, Optional<ZonedDateTime>> evaluateDateTimeExpressionString(
+      final EvaluationResult result, final Long scopeKey, final boolean isNullable) {
+    final var resultString = result.getString();
+
+    if (isNullable && resultString.isEmpty()) {
+      return Either.right(Optional.empty());
+    }
+
+    try {
+      return Either.right(Optional.of(ZonedDateTime.parse(resultString)));
+    } catch (final DateTimeParseException e) {
+      return Either.left(
+          new Failure(
+              String.format(
+                  "Invalid date-time format '%s' for expression '%s'",
+                  resultString, result.getExpression()),
+              ErrorType.EXTRACT_VALUE_ERROR,
+              scopeKey));
+    }
   }
 
   public static final class EvaluationException extends RuntimeException {
