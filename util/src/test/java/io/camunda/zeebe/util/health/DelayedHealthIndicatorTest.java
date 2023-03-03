@@ -47,7 +47,7 @@ public class DelayedHealthIndicatorTest {
   }
 
   @Test
-  public void shouldReportUnknownHealthStatusIfAskedBeforeDelegateHealthIndicatorWasCalled() {
+  public void shouldReportDownHealthStatusIfAskedBeforeDelegateHealthIndicatorWasCalled() {
     // given
     final var sutDelayedHealthIndicator =
         new DelayedHealthIndicator(mockHealthIndicator, TEST_MAX_DOWNTIME);
@@ -57,7 +57,7 @@ public class DelayedHealthIndicatorTest {
 
     // then
     Assertions.assertThat(actualHealth).isNotNull();
-    Assertions.assertThat(actualHealth.getStatus()).isEqualTo(Status.UNKNOWN);
+    Assertions.assertThat(actualHealth.getStatus()).isEqualTo(Status.DOWN);
   }
 
   @Test

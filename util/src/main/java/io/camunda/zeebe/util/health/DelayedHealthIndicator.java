@@ -46,9 +46,9 @@ public class DelayedHealthIndicator implements HealthIndicator {
   protected DelayedHealthIndicator(
       final HealthIndicator originalHealthIndicator,
       final Duration maxDowntime,
-      Supplier<Long> clock) {
+      final Supplier<Long> clock) {
     if (requireNonNull(maxDowntime).toMillis() < 0) {
-      throw new IllegalArgumentException("maxDonwtime must be >= 0");
+      throw new IllegalArgumentException("maxDowntime must be >= 0");
     }
     this.originalHealthIndicator = requireNonNull(originalHealthIndicator);
     this.maxDowntime = maxDowntime;
@@ -60,7 +60,7 @@ public class DelayedHealthIndicator implements HealthIndicator {
 
   public DelayedHealthIndicator(
       final HealthIndicator originalHealthIndicator, final Duration maxDowntime) {
-    this(originalHealthIndicator, maxDowntime, () -> System.currentTimeMillis());
+    this(originalHealthIndicator, maxDowntime, System::currentTimeMillis);
   }
 
   @Scheduled(fixedDelay = 5000)
@@ -78,7 +78,7 @@ public class DelayedHealthIndicator implements HealthIndicator {
     final long now = clock.get();
 
     if (lastHealthStatus == null) { // was never checked
-      responseBuilder = Health.unknown();
+      responseBuilder = Health.down();
     } else {
       if (lastTimeUp == null) { // was never up
         responseBuilder = Health.status(lastHealthStatus.getStatus());
@@ -92,7 +92,7 @@ public class DelayedHealthIndicator implements HealthIndicator {
     return responseBuilder.withDetails(createDetails(now)).build();
   }
 
-  private Map<String, Object> createDetails(long referenceTime) {
+  private Map<String, Object> createDetails(final long referenceTime) {
     final var result = new HashMap<>(staticDetails);
 
     if (lastHealthStatus != null) {
