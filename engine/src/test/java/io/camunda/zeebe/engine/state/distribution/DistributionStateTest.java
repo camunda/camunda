@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.distribution;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -136,6 +138,21 @@ public final class DistributionStateTest {
     // then
     final var storedDistributionRecord = distributionState.getCommandDistributionRecord(1, 1);
     assertThat(storedDistributionRecord).isNull();
+  }
+
+  @Test
+  public void shouldFailToAddPendingDistributionIfNoCommandDistributionExists() {
+    // given
+    final long distributionKey = 1L;
+    final int partition = 1;
+    final ThrowingCallable addPending =
+        () -> distributionState.addPendingDistribution(distributionKey, partition);
+
+    // when then
+    assertThat(distributionState.getCommandDistributionRecord(distributionKey, partition)).isNull();
+    assertThatThrownBy(addPending)
+        .hasStackTraceContaining(
+            "Foreign key DbLong{1} does not exist in COMMAND_DISTRIBUTION_RECORD");
   }
 
   private CommandDistributionRecord createCommandDistributionRecord() {
