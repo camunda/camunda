@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -18,12 +19,16 @@ import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Collectors;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -219,5 +224,33 @@ public class DeploymentRejectionTest {
     Assertions.assertThat(deploymentRejection)
         .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE)
         .hasRejectionReason("");
+  }
+
+  @Test
+  public void shouldDoAtomicDeployments() {
+    // given
+    final BpmnModelInstance invalidProcess =
+        Bpmn.createExecutableProcess("invalid_process_without_start_event").done();
+    final BpmnModelInstance validProcess =
+        Bpmn.createExecutableProcess("valid_process").startEvent().manualTask().endEvent().done();
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlResource(invalidProcess)
+        .withXmlResource(validProcess)
+        .expectRejection()
+        .deploy();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent, Record::getRecordType)
+        .doesNotContain(
+            tuple(ProcessIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentIntent.CREATED, RecordType.EVENT),
+            tuple(DeploymentDistributionIntent.DISTRIBUTING, RecordType.EVENT));
   }
 }
