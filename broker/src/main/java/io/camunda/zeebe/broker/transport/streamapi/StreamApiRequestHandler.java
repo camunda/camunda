@@ -15,8 +15,10 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.broker.jobstream.StreamRegistry;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 // Instantiate in broker with concrete types. We already know that it is job stream.
@@ -28,13 +30,13 @@ public final class StreamApiRequestHandler<M extends Metadata, P extends BufferW
   private final ClusterMembershipService membershipService;
   private final StreamRegistry<M, P> streamRegistry;
 
-  private final M metadataReader;
+  private final MetadataReader<M> metadataReader;
 
   public StreamApiRequestHandler(
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService membershipService,
       final StreamRegistry streamRegistry,
-      final M metadataReader) {
+      final MetadataReader<M> metadataReader) {
     this.communicationService = communicationService;
     this.membershipService = membershipService;
     this.streamRegistry = streamRegistry;
@@ -61,17 +63,18 @@ public final class StreamApiRequestHandler<M extends Metadata, P extends BufferW
     final var request = decodeRequest(rawRequest);
 
     // TODO: validate stream type (that there is one)
-    // TODO: validate the metadata (at least that you can deserialize it in the expected type)
-
-    if (!metadataReader.tryWrap(request.metadata())) {
-      // not valid
-      // return error
-      return;
+    // request.streamType().capacity() > 0
+    final var metadata = metadataReader.read(request.metadata());
+    if (metadata.isLeft()) {
+      throw metadata.getLeft();
     }
+    streamRegistry.add(request.streamType(), request.id(), sender, metadata.get());
+  }
 
-    metadataReader.wrap(request.metadata(), 0, request.metadata().capacity());
-    final M metadata = metadataReader.copy();
-    streamRegistry.add(request.streamType(), request.id(), sender, metadata);
+  private void handleRemoveStreamRequest(final MemberId sender, final byte[] rawRequest) {
+    final var request = decodeRequest(rawRequest);
+
+    streamRegistry.remove(request.id(), sender);
   }
 
   private ApiRequestReader decodeRequest(final byte[] bytes) {
@@ -80,5 +83,9 @@ public final class StreamApiRequestHandler<M extends Metadata, P extends BufferW
     reader.wrap(buffer);
 
     return reader;
+  }
+
+  interface MetadataReader<M> {
+    Either<RuntimeException, M> read(DirectBuffer buffer);
   }
 }
