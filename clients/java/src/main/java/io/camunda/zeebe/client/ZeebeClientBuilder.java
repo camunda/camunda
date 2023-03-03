@@ -119,6 +119,13 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder overrideAuthority(String authority);
 
   /**
+   * A custom maxMessageSize allows the client to receive larger or smaller responses from Zeebe.
+   * Technically, it specifies the maxInboundMessageSize of the gRPC channel. The default is 4194304
+   * = 4MB.
+   */
+  ZeebeClientBuilder maxMessageSize(int maxSize);
+
+  /**
    * @return a new {@link ZeebeClient} with the provided configuration options.
    */
   ZeebeClient build();
