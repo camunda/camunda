@@ -126,9 +126,26 @@ public final class ZeebeRuntimeValidators {
             .build(expressionLanguage),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeTaskSchedule.class)
-            .hasValidExpression(ZeebeTaskSchedule::getDueDate, ExpressionVerification::isOptional)
             .hasValidExpression(
-                ZeebeTaskSchedule::getFollowUpDate, ExpressionVerification::isOptional)
+                ZeebeTaskSchedule::getDueDate,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            staticExpression ->
+                                ZeebeExpressionValidator.isValidDateTime(
+                                    staticExpression, expressionProcessor),
+                            "be a valid DateTime String, e.g. '2023-03-02T15:35+02:00'"))
+            .hasValidExpression(
+                ZeebeTaskSchedule::getFollowUpDate,
+                expression ->
+                    expression
+                        .isOptional()
+                        .satisfiesIfStatic(
+                            staticExpression ->
+                                ZeebeExpressionValidator.isValidDateTime(
+                                    staticExpression, expressionProcessor),
+                            "be a valid DateTime String, e.g. '2023-03-02T15:35+02:00'"))
             .build(expressionLanguage),
         // ----------------------------------------
         new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor),

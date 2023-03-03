@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.ExpressionTransformer;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,8 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     implements ModelElementValidator<T> {
+
+  private static final long NO_VARIABLE_SCOPE = -1L;
 
   private static final Pattern PATH_PATTERN =
       Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*");
@@ -104,6 +107,11 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
 
   public static boolean isListOfCsv(final Expression staticExp) {
     return ExpressionTransformer.parseListOfCsv(staticExp.getExpression()).isRight();
+  }
+
+  public static boolean isValidDateTime(
+      final Expression staticExp, final ExpressionProcessor expressionProcessor) {
+    return expressionProcessor.evaluateDateTimeExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
   }
 
   public static class Builder<T extends ModelElementInstance> {
