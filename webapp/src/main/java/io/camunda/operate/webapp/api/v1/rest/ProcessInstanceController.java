@@ -8,10 +8,12 @@ package io.camunda.operate.webapp.api.v1.rest;
 
 import static io.camunda.operate.webapp.api.v1.rest.ProcessInstanceController.URI;
 
+import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.Error;
+import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.QueryValidator;
@@ -23,6 +25,7 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.api.v1.exceptions.ValidationException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -42,6 +45,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,6 +62,9 @@ public class ProcessInstanceController extends ErrorController implements Search
 
   @Autowired
   private SequenceFlowDao sequenceFlowDao;
+
+  @Autowired
+  private FlowNodeStatisticsDao flowNodeStatisticsDao;
 
   private final QueryValidator<ProcessInstance> queryValidator = new QueryValidator<>();
 
@@ -208,5 +215,36 @@ public class ProcessInstanceController extends ErrorController implements Search
     queryValidator.validate(query, SequenceFlow.class);
     Results<SequenceFlow> results = sequenceFlowDao.search(query);
     return results.getItems().stream().map(SequenceFlow::getActivityId).collect(Collectors.toList());
+  }
+
+  @Operation(
+      summary = "Get flow node statistic by process instance id",
+      security = { @SecurityRequirement(name = "bearer-key") , @SecurityRequirement(name = "cookie") },
+      responses = {
+          @ApiResponse(
+              description = "Success. Returns statistics for the given process instance, grouped by flow nodes",
+              responseCode = "200",
+              content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, array = @ArraySchema(schema = @Schema(implementation = FlowNodeStatistics.class)))
+          ),
+          @ApiResponse(
+              description = ServerException.TYPE,
+              responseCode = "500",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ClientException.TYPE,
+              responseCode = "400",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          ),
+          @ApiResponse(
+              description = ResourceNotFoundException.TYPE,
+              responseCode = "404",
+              content = @Content(mediaType = MediaType.APPLICATION_PROBLEM_JSON_VALUE, schema = @Schema(implementation = Error.class))
+          )
+      })
+  @GetMapping(value = BY_KEY + "/statistics")
+  public Collection<FlowNodeStatistics> getStatistics(@Parameter(description = "Key of process instance",required = true) @PathVariable final Long key) {
+    processInstanceDao.byKey(key); // this is just to throw error if not found
+    return flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(key);
   }
 }

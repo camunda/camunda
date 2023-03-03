@@ -19,9 +19,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.api.v1.dao.FlowNodeStatisticsDao;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.dao.SequenceFlowDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
+import io.camunda.operate.webapp.api.v1.entities.FlowNodeStatistics;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Query.Sort;
@@ -44,6 +46,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Arrays;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
@@ -63,6 +66,9 @@ public class ProcessInstanceControllerTest {
 
   @MockBean
   private SequenceFlowDao sequenceFlowDao;
+
+  @MockBean
+  private FlowNodeStatisticsDao flowNodeStatisticsDao;
 
   @Before
   public void setupMockMvc() {
@@ -195,6 +201,19 @@ public class ProcessInstanceControllerTest {
     when(sequenceFlowDao.search(new Query<SequenceFlow>().setFilter(new SequenceFlow().setProcessInstanceKey(processInstanceKey)))).thenReturn(results);
     // then
     assertGetWithSucceed(String.format("%s/%s/sequence-flows", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
+  }
+
+  @Test
+  public void shouldReturnFlowNodeStatistics() throws Exception {
+    final String expectedJSONContent = "[{\"activityId\":\"A1\",\"active\":1,\"canceled\":2,\"incidents\":4,\"completed\":3},{\"activityId\":\"A2\",\"active\":5,\"canceled\":6,\"incidents\":8,\"completed\":7}]";
+    final Long processInstanceKey = 123L;
+    // given
+    List<FlowNodeStatistics> results = Arrays.asList(
+        new FlowNodeStatistics().setActivityId("A1").setActive(1L).setCanceled(2L).setCompleted(3L).setIncidents(4L),
+        new FlowNodeStatistics().setActivityId("A2").setActive(5L).setCanceled(6L).setCompleted(7L).setIncidents(8L));
+    when(flowNodeStatisticsDao.getFlowNodeStatisticsForProcessInstance(processInstanceKey)).thenReturn(results);
+    // then
+    assertGetWithSucceed(String.format("%s/%s/statistics", URI, processInstanceKey)).andExpect(content().string(expectedJSONContent));
   }
 
   protected ResultActions assertGetWithFailed(final String endpoint) throws Exception {
