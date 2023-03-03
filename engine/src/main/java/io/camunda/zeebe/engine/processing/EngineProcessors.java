@@ -42,6 +42,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 
@@ -53,7 +54,7 @@ public final class EngineProcessors {
       final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
+      final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
@@ -88,6 +89,10 @@ public final class EngineProcessors {
             timerChecker,
             jobMetrics,
             decisionBehavior);
+
+    final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
+        new DeploymentDistributionCommandSender(
+            typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,

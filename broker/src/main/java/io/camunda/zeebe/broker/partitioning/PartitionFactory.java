@@ -47,7 +47,6 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTran
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -226,15 +225,12 @@ final class PartitionFactory {
       final SubscriptionCommandSender subscriptionCommandSender =
           new SubscriptionCommandSender(
               recordProcessorContext.getPartitionId(), partitionCommandSender);
-      final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
-          new DeploymentDistributionCommandSender(
-              recordProcessorContext.getPartitionId(), partitionCommandSender);
 
       return EngineProcessors.createEngineProcessors(
           recordProcessorContext,
           localBroker.getPartitionsCount(),
           subscriptionCommandSender,
-          deploymentDistributionCommandSender,
+          partitionCommandSender,
           featureFlags);
     };
   }
