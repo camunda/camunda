@@ -13,6 +13,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
+import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
@@ -93,6 +94,15 @@ public final class EngineProcessors {
     final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
         new DeploymentDistributionCommandSender(
             typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
+    // TODO unused for now, will be used with the implementation of
+    // https://github.com/camunda/zeebe/issues/11661
+    final var commandDistributionBehavior =
+        new CommandDistributionBehavior(
+            writers,
+            typedRecordProcessorContext.getPartitionId(),
+            partitionsCount,
+            interPartitionCommandSender,
+            processingState.getKeyGenerator());
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,
