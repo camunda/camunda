@@ -29,7 +29,10 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
@@ -128,4 +131,6 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupStore getBackupStore();
 
   void setBackupStore(BackupStore backupStore);
+
+  GatewayStreamer<JobActivationProperties, ActivatedJob> getJobStreamer();
 }

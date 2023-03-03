@@ -21,11 +21,13 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.util.EnsureUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -67,12 +69,15 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private final JobMetrics metrics;
 
-  private Consumer<String> onJobsAvailableCallback;
+  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   public DbJobState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final int partitionId) {
+      final int partitionId,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+    this.jobStreamer = jobStreamer;
+
     jobKey = new DbLong();
     fkJob = new DbForeignKey<>(jobKey, ZbColumnFamilies.JOBS);
     jobsColumnFamily =
@@ -308,11 +313,6 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   @Override
-  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
-    this.onJobsAvailableCallback = onJobsAvailableCallback;
-  }
-
-  @Override
   public long findBackedOffJobs(final long timestamp, final BiPredicate<Long, JobRecord> callback) {
     nextBackOffDueDate = -1L;
     backoffColumnFamily.whileTrue(
@@ -345,8 +345,11 @@ public final class DbJobState implements JobState, MutableJobState {
   }
 
   private void notifyJobAvailable(final DirectBuffer jobType) {
-    if (onJobsAvailableCallback != null) {
-      onJobsAvailableCallback.accept(BufferUtil.bufferAsString(jobType));
+    if (jobStreamer != null) {
+      // ignore the result for now
+      // TODO: remove the cloneBuffer eventually, but it's required now due to the
+      //  ActivatableJobsNotificationTests
+      jobStreamer.streamFor(BufferUtil.cloneBuffer(jobType));
     }
   }
 

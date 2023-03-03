@@ -9,7 +9,10 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
@@ -27,6 +30,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
+  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -34,13 +38,15 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
-      final KeyGeneratorControls keyGeneratorControls) {
+      final KeyGeneratorControls keyGeneratorControls,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
+    this.jobStreamer = jobStreamer;
   }
 
   @Override
@@ -81,5 +87,10 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
+    return jobStreamer;
   }
 }

@@ -27,6 +27,7 @@ import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
@@ -69,7 +70,13 @@ final class CheckpointRecordsProcessorTest {
       final ProcessingScheduleService executor, final ZeebeDb zeebeDb) {
     final var context = zeebeDb.createContext();
     return new RecordProcessorContextImpl(
-        1, executor, zeebeDb, context, null, new DbKeyGenerator(1, zeebeDb, context));
+        1,
+        executor,
+        zeebeDb,
+        context,
+        null,
+        new DbKeyGenerator(1, zeebeDb, context),
+        GatewayStreamer.noop());
   }
 
   @AfterEach

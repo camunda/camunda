@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -73,7 +74,8 @@ public final class StateQueryService implements QueryService {
               zeebeDb.createContext(),
               () -> {
                 throw new UnsupportedOperationException("Not allowed to generate a new key");
-              });
+              },
+              GatewayStreamer.noop());
     }
   }
 }

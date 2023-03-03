@@ -34,8 +34,11 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
@@ -87,6 +90,7 @@ public final class TestStreams {
   private boolean snapshotWasTaken = false;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
+  private GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -260,6 +264,7 @@ public final class TestStreams {
             .recordProcessors(List.of(new Engine(wrappedFactory)))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
+            .jobStreamer(id -> Optional.ofNullable(jobStreamer).flatMap(s -> s.streamFor(id)))
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     final StreamProcessor streamProcessor = builder.build();
@@ -280,6 +285,11 @@ public final class TestStreams {
     closeables.manage(processorContext);
 
     return streamProcessor;
+  }
+
+  public void setJobStreamer(
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+    this.jobStreamer = jobStreamer;
   }
 
   public void pauseProcessing(final String streamName) {
