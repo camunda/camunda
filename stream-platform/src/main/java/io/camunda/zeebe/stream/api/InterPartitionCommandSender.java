@@ -26,10 +26,8 @@ public interface InterPartitionCommandSender {
    * Uses the given record key when writing the command. Otherwise, behaves like {@link
    * InterPartitionCommandSender#sendCommand}
    *
-   * @deprecated This is only available for compatability with deployment distribution.
    * @param recordKey Record key to use when writing the command. Ignored if null.
    */
-  @Deprecated(forRemoval = true)
   void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
