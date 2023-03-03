@@ -57,6 +57,9 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableSignalSubscriptionState getSignalSubscriptionState();
 
+  @Override
+  MutableDistributionState getDistributionState();
+
   MutableMigrationState getMigrationState();
 
   MutablePendingMessageSubscriptionState getPendingMessageSubscriptionState();
