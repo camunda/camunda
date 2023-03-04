@@ -202,11 +202,10 @@ public interface ClusterCommunicationService {
    * @param executor executor to run this handler on
    * @param <M> incoming message type
    * @param <R> reply message type
-   * @return future to be completed once the subscription has been propagated
    */
-  default <M, R> CompletableFuture<Void> subscribe(
+  default <M, R> void subscribe(
       final String subject, final Function<M, R> handler, final Executor executor) {
-    return subscribe(subject, BASIC::decode, handler, BASIC::encode, executor);
+    subscribe(subject, BASIC::decode, handler, BASIC::encode, executor);
   }
 
   /**
@@ -219,9 +218,8 @@ public interface ClusterCommunicationService {
    * @param executor executor to run this handler on
    * @param <M> incoming message type
    * @param <R> reply message type
-   * @return future to be completed once the subscription has been propagated
    */
-  <M, R> CompletableFuture<Void> subscribe(
+  <M, R> void subscribe(
       String subject,
       Function<byte[], M> decoder,
       Function<M, R> handler,
@@ -235,11 +233,10 @@ public interface ClusterCommunicationService {
    * @param handler handler function that processes the incoming message and produces a reply
    * @param <M> incoming message type
    * @param <R> reply message type
-   * @return future to be completed once the subscription has been propagated
    */
-  default <M, R> CompletableFuture<Void> subscribe(
+  default <M, R> void subscribe(
       final String subject, final Function<M, CompletableFuture<R>> handler) {
-    return subscribe(subject, BASIC::decode, handler, BASIC::encode);
+    subscribe(subject, BASIC::decode, handler, BASIC::encode);
   }
 
   /**
@@ -251,9 +248,8 @@ public interface ClusterCommunicationService {
    * @param encoder encoder for serializing reply
    * @param <M> incoming message type
    * @param <R> reply message type
-   * @return future to be completed once the subscription has been propagated
    */
-  <M, R> CompletableFuture<Void> subscribe(
+  <M, R> void subscribe(
       String subject,
       Function<byte[], M> decoder,
       Function<M, CompletableFuture<R>> handler,
@@ -266,11 +262,10 @@ public interface ClusterCommunicationService {
    * @param handler handler for handling message
    * @param executor executor to run this handler on
    * @param <M> incoming message type
-   * @return future to be completed once the subscription has been propagated
    */
-  default <M> CompletableFuture<Void> subscribe(
+  default <M> void subscribe(
       final String subject, final Consumer<M> handler, final Executor executor) {
-    return subscribe(subject, BASIC::decode, handler, executor);
+    subscribe(subject, BASIC::decode, handler, executor);
   }
 
   /**
@@ -280,11 +275,10 @@ public interface ClusterCommunicationService {
    * @param handler handler for handling message
    * @param executor executor to run this handler on
    * @param <M> incoming message type
-   * @return future to be completed once the subscription has been propagated
    */
-  default <M> CompletableFuture<Void> subscribe(
+  default <M> void subscribe(
       final String subject, final BiConsumer<MemberId, M> handler, final Executor executor) {
-    return subscribe(subject, BASIC::decode, handler, executor);
+    subscribe(subject, BASIC::decode, handler, executor);
   }
 
   /**
@@ -295,9 +289,8 @@ public interface ClusterCommunicationService {
    * @param handler handler for handling message
    * @param executor executor to run this handler on
    * @param <M> incoming message type
-   * @return future to be completed once the subscription has been propagated
    */
-  <M> CompletableFuture<Void> subscribe(
+  <M> void subscribe(
       String subject, Function<byte[], M> decoder, Consumer<M> handler, Executor executor);
 
   /**
@@ -308,9 +301,8 @@ public interface ClusterCommunicationService {
    * @param handler handler for handling message
    * @param executor executor to run this handler on
    * @param <M> incoming message type
-   * @return future to be completed once the subscription has been propagated
    */
-  <M> CompletableFuture<Void> subscribe(
+  <M> void subscribe(
       String subject,
       Function<byte[], M> decoder,
       BiConsumer<MemberId, M> handler,

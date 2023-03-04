@@ -118,7 +118,7 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
   }
 
   @Override
-  public <M, R> CompletableFuture<Void> subscribe(
+  public <M, R> void subscribe(
       final String subject,
       final Function<byte[], M> decoder,
       final Function<M, R> handler,
@@ -141,22 +141,20 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
                   });
               return responseFuture;
             }));
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override
-  public <M, R> CompletableFuture<Void> subscribe(
+  public <M, R> void subscribe(
       final String subject,
       final Function<byte[], M> decoder,
       final Function<M, CompletableFuture<R>> handler,
       final Function<R, byte[]> encoder) {
     messagingService.registerHandler(
         subject, new InternalMessageResponder<>(decoder, encoder, handler));
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override
-  public <M> CompletableFuture<Void> subscribe(
+  public <M> void subscribe(
       final String subject,
       final Function<byte[], M> decoder,
       final Consumer<M> handler,
@@ -167,11 +165,10 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
         new InternalMessageConsumer<>(decoder, handler);
     unicastConsumers.put(subject, unicastConsumer);
     unicastService.addListener(subject, unicastConsumer, executor);
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override
-  public <M> CompletableFuture<Void> subscribe(
+  public <M> void subscribe(
       final String subject,
       final Function<byte[], M> decoder,
       final BiConsumer<MemberId, M> handler,
@@ -182,7 +179,6 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
         new InternalMessageBiConsumer<>(decoder, handler);
     unicastConsumers.put(subject, unicastConsumer);
     unicastService.addListener(subject, unicastConsumer, executor);
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override
