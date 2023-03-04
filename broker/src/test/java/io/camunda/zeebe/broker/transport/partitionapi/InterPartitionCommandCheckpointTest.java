@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import java.util.function.Function;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -187,7 +188,13 @@ final class InterPartitionCommandCheckpointTest {
     sender.sendCommand(1, valueType, intent, new JobRecord());
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
-    verify(communicationService).unicast(eq(TOPIC_PREFIX + 1), messageCaptor.capture(), any());
+    verify(communicationService)
+        .unicast(
+            eq(TOPIC_PREFIX + 1),
+            messageCaptor.capture(),
+            eq(Function.identity()),
+            any(),
+            eq(true));
     receiver.handleMessage(new MemberId("0"), messageCaptor.getValue());
   }
 }

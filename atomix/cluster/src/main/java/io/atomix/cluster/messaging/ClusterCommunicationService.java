@@ -16,8 +16,6 @@
  */
 package io.atomix.cluster.messaging;
 
-import static io.atomix.utils.serializer.serializers.DefaultSerializers.BASIC;
-
 import io.atomix.cluster.MemberId;
 import java.time.Duration;
 import java.util.Set;
@@ -36,20 +34,22 @@ import java.util.function.Function;
  * supports several types of messaging:
  *
  * <ul>
- *   <li>{@link #broadcast(String, Object)} broadcasts a message to all cluster members
- *   <li>{@link #multicast(String, Object, Set)} sends the message to all provided members
- *   <li>{@link #unicast(String, Object, MemberId)} sends a unicast message directly to the given
- *       member
- *   <li>{@link #send(String, Object, MemberId, Duration)} sends a message directly to the given
- *       member and awaits a reply
+ *   <li>{@link #broadcast(String, Object, Function, boolean)} broadcasts a message to all cluster
+ *       members
+ *   <li>{@link #multicast(String, Object, Function, Set, boolean)} sends the message to all
+ *       provided members
+ *   <li>{@link #unicast(String, Object, Function, MemberId, boolean)} sends a unicast message
+ *       directly to the given member
+ *   <li>{@link #send(String, Object, Function, Function, MemberId, Duration)} sends a message
+ *       directly to the given member and awaits a reply
  * </ul>
  *
- * To register to listen for messages, use one of the {@link #subscribe(String, Consumer, Executor)}
- * methods:
+ * To register to listen for messages, use one of the {@link #subscribe(String, Function, Consumer,
+ * Executor)} methods:
  *
  * <pre>{@code
- * atomix.getCommunicationService().subscribe("test", message -> {
- *   System.out.println("Received message");
+ * service.subscribe("test", String::new, message -> {
+ *   System.out.println("Received message " + message);
  * }, executor);
  *
  * }</pre>
@@ -61,59 +61,11 @@ public interface ClusterCommunicationService {
    *
    * @param subject message subject
    * @param message message to send
-   * @param <M> message type
-   */
-  default <M> void broadcast(final String subject, final M message) {
-    broadcast(subject, message, BASIC::encode, true);
-  }
-
-  /**
-   * Broadcasts a message to all members.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param reliable whether to perform a reliable (TCP) unicast
-   * @param <M> message type
-   */
-  default <M> void broadcast(final String subject, final M message, final boolean reliable) {
-    broadcast(subject, message, BASIC::encode, reliable);
-  }
-
-  /**
-   * Broadcasts a message to all members.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param encoder function for encoding message to byte[]
-   * @param <M> message type
-   */
-  default <M> void broadcast(
-      final String subject, final M message, final Function<M, byte[]> encoder) {
-    broadcast(subject, message, encoder, true);
-  }
-
-  /**
-   * Broadcasts a message to all members.
-   *
-   * @param subject message subject
-   * @param message message to send
    * @param encoder function for encoding message to byte[]
    * @param reliable whether to perform a reliable (TCP) unicast
    * @param <M> message type
    */
   <M> void broadcast(String subject, M message, Function<M, byte[]> encoder, boolean reliable);
-
-  /**
-   * Multicasts a message to a set of members over TCP.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param memberIds recipient node identifiers
-   * @param <M> message type
-   */
-  default <M> void multicast(final String subject, final M message, final Set<MemberId> memberIds) {
-    multicast(subject, message, BASIC::encode, memberIds, true);
-  }
 
   /**
    * Multicasts a message to a set of members.
@@ -133,18 +85,6 @@ public interface ClusterCommunicationService {
       boolean reliable);
 
   /**
-   * Sends a message to a member over TCP.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param memberId recipient node identifier
-   * @param <M> message type
-   */
-  default <M> void unicast(final String subject, final M message, final MemberId memberId) {
-    unicast(subject, message, BASIC::encode, memberId, true);
-  }
-
-  /**
    * Sends a message to a member.
    *
    * @param subject message subject
@@ -156,22 +96,6 @@ public interface ClusterCommunicationService {
    */
   <M> void unicast(
       String subject, M message, Function<M, byte[]> encoder, MemberId memberId, boolean reliable);
-
-  /**
-   * Sends a message and expects a reply.
-   *
-   * @param subject message subject
-   * @param message message to send
-   * @param toMemberId recipient node identifier
-   * @param timeout response timeout
-   * @param <M> request type
-   * @param <R> reply type
-   * @return reply future
-   */
-  default <M, R> CompletableFuture<R> send(
-      final String subject, final M message, final MemberId toMemberId, final Duration timeout) {
-    return send(subject, message, BASIC::encode, BASIC::decode, toMemberId, timeout);
-  }
 
   /**
    * Sends a message and expects a reply.
@@ -198,20 +122,6 @@ public interface ClusterCommunicationService {
    * Adds a new subscriber for the specified message subject.
    *
    * @param subject message subject
-   * @param handler handler function that processes the incoming message and produces a reply
-   * @param executor executor to run this handler on
-   * @param <M> incoming message type
-   * @param <R> reply message type
-   */
-  default <M, R> void subscribe(
-      final String subject, final Function<M, R> handler, final Executor executor) {
-    subscribe(subject, BASIC::decode, handler, BASIC::encode, executor);
-  }
-
-  /**
-   * Adds a new subscriber for the specified message subject.
-   *
-   * @param subject message subject
    * @param decoder decoder for resurrecting incoming message
    * @param handler handler function that processes the incoming message and produces a reply
    * @param encoder encoder for serializing reply
@@ -230,19 +140,6 @@ public interface ClusterCommunicationService {
    * Adds a new subscriber for the specified message subject.
    *
    * @param subject message subject
-   * @param handler handler function that processes the incoming message and produces a reply
-   * @param <M> incoming message type
-   * @param <R> reply message type
-   */
-  default <M, R> void subscribe(
-      final String subject, final Function<M, CompletableFuture<R>> handler) {
-    subscribe(subject, BASIC::decode, handler, BASIC::encode);
-  }
-
-  /**
-   * Adds a new subscriber for the specified message subject.
-   *
-   * @param subject message subject
    * @param decoder decoder for resurrecting incoming message
    * @param handler handler function that processes the incoming message and produces a reply
    * @param encoder encoder for serializing reply
@@ -254,32 +151,6 @@ public interface ClusterCommunicationService {
       Function<byte[], M> decoder,
       Function<M, CompletableFuture<R>> handler,
       Function<R, byte[]> encoder);
-
-  /**
-   * Adds a new subscriber for the specified message subject.
-   *
-   * @param subject message subject
-   * @param handler handler for handling message
-   * @param executor executor to run this handler on
-   * @param <M> incoming message type
-   */
-  default <M> void subscribe(
-      final String subject, final Consumer<M> handler, final Executor executor) {
-    subscribe(subject, BASIC::decode, handler, executor);
-  }
-
-  /**
-   * Adds a new subscriber for the specified message subject.
-   *
-   * @param subject message subject
-   * @param handler handler for handling message
-   * @param executor executor to run this handler on
-   * @param <M> incoming message type
-   */
-  default <M> void subscribe(
-      final String subject, final BiConsumer<MemberId, M> handler, final Executor executor) {
-    subscribe(subject, BASIC::decode, handler, executor);
-  }
 
   /**
    * Adds a new subscriber for the specified message subject.

@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.Map;
+import java.util.function.Function;
 import org.slf4j.Logger;
 
 /**
@@ -58,7 +59,8 @@ public final class InterPartitionCommandReceiverActor extends Actor
 
   @Override
   protected void onActorStarting() {
-    communicationService.subscribe(TOPIC_PREFIX + partitionId, this::tryHandleMessage, actor::run);
+    communicationService.subscribe(
+        TOPIC_PREFIX + partitionId, Function.identity(), this::tryHandleMessage, actor::run);
   }
 
   @Override

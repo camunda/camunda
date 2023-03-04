@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
+import java.util.function.Function;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -74,7 +75,11 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
         Encoder.encode(checkpointId, receiverPartitionId, valueType, intent, recordKey, command);
 
     communicationService.unicast(
-        TOPIC_PREFIX + receiverPartitionId, message, MemberId.from("" + partitionLeader));
+        TOPIC_PREFIX + receiverPartitionId,
+        message,
+        Function.identity(),
+        MemberId.from("" + partitionLeader),
+        true);
   }
 
   void setCheckpointId(final long checkpointId) {
