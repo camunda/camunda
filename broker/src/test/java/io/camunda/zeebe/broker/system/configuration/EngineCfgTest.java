@@ -24,7 +24,7 @@ final class EngineCfgTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
 
     // when
-    final var configuration = cfg.getEngine().createEngineConfiguration();
+    final var configuration = cfg.getExperimental().getEngine().createEngineConfiguration();
 
     // then
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(10);
@@ -37,7 +37,7 @@ final class EngineCfgTest {
     final BrokerCfg cfg = TestConfigReader.readConfig("engine", environment);
 
     // when
-    final var configuration = cfg.getEngine().createEngineConfiguration();
+    final var configuration = cfg.getExperimental().getEngine().createEngineConfiguration();
 
     // then
     assertThat(configuration.getMessagesTtlCheckerBatchLimit()).isEqualTo(1000);

@@ -13,7 +13,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
-import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
 import io.camunda.zeebe.util.Environment;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
 import java.util.HashMap;
@@ -31,7 +30,6 @@ public final class BrokerCfg {
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
-  private EngineCfg engine = new EngineCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
@@ -56,7 +54,6 @@ public final class BrokerCfg {
     gateway.init(this, brokerBase);
     backpressure.init(this, brokerBase);
     processingCfg.init(this, brokerBase);
-    engine.init(this, brokerBase);
     experimental.init(this, brokerBase);
   }
 
@@ -140,14 +137,6 @@ public final class BrokerCfg {
     processingCfg = cfg;
   }
 
-  public EngineCfg getEngine() {
-    return engine;
-  }
-
-  public void setEngine(final EngineCfg engine) {
-    this.engine = engine;
-  }
-
   public ExperimentalCfg getExperimental() {
     return experimental;
   }
@@ -175,8 +164,6 @@ public final class BrokerCfg {
         + backpressure
         + ", processingCfg="
         + processingCfg
-        + ", engineCfg="
-        + engine
         + ", experimental="
         + experimental
         + ", executionMetricsExporterEnabled="
