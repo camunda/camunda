@@ -73,7 +73,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    clusterServices.getMembershipService().addListener(service.server());
+    clusterServices.getMembershipService().removeListener(service.server());
     final var result =
         Stream.of(service.server().closeAsync(), service.jobStreamer().closeAsync())
             .collect(new ActorFutureCollector<>(concurrencyControl));
