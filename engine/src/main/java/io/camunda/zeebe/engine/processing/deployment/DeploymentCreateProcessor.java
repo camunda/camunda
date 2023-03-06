@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_IN
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -56,6 +57,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final DeploymentDistributionBehavior deploymentDistributionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final CommandDistributionBehavior distributionBehavior;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -64,7 +66,8 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       final Writers writers,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final CommandDistributionBehavior distributionBehavior) {
     processState = processingState.getProcessState();
     timerInstanceState = processingState.getTimerState();
     this.keyGenerator = keyGenerator;
@@ -73,6 +76,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     responseWriter = writers.response();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
+    this.distributionBehavior = distributionBehavior;
     deploymentTransformer =
         new DeploymentTransformer(
             stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
