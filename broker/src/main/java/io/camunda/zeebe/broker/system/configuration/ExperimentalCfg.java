@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.zeebe.broker.system.configuration.engine.EngineCfg;
 import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 
@@ -29,6 +30,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private PartitioningCfg partitioning = new PartitioningCfg();
   private QueryApiCfg queryApi = new QueryApiCfg();
   private ConsistencyCheckCfg consistencyChecks = new ConsistencyCheckCfg();
+  private EngineCfg engine = new EngineCfg();
 
   private FeatureFlagsCfg features = new FeatureFlagsCfg();
 
@@ -36,6 +38,7 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     rocksdb.init(globalConfig, brokerBase);
     raft.init(globalConfig, brokerBase);
+    engine.init(globalConfig, brokerBase);
   }
 
   public int getMaxAppendsPerFollower() {
@@ -106,6 +109,14 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.consistencyChecks = consistencyChecks;
   }
 
+  public EngineCfg getEngine() {
+    return engine;
+  }
+
+  public void setEngine(final EngineCfg engine) {
+    this.engine = engine;
+  }
+
   public FeatureFlagsCfg getFeatures() {
     return features;
   }
@@ -131,6 +142,8 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + queryApi
         + ", consistencyChecks="
         + consistencyChecks
+        + ", engineCfg="
+        + engine
         + ", features="
         + features
         + '}';

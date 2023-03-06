@@ -1,6 +1,7 @@
 zeebe:
   broker:
-    engine:
-      messages:
-        ttlCheckerBatchLimit: 1000
-        ttlCheckerInterval: 15s
+    experimental:
+      engine:
+        messages:
+          ttlCheckerBatchLimit: 1000
+          ttlCheckerInterval: 15s
