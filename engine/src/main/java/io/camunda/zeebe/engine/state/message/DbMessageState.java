@@ -339,25 +339,23 @@ public final class DbMessageState implements MutableMessageState {
   @Override
   public boolean visitMessagesWithDeadlineBeforeTimestamp(
       final long timestamp, final Index startAt, final ExpiredMessageVisitor visitor) {
-    final var stoppedByVisitor = new MutableBoolean(false);
-    if (startAt == null) {
-      deadlineColumnFamily.whileTrue(
-          (key, value) -> {
-            final var shouldContinue = visit(timestamp, visitor, key);
-            stoppedByVisitor.set(!shouldContinue);
-            return shouldContinue;
-          });
-    } else {
+    final DbCompositeKey<DbLong, DbForeignKey<DbLong>> startAtKey;
+    if (startAt != null) {
       deadline.wrapLong(startAt.deadline());
       messageKey.wrapLong(startAt.key());
-      deadlineColumnFamily.whileTrue(
-          deadlineMessageKey,
-          (key, value) -> {
-            final var shouldContinue = visit(timestamp, visitor, key);
-            stoppedByVisitor.set(!shouldContinue);
-            return shouldContinue;
-          });
+      startAtKey = deadlineMessageKey;
+    } else {
+      startAtKey = null;
     }
+    final var stoppedByVisitor = new MutableBoolean(false);
+    deadlineColumnFamily.whileTrue(
+        startAtKey,
+        (key, value) -> {
+          final var shouldContinue = visit(timestamp, visitor, key);
+          stoppedByVisitor.set(!shouldContinue);
+          return shouldContinue;
+        });
+
     return stoppedByVisitor.get();
   }
 
