@@ -372,6 +372,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-backup-store-gcs</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-backup-testkit</artifactId>
         <version>${project.version}</version>
       </dependency>
