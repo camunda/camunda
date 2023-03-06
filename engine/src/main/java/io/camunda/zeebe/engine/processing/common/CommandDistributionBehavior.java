@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -27,6 +28,7 @@ public final class CommandDistributionBehavior {
   private final List<Integer> otherPartitions;
   private final InterPartitionCommandSender interPartitionCommandSender;
   private final KeyGenerator keyGenerator;
+  private final int currentPartitionId;
 
   public CommandDistributionBehavior(
       final Writers writers,
@@ -43,6 +45,7 @@ public final class CommandDistributionBehavior {
             .filter(partition -> partition != currentPartition)
             .boxed()
             .toList();
+    currentPartitionId = currentPartition;
   }
 
   public <T extends UnifiedRecordValue> void distributeCommand(final TypedRecord<T> command) {
@@ -77,6 +80,23 @@ public final class CommandDistributionBehavior {
         () -> {
           interPartitionCommandSender.sendCommand(
               partition, command.getValueType(), command.getIntent(), key, command.getValue());
+          return true;
+        });
+  }
+
+  public <T extends UnifiedRecordValue> void acknowledgeCommand(final long distributionKey) {
+    final var distributionRecord =
+        new CommandDistributionRecord().setPartitionId(currentPartitionId);
+
+    final int receiverPartitionId = Protocol.decodePartitionId(distributionKey);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          interPartitionCommandSender.sendCommand(
+              receiverPartitionId,
+              ValueType.COMMAND_DISTRIBUTION,
+              CommandDistributionIntent.ACKNOWLEDGE,
+              distributionKey,
+              distributionRecord);
           return true;
         });
   }
