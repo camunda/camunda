@@ -347,6 +347,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
       incidentEntity.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
       incidentEntity.setProcessInstanceKey(processInstance.getProcessInstanceKey());
+      incidentEntity.setBpmnProcessId(processInstance.getBpmnProcessId());
       entities.add(incidentEntity);
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
@@ -363,6 +364,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
       IncidentEntity incidentEntity = TestUtil.createIncident(IncidentState.ACTIVE,activityInstance.getActivityId(), Long.valueOf(activityInstance.getId()),activityInstance.getErrorMessage());
       incidentEntity.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
       incidentEntity.setProcessInstanceKey(processInstance.getProcessInstanceKey());
+      incidentEntity.setBpmnProcessId(processInstance.getBpmnProcessId());
       incidentEntity.setPending(true);
       entities.add(incidentEntity);
     }

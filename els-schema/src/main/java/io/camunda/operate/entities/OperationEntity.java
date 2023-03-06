@@ -7,11 +7,14 @@
 package io.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 public class OperationEntity extends OperateEntity<OperationEntity> {
 
   private Long processInstanceKey;
+  private Long processDefinitionKey;
+  private String bpmnProcessId;
   private Long incidentKey;
   private Long scopeKey;
   private String variableName;
@@ -24,7 +27,6 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
   private String batchOperationId;
   private Long zeebeCommandKey;
   private String username;
-
   private String modifyInstructions;
 
   public Long getProcessInstanceKey() {
@@ -33,6 +35,22 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
 
   public void setProcessInstanceKey(Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
   public Long getIncidentKey() {
@@ -152,65 +170,27 @@ public class OperationEntity extends OperateEntity<OperationEntity> {
       return false;
     if (!super.equals(o))
       return false;
-
     OperationEntity that = (OperationEntity) o;
-
-    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
-      return false;
-    if (incidentKey != null ? !incidentKey.equals(that.incidentKey) : that.incidentKey != null)
-      return false;
-    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null)
-      return false;
-    if (variableName != null ? !variableName.equals(that.variableName) : that.variableName != null)
-      return false;
-    if (variableValue != null ? !variableValue.equals(that.variableValue) : that.variableValue != null)
-      return false;
-    if (type != that.type)
-      return false;
-    if (lockExpirationTime != null ? !lockExpirationTime.equals(that.lockExpirationTime) : that.lockExpirationTime != null)
-      return false;
-    if (lockOwner != null ? !lockOwner.equals(that.lockOwner) : that.lockOwner != null)
-      return false;
-    if (state != that.state)
-      return false;
-    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
-      return false;
-    if (batchOperationId != null ? !batchOperationId.equals(that.batchOperationId) : that.batchOperationId != null)
-      return false;
-    if (zeebeCommandKey != null ? !zeebeCommandKey.equals(that.zeebeCommandKey) : that.zeebeCommandKey != null)
-      return false;
-    if (modifyInstructions != null ? !modifyInstructions.equals(that.modifyInstructions) : that.modifyInstructions != null)
-      return false;
-    return username != null ? username.equals(that.username) : that.username == null;
-
+    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
+        bpmnProcessId, that.bpmnProcessId) && Objects.equals(incidentKey, that.incidentKey) && Objects.equals(scopeKey, that.scopeKey) && Objects.equals(
+        variableName, that.variableName) && Objects.equals(variableValue, that.variableValue) && type == that.type && Objects.equals(lockExpirationTime,
+        that.lockExpirationTime) && Objects.equals(lockOwner, that.lockOwner) && state == that.state && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(batchOperationId, that.batchOperationId) && Objects.equals(zeebeCommandKey, that.zeebeCommandKey) && Objects.equals(username,
+        that.username) && Objects.equals(modifyInstructions, that.modifyInstructions);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
-    result = 31 * result + (incidentKey != null ? incidentKey.hashCode() : 0);
-    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
-    result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
-    result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
-    result = 31 * result + (type != null ? type.hashCode() : 0);
-    result = 31 * result + (lockExpirationTime != null ? lockExpirationTime.hashCode() : 0);
-    result = 31 * result + (lockOwner != null ? lockOwner.hashCode() : 0);
-    result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
-    result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
-    result = 31 * result + (zeebeCommandKey != null ? zeebeCommandKey.hashCode() : 0);
-    result = 31 * result + (modifyInstructions != null ? modifyInstructions.hashCode() : 0);
-    result = 31 * result + (username != null ? username.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, incidentKey, scopeKey, variableName, variableValue, type,
+        lockExpirationTime, lockOwner, state, errorMessage, batchOperationId, zeebeCommandKey, username, modifyInstructions);
   }
 
   @Override
   public String toString() {
-    return "OperationEntity{" + "processInstanceKey=" + processInstanceKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='"
-        + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='"
-        + lockOwner + '\'' + ", state=" + state + ", errorMessage='" + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\''
-        + ", modifyInstructions='" + modifyInstructions +"'"
-        + ", zeebeCommandKey=" + zeebeCommandKey + '}';
+    return "OperationEntity{" + "processInstanceKey=" + processInstanceKey + ", processDefinitionKey=" + processDefinitionKey + ", bpmnProcessId='"
+        + bpmnProcessId + '\'' + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='" + variableName + '\'' + ", variableValue='"
+        + variableValue + '\'' + ", type=" + type + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='" + lockOwner + '\'' + ", state=" + state
+        + ", errorMessage='" + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\'' + ", zeebeCommandKey=" + zeebeCommandKey + ", username='"
+        + username + '\'' + ", modifyInstructions='" + modifyInstructions + '\'' + '}';
   }
 }

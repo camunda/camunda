@@ -21,6 +21,9 @@ public class VariableTemplate extends AbstractTemplateDescriptor implements Proc
   public static final String VALUE = "value";
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
 
   @Override
   public String getIndexName() {
@@ -29,6 +32,6 @@ public class VariableTemplate extends AbstractTemplateDescriptor implements Proc
 
   @Override
   public String getVersion() {
-    return "1.1.0";
+    return "8.2.0";
   }
 }

@@ -209,7 +209,7 @@ public class IncidentStatisticsReader extends AbstractReader {
         .size(ElasticsearchUtil.TERMS_AGG_SIZE)
         .subAggregation(topHits(ERROR_MESSAGE).size(1).fetchSource(IncidentTemplate.ERROR_MSG,null))
         .subAggregation(terms(GROUP_BY_PROCESS_KEYS)
-            .field(IncidentTemplate.PROCESS_KEY)
+            .field(IncidentTemplate.PROCESS_DEFINITION_KEY)
             .size(ElasticsearchUtil.TERMS_AGG_SIZE)
             .subAggregation(cardinality(UNIQ_PROCESS_INSTANCES)
                 .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));

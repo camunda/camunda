@@ -25,8 +25,8 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
-
-  public static final String PROCESS_KEY = "processDefinitionKey";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String FLOW_NODE_ID = "flowNodeId";
   public static final String FLOW_NODE_INSTANCE_KEY = "flowNodeInstanceKey";
   public static final String JOB_KEY = "jobKey";
@@ -45,6 +45,6 @@ public class IncidentTemplate extends AbstractTemplateDescriptor implements Proc
 
   @Override
   public String getVersion() {
-    return "1.3.0";
+    return "8.2.0";
   }
 }

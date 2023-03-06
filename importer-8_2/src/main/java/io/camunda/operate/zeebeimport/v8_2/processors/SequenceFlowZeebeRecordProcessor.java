@@ -46,6 +46,8 @@ public class SequenceFlowZeebeRecordProcessor {
     SequenceFlowEntity entity = new SequenceFlowEntity();
     entity.setId(String.format(ID_PATTERN, recordValue.getProcessInstanceKey(), recordValue.getElementId()));
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setActivityId(recordValue.getElementId());
     bulkRequest.add(getSequenceFlowInsertQuery(entity));
   }

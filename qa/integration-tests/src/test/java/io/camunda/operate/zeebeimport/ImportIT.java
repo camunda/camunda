@@ -12,6 +12,7 @@ import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -20,16 +21,22 @@ import io.camunda.operate.entities.FlowNodeState;
 import io.camunda.operate.entities.FlowNodeType;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.IncidentState;
+import io.camunda.operate.entities.SequenceFlowEntity;
+import io.camunda.operate.entities.VariableEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.es.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.es.reader.SequenceFlowReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -40,18 +47,21 @@ import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -71,10 +81,16 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   private ListViewReader listViewReader;
 
   @Autowired
+  private SequenceFlowReader sequenceFlowReader;
+
+  @Autowired
   private RestHighLevelClient esClient;
 
   @Autowired
   private ListViewTemplate listViewTemplate;
+
+  @Autowired
+  private VariableTemplate variableTemplate;
 
   @Test
   public void testProcessInstanceCreated() {
@@ -295,6 +311,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
@@ -338,6 +355,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isEqualTo(errorMessage);
@@ -402,6 +420,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
@@ -468,6 +487,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     assertThat(allIncidents).hasSize(1);
     IncidentEntity incidentEntity = allIncidents.get(0);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(processId);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
     //when I cancel process instance
@@ -801,9 +821,69 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     /*final ProcessInstanceForListViewEntity processInstanceById =*/ processInstanceReader.getProcessInstanceByKey(-42L);
   }
 
+  @Test
+  public void testSequenceFlowEntityCreated() {
+
+    //having
+    String processId = "demoProcess";
+    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
+
+    //when
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+
+    //then
+    final List<SequenceFlowEntity> sequenceFlowEntities = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(processInstanceKey);
+    assertThat(sequenceFlowEntities).hasSize(1);
+
+    SequenceFlowEntity sequenceFlowEntity = sequenceFlowEntities.get(0);
+    assertThat(sequenceFlowEntity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(sequenceFlowEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(sequenceFlowEntity.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(sequenceFlowEntity.getActivityId()).isEqualTo("SequenceFlow_1sz6737");
+  }
+
+  @Test
+  public void testVariableEntityCreated() {
+
+    //having
+    String processId = "demoProcess";
+    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
+
+    //when
+    final Long processInstanceKey = ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
+
+    //then
+    final List<VariableEntity> variableEntities = getVariablesByProcessInstanceKey(processInstanceKey);
+    assertThat(variableEntities).isNotEmpty();
+
+    VariableEntity variableEntity = variableEntities.get(0);
+    assertThat(variableEntity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(variableEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(variableEntity.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(variableEntity.getValue()).isEqualTo("\"b\"");
+  }
+
+  private List<VariableEntity> getVariablesByProcessInstanceKey(Long processInstanceKey) {
+
+    final TermQueryBuilder processInstanceKeyQuery = termQuery(VariableTemplate.PROCESS_INSTANCE_KEY, processInstanceKey);
+    final ConstantScoreQueryBuilder query = constantScoreQuery(processInstanceKeyQuery);
+    final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(variableTemplate, ElasticsearchUtil.QueryType.ALL)
+        .source(new SearchSourceBuilder().query(query));
+    try {
+      return ElasticsearchUtil.scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining variables: %s for processInstanceKey %s",
+          e.getMessage(), processInstanceKey);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
   private void assertStartFlowNodeCompleted(FlowNodeInstanceEntity startActivity) {
     assertThat(startActivity.getFlowNodeId()).isEqualTo("start");
     assertThat(startActivity.getProcessDefinitionKey()).isNotNull();
+    assertThat(startActivity.getBpmnProcessId()).isNotNull();
     assertThat(startActivity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(startActivity.getType()).isEqualTo(FlowNodeType.START_EVENT);
     assertThat(startActivity.getStartDate()).isAfterOrEqualTo(testStartTime);
@@ -815,6 +895,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
   private void assertFlowNodeIsActive(FlowNodeInstanceEntity flowNodeEntity, String flowNodeId) {
     assertThat(flowNodeEntity.getFlowNodeId()).isEqualTo(flowNodeId);
     assertThat(flowNodeEntity.getProcessDefinitionKey()).isNotNull();
+    assertThat(flowNodeEntity.getBpmnProcessId()).isNotNull();
     assertThat(flowNodeEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(flowNodeEntity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(flowNodeEntity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());

@@ -29,10 +29,6 @@ import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.entities.listview.VariableForListViewEntity;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -41,17 +37,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
-import java.util.function.Consumer;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
-
 
 public abstract class TestUtil {
 
@@ -240,11 +233,11 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state, Long incidentKey, Long processInstanceKey) {
-    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey, null);
+    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey, null, null);
   }
 
   public static IncidentEntity createIncident(IncidentState state, Long incidentKey, Long processInstanceKey, Long processDefinitionKey) {
-    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey, processDefinitionKey);
+    return createIncident(state, "start", random.nextLong(), null, incidentKey, processInstanceKey, processDefinitionKey, null);
   }
 
   public static IncidentEntity createIncident(IncidentState state, String errorMsg) {
@@ -260,11 +253,11 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey) {
-    return createIncident(state, activityId, activityInstanceId, errorMsg, incidentKey, null, null);
+    return createIncident(state, activityId, activityInstanceId, errorMsg, incidentKey, null, null, null);
   }
 
   public static IncidentEntity createIncident(IncidentState state, String activityId, Long activityInstanceId, String errorMsg, Long incidentKey, Long processInstanceKey,
-      Long processDefinitionKey) {
+      Long processDefinitionKey, String bpmnProcessId) {
     IncidentEntity incidentEntity = new IncidentEntity();
     if (incidentKey == null) {
       incidentEntity.setKey(random.nextLong());
@@ -291,6 +284,7 @@ public abstract class TestUtil {
     if (processDefinitionKey != null) {
       incidentEntity.setProcessDefinitionKey(processDefinitionKey);
     }
+    incidentEntity.setBpmnProcessId(bpmnProcessId);
     return incidentEntity;
   }
 
@@ -322,9 +316,15 @@ public abstract class TestUtil {
   }
 
   public static VariableEntity createVariable(Long processInstanceKey, Long scopeKey, String name, String value) {
+    return createVariable(processInstanceKey, null, null, scopeKey, name, value);
+  }
+
+  public static VariableEntity createVariable(Long processInstanceKey, Long processDefinitionKey, String bpmnProcessId, Long scopeKey, String name, String value) {
     VariableEntity variable = new VariableEntity();
     variable.setId(scopeKey + "_" + name);
     variable.setProcessInstanceKey(processInstanceKey);
+    variable.setProcessDefinitionKey(processDefinitionKey);
+    variable.setBpmnProcessId(bpmnProcessId);
     variable.setScopeKey(scopeKey);
     variable.setName(name);
     variable.setName(value);
@@ -353,9 +353,15 @@ public abstract class TestUtil {
   }
 
   public static OperationEntity createOperationEntity(Long processInstanceKey, Long incidentKey, String varName, OperationState state, String username, boolean lockExpired) {
+    return createOperationEntity(processInstanceKey, null, null, incidentKey, varName, state, username, lockExpired);
+  }
+
+  public static OperationEntity createOperationEntity(Long processInstanceKey, Long processDefinitionKey, String bpmnProcessId, Long incidentKey, String varName, OperationState state, String username, boolean lockExpired) {
     OperationEntity oe = new OperationEntity();
     oe.generateId();
     oe.setProcessInstanceKey(processInstanceKey);
+    oe.setProcessDefinitionKey(processDefinitionKey);
+    oe.setBpmnProcessId(bpmnProcessId);
     oe.setIncidentKey(incidentKey);
     oe.setVariableName(varName);
     oe.setType(OperationType.RESOLVE_INCIDENT);

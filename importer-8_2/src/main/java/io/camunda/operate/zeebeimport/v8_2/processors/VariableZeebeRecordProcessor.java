@@ -66,6 +66,8 @@ public class VariableZeebeRecordProcessor {
     entity.setPartitionId(record.getPartitionId());
     entity.setScopeKey(recordValue.getScopeKey());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setName(recordValue.getName());
     if (recordValue.getValue().length() > operateProperties.getImporter().getVariableSizeThreshold()) {
       // store preview

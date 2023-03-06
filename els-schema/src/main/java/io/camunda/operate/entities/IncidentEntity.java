@@ -32,6 +32,8 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
 
   private Long processDefinitionKey;
 
+  private String bpmnProcessId;
+
   private String treePath;
 
   private boolean pending = true;
@@ -117,13 +119,22 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return this;
   }
 
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
   public IncidentEntity setProcessDefinitionKey(Long processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
 
-  public Long getProcessDefinitionKey() {
-    return processDefinitionKey;
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public IncidentEntity setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public String getTreePath() {
@@ -167,6 +178,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
         Objects.equals(processInstanceKey, that.processInstanceKey) &&
         Objects.equals(creationTime, that.creationTime) &&
         Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
         Objects.equals(treePath, that.treePath);
   }
 
@@ -175,7 +187,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
     return Objects
         .hash(super.hashCode(), errorType, errorMessage, errorMessageHash, state, flowNodeId,
             flowNodeInstanceKey, jobKey, processInstanceKey, creationTime, processDefinitionKey,
-            treePath, pending);
+            bpmnProcessId, treePath, pending);
   }
 
   @Override
@@ -192,6 +204,7 @@ public class IncidentEntity extends OperateZeebeEntity<IncidentEntity> {
         ", processInstanceKey=" + processInstanceKey +
         ", creationTime=" + creationTime +
         ", processDefinitionKey=" + processDefinitionKey +
+        ", bpmnProcessId=" + bpmnProcessId +
         ", treePath='" + treePath + '\'' +
         ", pending=" + pending +
         '}';

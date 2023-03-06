@@ -259,6 +259,7 @@ public class IncidentNotifierTest {
         .setFlowNodeId(flowNodeId)
         .setFlowNodeInstanceKey(flowNodeInstanceId)
         .setProcessDefinitionKey(processDefinitionKey)
+        .setBpmnProcessId(bpmnProcessId)
         .setJobKey(jobKey)
         .setState(incidentState);
   }

@@ -25,6 +25,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private String decisionRequirementsId;
   private long processDefinitionKey;
   private long processInstanceKey;
+  private String bpmnProcessId;
   private long elementInstanceKey;
   private String elementId;
   private String decisionId;
@@ -139,6 +140,15 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   public DecisionInstanceEntity setProcessInstanceKey(final long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public DecisionInstanceEntity setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -278,6 +288,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return decisionRequirementsKey == that.decisionRequirementsKey &&
         processDefinitionKey == that.processDefinitionKey &&
         processInstanceKey == that.processInstanceKey &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
         elementInstanceKey == that.elementInstanceKey &&
         decisionVersion == that.decisionVersion &&
         Objects.equals(executionIndex, that.executionIndex) &&
@@ -305,7 +316,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     int result1 = Objects
         .hash(super.hashCode(), executionIndex, state, evaluationDate, evaluationFailure, position,
             decisionRequirementsKey, decisionRequirementsId, processDefinitionKey,
-            processInstanceKey,
+            processInstanceKey, bpmnProcessId,
             elementInstanceKey, elementId, decisionId, decisionDefinitionId, decisionName,
             decisionVersion, rootDecisionName, rootDecisionId, rootDecisionDefinitionId,
             decisionType,

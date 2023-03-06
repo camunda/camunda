@@ -122,6 +122,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setFlowNodeId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
     if (entity.getTreePath() == null) {
 
@@ -222,6 +223,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
     entity.setFlowNodeId(recordValue.getElementId());
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
     entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     if (intentStr.equals(IncidentIntent.CREATED.name())) {
       entity.setIncidentKey(record.getKey());
     } else if (intentStr.equals(IncidentIntent.RESOLVED.name())) {

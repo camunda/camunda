@@ -23,6 +23,8 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor impleme
   public static final String ROOT_DECISION_ID = "rootDecisionId";
   public static final String ROOT_DECISION_DEFINITION_ID = "rootDecisionDefinitionId";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ELEMENT_INSTANCE_KEY = "elementInstanceKey";
   public static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
   public static final String DECISION_ID = "decisionId";
@@ -40,6 +42,6 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor impleme
 
   @Override
   public String getVersion() {
-    return "8.0.8";
+    return "8.2.0";
   }
 }

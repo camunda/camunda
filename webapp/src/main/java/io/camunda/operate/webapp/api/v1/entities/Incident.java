@@ -17,7 +17,7 @@ public class Incident {
 
   public static final String
     KEY = IncidentTemplate.KEY,
-    PROCESS_DEFINITION_KEY = IncidentTemplate.PROCESS_KEY,
+    PROCESS_DEFINITION_KEY = IncidentTemplate.PROCESS_DEFINITION_KEY,
     PROCESS_INSTANCE_KEY = IncidentTemplate.PROCESS_INSTANCE_KEY,
     TYPE = IncidentTemplate.ERROR_TYPE,
     MESSAGE = IncidentTemplate.ERROR_MSG,

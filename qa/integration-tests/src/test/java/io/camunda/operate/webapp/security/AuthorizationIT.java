@@ -112,7 +112,7 @@ public class AuthorizationIT {
     } catch(OperateRuntimeException e) {
       Throwable cause = e.getCause();
         assertThat(cause).isInstanceOf(NotFoundException.class);
-        assertThat(cause.getMessage()).isEqualTo("Process instances [23] doesn't exists.");
+        assertThat(cause.getMessage()).isEqualTo("Could not find process instance with id '23'.");
     }
   }
 

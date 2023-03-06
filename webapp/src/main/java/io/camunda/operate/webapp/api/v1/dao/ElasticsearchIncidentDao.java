@@ -118,7 +118,7 @@ public class ElasticsearchIncidentDao extends ElasticsearchDao<Incident> impleme
     return new Incident()
         .setKey((Long) searchHitAsMap.get(IncidentTemplate.KEY))
         .setProcessInstanceKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_INSTANCE_KEY))
-        .setProcessDefinitionKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_KEY))
+        .setProcessDefinitionKey((Long) searchHitAsMap.get(IncidentTemplate.PROCESS_DEFINITION_KEY))
         .setType((String) searchHitAsMap.get(IncidentTemplate.ERROR_TYPE))
         .setMessage((String) searchHitAsMap.get(IncidentTemplate.ERROR_MSG))
         .setCreationTime((String) searchHitAsMap.get(Incident.CREATION_TIME))

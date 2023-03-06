@@ -157,7 +157,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //and
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    assertIncidentEntity(allIncidents.get(0),activityId, processDefinitionKey,IncidentState.ACTIVE);
+    assertIncidentEntity(allIncidents.get(0),activityId, processDefinitionKey, processId, IncidentState.ACTIVE);
 
     //and
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
@@ -203,7 +203,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //and
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
     assertThat(allIncidents).hasSize(1);
-    assertIncidentEntity(allIncidents.get(0),taskId, processDefinitionKey,IncidentState.ACTIVE);
+    assertIncidentEntity(allIncidents.get(0),taskId, processDefinitionKey, processId, IncidentState.ACTIVE);
 
     //and
     final ListViewProcessInstanceDto pi = getSingleProcessInstanceForListView();
@@ -272,13 +272,14 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(pi.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
   }
 
-  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long processDefinitionKey,final IncidentState state) {
+  private void assertIncidentEntity(final IncidentEntity incidentEntity,String activityId, final Long processDefinitionKey, String bpmnProcessId, final IncidentState state) {
     assertThat(incidentEntity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(incidentEntity.getFlowNodeInstanceKey()).isNotNull();
     assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
     assertThat(incidentEntity.getErrorType()).isNotNull();
     assertThat(incidentEntity.getState()).isEqualTo(state);
     assertThat(incidentEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
   }
 
   private void assertProcessInstanceListViewEntityWithIncident(ProcessInstanceForListViewEntity processInstanceEntity,final String processName,final Long processDefinitionKey, final Long processInstanceKey) {
@@ -593,6 +594,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(entity.getPosition()).isNotNull();
     assertThat(entity.getProcessDefinitionKey()).isNotNull();
     assertThat(entity.getProcessInstanceKey()).isNotNull();
+    assertThat(entity.getBpmnProcessId()).isNotNull();
     assertThat(entity.getResult()).isEqualTo("null");
     assertThat(entity.getEvaluatedOutputs()).isEmpty();
     assertThat(entity.getEvaluatedInputs()).isEmpty();
@@ -667,6 +669,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
       assertThat(entity.getPosition()).isNotNull();
       assertThat(entity.getProcessDefinitionKey()).isNotNull();
       assertThat(entity.getProcessInstanceKey()).isNotNull();
+      assertThat(entity.getBpmnProcessId()).isNotNull();
       assertThat(entity.getResult()).isNotEmpty();
       assertThat(entity.getEvaluatedOutputs()).isNotEmpty();
       assertThat(entity.getEvaluatedInputs()).isNotEmpty();
@@ -735,6 +738,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(entity.getPosition()).isNotNull();
     assertThat(entity.getProcessDefinitionKey()).isNotNull();
     assertThat(entity.getProcessInstanceKey()).isNotNull();
+    assertThat(entity.getBpmnProcessId()).isNotNull();
     assertThat(entity.getResult()).isNotEmpty();
     assertThat(entity.getEvaluatedOutputs()).isEmpty();
     assertThat(entity.getEvaluatedInputs()).isEmpty();
@@ -752,6 +756,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private void assertFlowNodeIsInIncidentState(FlowNodeInstanceEntity activity, String activityId) {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getProcessDefinitionKey()).isNotNull();
+    assertThat(activity.getBpmnProcessId()).isNotNull();
     assertThat(activity.getState()).isEqualTo(FlowNodeState.ACTIVE);
     assertThat(activity.getIncidentKey()).isNotNull();
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
@@ -761,6 +766,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   private void assertFlowNodeIsCompleted(FlowNodeInstanceEntity activity, String activityId) {
     assertThat(activity.getFlowNodeId()).isEqualTo(activityId);
     assertThat(activity.getProcessDefinitionKey()).isNotNull();
+    assertThat(activity.getBpmnProcessId()).isNotNull();
     assertThat(activity.getState()).isEqualTo(FlowNodeState.COMPLETED);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());

@@ -6,9 +6,13 @@
  */
 package io.camunda.operate.entities;
 
+import java.util.Objects;
+
 public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   private Long processInstanceKey;
+  private Long processDefinitionKey;
+  private String bpmnProcessId;
   private String activityId;
 
   public Long getProcessInstanceKey() {
@@ -17,6 +21,24 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
 
   public SequenceFlowEntity setProcessInstanceKey(Long processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+    return this;
+  }
+
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public SequenceFlowEntity setProcessDefinitionKey(Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+    return this;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public SequenceFlowEntity setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
     return this;
   }
 
@@ -37,19 +59,13 @@ public class SequenceFlowEntity extends OperateEntity<SequenceFlowEntity> {
       return false;
     if (!super.equals(o))
       return false;
-
     SequenceFlowEntity that = (SequenceFlowEntity) o;
-
-    if (processInstanceKey != null ? !processInstanceKey.equals(that.processInstanceKey) : that.processInstanceKey != null)
-      return false;
-    return activityId != null ? activityId.equals(that.activityId) : that.activityId == null;
+    return Objects.equals(processInstanceKey, that.processInstanceKey) && Objects.equals(processDefinitionKey, that.processDefinitionKey) && Objects.equals(
+        bpmnProcessId, that.bpmnProcessId) && Objects.equals(activityId, that.activityId);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (processInstanceKey != null ? processInstanceKey.hashCode() : 0);
-    result = 31 * result + (activityId != null ? activityId.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), processInstanceKey, processDefinitionKey, bpmnProcessId, activityId);
   }
 }

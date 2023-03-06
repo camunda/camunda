@@ -21,6 +21,7 @@ import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.OperationEntity;
 import io.camunda.operate.entities.OperationState;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
@@ -32,6 +33,7 @@ import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.es.reader.IncidentReader;
 import io.camunda.operate.webapp.es.reader.ListViewReader;
 import io.camunda.operate.webapp.es.reader.OperationReader;
+import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
@@ -41,11 +43,15 @@ import io.camunda.operate.webapp.security.UserService;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -101,6 +107,8 @@ public class BatchOperationWriter {
   @Autowired
   private UserService userService;
 
+  @Autowired
+  private ProcessInstanceReader processInstanceReader;
 
   /**
    * Finds operation, which are scheduled or locked with expired timeout, in the amount of configured batch size, and locks them.
@@ -177,15 +185,19 @@ public class BatchOperationWriter {
       if (batchOperationRequest.getOperationType().equals(OperationType.DELETE_PROCESS_INSTANCE)) {
         queryType = QueryType.ALL;
       }
+      String[] includeFields = new String[] {OperationTemplate.PROCESS_INSTANCE_KEY, OperationTemplate.PROCESS_DEFINITION_KEY, OperationTemplate.BPMN_PROCESS_ID};
       final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
-            .source(new SearchSourceBuilder().query(query).size(batchSize).fetchSource(false));
+            .source(new SearchSourceBuilder().query(query).size(batchSize).fetchSource(includeFields, null));
 
       AtomicInteger operationsCount = new AtomicInteger();
       ElasticsearchUtil.scrollWith(searchRequest, esClient,
           searchHits -> {
             try {
-              final List<Long> processInstanceKeys = map(searchHits.getHits(),ElasticsearchUtil.searchHitIdToLong);
-              operationsCount.addAndGet(persistOperations(processInstanceKeys, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
+              final List<ProcessInstanceSource> processInstanceSources = new ArrayList<>();
+              for(SearchHit hit : searchHits.getHits()) {
+                processInstanceSources.add(ProcessInstanceSource.fromSourceMap(hit.getSourceAsMap()));
+              }
+              operationsCount.addAndGet(persistOperations(processInstanceSources, batchOperation.getId(), batchOperationRequest.getOperationType(), null));
             } catch (PersistenceException e) {
               throw new RuntimeException(e);
             }
@@ -339,10 +351,11 @@ public class BatchOperationWriter {
             source(objectMapper.writeValueAsString(batchOperationEntity), XContentType.JSON);
   }
 
-  private int persistOperations(List<Long> processInstanceKeys, String batchOperationId, OperationType operationType, String incidentId) throws PersistenceException {
+  private int persistOperations(List<ProcessInstanceSource> processInstanceSources, String batchOperationId, OperationType operationType, String incidentId) throws PersistenceException {
     BulkRequest bulkRequest = new BulkRequest();
     int operationsCount = 0;
 
+    List<Long> processInstanceKeys = processInstanceSources.stream().map(ProcessInstanceSource::getProcessInstanceKey).collect(Collectors.toList());
     Map<Long, List<Long>> incidentKeys = new HashMap<>();
     //prepare map of incident ids per process instance id
     if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
@@ -354,18 +367,19 @@ public class BatchOperationWriter {
     } catch (IOException e) {
       throw new NotFoundException("Couldn't find index names for process instances.", e);
     }
-    for (Long processInstanceKey : processInstanceKeys) {
+    for (ProcessInstanceSource processInstanceSource : processInstanceSources) {
       //create single operations
+      Long processInstanceKey = processInstanceSource.getProcessInstanceKey();
       if (operationType.equals(OperationType.RESOLVE_INCIDENT) && incidentId == null) {
         final List<Long> allIncidentKeys = incidentKeys.get(processInstanceKey);
         if (allIncidentKeys != null && allIncidentKeys.size() != 0) {
           for (Long incidentKey: allIncidentKeys) {
-            bulkRequest.add(getIndexOperationRequest(processInstanceKey, incidentKey, batchOperationId, operationType));
+            bulkRequest.add(getIndexOperationRequest(processInstanceSource, incidentKey, batchOperationId, operationType));
             operationsCount++;
           }
         }
       } else {
-        bulkRequest.add(getIndexOperationRequest(processInstanceKey, toLongOrNull(incidentId), batchOperationId, operationType));
+        bulkRequest.add(getIndexOperationRequest(processInstanceSource, toLongOrNull(incidentId), batchOperationId, operationType));
         operationsCount++;
       }
       //update process instance
@@ -421,6 +435,13 @@ public class BatchOperationWriter {
     return createIndexRequest(operationEntity, processInstanceKey);
   }
 
+  protected IndexRequest getIndexOperationRequest(ProcessInstanceSource processInstanceSource, Long incidentKey, String batchOperationId, OperationType operationType) throws PersistenceException {
+    OperationEntity operationEntity = createOperationEntity(processInstanceSource, operationType, batchOperationId);
+    operationEntity.setIncidentKey(incidentKey);
+
+    return createIndexRequest(operationEntity, processInstanceSource.getProcessInstanceKey());
+  }
+
   private UpdateRequest getUpdateProcessInstanceRequest(Long processInstanceKey,
       final Map<Long, String> processInstanceIdToIndexName, String batchOperationId) {
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -434,13 +455,28 @@ public class BatchOperationWriter {
   }
 
   private OperationEntity createOperationEntity(Long processInstanceKey, OperationType operationType, String batchOperationId) {
+
+    ProcessInstanceSource processInstanceSource = new ProcessInstanceSource().setProcessInstanceKey(processInstanceKey);
+    Optional<ProcessInstanceForListViewEntity> optionalProcessInstance = tryGetProcessInstance(processInstanceKey);
+    optionalProcessInstance.ifPresent(processInstance -> processInstanceSource
+        .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+        .setBpmnProcessId(processInstance.getBpmnProcessId()));
+
+    return createOperationEntity(processInstanceSource, operationType, batchOperationId);
+  }
+
+  private OperationEntity createOperationEntity(ProcessInstanceSource processInstanceSource, OperationType operationType, String batchOperationId) {
+
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
-    operationEntity.setProcessInstanceKey(processInstanceKey);
+    operationEntity.setProcessInstanceKey(processInstanceSource.getProcessInstanceKey());
+    operationEntity.setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey());
+    operationEntity.setBpmnProcessId(processInstanceSource.getBpmnProcessId());
     operationEntity.setType(operationType);
     operationEntity.setState(OperationState.SCHEDULED);
     operationEntity.setBatchOperationId(batchOperationId);
     operationEntity.setUsername(userService.getCurrentUser().getUsername());
+
     return operationEntity;
   }
 
@@ -463,4 +499,56 @@ public class BatchOperationWriter {
     }
   }
 
+  private Optional<ProcessInstanceForListViewEntity> tryGetProcessInstance(Long processInstanceKey) {
+    ProcessInstanceForListViewEntity processInstance = null;
+    try {
+      processInstance = processInstanceReader.getProcessInstanceByKey(processInstanceKey);
+    } catch (OperateRuntimeException ex) {
+      logger.error(String.format("Failed to get process instance for key %s: %s", processInstanceKey, ex.getMessage()));
+    }
+    return Optional.ofNullable(processInstance);
+  }
+
+  private static class ProcessInstanceSource {
+
+    private Long processInstanceKey;
+    private Long processDefinitionKey;
+    private String bpmnProcessId;
+
+    public Long getProcessInstanceKey() {
+      return processInstanceKey;
+    }
+
+    public ProcessInstanceSource setProcessInstanceKey(Long processInstanceKey) {
+      this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public Long getProcessDefinitionKey() {
+      return processDefinitionKey;
+    }
+
+    public ProcessInstanceSource setProcessDefinitionKey(Long processDefinitionKey) {
+      this.processDefinitionKey = processDefinitionKey;
+      return this;
+    }
+
+    public String getBpmnProcessId() {
+      return bpmnProcessId;
+    }
+
+    public ProcessInstanceSource setBpmnProcessId(String bpmnProcessId) {
+      this.bpmnProcessId = bpmnProcessId;
+      return this;
+    }
+
+    public static ProcessInstanceSource fromSourceMap(Map<String,Object> sourceMap)
+    {
+      ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
+      processInstanceSource.processInstanceKey = (Long)sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
+      processInstanceSource.processDefinitionKey = (Long)sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
+      processInstanceSource.bpmnProcessId = (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
+      return processInstanceSource;
+    }
+  }
 }

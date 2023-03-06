@@ -18,6 +18,8 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
   private boolean isPreview;
   private Long scopeKey;
   private Long processInstanceKey;
+  private Long processDefinitionKey;
+  private String bpmnProcessId;
 
   @JsonIgnore
   private Object[] sortValues;
@@ -72,6 +74,22 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
     this.processInstanceKey = processInstanceKey;
   }
 
+  public Long getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(Long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
   public Object[] getSortValues() {
     return sortValues;
   }
@@ -99,13 +117,15 @@ public class VariableEntity extends OperateZeebeEntity<VariableEntity> {
         Objects.equals(fullValue, that.fullValue) &&
         Objects.equals(scopeKey, that.scopeKey) &&
         Objects.equals(processInstanceKey, that.processInstanceKey) &&
+        Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
+        Objects.equals(bpmnProcessId, that.bpmnProcessId) &&
         Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
   public int hashCode() {
     int result = Objects
-        .hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey, processInstanceKey);
+        .hash(super.hashCode(), name, value, fullValue, isPreview, scopeKey, processInstanceKey, processDefinitionKey, bpmnProcessId);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }

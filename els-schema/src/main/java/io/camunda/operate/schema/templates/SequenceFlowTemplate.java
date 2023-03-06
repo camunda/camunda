@@ -17,6 +17,8 @@ public class SequenceFlowTemplate extends AbstractTemplateDescriptor implements 
   public static final String ID = "id";
   public static final String KEY = "key";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ACTIVITY_ID = "activityId";
 
   @Override
@@ -24,4 +26,8 @@ public class SequenceFlowTemplate extends AbstractTemplateDescriptor implements 
     return INDEX_NAME;
   }
 
+  @Override
+  public String getVersion() {
+    return "8.2.0";
+  }
 }

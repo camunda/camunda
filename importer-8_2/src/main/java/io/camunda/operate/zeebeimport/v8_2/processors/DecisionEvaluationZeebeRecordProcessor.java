@@ -99,6 +99,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
           .setEvaluationDate(timestamp)
           .setProcessInstanceKey(decisionEvaluation.getProcessInstanceKey())
           .setProcessDefinitionKey(decisionEvaluation.getProcessDefinitionKey())
+          .setBpmnProcessId(decisionEvaluation.getBpmnProcessId())
           .setElementInstanceKey(decisionEvaluation.getElementInstanceKey())
           .setElementId(decisionEvaluation.getElementId())
           .setDecisionRequirementsKey(decisionEvaluation.getDecisionRequirementsKey())

@@ -116,6 +116,7 @@ public class IncidentZeebeRecordProcessor {
       if (recordValue.getProcessDefinitionKey() > 0) {
         incident.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
       }
+      incident.setBpmnProcessId(recordValue.getBpmnProcessId());
       String errorMessage = StringUtils.trimWhitespace(recordValue.getErrorMessage());
       incident.setErrorMessage(errorMessage);
       incident.setErrorType(ErrorType.fromZeebeErrorType(recordValue.getErrorType() == null ? null : recordValue.getErrorType().name()));

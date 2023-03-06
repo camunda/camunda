@@ -39,6 +39,9 @@
       "processInstanceKey": {
         "type": "long"
       },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
       "elementInstanceKey": {
         "type": "long"
       },
