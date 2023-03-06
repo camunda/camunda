@@ -147,12 +147,4 @@ public final class BpmnVariableMappingBehavior {
       return false;
     }
   }
-
-  private boolean isErrorEvent(final ExecutableFlowNode element) {
-    if (element instanceof final ExecutableCatchEventElement catchEvent) {
-      return catchEvent.isError();
-    } else {
-      return false;
-    }
-  }
 }
