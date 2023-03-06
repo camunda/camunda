@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,7 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
   // Needs to be thread-safe for readers
-  private final Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
+  private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
       new ConcurrentHashMap<>();
   private final Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
 
