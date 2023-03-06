@@ -17,6 +17,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.KeyValuePairVisitor;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -326,7 +327,8 @@ class TransactionalColumnFamily<
   /**
    * This is the preferred method to implement methods that iterate over a column family.
    *
-   * @param startAt seek to this key before starting iteration.
+   * @param startAt seek to this key before starting iteration. If null, seek to {@code prefix}
+   *     instead.
    * @param prefix of all keys that are iterated over.
    * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
    *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
@@ -335,6 +337,10 @@ class TransactionalColumnFamily<
       final DbKey startAt,
       final DbKey prefix,
       final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    final var seekTarget = Objects.requireNonNullElse(startAt, prefix);
+    Objects.requireNonNull(prefix);
+    Objects.requireNonNull(visitor);
+
     /*
      * NOTE: it doesn't seem possible in Java RocksDB to set a flexible prefix extractor on
      * iterators at the moment, so using prefixes seem to be mostly related to skipping files that
@@ -352,7 +358,7 @@ class TransactionalColumnFamily<
 
             boolean shouldVisitNext = true;
 
-            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(startAt));
+            for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                 iterator.isValid() && shouldVisitNext;
                 iterator.next()) {
               final byte[] keyBytes = iterator.key();
