@@ -17,12 +17,12 @@ import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-class StreamRegistryTest {
+final class StreamRegistryTest {
 
-  final StreamRegistry<Integer> streamRegistry = new StreamRegistry<>();
-  final MemberId gateway = MemberId.from("gateway");
-  final MemberId otherGateway = MemberId.from("gateway-other");
-  final UnsafeBuffer typeBar = new UnsafeBuffer(BufferUtil.wrapString("bar"));
+  private final StreamRegistry<Integer> streamRegistry = new StreamRegistry<>();
+  private final MemberId gateway = MemberId.from("gateway");
+  private final MemberId otherGateway = MemberId.from("gateway-other");
+  private final UnsafeBuffer typeBar = new UnsafeBuffer(BufferUtil.wrapString("bar"));
   private final UnsafeBuffer typeFoo = new UnsafeBuffer(BufferUtil.wrapString("foo"));
 
   @Test
