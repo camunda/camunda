@@ -375,6 +375,30 @@ public final class ColumnFamilyTest {
   }
 
   @Test
+  public void shouldUseWhileTrueWithNullStartAt() {
+    // given
+    upsertKeyValuePair(4567, 123);
+    upsertKeyValuePair(6734, 921);
+    upsertKeyValuePair(1213, 255);
+
+    // when
+    final List<Long> keys = new ArrayList<>();
+    final List<Long> values = new ArrayList<>();
+    columnFamily.whileTrue(
+        null,
+        (key, value) -> {
+          keys.add(key.getValue());
+          values.add(value.getValue());
+
+          return key.getValue() != 4567;
+        });
+
+    // then
+    assertThat(keys).containsExactly(1213L, 4567L);
+    assertThat(values).containsExactly(255L, 123L);
+  }
+
+  @Test
   public void shouldCheckIfEmpty() {
     assertThat(columnFamily.isEmpty()).isTrue();
 
