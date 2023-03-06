@@ -5,4 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-export {initTranslation, t, getLanguage} from './translation';
+export function getRandomId() {
+  return Math.random().toString(36).slice(2);
+}

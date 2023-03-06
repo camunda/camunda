@@ -5,12 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-
-import classnames from 'classnames';
-
-import './Message.scss';
-
-export default function Message({error, className, children}) {
-  return <div className={classnames('Message', className, {error})}>{children}</div>;
-}
+export {Button} from './Button';
+export {Message} from './Message';
+export {Icon} from './Icon';
+export {ActionItem} from './ActionItem';

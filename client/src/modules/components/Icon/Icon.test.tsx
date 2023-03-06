@@ -5,14 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {mount} from 'enzyme';
 
 import Icon from './Icon';
 
 jest.mock('./icons', () => {
   return {
-    plus: (props) => <svg {...props} />,
+    plus: (props: React.SVGProps<SVGSVGElement>) => <svg {...props} />,
   };
 });
 

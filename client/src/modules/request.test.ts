@@ -5,7 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {request, formatQuery, put, post, get, addHandler, removeHandler} from './request';
+import {
+  RequestPayload,
+  request,
+  formatQuery,
+  put,
+  post,
+  get,
+  addHandler,
+  removeHandler,
+} from './request';
 
 const successResponse = {
   status: 200,
@@ -15,9 +24,9 @@ const failedResponse = {
   status: 401,
   message: 'FAILED',
 };
-
 global.fetch = jest.fn();
-global.fetch.mockReturnValue(Promise.resolve(successResponse));
+const fetch = global.fetch as any;
+fetch.mockReturnValue(Promise.resolve(successResponse));
 
 const url = 'https://example.com';
 
@@ -49,7 +58,7 @@ describe('request', () => {
       url,
       method,
       headers,
-    });
+    } as RequestPayload);
 
     const {
       headers: {g},
@@ -134,7 +143,7 @@ describe('handlers', () => {
 
     addHandler(spy);
 
-    await request({url});
+    await request({url} as RequestPayload);
 
     expect(spy).toHaveBeenCalledWith(successResponse, {url});
   });
@@ -145,14 +154,14 @@ describe('handlers', () => {
     addHandler(spy);
     removeHandler(spy);
 
-    await request({url});
+    await request({url} as RequestPayload);
 
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('should call handlers in order of their priority', async () => {
-    const out = [];
-    const handler = (i) => (r) => out.push(i) && r;
+    const out: any = [];
+    const handler = (i: any) => (r: any) => out.push(i) && r;
 
     addHandler(handler(0), 0);
     addHandler(handler(-4), -4);
@@ -160,7 +169,7 @@ describe('handlers', () => {
     addHandler(handler(1), 1);
     addHandler(handler(3), 3);
 
-    await request({url});
+    await request({url} as RequestPayload);
 
     expect(out).toEqual([3, 1, 0, 0, -4]);
   });
@@ -207,7 +216,7 @@ describe('methods shortcuts functions', () => {
     });
 
     it('should return request response', async () => {
-      expect(await put()).toBe(successResponse);
+      expect(await put(url, body)).toBe(successResponse);
     });
   });
 
@@ -233,7 +242,7 @@ describe('methods shortcuts functions', () => {
     });
 
     it('should return request response', async () => {
-      expect(await post()).toBe(successResponse);
+      expect(await post(url, body)).toBe(successResponse);
     });
   });
 
@@ -259,9 +268,13 @@ describe('methods shortcuts functions', () => {
     });
 
     it('should use custom options', async () => {
-      await get(url, body, {
-        headers: {d: 12},
-      });
+      await get(
+        url,
+        {},
+        {
+          headers: {d: 12},
+        }
+      );
 
       const fetchPayload = fetch.mock.calls[0][1];
 
@@ -269,7 +282,7 @@ describe('methods shortcuts functions', () => {
     });
 
     it('should return request response', async () => {
-      expect(await get()).toBe(successResponse);
+      expect(await get(url, {})).toBe(successResponse);
     });
   });
 });

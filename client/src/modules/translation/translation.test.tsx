@@ -10,25 +10,28 @@ import {shallow} from 'enzyme';
 
 import {t, initTranslation} from './translation';
 
-let languageGetter;
-languageGetter = jest.spyOn(window.navigator, 'languages', 'get');
-
 jest.mock('config', () => ({
   getOptimizeVersion: () => '2.7.0',
 }));
 
-beforeAll(async () => {
-  jest.clearAllMocks();
-  languageGetter.mockReturnValue(['de']);
-  jest.spyOn(request, 'get').mockReturnValue({
-    json: () => ({
+function createJSONResponse(data: object) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: {'Content-type': 'application/json'},
+  });
+}
+
+beforeEach(async () => {
+  jest.spyOn(window.navigator, 'languages', 'get').mockReturnValue(['de']);
+  jest.spyOn(request, 'get').mockResolvedValueOnce(
+    createJSONResponse({
       homepage: 'Home',
       entity: {
         create: 'Create a new {label}',
       },
       htmlString: 'This is an html <b>string</b> linking to <a href="testUrl" >{linkText}</a><br/>',
-    }),
-  });
+    })
+  );
   await initTranslation();
 });
 
@@ -43,7 +46,7 @@ it('should inject data into translations that contain variables', async () => {
 it('return an error message if key does not exist', async () => {
   try {
     t('entity.nonExistent');
-  } catch (err) {
+  } catch (err: any) {
     expect(err.message).toBe(
       '"nonExistent" key of "entity.nonExistent" not found in translation object'
     );
@@ -51,8 +54,7 @@ it('return an error message if key does not exist', async () => {
 });
 
 it('should get the language file depending on the browser language', async () => {
-  await initTranslation();
-  expect(request.get.mock.calls[0][1]).toEqual({localeCode: 'de', version: '2.7.0'});
+  expect((request.get as jest.Mock).mock.calls[0][1]).toEqual({localeCode: 'de', version: '2.7.0'});
 });
 
 it('should convert html string to JSX', async () => {

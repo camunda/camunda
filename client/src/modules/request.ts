@@ -7,9 +7,30 @@
 
 import {getLanguage, t} from './translation/translation';
 
-const handlers = [];
+type Handler = {
+  fct: (response: Response, payload: RequestPayload) => Promise<Response>;
+  priority: number;
+};
 
-export function put(url, body, options = {}) {
+export type RequestPayload = {
+  url: string;
+  method: string;
+  body?: unknown;
+  query?: Record<string, unknown>;
+  headers?: Record<string, unknown>;
+};
+
+export interface ErrorResponse extends Response {
+  message: string;
+}
+
+const handlers: Handler[] = [];
+
+export function put(
+  url: string,
+  body: unknown,
+  options: Record<string, unknown> = {}
+): Promise<Response> {
   return request({
     url,
     body,
@@ -18,7 +39,11 @@ export function put(url, body, options = {}) {
   });
 }
 
-export function post(url, body, options = {}) {
+export function post(
+  url: string,
+  body: unknown,
+  options: Record<string, unknown> = {}
+): Promise<Response> {
   return request({
     url,
     body,
@@ -27,7 +52,11 @@ export function post(url, body, options = {}) {
   });
 }
 
-export function get(url, query, options = {}) {
+export function get(
+  url: string,
+  query: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
+): Promise<Response> {
   return request({
     url,
     query,
@@ -36,7 +65,11 @@ export function get(url, query, options = {}) {
   });
 }
 
-export function del(url, query, options = {}) {
+export function del(
+  url: string,
+  query: Record<string, unknown> = {},
+  options: Record<string, unknown> = {}
+): Promise<Response> {
   return request({
     url,
     query,
@@ -45,16 +78,19 @@ export function del(url, query, options = {}) {
   });
 }
 
-export function addHandler(fct, priority = 0) {
+export function addHandler(fct: Handler['fct'], priority = 0) {
   handlers.push({fct, priority});
   handlers.sort((a, b) => b.priority - a.priority);
 }
 
-export function removeHandler(fct) {
-  handlers.splice(handlers.indexOf(handlers.find((entry) => entry.fct === fct)), 1);
+export function removeHandler(fct: Handler['fct']) {
+  const handlerToRemove = handlers.find((entry) => entry.fct === fct);
+  if (handlerToRemove) {
+    handlers.splice(handlers.indexOf(handlerToRemove), 1);
+  }
 }
 
-export async function request(payload) {
+export async function request(payload: RequestPayload): Promise<Response> {
   const {url, method, body, query, headers} = payload;
   const resourceUrl = query ? `${url}?${formatQuery(query)}` : url;
 
@@ -72,37 +108,42 @@ export async function request(payload) {
   });
 
   for (let i = 0; i < handlers.length; i++) {
-    response = await handlers[i].fct(response, payload);
+    const handlerToCall = handlers[i];
+    if (handlerToCall) {
+      response = await handlerToCall.fct(response, payload);
+    }
   }
 
   if (response.status >= 200 && response.status < 300) {
     return response;
   } else {
-    throw await parseError(response);
+    throw await parseError(response as ErrorResponse);
   }
 }
 
-export function formatQuery(query) {
-  return Object.keys(query).reduce((queryStr, key) => {
-    const value = query[key];
+export function formatQuery(query: Record<string, unknown>): string {
+  return Object.keys(query)
+    .reduce<string[]>((queryStr, key) => {
+      const value = query[key] as string | string[];
 
-    if (Array.isArray(value)) {
-      const str = value.map((val) => `${key}=${val}`).join('&');
-      if (!str) {
-        return queryStr;
+      if (Array.isArray(value)) {
+        const str = value.map((val) => `${key}=${val}`).join('&');
+        if (!str) {
+          return queryStr;
+        }
+        return queryStr.concat(str);
       }
-      return queryStr === '' ? str : queryStr + '&' + str;
-    }
 
-    if (queryStr === '') {
-      return `${key}=${encodeURIComponent(value)}`;
-    }
+      if (queryStr.length === 0) {
+        return [`${key}=${encodeURIComponent(value)}`];
+      }
 
-    return `${queryStr}&${key}=${encodeURIComponent(value)}`;
-  }, '');
+      return queryStr.concat(`${key}=${encodeURIComponent(value)}`);
+    }, [])
+    .join('&');
 }
 
-function processBody(body) {
+function processBody(body: unknown): string {
   if (typeof body === 'string') {
     return body;
   }
@@ -110,12 +151,13 @@ function processBody(body) {
   return JSON.stringify(body);
 }
 
-async function parseError(error) {
+async function parseError(error: ErrorResponse): Promise<ErrorResponse | Record<string, unknown>> {
   let parsedProps = {message: error.message || 'Unknown error'};
 
   if (typeof error.json === 'function') {
     try {
       const {errorCode, errorMessage, invalidAlertEmails, ...errorProps} = await error.json();
+
       parsedProps = {
         message: errorCode ? t('apiErrors.' + errorCode, {invalidAlertEmails}) : errorMessage,
         ...errorProps,

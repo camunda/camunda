@@ -5,14 +5,29 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ReactNode} from 'react';
 import classnames from 'classnames';
 
-import {Button, Message, Icon} from 'components';
+import {Message, Icon, Button} from 'components';
 
 import './ActionItem.scss';
 
-export default function ActionItem({onClick, type, warning, onEdit, ...props}) {
+type ActionItemProps = {
+  type?: string;
+  warning?: string;
+  children?: ReactNode;
+  className?: string;
+  onClick?: () => void;
+  onEdit?: () => void;
+};
+
+export default function ActionItem({
+  onClick,
+  type,
+  warning,
+  onEdit,
+  ...props
+}: ActionItemProps): JSX.Element {
   return (
     <div className="ActionItem">
       <div className="header">

@@ -5,19 +5,31 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {forwardRef, ComponentPropsWithoutRef} from 'react';
 import classnames from 'classnames';
 
 import './Button.scss';
 
-export default React.forwardRef(function Button(
-  {active, main, primary, warning, icon, small, className, link, ...props},
+interface ButtonProps extends ComponentPropsWithoutRef<'button'> {
+  active?: boolean;
+  main?: boolean;
+  primary?: boolean;
+  warning?: boolean;
+  icon?: boolean;
+  small?: boolean;
+  link?: boolean;
+  className?: string;
+  onClick?: () => void;
+}
+
+export default forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {active, main, primary, warning, icon, small, className, link, onClick, ...rest},
   ref
-) {
+): JSX.Element {
   return (
     <button
       type="button"
-      {...props}
+      {...rest}
       className={classnames(className, 'Button', {
         primary,
         main,
@@ -28,6 +40,7 @@ export default React.forwardRef(function Button(
         active,
       })}
       ref={ref}
+      onClick={onClick}
     />
   );
 });

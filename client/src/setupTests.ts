@@ -10,20 +10,33 @@ import Enzyme from 'enzyme';
 import Adapter from '@wojtekmaj/enzyme-adapter-react-17';
 import 'jest-enzyme';
 import './modules/polyfills/array_flat';
-import {initTranslation} from 'translation';
-import * as request from 'request';
+import {setTranslation} from 'translation';
 import translation from '../../backend/src/main/resources/localization/en.json';
 import {setImmediate} from 'timers';
 
 Enzyme.configure({adapter: new Adapter()});
 document.execCommand = jest.fn();
 
-beforeAll(async () => {
-  jest.spyOn(request, 'get').mockImplementationOnce(async (url) => ({json: () => translation}));
-  await initTranslation();
+beforeAll(() => {
+  setTranslation(translation);
 });
 
-// cleans pending promisse and mock call history to isolate tests from each other
+global.MutationObserver = class MutationObserver {
+  observe() {}
+  disconnect() {}
+  takeRecords(): MutationRecord[] {
+    return [];
+  }
+};
+
+declare global {
+  function flushPromises(): Promise<void>;
+}
+// since jest does not offer an out of the box way to flush promises:
+// https://github.com/facebook/jest/issues/2157
+global.flushPromises = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
+
+// cleans pending promises and mock call history to isolate tests from each other
 afterEach(async () => {
   await flushPromises();
   jest.clearAllMocks();
@@ -36,15 +49,3 @@ afterAll(() => {
     global.gc();
   }
 });
-
-global.MutationObserver = class MutationObserver {
-  disconnect() {}
-  observe() {}
-  takeRecords() {
-    return [];
-  }
-};
-
-// since jest does not offer an out of the box way to flush promises:
-// https://github.com/facebook/jest/issues/2157
-global.flushPromises = () => new Promise((resolve) => setImmediate(resolve));

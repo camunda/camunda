@@ -5,23 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 
+import {ErrorResponse} from 'request';
+
 import {default as Notifications, addNotification, showError} from './Notifications';
-
-it('should render Notifications', () => {
-  const node = shallow(<Notifications />);
-
-  node.setState({
-    notifications: [
-      {id: 'a', text: 'Notification 1'},
-      {id: 'b', text: 'Notification 2'},
-    ],
-  });
-
-  expect(node).toMatchSnapshot();
-});
+import {Config} from './Notification';
 
 it('should expose a global addNotifications method', () => {
   const node = shallow(<Notifications />);
@@ -29,16 +18,16 @@ it('should expose a global addNotifications method', () => {
   addNotification('Sample Notification');
 
   expect(node.find('Notification')).toExist();
-  expect(node.find('Notification').prop('config').text).toBe('Sample Notification');
+  expect(node.find('Notification').prop<Config>('config').text).toBe('Sample Notification');
 });
 
 it('should process and show an error notification', async () => {
   const node = shallow(<Notifications />);
 
-  await showError({message: 'Error content'});
+  await showError({message: 'Error content'} as ErrorResponse);
 
   expect(node.find('Notification')).toExist();
-  expect(node.find('Notification').prop('config').text).toBe('Error content');
+  expect(node.find('Notification').prop<Config>('config').text).toBe('Error content');
 });
 
 it('should accept string error', async () => {
@@ -46,5 +35,5 @@ it('should accept string error', async () => {
 
   await showError('Error content');
 
-  expect(node.find('Notification').prop('config').text).toBe('Error content');
+  expect(node.find('Notification').prop<Config>('config').text).toBe('Error content');
 });

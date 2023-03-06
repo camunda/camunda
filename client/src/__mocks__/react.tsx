@@ -5,16 +5,17 @@
  * except in compliance with the proprietary license.
  */
 
+// @ts-ignore
 export * from 'react';
 export {default} from 'react';
 
-const outstandingEffects = [];
-const outstandingCleanups = [];
+const outstandingEffects: (() => void)[] = [];
+const outstandingCleanups: (() => void)[] = [];
 
-export const useEffect = (fn) => outstandingEffects.push(fn);
+export const useEffect = (fn: () => (() => void) | void) => outstandingEffects.push(fn);
 export const runLastEffect = () => {
   if (outstandingEffects.length) {
-    const cleanup = outstandingEffects.pop()();
+    const cleanup = outstandingEffects.pop()?.();
 
     if (cleanup) {
       outstandingCleanups.push(cleanup);
@@ -24,17 +25,15 @@ export const runLastEffect = () => {
 
 export const runLastCleanup = () => {
   if (outstandingCleanups.length) {
-    outstandingCleanups.pop()();
+    outstandingCleanups.pop()?.();
   }
 };
 
 export const runAllEffects = () => {
-  // Effects can cause scheduling of other effects. To prevent infinite loops,
-  // we only run effects that are in the queue when runAllEffects was called.
   const numberOfEffects = outstandingEffects.length;
 
   for (let i = 0; i < numberOfEffects; i++) {
-    const cleanup = outstandingEffects.shift()();
+    const cleanup = outstandingEffects.shift()?.();
 
     if (cleanup) {
       outstandingCleanups.push(cleanup);
@@ -50,6 +49,6 @@ export const runAllCleanups = () => {
   const numberOfEffects = outstandingCleanups.length;
 
   for (let i = 0; i < numberOfEffects; i++) {
-    outstandingCleanups.shift()();
+    outstandingCleanups.shift()?.();
   }
 };

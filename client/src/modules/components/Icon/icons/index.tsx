@@ -68,7 +68,13 @@ import {ReactComponent as dashboardOptimize} from './dashboard-optimize.svg';
 import {ReactComponent as dashboardOptimizeAccent} from './dashboard-optimize-accent.svg';
 import {ReactComponent as optimize} from './optimize.svg';
 
-const icons = {
+export type IconSvg = React.FunctionComponent<React.SVGProps<SVGSVGElement>>;
+
+export type Icons = {
+  [key: string]: IconSvg;
+};
+
+const icons: Icons = {
   autorefresh,
   check,
   delete: deleteIcon,
