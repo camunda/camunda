@@ -907,6 +907,26 @@
         # This setting can also be set using the environmentvariable ZEEBE_BROKER_EXPERIMENTAL_QUERYAPI_ENABLED
         # enabled: false
 
+      # engine:
+        # messages:
+          # Allows to configure the Message TTL Checker's batch limit. This is the number of buffered
+          # messages that it can expire in a single batch. When it reaches this limit, it expires
+          # another batch of buffered messages. When there are no messages in the buffer past their
+          # Time-To-Live, then it goes idle, and reschedules itself after an interval defined with
+          # `ttlCheckerInterval`. The batch of message expirations is processed on the stream processor
+          # blocking other stream processing activities like process execution and job activation/completion.
+          # A smaller batch limit will thus enable greater concurrency with the other stream processing activities.
+          # A larger batch limit can allow faster message expiration, but at the cost of blocking the other
+          # stream processing activities for extended periods.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
+          # ttlCheckerBatchLimit: 10
+
+          # Allows to configure the Message TTL Checker's interval. This is the period during which the
+          # checker is idle in between two of its executions. Note that it can expire multiple batches
+          # of messages in a single execution. See `ttlCheckerBatchLimit` to configure the size of these batches.
+          # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_MESSAGES_TTLCHECKERINTERVAL
+          # ttlCheckerInterval: 1m
+
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
       # features:

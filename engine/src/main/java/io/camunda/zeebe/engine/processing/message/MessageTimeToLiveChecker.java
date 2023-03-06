@@ -27,19 +27,19 @@ import org.agrona.collections.MutableInteger;
  * a limited number of these commands in a single run of {@link #execute(TaskResultBuilder)}.
  *
  * <p>It determines whether to reschedule itself immediately, or after the configured {@link
- * MessageObserver#MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL interval}. If it reschedules itself
- * immediately, then it will continue where it left off the last time. Otherwise, it starts with the
- * first expired message deadline it can find.
+ * #executionInterval interval}. If it reschedules itself immediately, then it will continue where
+ * it left off the last time. Otherwise, it starts with the first expired message deadline it can
+ * find.
  */
 public final class MessageTimeToLiveChecker implements Task {
 
   private static final MessageRecord EMPTY_DELETE_MESSAGE_COMMAND =
       new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
 
-  private static final int EXPIRE_COMMANDS_LIMIT_DEFAULT = 10;
-
+  /** This determines the duration that the TTL checker is idle after it completes an execution. */
+  private final Duration executionInterval;
   /** This determines the maximum number of EXPIRE commands it will attempt to fit in the result. */
-  private static final int LIMIT = EXPIRE_COMMANDS_LIMIT_DEFAULT;
+  private final int batchLimit;
 
   private final ProcessingScheduleService scheduleService;
   private final MessageState messageState;
@@ -50,9 +50,14 @@ public final class MessageTimeToLiveChecker implements Task {
   private MessageState.Index lastIndex;
 
   public MessageTimeToLiveChecker(
-      final ProcessingScheduleService scheduleService, final MessageState messageState) {
-    this.scheduleService = scheduleService;
+      final Duration executionInterval,
+      final int batchLimit,
+      final ProcessingScheduleService scheduleService,
+      final MessageState messageState) {
+    this.executionInterval = executionInterval;
+    this.batchLimit = batchLimit;
     this.messageState = messageState;
+    this.scheduleService = scheduleService;
     lastIndex = null;
   }
 
@@ -80,7 +85,7 @@ public final class MessageTimeToLiveChecker implements Task {
               final boolean stillFitsInResult =
                   taskResultBuilder.appendCommandRecord(
                       expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND);
-              return stillFitsInResult && counter.incrementAndGet() < LIMIT;
+              return stillFitsInResult && counter.incrementAndGet() < batchLimit;
             });
 
     if (shouldContinueWhereLeftOff) {
@@ -88,7 +93,7 @@ public final class MessageTimeToLiveChecker implements Task {
     } else {
       lastIndex = null;
       currentTimestamp = -1;
-      scheduleService.runDelayedAsync(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, this);
+      scheduleService.runDelayedAsync(executionInterval, this);
     }
 
     return taskResultBuilder.build();

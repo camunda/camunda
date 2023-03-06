@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -180,7 +181,7 @@ public final class PublishMessageTest {
     final Record<MessageRecordValue> publishedRecord =
         messageClient.withTimeToLive(timeToLive).publish();
 
-    ENGINE_RULE.increaseTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+    ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
     final Record<MessageRecordValue> deletedEvent =
@@ -224,7 +225,7 @@ public final class PublishMessageTest {
     // when
     final Record<MessageRecordValue> publishedRecord =
         messageClient.withTimeToLive(timeToLive).publish();
-    ENGINE_RULE.increaseTime(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+    ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
 
     // then
     final Record<MessageRecordValue> deleteCommand =

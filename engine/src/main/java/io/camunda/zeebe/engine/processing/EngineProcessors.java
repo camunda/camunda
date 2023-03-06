@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
@@ -69,6 +70,7 @@ public final class EngineProcessors {
     typedRecordProcessors.withListener(processingState);
 
     final int partitionId = typedRecordProcessorContext.getPartitionId();
+    final var config = typedRecordProcessorContext.getConfig();
 
     final DueDateTimerChecker timerChecker =
         new DueDateTimerChecker(processingState.getTimerState(), featureFlags);
@@ -105,7 +107,8 @@ public final class EngineProcessors {
         processingState,
         typedRecordProcessorContext.getScheduledTaskDbState(),
         typedRecordProcessors,
-        writers);
+        writers,
+        config);
 
     final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor =
         addProcessProcessors(
@@ -221,14 +224,16 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final ScheduledTaskDbState scheduledTaskDbState,
       final TypedRecordProcessors typedRecordProcessors,
-      final Writers writers) {
+      final Writers writers,
+      final EngineConfiguration config) {
     MessageEventProcessors.addMessageProcessors(
         bpmnBehaviors,
         typedRecordProcessors,
         processingState,
         scheduledTaskDbState,
         subscriptionCommandSender,
-        writers);
+        writers,
+        config);
   }
 
   private static void addDecisionProcessors(
