@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.util.Environment;
-import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,23 +39,19 @@ public class TestConfigurationFactoryTest {
   }
 
   @Test
-  public void shouldReadEmptyConfiguration()
-      throws InvocationTargetException, NoSuchMethodException, InstantiationException,
-          IllegalAccessException {
+  public void shouldReadEmptyConfiguration() {
     // when
     final SampleConfiguration actual =
         sutConfigurationFactory.create(
             null, "config", "TestConfigurationFactoryTestEmpty.yaml", SampleConfiguration.class);
 
     // then
-    assertThat(actual.getSetting()).isEqualTo(null);
+    assertThat(actual.getSetting()).isNull();
     assertThat(actual.getArgs()).isNull();
   }
 
   @Test
-  public void shouldOverlayEnvironmentSettingsOverConfigurationReadFromFile()
-      throws InvocationTargetException, NoSuchMethodException, InstantiationException,
-          IllegalAccessException {
+  public void shouldOverlayEnvironmentSettingsOverConfigurationReadFromFile() {
     // given
     final Map<String, String> environmentEntries = new HashMap<>();
     environmentEntries.put("config-test.args.foo", "not bar");
@@ -75,6 +70,7 @@ public class TestConfigurationFactoryTest {
     assertThat(actual.getSize()).isEqualTo(DataSize.ofMegabytes(2));
   }
 
+  @SuppressWarnings("unused")
   public static final class SampleConfiguration {
     private String setting;
     private Map<String, Object> args;
