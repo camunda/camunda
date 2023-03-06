@@ -19,6 +19,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingResultBuilder;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -41,6 +42,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class MessageStreamProcessorTest {
+
+  private static final EngineConfiguration DEFAULT_ENGINE_CONFIGURATION = new EngineConfiguration();
 
   @Rule public final StreamProcessorRule rule = new StreamProcessorRule();
 
@@ -67,7 +70,8 @@ public final class MessageStreamProcessorTest {
               processingState,
               scheduledTaskDbState,
               spySubscriptionCommandSender,
-              processingContext.getWriters());
+              processingContext.getWriters(),
+              DEFAULT_ENGINE_CONFIGURATION);
           return typedRecordProcessors;
         });
   }

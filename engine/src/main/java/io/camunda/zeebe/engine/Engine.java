@@ -88,7 +88,8 @@ public class Engine implements RecordProcessor {
             processingState,
             scheduledTaskDbState,
             writers,
-            recordProcessorContext.getPartitionCommandSender());
+            recordProcessorContext.getPartitionCommandSender(),
+            config);
 
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);

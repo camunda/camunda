@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.message.MessageObserver;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -85,7 +85,8 @@ public final class ReplayStateTest {
                   engine
                       .getClock()
                       .addTime(
-                          timeToLive.plus(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL));
+                          timeToLive.plus(
+                              EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL));
 
                   return RecordingExporter.messageRecords(MessageIntent.EXPIRED).getFirst();
                 }),
