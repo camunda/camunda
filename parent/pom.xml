@@ -126,7 +126,7 @@
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.3.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.2.0</plugin.version.checkstyle>
-    <plugin.version.compiler>3.10.1</plugin.version.compiler>
+    <plugin.version.compiler>3.11.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.13.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.4.0</plugin.version.dependency>
     <plugin.version.enforcer>3.2.1</plugin.version.enforcer>
