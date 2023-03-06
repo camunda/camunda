@@ -207,9 +207,10 @@
       # backup:
         # Configure backup store. NOTE:- Use the same configuration on all brokers of this cluster.
 
-        # Set the backup store type. Supported values are [NONE, S3]. Default value is NONE
+        # Set the backup store type. Supported values are [NONE, S3, GCS]. Default value is NONE
         # When NONE, no backup store is configured and no backup will be taken.
         # Use S3 to use any S3 compatible storage (https://docs.aws.amazon.com/AmazonS3/latest/API/Type_API_Reference.html).
+        # Use GCS to use Google Cloud Storage (https://cloud.google.com/storage/)
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_STORE
         # store: NONE
 
@@ -260,8 +261,21 @@
           # compression: none
 
           # When set, all objects in the bucket will use this prefix. Must be non-empty and not start or end with '/'.
-          # Useful for using the same bucket for multiple Zeebe clusters.
+          # Useful for using the same bucket for multiple Zeebe clusters. In this case, basePath must be unique.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_S3_BASEPATH
+          # basePath:
+
+        # Configure the following if store is set to GCS
+        # gcs:
+          # Name of the bucket where the backup will be stored.
+          # The bucket must already exist.
+          # The bucket must not be shared with other Zeebe clusters unless basePath is also set.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME
+          # bucketName:
+
+          # When set, all blobs in the bucket will use this prefix. Must be non-empty and not start or end with '/'.
+          # Useful for using the same bucket for multiple Zeebe clusters. In this case, basePath must be unique.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH
           # basePath:
 
     # cluster:

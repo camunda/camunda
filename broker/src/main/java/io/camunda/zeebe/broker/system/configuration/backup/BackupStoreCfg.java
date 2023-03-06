@@ -14,6 +14,7 @@ public class BackupStoreCfg implements ConfigurationEntry {
   private BackupStoreType store = BackupStoreType.NONE;
 
   private S3BackupStoreConfig s3 = new S3BackupStoreConfig();
+  private GCSBackupStoreConfig gcs = new GCSBackupStoreConfig();
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -21,6 +22,14 @@ public class BackupStoreCfg implements ConfigurationEntry {
 
   public void setS3(final S3BackupStoreConfig s3) {
     this.s3 = s3;
+  }
+
+  public GCSBackupStoreConfig getGcs() {
+    return gcs;
+  }
+
+  public void setGcs(final GCSBackupStoreConfig gcs) {
+    this.gcs = gcs;
   }
 
   public BackupStoreType getStore() {
@@ -33,7 +42,11 @@ public class BackupStoreCfg implements ConfigurationEntry {
 
   @Override
   public String toString() {
-    return "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
+    return switch (store) {
+      case NONE -> "BackupStoreCfg{" + "store=" + store + '}';
+      case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
+      case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
+    };
   }
 
   public enum BackupStoreType {
@@ -42,6 +55,12 @@ public class BackupStoreCfg implements ConfigurationEntry {
      * store
      */
     S3,
+
+    /**
+     * When type = GCS, {@link io.camunda.zeebe.backup.gcs.GcsBackupStore} will be used as the
+     * backup store
+     */
+    GCS,
 
     /** Set type = NONE when no backup store is available. No backup will be taken. */
     NONE
