@@ -7,6 +7,7 @@
 
 import classnames from 'classnames';
 import {LexicalComposer} from '@lexical/react/LexicalComposer';
+import {TEXT_REPORT_MAX_CHARACTERS} from 'services';
 
 import editorNodes from './nodes';
 import Editor from './Editor';
@@ -78,7 +79,7 @@ TextEditor.getEditorStateLength = function (editorState) {
   return length;
 };
 
-TextEditor.CharCount = function ({editorState, limit}) {
+TextEditor.CharCount = function ({editorState, limit = TEXT_REPORT_MAX_CHARACTERS}) {
   const textLenght = TextEditor.getEditorStateLength(editorState);
   return (
     <div className={classnames('TextEditor', 'CharCount', {error: textLenght > limit})}>

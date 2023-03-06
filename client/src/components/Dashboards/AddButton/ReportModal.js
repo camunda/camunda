@@ -20,13 +20,7 @@ import {
   Icon,
   TextEditor,
 } from 'components';
-import {
-  getCollection,
-  isTextReportTooLong,
-  isTextReportValid,
-  loadReports,
-  TEXT_REPORT_MAX_CHARACTERS,
-} from 'services';
+import {getCollection, isTextReportTooLong, isTextReportValid, loadReports} from 'services';
 import {t} from 'translation';
 
 function ReportModal({close, confirm, location}) {
@@ -141,7 +135,7 @@ function ReportModal({close, confirm, location}) {
                   onChange={setText}
                   error={isTextReportTooLong(textLength)}
                 />
-                <TextEditor.CharCount editorState={text} limit={TEXT_REPORT_MAX_CHARACTERS} />
+                <TextEditor.CharCount editorState={text} />
               </Form.Group>
             </Tabs.Tab>
           </Tabs>
