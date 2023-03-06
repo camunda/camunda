@@ -43,6 +43,9 @@ public final class MessageTimeToLiveChecker implements Task {
 
   private final ProcessingScheduleService scheduleService;
   private final MessageState messageState;
+
+  /** Keeps track of the timestamp to compare the message deadlines against. */
+  private long currentTimestamp = -1;
   /** Keeps track of where to continue between iterations. */
   private MessageState.Index lastIndex;
 
@@ -55,11 +58,14 @@ public final class MessageTimeToLiveChecker implements Task {
 
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
-    final var counter = new MutableInteger(0);
+    if (currentTimestamp == -1) {
+      currentTimestamp = ActorClock.currentTimeMillis();
+    }
 
+    final var counter = new MutableInteger(0);
     final boolean shouldContinueWhereLeftOff =
         messageState.visitMessagesWithDeadlineBeforeTimestamp(
-            ActorClock.currentTimeMillis(),
+            currentTimestamp,
             lastIndex,
             (deadline, expiredMessageKey) -> {
               final var newIndex = new Index(expiredMessageKey, deadline);
@@ -81,6 +87,7 @@ public final class MessageTimeToLiveChecker implements Task {
       scheduleService.runDelayedAsync(Duration.ZERO, this);
     } else {
       lastIndex = null;
+      currentTimestamp = -1;
       scheduleService.runDelayedAsync(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, this);
     }
 
