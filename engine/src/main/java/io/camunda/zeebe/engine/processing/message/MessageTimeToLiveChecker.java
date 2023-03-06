@@ -80,7 +80,7 @@ public final class MessageTimeToLiveChecker implements Task {
               final boolean stillFitsInResult =
                   taskResultBuilder.appendCommandRecord(
                       expiredMessageKey, MessageIntent.EXPIRE, EMPTY_DELETE_MESSAGE_COMMAND);
-              return stillFitsInResult && counter.incrementAndGet() <= LIMIT;
+              return stillFitsInResult && counter.incrementAndGet() < LIMIT;
             });
 
     if (shouldContinueWhereLeftOff) {
