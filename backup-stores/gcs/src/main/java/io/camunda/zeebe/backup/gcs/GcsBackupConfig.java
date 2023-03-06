@@ -8,10 +8,38 @@
 package io.camunda.zeebe.backup.gcs;
 
 public record GcsBackupConfig(String bucketName, String basePath) {
-  public GcsBackupConfig {
-    if (bucketName == null || bucketName.isEmpty()) {
+  public GcsBackupConfig(String bucketName, String basePath) {
+    this.bucketName = requireBucketName(bucketName);
+    this.basePath = sanitizeBasePath(basePath);
+  }
+
+  private String requireBucketName(final String bucketName) {
+    if (bucketName == null || bucketName.isBlank()) {
       throw new IllegalArgumentException("bucketName must be provided");
     }
+    return bucketName;
+  }
+
+  private String sanitizeBasePath(final String basePath) {
+    if (basePath == null || basePath.isBlank()) {
+      return null;
+    }
+
+    // Remove one leading and one trailing slash if present.
+    String sanitized = basePath;
+    if (basePath.startsWith("/")) {
+      sanitized = basePath.substring(1);
+    }
+    if (basePath.endsWith("/")) {
+      sanitized = sanitized.substring(0, sanitized.length() - 1);
+    }
+
+    if (sanitized.isBlank()) {
+      throw new IllegalArgumentException(
+          "After removing leading and trailing '/' characters from basePath '%s', the remainder is empty and not a valid base path"
+              .formatted(basePath));
+    }
+    return sanitized;
   }
 
   public static final class Builder {

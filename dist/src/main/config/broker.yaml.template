@@ -273,8 +273,9 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_BUCKETNAME
           # bucketName:
 
-          # When set, all blobs in the bucket will use this prefix. Must be non-empty and not start or end with '/'.
+          # When set, all blobs in the bucket will use this prefix.
           # Useful for using the same bucket for multiple Zeebe clusters. In this case, basePath must be unique.
+          # Should not start or end with '/' character. Must be non-empty and not consist of only '/' characters.
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH
           # basePath:
 
