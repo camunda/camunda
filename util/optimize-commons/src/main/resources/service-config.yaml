@@ -362,6 +362,8 @@ es:
       certificate_authorities: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES:[]}
       # used to enable or disable TLS/SSL for the HTTP connection
       enabled: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SSL_ENABLED:false}
+      # used to specify that the certificate was self-signed
+      selfSigned: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SECURITY_SSL_SELF_SIGNED:false}
 
   # Maximum time in seconds a request to elasticsearch should last, before a timeout
   # triggers.

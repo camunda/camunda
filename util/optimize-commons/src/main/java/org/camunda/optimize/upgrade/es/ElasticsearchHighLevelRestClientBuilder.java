@@ -10,6 +10,8 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -57,8 +59,11 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
       final SSLContext sslContext;
       final KeyStore truststore = loadCustomTrustStore(configurationService);
+
       if (truststore.size() > 0) {
-        sslContext = SSLContexts.custom().loadTrustMaterial(truststore, null).build();
+        final TrustStrategy trustStrategy = configurationService.getElasticsearchSecuritySslSelfSigned() == Boolean.TRUE ?
+          new TrustSelfSignedStrategy() : null;
+        sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
       } else {
         // default if custom truststore is empty
         sslContext = SSLContext.getDefault();

@@ -74,6 +74,7 @@ public class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_SECURITY_USERNAME = "$.es.security.username";
   public static final String ELASTICSEARCH_SECURITY_PASSWORD = "$.es.security.password";
   public static final String ELASTICSEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
+  public static final String ELASTICSEARCH_SECURITY_SSL_SELF_SIGNED = "$.es.security.ssl.selfSigned";
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
 

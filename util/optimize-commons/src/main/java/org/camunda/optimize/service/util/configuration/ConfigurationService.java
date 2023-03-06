@@ -99,6 +99,7 @@ public class ConfigurationService {
   private String elasticsearchSecurityUsername;
   private String elasticsearchSecurityPassword;
   private Boolean elasticsearchSecuritySSLEnabled;
+  private Boolean elasticsearchSecuritySslSelfSigned;
   private String elasticsearchSecuritySSLCertificate;
   private List<String> elasticsearchSecuritySSLCertificateAuthorities;
 
@@ -1050,6 +1051,14 @@ public class ConfigurationService {
         configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_ENABLED, Boolean.class);
     }
     return elasticsearchSecuritySSLEnabled;
+  }
+
+  public Boolean getElasticsearchSecuritySslSelfSigned() {
+    if (elasticsearchSecuritySslSelfSigned == null && getElasticsearchSecuritySSLEnabled()) {
+      elasticsearchSecuritySslSelfSigned =
+        configJsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_SECURITY_SSL_SELF_SIGNED, Boolean.class);
+    }
+    return elasticsearchSecuritySslSelfSigned;
   }
 
   public String getElasticsearchSecuritySSLCertificate() {
