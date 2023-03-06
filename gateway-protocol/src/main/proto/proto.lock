@@ -1048,7 +1048,14 @@
             ]
           },
           {
-            "name": "BroadcastSignalResponse"
+            "name": "BroadcastSignalResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              }
+            ]
           }
         ],
         "services": [
