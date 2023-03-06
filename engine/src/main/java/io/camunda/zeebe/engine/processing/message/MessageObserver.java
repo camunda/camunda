@@ -41,7 +41,6 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     final var scheduleService = context.getScheduleService();
-    // it is safe to reuse the write because we running in the same actor/thread
     final var timeToLiveChecker =
         new MessageTimeToLiveChecker(
             messagesTtlCheckerInterval,
