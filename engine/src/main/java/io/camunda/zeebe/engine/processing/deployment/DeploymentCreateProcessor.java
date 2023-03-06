@@ -15,8 +15,6 @@ import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionBehavior;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
@@ -54,7 +52,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   private final ExpressionProcessor expressionProcessor;
   private final StateWriter stateWriter;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
-  private final DeploymentDistributionBehavior deploymentDistributionBehavior;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
@@ -62,9 +59,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final int partitionsCount,
       final Writers writers,
-      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
       final CommandDistributionBehavior distributionBehavior) {
@@ -82,9 +77,6 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
             stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator);
-    deploymentDistributionBehavior =
-        new DeploymentDistributionBehavior(
-            writers, partitionsCount, deploymentDistributionCommandSender);
   }
 
   @Override
@@ -143,8 +135,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
-    // TODO different distributor
-    deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
+    distributionBehavior.distributeCommand(command);
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {

@@ -119,7 +119,6 @@ public final class EngineProcessors {
         processingState,
         typedRecordProcessors,
         writers,
-        partitionsCount,
         deploymentDistributionCommandSender,
         processingState.getKeyGenerator(),
         featureFlags,
@@ -207,7 +206,6 @@ public final class EngineProcessors {
       final ProcessingState processingState,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final int partitionsCount,
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
@@ -219,9 +217,7 @@ public final class EngineProcessors {
         new DeploymentCreateProcessor(
             processingState,
             bpmnBehaviors,
-            partitionsCount,
             writers,
-            deploymentDistributionCommandSender,
             keyGenerator,
             featureFlags,
             distributionBehavior);
