@@ -18,6 +18,11 @@ import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 public final class GcsBackupStore implements BackupStore {
+  private final GcsBackupConfig config;
+
+  public GcsBackupStore(final GcsBackupConfig config) {
+    this.config = config;
+  }
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
