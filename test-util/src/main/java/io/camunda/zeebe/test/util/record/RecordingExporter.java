@@ -12,6 +12,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
@@ -173,6 +175,16 @@ public final class RecordingExporter implements Exporter {
 
   public static DeploymentRecordStream deploymentRecords(final DeploymentIntent intent) {
     return deploymentRecords().withIntent(intent);
+  }
+
+  public static CommandDistributionRecordStream commandDistributionRecords() {
+    return new CommandDistributionRecordStream(
+        records(ValueType.COMMAND_DISTRIBUTION, CommandDistributionRecordValue.class));
+  }
+
+  public static CommandDistributionRecordStream commandDistributionRecords(
+      final CommandDistributionIntent intent) {
+    return commandDistributionRecords().withIntent(intent);
   }
 
   public static ProcessRecordStream processRecords() {
