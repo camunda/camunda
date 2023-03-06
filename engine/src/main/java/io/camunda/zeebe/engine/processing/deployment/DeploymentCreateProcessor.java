@@ -89,30 +89,36 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> command) {
-
     final DeploymentRecord deploymentEvent = command.getValue();
-    final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
 
-    if (result.isLeft()) {
-      throw new ResourceTransformationFailedException(result.getLeft().getMessage());
+    if (!command.isCommandDistributed()) {
+      final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
+
+      if (result.isLeft()) {
+        throw new ResourceTransformationFailedException(result.getLeft().getMessage());
+      }
+
+      try {
+        createTimerIfTimerStartEvent(command);
+      } catch (final RuntimeException e) {
+        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
+        rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
+        return;
+      }
+
+      final long key = keyGenerator.nextKey();
+      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+
+      // TODO different distributor
+      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
+    } else {
+      // TODO write process commands
+      // TODO write dmn commands
+      // TODO ack distribution
     }
 
-    try {
-      createTimerIfTimerStartEvent(command);
-    } catch (final RuntimeException e) {
-      final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-      responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-      rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-      return;
-    }
-
-    final long key = keyGenerator.nextKey();
-
-    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-
-    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
-
-    deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
   }
