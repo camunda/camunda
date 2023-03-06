@@ -43,6 +43,15 @@ public final class DistributionStateTest {
   }
 
   @Test
+  public void shouldReturnFalseOnEmptyStateForHasPendingForPartitionCheck() {
+    // when
+    final var hasPending = distributionState.hasPendingDistribution(10L, 10);
+
+    // then
+    assertThat(hasPending).isFalse();
+  }
+
+  @Test
   public void shouldAddPendingDistribution() {
     // given
     final var distributionKey = 10L;
@@ -54,6 +63,7 @@ public final class DistributionStateTest {
 
     // then
     assertThat(distributionState.hasPendingDistribution(distributionKey)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(distributionKey, partition)).isTrue();
   }
 
   @Test

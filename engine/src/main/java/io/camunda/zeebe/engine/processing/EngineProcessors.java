@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeployme
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionAcknowledgeProcessor;
 import io.camunda.zeebe.engine.processing.dmn.EvaluateDecisionProcessor;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.engine.state.migration.DbMigrationController;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -122,6 +124,7 @@ public final class EngineProcessors {
     addIncidentProcessors(processingState, bpmnStreamProcessor, typedRecordProcessors, writers);
     addResourceDeletionProcessors(typedRecordProcessors, writers, processingState);
     addSignalBroadcastProcessors(typedRecordProcessors, bpmnBehaviors, writers, processingState);
+    addCommandDistributionProcessors(typedRecordProcessors, writers, processingState);
 
     return typedRecordProcessors;
   }
@@ -269,5 +272,18 @@ public final class EngineProcessors {
             processingState.getSignalSubscriptionState());
     typedRecordProcessors.onCommand(
         ValueType.SIGNAL, SignalIntent.BROADCAST, signalBroadcastProcessor);
+  }
+
+  private static void addCommandDistributionProcessors(
+      final TypedRecordProcessors typedRecordProcessors,
+      final Writers writers,
+      final ProcessingState processingState) {
+    final var commandDistributionAcknowledgeProcessor =
+        new CommandDistributionAcknowledgeProcessor(
+            processingState.getDistributionState(), writers);
+    typedRecordProcessors.onCommand(
+        ValueType.COMMAND_DISTRIBUTION,
+        CommandDistributionIntent.ACKNOWLEDGE,
+        commandDistributionAcknowledgeProcessor);
   }
 }

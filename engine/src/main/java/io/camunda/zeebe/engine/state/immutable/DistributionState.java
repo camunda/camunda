@@ -20,6 +20,15 @@ public interface DistributionState {
   boolean hasPendingDistribution(long distributionKey);
 
   /**
+   * Returns whether a specific distribution for a specific partition is pending.
+   *
+   * @param distributionKey the key of the distribution that may be pending
+   * @param partition the id of the partition for which the distribution might be pending
+   * @return {@code true} if the specific pending distribution exists, otherwise {@code false}.
+   */
+  boolean hasPendingDistribution(long distributionKey, int partition);
+
+  /**
    * Returns the {@link CommandDistributionRecord} for the given distribution key. This method takes
    * a partition id. This is only used to set the partition property in the {@link
    * CommandDistributionRecord}. Doing so allows us to return a whole record, without the need to
