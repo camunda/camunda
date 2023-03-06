@@ -28,8 +28,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class StreamRegistry<M> {
   // Needs to be thread-safe for readers
-  Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers = new ConcurrentHashMap<>();
-  Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
+  private final Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers = new ConcurrentHashMap<>();
+  private final Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
 
   /**
    * Adds a stream receiver that can receive data from the stream with the given streamType.
