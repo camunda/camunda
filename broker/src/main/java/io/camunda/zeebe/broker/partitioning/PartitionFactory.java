@@ -12,7 +12,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
-import io.camunda.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
@@ -55,7 +54,10 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
@@ -96,6 +98,7 @@ final class PartitionFactory {
   private final BrokerHealthCheckService healthCheckService;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   PartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -107,7 +110,8 @@ final class PartitionFactory {
       final ExporterRepository exporterRepository,
       final BrokerHealthCheckService healthCheckService,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
-      final AtomixServerTransport gatewayBrokerTransport) {
+      final AtomixServerTransport gatewayBrokerTransport,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -118,6 +122,7 @@ final class PartitionFactory {
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
+    this.jobStreamer = jobStreamer;
   }
 
   List<ZeebePartition> constructPartitions(
@@ -138,8 +143,6 @@ final class PartitionFactory {
             .toList();
 
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
-    final var jobStreamer = new LongPollingJobNotification(eventService);
-
     for (final RaftPartition owningPartition : owningPartitions) {
       final var partitionId = owningPartition.id().id();
 
