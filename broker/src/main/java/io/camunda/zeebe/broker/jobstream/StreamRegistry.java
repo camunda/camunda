@@ -8,6 +8,12 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.atomix.cluster.MemberId;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -21,6 +27,9 @@ import org.agrona.concurrent.UnsafeBuffer;
  * @param <M> the type of the properties of the stream.
  */
 public class StreamRegistry<M> {
+  // Needs to be thread-safe for readers
+  Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers = new ConcurrentHashMap<>();
+  Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
 
   /**
    * Adds a stream receiver that can receive data from the stream with the given streamType.
@@ -33,9 +42,24 @@ public class StreamRegistry<M> {
    */
   public void add(
       final UnsafeBuffer streamType,
-      final long streamId,
+      final UUID streamId,
       final MemberId receiver,
-      final M properties) {}
+      final M properties) {
+
+    final StreamId uniqueId = new StreamId(streamId, receiver);
+    if (idToConsumer.containsKey(uniqueId)) {
+      return;
+    }
+
+    // Using CopyOnWriteArraySet assuming the size is small and updates/removal is less frequent. If
+    // this is not the case, better use other thread-safe sets.
+    typeToConsumers.putIfAbsent(streamType, new CopyOnWriteArraySet<>());
+
+    final var streamConsumer = new StreamConsumer<>(uniqueId, properties, streamType);
+
+    idToConsumer.put(uniqueId, streamConsumer);
+    typeToConsumers.get(streamType).add(streamConsumer);
+  }
 
   /**
    * Removes the stream.
@@ -43,12 +67,62 @@ public class StreamRegistry<M> {
    * @param streamId id of the stream
    * @param receiver The id of the node that receives data from the stream
    */
-  public void remove(final long streamId, final MemberId receiver) {}
+  public void remove(final UUID streamId, final MemberId receiver) {
+    final var uniqueId = new StreamId(streamId, receiver);
+    final var consumer = idToConsumer.remove(uniqueId);
+    if (consumer != null) {
+      typeToConsumers.computeIfPresent(
+          consumer.streamType(),
+          (type, consumerSet) -> {
+            consumerSet.remove(consumer);
+            return consumerSet.isEmpty() ? null : consumerSet;
+          });
+    }
+  }
 
   /**
    * Removes all stream from the given receiver
    *
    * @param receiver id of the node
    */
-  public void removeAll(final MemberId receiver) {}
+  public void removeAll(final MemberId receiver) {
+    final var streamOfReceiver =
+        idToConsumer.keySet().stream().filter(id -> id.receiver().equals(receiver)).toList();
+
+    streamOfReceiver.forEach(stream -> remove(stream.streamId(), stream.receiver()));
+  }
+
+  /**
+   * Thread-safe with concurrent add/remove
+   *
+   * @param streamType type of the stream
+   * @return set of streams for the given type
+   */
+  public Set<StreamConsumer<M>> get(final UnsafeBuffer streamType) {
+    // TODO: we may have to return an immutable collection here.
+    return typeToConsumers.get(streamType);
+  }
+
+  public void clear() {
+    typeToConsumers.clear();
+    idToConsumer.clear();
+  }
+
+  /**
+   * Uniquely identifies a stream
+   *
+   * @param streamId
+   * @param receiver
+   */
+  record StreamId(UUID streamId, MemberId receiver) {}
+
+  /**
+   * A stream consumer uniquely identified by the id, with its properties and streamType.
+   *
+   * @param id unique id
+   * @param properties properties of the stream
+   * @param streamType type of the stream
+   * @param <M> type of the properties
+   */
+  record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
 }
