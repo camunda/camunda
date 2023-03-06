@@ -28,7 +28,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  */
 public class StreamRegistry<M> {
   // Needs to be thread-safe for readers
-  private final Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers = new ConcurrentHashMap<>();
+  private final Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
+      new ConcurrentHashMap<>();
   private final Map<StreamId, StreamConsumer<M>> idToConsumer = new HashMap<>();
 
   /**
@@ -109,14 +110,6 @@ public class StreamRegistry<M> {
   }
 
   /**
-   * Uniquely identifies a stream
-   *
-   * @param streamId
-   * @param receiver
-   */
-  record StreamId(UUID streamId, MemberId receiver) {}
-
-  /**
    * A stream consumer uniquely identified by the id, with its properties and streamType.
    *
    * @param id unique id
@@ -124,5 +117,13 @@ public class StreamRegistry<M> {
    * @param streamType type of the stream
    * @param <M> type of the properties
    */
-  record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
+  public record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
+
+  /**
+   * Uniquely identifies a stream
+   *
+   * @param streamId
+   * @param receiver
+   */
+  public record StreamId(UUID streamId, MemberId receiver) {}
 }
