@@ -28,6 +28,17 @@ jest.mock('modules/notifications', () => {
   };
 });
 
+const mockOperation: OperationEntity = {
+  id: '2251799813687094',
+  name: 'Delete MyDecisionDefinition - Version 1',
+  type: 'DELETE_DECISION_DEFINITION',
+  startDate: '2023-02-16T14:23:45.306+0100',
+  endDate: null,
+  instancesCount: 10,
+  operationsTotalCount: 10,
+  operationsFinishedCount: 0,
+};
+
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     decisionDefinitionStore.setDefinition({
@@ -104,16 +115,6 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should apply delete definition operation', async () => {
-    const mockOperation: OperationEntity = {
-      id: '2251799813687094',
-      name: 'Delete MyDecisionDefinition - Version 1',
-      type: 'DELETE_DECISION_DEFINITION',
-      startDate: '2023-02-16T14:23:45.306+0100',
-      endDate: null,
-      instancesCount: 10,
-      operationsTotalCount: 10,
-      operationsFinishedCount: 0,
-    };
     mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
 
     const {user} = render(
@@ -179,5 +180,85 @@ describe('<DecisionOperations />', () => {
     expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
       headline: 'Operation could not be created',
     });
+  });
+
+  it('should disable button and show spinner when delete operation is triggered', async () => {
+    mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
+
+    const {user} = render(
+      <DecisionOperations
+        decisionName="myDecision"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
+      />,
+      {wrapper: Wrapper}
+    );
+
+    user.click(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    );
+
+    user.click(
+      await screen.findByLabelText(
+        'Yes, I confirm I want to delete this DRD and all related instances.'
+      )
+    );
+
+    user.click(await screen.findByTestId('delete-button'));
+    expect(
+      await screen.findByTestId('delete-operation-spinner')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    ).toBeDisabled();
+  });
+
+  it('should enable button and remove spinner when delete operation failed', async () => {
+    mockApplyDeleteDefinitionOperation().withNetworkError();
+
+    const {user} = render(
+      <DecisionOperations
+        decisionName="myDecision"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
+      />,
+      {wrapper: Wrapper}
+    );
+
+    user.click(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    );
+
+    user.click(
+      await screen.findByLabelText(
+        'Yes, I confirm I want to delete this DRD and all related instances.'
+      )
+    );
+
+    user.click(await screen.findByTestId('delete-button'));
+    expect(
+      await screen.findByTestId('delete-operation-spinner')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    ).toBeDisabled();
+
+    await waitForElementToBeRemoved(() =>
+      screen.getByTestId('delete-operation-spinner')
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    ).toBeEnabled();
   });
 });

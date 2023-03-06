@@ -15,6 +15,8 @@ import {DetailTable} from 'modules/components/DeleteDefinitionModal/DetailTable'
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
 import {useNotifications} from 'modules/notifications';
+import {OperationSpinner} from 'modules/components/OperationSpinner';
+import {DeleteButtonContainer} from './styled';
 
 type Props = {
   decisionDefinitionId: string;
@@ -31,16 +33,23 @@ const DecisionOperations: React.FC<Props> = ({
     useState<boolean>(false);
 
   const notifications = useNotifications();
+  const [isOperationRunning, setIsOperationRunning] = useState(false);
 
   return (
     <>
-      <OperationItems>
-        <OperationItem
-          title={`Delete Decision Definition "${decisionName} - Version ${decisionVersion}"`}
-          type="DELETE"
-          onClick={() => setIsDeleteModalVisible(true)}
-        />
-      </OperationItems>
+      <DeleteButtonContainer>
+        {isOperationRunning && (
+          <OperationSpinner data-testid="delete-operation-spinner" />
+        )}
+        <OperationItems>
+          <OperationItem
+            title={`Delete Decision Definition "${decisionName} - Version ${decisionVersion}"`}
+            type="DELETE"
+            disabled={isOperationRunning}
+            onClick={() => setIsDeleteModalVisible(true)}
+          />
+        </OperationItems>
+      </DeleteButtonContainer>
 
       <DeleteDefinitionModal
         title="Delete DRD"
@@ -63,15 +72,19 @@ const DecisionOperations: React.FC<Props> = ({
         }
         onClose={() => setIsDeleteModalVisible(false)}
         onDelete={() => {
+          setIsOperationRunning(true);
           setIsDeleteModalVisible(false);
 
           operationsStore.applyDeleteDecisionDefinitionOperation({
             decisionDefinitionId,
             onSuccess: panelStatesStore.expandOperationsPanel,
-            onError: () =>
+            onError: () => {
+              setIsOperationRunning(false);
+
               notifications.displayNotification('error', {
                 headline: 'Operation could not be created',
-              }),
+              });
+            },
           });
         }}
       />

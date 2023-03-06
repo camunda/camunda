@@ -5,15 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {DetailTable} from 'modules/components/DeleteDefinitionModal/DetailTable';
-import {Warning, Information, Ul, Link} from './styled';
+import {Warning, Information, Ul, Link, DeleteButtonContainer} from './styled';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
+import {OperationSpinner} from 'modules/components/OperationSpinner';
 
 type Props = {
   processDefinitionId: string;
@@ -30,16 +31,29 @@ const ProcessOperations: React.FC<Props> = ({
     useState<boolean>(false);
 
   const notifications = useNotifications();
+  const [isOperationRunning, setIsOperationRunning] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      setIsOperationRunning(false);
+    };
+  }, [processDefinitionId]);
 
   return (
     <>
-      <OperationItems>
-        <OperationItem
-          title={`Delete Process Definition "${processName} - Version ${processVersion}"`}
-          type="DELETE"
-          onClick={() => setIsDeleteModalVisible(true)}
-        />
-      </OperationItems>
+      <DeleteButtonContainer>
+        {isOperationRunning && (
+          <OperationSpinner data-testid="delete-operation-spinner" />
+        )}
+        <OperationItems>
+          <OperationItem
+            title={`Delete Process Definition "${processName} - Version ${processVersion}"`}
+            type="DELETE"
+            disabled={isOperationRunning}
+            onClick={() => setIsDeleteModalVisible(true)}
+          />
+        </OperationItems>
+      </DeleteButtonContainer>
       <DeleteDefinitionModal
         title="Delete Process Definition"
         description="You are about to delete the following process definition:"
@@ -96,15 +110,18 @@ const ProcessOperations: React.FC<Props> = ({
         confirmationText="Yes, I confirm I want to delete this process definition."
         onClose={() => setIsDeleteModalVisible(false)}
         onDelete={() => {
+          setIsOperationRunning(true);
           setIsDeleteModalVisible(false);
-
           operationsStore.applyDeleteProcessDefinitionOperation({
             processDefinitionId,
             onSuccess: panelStatesStore.expandOperationsPanel,
-            onError: () =>
+            onError: () => {
+              setIsOperationRunning(false);
+
               notifications.displayNotification('error', {
                 headline: 'Operation could not be created',
-              }),
+              });
+            },
           });
         }}
       />

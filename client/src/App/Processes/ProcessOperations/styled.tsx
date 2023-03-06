@@ -28,4 +28,9 @@ const Link = styled(Anchor)`
   ${bodyShort01};
 `;
 
-export {Warning, Information, Ul, Link};
+const DeleteButtonContainer = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+export {Warning, Information, Ul, Link, DeleteButtonContainer};
