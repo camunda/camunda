@@ -25,7 +25,9 @@ public class ClusterMetadata implements Serializable {
       @JsonProperty("tasklist")
       TASKLIST,
       @JsonProperty("zeebe")
-      ZEEBE;
+      ZEEBE,
+      @JsonProperty("connectors")
+      CONNECTORS;
 
       @Override public String toString() {
         return super.toString().toLowerCase();

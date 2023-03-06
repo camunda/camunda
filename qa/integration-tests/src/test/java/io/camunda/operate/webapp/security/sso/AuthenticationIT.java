@@ -25,6 +25,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
@@ -129,6 +130,9 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @Autowired
   private BeanFactory beanFactory;
+
+  @Autowired
+  private ObjectMapper objectMapper;
 
   @MockBean
   @Qualifier("auth0_restTemplate")
@@ -410,6 +414,20 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(response.getBody()).contains("\"salesPlanType\":\"test\"");
     assertThat(response.getBody()).contains("\"roles\":[\"user\",\"analyst\"]");
     assertThat(response.getBody()).contains("\"c8Links\":" + c8Links);
+  }
+
+  @Test
+  public void testCanParseResponseWithConnectorsUrl() throws Exception {
+
+    // given
+    String jsonResponse = "[{\"uuid\":null,\"name\":null,\"urls\":{\"connectors\":\"http://connectors-url\"}}]";
+
+    // when
+    ClusterMetadata[] clusterMetadatas = objectMapper.readValue(jsonResponse, ClusterMetadata[].class);
+
+    // then
+    assertThat(clusterMetadatas.length).isEqualTo(1);
+    assertThat(clusterMetadatas[0].getUrls().get(ClusterMetadata.AppName.CONNECTORS)).isEqualTo("http://connectors-url");
   }
 
   private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
