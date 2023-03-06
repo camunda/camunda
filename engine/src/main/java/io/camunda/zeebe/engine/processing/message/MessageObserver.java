@@ -24,18 +24,21 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final MutablePendingMessageSubscriptionState pendingState;
   private final int messagesTtlCheckerBatchLimit;
   private final Duration messagesTtlCheckerInterval;
+  private final boolean enableMessageTtlCheckerAsync;
 
   public MessageObserver(
       final MessageState messageState,
       final MutablePendingMessageSubscriptionState pendingState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Duration messagesTtlCheckerInterval,
-      final int messagesTtlCheckerBatchLimit) {
+      final int messagesTtlCheckerBatchLimit,
+      final boolean enableMessageTtlCheckerAsync) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.messageState = messageState;
     this.pendingState = pendingState;
     this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
     this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
+    this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
   }
 
   @Override
@@ -45,9 +48,14 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
         new MessageTimeToLiveChecker(
             messagesTtlCheckerInterval,
             messagesTtlCheckerBatchLimit,
+            enableMessageTtlCheckerAsync,
             scheduleService,
             messageState);
-    scheduleService.runDelayedAsync(messagesTtlCheckerInterval, timeToLiveChecker);
+    if (enableMessageTtlCheckerAsync) {
+      scheduleService.runDelayedAsync(messagesTtlCheckerInterval, timeToLiveChecker);
+    } else {
+      scheduleService.runDelayed(messagesTtlCheckerInterval, timeToLiveChecker);
+    }
 
     final var pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(

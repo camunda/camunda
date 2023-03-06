@@ -33,6 +33,7 @@ public final class FeatureFlagsCfg {
   private boolean enableYieldingDueDateChecker = DEFAULT_SETTINGS.yieldingDueDateChecker();
   private boolean enableActorMetrics = DEFAULT_SETTINGS.enableActorMetrics();
   private boolean enableBackup = DEFAULT_SETTINGS.enableBackup();
+  private boolean enableMessageTtlCheckerAsync = DEFAULT_SETTINGS.enableMessageTTLCheckerAsync();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -58,9 +59,18 @@ public final class FeatureFlagsCfg {
     this.enableBackup = enableBackup;
   }
 
+  public boolean isEnableMessageTtlCheckerAsync() {
+    return enableMessageTtlCheckerAsync;
+  }
+
+  public void setEnableMessageTtlCheckerAsync(final boolean enableMessageTtlCheckerAsync) {
+    this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
-        enableYieldingDueDateChecker, enableActorMetrics, enableBackup /*, enableFoo*/);
+        enableYieldingDueDateChecker, enableActorMetrics, enableBackup, enableMessageTtlCheckerAsync
+        /*, enableFoo*/ );
   }
 
   @Override
