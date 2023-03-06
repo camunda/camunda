@@ -8,9 +8,9 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -37,7 +37,7 @@ final class BackupStoreComponent {
     final var store = backupCfg.getStore();
     return switch (store) {
       case S3 -> buildS3BackupStore(backupCfg);
-      case GCS -> new GcsBackupStore();
+      case GCS -> buildGcsBackupStore(backupCfg);
       case NONE -> throw new IllegalArgumentException(
           "No backup store configured, cannot restore from backup.");
     };
@@ -46,7 +46,7 @@ final class BackupStoreComponent {
   private static S3BackupStore buildS3BackupStore(final BackupStoreCfg backupStoreCfg) {
     final var s3Config = backupStoreCfg.getS3();
     final S3BackupConfig storeConfig =
-        new Builder()
+        new S3BackupConfig.Builder()
             .withBucketName(s3Config.getBucketName())
             .withEndpoint(s3Config.getEndpoint())
             .withRegion(s3Config.getRegion())
@@ -60,6 +60,12 @@ final class BackupStoreComponent {
   }
 
   private static GcsBackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
-    return new GcsBackupStore();
+    final var gcsConfig = backupStoreCfg.getGcs();
+    final GcsBackupConfig storeConfig =
+        new GcsBackupConfig.Builder()
+            .withBucketName(gcsConfig.getBucketName())
+            .withBasePath(gcsConfig.getBasePath())
+            .build();
+    return new GcsBackupStore(storeConfig);
   }
 }
