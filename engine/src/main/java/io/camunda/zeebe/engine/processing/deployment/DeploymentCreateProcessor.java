@@ -92,27 +92,7 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     final DeploymentRecord deploymentEvent = command.getValue();
 
     if (!command.isCommandDistributed()) {
-      final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
-
-      if (result.isLeft()) {
-        throw new ResourceTransformationFailedException(result.getLeft().getMessage());
-      }
-
-      try {
-        createTimerIfTimerStartEvent(command);
-      } catch (final RuntimeException e) {
-        final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
-        responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
-        rejectionWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
-        return;
-      }
-
-      final long key = keyGenerator.nextKey();
-      responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-      stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
-
-      // TODO different distributor
-      deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
+      transformAndDistributeDeployment(command);
     } else {
       // TODO write process commands
       // TODO write dmn commands
@@ -132,9 +112,39 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.INVALID_ARGUMENT, exception.getMessage());
       return ProcessingError.EXPECTED_ERROR;
+    } else if (error instanceof TimerCreationFailedException exception) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.PROCESSING_ERROR, exception.getMessage());
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.PROCESSING_ERROR, exception.getMessage());
+      return ProcessingError.EXPECTED_ERROR;
     }
 
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
+    final DeploymentRecord deploymentEvent = command.getValue();
+    // Note: transforming a resource will also write the CREATE events for said resource
+    final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
+
+    if (result.isLeft()) {
+      throw new ResourceTransformationFailedException(result.getLeft().getMessage());
+    }
+
+    try {
+      createTimerIfTimerStartEvent(command);
+    } catch (final RuntimeException e) {
+      final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
+      throw new TimerCreationFailedException(reason);
+    }
+
+    final long key = keyGenerator.nextKey();
+    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+
+    // TODO different distributor
+    deploymentDistributionBehavior.distributeDeployment(deploymentEvent, key);
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {
@@ -191,13 +201,24 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   /**
    * Exception that can be thrown during processing of a command, in case the resource cannot be
    * transformed successfully. This allows the platform to roll back any changes the engine made.
-   * This exception can be handled by the processor in {@link
-   * io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor#tryHandleError(
-   * TypedRecord, Throwable)}.
+   * This exception can be handled by the processor in {@link #tryHandleError(TypedRecord,
+   * Throwable)}.
    */
   private static final class ResourceTransformationFailedException extends RuntimeException {
 
     private ResourceTransformationFailedException(final String message) {
+      super(message);
+    }
+  }
+
+  /**
+   * Exception can be thrown during processing of a command, in case a timer start event could not
+   * be created. This exception is handled in the {@link #tryHandleError(TypedRecord, Throwable)}
+   * method.
+   */
+  private static final class TimerCreationFailedException extends RuntimeException {
+
+    public TimerCreationFailedException(final String message) {
       super(message);
     }
   }
