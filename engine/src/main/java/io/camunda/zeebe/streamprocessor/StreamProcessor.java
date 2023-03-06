@@ -234,11 +234,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorClosing() {
     tearDown();
+    asyncActor.close(closeFuture);
   }
 
   @Override
   protected void onActorClosed() {
-    closeFuture.complete(null);
     LOG.debug("Closed stream processor controller {}.", getName());
   }
 
@@ -267,7 +267,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
-    closeFuture.complete(null);
+    asyncActor.close(closeFuture);
   }
 
   private boolean shouldProcessNext() {
@@ -276,7 +276,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   private void tearDown() {
     processorActorService.close();
-    asyncActor.closeAsync();
     asyncScheduleService.close();
     streamProcessorContext.getLogStreamReader().close();
     logStream.removeRecordAvailableListener(this);
@@ -571,6 +570,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private static final class AsyncProcessingScheduleServiceActor extends Actor {
 
     private final ProcessingScheduleServiceImpl scheduleService;
+    private CompletableActorFuture<Void> closeFuture;
 
     public AsyncProcessingScheduleServiceActor(
         final ProcessingScheduleServiceImpl scheduleService) {
@@ -589,8 +589,27 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
           });
     }
 
+    @Override
+    protected void onActorClosed() {
+      closeFuture.complete(null);
+    }
+
+    @Override
+    public void onActorFailed() {
+      closeFuture.complete(null);
+    }
+
     public ActorControl getActorControl() {
       return actor;
+    }
+
+    public void close(final CompletableActorFuture<Void> closeFuture) {
+      this.closeFuture = closeFuture;
+      if (actor.isClosed()) {
+        closeFuture.complete(null);
+      } else {
+        actor.close();
+      }
     }
   }
 
