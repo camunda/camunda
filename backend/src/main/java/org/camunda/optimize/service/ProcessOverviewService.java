@@ -9,14 +9,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOverviewResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessOwnerResponseDto;
 import org.camunda.optimize.dto.optimize.query.processoverview.ProcessUpdateDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.digest.DigestService;
 import org.camunda.optimize.service.es.reader.ProcessOverviewReader;
@@ -39,7 +37,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
-import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 
 @AllArgsConstructor
 @Component
@@ -78,14 +75,10 @@ public class ProcessOverviewService {
     final Map<String, ProcessOverviewDto> processOverviewByKey =
       processOverviewReader.getProcessOverviewsByKey(procDefKeysAndName.keySet());
 
-    // Get data for all processes at once concerning whether they already have a dashboard
-    Map<String, Boolean> collectionHasDashboard = retrieveCollectionInformation(userId);
-
     return procDefKeysAndName.entrySet()
       .stream()
       .map(entry -> {
         final String procDefKey = entry.getKey();
-        String magicLinkToDashboard = String.format(MAGIC_LINK_TEMPLATE, "", procDefKey, procDefKey);
         final Optional<ProcessOverviewDto> overviewForKey = Optional.ofNullable(processOverviewByKey.get(procDefKey));
         return new ProcessOverviewResponseDto(
           entry.getValue(),
@@ -95,9 +88,7 @@ public class ProcessOverviewService {
           ).orElse(new ProcessOwnerResponseDto()),
           overviewForKey.map(ProcessOverviewDto::getDigest)
             .orElse(new ProcessDigestDto(false, new HashMap<>())),
-          overviewForKey.map(kpiService::extractKpiResultsForProcessDefinition).orElse(Collections.emptyList()),
-          magicLinkToDashboard,
-          collectionHasDashboard.getOrDefault(procDefKey, Boolean.FALSE)
+          overviewForKey.map(kpiService::extractKpiResultsForProcessDefinition).orElse(Collections.emptyList())
         );
       }).collect(Collectors.toList());
   }
@@ -198,13 +189,5 @@ public class ProcessOverviewService {
       }, () -> {
         throw new NotFoundException("Process definition with key " + processDefKey + " does not exist.");
       });
-  }
-
-  private Map<String, Boolean> retrieveCollectionInformation(final String userId) {
-    // This involves a call to ES, so using it parsimoniously
-    return collectionService.getAllCollectionDefinitions(userId)
-      .stream()
-      .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
-      .collect(Collectors.toMap(CollectionDefinitionDto::getId, CollectionDefinitionDto::isAutomaticallyCreated));
   }
 }

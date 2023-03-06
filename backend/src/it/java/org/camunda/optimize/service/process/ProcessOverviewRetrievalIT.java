@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
-import static org.camunda.optimize.service.onboardinglistener.OnboardingNotificationService.MAGIC_LINK_TEMPLATE;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -247,24 +246,6 @@ public class ProcessOverviewRetrievalIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  @Test
-  public void magicLinkUrlContainsExpectedContent() {
-    // given
-    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(FIRST_PROCESS_DEFINITION_KEY));
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final List<ProcessOverviewResponseDto> overviews = processOverviewClient.getProcessOverviews();
-
-    // then
-    assertThat(overviews).filteredOn(process -> process.getProcessDefinitionKey()
-        .equals(FIRST_PROCESS_DEFINITION_KEY))
-      .singleElement()
-      .satisfies(process -> assertThat(process.getLinkToDashboard()).isEqualTo(
-        // No suffix
-        String.format(MAGIC_LINK_TEMPLATE, "", FIRST_PROCESS_DEFINITION_KEY, FIRST_PROCESS_DEFINITION_KEY)));
   }
 
   @Test
