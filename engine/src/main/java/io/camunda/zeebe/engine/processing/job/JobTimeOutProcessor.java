@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.CommandProcessor;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -23,7 +23,7 @@ public final class JobTimeOutProcessor implements CommandProcessor<JobRecord> {
   private final JobState jobState;
   private final JobMetrics jobMetrics;
 
-  public JobTimeOutProcessor(final ZeebeState state, final JobMetrics jobMetrics) {
+  public JobTimeOutProcessor(final ProcessingState state, final JobMetrics jobMetrics) {
     jobState = state.getJobState();
     this.jobMetrics = jobMetrics;
   }

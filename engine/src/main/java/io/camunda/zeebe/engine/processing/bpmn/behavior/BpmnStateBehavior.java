@@ -15,8 +15,8 @@ import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
@@ -32,13 +32,14 @@ public final class BpmnStateBehavior {
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
 
-  public BpmnStateBehavior(final ZeebeState zeebeState, final VariableBehavior variableBehavior) {
+  public BpmnStateBehavior(
+      final ProcessingState processingState, final VariableBehavior variableBehavior) {
     this.variableBehavior = variableBehavior;
 
-    processState = zeebeState.getProcessState();
-    elementInstanceState = zeebeState.getElementInstanceState();
-    variablesState = zeebeState.getVariableState();
-    jobState = zeebeState.getJobState();
+    processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
+    variablesState = processingState.getVariableState();
+    jobState = processingState.getJobState();
   }
 
   public ElementInstance getElementInstance(final BpmnElementContext context) {

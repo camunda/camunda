@@ -13,8 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -33,15 +33,15 @@ public final class ElementInstanceStateTest {
 
   private static final long PROCESS_KEY = 123;
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableElementInstanceState elementInstanceState;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    zeebeState = stateRule.getZeebeState();
-    elementInstanceState = zeebeState.getElementInstanceState();
+    processingState = stateRule.getProcessingState();
+    elementInstanceState = processingState.getElementInstanceState();
   }
 
   @Test
@@ -291,7 +291,7 @@ public final class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             parent, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATED);
-    zeebeState
+    processingState
         .getVariableState()
         .setVariableLocal(
             1, parent, PROCESS_KEY, BufferUtil.wrapString("a"), MsgPackUtil.asMsgPack("1"));
@@ -299,7 +299,7 @@ public final class ElementInstanceStateTest {
     processInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, child, processInstanceRecord, ProcessInstanceIntent.ELEMENT_ACTIVATING);
-    zeebeState
+    processingState
         .getVariableState()
         .setVariableLocal(
             2, child, PROCESS_KEY, BufferUtil.wrapString("b"), MsgPackUtil.asMsgPack("2"));
@@ -312,7 +312,7 @@ public final class ElementInstanceStateTest {
     final var nonEmptyColumns =
         Arrays.stream(ZbColumnFamilies.values())
             .filter(not(ZbColumnFamilies.KEY::equals))
-            .filter(not(zeebeState::isEmpty))
+            .filter(not(processingState::isEmpty))
             .collect(Collectors.toList());
 
     assertThat(nonEmptyColumns).describedAs("Expected all columns to be empty").isEmpty();

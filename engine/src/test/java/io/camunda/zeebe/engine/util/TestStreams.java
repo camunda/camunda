@@ -26,7 +26,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -89,7 +89,7 @@ public final class TestStreams {
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
   private boolean snapshotWasTaken = false;
 
-  private Function<MutableZeebeState, EventApplier> eventApplierFactory = EventAppliers::new;
+  private Function<MutableProcessingState, EventApplier> eventApplierFactory = EventAppliers::new;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
 
@@ -115,7 +115,7 @@ public final class TestStreams {
   }
 
   public void withEventApplierFactory(
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
+      final Function<MutableProcessingState, EventApplier> eventApplierFactory) {
     this.eventApplierFactory = eventApplierFactory;
   }
 

@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutablePendingMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import org.junit.Test;
 
 public final class PendingMessageSubscriptionStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableMessageSubscriptionState persistentState;
   private MutablePendingMessageSubscriptionState transientState;
@@ -33,9 +33,9 @@ public final class PendingMessageSubscriptionStateTest {
   @Before
   public void setUp() {
 
-    final MutableZeebeState zeebeState = stateRule.getZeebeState();
-    persistentState = zeebeState.getMessageSubscriptionState();
-    transientState = zeebeState.getPendingMessageSubscriptionState();
+    final MutableProcessingState processingState = stateRule.getProcessingState();
+    persistentState = processingState.getMessageSubscriptionState();
+    transientState = processingState.getPendingMessageSubscriptionState();
   }
 
   @Test

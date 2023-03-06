@@ -167,7 +167,7 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    final var keyGenerator = streamProcessorRule.getZeebeState().getKeyGenerator();
+    final var keyGenerator = streamProcessorRule.getProcessingState().getKeyGenerator();
     assertThat(keyGenerator.nextKey()).isEqualTo(lastGeneratedKey + 1);
   }
 
@@ -187,7 +187,7 @@ public final class StreamProcessorReplayTest {
     startStreamProcessor(typedRecordProcessor, eventApplier);
 
     // then
-    final var keyGenerator = streamProcessorRule.getZeebeState().getKeyGenerator();
+    final var keyGenerator = streamProcessorRule.getProcessingState().getKeyGenerator();
     assertThat(keyGenerator.nextKey()).isEqualTo(keyOfThisPartition + 1);
   }
 

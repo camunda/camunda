@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -29,20 +29,21 @@ public class DbMigratorImpl implements DbMigrator {
   // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
-  private final MutableZeebeState zeebeState;
+  private final MutableProcessingState processingState;
   private final Supplier<List<MigrationTask>> migrationSupplier;
   private boolean abortRequested = false;
 
   private MigrationTask currentMigration;
 
-  public DbMigratorImpl(final MutableZeebeState zeebeState) {
-    this(zeebeState, () -> MIGRATION_TASKS);
+  public DbMigratorImpl(final MutableProcessingState processingState) {
+    this(processingState, () -> MIGRATION_TASKS);
   }
 
   DbMigratorImpl(
-      final MutableZeebeState zeebeState, final Supplier<List<MigrationTask>> migrationSupplier) {
+      final MutableProcessingState processingState,
+      final Supplier<List<MigrationTask>> migrationSupplier) {
 
-    this.zeebeState = zeebeState;
+    this.processingState = processingState;
     this.migrationSupplier = migrationSupplier;
   }
 
@@ -103,7 +104,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
-    if (migrationTask.needsToRun(zeebeState)) {
+    if (migrationTask.needsToRun(processingState)) {
       try {
         currentMigration = migrationTask;
         runMigration(migrationTask, index, total);
@@ -133,7 +134,7 @@ public class DbMigratorImpl implements DbMigrator {
     LOGGER.info(
         "Starting " + migrationTask.getIdentifier() + " migration (" + index + "/" + total + ")");
     final var startTime = System.currentTimeMillis();
-    migrationTask.runMigration(zeebeState);
+    migrationTask.runMigration(processingState);
     final var duration = System.currentTimeMillis() - startTime;
 
     LOGGER.debug(migrationTask.getIdentifier() + " migration completed in " + duration + " ms.");

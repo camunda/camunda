@@ -8,11 +8,11 @@
 package io.camunda.zeebe.engine.state.query;
 
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -22,7 +22,7 @@ import org.agrona.DirectBuffer;
 
 public final class StateQueryService implements QueryService {
   private volatile boolean isClosed;
-  private ZeebeState state;
+  private ProcessingState state;
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
 
   public StateQueryService(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
@@ -67,7 +67,8 @@ public final class StateQueryService implements QueryService {
       // service is used for the first time, create state now
       // we don't need a key generator here, so we set it to null
       state =
-          new ZeebeDbState(Protocol.DEPLOYMENT_PARTITION, zeebeDb, zeebeDb.createContext(), null);
+          new ProcessingDbState(
+              Protocol.DEPLOYMENT_PARTITION, zeebeDb, zeebeDb.createContext(), null);
     }
   }
 }

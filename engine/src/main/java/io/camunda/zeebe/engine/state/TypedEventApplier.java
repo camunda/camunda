@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.engine.state;
 
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 
-/** Applies state changes for a specific event to the {@link MutableZeebeState}. */
+/** Applies state changes for a specific event to the {@link MutableProcessingState}. */
 public interface TypedEventApplier<I extends Intent, V extends RecordValue> {
 
   void applyState(final long key, final V value);

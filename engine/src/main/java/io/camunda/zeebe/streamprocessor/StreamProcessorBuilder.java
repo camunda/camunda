@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.RecordProcessor;
 import io.camunda.zeebe.engine.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.engine.state.EventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public final class StreamProcessorBuilder {
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private ActorSchedulingService actorSchedulingService;
   private ZeebeDb zeebeDb;
-  private Function<MutableZeebeState, EventApplier> eventApplierFactory;
+  private Function<MutableProcessingState, EventApplier> eventApplierFactory;
   private int nodeId;
 
   private List<RecordProcessor> recordProcessors;
@@ -74,7 +74,7 @@ public final class StreamProcessorBuilder {
   }
 
   public StreamProcessorBuilder eventApplierFactory(
-      final Function<MutableZeebeState, EventApplier> eventApplierFactory) {
+      final Function<MutableProcessingState, EventApplier> eventApplierFactory) {
     this.eventApplierFactory = eventApplierFactory;
     return this;
   }
@@ -114,7 +114,7 @@ public final class StreamProcessorBuilder {
     return recordProcessors;
   }
 
-  public Function<MutableZeebeState, EventApplier> getEventApplierFactory() {
+  public Function<MutableProcessingState, EventApplier> getEventApplierFactory() {
     return eventApplierFactory;
   }
 

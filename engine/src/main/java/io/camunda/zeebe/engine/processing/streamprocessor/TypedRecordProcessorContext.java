@@ -10,7 +10,8 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.ScheduledTaskDbState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 
 public interface TypedRecordProcessorContext {
 
@@ -18,9 +19,11 @@ public interface TypedRecordProcessorContext {
 
   ProcessingScheduleService getScheduleService();
 
-  MutableZeebeState getZeebeState();
+  MutableProcessingState getProcessingState();
 
   Writers getWriters();
 
   InterPartitionCommandSender getPartitionCommandSender();
+
+  ScheduledTaskDbState getScheduledTaskDbState();
 }

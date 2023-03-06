@@ -14,8 +14,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowE
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.KeyGenerator;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
@@ -32,15 +32,15 @@ public final class ProcessStateTest {
 
   private static final Long FIRST_PROCESS_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableProcessState processState;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    zeebeState = stateRule.getZeebeState();
-    processState = zeebeState.getProcessState();
+    processingState = stateRule.getProcessingState();
+    processState = processingState.getProcessState();
   }
 
   @Test
@@ -57,7 +57,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetProcessVersion() {
     // given
-    final var processRecord = creatingProcessRecord(zeebeState);
+    final var processRecord = creatingProcessRecord(processingState);
     processState.putProcess(processRecord.getKey(), processRecord);
 
     // when
@@ -70,10 +70,10 @@ public final class ProcessStateTest {
   @Test
   public void shouldIncrementProcessVersion() {
     // given
-    final var processRecord = creatingProcessRecord(zeebeState);
+    final var processRecord = creatingProcessRecord(processingState);
     processState.putProcess(processRecord.getKey(), processRecord);
 
-    final var processRecord2 = creatingProcessRecord(zeebeState);
+    final var processRecord2 = creatingProcessRecord(processingState);
     processState.putProcess(processRecord2.getKey(), processRecord2);
 
     // when
@@ -87,9 +87,9 @@ public final class ProcessStateTest {
   @Test
   public void shouldNotIncrementProcessVersionForDifferentProcessId() {
     // given
-    final var processRecord = creatingProcessRecord(zeebeState);
+    final var processRecord = creatingProcessRecord(processingState);
     processState.putProcess(processRecord.getKey(), processRecord);
-    final var processRecord2 = creatingProcessRecord(zeebeState, "other");
+    final var processRecord2 = creatingProcessRecord(processingState, "other");
 
     // when
     processState.putProcess(processRecord2.getKey(), processRecord2);
@@ -162,7 +162,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldPutDeploymentToState() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(processingState);
 
     // when
     processState.putDeployment(deploymentRecord);
@@ -177,7 +177,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldPutProcessToState() {
     // given
-    final var processRecord = creatingProcessRecord(zeebeState);
+    final var processRecord = creatingProcessRecord(processingState);
 
     // when
     processState.putProcess(processRecord.getKey(), processRecord);
@@ -205,7 +205,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldUpdateLatestDigestOnPutProcessToState() {
     // given
-    final var processRecord = creatingProcessRecord(zeebeState);
+    final var processRecord = creatingProcessRecord(processingState);
 
     // when
     processState.putProcess(processRecord.getKey(), processRecord);
@@ -218,7 +218,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldUpdateLatestProcessOnPutProcessToState() {
     // given
-    final var processRecord = creatingProcessRecord(zeebeState);
+    final var processRecord = creatingProcessRecord(processingState);
 
     // when
     processState.putProcess(processRecord.getKey(), processRecord);
@@ -238,7 +238,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldNotOverwritePreviousRecord() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(processingState);
 
     // when
     processState.putDeployment(deploymentRecord);
@@ -261,8 +261,8 @@ public final class ProcessStateTest {
     // given
 
     // when
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
 
     // then
     final DeployedProcess deployedProcess =
@@ -287,10 +287,10 @@ public final class ProcessStateTest {
   @Test
   public void shouldRestartVersionCountOnDifferentProcessId() {
     // given
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
 
     // when
-    processState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
+    processState.putDeployment(creatingDeploymentRecord(processingState, "otherId"));
 
     // then
     final DeployedProcess deployedProcess =
@@ -314,8 +314,8 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetLatestDeployedProcess() {
     // given
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
 
     // when
     final DeployedProcess latestProcess =
@@ -349,12 +349,12 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetLatestDeployedProcessAfterDeploymentWasAdded() {
     // given
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
     final DeployedProcess firstLatest =
         processState.getLatestProcessVersionByProcessId(wrapString("processId"));
 
     // when
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
 
     // then
     final DeployedProcess latestProcess =
@@ -377,7 +377,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetExecutableProcess() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(processingState);
     processState.putDeployment(deploymentRecord);
 
     // when
@@ -394,7 +394,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetExecutableProcessByKey() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(processingState);
     processState.putDeployment(deploymentRecord);
 
     // when
@@ -411,7 +411,7 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetExecutableProcessByLatestProcess() {
     // given
-    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(zeebeState);
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(processingState);
     processState.putDeployment(deploymentRecord);
 
     // when
@@ -428,9 +428,9 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetAllProcesses() {
     // given
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
+    processState.putDeployment(creatingDeploymentRecord(processingState, "otherId"));
 
     // when
     final Collection<DeployedProcess> processes = processState.getProcesses();
@@ -450,8 +450,8 @@ public final class ProcessStateTest {
   @Test
   public void shouldGetAllProcessesWithProcessId() {
     // given
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
 
     // when
     final Collection<DeployedProcess> processes =
@@ -471,8 +471,8 @@ public final class ProcessStateTest {
   @Test
   public void shouldNotGetProcessesWithOtherProcessId() {
     // given
-    processState.putDeployment(creatingDeploymentRecord(zeebeState));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState, "otherId"));
+    processState.putDeployment(creatingDeploymentRecord(processingState));
+    processState.putDeployment(creatingDeploymentRecord(processingState, "otherId"));
 
     // when
     final Collection<DeployedProcess> processes =
@@ -496,8 +496,8 @@ public final class ProcessStateTest {
   public void shouldReturnHighestVersionInsteadOfMostRecent() {
     // given
     final String processId = "process";
-    processState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 2));
-    processState.putDeployment(creatingDeploymentRecord(zeebeState, processId, 1));
+    processState.putDeployment(creatingDeploymentRecord(processingState, processId, 2));
+    processState.putDeployment(creatingDeploymentRecord(processingState, processId, 1));
 
     // when
     final DeployedProcess latestProcess =
@@ -507,19 +507,20 @@ public final class ProcessStateTest {
     Assertions.assertThat(latestProcess.getVersion()).isEqualTo(2);
   }
 
-  public static DeploymentRecord creatingDeploymentRecord(final MutableZeebeState zeebeState) {
-    return creatingDeploymentRecord(zeebeState, "processId");
+  public static DeploymentRecord creatingDeploymentRecord(
+      final MutableProcessingState processingState) {
+    return creatingDeploymentRecord(processingState, "processId");
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
-      final MutableZeebeState zeebeState, final String processId) {
-    final MutableProcessState processState = zeebeState.getProcessState();
+      final MutableProcessingState processingState, final String processId) {
+    final MutableProcessState processState = processingState.getProcessState();
     final int version = processState.getProcessVersion(processId) + 1;
-    return creatingDeploymentRecord(zeebeState, processId, version);
+    return creatingDeploymentRecord(processingState, processId, version);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
-      final MutableZeebeState zeebeState, final String processId, final int version) {
+      final MutableProcessingState processingState, final String processId, final int version) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -541,7 +542,7 @@ public final class ProcessStateTest {
         .setResourceName(wrapString(resourceName))
         .setResource(resource);
 
-    final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
+    final KeyGenerator keyGenerator = processingState.getKeyGenerator();
     final long key = keyGenerator.nextKey();
 
     deploymentRecord
@@ -556,19 +557,19 @@ public final class ProcessStateTest {
     return deploymentRecord;
   }
 
-  public static ProcessRecord creatingProcessRecord(final MutableZeebeState zeebeState) {
-    return creatingProcessRecord(zeebeState, "processId");
+  public static ProcessRecord creatingProcessRecord(final MutableProcessingState processingState) {
+    return creatingProcessRecord(processingState, "processId");
   }
 
   public static ProcessRecord creatingProcessRecord(
-      final MutableZeebeState zeebeState, final String processId) {
-    final MutableProcessState processState = zeebeState.getProcessState();
+      final MutableProcessingState processingState, final String processId) {
+    final MutableProcessState processState = processingState.getProcessState();
     final int version = processState.getProcessVersion(processId) + 1;
-    return creatingProcessRecord(zeebeState, processId, version);
+    return creatingProcessRecord(processingState, processId, version);
   }
 
   public static ProcessRecord creatingProcessRecord(
-      final MutableZeebeState zeebeState, final String processId, final int version) {
+      final MutableProcessingState processingState, final String processId, final int version) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -581,7 +582,7 @@ public final class ProcessStateTest {
     final var resource = wrapString(Bpmn.convertToString(modelInstance));
     final var checksum = wrapString("checksum");
 
-    final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
+    final KeyGenerator keyGenerator = processingState.getKeyGenerator();
     final long key = keyGenerator.nextKey();
 
     processRecord

@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -44,7 +44,7 @@ public final class DeploymentTransformer {
 
   public DeploymentTransformer(
       final StateWriter stateWriter,
-      final ZeebeState zeebeState,
+      final ProcessingState processingState,
       final ExpressionProcessor expressionProcessor,
       final KeyGenerator keyGenerator) {
 
@@ -64,11 +64,11 @@ public final class DeploymentTransformer {
             keyGenerator,
             stateWriter,
             this::getChecksum,
-            zeebeState.getProcessState(),
+            processingState.getProcessState(),
             expressionProcessor);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
-            keyGenerator, stateWriter, this::getChecksum, zeebeState.getDecisionState());
+            keyGenerator, stateWriter, this::getChecksum, processingState.getDecisionState());
 
     resourceTransformers =
         Map.ofEntries(

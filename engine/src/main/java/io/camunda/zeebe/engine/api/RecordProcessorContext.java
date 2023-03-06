@@ -11,7 +11,7 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.KeyGenerator;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import java.util.List;
 import java.util.function.Function;
 
@@ -25,7 +25,7 @@ public interface RecordProcessorContext {
 
   TransactionContext getTransactionContext();
 
-  Function<MutableZeebeState, EventApplier> getEventApplierFactory();
+  Function<MutableProcessingState, EventApplier> getEventApplierFactory();
 
   List<StreamProcessorLifecycleAware> getLifecycleListeners();
 

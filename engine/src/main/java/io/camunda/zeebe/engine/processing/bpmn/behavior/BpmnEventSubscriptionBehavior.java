@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -32,12 +32,12 @@ public final class BpmnEventSubscriptionBehavior {
   public BpmnEventSubscriptionBehavior(
       final CatchEventBehavior catchEventBehavior,
       final EventTriggerBehavior eventTriggerBehavior,
-      final ZeebeState zeebeState) {
+      final ProcessingState processingState) {
     this.catchEventBehavior = catchEventBehavior;
     this.eventTriggerBehavior = eventTriggerBehavior;
 
-    processState = zeebeState.getProcessState();
-    eventScopeInstanceState = zeebeState.getEventScopeInstanceState();
+    processState = processingState.getProcessState();
+    eventScopeInstanceState = processingState.getEventScopeInstanceState();
   }
 
   /**

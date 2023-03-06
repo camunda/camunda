@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -54,19 +54,19 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
   public ProcessMessageSubscriptionCorrelateProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final MutableZeebeState zeebeState,
+      final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    processState = zeebeState.getProcessState();
-    elementInstanceState = zeebeState.getElementInstanceState();
+    processState = processingState.getProcessState();
+    elementInstanceState = processingState.getElementInstanceState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     eventHandle =
         new EventHandle(
-            zeebeState.getKeyGenerator(),
-            zeebeState.getEventScopeInstanceState(),
+            processingState.getKeyGenerator(),
+            processingState.getEventScopeInstanceState(),
             writers,
             processState,
             bpmnBehaviors.eventTriggerBehavior(),

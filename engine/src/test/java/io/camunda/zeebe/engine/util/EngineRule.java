@@ -22,9 +22,9 @@ import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistri
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.RecordValues;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.ZbColumnFamilies;
-import io.camunda.zeebe.engine.state.ZeebeDbState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
@@ -281,8 +281,8 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getClock();
   }
 
-  public ZeebeState getZeebeState() {
-    return environmentRule.getZeebeState();
+  public ProcessingState getProcessingState() {
+    return environmentRule.getProcessingState();
   }
 
   public StreamProcessor getStreamProcessor(final int partitionId) {
@@ -371,7 +371,7 @@ public final class EngineRule extends ExternalResource {
                 Function.identity(),
                 columnFamily -> {
                   final var entries = new HashMap<>();
-                  ((ZeebeDbState) getZeebeState())
+                  ((ProcessingDbState) getProcessingState())
                       .forEach(
                           columnFamily,
                           keyInstance,

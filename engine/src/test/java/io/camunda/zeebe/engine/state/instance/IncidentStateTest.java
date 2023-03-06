@@ -14,8 +14,8 @@ import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableZeebeState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -27,19 +27,19 @@ import org.junit.Test;
 
 public final class IncidentStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableIncidentState incidentState;
   private MutableElementInstanceState elementInstanceState;
   private MutableJobState jobState;
-  private MutableZeebeState zeebeState;
+  private MutableProcessingState processingState;
 
   @Before
   public void setUp() {
-    zeebeState = stateRule.getZeebeState();
-    elementInstanceState = zeebeState.getElementInstanceState();
-    jobState = zeebeState.getJobState();
-    incidentState = zeebeState.getIncidentState();
+    processingState = stateRule.getProcessingState();
+    elementInstanceState = processingState.getElementInstanceState();
+    jobState = processingState.getJobState();
+    incidentState = processingState.getIncidentState();
   }
 
   @Test

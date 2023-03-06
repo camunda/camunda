@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutablePendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.util.ZeebeStateRule;
+import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,15 +23,15 @@ import org.junit.Test;
 
 public final class PendingProcessMessageSubscriptionStateTest {
 
-  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ProcessingStateRule stateRule = new ProcessingStateRule();
 
   private MutableProcessMessageSubscriptionState persistentState;
   private MutablePendingProcessMessageSubscriptionState transientState;
 
   @Before
   public void setUp() {
-    persistentState = stateRule.getZeebeState().getProcessMessageSubscriptionState();
-    transientState = stateRule.getZeebeState().getPendingProcessMessageSubscriptionState();
+    persistentState = stateRule.getProcessingState().getProcessMessageSubscriptionState();
+    transientState = stateRule.getProcessingState().getPendingProcessMessageSubscriptionState();
   }
 
   @Test

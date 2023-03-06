@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.ZeebeState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -31,7 +31,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
   private final EventHandle eventHandle;
 
   public JobCompleteProcessor(
-      final ZeebeState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
+      final ProcessingState state, final JobMetrics jobMetrics, final EventHandle eventHandle) {
     jobState = state.getJobState();
     elementInstanceState = state.getElementInstanceState();
     defaultProcessor =
