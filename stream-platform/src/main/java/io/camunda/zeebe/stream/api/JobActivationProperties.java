@@ -8,7 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.util.buffer.BufferReader;
+import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
  * {@link JobActivationProperties} represents the minimum set of properties required to activate a
  * {@link io.camunda.zeebe.protocol.record.value.JobRecordValue} in the engine.
  */
-public interface JobActivationProperties extends BufferReader {
+public interface JobActivationProperties extends Metadata {
 
   /**
    * Returns the name of the worker. This is mostly used for debugging purposes.
@@ -31,7 +31,7 @@ public interface JobActivationProperties extends BufferReader {
    *
    * @see JobRecordValue#getVariables()
    */
-  Collection<String> fetchVariables();
+  Collection<DirectBuffer> fetchVariables();
 
   /**
    * Returns the activation timeout of the job, i.e. how long before the job is made activate-able
