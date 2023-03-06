@@ -26,7 +26,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * @param <M> the type of the properties of the stream.
  */
-public class StreamRegistry<M> {
+public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
   // Needs to be thread-safe for readers
   private final Map<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
       new ConcurrentHashMap<>();
@@ -93,12 +93,7 @@ public class StreamRegistry<M> {
     streamOfReceiver.forEach(stream -> remove(stream.streamId(), stream.receiver()));
   }
 
-  /**
-   * Thread-safe with concurrent add/remove
-   *
-   * @param streamType type of the stream
-   * @return set of streams for the given type
-   */
+  @Override
   public Set<StreamConsumer<M>> get(final UnsafeBuffer streamType) {
     // TODO: we may have to return an immutable collection here.
     return typeToConsumers.get(streamType);
@@ -108,22 +103,4 @@ public class StreamRegistry<M> {
     typeToConsumers.clear();
     idToConsumer.clear();
   }
-
-  /**
-   * A stream consumer uniquely identified by the id, with its properties and streamType.
-   *
-   * @param id unique id
-   * @param properties properties of the stream
-   * @param streamType type of the stream
-   * @param <M> type of the properties
-   */
-  public record StreamConsumer<M>(StreamId id, M properties, UnsafeBuffer streamType) {}
-
-  /**
-   * Uniquely identifies a stream
-   *
-   * @param streamId
-   * @param receiver
-   */
-  public record StreamId(UUID streamId, MemberId receiver) {}
 }

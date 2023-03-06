@@ -10,8 +10,8 @@ package io.camunda.zeebe.broker.jobstream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.jobstream.StreamRegistry.StreamConsumer;
-import io.camunda.zeebe.broker.jobstream.StreamRegistry.StreamId;
+import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamConsumer;
+import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
