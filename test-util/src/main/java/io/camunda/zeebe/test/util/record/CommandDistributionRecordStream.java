@@ -24,4 +24,8 @@ public class CommandDistributionRecordStream
       final Stream<Record<CommandDistributionRecordValue>> wrappedStream) {
     return new CommandDistributionRecordStream(wrappedStream);
   }
+
+  public CommandDistributionRecordStream withDistributionPartitionId(final int partitionId) {
+    return valueFilter(v -> v.getPartitionId() == partitionId);
+  }
 }

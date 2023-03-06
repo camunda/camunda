@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -40,13 +41,13 @@ public final class DeploymentClient {
                     return;
                   }
 
-                  RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
+                  RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
                       .withPartitionId(partitionId)
                       .withRecordKey(deploymentOnPartitionOne.getKey())
                       .getFirst();
                 });
 
-            RecordingExporter.deploymentRecords(DeploymentIntent.FULLY_DISTRIBUTED)
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
                 .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                 .withRecordKey(deploymentOnPartitionOne.getKey())
                 .getFirst();
