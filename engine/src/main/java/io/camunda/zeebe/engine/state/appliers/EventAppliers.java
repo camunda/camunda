@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
@@ -74,6 +75,8 @@ public final class EventAppliers implements EventApplier {
     registerDecisionRequirementsAppliers(state);
 
     registerSignalSubscriptionAppliers(state);
+
+    registerCommandDistributionAppliers(state);
   }
 
   private void registerTimeEventAppliers(final MutableProcessingState state) {
@@ -270,6 +273,22 @@ public final class EventAppliers implements EventApplier {
     register(
         DecisionRequirementsIntent.DELETED,
         new DecisionRequirementsDeletedApplier(state.getDecisionState()));
+  }
+
+  private void registerCommandDistributionAppliers(final MutableProcessingState state) {
+    final var distributionState = state.getDistributionState();
+    register(
+        CommandDistributionIntent.STARTED,
+        new CommandDistributionStartedApplier(distributionState));
+    register(
+        CommandDistributionIntent.DISTRIBUTING,
+        new CommandDistributionDistributingApplier(distributionState));
+    register(
+        CommandDistributionIntent.ACKNOWLEDGED,
+        new CommandDistributionAcknowledgedApplier(distributionState));
+    register(
+        CommandDistributionIntent.FINISHED,
+        new CommandDistributionFinishedApplier(distributionState));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
