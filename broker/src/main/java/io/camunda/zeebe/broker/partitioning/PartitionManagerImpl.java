@@ -27,6 +27,9 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreFactory;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.ArrayList;
@@ -59,6 +62,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
   private final CommandApiService commandApiService;
   private final ExporterRepository exporterRepository;
   private final AtomixServerTransport gatewayBrokerTransport;
+  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   public PartitionManagerImpl(
       final ActorSchedulingService actorSchedulingService,
@@ -70,7 +74,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
       final List<PartitionListener> partitionListeners,
       final CommandApiService commandApiService,
       final ExporterRepository exporterRepository,
-      final AtomixServerTransport gatewayBrokerTransport) {
+      final AtomixServerTransport gatewayBrokerTransport,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
 
     snapshotStoreFactory =
@@ -84,6 +89,7 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.commandApiService = commandApiService;
     this.exporterRepository = exporterRepository;
+    this.jobStreamer = jobStreamer;
 
     partitionGroup =
         new RaftPartitionGroupFactory().buildRaftPartitionGroup(brokerCfg, snapshotStoreFactory);
@@ -144,7 +150,8 @@ public final class PartitionManagerImpl implements PartitionManager, TopologyMan
                       exporterRepository,
                       healthCheckService,
                       diskSpaceUsageMonitor,
-                      gatewayBrokerTransport);
+                      gatewayBrokerTransport,
+                      jobStreamer);
 
               partitions.addAll(
                   partitionFactory.constructPartitions(
