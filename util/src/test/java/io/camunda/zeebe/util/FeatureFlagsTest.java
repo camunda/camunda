@@ -21,6 +21,7 @@ class FeatureFlagsTest {
     // then
     assertThat(sut.yieldingDueDateChecker()).isFalse();
     assertThat(sut.enableActorMetrics()).isFalse();
+    assertThat(sut.enableMessageTTLCheckerAsync()).isFalse();
   }
 
   @Test
@@ -30,5 +31,6 @@ class FeatureFlagsTest {
 
     // then
     assertThat(sut.yieldingDueDateChecker()).isTrue();
+    assertThat(sut.enableMessageTTLCheckerAsync()).isTrue();
   }
 }
