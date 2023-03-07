@@ -10,12 +10,30 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Form} from 'react-final-form';
 import arrayMutators from 'final-form-arrays';
+import {useEffect} from 'react';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {variablesStore} from 'modules/stores/variables';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
+import {modificationsStore} from 'modules/stores/modifications';
 
 type Props = {
   children?: React.ReactNode;
 };
 
 const Wrapper: React.FC<Props> = ({children}) => {
+  useEffect(() => {
+    flowNodeSelectionStore.init();
+
+    return () => {
+      processInstanceDetailsStore.reset();
+      variablesStore.reset();
+      flowNodeSelectionStore.reset();
+      processInstanceDetailsStatisticsStore.reset();
+      modificationsStore.reset();
+    };
+  });
+
   return (
     <ThemeProvider>
       <MemoryRouter initialEntries={[`/processes/1`]}>

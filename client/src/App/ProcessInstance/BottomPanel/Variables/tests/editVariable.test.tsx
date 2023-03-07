@@ -16,12 +16,11 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from '../index';
 import {Wrapper, mockVariables} from './mocks';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance, createVariable} from 'modules/testUtils';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
+import {act} from 'react-dom/test-utils';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -33,27 +32,6 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Edit variable', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  beforeEach(() => {
-    flowNodeSelectionStore.init();
-  });
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    modificationsStore.reset();
-  });
-
   it('should show/hide edit button next to variable according to it having an active operation', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -116,16 +94,16 @@ describe('Edit variable', () => {
       )
     ).toBeInTheDocument();
 
-    processInstanceDetailsStore.setProcessInstance({
-      ...instanceMock,
-      state: 'CANCELED',
-    });
-
-    await waitForElementToBeRemoved(() =>
-      within(screen.getByTestId(inactiveOperationVariable!.name)).queryByTestId(
-        'edit-variable-button'
-      )
+    act(() =>
+      processInstanceDetailsStore.setProcessInstance({
+        ...instanceMock,
+        state: 'CANCELED',
+      })
     );
+
+    expect(
+      screen.queryByTestId('edit-variable-button')
+    ).not.toBeInTheDocument();
   });
 
   it('should show/hide edit variable inputs', async () => {

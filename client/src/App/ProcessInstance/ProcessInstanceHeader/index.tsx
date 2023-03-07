@@ -150,7 +150,12 @@ const ProcessInstanceHeader: React.FC = observer(() => {
           </tr>
         </tbody>
       </Styled.Table>
-      <Restricted scopes={['write']}>
+      <Restricted
+        scopes={['write']}
+        resourceBasedRestrictions={{
+          scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
+        }}
+      >
         <>
           <Operations
             instance={processInstance}

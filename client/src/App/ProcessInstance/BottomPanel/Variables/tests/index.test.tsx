@@ -17,8 +17,6 @@ import Variables from '../index';
 import {mockVariables} from '../index.setup';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance, createVariable} from 'modules/testUtils';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {Wrapper} from './mocks';
 
@@ -32,26 +30,8 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Variables', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
   beforeEach(() => {
     flowNodeSelectionStore.init();
-  });
-
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    modificationsStore.reset();
   });
 
   describe('Variables', () => {

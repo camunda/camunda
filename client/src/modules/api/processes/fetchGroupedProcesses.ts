@@ -6,7 +6,6 @@
  */
 
 import {requestAndParse} from 'modules/request';
-import {PermissionDto} from '../sharedTypes';
 
 type ProcessVersionDto = {
   bpmnProcessId: string;

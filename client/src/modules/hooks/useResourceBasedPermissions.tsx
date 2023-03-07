@@ -7,8 +7,9 @@
 
 import {useMatch} from 'react-router-dom';
 import {Paths} from 'modules/routes';
-import {PermissionDto} from 'modules/api/sharedTypes';
 import {processesStore} from 'modules/stores/processes';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {isNil} from 'lodash';
 
 const useResourceBasedPermissions = () => {
   const processesMatch = useMatch(Paths.processes());
@@ -19,7 +20,10 @@ const useResourceBasedPermissions = () => {
     scopes: PermissionDto[],
     resourceDefinitionId?: string
   ) => {
-    if (scopes.length === 0) {
+    if (
+      !window.clientConfig?.resourcePermissionsEnabled ||
+      scopes.length === 0
+    ) {
       return true;
     }
 
@@ -32,8 +36,13 @@ const useResourceBasedPermissions = () => {
       // TODO https://github.com/camunda/operate/issues/4116
       return true;
     } else if (processInstanceDetailMatch !== null) {
-      // TODO https://github.com/camunda/operate/issues/4122
-      return true;
+      const permissions =
+        processInstanceDetailsStore.state.processInstance?.permissions;
+
+      return (
+        !isNil(permissions) &&
+        scopes.some((permission) => permissions.includes(permission))
+      );
     }
 
     return false;

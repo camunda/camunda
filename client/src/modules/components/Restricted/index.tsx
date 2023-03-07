@@ -7,7 +7,6 @@
 
 import {authenticationStore, Permissions} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
-import {PermissionDto} from 'modules/api/sharedTypes';
 import {useResourceBasedPermissions} from 'modules/hooks/useResourceBasedPermissions';
 
 type Props = {
@@ -29,7 +28,6 @@ const Restricted: React.FC<Props> = observer(
     }
 
     if (
-      window.clientConfig?.resourcePermissionsEnabled &&
       resourceBasedRestrictions !== undefined &&
       !hasResourceBasedPermission(
         resourceBasedRestrictions.scopes,

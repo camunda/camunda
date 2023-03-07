@@ -290,6 +290,9 @@ const Variables: React.FC<Props> = observer(
                                       ) : (
                                         <Restricted
                                           scopes={['write']}
+                                          resourceBasedRestrictions={{
+                                            scopes: ['UPDATE_PROCESS_INSTANCE'],
+                                          }}
                                           fallback={
                                             isPreview ? (
                                               <ViewFullVariableButton
@@ -378,7 +381,12 @@ const Variables: React.FC<Props> = observer(
           </>
         )}
         {!isModificationModeEnabled && (
-          <Restricted scopes={['write']}>
+          <Restricted
+            scopes={['write']}
+            resourceBasedRestrictions={{
+              scopes: ['UPDATE_PROCESS_INSTANCE'],
+            }}
+          >
             <Styled.Footer
               scrollBarWidth={
                 (scrollableContentRef?.current?.offsetWidth ?? 0) -

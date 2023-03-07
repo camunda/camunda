@@ -20,11 +20,21 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 
 const instanceMock = createInstance({id: '1'});
 
-describe('Restricted user', () => {
+describe('Restricted user with resource based permissions', () => {
   beforeEach(() => {
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+  });
+
+  afterEach(() => {
+    window.clientConfig = undefined;
+  });
+
+  beforeAll(() => {
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['read'],
+      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
@@ -33,8 +43,15 @@ describe('Restricted user', () => {
     });
   });
 
-  it('should not display Edit Variable button', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
+  afterAll(() => {
+    authenticationStore.reset();
+  });
+
+  it('should display add/edit variable buttons when update process instance permission is available', async () => {
+    processInstanceDetailsStore.setProcessInstance({
+      ...instanceMock,
+      permissions: ['UPDATE_PROCESS_INSTANCE'],
+    });
 
     mockFetchVariables().withSuccess([createVariable()]);
 
@@ -47,10 +64,11 @@ describe('Restricted user', () => {
     render(<Variables />, {wrapper: Wrapper});
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-    expect(screen.queryByTitle(/enter edit mode/i)).not.toBeInTheDocument();
+    expect(screen.getByTitle(/enter edit mode/i)).toBeInTheDocument();
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
   });
 
-  it('should not display Add Variable footer', async () => {
+  it('should not display add/edit variable buttons when update process instance permission is not available', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess([createVariable()]);
@@ -65,12 +83,11 @@ describe('Restricted user', () => {
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
     expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/enter edit mode/i)).not.toBeInTheDocument();
   });
 
   it('should have a button to see full variable value', async () => {
-    processInstanceDetailsStore.setProcessInstance({
-      ...instanceMock,
-    });
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
 

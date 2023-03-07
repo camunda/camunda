@@ -20,11 +20,11 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {createInstance} from 'modules/testUtils';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
+import {act} from 'react-dom/test-utils';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -36,27 +36,6 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Footer', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  beforeEach(() => {
-    flowNodeSelectionStore.init();
-  });
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    modificationsStore.reset();
-  });
-
   it('should disable add variable button when loading', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -169,11 +148,13 @@ describe('Footer', () => {
       },
     });
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'start',
-      flowNodeInstanceId: '2',
-      isMultiInstance: false,
-    });
+    act(() =>
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'start',
+        flowNodeInstanceId: '2',
+        isMultiInstance: false,
+      })
+    );
 
     await waitFor(() =>
       expect(
@@ -185,11 +166,13 @@ describe('Footer', () => {
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'neverFails',
-      flowNodeInstanceId: '3',
-      isMultiInstance: false,
-    });
+    act(() =>
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'neverFails',
+        flowNodeInstanceId: '3',
+        isMultiInstance: false,
+      })
+    );
 
     await waitFor(() =>
       expect(

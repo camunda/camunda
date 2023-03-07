@@ -25,6 +25,7 @@ import {CalledInstanceCancellationModal} from './CalledInstanceCancellationModal
 import {modificationsStore} from 'modules/stores/modifications';
 import {ModificationHelperModal} from './ModificationHelperModal';
 import {getStateLocally} from 'modules/utils/localStorage';
+import {Restricted} from '../Restricted';
 
 type Props = {
   instance: ProcessInstanceEntity;
@@ -96,43 +97,75 @@ const Operations: React.FC<Props> = observer(
 
         <OperationItems>
           {hasIncident(instance) && !isModificationModeEnabled && (
-            <OperationItem
-              type="RESOLVE_INCIDENT"
-              onClick={() => applyOperation('RESOLVE_INCIDENT')}
-              title={`Retry Instance ${instance.id}`}
-              disabled={isOperationActive('RESOLVE_INCIDENT')}
-            />
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                scopes: ['UPDATE_PROCESS_INSTANCE'],
+                resourceDefinitionId: instance.bpmnProcessId,
+              }}
+            >
+              <OperationItem
+                type="RESOLVE_INCIDENT"
+                onClick={() => applyOperation('RESOLVE_INCIDENT')}
+                title={`Retry Instance ${instance.id}`}
+                disabled={isOperationActive('RESOLVE_INCIDENT')}
+              />
+            </Restricted>
           )}
           {isRunning(instance) && !isModificationModeEnabled && (
-            <OperationItem
-              type="CANCEL_PROCESS_INSTANCE"
-              onClick={() => setIsCancellationModalVisible(true)}
-              title={`Cancel Instance ${instance.id}`}
-              disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
-            />
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                scopes: ['UPDATE_PROCESS_INSTANCE'],
+                resourceDefinitionId: instance.bpmnProcessId,
+              }}
+            >
+              <OperationItem
+                type="CANCEL_PROCESS_INSTANCE"
+                onClick={() => setIsCancellationModalVisible(true)}
+                title={`Cancel Instance ${instance.id}`}
+                disabled={isOperationActive('CANCEL_PROCESS_INSTANCE')}
+              />
+            </Restricted>
           )}
           {!isRunning(instance) && (
-            <OperationItem
-              type="DELETE"
-              onClick={() => setIsDeleteModalVisible(true)}
-              title={`Delete Instance ${instance.id}`}
-              disabled={isOperationActive('DELETE_PROCESS_INSTANCE')}
-            />
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                scopes: ['DELETE_PROCESS_INSTANCE'],
+                resourceDefinitionId: instance.bpmnProcessId,
+              }}
+            >
+              <OperationItem
+                type="DELETE"
+                onClick={() => setIsDeleteModalVisible(true)}
+                title={`Delete Instance ${instance.id}`}
+                disabled={isOperationActive('DELETE_PROCESS_INSTANCE')}
+              />
+            </Restricted>
           )}
           {isInstanceModificationVisible &&
             isRunning(instance) &&
             !isModificationModeEnabled && (
-              <OperationItem
-                type="ENTER_MODIFICATION_MODE"
-                onClick={() => {
-                  if (getStateLocally()?.['hideModificationHelperModal']) {
-                    modificationsStore.enableModificationMode();
-                  } else {
-                    setIsModificationModeHelperModalVisible(true);
-                  }
+              <Restricted
+                scopes={['write']}
+                resourceBasedRestrictions={{
+                  scopes: ['UPDATE_PROCESS_INSTANCE'],
+                  resourceDefinitionId: instance.bpmnProcessId,
                 }}
-                title={`Modify Instance ${instance.id}`}
-              />
+              >
+                <OperationItem
+                  type="ENTER_MODIFICATION_MODE"
+                  onClick={() => {
+                    if (getStateLocally()?.['hideModificationHelperModal']) {
+                      modificationsStore.enableModificationMode();
+                    } else {
+                      setIsModificationModeHelperModalVisible(true);
+                    }
+                  }}
+                  title={`Modify Instance ${instance.id}`}
+                />
+              </Restricted>
             )}
         </OperationItems>
 

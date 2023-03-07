@@ -89,6 +89,7 @@ describe('InstanceHeader', () => {
     processInstanceDetailsStore.reset();
     processInstanceDetailsDiagramStore.reset();
     authenticationStore.reset();
+    window.clientConfig = undefined;
   });
 
   it('should show skeleton before instance data is available', async () => {
@@ -340,7 +341,7 @@ describe('InstanceHeader', () => {
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
   });
 
-  it('should show operation buttons when user has permission', async () => {
+  it('should show operation buttons for running process instance when user has permission', async () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
     mockFetchProcessXML().withSuccess(mockProcessXML);
 
@@ -374,6 +375,114 @@ describe('InstanceHeader', () => {
     expect(
       screen.getByRole('button', {name: /Modify Instance/})
     ).toBeInTheDocument();
+  });
+
+  it('should show operation buttons for finished process instance when user has permission', async () => {
+    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    authenticationStore.setUser({
+      displayName: 'demo',
+      permissions: ['read', 'write'],
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+    });
+
+    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    processInstanceDetailsDiagramStore.init();
+    processInstanceDetailsStore.init({
+      id: mockCanceledInstance.id,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.getByRole('button', {name: /Delete Instance/})
+    ).toBeInTheDocument();
+  });
+
+  it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+
+    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    authenticationStore.setUser({
+      displayName: 'demo',
+      permissions: ['write'],
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+    });
+
+    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    processInstanceDetailsDiagramStore.init();
+    processInstanceDetailsStore.init({
+      id: mockCanceledInstance.id,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /Delete Instance/})
+    ).not.toBeInTheDocument();
+  });
+
+  it('should hide operation buttons when user has no resource based permission for update process instance', async () => {
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+
+    authenticationStore.setUser({
+      displayName: 'demo',
+      permissions: ['write'],
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+    });
+
+    render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+
+    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
+
+    processInstanceDetailsDiagramStore.init();
+    processInstanceDetailsStore.init({
+      id: mockInstanceWithActiveOperation.id,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    expect(
+      screen.queryByRole('button', {name: /Cancel Instance/})
+    ).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('button', {name: /Modify Instance/})
+    ).not.toBeInTheDocument();
   });
 
   it('should hide operation buttons when user has no permission', async () => {

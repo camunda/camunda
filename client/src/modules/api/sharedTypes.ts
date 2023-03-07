@@ -21,10 +21,4 @@ type BatchOperationDto = {
   operationsFinishedCount: number;
 };
 
-type PermissionDto =
-  | 'READ'
-  | 'DELETE'
-  | 'UPDATE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_INSTANCE';
-
-export type {BatchOperationDto, PermissionDto};
+export type {BatchOperationDto};

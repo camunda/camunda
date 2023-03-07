@@ -16,11 +16,9 @@ import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from '../index';
 import {Wrapper, mockVariables} from './mocks';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {createInstance} from 'modules/testUtils';
-import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
-import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {act} from 'react-dom/test-utils';
 
 const mockDisplayNotification = jest.fn();
 jest.mock('modules/notifications', () => ({
@@ -32,27 +30,6 @@ jest.mock('modules/notifications', () => ({
 const instanceMock = createInstance({id: '1'});
 
 describe('Add variable', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  beforeEach(() => {
-    flowNodeSelectionStore.init();
-  });
-  afterEach(() => {
-    processInstanceDetailsStore.reset();
-    variablesStore.reset();
-    flowNodeSelectionStore.reset();
-    processInstanceDetailsStatisticsStore.reset();
-    modificationsStore.reset();
-  });
-
   it('should show/hide add variable inputs', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -303,14 +280,15 @@ describe('Add variable', () => {
 
     await user.click(screen.getByTitle(/add variable/i));
     expect(screen.getByTestId('add-variable-row')).toBeInTheDocument();
-    processInstanceDetailsStore.setProcessInstance({
-      ...instanceMock,
-      state: 'CANCELED',
-    });
 
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('add-variable-row')
+    act(() =>
+      processInstanceDetailsStore.setProcessInstance({
+        ...instanceMock,
+        state: 'CANCELED',
+      })
     );
+
+    expect(screen.queryByTestId('add-variable-row')).not.toBeInTheDocument();
   });
 
   it('should have JSON editor when adding a new Variable', async () => {

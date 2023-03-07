@@ -56,6 +56,12 @@ interface InstanceOperationEntity {
   errorMessage: null | string;
 }
 
+type PermissionDto =
+  | 'READ'
+  | 'DELETE'
+  | 'UPDATE_PROCESS_INSTANCE'
+  | 'DELETE_PROCESS_INSTANCE';
+
 interface ProcessInstanceEntity {
   id: string;
   processId: string;
@@ -74,6 +80,7 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
+  permissions?: PermissionDto[] | null;
 }
 
 interface DecisionInstanceEntity {
