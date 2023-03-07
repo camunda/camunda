@@ -356,8 +356,8 @@ public final class DbMessageState implements MutableMessageState {
           if (deadlineEntry <= timestamp) {
             final long messageKeyEntry = key.second().inner().getValue();
             shouldContinue = visitor.visit(deadlineEntry, messageKeyEntry);
+            stoppedByVisitor.set(!shouldContinue);
           }
-          stoppedByVisitor.set(!shouldContinue);
           return shouldContinue;
         });
 
