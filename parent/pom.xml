@@ -120,6 +120,7 @@
     <version.jackson-databind-nullable>0.2.5</version.jackson-databind-nullable>
     <version.jackson-annotations>2.14.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.7</version.swagger-annotations>
+    <version.checker-qual>3.32.0</version.checker-qual>
 
     <!-- maven plugins -->
     <plugin.version.antrun>3.1.0</plugin.version.antrun>
@@ -1071,6 +1072,12 @@
         <groupId>io.swagger.core.v3</groupId>
         <artifactId>swagger-annotations</artifactId>
         <version>${version.swagger-annotations}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.checkerframework</groupId>
+        <artifactId>checker-qual</artifactId>
+        <version>${version.checker-qual}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
