@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableBoolean;
 
 public final class DbMessageState implements MutableMessageState {
 
@@ -336,17 +337,31 @@ public final class DbMessageState implements MutableMessageState {
   }
 
   @Override
-  public void visitMessagesWithDeadlineBefore(
-      final long timestamp, final ExpiredMessageVisitor visitor) {
+  public boolean visitMessagesWithDeadlineBeforeTimestamp(
+      final long timestamp, final Index startAt, final ExpiredMessageVisitor visitor) {
+    final DbCompositeKey<DbLong, DbForeignKey<DbLong>> startAtKey;
+    if (startAt != null) {
+      deadline.wrapLong(startAt.deadline());
+      messageKey.wrapLong(startAt.key());
+      startAtKey = deadlineMessageKey;
+    } else {
+      startAtKey = null;
+    }
+    final var stoppedByVisitor = new MutableBoolean(false);
     deadlineColumnFamily.whileTrue(
-        ((compositeKey, zbNil) -> {
-          final long deadline = compositeKey.first().getValue();
-          if (deadline <= timestamp) {
-            final long messageKey = compositeKey.second().inner().getValue();
-            return visitor.visit(messageKey);
+        startAtKey,
+        (key, value) -> {
+          boolean shouldContinue = false;
+          final long deadlineEntry = key.first().getValue();
+          if (deadlineEntry <= timestamp) {
+            final long messageKeyEntry = key.second().inner().getValue();
+            shouldContinue = visitor.visit(deadlineEntry, messageKeyEntry);
+            stoppedByVisitor.set(!shouldContinue);
           }
-          return false;
-        }));
+          return shouldContinue;
+        });
+
+    return stoppedByVisitor.get();
   }
 
   @Override
