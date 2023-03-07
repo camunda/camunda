@@ -115,6 +115,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingScheduleServiceImpl processorActorService;
   private ProcessingScheduleServiceImpl asyncScheduleService;
   private AsyncProcessingScheduleServiceActor asyncActor;
+  private final int nodeId;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -131,7 +132,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             .abortCondition(this::isClosed);
     logStream = streamProcessorContext.getLogStream();
     partitionId = logStream.getPartitionId();
-    actorName = buildActorName(processorBuilder.getNodeId(), "StreamProcessor", partitionId);
+    nodeId = processorBuilder.getNodeId();
+    actorName = buildActorName(nodeId, "StreamProcessor", partitionId);
     metrics = new StreamProcessorMetrics(partitionId);
     recordProcessors.addAll(processorBuilder.getRecordProcessors());
   }
@@ -182,7 +184,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
               () -> false, // we will just stop the actor in this case, no need to provide this
               logStream::newLogStreamBatchWriter);
-      asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService);
+      asyncActor =
+          new AsyncProcessingScheduleServiceActor(asyncScheduleService, nodeId, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
               processorActorService, asyncScheduleService, asyncActor.getActorControl());
@@ -580,10 +583,28 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
     private final ProcessingScheduleServiceImpl scheduleService;
     private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
+    private final String asyncScheduleActorName;
+    private final int partitionId;
 
     public AsyncProcessingScheduleServiceActor(
-        final ProcessingScheduleServiceImpl scheduleService) {
+        final ProcessingScheduleServiceImpl scheduleService,
+        final int nodeId,
+        final int partitionId) {
       this.scheduleService = scheduleService;
+      asyncScheduleActorName = buildActorName(nodeId, "AsyncProcessingScheduleActor", partitionId);
+      this.partitionId = partitionId;
+    }
+
+    @Override
+    protected Map<String, String> createContext() {
+      final var context = super.createContext();
+      context.put(ACTOR_PROP_PARTITION_ID, Integer.toString(partitionId));
+      return context;
+    }
+
+    @Override
+    public String getName() {
+      return asyncScheduleActorName;
     }
 
     @Override
