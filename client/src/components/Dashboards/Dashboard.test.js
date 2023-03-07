@@ -232,3 +232,18 @@ it('should call loadEntity with template param', async () => {
 
   expect(loadEntity).toHaveBeenCalledWith('dashboard/instant', '1', {template: 'template.json'});
 });
+
+it('should use instant preview dashboard entity for magic link', async () => {
+  shallow(
+    <Dashboard
+      {...props}
+      entity="dashboard"
+      location={{pathname: '/collection/id/dashboard/id/'}}
+      match={{params: {id: 'id'}}}
+    />
+  );
+
+  await flushPromises();
+
+  expect(loadEntity).toHaveBeenCalledWith('dashboard/instant', 'id', undefined);
+});

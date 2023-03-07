@@ -123,7 +123,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
         name: t('navigation.dashboards'),
         linksTo: '/processes',
         active: ['/processes/', '/processes/*'],
-        breadcrumbsEntities: ['report'],
+        breadcrumbsEntities: [{entity: 'report'}],
       },
     },
     {
@@ -134,10 +134,14 @@ function createNavBarProps(showEventBased, enterpriseMode) {
         name: t('navigation.collections'),
         linksTo: '/',
         active: ['/', '/report/*', '/dashboard/*', '/collection/*'],
-        breadcrumbsEntities: ['collection', 'instantDashboard', 'dashboard', 'report'],
+        breadcrumbsEntities: [
+          {entity: 'collection'},
+          {entity: 'dashboard'},
+          {entity: 'dashboard', entityUrl: 'dashboard/instant'},
+          {entity: 'report'},
+        ],
       },
     },
-
     {
       key: 'analysis',
       label: t('navigation.analysis'),
@@ -159,7 +163,7 @@ function createNavBarProps(showEventBased, enterpriseMode) {
         name: t('navigation.events'),
         linksTo: '/events/processes/',
         active: ['/events/processes/', '/events/ingested/', '/events/processes/*'],
-        breadcrumbsEntities: ['eventBasedProcess'],
+        breadcrumbsEntities: [{entity: 'eventBasedProcess', entityUrl: 'events/processes'}],
       },
     });
   }

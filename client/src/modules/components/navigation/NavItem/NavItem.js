@@ -45,34 +45,39 @@ export default withRouter(
         breadcrumbsEntities,
       } = this.props;
 
-      if (!breadcrumbsEntities) {
+      if (!breadcrumbsEntities?.length) {
         return;
       }
 
       let breadcrumbs = [];
       const entitiesIds = {};
-      breadcrumbsEntities.forEach((entity) => {
-        const entityUrl = entity === 'eventBasedProcess' ? 'events/processes' : entity;
-        const splittedUrl = pathname.split(`/${entityUrl}/`);
-        if (splittedUrl[1]) {
-          const id = splittedUrl[1].split('/')[0];
+      breadcrumbsEntities.forEach(({entity, entityUrl = entity}) => {
+        const [baseUrl, paramUrl] = pathname.split(`/${entityUrl}/`);
+        if (paramUrl) {
+          const id = paramUrl.split('/')[0];
           if (!['new', 'new-combined', 'new-decision'].includes(id)) {
             entitiesIds[entity + 'Id'] = id;
             breadcrumbs.push({
               id,
               type: entity,
-              url: splittedUrl[0] + `/${entityUrl}/${id}/`,
+              url: baseUrl + `/${entityUrl}/${id}/`,
             });
           }
         }
       });
 
       if (breadcrumbs.length > 0) {
-        const names = await loadEntitiesNames(entitiesIds);
-        breadcrumbs = breadcrumbs.map((breadcrumb) => ({
-          ...breadcrumb,
-          name: names[breadcrumb.type + 'Name'],
-        }));
+        try {
+          const names = await loadEntitiesNames(entitiesIds);
+          breadcrumbs = breadcrumbs
+            .map((breadcrumb) => ({
+              ...breadcrumb,
+              name: names[breadcrumb.type + 'Name'],
+            }))
+            .filter((breadcrumb) => breadcrumb.name);
+        } catch (error) {
+          breadcrumbs = [];
+        }
       }
 
       this.setState({breadcrumbs});
@@ -101,7 +106,7 @@ export default withRouter(
           </Tooltip>
           {active &&
             breadcrumbs.map(({id, name, url}, i) => (
-              <Tooltip content={name} key={id} position="bottom" overflowOnly>
+              <Tooltip content={name} key={`${id}_${url}`} position="bottom" overflowOnly>
                 <Link className="breadcrumb" key={id} to={url}>
                   <span className="arrow">›</span>
                   <span className={classnames({active: breadcrumbsCount - 1 === i})}>{name}</span>

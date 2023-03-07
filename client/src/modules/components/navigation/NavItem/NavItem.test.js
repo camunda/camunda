@@ -59,7 +59,7 @@ it('should render a breadcrumbs links when specified', async () => {
       name="testName"
       active={['/report/*', '/dashboard/*']}
       location={{pathname: '/dashboard/did/report/rid'}}
-      breadcrumbsEntities={['dashboard', 'report']}
+      breadcrumbsEntities={[{entity: 'dashboard'}, {entity: 'report'}]}
     />
   );
 
@@ -76,7 +76,7 @@ it('should update breadcrumbs when requested', async () => {
       name="testName"
       active={['/report/*', '/dashboard/*']}
       location={{pathname: '/dashboard/did/report/rid'}}
-      breadcrumbsEntities={['dashboard', 'report']}
+      breadcrumbsEntities={[{entity: 'dashboard'}, {entity: 'report'}]}
     />
   );
 
@@ -94,7 +94,7 @@ it('should not invoke loadEntitiesNames if id of the entity contains new keyword
       name="testName"
       active={['/report/*', '/dashboard/*']}
       location={{pathname: '/dashboard/did/report/new'}}
-      breadcrumbsEntities={['dashboard', 'report']}
+      breadcrumbsEntities={[{entity: 'dashboard'}, {entity: 'report'}]}
     />
   );
 
@@ -102,7 +102,65 @@ it('should not invoke loadEntitiesNames if id of the entity contains new keyword
   expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did'});
 
   loadEntitiesNames.mockClear();
-  node.setProps({location: {pathname: '/dashboard/new', breadcrumbsEntities: ['dashboard']}});
+  node.setProps({
+    location: {pathname: '/dashboard/new', breadcrumbsEntities: [{entity: 'dashboard'}]},
+  });
   refreshBreadcrumbs();
   expect(loadEntitiesNames).not.toHaveBeenCalledWith();
+});
+
+it('should filter out breadcrumbs with no name', async () => {
+  loadEntitiesNames.mockReturnValueOnce({dashboardName: 'dashboard', reportName: null});
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/dashboard/*', '/report/*']}
+      location={{pathname: '/dashboard/did/report/rid'}}
+      breadcrumbsEntities={[{entity: 'dashboard'}, {entity: 'report'}]}
+    />
+  );
+  await node.update();
+
+  expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did', reportId: 'rid'});
+  expect(node.find({to: '/dashboard/did/'})).toExist();
+  expect(node.find({to: '/dashboard/did/report/rid/'})).not.toExist();
+});
+
+it('should override entity with the same name', async () => {
+  loadEntitiesNames.mockReturnValueOnce({dashboardName: 'dashboard'});
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/dashboard/*']}
+      location={{pathname: '/dashboard/instant/did'}}
+      breadcrumbsEntities={[
+        {entity: 'dashboard'},
+        {entity: 'dashboard', entityUrl: 'dashboard/instant'},
+      ]}
+    />
+  );
+  await node.update();
+
+  expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardId: 'did'});
+  expect(node.find({to: '/dashboard/instant/did/'})).toExist();
+});
+
+it('should use entity url to build breadcrumbs', async () => {
+  loadEntitiesNames.mockReturnValueOnce({dashboardInstantName: 'dashboard', reportName: 'report'});
+  const node = shallow(
+    <NavItem
+      name="testName"
+      active={['/dashboard/*', '/report/*']}
+      location={{pathname: '/dashboard/instant/did/report/rid'}}
+      breadcrumbsEntities={[
+        {entity: 'dashboardInstant', entityUrl: 'dashboard/instant'},
+        {entity: 'report'},
+      ]}
+    />
+  );
+  await node.update();
+
+  expect(loadEntitiesNames).toHaveBeenCalledWith({dashboardInstantId: 'did', reportId: 'rid'});
+  expect(node.find({to: '/dashboard/instant/did/'})).toExist();
+  expect(node.find({to: '/dashboard/instant/did/report/rid/'})).toExist();
 });
