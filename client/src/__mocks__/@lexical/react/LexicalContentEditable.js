@@ -4,3 +4,7 @@
  * See the License.txt file for more information. You may not use this file
  * except in compliance with the proprietary license.
  */
+
+export function ContentEditable(props) {
+  return <div {...props} />;
+}

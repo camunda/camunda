@@ -11,6 +11,7 @@ import {RichTextPlugin} from '@lexical/react/LexicalRichTextPlugin';
 import {ContentEditable} from '@lexical/react/LexicalContentEditable';
 import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
 import {OnChangePlugin} from '@lexical/react/LexicalOnChangePlugin';
+import update from 'immutability-helper';
 
 import editorPlugins, {ToolbarPlugin} from './plugins';
 
@@ -21,7 +22,7 @@ export default function Editor({onChange, error}) {
 
   const onEditorChange = useCallback(
     (editorState) => {
-      onChange?.(editorState.toJSON());
+      onChange?.(sanitizeEditorState(editorState.toJSON()));
     },
     [onChange]
   );
@@ -40,4 +41,39 @@ export default function Editor({onChange, error}) {
       ))}
     </div>
   );
+}
+
+function trimChildrenEmptyParagraphs(children = []) {
+  let newChildren = [...children];
+
+  while (isEmptyParagraph(newChildren[newChildren.length - 1])) {
+    newChildren.pop();
+  }
+
+  while (isEmptyParagraph(newChildren[0])) {
+    newChildren.shift();
+  }
+
+  newChildren = newChildren.map((child) => {
+    if (child?.children?.length) {
+      child.children = [...trimChildrenEmptyParagraphs(child.children)];
+    }
+    return child;
+  });
+
+  return newChildren;
+}
+
+function isEmptyParagraph(child) {
+  return child?.type === 'paragraph' && !child?.children.length;
+}
+
+function sanitizeEditorState(editorState) {
+  if (!editorState?.root?.children.length) {
+    return editorState;
+  }
+
+  return update(editorState, {
+    root: {children: {$set: trimChildrenEmptyParagraphs(editorState.root.children)}},
+  });
 }

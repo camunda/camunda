@@ -12,6 +12,7 @@ import {
   COMMAND_PRIORITY_EDITOR,
   $getSelection,
   $isRangeSelection,
+  $createParagraphNode,
 } from 'lexical';
 import {$createLinkNode, LinkNode} from '@lexical/link';
 import {mergeRegister, $insertNodeToNearestRoot} from '@lexical/utils';
@@ -49,7 +50,7 @@ export default function LinkPlugin() {
           const focusNode = selection.focus.getNode();
 
           if (focusNode !== null) {
-            $insertNodeToNearestRoot(linkNode);
+            $insertNodeToNearestRoot($createParagraphNode().append(linkNode));
           }
 
           return true;
