@@ -30,8 +30,11 @@ import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
@@ -87,8 +90,23 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
       transformAndDistributeDeployment(command);
     } else {
       // TODO write process commands
+      for (final ProcessMetadata metadata : deploymentEvent.processesMetadata()) {
+        for (final DeploymentResource resource : deploymentEvent.getResources()) {
+          if (resource.getResourceName().equals(metadata.getResourceName())) {
+            stateWriter.appendFollowUpEvent(
+                metadata.getKey(),
+                ProcessIntent.CREATED,
+                new ProcessRecord().wrap(metadata, resource.getResource()));
+          }
+        }
+      }
       // TODO write dmn commands
+
       // TODO ack distribution
+      distributionBehavior.acknowledgeCommand(command.getKey());
+
+      // TODO Write deployment CREATED event
+      stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent);
     }
 
     // manage the top-level start event subscriptions except for timers
