@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.deployment;
 
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
+import static java.util.function.Predicate.not;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
@@ -28,10 +30,15 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
@@ -39,6 +46,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -149,7 +157,21 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
         }
       }
     }
-    // TODO write dmn commands
+
+    deploymentEvent.decisionRequirementsMetadata().stream()
+        .filter(not(DecisionRequirementsMetadataRecord::isDuplicate))
+        .forEach(
+            drg -> {
+              final DecisionRequirementsRecord decisionRequirementsRecord =
+                  createDrgRecord(deploymentEvent, drg);
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), DecisionRequirementsIntent.CREATED, decisionRequirementsRecord);
+            });
+    deploymentEvent.decisionsMetadata().stream()
+        .filter(not(DecisionRecord::isDuplicate))
+        .forEach(
+            (record) ->
+                stateWriter.appendFollowUpEvent(command.getKey(), DecisionIntent.CREATED, record));
 
     stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent);
     distributionBehavior.acknowledgeCommand(command.getKey());
@@ -206,6 +228,26 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     }
   }
 
+  private DecisionRequirementsRecord createDrgRecord(
+      final DeploymentRecord deploymentEvent, final DecisionRequirementsMetadataRecord drg) {
+    final var resource =
+        deploymentEvent.getResources().stream()
+            .filter(r -> r.getResourceName().equals(drg.getResourceName()))
+            .map(DeploymentResource::getResource)
+            .map(BufferUtil::wrapArray)
+            .findFirst()
+            .orElseThrow(() -> new NoSuchResourceException(drg.getResourceName()));
+    return new DecisionRequirementsRecord()
+        .setDecisionRequirementsKey(drg.getDecisionRequirementsKey())
+        .setDecisionRequirementsId(drg.getDecisionRequirementsId())
+        .setDecisionRequirementsVersion(drg.getDecisionRequirementsVersion())
+        .setDecisionRequirementsName(drg.getDecisionRequirementsName())
+        .setNamespace(drg.getNamespace())
+        .setResourceName(drg.getResourceName())
+        .setChecksum(wrapArray(drg.getChecksum()))
+        .setResource(resource);
+  }
+
   /**
    * Exception that can be thrown during processing of a command, in case the resource cannot be
    * transformed successfully. This allows the platform to roll back any changes the engine made.
@@ -228,6 +270,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
     public TimerCreationFailedException(final String message) {
       super(message);
+    }
+  }
+
+  private static final class NoSuchResourceException extends IllegalStateException {
+    private NoSuchResourceException(final String resourceName) {
+      super(
+          String.format(
+              "Expected to find resource '%s' in deployment but not found", resourceName));
     }
   }
 }

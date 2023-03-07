@@ -152,7 +152,7 @@ public class MultiPartitionDeploymentLifecycleTest {
             DeploymentIntent.CREATED);
 
     final var deploymentCreatedEvent =
-        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED).getLast().getValue();
+        RecordingExporter.deploymentRecords(DeploymentIntent.CREATED).limit(3).getLast().getValue();
     assertThat(deploymentCreatedEvent.getDecisionRequirementsMetadata())
         .describedAs("Expect that decision requirements are distributed")
         .isNotEmpty();
