@@ -7,7 +7,7 @@
 
 import {Button, Modal, TextEditor} from 'components';
 import {useState} from 'react';
-import {isTextReportTooLong, isTextReportValid, TEXT_REPORT_MAX_CHARACTERS} from 'services';
+import {isTextReportValid} from 'services';
 import {t} from 'translation';
 
 export default function TextReportEditModal({initialValue, onClose, onConfirm}) {
@@ -24,12 +24,8 @@ export default function TextReportEditModal({initialValue, onClose, onConfirm}) 
     <Modal open onClose={onClose}>
       <Modal.Header>{t('common.editName', {name: t('report.textReport')})}</Modal.Header>
       <Modal.Content>
-        <TextEditor
-          initialValue={initialValue}
-          onChange={setText}
-          error={isTextReportTooLong(textLength)}
-        />
-        <TextEditor.CharCount editorState={text} limit={TEXT_REPORT_MAX_CHARACTERS} />
+        <TextEditor initialValue={initialValue} onChange={setText} />
+        <TextEditor.CharCount editorState={text} />
       </Modal.Content>
       <Modal.Actions>
         <Button main onClick={onClose}>

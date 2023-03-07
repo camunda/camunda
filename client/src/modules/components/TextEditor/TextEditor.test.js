@@ -52,7 +52,24 @@ describe('TextEditor', () => {
   });
 
   it('should indicate error', () => {
-    const node = shallow(<TextEditor error />);
+    const editorState = {
+      root: {
+        children: [
+          {
+            children: [
+              {
+                text: 'a'.repeat(3001),
+                type: 'text',
+              },
+            ],
+            type: 'paragraph',
+          },
+        ],
+        type: 'root',
+      },
+    };
+
+    const node = shallow(<TextEditor initialValue={editorState} />);
 
     expect(node.find('Editor').prop('error')).toBe(true);
   });
@@ -101,9 +118,9 @@ describe('TextEditor.CharCount', () => {
         type: 'root',
       },
     };
-    const node = shallow(<TextEditor.CharCount editorState={editorState} limit={10} />);
+    const node = shallow(<TextEditor.CharCount editorState={editorState} />);
 
-    expect(node.text()).toBe('9/10');
+    expect(node.text()).toBe('9/3000');
   });
 
   it('should indicate error when text is longer than the limit', () => {
@@ -113,7 +130,7 @@ describe('TextEditor.CharCount', () => {
           {
             children: [
               {
-                text: 'some long text',
+                text: 'a'.repeat(3001),
                 type: 'text',
               },
             ],
@@ -123,9 +140,9 @@ describe('TextEditor.CharCount', () => {
         type: 'root',
       },
     };
-    const node = shallow(<TextEditor.CharCount editorState={editorState} limit={10} />);
+    const node = shallow(<TextEditor.CharCount editorState={editorState} />);
 
-    expect(node.text()).toBe('14/10');
+    expect(node.text()).toBe('3001/3000');
     expect(node.hasClass('error')).toBe(true);
   });
 });

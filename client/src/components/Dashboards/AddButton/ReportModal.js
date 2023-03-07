@@ -20,7 +20,7 @@ import {
   Icon,
   TextEditor,
 } from 'components';
-import {getCollection, isTextReportTooLong, isTextReportValid, loadReports} from 'services';
+import {getCollection, isTextReportValid, loadReports} from 'services';
 import {t} from 'translation';
 
 function ReportModal({close, confirm, location}) {
@@ -130,11 +130,7 @@ function ReportModal({close, confirm, location}) {
             <Tabs.Tab value="text" title={t('report.textReport')}>
               <Form.Group className="Labeled">
                 <span className="label before">{t('report.textReport')}</span>
-                <TextEditor
-                  initialValue={initialTextReportValue}
-                  onChange={setText}
-                  error={isTextReportTooLong(textLength)}
-                />
+                <TextEditor initialValue={initialTextReportValue} onChange={setText} />
                 <TextEditor.CharCount editorState={text} />
               </Form.Group>
             </Tabs.Tab>

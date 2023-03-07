@@ -7,7 +7,8 @@
 
 import classnames from 'classnames';
 import {LexicalComposer} from '@lexical/react/LexicalComposer';
-import {TEXT_REPORT_MAX_CHARACTERS} from 'services';
+
+import {isTextReportTooLong, TEXT_REPORT_MAX_CHARACTERS} from 'services';
 
 import editorNodes from './nodes';
 import Editor from './Editor';
@@ -34,7 +35,7 @@ const theme = {
   },
 };
 
-export default function TextEditor({onChange, error = false, initialValue}) {
+export default function TextEditor({onChange, initialValue}) {
   const initialConfig = {
     editorState: initialValue ? JSON.stringify(initialValue) : null,
     editable: !!onChange,
@@ -52,7 +53,10 @@ export default function TextEditor({onChange, error = false, initialValue}) {
       className="TextEditor"
     >
       <LexicalComposer initialConfig={initialConfig}>
-        <Editor onChange={onChange} error={error} />
+        <Editor
+          onChange={onChange}
+          error={isTextReportTooLong(TextEditor.getEditorStateLength(initialValue))}
+        />
       </LexicalComposer>
     </div>
   );
@@ -79,11 +83,15 @@ TextEditor.getEditorStateLength = function (editorState) {
   return length;
 };
 
-TextEditor.CharCount = function ({editorState, limit = TEXT_REPORT_MAX_CHARACTERS}) {
+TextEditor.CharCount = function ({editorState}) {
   const textLenght = TextEditor.getEditorStateLength(editorState);
   return (
-    <div className={classnames('TextEditor', 'CharCount', {error: textLenght > limit})}>
-      {textLenght}/{limit}
+    <div
+      className={classnames('TextEditor', 'CharCount', {
+        error: isTextReportTooLong(textLenght),
+      })}
+    >
+      {textLenght}/{TEXT_REPORT_MAX_CHARACTERS}
     </div>
   );
 };
