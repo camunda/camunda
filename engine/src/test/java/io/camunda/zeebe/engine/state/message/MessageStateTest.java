@@ -184,6 +184,59 @@ public final class MessageStateTest {
   }
 
   @Test
+  public void shouldVisitMessagesUntilVisitorReturnsFalse() {
+    // given
+    final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
+    final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
+
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
+
+    // then
+    final List<Long> readMessage = new ArrayList<>();
+    final boolean isStoppedByVisitor =
+        messageState.visitMessagesWithDeadlineBeforeTimestamp(
+            3456,
+            null,
+            (deadline, e) -> {
+              readMessage.add(e);
+              return false;
+            });
+
+    assertThat(readMessage).hasSize(1).containsExactly(1L);
+    assertThat(isStoppedByVisitor)
+        .describedAs("Expect that the visiting stopped because of the visitor")
+        .isTrue();
+  }
+
+  @Test
+  public void shouldVisitMessagesWhileVisitorReturnsTrue() {
+    // given
+    final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
+    final var message2 = createMessage("otherName", "correlationKey", "{}", "nr2", 2000);
+
+    messageState.put(1L, message);
+    messageState.put(2L, message2);
+
+    // then
+    final List<Long> readMessage = new ArrayList<>();
+    final boolean isStoppedByVisitor =
+        messageState.visitMessagesWithDeadlineBeforeTimestamp(
+            1_900,
+            null,
+            (deadline, e) -> {
+              readMessage.add(e);
+              return true;
+            });
+
+    assertThat(readMessage).hasSize(1).containsExactly(1L);
+    assertThat(isStoppedByVisitor)
+        .describedAs(
+            "Expect that the visiting is stopped because there are no more entries before the timestamp")
+        .isFalse();
+  }
+
+  @Test
   public void shouldNotVisitMessagesBeforeTime() {
     // given
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
