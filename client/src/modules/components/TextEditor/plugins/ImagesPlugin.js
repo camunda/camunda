@@ -29,10 +29,8 @@ export function InsertImageModal({editor, onClose}) {
   const [src, setSrc] = useState('');
   const [altText, setAltText] = useState('');
 
-  const isDisabled = !validateUrl(src) || !altText;
-
   const onClick = () => {
-    editor.dispatchCommand(INSERT_IMAGE_COMMAND, {src, altText});
+    editor.dispatchCommand(INSERT_IMAGE_COMMAND, {src, altText: altText || src});
     onClose();
   };
 
@@ -63,7 +61,7 @@ export function InsertImageModal({editor, onClose}) {
         <Button main onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={isDisabled} onClick={onClick}>
+        <Button main primary disabled={!validateUrl(src)} onClick={onClick}>
           {t('common.add')}
         </Button>
       </Modal.Actions>

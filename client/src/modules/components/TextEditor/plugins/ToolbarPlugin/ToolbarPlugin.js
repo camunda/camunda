@@ -18,7 +18,6 @@ import {$findMatchingParent, mergeRegister} from '@lexical/utils';
 
 import BlockTypeDropdown from './BlockTypeOptions';
 import FontSizeOptions from './FontSizeOptions';
-import HistoryButtons from './HistoryButtons';
 import InlineStylesButtons from './InlineStylesButtons';
 import InsertOptions from './InsertOptions';
 import AlignOptions from './AlignOptions';
@@ -73,7 +72,6 @@ export default function ToolbarPlugin() {
 
   return (
     <div className="toolbar">
-      <HistoryButtons editor={editor} disabled={!isEditable} />
       <BlockTypeDropdown editor={editor} disabled={!isEditable} blockType={blockType} />
       <FontSizeOptions editor={editor} disabled={!isEditable} />
       <InlineStylesButtons editor={editor} disabled={!isEditable} />

@@ -1525,14 +1525,14 @@
         "title": "Insert Image",
         "urlLabel": "Image URL",
         "urlPlaceholder": "https://picture/some-picture.jpg",
-        "altTextLabel": "Image name",
+        "altTextLabel": "Image name (optional)",
         "altTextPlaceholder": "Some picture"
       },
       "link": {
         "title": "Insert Link",
         "urlLabel": "Link URL",
         "urlPlaceholder": "https://example.com",
-        "altTextLabel": "Display text",
+        "altTextLabel": "Display text (optional)",
         "altTextPlaceholder": "Link to example.com"
       }
     }

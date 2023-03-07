@@ -67,10 +67,8 @@ export function InsertLinkModal({editor, onClose}) {
   const [url, setUrl] = useState('');
   const [altText, setAltText] = useState('');
 
-  const isDisabled = !validateUrl(url) || !altText;
-
   const onClick = () => {
-    editor.dispatchCommand(INSERT_LINK_COMMAND, {url, altText});
+    editor.dispatchCommand(INSERT_LINK_COMMAND, {url, altText: altText || url});
     onClose();
   };
 
@@ -101,7 +99,7 @@ export function InsertLinkModal({editor, onClose}) {
         <Button main onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button main primary disabled={isDisabled} onClick={onClick}>
+        <Button main primary disabled={!validateUrl(url)} onClick={onClick}>
           {t('common.add')}
         </Button>
       </Modal.Actions>

@@ -13,7 +13,7 @@ import {
   FORMAT_TEXT_COMMAND,
   SELECTION_CHANGE_COMMAND,
 } from 'lexical';
-import {Code, TextBold, TextItalic, TextStrikethrough, TextUnderline} from '@carbon/icons-react';
+import {TextBold, TextItalic, TextStrikethrough, TextUnderline} from '@carbon/icons-react';
 import {mergeRegister} from '@lexical/utils';
 
 import {Button} from 'components';
@@ -24,7 +24,6 @@ export default function InlineStylesButtons({disabled, editor}) {
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
   const [isStrikethrough, setIsStrikethrough] = useState(false);
-  const [isCode, setIsCode] = useState(false);
 
   const updateStyles = useCallback(() => {
     const selection = $getSelection();
@@ -33,7 +32,6 @@ export default function InlineStylesButtons({disabled, editor}) {
       setIsItalic(selection.hasFormat('italic'));
       setIsUnderline(selection.hasFormat('underline'));
       setIsStrikethrough(selection.hasFormat('strikethrough'));
-      setIsCode(selection.hasFormat('code'));
     }
   }, []);
 
@@ -58,7 +56,6 @@ export default function InlineStylesButtons({disabled, editor}) {
     italic: {Icon: TextItalic, active: isItalic},
     underline: {Icon: TextUnderline, active: isUnderline},
     strikethrough: {Icon: TextStrikethrough, active: isStrikethrough},
-    code: {Icon: Code, active: isCode},
   };
 
   return (

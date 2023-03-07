@@ -52,26 +52,6 @@ it('should disable the button if the url is invalid', () => {
   expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(false);
 });
 
-it('should disable the button if the alt text is empty', () => {
-  const node = shallow(<InsertImageModal />);
-
-  expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(true);
-
-  node
-    .find('ForwardRef(Input)')
-    .at(0)
-    .simulate('change', {target: {value: 'http://example.com'}});
-
-  expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(true);
-
-  node
-    .find('ForwardRef(Input)')
-    .at(1)
-    .simulate('change', {target: {value: 'some link'}});
-
-  expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(false);
-});
-
 it('should dispatch insert link command on report add button', () => {
   const spy = jest.fn();
   const editor = {
@@ -93,6 +73,27 @@ it('should dispatch insert link command on report add button', () => {
 
   expect(editor.dispatchCommand).toHaveBeenCalledWith(undefined, {
     altText: 'some link',
+    src: 'http://example.com',
+  });
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should dispatch insert image command with alt text defaulted to url when not provided', () => {
+  const spy = jest.fn();
+  const editor = {
+    dispatchCommand: jest.fn(),
+  };
+  const node = shallow(<InsertImageModal editor={editor} onClose={spy} />);
+
+  node
+    .find('ForwardRef(Input)')
+    .at(0)
+    .simulate('change', {target: {value: 'http://example.com'}});
+
+  node.find('ForwardRef(Button)').at(1).simulate('click');
+
+  expect(editor.dispatchCommand).toHaveBeenCalledWith(undefined, {
+    altText: 'http://example.com',
     src: 'http://example.com',
   });
   expect(spy).toHaveBeenCalled();

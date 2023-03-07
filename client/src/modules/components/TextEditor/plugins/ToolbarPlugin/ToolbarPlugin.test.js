@@ -22,7 +22,6 @@ jest.mock('@lexical/react/LexicalComposerContext', () => ({
 jest.mock('./service', () => ({getNodeType: jest.fn()}));
 jest.mock('./BlockTypeOptions', () => 'BlockTypeOptions');
 jest.mock('./FontSizeOptions', () => 'FontSizeOptions');
-jest.mock('./HistoryButtons', () => 'HistoryButtons');
 jest.mock('./InlineStylesButtons', () => 'InlineStylesButtons');
 jest.mock('./InsertOptions', () => 'InsertOptions');
 jest.mock('./AlignOptions', () => 'AlignOptions');
@@ -32,7 +31,6 @@ it('should render toolbar', () => {
 
   expect(node.find('BlockTypeOptions')).toExist();
   expect(node.find('FontSizeOptions')).toExist();
-  expect(node.find('HistoryButtons')).toExist();
   expect(node.find('InlineStylesButtons')).toExist();
   expect(node.find('InsertOptions')).toExist();
   expect(node.find('AlignOptions')).toExist();
