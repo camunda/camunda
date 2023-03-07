@@ -241,13 +241,17 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
   }
 
+  private void assertThatUnauthorizedIsReturned(ResponseEntity<?> response) {
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+  }
+
   @Test
   public void testLoginToAPIResource() throws Exception {
     // Step 1: try to access current user
     ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+    assertThatUnauthorizedIsReturned(response);
 
     // Step 2: Get Login provider url
     mockPermissionAllowed();
@@ -266,19 +270,18 @@ public class AuthenticationWithPersistentSessionsIT implements AuthenticationTes
                 tasklistProperties.getAuth0().getClaimName(),
                 tasklistProperties.getAuth0().getOrganization()));
 
-    response = get(SSO_CALLBACK, cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(GRAPHQL_URL));
-
     // Test no ClusterMetadata
     mockEmptyClusterMetadata();
-    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(cookies);
+
+    final HttpEntity<?> loggedCookies = loginWithSSO();
+    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(loggedCookies);
     GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.c8Links", List.class)).isEmpty();
 
     // Test with ClusterMetadata
     mockClusterMetadata();
     // when
-    responseEntity = getCurrentUserByGraphQL(cookies);
+    responseEntity = getCurrentUserByGraphQL(loggedCookies);
 
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);

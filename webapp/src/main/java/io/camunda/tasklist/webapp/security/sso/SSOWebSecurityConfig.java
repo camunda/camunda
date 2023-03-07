@@ -72,12 +72,19 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
   protected void authenticationEntry(
       HttpServletRequest req, HttpServletResponse res, AuthenticationException ex)
       throws IOException {
+
     String requestedUrl = req.getRequestURI();
+
     if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
       requestedUrl = requestedUrl + "?" + req.getQueryString();
     }
-    LOGGER.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
-    req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
-    res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
+
+    if (requestedUrl.toLowerCase().contains(GRAPHQL_URL)) {
+      sendJSONErrorMessage(res, ex.getMessage());
+    } else {
+      LOGGER.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
+      req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
+      res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
+    }
   }
 }

@@ -63,8 +63,13 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
     if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
       requestedUrl = requestedUrl + "?" + req.getQueryString();
     }
-    logger.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
-    req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
-    res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
+
+    if (requestedUrl.toLowerCase().contains(GRAPHQL_URL)) {
+      sendJSONErrorMessage(res, ex.getMessage());
+    } else {
+      logger.debug("Try to access protected resource {}. Save it for later redirect", requestedUrl);
+      req.getSession().setAttribute(REQUESTED_URL, requestedUrl);
+      res.sendRedirect(req.getContextPath() + LOGIN_RESOURCE);
+    }
   }
 }

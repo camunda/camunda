@@ -330,7 +330,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
+    assertThatUnauthorizedIsReturned(response);
 
     // Step 2: Get Login provider url
     mockPermissionAllowed();
@@ -350,18 +350,17 @@ public class AuthenticationIT implements AuthenticationTestable {
                 tasklistProperties.getAuth0().getClaimName(),
                 tasklistProperties.getAuth0().getOrganization()));
 
-    response = get(SSO_CALLBACK, cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(GRAPHQL_URL));
-
     // Test no ClusterMetadata
     mockEmptyClusterMetadata();
-    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(cookies);
+
+    final HttpEntity<?> loggedCookies = loginWithSSO();
+    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(loggedCookies);
     GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
     assertThat(graphQLResponse.get("$.data.currentUser.c8Links", List.class)).isEmpty();
     // Test with ClusterMetadata
     mockClusterMetadata();
     // when
-    responseEntity = getCurrentUserByGraphQL(cookies);
+    responseEntity = getCurrentUserByGraphQL(loggedCookies);
 
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -394,6 +393,10 @@ public class AuthenticationIT implements AuthenticationTestable {
   private void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
+  }
+
+  private void assertThatUnauthorizedIsReturned(ResponseEntity<?> response) {
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
   private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
