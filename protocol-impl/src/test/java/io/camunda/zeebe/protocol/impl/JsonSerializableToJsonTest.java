@@ -1289,24 +1289,12 @@ final class JsonSerializableToJsonTest {
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
         "Empty CommandDistributionRecord",
-        (Supplier<UnifiedRecordValue>)
-            () -> {
-              final var deploymentRecord = new DeploymentRecord();
-              return new CommandDistributionRecord()
-                  .setPartitionId(1)
-                  .setValueType(ValueType.DEPLOYMENT)
-                  .setRecordValue(deploymentRecord);
-            },
+        (Supplier<UnifiedRecordValue>) () -> new CommandDistributionRecord().setPartitionId(1),
         """
           {
               "partitionId": 1,
-              "valueType": "DEPLOYMENT",
-              "commandValue": {
-                "resources": [],
-                "processesMetadata": [],
-                "decisionsMetadata": [],
-                "decisionRequirementsMetadata": []
-              }
+              "valueType": "NULL_VAL",
+              "commandValue": null
           }
           """
       },

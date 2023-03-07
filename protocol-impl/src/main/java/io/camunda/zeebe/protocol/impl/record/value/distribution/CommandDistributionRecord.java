@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.distribution;
 
-import io.camunda.zeebe.msgpack.MsgpackException;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -66,10 +65,10 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   @Override
   public UnifiedRecordValue getCommandValue() {
     // fetch a concrete instance of the record value by type
-    if (!valueTypeProperty.hasValue()) {
-      throw new MsgpackException("Expected to read the value type property, but it's not yet set");
-    }
     final var valueType = getValueType();
+    if (valueType == ValueType.NULL_VAL) {
+      return null;
+    }
     final var concrecteRecordValueSupplier = RECORDS_BY_TYPE.get(valueType);
     if (concrecteRecordValueSupplier == null) {
       throw new IllegalStateException(
