@@ -408,7 +408,7 @@ public final class ControllableRaftContexts {
   }
 
   private void waitUntilThereIsAnotherLeader(final MemberId memberId) {
-    int steps = 100;
+    int steps = 500;
 
     while (steps-- > 0) {
       final Entry<Long, MemberId> currentLeaderEntry = leadersAtTerms.lowerEntry(Long.MAX_VALUE);
@@ -424,7 +424,7 @@ public final class ControllableRaftContexts {
         LOG.info("Current leader is {}. ", leader.id());
         break;
       } else {
-        tickHeartbeatTimeout();
+        tick(Duration.ofMillis(50));
         processAllMessage();
         runUntilDone();
       }
