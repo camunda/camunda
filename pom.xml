@@ -55,6 +55,7 @@
     <module>backup</module>
     <module>backup-stores/testkit</module>
     <module>backup-stores/s3</module>
+    <module>backup-stores/gcs</module>
     <module>restore</module>
   </modules>
 

@@ -9,11 +9,11 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
+import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -49,16 +49,16 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
     if (shouldInstallOnTransition(context.getCurrentRole(), targetRole)
         || (context.getBackupStore() == null && targetRole != Role.INACTIVE)) {
-
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
-      if (backupCfg.getStore() == BackupStoreType.NONE) {
-        // No backup store is installed. BackupManager can handle this case
-        context.setBackupStore(null);
-        installed.complete(null);
-      } else if (backupCfg.getStore() == BackupStoreType.S3) {
-        installS3Store(context, backupCfg, installed);
-      } else {
-        installed.completeExceptionally(
+      switch (backupCfg.getStore()) {
+        case NONE -> {
+          // No backup store is installed. BackupManager can handle this case
+          context.setBackupStore(null);
+          installed.complete(null);
+        }
+        case S3 -> installS3Store(context, backupCfg, installed);
+        case GCS -> installGcsStore(context, backupCfg, installed);
+        default -> installed.completeExceptionally(
             new IllegalArgumentException(
                 "Unknown backup store type %s".formatted(backupCfg.getStore())));
       }
@@ -80,7 +80,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
     try {
       final var s3Config = backupCfg.getS3();
       final S3BackupConfig storeConfig =
-          new Builder()
+          new S3BackupConfig.Builder()
               .withBucketName(s3Config.getBucketName())
               .withEndpoint(s3Config.getEndpoint())
               .withRegion(s3Config.getRegion())
@@ -92,6 +92,25 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
               .build();
       final S3BackupStore backupStore = new S3BackupStore(storeConfig);
       context.setBackupStore(backupStore);
+      installed.complete(null);
+    } catch (final Exception error) {
+      installed.completeExceptionally("Failed to create backup store", error);
+    }
+  }
+
+  private static void installGcsStore(
+      final PartitionTransitionContext context,
+      final BackupStoreCfg backupCfg,
+      final ActorFuture<Void> installed) {
+    try {
+      final var gcsConfig = backupCfg.getGcs();
+      final GcsBackupConfig storeConfig =
+          new GcsBackupConfig.Builder()
+              .withBucketName(gcsConfig.getBucketName())
+              .withBasePath(gcsConfig.getBasePath())
+              .build();
+      final var gcsStore = new GcsBackupStore(storeConfig);
+      context.setBackupStore(gcsStore);
       installed.complete(null);
     } catch (final Exception error) {
       installed.completeExceptionally("Failed to create backup store", error);
