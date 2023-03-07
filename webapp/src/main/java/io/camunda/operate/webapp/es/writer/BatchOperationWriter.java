@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -509,7 +510,7 @@ public class BatchOperationWriter {
     return Optional.ofNullable(processInstance);
   }
 
-  private static class ProcessInstanceSource {
+  public static class ProcessInstanceSource {
 
     private Long processInstanceKey;
     private Long processDefinitionKey;
@@ -542,13 +543,29 @@ public class BatchOperationWriter {
       return this;
     }
 
-    public static ProcessInstanceSource fromSourceMap(Map<String,Object> sourceMap)
-    {
+    public static ProcessInstanceSource fromSourceMap(Map<String, Object> sourceMap) {
       ProcessInstanceSource processInstanceSource = new ProcessInstanceSource();
-      processInstanceSource.processInstanceKey = (Long)sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
-      processInstanceSource.processDefinitionKey = (Long)sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
+      processInstanceSource.processInstanceKey = (Long) sourceMap.get(OperationTemplate.PROCESS_INSTANCE_KEY);
+      processInstanceSource.processDefinitionKey = (Long) sourceMap.get(OperationTemplate.PROCESS_DEFINITION_KEY);
       processInstanceSource.bpmnProcessId = (String) sourceMap.get(OperationTemplate.BPMN_PROCESS_ID);
       return processInstanceSource;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o)
+        return true;
+      if (o == null || getClass() != o.getClass())
+        return false;
+      ProcessInstanceSource that = (ProcessInstanceSource) o;
+      return Objects.equals(processInstanceKey, that.processInstanceKey) &&
+          Objects.equals(processDefinitionKey, that.processDefinitionKey) &&
+          Objects.equals(bpmnProcessId, that.bpmnProcessId);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(processInstanceKey, processDefinitionKey, bpmnProcessId);
     }
   }
 }

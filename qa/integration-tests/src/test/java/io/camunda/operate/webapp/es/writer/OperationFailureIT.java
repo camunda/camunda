@@ -58,21 +58,21 @@ public class OperationFailureIT extends OperateZeebeIntegrationTest {
 
   @Test public void testCancelExecutedEvenThoughBatchOperationNotFullyPersisted() throws Exception {
     // given
-    final Long processInstanceKey1 = startDemoProcessInstance();
-    final Long processInstanceKey2 = startDemoProcessInstance();
+    final BatchOperationWriter.ProcessInstanceSource processInstanceSource1 = startDemoProcessInstance();
+    final BatchOperationWriter.ProcessInstanceSource processInstanceSource2 = startDemoProcessInstance();
 
     //first single operation will be created successfully, second will fail
     doCallRealMethod().when(batchOperationWriter)
-        .getIndexOperationRequest(eq(processInstanceKey1), any(), any(), any());
+        .getIndexOperationRequest(eq(processInstanceSource1), any(), any(), any());
     IndexRequest failingRequest = new IndexRequest(batchOperationTemplate.getFullQualifiedName()).id("id")
         .source("{\"wrong_field\":\"\"}", XContentType.JSON);
     doReturn(failingRequest).when(batchOperationWriter)
-        .getIndexOperationRequest(eq(processInstanceKey2), any(), any(), any());
+        .getIndexOperationRequest(eq(processInstanceSource2), any(), any(), any());
 
     //when
     //we call CANCEL_PROCESS_INSTANCE operation on instance
     final ListViewQueryDto processInstanceQuery = createGetAllProcessInstancesQuery()
-        .setIds(Arrays.asList(processInstanceKey1.toString(), processInstanceKey2.toString()));
+        .setIds(Arrays.asList(processInstanceSource1.getProcessInstanceKey().toString(), processInstanceSource2.getProcessInstanceKey().toString()));
     try {
       postBatchOperation(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE, null, 500);
     } catch (Exception ex) {
@@ -84,7 +84,7 @@ public class OperationFailureIT extends OperateZeebeIntegrationTest {
 
     //then
     //import works without being stuck on empty batch operation
-    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey1);
+    elasticsearchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceSource1.getProcessInstanceKey());
     ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(2);
     assertThat(processInstances.getProcessInstances()).extracting(pi -> {
@@ -93,12 +93,16 @@ public class OperationFailureIT extends OperateZeebeIntegrationTest {
 
   }
 
-  private long startDemoProcessInstance() {
+  private BatchOperationWriter.ProcessInstanceSource startDemoProcessInstance() {
     String processId = "demoProcess";
-    return tester.startProcessInstance(processId, "{\"a\": \"b\"}")
+    tester.startProcessInstance(processId, "{\"a\": \"b\"}")
         .waitUntil()
-        .flowNodeIsActive("taskA")
-        .getProcessInstanceKey();
+        .flowNodeIsActive("taskA");
+
+    return new BatchOperationWriter.ProcessInstanceSource()
+        .setProcessInstanceKey(tester.getProcessInstanceKey())
+        .setProcessDefinitionKey(tester.getProcessDefinitionKey())
+        .setBpmnProcessId(processId);
   }
 
   private ListViewResponseDto getProcessInstances(ListViewQueryDto query) throws Exception {
