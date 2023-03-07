@@ -53,13 +53,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 @AllArgsConstructor
 public class ReportClient {
 
-  private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
-
   private static final String TEST_REPORT_NAME = "My test report";
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
@@ -374,6 +373,25 @@ public class ReportClient {
       user,
       pw
     );
+  }
+
+  public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReport(final String reportId) {
+    return evaluateReportAsUser(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsKermit(final String reportId) {
+    return evaluateReportAsUser(reportId, KERMIT_USER, KERMIT_USER);
+  }
+
+  public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsUser(final String reportId,
+                                                                                                     final String username,
+                                                                                                     final String password) {
+    return getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildEvaluateSavedReportRequest(reportId)
+      // @formatter:off
+      .execute(new TypeReference<>() {});
+    // @formatter:on
   }
 
   private String createReportForCollectionAsUser(final String collectionId, final DefinitionType resourceType,

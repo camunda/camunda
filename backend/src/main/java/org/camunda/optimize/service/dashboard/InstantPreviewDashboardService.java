@@ -11,12 +11,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.entities.EntityImportService;
 import org.camunda.optimize.service.es.reader.InstantDashboardMetadataReader;
 import org.camunda.optimize.service.es.writer.InstantDashboardMetadataWriter;
@@ -40,6 +42,7 @@ import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.Checksum;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 
 @Slf4j
@@ -54,6 +57,7 @@ public class InstantPreviewDashboardService {
   private final InstantDashboardMetadataReader instantDashboardMetadataReader;
   private final InstantDashboardMetadataWriter instantDashboardMetadataWriter;
   private final EntityImportService entityImportService;
+  private final DefinitionService definitionService;
   private HashMap<String, Long> templateChecksums;
 
   public AuthorizedDashboardDefinitionResponseDto getInstantPreviewDashboard(final String processDefinitionKey,
@@ -111,14 +115,25 @@ public class InstantPreviewDashboardService {
   private Optional<String> createReportsAndAddToDashboard(final Set<OptimizeEntityExportDto> exportDtos,
                                                           final String processDefinitionKey) {
 
-    exportDtos.stream()
-      .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
-      .forEach(reportEntity -> {
-        SingleProcessReportDefinitionExportDto singleReport = ((SingleProcessReportDefinitionExportDto) reportEntity);
+    final Optional<DefinitionWithTenantIdsDto> processDefinitionWithTenants =
+      definitionService.getProcessDefinitionWithTenants(processDefinitionKey);
 
-        singleReport.getData().setDefinitions(List.of(new ReportDataDefinitionDto(processDefinitionKey)));
-        singleReport.getData().setInstantPreviewReport(true);
-      });
+    processDefinitionWithTenants
+      .ifPresentOrElse(
+        processDefinition ->
+          exportDtos.stream()
+            .filter(SingleProcessReportDefinitionExportDto.class::isInstance)
+            .forEach(reportEntity -> {
+              SingleProcessReportDefinitionExportDto singleReport =
+                ((SingleProcessReportDefinitionExportDto) reportEntity);
+              singleReport.getData().setDefinitions(
+                List.of(new ReportDataDefinitionDto(processDefinitionKey,
+                                                    List.of(ALL_VERSIONS), processDefinition.getTenantIds()
+                )));
+              singleReport.getData().setInstantPreviewReport(true);
+            }),
+        () -> log.warn("Could not retrieve process definition data for {}", processDefinitionKey)
+      );
 
     exportDtos.stream()
       .filter(DashboardDefinitionExportDto.class::isInstance)

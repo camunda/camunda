@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -68,7 +69,7 @@ public abstract class ReportEvaluationHandler {
 
   public AuthorizedReportEvaluationResult evaluateReport(final ReportEvaluationInfo evaluationInfo) {
     evaluationInfo.postFetchSavedReport(reportReader);
-    setDataSourcesForManagementReport(evaluationInfo);
+    setDataSourcesForSystemGeneratedReports(evaluationInfo);
     final RoleType currentUserRole = getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
       .orElseThrow(() -> new ForbiddenException(String.format(
         "User [%s] is not authorized to evaluate report [%s].",
@@ -84,7 +85,9 @@ public abstract class ReportEvaluationHandler {
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
-  private void setDataSourcesForManagementReport(final ReportEvaluationInfo reportEvaluationInfo) {
+  private void setDataSourcesForSystemGeneratedReports(final ReportEvaluationInfo reportEvaluationInfo) {
+    // Overwrite tenant selection for management and instant reports to ensure reports are always evaluating data
+    // from all tenants the given definition currently exists on
     if (reportEvaluationInfo.getReport().getData() instanceof ProcessReportDataDto) {
       final ProcessReportDataDto processReportData = (ProcessReportDataDto) reportEvaluationInfo.getReport()
         .getData();
@@ -101,6 +104,26 @@ public abstract class ReportEvaluationHandler {
             ))
             .collect(Collectors.toList());
         processReportData.setDefinitions(definitionsForManagementReport);
+      }
+      else if (processReportData.isInstantPreviewReport()) {
+        // Same logic as above, but just for the single process definition in the report
+        String key =
+          ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
+        List<ReportDataDefinitionDto> definitionForInstantPreviewReport =
+          definitionService.getDefinitionWithAvailableTenants(DefinitionType.PROCESS,
+                                                              key,
+                                                              reportEvaluationInfo.getUserId())
+            .stream()
+            .map(def -> new ReportDataDefinitionDto(
+              def.getKey(),
+              def.getName(),
+              List.of(ALL_VERSIONS),
+              def.getTenants().stream().map(TenantDto::getId).collect(Collectors.toList()),
+              def.getName()
+            ))
+            .collect(Collectors.toList());
+
+        processReportData.setDefinitions(definitionForInstantPreviewReport);
       }
     }
   }

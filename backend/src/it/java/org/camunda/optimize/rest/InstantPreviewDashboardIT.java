@@ -5,14 +5,21 @@
  */
 package org.camunda.optimize.rest;
 
+import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.ReportDataDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.InstanceEndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.export.dashboard.DashboardDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResponseDto;
+import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -22,20 +29,30 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.dashboard.InstantPreviewDashboardService.INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH;
 import static org.camunda.optimize.service.dashboard.InstantPreviewDashboardService.getChecksumCRC32;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
+
+  private static final String SECOND_TENANT = "secondTenant";
+  private static final String FIRST_TENANT = "firstTenant";
+  private static final String FIRST_DEF_KEY = "someDef";
+  private static final String SECOND_DEF_KEY = "otherDef";
 
   @Test
   public void instantPreviewDashboardHappyCase() {
@@ -267,26 +284,14 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @Test
   public void instantPreviewReportsRespectPermissions() {
     // given
-    final InstantPreviewDashboardService instantPreviewDashboardService =
-      embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
-    String dashboardJsonTemplate = "template1.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    // when
-    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
-      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
-
-    // then
-    assertThat(instantPreviewDashboard).isPresent();
-
-    // given
-    DashboardDefinitionRestDto originalDashboard =
-      dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
-    originalDashboard.getReportIds().forEach(reportId -> {
+    final Set<String> reportIds = getInstantPreviewReportIDsForProcess(processDefKey);
+    reportIds.forEach(reportId -> {
       // when
       Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
       // then
@@ -304,6 +309,15 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       // then
       assertThat(result.getCurrentUserRole()).isEqualTo(RoleType.VIEWER);
     });
+  }
+
+  private Set<String> getInstantPreviewReportIDsForProcess(final String processDefKey) {
+    String dashboardJsonTemplate = "template1.json";
+    DashboardDefinitionRestDto originalDashboard =
+      dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+    final Set<String> reportIds = originalDashboard.getReportIds();
+    assertThat(reportIds).isNotEmpty();
+    return reportIds;
   }
 
   @Test
@@ -420,6 +434,130 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // then
     assertThat(dashboardCopyResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
     assertThat(reportCopyResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void savedInstantPreviewReportCanBeEvaluatedAndIncludesAllTenants() {
+    /* Test logic:
+        1. deploy definition on tenant1
+        2. create instant preview reports
+        3. evaluate reports ==> includes data from tenant1 only
+        4. deploy definition on tenant2
+        5. evaluate the reports again ==> includes data from tenant1 and tenant2
+     */
+
+    // given
+    engineIntegrationExtension.createTenant(FIRST_TENANT);
+    engineIntegrationExtension.createTenant(SECOND_TENANT);
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), FIRST_TENANT);
+    importAllEngineEntitiesFromScratch();
+
+    final Set<String> reportIds = getInstantPreviewReportIDsForProcess(FIRST_DEF_KEY);
+    reportIds.forEach(reportId -> {
+      // when
+      final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+        reportClient.evaluateReport(reportId);
+
+      // then
+      ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+      assertThat(resultReportDataDto.isInstantPreviewReport()).isTrue();
+      assertThat(resultReportDataDto.getDefinitions()).hasSize(1)
+        .extracting(
+          ReportDataDefinitionDto::getKey,
+          ReportDataDefinitionDto::getVersions,
+          ReportDataDefinitionDto::getTenantIds
+        )
+        .containsExactlyInAnyOrder(
+          // the process includes one tenant
+          Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT))
+        );
+      // the result includes data from one tenant
+      final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+      // getInstanceCountWithoutFilters() is the same as getInstanceCount() if the filter is of type
+      // InstanceEndDateFilterDto, so excluding that one. This is an intentional behaviour from the filter
+      if (resultReportDataDto.getFilter().stream().noneMatch(c -> c instanceof InstanceEndDateFilterDto)) {
+        assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(1L);
+      }
+    });
+
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), SECOND_TENANT);
+    importAllEngineEntitiesFromLastIndex();
+
+    reportIds.forEach(reportId -> {
+      // when
+      final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+        reportClient.evaluateReport(reportId);
+
+      // then
+      ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+      assertThat(resultReportDataDto.isInstantPreviewReport()).isTrue();
+      assertThat(resultReportDataDto.getDefinitions()).hasSize(1)
+        .extracting(
+          ReportDataDefinitionDto::getKey,
+          ReportDataDefinitionDto::getVersions,
+          ReportDataDefinitionDto::getTenantIds
+        )
+        .containsExactlyInAnyOrder(
+          // the process includes both tenants
+          Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT, SECOND_TENANT))
+        );
+      // the result includes data from both tenants
+      final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+      // getInstanceCountWithoutFilters() is the same as getInstanceCount() if the filter is of type
+      // InstanceEndDateFilterDto, so excluding that one. This is an intentional behaviour from the filter
+      if (resultReportDataDto.getFilter().stream().noneMatch(c -> c instanceof InstanceEndDateFilterDto)) {
+        assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2L);
+      }
+    });
+  }
+
+  @Test
+  public void savedInstantPreviewReportCanBeEvaluatedAndExcludesUnauthorizedTenants() {
+    // given
+    engineIntegrationExtension.createTenant(FIRST_TENANT);
+    // kermit not authorized for second tenant
+    engineIntegrationExtension.createTenant(SECOND_TENANT);
+    final ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), FIRST_TENANT);
+    // Kermit is not authorized to see the data for these two instances
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY), SECOND_TENANT);
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY), SECOND_TENANT);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, processInstance.getProcessDefinitionKey(), RESOURCE_TYPE_PROCESS_DEFINITION
+    );
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      KERMIT_USER, FIRST_TENANT, RESOURCE_TYPE_TENANT
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    final Set<String> reportIds = getInstantPreviewReportIDsForProcess(FIRST_DEF_KEY);
+
+    reportIds.forEach(reportId -> {
+      // when
+      final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+        reportClient.evaluateReportAsKermit(reportId);
+
+      // then
+      ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+      assertThat(resultReportDataDto.isInstantPreviewReport()).isTrue();
+      assertThat(resultReportDataDto.getDefinitions()).hasSize(1)
+        .extracting(ReportDataDefinitionDto::getKey, ReportDataDefinitionDto::getVersions, ReportDataDefinitionDto::getTenantIds)
+        .containsExactlyInAnyOrder(
+          // the process includes only one tenant
+          Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT))
+        );
+      // the result includes data from only from FIRST_TENANT (one instance)
+      final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
+      // getInstanceCountWithoutFilters() is the same as getInstanceCount() if the filter is of type
+      // InstanceEndDateFilterDto, so excluding that one. This is an intentional behaviour from the filter
+      if (resultReportDataDto.getFilter().stream().noneMatch(c -> c instanceof InstanceEndDateFilterDto)) {
+        assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(1L);
+      }
+    });
+
   }
 
   @NotNull

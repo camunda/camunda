@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -44,8 +43,6 @@ import static org.camunda.optimize.service.dashboard.ManagementDashboardService.
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_NAME;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_NAME;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_NAME;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
-import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -136,7 +133,8 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = evaluateReport(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateReport(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -174,7 +172,8 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = evaluateReport(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateReport(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -274,7 +273,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
-      evaluateReportAsKermit(reportId);
+      reportClient.evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -297,7 +296,8 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     final String reportId = getIdForManagementReport();
 
     // when
-    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse = evaluateReport(reportId);
+    final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
+      reportClient.evaluateReport(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -343,7 +343,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
-      evaluateReportAsKermit(reportId);
+      reportClient.evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -351,7 +351,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     assertThat(resultReportDataDto.getDefinitions()).hasSize(1)
       .extracting(ReportDataDefinitionDto::getKey, ReportDataDefinitionDto::getVersions, ReportDataDefinitionDto::getTenantIds)
       .containsExactlyInAnyOrder(
-        // the process includes both tenants
+        // the process includes only one tenant
         Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT))
       );
     // the result includes data from the authorized tenant
@@ -366,8 +366,6 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void savedManagementReportCanBeEvaluatedUserNotAuthorizedForAnyImportedProcess() {
     // given
-    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.deployAndStartProcess(
-      getSingleUserTaskDiagram(FIRST_DEF_KEY));
     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -377,35 +375,17 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
-      evaluateReportAsKermit(reportId);
+      reportClient.evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.isManagementReport()).isTrue();
-    assertThat(resultReportDataDto.getDefinitions()).hasSize(0);
+    assertThat(resultReportDataDto.getDefinitions()).isEmpty();
     // the result is empty as Kermit has no authorization for any processes
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isZero();
     assertThat(resultDto.getFirstMeasureData()).isEmpty();
   }
-
-  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReport(final String reportId) {
-    return evaluateReportAsUser(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsKermit(final String reportId) {
-    return evaluateReportAsUser(reportId, KERMIT_USER, KERMIT_USER);
-  }
-
-  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsUser(final String reportId,
-                                                                                                     final String username,
-                                                                                                     final String password) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .withUserAuthentication(username, password)
-      .buildEvaluateSavedReportRequest(reportId)
-      // @formatter:off
-      .execute(new TypeReference<>() {});}
-      // @formatter:on
 
   private String getIdForManagementReport() {
     return getAllManagementReports()
