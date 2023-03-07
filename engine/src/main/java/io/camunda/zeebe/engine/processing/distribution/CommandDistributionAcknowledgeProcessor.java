@@ -58,7 +58,9 @@ public class CommandDistributionAcknowledgeProcessor
       // this we could exceed the max message size. As we only need the distributionKey in the
       // FINISHED event applier an empty record will suffice here.
       stateWriter.appendFollowUpEvent(
-          distributionKey, CommandDistributionIntent.FINISHED, EMPTY_DISTRIBUTION_RECORD);
+          distributionKey,
+          CommandDistributionIntent.FINISHED,
+          new CommandDistributionRecord().setPartitionId(record.getPartitionId()));
     }
   }
 }

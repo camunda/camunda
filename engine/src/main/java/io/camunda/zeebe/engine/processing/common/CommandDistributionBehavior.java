@@ -51,6 +51,7 @@ public final class CommandDistributionBehavior {
   public <T extends UnifiedRecordValue> void distributeCommand(final TypedRecord<T> command) {
     final var distributionRecord =
         new CommandDistributionRecord()
+            .setPartitionId(currentPartitionId)
             .setValueType(command.getValueType())
             .setRecordValue(command.getValue());
 
