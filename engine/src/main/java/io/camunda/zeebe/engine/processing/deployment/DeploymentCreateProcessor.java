@@ -84,33 +84,14 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
 
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> command) {
-    final DeploymentRecord deploymentEvent = command.getValue();
-
     if (!command.isCommandDistributed()) {
       transformAndDistributeDeployment(command);
     } else {
-      // TODO write process commands
-      for (final ProcessMetadata metadata : deploymentEvent.processesMetadata()) {
-        for (final DeploymentResource resource : deploymentEvent.getResources()) {
-          if (resource.getResourceName().equals(metadata.getResourceName())) {
-            stateWriter.appendFollowUpEvent(
-                metadata.getKey(),
-                ProcessIntent.CREATED,
-                new ProcessRecord().wrap(metadata, resource.getResource()));
-          }
-        }
-      }
-      // TODO write dmn commands
-
-      // TODO ack distribution
-      distributionBehavior.acknowledgeCommand(command.getKey());
-
-      // TODO Write deployment CREATED event
-      stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent);
+      processDistributedRecord(command);
     }
 
     // manage the top-level start event subscriptions except for timers
-    startEventSubscriptionManager.tryReOpenStartEventSubscription(deploymentEvent, stateWriter);
+    startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue(), stateWriter);
   }
 
   @Override
@@ -154,6 +135,24 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
 
     distributionBehavior.distributeCommand(command);
+  }
+
+  private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {
+    final var deploymentEvent = command.getValue();
+    for (final ProcessMetadata metadata : deploymentEvent.processesMetadata()) {
+      for (final DeploymentResource resource : deploymentEvent.getResources()) {
+        if (resource.getResourceName().equals(metadata.getResourceName())) {
+          stateWriter.appendFollowUpEvent(
+              metadata.getKey(),
+              ProcessIntent.CREATED,
+              new ProcessRecord().wrap(metadata, resource.getResource()));
+        }
+      }
+    }
+    // TODO write dmn commands
+
+    stateWriter.appendFollowUpEvent(command.getKey(), DeploymentIntent.CREATED, deploymentEvent);
+    distributionBehavior.acknowledgeCommand(command.getKey());
   }
 
   private void createTimerIfTimerStartEvent(final TypedRecord<DeploymentRecord> record) {
