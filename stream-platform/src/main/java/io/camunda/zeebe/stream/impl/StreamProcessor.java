@@ -242,11 +242,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    if (!isOpened.get()) {
-      return closeFuture;
+    if (isOpened.getAndSet(false)) {
+      actor.run(() -> asyncActor.closeAsync().onComplete((v, t) -> actor.close()));
     }
-
-    actor.run(() -> asyncActor.closeAsync().onComplete((v, t) -> actor.close()));
 
     return closeFuture;
   }
