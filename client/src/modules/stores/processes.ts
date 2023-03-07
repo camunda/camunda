@@ -142,6 +142,18 @@ class Processes extends NetworkReconnectionHandler {
     this.retryCount = 0;
   };
 
+  getProcessPermissions = (processId?: string) => {
+    if (processId === undefined) {
+      return [];
+    }
+
+    return (
+      this.state.processes.find(
+        (process) => process.bpmnProcessId === processId
+      )?.permissions ?? []
+    );
+  };
+
   reset() {
     super.reset();
     this.state = INITIAL_STATE;

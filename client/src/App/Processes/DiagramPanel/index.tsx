@@ -68,7 +68,8 @@ const DiagramPanel: React.FC = observer(() => {
     ({bpmnProcessId}) => bpmnProcessId === process
   );
 
-  const processName = selectedProcess?.name || selectedProcess?.bpmnProcessId;
+  const bpmnProcessId = selectedProcess?.bpmnProcessId;
+  const processName = selectedProcess?.name || bpmnProcessId;
   const isDiagramLoading =
     processDiagramStore.state.status === 'fetching' ||
     processesStore.state.status === 'initial' ||
@@ -110,7 +111,13 @@ const DiagramPanel: React.FC = observer(() => {
         {IS_PROCESS_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
           processId !== undefined && (
-            <Restricted scopes={['write']}>
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                resourceDefinitionId: bpmnProcessId,
+                scopes: ['DELETE'],
+              }}
+            >
               <ProcessOperations
                 processDefinitionId={processId}
                 processName={processName ?? 'Process'}

@@ -126,4 +126,5 @@ const handlers: RequestHandler[] = [
   ...mockDeleteDecisionDefinition,
   ...mockDeleteProcessDefinition,
 ];
+
 export {handlers};

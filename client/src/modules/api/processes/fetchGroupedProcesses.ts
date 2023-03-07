@@ -6,6 +6,7 @@
  */
 
 import {requestAndParse} from 'modules/request';
+import {PermissionDto} from '../sharedTypes';
 
 type ProcessVersionDto = {
   bpmnProcessId: string;
@@ -18,6 +19,7 @@ type ProcessDto = {
   bpmnProcessId: string;
   name: string | null;
   processes: ProcessVersionDto[];
+  permissions?: PermissionDto[] | null;
 };
 
 const fetchGroupedProcesses = async () => {

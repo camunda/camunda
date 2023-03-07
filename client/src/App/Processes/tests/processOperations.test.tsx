@@ -12,7 +12,6 @@ import {createWrapper} from './mocks';
 import {
   groupedProcessesMock,
   mockProcessInstances,
-  mockProcessStatistics,
   mockProcessXML,
   operations,
 } from 'modules/testUtils';
@@ -30,7 +29,7 @@ describe('<Processes /> - operations', () => {
   beforeEach(() => {
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
     mockFetchGroupedProcesses().withSuccess(groupedProcessesMock);
-    mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
+    mockFetchProcessInstancesStatistics().withSuccess([]);
     mockFetchProcessXML().withSuccess(mockProcessXML);
     mockFetchBatchOperations().withSuccess(operations);
   });
@@ -91,5 +90,42 @@ describe('<Processes /> - operations', () => {
         name: /delete process definition/i,
       })
     ).not.toBeInTheDocument();
+  });
+
+  it('should not show delete button when user has no resource based permissions', async () => {
+    authenticationStore.setUser({
+      displayName: 'demo',
+      permissions: ['write'],
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+    });
+
+    const {rerender} = render(<Processes />, {
+      wrapper: createWrapper('/processes?process=demoProcess&version=1'),
+    });
+
+    expect(
+      await screen.findByRole('button', {
+        name: /delete process definition/i,
+      })
+    ).toBeInTheDocument();
+    expect(await screen.findByRole('button', {name: 'Zoom in diagram'}));
+
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+
+    rerender(<Processes />);
+
+    expect(
+      screen.queryByRole('button', {
+        name: /delete process definition/i,
+      })
+    ).not.toBeInTheDocument();
+
+    window.clientConfig = undefined;
   });
 });

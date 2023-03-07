@@ -9,6 +9,7 @@ import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
 import {UserDto} from './api/getUser';
 import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
+import {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import {BatchOperationDto} from './api/sharedTypes';
 
@@ -148,7 +149,7 @@ const createUser = (options: Partial<UserDto> = {}): UserDto => ({
 /**
  * A hard coded object to use when mocking fetchGroupedProcesses api/instances.js
  */
-export const groupedProcessesMock = [
+export const groupedProcessesMock: ProcessDto[] = [
   {
     bpmnProcessId: 'demoProcess',
     name: 'New demo process',
@@ -172,6 +173,7 @@ export const groupedProcessesMock = [
         bpmnProcessId: 'demoProcess',
       },
     ],
+    permissions: ['UPDATE_PROCESS_INSTANCE'],
   },
   {
     bpmnProcessId: 'eventBasedGatewayProcess',
@@ -190,6 +192,7 @@ export const groupedProcessesMock = [
         bpmnProcessId: 'eventBasedGatewayProcess',
       },
     ],
+    permissions: ['DELETE'],
   },
   {
     bpmnProcessId: 'bigVarProcess',
@@ -202,6 +205,7 @@ export const groupedProcessesMock = [
         bpmnProcessId: 'bigVarProcess',
       },
     ],
+    permissions: ['DELETE_PROCESS_INSTANCE'],
   },
   {
     bpmnProcessId: 'orderProcess',

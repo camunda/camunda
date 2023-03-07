@@ -5,10 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {Restricted} from './index';
+import {Restricted} from '../index';
 import {render, screen} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
+import {MemoryRouter} from 'react-router-dom';
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
@@ -17,7 +18,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
     };
   }, []);
 
-  return <>{children}</>;
+  return <MemoryRouter>{children}</MemoryRouter>;
 };
 
 describe('Restricted', () => {
