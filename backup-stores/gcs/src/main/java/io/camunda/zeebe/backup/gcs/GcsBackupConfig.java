@@ -7,20 +7,23 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
-public record GcsBackupConfig(String bucketName, String basePath) {
-  public GcsBackupConfig(String bucketName, String basePath) {
+import static java.util.Objects.requireNonNull;
+
+public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig conn) {
+  public GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig conn) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
+    this.conn = requireNonNull(conn);
   }
 
-  private String requireBucketName(final String bucketName) {
+  private static String requireBucketName(final String bucketName) {
     if (bucketName == null || bucketName.isBlank()) {
       throw new IllegalArgumentException("bucketName must be provided");
     }
     return bucketName;
   }
 
-  private String sanitizeBasePath(final String basePath) {
+  private static String sanitizeBasePath(final String basePath) {
     if (basePath == null || basePath.isBlank()) {
       return null;
     }
@@ -45,6 +48,7 @@ public record GcsBackupConfig(String bucketName, String basePath) {
   public static final class Builder {
     private String bucketName;
     private String basePath;
+    private GcsConnectionConfig.Authentication auth;
 
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
@@ -56,8 +60,18 @@ public record GcsBackupConfig(String bucketName, String basePath) {
       return this;
     }
 
+    public Builder withoutAuthentication() {
+      this.auth = new GcsConnectionConfig.Authentication.None();
+      return this;
+    }
+
+    public Builder withDefaultApplicationCredentials() {
+      this.auth = new GcsConnectionConfig.Authentication.Default();
+      return this;
+    }
+
     public GcsBackupConfig build() {
-      return new GcsBackupConfig(bucketName, basePath);
+      return new GcsBackupConfig(bucketName, basePath, new GcsConnectionConfig(auth));
     }
   }
 }

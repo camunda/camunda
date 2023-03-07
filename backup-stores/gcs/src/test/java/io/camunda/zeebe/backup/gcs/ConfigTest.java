@@ -78,4 +78,31 @@ final class ConfigTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("basePath");
   }
+
+  @Test
+  void shouldUseDefaultApplicationCredentialsByDefault() {
+    // given
+    final var bucketName = "test";
+
+    // when
+    final var config = new GcsBackupConfig.Builder().withBucketName(bucketName).build();
+
+    // then
+    Assertions.assertThat(config.conn().auth())
+        .isInstanceOf(GcsConnectionConfig.Authentication.Default.class);
+  }
+
+  @Test
+  void shouldUseNoAuthenticationWhenRequested() {
+    // given
+    final var bucketName = "test";
+
+    // when
+    final var config =
+        new GcsBackupConfig.Builder().withBucketName(bucketName).withoutAuthentication().build();
+
+    // then
+    Assertions.assertThat(config.conn().auth())
+        .isInstanceOf(GcsConnectionConfig.Authentication.None.class);
+  }
 }
