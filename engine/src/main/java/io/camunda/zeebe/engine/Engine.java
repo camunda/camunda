@@ -56,12 +56,14 @@ public class Engine implements RecordProcessor {
       new ProcessingResultBuilderMutex();
 
   private Writers writers;
-  private TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final EngineConfiguration config;
 
-  public Engine() {}
-
-  public Engine(final TypedRecordProcessorFactory typedRecordProcessorFactory) {
+  public Engine(
+      final TypedRecordProcessorFactory typedRecordProcessorFactory,
+      final EngineConfiguration config) {
     this.typedRecordProcessorFactory = typedRecordProcessorFactory;
+    this.config = config;
   }
 
   @Override
@@ -86,7 +88,8 @@ public class Engine implements RecordProcessor {
             processingState,
             scheduledTaskDbState,
             writers,
-            recordProcessorContext.getPartitionCommandSender());
+            recordProcessorContext.getPartitionCommandSender(),
+            config);
 
     final TypedRecordProcessors typedRecordProcessors =
         typedRecordProcessorFactory.createProcessors(typedProcessorContext);

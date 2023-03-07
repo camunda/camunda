@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state;
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.processing.message.MessageObserver;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -233,7 +233,8 @@ public final class ProcessExecutionCleanStateTest {
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
-    engineRule.increaseTime(timeToLive.plus(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL));
+    engineRule.increaseTime(
+        timeToLive.plus(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL));
 
     // then
     assertThatStateIsEmpty();
@@ -280,7 +281,8 @@ public final class ProcessExecutionCleanStateTest {
         .withElementType(BpmnElementType.PROCESS)
         .await();
 
-    engineRule.increaseTime(timeToLive.plus(MessageObserver.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL));
+    engineRule.increaseTime(
+        timeToLive.plus(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL));
 
     // deploy new process without message start event to close the open subscription
     engineRule

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.api.InterPartitionCommandSender;
 import io.camunda.zeebe.engine.api.ProcessingScheduleService;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -26,4 +27,6 @@ public interface TypedRecordProcessorContext {
   InterPartitionCommandSender getPartitionCommandSender();
 
   ScheduledTaskDbState getScheduledTaskDbState();
+
+  EngineConfiguration getConfig();
 }

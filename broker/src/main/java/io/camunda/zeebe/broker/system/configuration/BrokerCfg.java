@@ -134,7 +134,7 @@ public final class BrokerCfg {
   }
 
   public void setProcessingCfg(final ProcessingCfg cfg) {
-    this.processingCfg = cfg;
+    processingCfg = cfg;
   }
 
   public ExperimentalCfg getExperimental() {
