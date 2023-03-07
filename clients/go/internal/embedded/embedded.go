@@ -92,7 +92,7 @@ func version() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "VERSION", size: 7, mode: os.FileMode(420), modTime: time.Unix(1675933699, 0)}
+	info := bindataFileInfo{name: "VERSION", size: 7, mode: os.FileMode(420), modTime: time.Unix(1678176739, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
