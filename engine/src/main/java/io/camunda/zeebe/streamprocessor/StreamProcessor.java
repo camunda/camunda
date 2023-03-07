@@ -237,11 +237,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   @Override
   protected void onActorClosing() {
     tearDown();
-    closeFuture.complete(null);
   }
 
   @Override
   protected void onActorClosed() {
+    closeFuture.complete(null);
     LOG.debug("Closed stream processor controller {}.", getName());
   }
 
@@ -254,12 +254,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    isOpened.set(false);
+    if (!isOpened.get()) {
+      return closeFuture;
+    }
 
-    actor.run(
-        () -> {
-          asyncActor.closeAsync().onComplete((v, t) -> actor.close());
-        });
+    actor.run(() -> asyncActor.closeAsync().onComplete((v, t) -> actor.close()));
 
     return closeFuture;
   }
@@ -275,6 +274,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     isOpened.set(false);
     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
+    closeFuture.complete(null);
   }
 
   private boolean shouldProcessNext() {
