@@ -1536,5 +1536,34 @@
         "altTextPlaceholder": "Link to example.com"
       }
     }
+  },
+  "managementDashboard": {
+    "dashboardName": "Adoption Dashboard",
+    "report": {
+      "processInstanceUsage": "Process Instance Usage",
+      "incidentFreeRate": "Overall Incident-Free Rate",
+      "automationRate": "Automation Rate (<1 hour)",
+      "longRunningInstances": "Long-Running Process Instances",
+      "automationCandidates": "Automation Candidates",
+      "activeBottlenecks": "Active Bottlenecks"
+    }
+  },
+  "instantDashboard": {
+    "dashboardName": "Process performance overview",
+    "kpiDashboardName": "KPI Dashboard",
+    "report": {
+      "percentSLAMet": "% SLA Met",
+      "flownodeDuration": "Which process steps take too much time? (To Do: Add Target values for these process steps)",
+      "controlChart": "Is my process within control?",
+      "activeIncidentsHeatmap": "Where are the active incidents?",
+      "percentNoIncidents": "Incident-Free Rate",
+      "incidentDurationHeatmap": "Where are the worst incidents?",
+      "p99Duration": "99th Percentile Duration",
+      "incidentDurationTrend": "Are we improving incident handling?",
+      "30DayThroughput": "Throughput (30-day rolling)",
+      "p75Duration": "75th Percentile Duration",
+      "instanceTrends": "How frequently is this process run?",
+      "flownodeFrequency": "How often is each process step run?"
+    }
   }
 }

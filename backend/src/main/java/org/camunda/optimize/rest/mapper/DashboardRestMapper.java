@@ -6,25 +6,31 @@
 package org.camunda.optimize.rest.mapper;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.Optional;
 
+@Slf4j
 @Component
 @AllArgsConstructor
 public class DashboardRestMapper {
 
   private final AbstractIdentityService identityService;
+  private final LocalizationService localizationService;
 
-  public void prepareRestResponse(final AuthorizedDashboardDefinitionResponseDto dashboardDefinitionDto) {
-    resolveOwnerAndModifierNames(dashboardDefinitionDto.getDefinitionDto());
+  public void prepareRestResponse(final AuthorizedDashboardDefinitionResponseDto dashboardDefinitionDto, final String locale) {
+    prepareRestResponse(dashboardDefinitionDto.getDefinitionDto(), locale);
   }
 
-  public void prepareRestResponse(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+  public void prepareRestResponse(final DashboardDefinitionRestDto dashboardDefinitionDto, final String locale) {
     resolveOwnerAndModifierNames(dashboardDefinitionDto);
+    localizeDashboard(dashboardDefinitionDto, locale);
   }
 
   private void resolveOwnerAndModifierNames(DashboardDefinitionRestDto dashboardDefinitionDto) {
@@ -34,5 +40,30 @@ public class DashboardRestMapper {
     Optional.ofNullable(dashboardDefinitionDto.getLastModifier())
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(dashboardDefinitionDto::setLastModifier);
+  }
+
+  private void localizeDashboard(final DashboardDefinitionRestDto dashboardDefinition, final String locale) {
+    if (dashboardDefinition.isManagementDashboard() || dashboardDefinition.isInstantPreviewDashboard()) {
+      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
+      try {
+        if (dashboardDefinition.isManagementDashboard()) {
+          Optional.ofNullable(localizationService.getLocalizationForManagementDashboardCode(
+            validLocale,
+            dashboardDefinition.getName()
+          )).ifPresent(dashboardDefinition::setName);
+        } else {
+          Optional.ofNullable(localizationService.getLocalizationForInstantPreviewDashboardCode(
+            validLocale,
+            dashboardDefinition.getName()
+          )).ifPresent(dashboardDefinition::setName);
+        }
+      } catch (IOException e) {
+        log.error(
+          "Failed to localize Dashboard for Dashboard with name [{}] for locale [{}]",
+          dashboardDefinition.getName(),
+          validLocale
+        );
+      }
+    }
   }
 }

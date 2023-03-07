@@ -74,7 +74,7 @@ public class EntitiesService {
       ).collect(Collectors.toList());
   }
 
-  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String userId) {
+  public EntityNameResponseDto getEntityNames(final EntityNameRequestDto requestDto, final String userId, final String locale) {
     Optional<EntityNameResponseDto> entityNames;
     // If it's a click for a magic link, direct it to the default instant dashboard for that process key, as the
     // magic link functionality is discontinued
@@ -97,9 +97,8 @@ public class EntitiesService {
                    "is not authorized to access it", requestDto.getDashboardId(), requestDto.getDashboardId(), userId);
         entityNames = Optional.empty();
       }
-    }
-    else {
-      entityNames = entitiesReader.getEntityNames(requestDto);
+    } else {
+      entityNames = entitiesReader.getEntityNames(requestDto, locale);
     }
     return entityNames.orElseThrow(() -> {
       String reason = String.format("Could not get entity names search request %s", requestDto);

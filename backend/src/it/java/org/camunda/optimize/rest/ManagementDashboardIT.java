@@ -43,6 +43,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -57,15 +60,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_ID;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_NAME;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class ManagementDashboardIT extends AbstractIT {
 
   private static final Map<String, ExpectedReportConfigurationAndLocation> expectedReportsAndLocationsByName =
     createExpectedReportsAndLocationsByName();
+  private static final String ADOPTION_DASHBOARD = "Adoption Dashboard";
 
   @Test
   public void getManagementDashboard() {
@@ -126,7 +131,7 @@ public class ManagementDashboardIT extends AbstractIT {
     final DashboardDefinitionRestDto managementDashboard = dashboardClient.getManagementDashboard();
     assertThat(managementDashboard.isManagementDashboard()).isTrue();
     assertThat(managementDashboard.getId()).isEqualTo(MANAGEMENT_DASHBOARD_ID);
-    assertThat(managementDashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_NAME);
+    assertThat(managementDashboard.getName()).isEqualTo(ADOPTION_DASHBOARD);
     assertThat(managementDashboard.getCollectionId()).isNull();
     assertThat(managementDashboard.getLastModified()).isEqualTo(now);
     assertThat(managementDashboard.getLastModifier()).isNull();
@@ -135,9 +140,9 @@ public class ManagementDashboardIT extends AbstractIT {
     assertThat(managementDashboard.getExternalResourceUrls()).isEqualTo(Collections.emptySet());
     assertThat(managementDashboard.getRefreshRateSeconds()).isNull();
     assertThat(managementDashboard.getAvailableFilters()).isEqualTo(List.of(
-            createDashboardStartDateFilterWithDefaultValues(
-                    new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS))
-            )
+      createDashboardStartDateFilterWithDefaultValues(
+        new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS))
+      )
     ));
     assertThat(managementDashboard.getReports())
       .hasSize(6)
@@ -163,9 +168,22 @@ public class ManagementDashboardIT extends AbstractIT {
       .singleElement()
       .satisfies(dashboard -> {
         assertThat(dashboard.getId()).isEqualTo(MANAGEMENT_DASHBOARD_ID);
-        assertThat(dashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_NAME);
+        assertThat(dashboard.getName()).isEqualTo(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
         assertThat(dashboard.isManagementDashboard()).isTrue();
       });
+  }
+
+  @ParameterizedTest
+  @MethodSource("localizedDashboardNames")
+  public void managementDashboardNameIsLocalized(final String locale, final String expectedName) {
+    // when
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+
+    // when
+    final DashboardDefinitionRestDto returnedDashboard = dashboardClient.getManagementDashboardLocalized(locale);
+
+    // then
+    assertThat(returnedDashboard.getName()).isEqualTo(expectedName);
   }
 
   private ReportLocationDto getExpectedDashboardForReportWithName(final String reportName,
@@ -207,7 +225,7 @@ public class ManagementDashboardIT extends AbstractIT {
   private static Map<String, ExpectedReportConfigurationAndLocation> createExpectedReportsAndLocationsByName() {
     return Stream.of(
       new ExpectedReportConfigurationAndLocation(
-        PROCESS_INSTANCE_USAGE_REPORT_NAME,
+        PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -223,7 +241,7 @@ public class ManagementDashboardIT extends AbstractIT {
         new DimensionDto(3, 4)
       ),
       new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_NAME,
+        ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -238,7 +256,7 @@ public class ManagementDashboardIT extends AbstractIT {
         new DimensionDto(3, 2)
       ),
       new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.AUTOMATION_RATE_REPORT_NAME,
+        ManagementDashboardService.AUTOMATION_RATE_REPORT_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -259,7 +277,7 @@ public class ManagementDashboardIT extends AbstractIT {
         new DimensionDto(3, 2)
       ),
       new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_NAME,
+        ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -282,7 +300,7 @@ public class ManagementDashboardIT extends AbstractIT {
         new DimensionDto(4, 4)
       ),
       new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.AUTOMATION_CANDIDATES_REPORT_NAME,
+        ManagementDashboardService.AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -295,7 +313,7 @@ public class ManagementDashboardIT extends AbstractIT {
         new DimensionDto(4, 4)
       ),
       new ExpectedReportConfigurationAndLocation(
-        ManagementDashboardService.ACTIVE_BOTTLENECKS_REPORT_NAME,
+        ManagementDashboardService.ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE,
         new SingleProcessReportDefinitionRequestDto(
           ProcessReportDataDto.builder()
             .definitions(Collections.emptyList())
@@ -317,6 +335,14 @@ public class ManagementDashboardIT extends AbstractIT {
     private SingleProcessReportDefinitionRequestDto reportDefinitionRequestDto;
     private PositionDto positionDto;
     private DimensionDto dimensionDto;
+  }
+
+  @SuppressWarnings(UNUSED)
+  private static Stream<Arguments> localizedDashboardNames() {
+    return Stream.of(
+      Arguments.of("en", ADOPTION_DASHBOARD),
+      Arguments.of("de", ADOPTION_DASHBOARD)
+    );
   }
 
 }

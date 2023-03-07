@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+
 @AllArgsConstructor
 public class DashboardClient {
 
@@ -36,8 +38,23 @@ public class DashboardClient {
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public DashboardDefinitionRestDto getManagementDashboardLocalized(final String locale) {
+    return getRequestExecutor()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
+      .buildGetManagementDashboardRequest()
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public DashboardDefinitionRestDto getInstantPreviewDashboard(String processDefinitionKey, String template) {
     return getRequestExecutor()
+      .buildGetInstantPreviewDashboardRequest(processDefinitionKey, template)
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+  }
+
+  public DashboardDefinitionRestDto getInstantPreviewDashboardLocalized(final String processDefinitionKey,
+                                                                        final String template, final String locale) {
+    return getRequestExecutor()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
       .buildGetInstantPreviewDashboardRequest(processDefinitionKey, template)
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
@@ -117,6 +134,7 @@ public class DashboardClient {
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute();
   }
+
   public Response updateDashboardAsUser(String id, DashboardDefinitionRestDto updatedDashboard, String username,
                                         String password) {
     return getRequestExecutor()

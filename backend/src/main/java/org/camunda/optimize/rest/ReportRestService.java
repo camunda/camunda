@@ -47,6 +47,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
@@ -187,7 +188,10 @@ public class ReportRestService {
         reportEvaluationFilter,
         PaginationDto.fromPaginationRequest(paginationRequestDto)
       );
-    return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
+      reportEvaluationResult,
+      requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
+    );
   }
 
   /**
@@ -215,7 +219,8 @@ public class ReportRestService {
         reportDefinitionDto,
         PaginationDto.fromPaginationRequest(paginationRequestDto)
       );
-    return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(reportEvaluationResult,
+                                                                requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   /**

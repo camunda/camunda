@@ -1,7 +1,7 @@
 [ {
   "id" : "de508893-50e2-4647-a44c-e7b955f5a77c",
   "exportEntityType" : "single_process_report",
-  "name" : "Throughput (30-day rolling)",
+  "name" : "30DayThroughput",
   "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
@@ -130,7 +130,7 @@
 }, {
   "id" : "a7fe3d92-e8d2-4288-9209-a6e30fb70cbd",
   "exportEntityType" : "single_process_report",
-  "name" : "P75 Duration",
+  "name" : "p75Duration",
   "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
@@ -245,7 +245,7 @@
 }, {
   "id" : "c7304ec0-f532-413f-bd4b-dc8adf5d3183",
   "exportEntityType" : "single_process_report",
-  "name" : "Incident-Free Rate",
+  "name" : "percentNoIncidents",
   "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
@@ -365,7 +365,7 @@
 }, {
   "id" : "d816cc24-87e9-4086-a791-fc0624662819",
   "exportEntityType" : "single_process_report",
-  "name" : "% SLA Met",
+  "name" : "percentSLAMet",
   "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
@@ -490,7 +490,7 @@
 }, {
   "id" : "754367b4-485a-4e6b-9b16-8423d2760ef3",
   "exportEntityType" : "single_process_report",
-  "name" : "P99 Duration",
+  "name" : "p99Duration",
   "sourceIndexVersion" : 10,
   "collectionId" : "AnalysisTestingProcess",
   "data" : {
@@ -605,7 +605,7 @@
 }, {
   "id" : "AnalysisTestingProcess",
   "exportEntityType" : "dashboard",
-  "name" : "KPI Dashboard",
+  "name" : "kpiDashboardName",
   "sourceIndexVersion" : 7,
   "reports" : [ {
     "id" : "de508893-50e2-4647-a44c-e7b955f5a77c",

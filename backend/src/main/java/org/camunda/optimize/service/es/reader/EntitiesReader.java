@@ -11,9 +11,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -49,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
+import static org.camunda.optimize.service.es.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
@@ -78,7 +82,9 @@ public class EntitiesReader {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final OptimizeIndexNameService optimizeIndexNameService;
+  private final LocalizationService localizationService;
   private final ObjectMapper objectMapper;
+
 
   public List<CollectionEntity> getAllPrivateEntities() {
     return getAllPrivateEntities(null);
@@ -89,25 +95,19 @@ public class EntitiesReader {
 
     final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(COLLECTION_ID))
       .minimumShouldMatch(1)
-      .should(termQuery(DashboardIndex.MANAGEMENT_DASHBOARD, false))
+      .should(termQuery(MANAGEMENT_DASHBOARD, false))
       .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
-      .should(boolQuery()
-                .mustNot(existsQuery(DashboardIndex.MANAGEMENT_DASHBOARD))
-                .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT))
-      );
+      .should(boolQuery().mustNot(existsQuery(MANAGEMENT_DASHBOARD)).mustNot(existsQuery(DATA + "." + MANAGEMENT_DASHBOARD)));
 
     if (userId != null) {
       query.must(termQuery(OWNER, userId));
     }
 
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(query)
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, ENTITY_LIST_EXCLUDES);
-    SearchRequest searchRequest =
-      createReportAndDashboardSearchRequest()
-        .source(searchSourceBuilder)
-        .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+    SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder)
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -126,8 +126,7 @@ public class EntitiesReader {
     );
   }
 
-  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(
-    final List<? extends BaseCollectionDefinitionDto> collections) {
+  public Map<String, Map<EntityType, Long>> countEntitiesForCollections(final List<? extends BaseCollectionDefinitionDto> collections) {
     log.debug(
       "Counting all available entities for collection ids [{}]",
       collections.stream().map(BaseCollectionDefinitionDto::getId).collect(Collectors.toList())
@@ -137,16 +136,22 @@ public class EntitiesReader {
       return new HashMap<>();
     }
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termsQuery(
-        COLLECTION_ID, collections.stream().map(BaseCollectionDefinitionDto::getId).collect(Collectors.toList())
-      ))
-      .size(0);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(termsQuery(
+      COLLECTION_ID,
+      collections.stream()
+        .map(BaseCollectionDefinitionDto::getId)
+        .collect(Collectors.toList())
+    )).size(0);
 
     collections.forEach(collection -> {
       final String collectionId = collection.getId();
-      final FilterAggregationBuilder byCollectionIdFilterAggregation =
-        filter(collectionId, boolQuery().filter(termQuery(COLLECTION_ID, collectionId)));
+      final FilterAggregationBuilder byCollectionIdFilterAggregation = filter(
+        collectionId,
+        boolQuery().filter(termQuery(
+          COLLECTION_ID,
+          collectionId
+        ))
+      );
       searchSourceBuilder.aggregation(byCollectionIdFilterAggregation);
       final TermsAggregationBuilder byIndexNameAggregation = terms(AGG_BY_INDEX_COUNT).field("_index");
       byCollectionIdFilterAggregation.subAggregation(byIndexNameAggregation);
@@ -156,10 +161,13 @@ public class EntitiesReader {
 
     try {
       final SearchResponse searchResponse = esClient.search(searchRequest);
-      return searchResponse.getAggregations().asList().stream()
+      return searchResponse.getAggregations()
+        .asList()
+        .stream()
         .map(agg -> (Filter) agg)
         .map(collectionFilterAggregation -> new AbstractMap.SimpleEntry<>(
-          collectionFilterAggregation.getName(), extractEntityIndexCounts(collectionFilterAggregation)
+          collectionFilterAggregation.getName(),
+          extractEntityIndexCounts(collectionFilterAggregation)
         ))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     } catch (IOException e) {
@@ -169,13 +177,12 @@ public class EntitiesReader {
 
   public List<CollectionEntity> getAllEntitiesForCollection(final String collectionId) {
     log.debug("Fetching all available entities for collection [{}]", collectionId);
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(COLLECTION_ID, collectionId))
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(termQuery(COLLECTION_ID, collectionId))
       .size(LIST_FETCH_LIMIT);
     return runEntitiesSearchRequest(searchSourceBuilder);
   }
 
-  public Optional<EntityNameResponseDto> getEntityNames(final EntityNameRequestDto requestDto) {
+  public Optional<EntityNameResponseDto> getEntityNames(final EntityNameRequestDto requestDto, final String locale) {
     log.debug(String.format("Performing get entity names search request %s", requestDto.toString()));
     MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
 
@@ -194,9 +201,9 @@ public class EntitiesReader {
         }
 
         if (entityId.equals(requestDto.getDashboardId())) { // no "else if" here in case request comes from a magic link
-          result.setDashboardName(entity.getName());
+          result.setDashboardName(getLocalizedDashboardName((DashboardDefinitionRestDto) entity, locale));
         } else if (entityId.equals(requestDto.getReportId())) {
-          result.setReportName(entity.getName());
+          result.setReportName(getLocalizedReportName(entity, locale));
         } else if (entityId.equals(requestDto.getEventBasedProcessId())) {
           result.setEventBasedProcessName(entity.getName());
         }
@@ -213,8 +220,10 @@ public class EntitiesReader {
     final long singleDecisionReportCount = getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndex());
     final long dashboardCount = getDocCountForIndex(byIndexNameTerms, new DashboardIndex());
     return ImmutableMap.of(
-      EntityType.DASHBOARD, dashboardCount,
-      EntityType.REPORT, singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount
+      EntityType.DASHBOARD,
+      dashboardCount,
+      EntityType.REPORT,
+      singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount
     );
   }
 
@@ -222,10 +231,8 @@ public class EntitiesReader {
     if (indexMapper.isCreateFromTemplate()) {
       throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
     }
-    return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
-      optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
-      .map(MultiBucketsAggregation.Bucket::getDocCount)
-      .orElse(0L);
+    return Optional.ofNullable(byIndexNameTerms.getBucketByKey(optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(
+      indexMapper))).map(MultiBucketsAggregation.Bucket::getDocCount).orElse(0L);
   }
 
   private CollectionEntity readCollectionEntity(final GetResponse response, final String entityId) {
@@ -262,16 +269,14 @@ public class EntitiesReader {
     return multiGetItemResponses;
   }
 
-  private void addGetEntityToRequest(final MultiGetRequest request, final String entityId,
-                                     final String entityIndexName) {
+  private void addGetEntityToRequest(final MultiGetRequest request, final String entityId, final String entityIndexName) {
     if (entityId != null) {
       request.add(new MultiGetRequest.Item(entityIndexName, entityId));
     }
   }
 
   private List<CollectionEntity> runEntitiesSearchRequest(final SearchSourceBuilder searchSourceBuilder) {
-    SearchRequest searchRequest = createReportAndDashboardSearchRequest()
-      .source(searchSourceBuilder)
+    SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder)
       .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
@@ -298,5 +303,42 @@ public class EntitiesReader {
       COMBINED_REPORT_INDEX_NAME,
       DASHBOARD_INDEX_NAME
     );
+  }
+
+
+  private String getLocalizedDashboardName(final DashboardDefinitionRestDto dashboardEntity, final String locale) {
+    try {
+      if (dashboardEntity.isInstantPreviewDashboard()) {
+        return localizationService.getLocalizationForInstantPreviewDashboardCode(locale, dashboardEntity.getName());
+      } else if (dashboardEntity.isManagementDashboard()) {
+        return localizationService.getLocalizationForManagementDashboardCode(locale, dashboardEntity.getName());
+      }
+    } catch (IOException e) {
+      log.error(
+        "Failed to localize name for Management or Instant Preview Dashboard with ID [{}] and name [{}]",
+        dashboardEntity.getId(),
+        dashboardEntity.getName()
+      );
+    }
+    return dashboardEntity.getName();
+  }
+
+  private String getLocalizedReportName(final CollectionEntity reportEntity, final String locale) {
+    if (reportEntity instanceof SingleProcessReportDefinitionRequestDto) {
+      try {
+        if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isInstantPreviewReport()) {
+          return localizationService.getLocalizationForInstantPreviewReportCode(locale, reportEntity.getName());
+        } else if (((SingleProcessReportDefinitionRequestDto) reportEntity).getData().isManagementReport()) {
+          return localizationService.getLocalizationForManagementReportCode(locale, reportEntity.getName());
+        }
+      } catch (IOException e) {
+        log.error(
+          "Failed to localize name for Management or Instant Preview Report with ID [{}] and name [{}]",
+          reportEntity.getId(),
+          reportEntity.getName()
+        );
+      }
+    }
+    return reportEntity.getName();
   }
 }

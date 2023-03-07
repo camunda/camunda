@@ -33,6 +33,8 @@ public class LocalizationService implements ConfigurationReloadable {
   public static final String LOCALIZATION_PATH = "localization/";
 
   private static final String API_ERRORS_FIELD = "apiErrors";
+  private static final String MANAGEMENT_DASHBOARD_FIELD = "managementDashboard";
+  private static final String INSTANT_DASHBOARD_FIELD = "instantDashboard";
   private static final String JSON_FILE_EXTENSION = "json";
   private static final String MARKDOWN_FILE_EXTENSION = "md";
   private static final String LOCALIZATION_FILE_PREFIX_WHATSNEW = "whatsnew";
@@ -81,12 +83,47 @@ public class LocalizationService implements ConfigurationReloadable {
     validateLocalizationSetup();
   }
 
+  public String getLocalizationForManagementDashboardCode(final String localeCode, final String dashboardCode) throws
+                                                                                                               IOException {
+    return getMessageForCode(localeCode, MANAGEMENT_DASHBOARD_FIELD, dashboardCode);
+  }
+
+  public String getLocalizationForInstantPreviewDashboardCode(final String localeCode, final String dashboardCode) throws IOException {
+    return getMessageForCode(localeCode, INSTANT_DASHBOARD_FIELD, dashboardCode);
+  }
+
+  public String getLocalizationForManagementReportCode(final String localeCode, final String reportCode) throws IOException {
+    return getNestedMessageForCode(localeCode, MANAGEMENT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
+  }
+
+  public String getLocalizationForInstantPreviewReportCode(final String localeCode, final String reportCode) throws IOException {
+    return getNestedMessageForCode(localeCode, INSTANT_DASHBOARD_FIELD, REPORT_FIELD, reportCode);
+  }
+
+  public String validateAndReturnValidLocale(final String locale) {
+    try {
+      validateLocalizationFile(locale);
+    } catch (Exception e) {
+      final String fallbackLocale = configurationService.getFallbackLocale();
+      log.error(
+        "No valid localization files found for given locale [{}]. Defaulting to fallback locale [{}] instead.",
+        locale,
+        fallbackLocale,
+        e
+      );
+      return fallbackLocale;
+    }
+    return locale;
+  }
+
   private void validateLocalizationFiles() {
-    configurationService.getAvailableLocales().forEach(locale -> {
-      final String filePath = resolveFilePath(JSON_FILE_EXTENSION, locale);
-      validateFileExists(filePath);
-      validateJsonFile(filePath);
-    });
+    configurationService.getAvailableLocales().forEach(this::validateLocalizationFile);
+  }
+
+  private void validateLocalizationFile(final String locale) {
+    final String filePath = resolveFilePath(JSON_FILE_EXTENSION, locale);
+    validateFileExists(filePath);
+    validateJsonFile(filePath);
   }
 
   private void validateMarkdownFiles() {
@@ -187,5 +224,21 @@ public class LocalizationService implements ConfigurationReloadable {
     // @formatter:on
     final Map<String, String> categoryMessageCodeMap = (Map<String, String>) localisationMap.get(categoryCode);
     return categoryMessageCodeMap.get(messageCode);
+  }
+
+
+  @SuppressWarnings({"unchecked"})
+  private String getNestedMessageForCode(final String localeCode,
+                                         final String categoryCode,
+                                         final String subcategoryCode,
+                                         final String messageCode) throws IOException {
+    // @formatter:off
+    final Map<String, Object> localisationMap = objectMapper.readValue(
+      getLocalizedJsonFile(localeCode), new TypeReference<>() {}
+    );
+    // @formatter:on
+    final Map<String, Map<String, String>> categoryMessageCodeMap = (Map<String, Map<String, String>>) localisationMap.get(
+      categoryCode);
+    return categoryMessageCodeMap.get(subcategoryCode).get(messageCode);
   }
 }

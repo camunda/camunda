@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -24,6 +25,9 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.MapResultUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -31,18 +35,23 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ACTIVE_BOTTLENECKS_REPORT_NAME;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.AUTOMATION_CANDIDATES_REPORT_NAME;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.AUTOMATION_RATE_REPORT_NAME;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_NAME;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_NAME;
-import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_NAME;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.AUTOMATION_RATE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
+import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -50,6 +59,7 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.VERSION_TAG;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.SuppressionConstants.UNUSED;
 
 public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -213,25 +223,26 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       .collect(Collectors.toMap(ReportDefinitionDto::getName, Function.identity()));
 
     // then
-    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(PROCESS_INSTANCE_USAGE_REPORT_NAME).getId()))
+    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE).getId()))
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
         assertThat(response.getResult().getData()).isNotEmpty();
       });
-    assertThat(reportClient.evaluateNumberReportById(mgmtReportsByName.get(INCIDENT_FREE_RATE_REPORT_NAME).getId()))
+    assertThat(reportClient.evaluateNumberReportById(mgmtReportsByName.get(INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE).getId()))
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
         assertThat(response.getResult().getData()).isNotNull();
       });
-    assertThat(reportClient.evaluateNumberReportById(mgmtReportsByName.get(AUTOMATION_RATE_REPORT_NAME).getId()))
+    assertThat(reportClient.evaluateNumberReportById(mgmtReportsByName.get(AUTOMATION_RATE_REPORT_LOCALIZATION_CODE).getId()))
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
         assertThat(response.getResult().getData()).isNotNull();
       });
-    assertThat(reportClient.evaluateHyperMapReportById(mgmtReportsByName.get(LONG_RUNNING_INSTANCES_REPORT_NAME).getId()))
+    assertThat(reportClient.evaluateHyperMapReportById(mgmtReportsByName.get(LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE)
+                                                         .getId()))
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
@@ -241,13 +252,13 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
           .allSatisfy(hyperResult -> assertThat(hyperResult).extracting(MapResultEntryDto::getLabel)
             .containsExactlyInAnyOrder(firstDefName, secondDefName));
       });
-    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(AUTOMATION_CANDIDATES_REPORT_NAME).getId()))
+    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE).getId()))
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
         assertThat(response.getResult().getData()).isNotEmpty();
       });
-    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(ACTIVE_BOTTLENECKS_REPORT_NAME).getId()))
+    assertThat(reportClient.evaluateMapReportById(mgmtReportsByName.get(ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE).getId()))
       .satisfies(response -> {
         assertThat(response.getReportDefinition().getData().getDefinitions()).extracting(ReportDataDefinitionDto::getKey)
           .containsExactlyInAnyOrder(FIRST_DEF_KEY, SECOND_DEF_KEY);
@@ -351,7 +362,7 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
     assertThat(resultReportDataDto.getDefinitions()).hasSize(1)
       .extracting(ReportDataDefinitionDto::getKey, ReportDataDefinitionDto::getVersions, ReportDataDefinitionDto::getTenantIds)
       .containsExactlyInAnyOrder(
-        // the process includes only one tenant
+        // the process includes both tenants
         Tuple.tuple(FIRST_DEF_KEY, List.of(ALL_VERSIONS), List.of(FIRST_TENANT))
       );
     // the result includes data from the authorized tenant
@@ -366,6 +377,8 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
   @Test
   public void savedManagementReportCanBeEvaluatedUserNotAuthorizedForAnyImportedProcess() {
     // given
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.deployAndStartProcess(
+      getSingleUserTaskDiagram(FIRST_DEF_KEY));
     engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(SECOND_DEF_KEY));
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -375,22 +388,57 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
 
     // when
     final AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluationResponse =
-      reportClient.evaluateReportAsKermit(reportId);
+      evaluateReportAsKermit(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.isManagementReport()).isTrue();
-    assertThat(resultReportDataDto.getDefinitions()).isEmpty();
+    assertThat(resultReportDataDto.getDefinitions()).hasSize(0);
     // the result is empty as Kermit has no authorization for any processes
     final ReportResultResponseDto<List<MapResultEntryDto>> resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isZero();
     assertThat(resultDto.getFirstMeasureData()).isEmpty();
   }
 
+  @ParameterizedTest
+  @MethodSource("localizedReportNames")
+  public void managementReportNamesAreLocalized(final String locale, final Set<String> expectedReportNames) {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram(FIRST_DEF_KEY));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final Set<String> localizedReportNames = getAllManagementReports().stream()
+      .map(report -> reportClient.evaluateProcessReportLocalized(report.getId(), locale).getReportDefinition().getName())
+      .collect(toSet());
+
+    // then
+    assertThat(localizedReportNames).containsExactlyInAnyOrderElementsOf(expectedReportNames);
+  }
+
+  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReport(final String reportId) {
+    return evaluateReportAsUser(reportId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsKermit(final String reportId) {
+    return evaluateReportAsUser(reportId, KERMIT_USER, KERMIT_USER);
+  }
+
+  private AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsUser(final String reportId,
+                                                                                                     final String username,
+                                                                                                     final String password) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildEvaluateSavedReportRequest(reportId)
+      // @formatter:off
+      .execute(new TypeReference<>() {});
+    // @formatter:on
+  }
+
   private String getIdForManagementReport() {
     return getAllManagementReports()
       .stream()
-      .filter(report -> report.getName().equals(PROCESS_INSTANCE_USAGE_REPORT_NAME))
+      .filter(report -> report.getName().equals(PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE))
       .findFirst()
       .map(ReportDefinitionDto::getId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any management reports"));
@@ -417,6 +465,34 @@ public class ManagementReportEvaluationIT extends AbstractProcessDefinitionIT {
       .userTask("userTask")
       .endEvent("endEvent")
       .done();
+  }
+
+  @SuppressWarnings(UNUSED)
+  private static Stream<Arguments> localizedReportNames() {
+    return Stream.of(
+      Arguments.of(
+        "en",
+        Set.of(
+          "Process Instance Usage",
+          "Overall Incident-Free Rate",
+          "Automation Rate (<1 hour)",
+          "Long-Running Process Instances",
+          "Automation Candidates",
+          "Active Bottlenecks"
+        )
+      ),
+      Arguments.of(
+        "de",
+        Set.of(
+          "Anzahl der ausgeführten Prozesseinstanzen",
+          "Prozessausführungen ohne Zwischenfälle",
+          "Automatisierungsrate (< 1 Stunde)",
+          "Lang laufende Prozessinstanzen",
+          "Automatisierungskandidaten",
+          "Aktive Engpässe"
+        )
+      )
+    );
   }
 
 }

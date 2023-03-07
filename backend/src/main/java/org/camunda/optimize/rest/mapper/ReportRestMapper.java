@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest.mapper;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.CombinedReportEvaluationResult;
@@ -22,24 +23,30 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedSingleReportEvalu
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.dto.optimize.rest.report.ReportResultResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.measure.MeasureResponseDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.identity.AbstractIdentityService;
 import org.camunda.optimize.util.SuppressionConstants;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @AllArgsConstructor
 @Component
 public class ReportRestMapper {
 
   private final AbstractIdentityService identityService;
+  private final LocalizationService localizationService;
 
   @SuppressWarnings(SuppressionConstants.UNCHECKED_CAST)
-  public <T> AuthorizedReportEvaluationResponseDto<?> mapToEvaluationResultDto(final AuthorizedReportEvaluationResult reportEvaluationResult) {
+  public <T> AuthorizedReportEvaluationResponseDto<?> mapToLocalizedEvaluationResponseDto(
+    final AuthorizedReportEvaluationResult reportEvaluationResult,
+    final String locale) {
     resolveOwnerAndModifierNames(reportEvaluationResult.getEvaluationResult().getReportDefinition());
     if (reportEvaluationResult.getEvaluationResult() instanceof CombinedReportEvaluationResult) {
       final CombinedReportEvaluationResult combinedReportEvaluationResult =
@@ -65,10 +72,14 @@ public class ReportRestMapper {
     } else {
       SingleReportEvaluationResult<?> singleReportEvaluationResult =
         (SingleReportEvaluationResult<?>) reportEvaluationResult.getEvaluationResult();
-      return mapToAuthorizedEvaluationResponseDto(
-        reportEvaluationResult.getCurrentUserRole(), singleReportEvaluationResult
+      return mapToLocalizedEvaluationResponseDto(
+        reportEvaluationResult.getCurrentUserRole(), singleReportEvaluationResult, locale
       );
     }
+  }
+
+  public void prepareRestResponse(final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto) {
+    resolveOwnerAndModifierNames(authorizedReportDefinitionDto.getDefinitionDto());
   }
 
   private <T> AuthorizedProcessReportEvaluationResponseDto<T> mapToAuthorizedProcessReportEvaluationResponseDto(
@@ -80,14 +91,17 @@ public class ReportRestMapper {
     );
   }
 
-  private <T, R extends ReportDefinitionDto<?>> AuthorizedSingleReportEvaluationResponseDto<T, R> mapToAuthorizedEvaluationResponseDto(
+  private <T, R extends ReportDefinitionDto<?>> AuthorizedSingleReportEvaluationResponseDto<T, R> mapToLocalizedEvaluationResponseDto(
     final RoleType currentUserRole,
-    final SingleReportEvaluationResult<?> evaluationResult) {
-    return new AuthorizedSingleReportEvaluationResponseDto<>(
+    final SingleReportEvaluationResult<?> evaluationResult,
+    final String locale) {
+    final AuthorizedSingleReportEvaluationResponseDto<T, R> mappedResult = new AuthorizedSingleReportEvaluationResponseDto<>(
       currentUserRole,
       (ReportResultResponseDto<T>) mapToReportResultResponseDto(evaluationResult),
       (R) evaluationResult.getReportDefinition()
     );
+    localizeReportNames(mappedResult.getReportDefinition(), locale);
+    return mappedResult;
   }
 
   private <T> ReportResultResponseDto<T> mapToReportResultResponseDto(final SingleReportEvaluationResult<T> evaluationResult) {
@@ -111,10 +125,6 @@ public class ReportRestMapper {
     );
   }
 
-  public void prepareRestResponse(final AuthorizedReportDefinitionResponseDto authorizedReportDefinitionDto) {
-    resolveOwnerAndModifierNames(authorizedReportDefinitionDto.getDefinitionDto());
-  }
-
   private void resolveOwnerAndModifierNames(ReportDefinitionDto<?> reportDefinitionDto) {
     Optional.ofNullable(reportDefinitionDto.getOwner())
       .flatMap(identityService::getIdentityNameById)
@@ -122,5 +132,36 @@ public class ReportRestMapper {
     Optional.ofNullable(reportDefinitionDto.getLastModifier())
       .flatMap(identityService::getIdentityNameById)
       .ifPresent(reportDefinitionDto::setLastModifier);
+  }
+
+  private void localizeReportNames(final ReportDefinitionDto<?> reportDefinitionDto, final String locale) {
+    if (isManagementOrInstantPreviewReport(reportDefinitionDto)) {
+      final String validLocale = localizationService.validateAndReturnValidLocale(locale);
+      try {
+        if (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()) {
+          Optional.ofNullable(localizationService.getLocalizationForManagementReportCode(
+            validLocale,
+            reportDefinitionDto.getName()
+          )).ifPresent(reportDefinitionDto::setName);
+        } else {
+          Optional.ofNullable(localizationService.getLocalizationForInstantPreviewReportCode(
+            validLocale,
+            reportDefinitionDto.getName()
+          )).ifPresent(reportDefinitionDto::setName);
+        }
+      } catch (IOException e) {
+        log.error(
+          "Failed to localize Report for Report with name [{}] for locale [{}]",
+          reportDefinitionDto.getName(),
+          validLocale
+        );
+      }
+    }
+  }
+
+  private boolean isManagementOrInstantPreviewReport(final ReportDefinitionDto<?> reportDefinitionDto) {
+    return reportDefinitionDto instanceof SingleProcessReportDefinitionRequestDto
+      && (((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isManagementReport()
+      || ((SingleProcessReportDefinitionRequestDto) reportDefinitionDto).getData().isInstantPreviewReport());
   }
 }

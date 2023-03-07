@@ -30,6 +30,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
+
 @AllArgsConstructor
 @Path(EntitiesRestService.ENTITIES_PATH)
 @Component
@@ -57,7 +59,7 @@ public class EntitiesRestService {
   public EntityNameResponseDto getEntityNames(@Context ContainerRequestContext requestContext,
                                               @BeanParam EntityNameRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return entitiesService.getEntityNames(requestDto, userId);
+    return entitiesService.getEntityNames(requestDto, userId, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   @POST

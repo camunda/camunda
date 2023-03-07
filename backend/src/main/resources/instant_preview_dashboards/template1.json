@@ -1,7 +1,7 @@
 [ {
   "id" : "ed074e77-c858-4dbf-9d97-5976833cfe9c",
   "exportEntityType" : "single_process_report",
-  "name" : "% SLA Met",
+  "name" : "percentSLAMet",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -126,7 +126,7 @@
 }, {
   "id" : "1b61bacb-6c3a-49ab-883d-bc4d2e68c990",
   "exportEntityType" : "single_process_report",
-  "name" : "Which process steps take too much time? (To Do: Add Target values for these process steps)",
+  "name" : "flownodeDuration",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -247,7 +247,7 @@
 }, {
   "id" : "a1794d51-b6c7-48b0-8cbd-aa1145097385",
   "exportEntityType" : "single_process_report",
-  "name" : "Is my process within control?",
+  "name" : "controlChart",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -373,7 +373,7 @@
 }, {
   "id" : "a972ff98-aa84-4e24-82c0-154881104598",
   "exportEntityType" : "single_process_report",
-  "name" : "Where are the active incidents?",
+  "name" : "activeIncidentsHeatmap",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -488,7 +488,7 @@
 }, {
   "id" : "9e2aa98e-645a-4ddd-973f-bf529d27fac4",
   "exportEntityType" : "single_process_report",
-  "name" : "Incident-Free Rate",
+  "name" : "percentNoIncidents",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -608,7 +608,7 @@
 }, {
   "id" : "d5d98acb-0012-431c-901f-92c882712e39",
   "exportEntityType" : "single_process_report",
-  "name" : "Where are the worst incidents",
+  "name" : "incidentDurationHeatmap",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -729,7 +729,7 @@
 }, {
   "id" : "d615daa1-dfff-488a-8b15-4a0d49a110f7",
   "exportEntityType" : "single_process_report",
-  "name" : "99th Percentile Duration",
+  "name" : "p99Duration",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -844,7 +844,7 @@
 }, {
   "id" : "b8760b8e-56b3-4fcf-83f4-2d2367090287",
   "exportEntityType" : "single_process_report",
-  "name" : "Are we improving incident handling?",
+  "name" : "incidentDurationTrend",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -966,7 +966,7 @@
 }, {
   "id" : "f69bfb9e-2853-4d5e-8640-667d2c10c220",
   "exportEntityType" : "single_process_report",
-  "name" : "Throughput (30-day rolling)",
+  "name" : "30DayThroughput",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -1095,7 +1095,7 @@
 }, {
   "id" : "a6f36410-de07-4403-a27b-a02e2e1c30c6",
   "exportEntityType" : "single_process_report",
-  "name" : "75th Percentile Duration",
+  "name" : "p75Duration",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -1210,7 +1210,7 @@
 }, {
   "id" : "31db7857-85b1-46ce-936f-7afecc36b4df",
   "exportEntityType" : "single_process_report",
-  "name" : "How frequently is this process run?",
+  "name" : "instanceTrends",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -1327,7 +1327,7 @@
 }, {
   "id" : "16a124c6-869b-4d16-b01a-363026ab888e",
   "exportEntityType" : "single_process_report",
-  "name" : "How often is each process step run?",
+  "name" : "flownodeFrequency",
   "sourceIndexVersion" : 10,
   "collectionId" : null,
   "data" : {
@@ -1442,7 +1442,7 @@
 }, {
   "id" : "87dbcaff-bc21-4ccd-a754-247f7110e91f",
   "exportEntityType" : "dashboard",
-  "name" : "Process performance overview",
+  "name" : "dashboardName",
   "sourceIndexVersion" : 7,
   "reports" : [ {
     "id" : "f69bfb9e-2853-4d5e-8640-667d2c10c220",

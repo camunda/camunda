@@ -24,6 +24,7 @@ import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
@@ -284,14 +286,26 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @Test
   public void instantPreviewReportsRespectPermissions() {
     // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
     String processDefKey = "dummy";
+    String dashboardJsonTemplate = "template1.json";
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
     importAllEngineEntitiesFromScratch();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    final Set<String> reportIds = getInstantPreviewReportIDsForProcess(processDefKey);
-    reportIds.forEach(reportId -> {
+    // when
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+
+    // then
+    assertThat(instantPreviewDashboard).isPresent();
+
+    // given
+    DashboardDefinitionRestDto originalDashboard =
+      dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
+    originalDashboard.getReportIds().forEach(reportId -> {
       // when
       Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
       // then
@@ -436,6 +450,39 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     assertThat(reportCopyResponse.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
+  @ParameterizedTest
+  @MethodSource("templateAndExpectedLocalizedNames")
+  public void instantPreviewDashboardAndReportNamesAreLocalized(final String template, final String locale,
+                                                                final String expectedDashboardName,
+                                                                final Set<String> expectedReportNames) {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, template);
+
+    // then
+    assertThat(instantPreviewDashboard).isPresent();
+
+    // when
+    final DashboardDefinitionRestDto localizedDashboard =
+      dashboardClient.getInstantPreviewDashboardLocalized(processDefKey, template, locale);
+    final Set<String> reportNames = localizedDashboard.getReportIds().stream()
+      .map(reportId -> reportClient.evaluateProcessReportLocalized(reportId, locale)
+        .getReportDefinition()
+        .getName())
+      .collect(toSet());
+
+    // then
+    assertThat(localizedDashboard.getName()).isEqualTo(expectedDashboardName);
+    assertThat(reportNames).containsExactlyInAnyOrderElementsOf(expectedReportNames);
+  }
+
   @Test
   public void savedInstantPreviewReportCanBeEvaluatedAndIncludesAllTenants() {
     /* Test logic:
@@ -576,5 +623,73 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   @SuppressWarnings(UNUSED)
   public static Stream<String> emptyTemplates() {
     return Stream.of("", null);
+  }
+
+  @SuppressWarnings(UNUSED)
+  private static Stream<Arguments> templateAndExpectedLocalizedNames() {
+    return Stream.of(
+      Arguments.of(
+        "template1.json",
+        "en",
+        "Process performance overview",
+        Set.of(
+          "% SLA Met",
+          "Which process steps take too much time? (To Do: Add Target values for these process steps)",
+          "Is my process within control?",
+          "Where are the active incidents?",
+          "Incident-Free Rate",
+          "Where are the worst incidents?",
+          "99th Percentile Duration",
+          "Are we improving incident handling?",
+          "Throughput (30-day rolling)",
+          "75th Percentile Duration",
+          "How frequently is this process run?",
+          "How often is each process step run?"
+        )
+      ),
+      Arguments.of(
+        "template1.json",
+        "de",
+        "Prozessleistungsübersicht",
+        Set.of(
+          "% SLA erfüllt",
+          "Welche Prozessschritte benötigen zu viel Zeit? (To Do: Ziellaufzeit festlegen)",
+          "Ist mein Prozess unter Kontrolle?",
+          "Wo sind die aktiven Zwischenfälle?",
+          "Prozent ohne Zwischenfälle",
+          "Wo sind die schwerwiegendsten Zwischenfälle?",
+          "99. Perzentil der Dauer",
+          "Wird unser Umgang mit Zwischenfällen besser?",
+          "Durchsatz (gleitend über die letzten 30 Tage)",
+          "75. Perzentil der Dauer",
+          "Wie oft läuft dieser Prozess?",
+          "Wie oft laufen die einzelnen Schritte dieses Prozesses?"
+        )
+      ),
+      Arguments.of(
+        "template2.json",
+        "en",
+        "KPI Dashboard",
+        Set.of(
+          "% SLA Met",
+          "Incident-Free Rate",
+          "99th Percentile Duration",
+          "Throughput (30-day rolling)",
+          "75th Percentile Duration"
+        )
+      ),
+      Arguments.of(
+        "template2.json",
+        "de",
+        "KPI Dashboard",
+        Set.of(
+          "% SLA erfüllt",
+          "Prozent ohne Zwischenfälle",
+          "99. Perzentil der Dauer",
+          "Durchsatz (gleitend über die letzten 30 Tage)",
+          "75. Perzentil der Dauer"
+        )
+      )
+    );
   }
 }

@@ -15,6 +15,7 @@ public class RestConstants {
   public static final String BACKUP_ENDPOINT = "/backups";
 
   public static final String X_OPTIMIZE_CLIENT_TIMEZONE = "X-Optimize-Client-Timezone";
+  public static final String X_OPTIMIZE_CLIENT_LOCALE = "X-Optimize-Client-Locale";
   public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
   public static final String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
   public static final String OPTIMIZE_REFRESH_TOKEN = "X-Optimize-Refresh-Token";

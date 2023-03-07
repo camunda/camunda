@@ -49,13 +49,13 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 @Component
 public class ManagementDashboardService {
 
-  public static final String MANAGEMENT_DASHBOARD_NAME = "Management Dashboard";
-  public static final String PROCESS_INSTANCE_USAGE_REPORT_NAME = "Process Instance Usage";
-  public static final String INCIDENT_FREE_RATE_REPORT_NAME = "Overall Incident-Free Rate";
-  public static final String AUTOMATION_RATE_REPORT_NAME = "Automation Rate (<1 hour)";
-  public static final String LONG_RUNNING_INSTANCES_REPORT_NAME = "Long-Running Process Instances";
-  public static final String AUTOMATION_CANDIDATES_REPORT_NAME = "Automation Candidates";
-  public static final String ACTIVE_BOTTLENECKS_REPORT_NAME = "Active Bottlenecks";
+  public static final String MANAGEMENT_DASHBOARD_LOCALIZATION_CODE = "dashboardName";
+  public static final String PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE = "processInstanceUsage";
+  public static final String INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE = "incidentFreeRate";
+  public static final String AUTOMATION_RATE_REPORT_LOCALIZATION_CODE = "automationRate";
+  public static final String LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE = "longRunningInstances";
+  public static final String AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE = "automationCandidates";
+  public static final String ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE = "activeBottlenecks";
   public static final String MANAGEMENT_DASHBOARD_ID = "management-dashboard";
 
   private final DashboardWriter dashboardWriter;
@@ -92,7 +92,7 @@ public class ManagementDashboardService {
       .managementReport(true)
       .build();
     final String reportId = reportWriter.createNewSingleProcessReport(
-      null, processInstanceGroupedByMonth, PROCESS_INSTANCE_USAGE_REPORT_NAME, null
+      null, processInstanceGroupedByMonth, PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE, null
     ).getId();
     return buildReportLocationDto(positionDto, dimensionDto, reportId);
   }
@@ -113,7 +113,7 @@ public class ManagementDashboardService {
       .managementReport(true)
       .build();
     final String reportId = reportWriter.createNewSingleProcessReport(
-      null, overAllIncidentFreeRate, INCIDENT_FREE_RATE_REPORT_NAME, null
+      null, overAllIncidentFreeRate, INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE, null
     ).getId();
     return buildReportLocationDto(positionDto, dimensionDto, reportId);
   }
@@ -140,7 +140,7 @@ public class ManagementDashboardService {
       .managementReport(true)
       .build();
     final String reportId = reportWriter.createNewSingleProcessReport(
-      null, automationRate, AUTOMATION_RATE_REPORT_NAME, null
+      null, automationRate, AUTOMATION_RATE_REPORT_LOCALIZATION_CODE, null
     ).getId();
     return buildReportLocationDto(positionDto, dimensionDto, reportId);
   }
@@ -164,7 +164,7 @@ public class ManagementDashboardService {
       .managementReport(true)
       .build();
     final String reportId = reportWriter.createNewSingleProcessReport(
-      null, longRunningInstances, LONG_RUNNING_INSTANCES_REPORT_NAME, null
+      null, longRunningInstances, LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE, null
     ).getId();
     return buildReportLocationDto(positionDto, dimensionDto, reportId);
   }
@@ -178,7 +178,7 @@ public class ManagementDashboardService {
       .managementReport(true)
       .build();
     final String reportId = reportWriter.createNewSingleProcessReport(
-      null, automationCandidates, AUTOMATION_CANDIDATES_REPORT_NAME, null
+      null, automationCandidates, AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE, null
     ).getId();
     return buildReportLocationDto(positionDto, dimensionDto, reportId);
   }
@@ -192,7 +192,7 @@ public class ManagementDashboardService {
       .managementReport(true)
       .build();
     final String reportId = reportWriter.createNewSingleProcessReport(
-      null, automationCandidates, ACTIVE_BOTTLENECKS_REPORT_NAME, null
+      null, automationCandidates, ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE, null
     ).getId();
     return buildReportLocationDto(positionDto, dimensionDto, reportId);
   }
@@ -209,7 +209,7 @@ public class ManagementDashboardService {
   private void createManagementDashboardForReports(final List<ReportLocationDto> reportsForDashboard) {
     final DashboardDefinitionRestDto dashboardDefinition = new DashboardDefinitionRestDto();
     dashboardDefinition.setId(MANAGEMENT_DASHBOARD_ID);
-    dashboardDefinition.setName(MANAGEMENT_DASHBOARD_NAME);
+    dashboardDefinition.setName(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
     dashboardDefinition.setReports(reportsForDashboard);
 
     DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();

@@ -117,8 +117,9 @@ public class SharingPublicReaderRestService {
   @GET
   @Path(SHARE_PATH + DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardDefinitionRestDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
-    return executeIfSharingEnabled(() -> protectedSharingRestService.evaluateDashboard(dashboardShareId));
+  public DashboardDefinitionRestDto evaluateDashboard(@Context ContainerRequestContext requestContext,
+                                                      @PathParam("shareId") String dashboardShareId) {
+    return executeIfSharingEnabled(() -> protectedSharingRestService.evaluateDashboard(requestContext, dashboardShareId));
   }
 
   @POST

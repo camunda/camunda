@@ -6,19 +6,31 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.ReportType;
+import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.ExternalEventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.dashboard.InstantPreviewDashboardService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.SuppressionConstants.SAME_PARAM_VALUE;
 
 public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
@@ -147,11 +159,50 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final EntityNameResponseDto response = entitiesClient.getEntityNames("aDefinitionKey", "aDefinitionKey", null, null);
+    final EntityNameResponseDto response =
+      entitiesClient.getEntityNames("aDefinitionKey", "aDefinitionKey", null, null);
 
     // then
     assertThat(response.getCollectionName()).isNull();
     assertThat(response.getDashboardName()).isNotBlank();
+  }
+
+  @ParameterizedTest
+  @MethodSource("templatesAndExpectedLocalizedNames")
+  public void getEntityNames_localizesInstantPreviewDashboardContent(final String template, final String locale,
+                                                                     final String expectedDashboardName) {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+    final Optional<InstantDashboardDataDto> instantPreviewDashboard =
+      instantPreviewDashboardService.createInstantPreviewDashboard(processDefKey, template);
+    assertThat(instantPreviewDashboard).isPresent();
+
+    // when
+    final EntityNameResponseDto result =
+      entitiesClient.getEntityNamesLocalized(null, instantPreviewDashboard.get().getDashboardId(), null, null, locale);
+
+    // then
+    assertThat(result.getDashboardName()).isEqualTo(expectedDashboardName);
+  }
+
+  @ParameterizedTest
+  @MethodSource("localizedReportName")
+  public void managementReportNamesAreLocalized(final String locale, final String expectedReportName) {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(getSingleUserTaskDiagram("aProcess"));
+    importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.getManagementDashboardService().init();
+
+    // when
+    final EntityNameResponseDto result =
+      entitiesClient.getEntityNamesLocalized(null, null, getIdForManagementReport(), null, locale);
+
+    // then
+    assertThat(result.getReportName()).isEqualTo(expectedReportName);
   }
 
   @SuppressWarnings(SAME_PARAM_VALUE)
@@ -170,4 +221,37 @@ public class EntityNamesRestServiceIT extends AbstractEntitiesRestServiceIT {
     return eventProcessClient.createEventProcessMapping(eventBasedProcessDto);
   }
 
+  private static Stream<Arguments> localizedReportName() {
+    return Stream.of(
+      Arguments.of(
+        "en",
+        "Process Instance Usage"
+      ),
+      Arguments.of(
+        "de",
+        "Anzahl der ausgeführten Prozesseinstanzen"
+      )
+    );
+  }
+
+  private static Stream<Arguments> templatesAndExpectedLocalizedNames() {
+    return Stream.of(
+      Arguments.of("template1.json", "en", "Process performance overview"),
+      Arguments.of("template1.json", "de", "Prozessleistungsübersicht"),
+      Arguments.of("template2.json", "en", "KPI Dashboard"),
+      Arguments.of("template2.json", "de", "KPI Dashboard")
+    );
+  }
+
+  private String getIdForManagementReport() {
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+        SINGLE_PROCESS_REPORT_INDEX_NAME,
+        SingleProcessReportDefinitionRequestDto.class
+      )
+      .stream()
+      .filter(report -> report.getName().equals(PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE))
+      .findFirst()
+      .map(SingleProcessReportDefinitionRequestDto::getId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Cannot find any management reports"));
+  }
 }

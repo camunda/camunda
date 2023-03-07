@@ -52,6 +52,7 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_USERNAME;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static org.camunda.optimize.service.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
@@ -819,6 +820,15 @@ public class ReportClient {
   public <T, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResponseDto<T> evaluateProcessReport(final DD reportDefinition) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
+      // @formatter:off
+      .execute(new TypeReference<>() {});
+      // @formatter:on
+  }
+
+  public <T, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResponseDto<T> evaluateProcessReportLocalized(final String reportId, final String locale) {
+    return getRequestExecutor()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
+      .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
       .execute(new TypeReference<>() {});
       // @formatter:on

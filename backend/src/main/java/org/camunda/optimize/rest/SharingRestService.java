@@ -41,6 +41,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.ZoneId;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
@@ -129,12 +130,13 @@ public class SharingRestService {
                                                               @PathParam("shareId") String reportShareId,
                                                               @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
-    return reportRestMapper.mapToEvaluationResultDto(
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
       sharingService.evaluateReportShare(
         reportShareId,
         timezone,
         PaginationDto.fromPaginationRequest(paginationRequestDto)
-      )
+      ),
+      requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
     );
   }
 
@@ -148,23 +150,25 @@ public class SharingRestService {
                                                               AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
                                                               @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
-    return reportRestMapper.mapToEvaluationResultDto(
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
       sharingService.evaluateReportForSharedDashboard(
         dashboardShareId,
         reportId,
         timezone,
         reportEvaluationFilter,
         PaginationDto.fromPaginationRequest(paginationRequestDto)
-      )
+      ),
+      requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE)
     );
   }
 
   @GET
   @Path(DASHBOARD_SUB_PATH + "/{shareId}" + EVALUATE_SUB_PATH)
   @Produces(MediaType.APPLICATION_JSON)
-  public DashboardDefinitionRestDto evaluateDashboard(@PathParam("shareId") String dashboardShareId) {
+  public DashboardDefinitionRestDto evaluateDashboard(@Context ContainerRequestContext requestContext,
+                                                      @PathParam("shareId") String dashboardShareId) {
     DashboardDefinitionRestDto dashboardDefinitionDto = sharingService.evaluateDashboard(dashboardShareId).orElse(null);
-    dashboardRestMapper.prepareRestResponse(dashboardDefinitionDto);
+    dashboardRestMapper.prepareRestResponse(dashboardDefinitionDto, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinitionDto;
   }
 

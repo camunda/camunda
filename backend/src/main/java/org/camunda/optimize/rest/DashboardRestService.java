@@ -41,6 +41,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_LOCALE;
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
 @AllArgsConstructor
@@ -114,7 +115,7 @@ public class DashboardRestService {
       dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
     }
 
-    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
@@ -129,10 +130,12 @@ public class DashboardRestService {
                                                                       @QueryParam("template") String dashboardJsonTemplateFilename) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     AuthorizedDashboardDefinitionResponseDto dashboardDefinition;
-    dashboardDefinition = instantPreviewDashboardService.getInstantPreviewDashboard(processDefinitionKey,
-                                                                      dashboardJsonTemplateFilename,
-                                                                      userId);
-    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    dashboardDefinition = instantPreviewDashboardService.getInstantPreviewDashboard(
+      processDefinitionKey,
+      dashboardJsonTemplateFilename,
+      userId
+    );
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
@@ -141,7 +144,7 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedDashboardDefinitionResponseDto getManagementDashboard(@Context ContainerRequestContext requestContext) {
     AuthorizedDashboardDefinitionResponseDto dashboardDefinition = dashboardService.getManagementDashboard();
-    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
     return dashboardDefinition;
   }
 
