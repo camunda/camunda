@@ -64,10 +64,14 @@ public final class CommandDistributionBehavior {
       final int partition,
       final CommandDistributionRecord distributionRecord,
       final long key) {
+    // We don't need the actual record in the DISTRIBUTING event applier. In order to prevent
+    // reaching the max message size we don't set the record value here.
     stateWriter.appendFollowUpEvent(
         command.getKey(),
         CommandDistributionIntent.DISTRIBUTING,
-        distributionRecord.copy().setPartitionId(partition));
+        new CommandDistributionRecord()
+            .setPartitionId(partition)
+            .setValueType(distributionRecord.getValueType()));
 
     sideEffectWriter.appendSideEffect(
         () -> {

@@ -112,11 +112,4 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     commandValueProperty.getValue().read(recordValueReader.wrap(valueBuffer, 0, encodedLength));
     return this;
   }
-
-  public CommandDistributionRecord copy() {
-    return new CommandDistributionRecord()
-        .setPartitionId(getPartitionId())
-        .setValueType(getValueType())
-        .setRecordValue((UnifiedRecordValue) getCommandValue());
-  }
 }
