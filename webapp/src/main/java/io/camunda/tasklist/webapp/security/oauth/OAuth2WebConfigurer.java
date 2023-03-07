@@ -29,6 +29,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -90,7 +91,7 @@ public class OAuth2WebConfigurer {
       if (isValid(payload)) {
         return auth;
       }
-      return null;
+      throw new InvalidBearerTokenException("JWT payload validation failed");
     }
 
     private boolean isValid(final Map<String, Object> payload) {
