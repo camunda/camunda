@@ -64,7 +64,7 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     // then
     esMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_0")),
-      VerificationTimes.once()
+      VerificationTimes.exactly(2)
     );
     esMockServer.verify(
       request().withHeader(new Header("Authorization", "Bearer dynamicToken_1")),
@@ -93,7 +93,7 @@ public class UpgradePluginIT extends AbstractUpgradeIT {
     esMockServer.verify(request().withHeaders(
       new Header("Authorization", "Bearer dynamicToken_0"),
       new Header("CustomHeader", "customValue")
-    ), VerificationTimes.once());
+    ), VerificationTimes.exactly(2));
   }
 
   private void performUpgrade() {

@@ -49,10 +49,12 @@ public class ESVersionCheckerTest {
 
   @Test
   public void testWarningESVersions() {
+    // given
     String version = constructWarningVersionHigherMinor(getLatestSupportedESVersion());
-    final boolean doesWarn = ESVersionChecker.doesVersionNeedWarning(version, getLeastSupportedESVersion());
 
-    assertThat(doesWarn).isTrue();
+    // then
+    assertThat(ESVersionChecker.doesVersionNeedWarning(version, getLeastSupportedESVersion())).isTrue();
+    assertThat(ESVersionChecker.doesVersionNeedWarning(version, getLatestSupportedESVersion())).isTrue();
   }
 
   @Test
@@ -144,4 +146,5 @@ public class ESVersionCheckerTest {
   private static String getLeastSupportedESVersion() {
     return SUPPORTED_VERSIONS.stream().min(Comparator.naturalOrder()).get();
   }
+
 }

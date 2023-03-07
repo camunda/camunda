@@ -140,7 +140,6 @@ public class DataGenerationExecutor {
     importExecutor.shutdown();
     try {
       boolean finishedGeneration = importExecutor.awaitTermination(Integer.MAX_VALUE, TimeUnit.HOURS);
-
       if (!finishedGeneration) {
         log.error("Could not finish data generation in time. Trying to interrupt!");
         importExecutor.shutdownNow();
