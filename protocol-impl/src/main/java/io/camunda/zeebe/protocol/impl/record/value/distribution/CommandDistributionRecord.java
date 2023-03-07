@@ -15,7 +15,6 @@ import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import java.util.EnumMap;
@@ -42,7 +41,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   */
   private final IntegerProperty partitionIdProperty = new IntegerProperty("partitionId");
   private final EnumProperty<ValueType> valueTypeProperty =
-      new EnumProperty<>("valueType", ValueType.class);
+      new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue());
   private final MsgPackWriter recordValueWriter = new MsgPackWriter();
@@ -65,7 +64,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public RecordValue getCommandValue() {
+  public UnifiedRecordValue getCommandValue() {
     // fetch a concrete instance of the record value by type
     if (!valueTypeProperty.hasValue()) {
       throw new MsgpackException("Expected to read the value type property, but it's not yet set");
@@ -76,7 +75,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
       throw new IllegalStateException(
           "Expected to read the record value, but it's type `"
               + valueType.name()
-              + "` is unknown. Please add it to RecordDistributionRecord.RECORDS_BY_TYPE");
+              + "` is unknown. Please add it to CommandDistributionRecord.RECORDS_BY_TYPE");
     }
     final var concreteRecordValue = concrecteRecordValueSupplier.get();
 
