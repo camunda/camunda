@@ -53,4 +53,21 @@ final class SerializationTest {
     // then
     assertThat(deserialized.streamId()).isEqualTo(streamId);
   }
+
+  @Test
+  void shouldSerializePushStreamRequest() {
+    // given
+    final var streamId = UUID.randomUUID();
+    final var request =
+        new PushStreamRequest().streamId(streamId).payload(BufferUtil.wrapString("foo"));
+
+    // when
+    request.write(buffer, 0);
+    final var deserialized = new PushStreamRequest();
+    deserialized.wrap(buffer, 0, request.getLength());
+
+    // then
+    assertThat(deserialized.streamId()).isEqualTo(streamId);
+    assertThat(deserialized.payload()).isEqualTo(BufferUtil.wrapString("foo"));
+  }
 }

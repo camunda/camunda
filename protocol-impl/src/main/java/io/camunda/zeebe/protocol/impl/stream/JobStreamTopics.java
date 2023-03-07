@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.stream;
 
 public enum JobStreamTopics {
   ADD("job-stream-add"),
+  PUSH("job-stream-push"),
   REMOVE("job-stream-remove"),
   REMOVE_ALL("job-stream-remove-all"),
   JOB_AVAILABLE("jobsAvailable");
