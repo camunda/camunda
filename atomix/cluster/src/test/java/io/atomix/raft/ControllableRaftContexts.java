@@ -191,7 +191,7 @@ public final class ControllableRaftContexts {
             storage,
             getRaftThreadContextFactory(memberId),
             () -> random,
-            RaftElectionConfig.ofDefaultElection(),
+            RaftElectionConfig.ofPriorityElection(nodeCount, Integer.parseInt(memberId.id()) + 1),
             new RaftPartitionConfig());
     raft.setEntryValidator(new NoopEntryValidator());
     return raft;
