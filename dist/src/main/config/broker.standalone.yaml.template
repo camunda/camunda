@@ -809,9 +809,9 @@
           # blocking other stream processing activities like process execution and job activation/completion.
           # A smaller batch limit will thus enable greater concurrency with the other stream processing activities.
           # A larger batch limit can allow faster message expiration, but at the cost of blocking the other
-          # stream processing activities for extended periods.
+          # stream processing activities for extended periods. Defaults to MAX_INTEGER (2^31-1).
           # This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_MESSAGES_TTLCHECKERBATCHLIMIT
-          # ttlCheckerBatchLimit: 10
+          # ttlCheckerBatchLimit: 0x7fffffff
 
           # Allows to configure the Message TTL Checker's interval. This is the period during which the
           # checker is idle in between two of its executions. Note that it can expire multiple batches
