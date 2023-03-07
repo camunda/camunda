@@ -154,16 +154,19 @@ public final class DeploymentCreateProcessor implements TypedRecordProcessor<Dep
   }
 
   private void createBpmnResources(final DeploymentRecord deploymentEvent) {
-    for (final ProcessMetadata metadata : deploymentEvent.processesMetadata()) {
-      for (final DeploymentResource resource : deploymentEvent.getResources()) {
-        if (resource.getResourceName().equals(metadata.getResourceName())) {
-          stateWriter.appendFollowUpEvent(
-              metadata.getKey(),
-              ProcessIntent.CREATED,
-              new ProcessRecord().wrap(metadata, resource.getResource()));
-        }
-      }
-    }
+    deploymentEvent.processesMetadata().stream()
+        .filter(not(ProcessMetadata::isDuplicate))
+        .forEach(
+            metadata -> {
+              for (final DeploymentResource resource : deploymentEvent.getResources()) {
+                if (resource.getResourceName().equals(metadata.getResourceName())) {
+                  stateWriter.appendFollowUpEvent(
+                      metadata.getKey(),
+                      ProcessIntent.CREATED,
+                      new ProcessRecord().wrap(metadata, resource.getResource()));
+                }
+              }
+            });
   }
 
   private void createDmnResources(
