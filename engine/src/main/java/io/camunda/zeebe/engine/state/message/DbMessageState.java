@@ -351,8 +351,13 @@ public final class DbMessageState implements MutableMessageState {
     deadlineColumnFamily.whileTrue(
         startAtKey,
         (key, value) -> {
-          final var shouldContinue = visit(timestamp, visitor, key);
-          stoppedByVisitor.set(!shouldContinue);
+          boolean shouldContinue = false;
+          final long deadlineEntry = key.first().getValue();
+          if (deadlineEntry <= timestamp) {
+            final long messageKeyEntry = key.second().inner().getValue();
+            shouldContinue = visitor.visit(deadlineEntry, messageKeyEntry);
+            stoppedByVisitor.set(!shouldContinue);
+          }
           return shouldContinue;
         });
 
@@ -367,17 +372,5 @@ public final class DbMessageState implements MutableMessageState {
     this.messageId.wrapBuffer(messageId);
 
     return messageIdColumnFamily.exists(nameCorrelationMessageIdKey);
-  }
-
-  private static boolean visit(
-      final long timestamp,
-      final ExpiredMessageVisitor visitor,
-      final DbCompositeKey<DbLong, DbForeignKey<DbLong>> compositeDeadlineKey) {
-    final long deadline = compositeDeadlineKey.first().getValue();
-    if (deadline <= timestamp) {
-      final long messageKey = compositeDeadlineKey.second().inner().getValue();
-      return visitor.visit(deadline, messageKey);
-    }
-    return false;
   }
 }
