@@ -84,7 +84,7 @@ final class StreamRegistryTest {
     streamRegistry.removeAll(gateway);
 
     // then
-    assertThat(streamRegistry.get(typeFoo)).isNull();
+    assertThat(streamRegistry.get(typeFoo)).isEmpty();
     assertThat(streamRegistry.get(typeBar))
         .contains(new StreamConsumer<>(new StreamId(idOther, otherGateway), 3, typeBar));
   }
@@ -100,7 +100,7 @@ final class StreamRegistryTest {
     streamRegistry.clear();
 
     // then
-    assertThat(streamRegistry.get(typeFoo)).isNull();
-    assertThat(streamRegistry.get(typeBar)).isNull();
+    assertThat(streamRegistry.get(typeFoo)).isEmpty();
+    assertThat(streamRegistry.get(typeBar)).isEmpty();
   }
 }

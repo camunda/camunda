@@ -47,7 +47,7 @@ final class StreamApiHandlerTest {
 
     // when - then
     assertThatCode(() -> server.add(sender, request)).isInstanceOf(IndexOutOfBoundsException.class);
-    assertThat(registry.get(streamType)).isNull();
+    assertThat(registry.get(streamType)).isEmpty();
   }
 
   @Test
@@ -70,7 +70,7 @@ final class StreamApiHandlerTest {
 
     // when - then
     assertThatCode(() -> server.add(sender, request)).isInstanceOf(IllegalArgumentException.class);
-    assertThat(registry.get(streamType)).isNull();
+    assertThat(registry.get(streamType)).isEmpty();
   }
 
   @Test
@@ -87,7 +87,7 @@ final class StreamApiHandlerTest {
 
     // when - then
     assertThatCode(() -> server.add(sender, request)).isInstanceOf(IllegalArgumentException.class);
-    assertThat(registry.get(streamType)).isNull();
+    assertThat(registry.get(streamType)).isEmpty();
   }
 
   @Test
@@ -128,7 +128,7 @@ final class StreamApiHandlerTest {
 
     // then
     final var consumers = registry.get(streamType);
-    assertThat(consumers).isNullOrEmpty();
+    assertThat(consumers).isEmpty();
   }
 
   @Test
@@ -143,7 +143,7 @@ final class StreamApiHandlerTest {
 
     // then
     final var consumers = registry.get(streamType);
-    assertThat(consumers).isNullOrEmpty();
+    assertThat(consumers).isEmpty();
   }
 
   private static final class TestMetadata implements Metadata {

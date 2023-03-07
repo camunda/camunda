@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.atomix.cluster.MemberId;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -96,8 +97,7 @@ public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
 
   @Override
   public Set<StreamConsumer<M>> get(final UnsafeBuffer streamType) {
-    // TODO: we may have to return an immutable collection here.
-    return typeToConsumers.get(streamType);
+    return typeToConsumers.getOrDefault(streamType, Collections.emptySet());
   }
 
   public void clear() {
