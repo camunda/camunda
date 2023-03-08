@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.util;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -21,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
@@ -30,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -138,6 +142,17 @@ public final class RecordToWrite implements LogAppendEntry {
         .valueType(ValueType.PROCESS_INSTANCE_MODIFICATION)
         .intent(ProcessInstanceModificationIntent.MODIFY);
     unifiedRecordValue = (ProcessInstanceModificationRecord) value;
+    return this;
+  }
+
+  public RecordToWrite deployment(final DeploymentRecordValue value, final DeploymentIntent intent) {
+    recordMetadata.valueType(ValueType.DEPLOYMENT).intent(intent);
+    unifiedRecordValue = (DeploymentRecord) value;
+    return this;
+  }
+
+  public RecordToWrite brokerVersion(final VersionInfo brokerVersion) {
+    recordMetadata.brokerVersion(brokerVersion);
     return this;
   }
 
