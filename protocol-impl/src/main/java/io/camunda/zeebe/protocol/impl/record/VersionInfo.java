@@ -10,7 +10,7 @@ package io.camunda.zeebe.protocol.impl.record;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public final class VersionInfo {
+public final class VersionInfo implements Comparable<VersionInfo> {
 
   public static final VersionInfo UNKNOWN = new VersionInfo(0, 0, 0);
 
@@ -73,5 +73,23 @@ public final class VersionInfo {
   @Override
   public String toString() {
     return majorVersion + "." + minorVersion + "." + patchVersion;
+  }
+
+  @Override
+  public int compareTo(final VersionInfo other) {
+    // Compare the major version
+    if (majorVersion != other.majorVersion) {
+      return Integer.compare(majorVersion, other.majorVersion);
+    }
+    // If major versions are equal, compare minor version
+    if (minorVersion != other.minorVersion) {
+      return Integer.compare(minorVersion, other.minorVersion);
+    }
+    // If minor versions are equal, compare patch version
+    if (patchVersion != other.patchVersion) {
+      return Integer.compare(patchVersion, other.patchVersion);
+    }
+    // All components are equal
+    return 0;
   }
 }
