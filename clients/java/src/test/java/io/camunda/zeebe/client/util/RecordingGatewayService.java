@@ -21,6 +21,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BroadcastSignalResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CancelProcessInstanceResponse;
@@ -113,6 +115,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
         EvaluateDecisionRequest.class, r -> EvaluateDecisionResponse.getDefaultInstance());
     addRequestHandler(
         DeleteResourceRequest.class, r -> DeleteResourceResponse.getDefaultInstance());
+    addRequestHandler(
+        BroadcastSignalRequest.class, r -> BroadcastSignalResponse.getDefaultInstance());
   }
 
   public static Partition partition(
@@ -324,6 +328,13 @@ public final class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
+  @Override
+  public void broadcastSignal(
+      final BroadcastSignalRequest request,
+      final StreamObserver<BroadcastSignalResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
   public void onTopologyRequest(
       final int clusterSize,
       final int partitionsCount,
@@ -387,6 +398,12 @@ public final class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         PublishMessageRequest.class,
         request -> PublishMessageResponse.newBuilder().setKey(key).build());
+  }
+
+  public void onBroadcastSignalRequest(final long key) {
+    addRequestHandler(
+        BroadcastSignalRequest.class,
+        request -> BroadcastSignalResponse.newBuilder().setKey(key).build());
   }
 
   public void onCreateProcessInstanceWithResultRequest(
