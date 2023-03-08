@@ -130,9 +130,19 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
       boolean calledOnce = false;
 
       @Override
-      public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
+      public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo) throws NoSuchIndexException {
         if (calledOnce) {
-          return processInstanceRecordsReader.readNextBatch(positionFrom, positionTo);
+          return processInstanceRecordsReader.readNextBatchByPositionAndPartition(positionFrom, positionTo);
+        } else {
+          calledOnce = true;
+          return new ImportBatch(1, PROCESS_INSTANCE, new ArrayList<>(), null);
+        }
+      }
+
+      @Override
+      public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence) throws NoSuchIndexException {
+        if (calledOnce) {
+          return processInstanceRecordsReader.readNextBatchBySequence(sequence, lastSequence);
         } else {
           calledOnce = true;
           return new ImportBatch(1, PROCESS_INSTANCE, new ArrayList<>(), null);

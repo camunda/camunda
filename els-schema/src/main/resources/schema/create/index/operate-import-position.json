@@ -16,6 +16,9 @@
 			},
 			"position": {
 				"type": "long"
+			},
+			"sequence": {
+				"type": "long"
 			}
 		}
 	}

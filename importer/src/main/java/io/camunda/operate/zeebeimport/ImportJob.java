@@ -15,9 +15,7 @@ import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
-import org.elasticsearch.client.RequestOptions;
+import io.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
@@ -41,11 +39,11 @@ public class ImportJob implements Callable<Boolean> {
 
   private ImportBatch importBatch;
 
-  private ImportPositionEntity previousPosition;
+  private final ImportPositionEntity previousPosition;
 
   private ImportPositionEntity lastProcessedPosition;
 
-  private OffsetDateTime creationTime;
+  private final OffsetDateTime creationTime;
 
   @Autowired
   private ImportBatchProcessorFactory importBatchProcessorFactory;
@@ -79,7 +77,7 @@ public class ImportJob implements Callable<Boolean> {
   public Boolean call() {
     processPossibleIndexChange();
 
-    //separate importbatch in sub-batches per index
+    //separate importBatch in sub-batches per index
     List<ImportBatch> subBatches = createSubBatchesPerIndexName();
 
     for (ImportBatch subBatch: subBatches) {
@@ -97,7 +95,7 @@ public class ImportJob implements Callable<Boolean> {
   }
 
   private void processPossibleIndexChange() {
-    //if there was index change, comparing with previous batch, or there are more than one indices in current batch, refresh Zeebe indices
+    //if there was index change, comparing with previous batch, or there are more than one index in current batch, refresh Zeebe indices
     final List<SearchHit> hits = importBatch.getHits();
     if (indexChange() || hits.stream().map(SearchHit::getIndex).collect(Collectors.toSet()).size() > 1) {
       refreshZeebeIndices();
@@ -105,8 +103,13 @@ public class ImportJob implements Callable<Boolean> {
       RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
       if (recordsReader != null) {
         try {
-          ImportBatch newImportBatch = recordsReader.readNextBatch(previousPosition.getPosition(),
-              importBatch.getLastProcessedPosition(objectMapper));
+          ImportBatch newImportBatch;
+          if (previousPosition.getSequence() > 0) {
+            newImportBatch = recordsReader.readNextBatchBySequence(previousPosition.getSequence(), importBatch.getLastProcessedSequence(objectMapper));
+          } else {
+            newImportBatch = recordsReader.readNextBatchByPositionAndPartition(
+                previousPosition.getPosition(), importBatch.getLastProcessedPosition(objectMapper));
+          }
           if (newImportBatch == null || newImportBatch.getHits() == null || newImportBatch.getHits().size() < importBatch.getHits().size()) {
             throw new OperateRuntimeException("Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
           }
@@ -169,15 +172,7 @@ public class ImportJob implements Callable<Boolean> {
 
   public void refreshZeebeIndices() {
     final String indexPattern = importBatch.getImportValueType().getIndicesPattern(operateProperties.getZeebeElasticsearch().getPrefix());
-    RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
-    try {
-      RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        logger.warn("Unable to refresh indices: {}", indexPattern);
-      }
-    } catch (Exception ex) {
-      logger.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
-    }
+    ElasticsearchUtil.refreshIndicesFor(zeebeEsClient, indexPattern);
   }
 
   public void recordLatestScheduledPosition() {
@@ -187,8 +182,9 @@ public class ImportJob implements Callable<Boolean> {
   public ImportPositionEntity getLastProcessedPosition() {
     if (lastProcessedPosition == null) {
       long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
-      if (lastRecordPosition != 0) {
-        lastProcessedPosition = ImportPositionEntity.createFrom(previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
+      long lastSequence = importBatch.getLastProcessedSequence(objectMapper);
+      if (lastRecordPosition != 0 || lastSequence != 0) {
+        lastProcessedPosition = ImportPositionEntity.createFrom(lastSequence, previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
       } else {
         lastProcessedPosition = previousPosition;
       }

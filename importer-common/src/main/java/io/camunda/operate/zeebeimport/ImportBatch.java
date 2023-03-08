@@ -9,12 +9,12 @@ package io.camunda.operate.zeebeimport;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
+
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.ZeebeESConstants;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -88,18 +88,26 @@ public class ImportBatch {
     this.lastRecordIndexName = lastRecordIndexName;
   }
 
-  public long getLastProcessedPosition(ObjectMapper objectMapper) {
+  public Long getLastProcessedPosition(ObjectMapper objectMapper) {
+    return getLastProcessed(ZeebeESConstants.POSITION_FIELD_NAME, objectMapper, 0L);
+  }
+
+  public Long getLastProcessedSequence(ObjectMapper objectMapper) {
+    return getLastProcessed(ZeebeESConstants.SEQUENCE_FIELD_NAME, objectMapper, 0L);
+  }
+
+  private long getLastProcessed(final String fieldName, final ObjectMapper objectMapper, final Long defaultValue) {
     try {
       if (hits != null && hits.size() != 0) {
         final ObjectNode node = objectMapper.readValue(hits.get(hits.size() - 1).getSourceAsString(), ObjectNode.class);
-        if (node.has(ZeebeESConstants.POSITION_FIELD_NAME)) {
-          return node.get(ZeebeESConstants.POSITION_FIELD_NAME).longValue();
+        if (node.has(fieldName)) {
+          return node.get(fieldName).longValue();
         }
       }
     } catch (IOException e) {
-      logger.warn(String.format("Unable to parse Zeebe object: %s", e.getMessage()), e);
+      logger.warn(String.format("Unable to parse Zeebe object for getting field %s : %s", fieldName, e.getMessage()), e);
     }
-    return 0;
+    return defaultValue;
   }
 
   public String getAliasName() {

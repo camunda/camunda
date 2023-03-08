@@ -16,7 +16,6 @@ import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.v8_1.processors.ElasticsearchBulkProcessor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,7 +106,10 @@ public class ImportListenerTest extends NoBeansTest {
   @Test
   public void testFinished() {
     ImportBatch importBatch = new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), "some_name");
-    ImportPositionEntity previousPosition = new ImportPositionEntity("alias", 1, 0);
+    ImportPositionEntity previousPosition = new ImportPositionEntity()
+        .setAliasName("alias")
+        .setPartitionId(1).setPosition(0)
+        .setSequence(0L);
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
 
     //mock import methods
@@ -130,7 +132,10 @@ public class ImportListenerTest extends NoBeansTest {
   @Test
   public void testFailed() {
     ImportBatch importBatch = new ImportBatch(1, ImportValueType.PROCESS_INSTANCE, new ArrayList<>(), null);
-    ImportPositionEntity previousPosition = new ImportPositionEntity("alias", 1, 0);
+    ImportPositionEntity previousPosition = new ImportPositionEntity()
+        .setAliasName("alias")
+        .setPartitionId(1).setPosition(0)
+        .setSequence(0L);
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, previousPosition);
     //mock import methods
     try {

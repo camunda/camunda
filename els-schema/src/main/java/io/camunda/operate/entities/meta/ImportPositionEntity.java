@@ -8,7 +8,9 @@ package io.camunda.operate.entities.meta;
 
 import io.camunda.operate.entities.OperateEntity;
 
-public class ImportPositionEntity extends OperateEntity {
+import java.util.Objects;
+
+public class ImportPositionEntity extends OperateEntity<ImportPositionEntity> {
 
   private String aliasName;
 
@@ -16,60 +18,66 @@ public class ImportPositionEntity extends OperateEntity {
 
   private long position;
 
+  private long sequence;
+
   private String indexName;
-
-  public ImportPositionEntity() {
-  }
-
-  public ImportPositionEntity(String aliasName, int partitionId, long position) {
-    this.aliasName = aliasName;
-    this.partitionId = partitionId;
-    this.position = position;
-  }
 
   public String getAliasName() {
     return aliasName;
   }
 
-  public void setAliasName(String aliasName) {
+  public ImportPositionEntity setAliasName(String aliasName) {
     this.aliasName = aliasName;
+    return this;
   }
 
   public int getPartitionId() {
     return partitionId;
   }
 
-  public void setPartitionId(int partitionId) {
+  public ImportPositionEntity setPartitionId(int partitionId) {
     this.partitionId = partitionId;
+    return this;
   }
 
   public long getPosition() {
     return position;
   }
 
-  public void setPosition(long position) {
+  public ImportPositionEntity setPosition(long position) {
     this.position = position;
+    return this;
+  }
+
+  public long getSequence(){
+    return sequence;
+  }
+
+  public ImportPositionEntity setSequence(final long sequence){
+    this.sequence = sequence;
+    return this;
   }
 
   public String getIndexName() {
     return indexName;
   }
 
-  public void setIndexName(String indexName) {
+  public ImportPositionEntity setIndexName(String indexName) {
     this.indexName = indexName;
+    return this;
   }
 
   public String getId() {
     return String.format("%s-%s", partitionId, aliasName);
   }
 
-  public static ImportPositionEntity createFrom(ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
-    ImportPositionEntity newImportPositionEntity = new ImportPositionEntity();
-    newImportPositionEntity.setAliasName(importPositionEntity.getAliasName());
-    newImportPositionEntity.setPartitionId(importPositionEntity.getPartitionId());
-    newImportPositionEntity.setIndexName(indexName);
-    newImportPositionEntity.setPosition(newPosition);
-    return newImportPositionEntity;
+  public static ImportPositionEntity createFrom(final long sequence, ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
+    return new ImportPositionEntity()
+        .setSequence(sequence)
+        .setAliasName(importPositionEntity.getAliasName())
+        .setPartitionId(importPositionEntity.getPartitionId())
+        .setIndexName(indexName)
+        .setPosition(newPosition);
   }
 
   @Override
@@ -79,33 +87,20 @@ public class ImportPositionEntity extends OperateEntity {
     if (o == null || getClass() != o.getClass())
       return false;
     if (!super.equals(o))
-        return false;
-
+      return false;
     ImportPositionEntity that = (ImportPositionEntity) o;
-
-    if (partitionId != that.partitionId)
-      return false;
-    if (position != that.position)
-      return false;
-    if (aliasName != null ? !aliasName.equals(that.aliasName) : that.aliasName != null)
-      return false;
-    return indexName != null ? indexName.equals(that.indexName) : that.indexName == null;
-
+    return partitionId == that.partitionId && position == that.position && sequence == that.sequence && Objects.equals(
+        aliasName, that.aliasName) && Objects.equals(indexName, that.indexName);
   }
 
   @Override
   public int hashCode() {
-	int result = super.hashCode();
-    result = 31 * result + (aliasName != null ? aliasName.hashCode() : 0);
-    result = 31 * result + partitionId;
-    result = 31 * result + (int) (position ^ (position >>> 32));
-    result = 31 * result + (indexName != null ? indexName.hashCode() : 0);
-    return result;
+    return Objects.hash(super.hashCode(), aliasName, partitionId, position, sequence, indexName);
   }
 
   @Override
   public String toString() {
-    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", indexName='" + indexName
+    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\''+ ", sequence=" + sequence + ", partitionId=" + partitionId + ", position=" + position + ", indexName='" + indexName
         + '\'' + '}';
   }
 }

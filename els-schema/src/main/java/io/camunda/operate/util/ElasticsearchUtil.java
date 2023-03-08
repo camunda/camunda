@@ -40,6 +40,8 @@ import org.apache.http.util.EntityUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -53,6 +55,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.tasks.GetTaskRequest;
 import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.core.TimeValue;
@@ -649,6 +652,32 @@ public abstract class ElasticsearchUtil {
       throw new OperateRuntimeException(e.getMessage(), e);
     }
     return indexNames;
+  }
+
+  public static void refreshIndicesFor(final RestHighLevelClient esClient, final String indexPattern) {
+    RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
+    try {
+      RefreshResponse refresh = esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      if (refresh.getFailedShards() > 0) {
+        logger.warn("Unable to refresh indices: {}", indexPattern);
+      }
+    } catch (Exception ex) {
+      logger.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+    }
+  }
+
+  public static boolean indexExists(final RestHighLevelClient esCLient, final String indexName) throws IOException {
+    return esCLient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+  }
+
+  public static boolean fieldInIndexExists(final RestHighLevelClient esCLient, final String indexName, final String fieldName)
+      throws IOException {
+    final SearchResponse searchResponse = esCLient.search(new SearchRequest(indexName)
+            .source(new SearchSourceBuilder()
+                .query(
+                    QueryBuilders.existsQuery(fieldName)))
+        , RequestOptions.DEFAULT);
+    return searchResponse.getHits().getTotalHits().value > 0;
   }
 
   private static class DelegatingActionListener<Response> implements ActionListener<Response> {

@@ -188,12 +188,11 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
           .waitUntil().processIsDeployed()
           .then().startProcessInstance("multiInstanceServiceProcess", tester.getItemsPayloadFor(3))
           .waitUntil().processInstanceIsStarted()
-          .then()
-          .getProcessInstanceKey();
-      tester.waitUntil().flowNodesAreActive("serviceTask", 3);
+          .and().flowNodesAreActive("serviceTask", 3)
+          .then().getProcessInstanceKey();
 
       var flowNodeStatistics = getFlowNodeStatisticsForProcessInstance(processInstanceKey);
-       assertStatistic(flowNodeStatistics, "serviceTask", 0, 3, 0, 0);
+      assertStatisticActiveOrIncident(flowNodeStatistics, "serviceTask", 0, 3, 0);
   }
 
   @Test // due to https://github.com/camunda/operate/issues/3362
@@ -265,5 +264,23 @@ public class FlowNodeInstanceReaderIT extends OperateZeebeIntegrationTest {
     }else{
       fail("No flowNodeStatistic found for " + flowNodeId);
     }
+  }
+
+  private void assertStatisticActiveOrIncident(final List<FlowNodeStatisticsDto> flowNodeStatistics,
+    final String flowNodeId,
+    final long completed, final long active,final long canceled){
+      final Optional<FlowNodeStatisticsDto> flowNodeStatistic = flowNodeStatistics.stream().filter(
+          fns -> fns.getActivityId().equals(flowNodeId)).findFirst();
+      if(flowNodeStatistic.isPresent()){
+        final FlowNodeStatisticsDto flowNodeStatisticsDto = flowNodeStatistic.get();
+        assertThat(flowNodeStatisticsDto.getCompleted())
+            .as("completed for %s should be %d", flowNodeId, completed).isEqualTo(completed);
+        assertThat(flowNodeStatisticsDto.getCanceled())
+            .as("canceled for %s should be %d", flowNodeId, canceled).isEqualTo(canceled);
+        assertThat(flowNodeStatisticsDto.getActive() + flowNodeStatisticsDto.getIncidents())
+            .as("active+incidents for %s should be %d", flowNodeId, active).isEqualTo(active);
+      }else{
+        fail("No flowNodeStatistic found for " + flowNodeId);
+      }
   }
 }

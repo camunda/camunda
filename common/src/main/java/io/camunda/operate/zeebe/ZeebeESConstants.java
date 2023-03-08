@@ -9,6 +9,7 @@ package io.camunda.operate.zeebe;
 public interface ZeebeESConstants {
 
   String POSITION_FIELD_NAME = "position";
+  String SEQUENCE_FIELD_NAME = "sequence";
   String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   String DECISION_INDEX_NAME = "decision";
   String DECISION_REQUIREMENTS_INDEX_NAME = "decision-requirements";

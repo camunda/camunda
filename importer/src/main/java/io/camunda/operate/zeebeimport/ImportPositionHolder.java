@@ -9,7 +9,6 @@ package io.camunda.operate.zeebeimport;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -133,10 +132,10 @@ public class ImportPositionHolder {
             .size(10));
 
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-
     final Iterator<SearchHit> hitIterator = searchResponse.getHits().iterator();
 
-    ImportPositionEntity position = new ImportPositionEntity(aliasTemplate, partitionId, 0);
+    ImportPositionEntity position = new ImportPositionEntity()
+        .setAliasName(aliasTemplate).setPartitionId(partitionId);
 
     if (hitIterator.hasNext()) {
       position = ElasticsearchUtil.fromSearchHit(hitIterator.next().getSourceAsString(), objectMapper, ImportPositionEntity.class);
@@ -223,6 +222,7 @@ public class ImportPositionHolder {
 
       updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
+      updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
 
       final UpdateRequest updateRequest = new UpdateRequest()
           .index(index)
@@ -242,9 +242,7 @@ public class ImportPositionHolder {
     lastScheduledPositions.clear();
     pendingImportPositionUpdates.clear();
 
-    withInflightImportPositionLock(() -> {
-      inflightImportPositions.clear();
-    });
+    withInflightImportPositionLock(() -> inflightImportPositions.clear());
   }
 
   private String getKey(String aliasTemplate, int partitionId) {

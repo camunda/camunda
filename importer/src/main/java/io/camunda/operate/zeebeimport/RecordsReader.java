@@ -9,11 +9,9 @@ package io.camunda.operate.zeebeimport;
 import static io.camunda.operate.Metrics.GAUGE_IMPORT_QUEUE_SIZE;
 import static io.camunda.operate.Metrics.TAG_KEY_PARTITION;
 import static io.camunda.operate.Metrics.TAG_KEY_TYPE;
-import static io.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
-import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.Metrics;
@@ -55,10 +53,9 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
 
-
 /**
  * Represents Zeebe data reader for one partition and one value type. After reading the data is also schedules the jobs
- * for import execution. Each reader can have it's own backoff, so that we make a pause in case there is no data currently
+ * for import execution. Each reader can have its own backoff, so that we make a pause in case there is no data currently
  * for given partition and value type.
  */
 @Component
@@ -72,12 +69,12 @@ public class RecordsReader implements Runnable {
   /**
    * Partition id.
    */
-  private int partitionId;
+  private final int partitionId;
 
   /**
    * Value type.
    */
-  private ImportValueType importValueType;
+  private final ImportValueType importValueType;
 
   /**
    * The queue of executed tasks for execution.
@@ -90,7 +87,7 @@ public class RecordsReader implements Runnable {
   private Callable<Boolean> active;
 
   private ImportJob pendingImportJob;
-  private ReentrantLock schedulingImportJobLock;
+  private final ReentrantLock schedulingImportJobLock;
   private boolean ongoingRescheduling;
 
   @Autowired
@@ -123,7 +120,7 @@ public class RecordsReader implements Runnable {
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
-    this.importJobs = new LinkedBlockingQueue(queueSize);
+    this.importJobs = new LinkedBlockingQueue<>(queueSize);
     this.schedulingImportJobLock = new ReentrantLock();
   }
 
@@ -141,8 +138,13 @@ public class RecordsReader implements Runnable {
     try {
       metrics.registerGaugeQueueSize(GAUGE_IMPORT_QUEUE_SIZE, importJobs, TAG_KEY_PARTITION,
           String.valueOf(partitionId), TAG_KEY_TYPE, importValueType.name());
-      ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
-      ImportBatch importBatch = readNextBatch(latestPosition.getPosition(), null);
+      ImportBatch importBatch;
+      final ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
+      if (latestPosition != null && latestPosition.getSequence() > 0) {
+        importBatch = readNextBatchBySequence(latestPosition.getSequence());
+      } else {
+        importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
+      }
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().size() == 0) {
         nextRunDelay = readerBackoff;
@@ -173,6 +175,50 @@ public class RecordsReader implements Runnable {
       }
     }
   }
+
+  public ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
+    return readNextBatchBySequence(sequence, null);
+  }
+
+  public ImportBatch readNextBatchBySequence(final Long sequence, final Long lastSequence) throws NoSuchIndexException {
+    final String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
+    int size = operateProperties.getZeebeElasticsearch().getBatchSize();
+    if (lastSequence != null && lastSequence > 0) {
+      logger.debug("Import batch reread was called. Data type {}, partitionId {}, sequence {}, lastSequence {}.", importValueType, partitionId, sequence, lastSequence);
+      size = (int) (lastSequence - sequence);
+    }
+    size = (size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
+        .size(size);
+    try {
+      if (sequence != null && sequence > 0){
+        searchSourceBuilder = searchSourceBuilder.query(rangeQuery(ImportPositionIndex.SEQUENCE)
+            .gt(sequence).lte(sequence + size));
+      }
+
+      final SearchRequest searchRequest = new SearchRequest(aliasName)
+          .source(searchSourceBuilder)
+          .routing(String.valueOf(partitionId))
+          .requestCache(false);
+
+      final SearchResponse searchResponse =
+      withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+
+      return createImportBatch(searchResponse);
+    } catch (ElasticsearchStatusException ex) {
+      if (ex.getMessage().contains("no such index")) {
+        throw new NoSuchIndexException();
+      } else {
+        final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", ex.getMessage());
+        throw new OperateRuntimeException(message, ex);
+      }
+    } catch (Exception e) {
+      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
 
   private void rescheduleReader(Integer readerDelay) {
     if (readerDelay != null) {
@@ -214,17 +260,14 @@ public class RecordsReader implements Runnable {
     }
   }
 
-  public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
+  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo) throws NoSuchIndexException {
     String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
-
       final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
-
       final SearchResponse searchResponse =
           withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
 
       return createImportBatch(searchResponse);
-
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
@@ -246,7 +289,6 @@ public class RecordsReader implements Runnable {
     }
     return new ImportBatch(partitionId, importValueType, Arrays.asList(hits), indexName);
   }
-
 
   private SearchRequest createSearchQuery(String aliasName, long positionFrom, Long positionTo) {
     RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
@@ -391,7 +433,6 @@ public class RecordsReader implements Runnable {
       schedulingImportJobLock.unlock();
     }
   }
-
   public int getPartitionId() {
     return partitionId;
   }
