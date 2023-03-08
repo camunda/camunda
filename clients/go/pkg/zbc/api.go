@@ -35,6 +35,8 @@ type Client interface {
 
 	NewPublishMessageCommand() commands.PublishMessageCommandStep1
 
+	NewBroadcastSignalCommand() commands.BroadcastSignalCommandStep1
+
 	NewActivateJobsCommand() commands.ActivateJobsCommandStep1
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1

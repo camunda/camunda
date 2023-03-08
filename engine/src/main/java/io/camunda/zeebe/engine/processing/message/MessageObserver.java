@@ -16,30 +16,46 @@ import java.time.Duration;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
 
-  public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
-
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
   private final MutablePendingMessageSubscriptionState pendingState;
+  private final int messagesTtlCheckerBatchLimit;
+  private final Duration messagesTtlCheckerInterval;
+  private final boolean enableMessageTtlCheckerAsync;
 
   public MessageObserver(
       final MessageState messageState,
       final MutablePendingMessageSubscriptionState pendingState,
-      final SubscriptionCommandSender subscriptionCommandSender) {
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final Duration messagesTtlCheckerInterval,
+      final int messagesTtlCheckerBatchLimit,
+      final boolean enableMessageTtlCheckerAsync) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.messageState = messageState;
     this.pendingState = pendingState;
+    this.messagesTtlCheckerInterval = messagesTtlCheckerInterval;
+    this.messagesTtlCheckerBatchLimit = messagesTtlCheckerBatchLimit;
+    this.enableMessageTtlCheckerAsync = enableMessageTtlCheckerAsync;
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     final var scheduleService = context.getScheduleService();
-    // it is safe to reuse the write because we running in the same actor/thread
-    final var timeToLiveChecker = new MessageTimeToLiveChecker(scheduleService, messageState);
-    scheduleService.runDelayedAsync(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    final var timeToLiveChecker =
+        new MessageTimeToLiveChecker(
+            messagesTtlCheckerInterval,
+            messagesTtlCheckerBatchLimit,
+            enableMessageTtlCheckerAsync,
+            scheduleService,
+            messageState);
+    if (enableMessageTtlCheckerAsync) {
+      scheduleService.runDelayedAsync(messagesTtlCheckerInterval, timeToLiveChecker);
+    } else {
+      scheduleService.runDelayed(messagesTtlCheckerInterval, timeToLiveChecker);
+    }
 
     final var pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(

@@ -129,7 +129,10 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
     final StreamProcessorMode streamProcessorMode =
         targetRole == Role.LEADER ? StreamProcessorMode.PROCESSING : StreamProcessorMode.REPLAY;
 
-    final Engine engine = new Engine(context.getTypedRecordProcessorFactory());
+    final var experimentalCfg = context.getBrokerCfg().getExperimental();
+    final var engineCfg = experimentalCfg.getEngine().createEngineConfiguration();
+
+    final var engine = new Engine(context.getTypedRecordProcessorFactory(), engineCfg);
     final List<RecordProcessor> recordProcessors =
         List.of(engine, context.getCheckpointProcessor());
 

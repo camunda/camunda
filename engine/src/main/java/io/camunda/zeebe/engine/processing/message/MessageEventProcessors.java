@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.FeatureFlags;
 
 public final class MessageEventProcessors {
 
@@ -30,7 +32,9 @@ public final class MessageEventProcessors {
       final MutableProcessingState processingState,
       final ScheduledTaskDbState scheduledTaskDbState,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final Writers writers) {
+      final Writers writers,
+      final EngineConfiguration config,
+      final FeatureFlags featureFlags) {
 
     final MutableMessageState messageState = processingState.getMessageState();
     final MutableMessageSubscriptionState subscriptionState =
@@ -93,6 +97,9 @@ public final class MessageEventProcessors {
             new MessageObserver(
                 scheduledTaskDbState.getMessageState(),
                 processingState.getPendingMessageSubscriptionState(),
-                subscriptionCommandSender));
+                subscriptionCommandSender,
+                config.getMessagesTtlCheckerInterval(),
+                config.getMessagesTtlCheckerBatchLimit(),
+                featureFlags.enableMessageTTLCheckerAsync()));
   }
 }

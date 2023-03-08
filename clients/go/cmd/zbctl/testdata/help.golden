@@ -11,6 +11,7 @@ Usage:
 
 Available Commands:
   activate    Activate a resource
+  broadcast   Broadcast a signal
   cancel      Cancel resource
   complete    Complete a resource
   completion  Generate the autocompletion script for the specified shell

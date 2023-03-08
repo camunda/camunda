@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_0kc0zbb" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.6.0">
+  <bpmn:process id="Process_01ltxrx" isExecutable="true">
+    <bpmn:endEvent id="Event_1w8wtr1">
+      <bpmn:incoming>Flow_0m2821y</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0m2821y" sourceRef="StartEvent_1" targetRef="Event_1w8wtr1" />
+    <bpmn:startEvent id="StartEvent_1" name="Start Process Event">
+      <bpmn:outgoing>Flow_0m2821y</bpmn:outgoing>
+      <bpmn:signalEventDefinition id="SignalEventDefinition_1fwwmc9" signalRef="Signal_3q2n5ad" />
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_1y8333g" name="Start Process" />
+  <bpmn:signal id="Signal_3q2n5ad" name="Start Process" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_01ltxrx">
+      <bpmndi:BPMNShape id="Event_1w8wtr1_di" bpmnElement="Event_1w8wtr1">
+        <dc:Bounds x="272" y="79" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1tupj5p_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="164" y="122" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0m2821y_di" bpmnElement="Flow_0m2821y">
+        <di:waypoint x="215" y="97" />
+        <di:waypoint x="272" y="97" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -100,6 +100,10 @@ func (c *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandSt
 	return commands.NewPublishMessageCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
 
+func (c *ClientImpl) NewBroadcastSignalCommand() commands.BroadcastSignalCommandStep1 {
+	return commands.NewBroadcastSignalCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
+}
+
 func (c *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
 	return commands.NewResolveIncidentCommand(c.gateway, c.credentialsProvider.ShouldRetryRequest)
 }
