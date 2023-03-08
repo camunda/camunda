@@ -19,8 +19,14 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import org.immutables.value.Value;
 
+/**
+ * DeploymentDistributionRecordValue is deprecated as of 8.2.0. A generalised way of distributing
+ * commands has been introduced in this version. Distribution should now be handled using the {@link
+ * CommandDistributionRecordValue}. This record value only remains to stay backwards compatible.
+ */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDeploymentDistributionRecordValue.Builder.class)
+@Deprecated
 public interface DeploymentDistributionRecordValue extends RecordValue {
 
   /**
