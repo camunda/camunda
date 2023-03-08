@@ -98,6 +98,6 @@ public class BroadcastSignalTest {
         signalRecords(SignalIntent.BROADCASTED).withSignalName(signalName).getFirst();
     Assertions.assertThat(record.getValue()).hasSignalName(signalName);
 
-    assertThat(record.getValue().getVariables()).containsExactlyEntriesOf(variables);
+    assertThat(record.getValue().getVariables()).containsExactlyInAnyOrderEntriesOf(variables);
   }
 }
