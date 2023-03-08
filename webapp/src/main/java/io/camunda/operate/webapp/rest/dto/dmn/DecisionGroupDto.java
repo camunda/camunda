@@ -8,11 +8,14 @@ package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Schema(name = "Decision group object", description = "Group of decisions with the same decisionId with all versions included")
 public class DecisionGroupDto {
@@ -20,6 +23,8 @@ public class DecisionGroupDto {
   private String decisionId;
 
   private String name;
+
+  private Set<String> permissions;
 
   private List<DecisionDto> decisions;
 
@@ -39,6 +44,14 @@ public class DecisionGroupDto {
     this.name = name;
   }
 
+  public Set<String> getPermissions() {
+    return permissions;
+  }
+
+  public void setPermissions(Set<String> permissions) {
+    this.permissions = permissions;
+  }
+
   public List<DecisionDto> getDecisions() {
     return decisions;
   }
@@ -48,11 +61,16 @@ public class DecisionGroupDto {
   }
 
   public static List<DecisionGroupDto> createFrom(Map<String, List<DecisionDefinitionEntity>> decisionsGrouped) {
+    return createFrom(decisionsGrouped, null);
+  }
+
+  public static List<DecisionGroupDto> createFrom(Map<String, List<DecisionDefinitionEntity>> decisionsGrouped, PermissionsService permissionsService) {
     List<DecisionGroupDto> groups = new ArrayList<>();
     decisionsGrouped.entrySet().stream().forEach(groupEntry -> {
         DecisionGroupDto groupDto = new DecisionGroupDto();
         groupDto.setDecisionId(groupEntry.getKey());
         groupDto.setName(groupEntry.getValue().get(0).getName());
+        groupDto.setPermissions(permissionsService == null ? new HashSet<>() : permissionsService.getDecisionDefinitionPermission(groupEntry.getKey()));
         groupDto.setDecisions(DtoCreator.create(groupEntry.getValue(), DecisionDto.class));
         groups.add(groupDto);
       }

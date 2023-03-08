@@ -10,6 +10,7 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.es.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -28,6 +29,9 @@ public class DecisionRestService extends InternalAPIErrorController {
   @Autowired
   protected DecisionReader decisionReader;
 
+  @Autowired(required = false)
+  protected PermissionsService permissionsService;
+
   public static final String DECISION_URL = "/api/decisions";
 
 
@@ -41,7 +45,7 @@ public class DecisionRestService extends InternalAPIErrorController {
   @GetMapping(path = "/grouped")
   public List<DecisionGroupDto> getDecisionsGrouped() {
     final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped();
-    return DecisionGroupDto.createFrom(decisionsGrouped);
+    return DecisionGroupDto.createFrom(decisionsGrouped, permissionsService);
   }
 
 }

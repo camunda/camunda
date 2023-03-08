@@ -26,6 +26,7 @@ public class PermissionsService {
 
   public static final String RESOURCE_KEY_ALL = "*";
   public static final String RESOURCE_TYPE_PROCESS_DEFINITION = "process-definition";
+  public static final String RESOURCE_TYPE_DECISION_DEFINITION = "decision-definition";
 
   private static final Logger log = LoggerFactory.getLogger(PermissionsService.class);
 
@@ -61,6 +62,43 @@ public class PermissionsService {
 
     if (includeWildcardPermissions) {
       permissions.addAll(getProcessDefinitionPermission(RESOURCE_KEY_ALL, false));
+    }
+
+    return permissions;
+  }
+
+  /**
+   * getDecisionDefinitionPermission
+   *
+   * @param decisionId decisionId
+   * @return Identity permissions for the given decisionId, including wildcard permissions
+   */
+  public Set<String> getDecisionDefinitionPermission(String decisionId) {
+    return getDecisionDefinitionPermission(decisionId, true);
+  }
+
+  /**
+   * getDecisionDefinitionPermission
+   *
+   * @param decisionId                 decisionId
+   * @param includeWildcardPermissions true to include the wildcard permission, false to not include them
+   * @return Identity permissions for the given decisionId
+   */
+  public Set<String> getDecisionDefinitionPermission(String decisionId, boolean includeWildcardPermissions) {
+
+    Set<String> permissions = new HashSet<>();
+
+    getIdentityAuthorizations().stream()
+        .filter(x -> Objects.equals(x.getResourceKey(), decisionId) && Objects.equals(x.getResourceType(), RESOURCE_TYPE_DECISION_DEFINITION))
+        .findFirst()
+        .ifPresent(x -> {
+          if (x.getPermissions() != null) {
+            permissions.addAll(x.getPermissions());
+          }
+        });
+
+    if (includeWildcardPermissions) {
+      permissions.addAll(getDecisionDefinitionPermission(RESOURCE_KEY_ALL, false));
     }
 
     return permissions;

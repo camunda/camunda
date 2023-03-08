@@ -7,6 +7,9 @@
 package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -17,9 +20,12 @@ import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import java.util.List;
+
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -33,6 +39,9 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private DecisionDataUtil testDataUtil;
+
+  @MockBean
+  private PermissionsService permissionsService;
 
   @Test
   public void testDecisionsGrouped() throws Exception {
@@ -76,6 +85,7 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
     assertThat(demoDecisionGroup2.getDecisions()).isSortedAccordingTo((w1, w2) -> Integer.valueOf(w2.getVersion()).compareTo(w1.getVersion()));
     assertThat(demoDecisionGroup2.getDecisions().get(0).getId()).isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
+    verify(permissionsService, times(2)).getDecisionDefinitionPermission(anyString());
   }
 
   @Test
