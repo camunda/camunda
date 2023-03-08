@@ -28,6 +28,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -58,9 +60,7 @@ public abstract class ElasticsearchUtil {
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS =
       30000; // this scroll timeout value is used for reindex and delete queries
-  public static final int TERMS_AGG_SIZE = 10000;
   public static final int QUERY_MAX_SIZE = 10000;
-  public static final int TOPHITS_AGG_SIZE = 100;
   public static final int UPDATE_RETRY_COUNT = 3;
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
@@ -426,9 +426,7 @@ public abstract class ElasticsearchUtil {
     final List<String> result = new ArrayList<>();
 
     final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
-        };
+        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
 
     scrollWith(request, esClient, collectIds, null, null);
     return result;
@@ -439,9 +437,7 @@ public abstract class ElasticsearchUtil {
     final List<Long> result = new ArrayList<>();
 
     final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-        };
+        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
 
     scrollWith(request, esClient, collectIds, null, null);
     return result;
@@ -454,9 +450,7 @@ public abstract class ElasticsearchUtil {
         (searchHit) -> (T) searchHit.getSourceAsMap().get(fieldName);
 
     final Consumer<SearchHits> collectFields =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), searchHitFieldToString));
-        };
+        (hits) -> result.addAll(map(hits.getHits(), searchHitFieldToString));
 
     scrollWith(request, esClient, collectFields, null, null);
     return result;
@@ -467,9 +461,7 @@ public abstract class ElasticsearchUtil {
     final Set<String> result = new HashSet<>();
 
     final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
-        };
+        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
     scrollWith(request, esClient, collectIds, null, collectIds);
     return result;
   }
@@ -478,11 +470,23 @@ public abstract class ElasticsearchUtil {
       throws IOException {
     final Set<Long> result = new HashSet<>();
     final Consumer<SearchHits> collectIds =
-        (hits) -> {
-          result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
-        };
+        (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
     scrollWith(request, esClient, collectIds, null, null);
     return result;
+  }
+
+  public static void refreshIndicesFor(
+      final RestHighLevelClient esClient, final String indexPattern) {
+    final var refreshRequest = new RefreshRequest(indexPattern);
+    try {
+      final RefreshResponse refresh =
+          esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      if (refresh.getFailedShards() > 0) {
+        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
+      }
+    } catch (Exception ex) {
+      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
+    }
   }
 
   public enum QueryType {

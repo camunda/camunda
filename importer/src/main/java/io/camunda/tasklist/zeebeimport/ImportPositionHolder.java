@@ -135,7 +135,8 @@ public class ImportPositionHolder {
 
     final Iterator<SearchHit> hitIterator = searchResponse.getHits().iterator();
 
-    ImportPositionEntity position = new ImportPositionEntity(aliasTemplate, partitionId, 0);
+    ImportPositionEntity position =
+        new ImportPositionEntity().setAliasName(aliasTemplate).setPartitionId(partitionId);
 
     if (hitIterator.hasNext()) {
       position =
@@ -234,6 +235,7 @@ public class ImportPositionHolder {
 
       updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
+      updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
 
       final UpdateRequest updateRequest =
           new UpdateRequest()
@@ -257,10 +259,7 @@ public class ImportPositionHolder {
   public void clearCache() {
     lastScheduledPositions.clear();
     pendingProcessedPositions.clear();
-    withInflightImportPositionLock(
-        () -> {
-          inflightProcessedPositions.clear();
-        });
+    withInflightImportPositionLock(() -> inflightProcessedPositions.clear());
   }
 
   private String getKey(String aliasTemplate, int partitionId) {

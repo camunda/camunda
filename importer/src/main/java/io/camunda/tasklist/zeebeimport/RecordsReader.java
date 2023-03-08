@@ -61,10 +61,10 @@ public class RecordsReader implements Runnable {
   public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReader.class);
   /** Partition id. */
-  private int partitionId;
+  private final int partitionId;
 
   /** Value type. */
-  private ImportValueType importValueType;
+  private final ImportValueType importValueType;
 
   /** The queue of executed tasks for execution. */
   private final BlockingQueue<Callable<Boolean>> importJobs;
@@ -115,10 +115,15 @@ public class RecordsReader implements Runnable {
   public int readAndScheduleNextBatch(boolean autoContinue) {
     final var readerBackoff = tasklistProperties.getImporter().getReaderBackoff();
     try {
+      ImportBatch importBatch = null;
       final var latestPosition =
           importPositionHolder.getLatestScheduledPosition(
               importValueType.getAliasTemplate(), partitionId);
-      final var importBatch = readNextBatch(latestPosition.getPosition(), null);
+      if (latestPosition != null && latestPosition.getSequence() > 0) {
+        importBatch = readNextBatchBySequence(latestPosition.getSequence());
+      } else {
+        importBatch = readNextBatchByPositionAndPartition(latestPosition.getPosition(), null);
+      }
       Integer nextRunDelay = null;
       if (importBatch.getHits().size() == 0) {
         nextRunDelay = readerBackoff;
@@ -153,6 +158,60 @@ public class RecordsReader implements Runnable {
     return 0;
   }
 
+  public ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
+    return readNextBatchBySequence(sequence, null);
+  }
+
+  public ImportBatch readNextBatchBySequence(final Long fromSequence, final Long toSequence)
+      throws NoSuchIndexException {
+    final String aliasName =
+        importValueType.getAliasName(tasklistProperties.getZeebeElasticsearch().getPrefix());
+    final int size = getBatchSizeForSequenceRange(fromSequence, toSequence);
+    SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder().sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC).size(size);
+    try {
+      if (fromSequence != null && fromSequence > 0) {
+        searchSourceBuilder =
+            searchSourceBuilder.query(
+                rangeQuery(ImportPositionIndex.SEQUENCE).gt(fromSequence).lte(fromSequence + size));
+      }
+
+      final SearchRequest searchRequest =
+          new SearchRequest(aliasName)
+              .source(searchSourceBuilder)
+              .routing(String.valueOf(partitionId))
+              .requestCache(false);
+
+      final SearchResponse searchResponse =
+          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+
+      return createImportBatch(searchResponse);
+    } catch (ElasticsearchStatusException ex) {
+      if (ex.getMessage().contains("no such index")) {
+        throw new NoSuchIndexException();
+      } else {
+        final String message =
+            String.format(
+                "Exception occurred, while obtaining next Zeebe records batch: %s",
+                ex.getMessage());
+        throw new TasklistRuntimeException(message, ex);
+      }
+    } catch (Exception e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  private int getBatchSizeForSequenceRange(final Long fromSequence, final Long toSequence) {
+    int size = tasklistProperties.getZeebeElasticsearch().getBatchSize();
+    if (fromSequence != null && toSequence != null && toSequence > 0) {
+      size = (int) (toSequence - fromSequence);
+    }
+    return (size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size);
+  }
+
   private void rescheduleReader(final Integer readerDelay) {
     if (readerDelay != null) {
       readersExecutor.schedule(
@@ -162,7 +221,8 @@ public class RecordsReader implements Runnable {
     }
   }
 
-  public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
+  public ImportBatch readNextBatchByPositionAndPartition(long positionFrom, Long positionTo)
+      throws NoSuchIndexException {
     final String aliasName =
         importValueType.getAliasName(tasklistProperties.getZeebeElasticsearch().getPrefix());
     try {

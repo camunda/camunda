@@ -12,15 +12,14 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
+import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
@@ -102,10 +101,25 @@ public class ImportJob implements Callable<Boolean> {
               importBatch.getPartitionId(), importBatch.getImportValueType());
       if (recordsReader != null) {
         try {
-          importBatch =
-              recordsReader.readNextBatch(
-                  previousPosition.getPosition(),
-                  importBatch.getLastProcessedPosition(objectMapper));
+          final ImportBatch newImportBatch;
+          if (previousPosition.getSequence() > 0) {
+            newImportBatch =
+                recordsReader.readNextBatchBySequence(
+                    previousPosition.getSequence(),
+                    importBatch.getLastProcessedSequence(objectMapper));
+          } else {
+            newImportBatch =
+                recordsReader.readNextBatchByPositionAndPartition(
+                    previousPosition.getPosition(),
+                    importBatch.getLastProcessedPosition(objectMapper));
+          }
+          if (newImportBatch == null
+              || newImportBatch.getHits() == null
+              || newImportBatch.getHits().size() < importBatch.getHits().size()) {
+            throw new TasklistRuntimeException(
+                "Warning! Import batch became smaller after reread. Should not happen. Will be retried.");
+          }
+          importBatch = newImportBatch;
         } catch (NoSuchIndexException ex) {
           LOGGER.warn("Indices are not found" + importBatch.toString());
         }
@@ -181,16 +195,7 @@ public class ImportJob implements Callable<Boolean> {
         importBatch
             .getImportValueType()
             .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
-    final RefreshRequest refreshRequest = new RefreshRequest(indexPattern);
-    try {
-      final RefreshResponse refresh =
-          zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-      if (refresh.getFailedShards() > 0) {
-        LOGGER.warn("Unable to refresh indices: {}", indexPattern);
-      }
-    } catch (Exception ex) {
-      LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
-    }
+    ElasticsearchUtil.refreshIndicesFor(zeebeEsClient, indexPattern);
   }
 
   public void recordLatestScheduledPosition() {
@@ -201,10 +206,14 @@ public class ImportJob implements Callable<Boolean> {
   public ImportPositionEntity getLastProcessedPosition() {
     if (lastProcessedPosition == null) {
       final long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
-      if (lastRecordPosition != 0) {
+      final long lastSequence = importBatch.getLastProcessedSequence(objectMapper);
+      if (lastRecordPosition != 0 || lastSequence != 0) {
         lastProcessedPosition =
             ImportPositionEntity.createFrom(
-                previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
+                lastSequence,
+                previousPosition,
+                lastRecordPosition,
+                importBatch.getLastRecordIndexName());
       } else {
         lastProcessedPosition = previousPosition;
       }

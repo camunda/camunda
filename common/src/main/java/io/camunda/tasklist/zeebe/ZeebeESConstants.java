@@ -10,6 +10,7 @@ package io.camunda.tasklist.zeebe;
 public interface ZeebeESConstants {
 
   String POSITION_FIELD_NAME = "position";
+  String SEQUENCE_FIELD_NAME = "sequence";
   String PROCESS_INSTANCE_INDEX_NAME = "process-instance";
   String JOB_INDEX_NAME = "job";
   String PROCESS_INDEX_NAME = "process";

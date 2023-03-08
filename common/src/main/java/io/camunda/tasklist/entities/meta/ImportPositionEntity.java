@@ -9,7 +9,7 @@ package io.camunda.tasklist.entities.meta;
 import io.camunda.tasklist.entities.TasklistEntity;
 import java.util.Objects;
 
-public class ImportPositionEntity extends TasklistEntity {
+public class ImportPositionEntity extends TasklistEntity<ImportPositionEntity> {
 
   private String aliasName;
 
@@ -17,15 +17,11 @@ public class ImportPositionEntity extends TasklistEntity {
 
   private long position;
 
+  private long sequence;
+
   private String indexName;
 
   public ImportPositionEntity() {}
-
-  public ImportPositionEntity(String aliasName, int partitionId, long position) {
-    this.aliasName = aliasName;
-    this.partitionId = partitionId;
-    this.position = position;
-  }
 
   public String getAliasName() {
     return aliasName;
@@ -42,6 +38,15 @@ public class ImportPositionEntity extends TasklistEntity {
 
   public ImportPositionEntity setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
+    return this;
+  }
+
+  public long getSequence() {
+    return sequence;
+  }
+
+  public ImportPositionEntity setSequence(final long sequence) {
+    this.sequence = sequence;
     return this;
   }
 
@@ -69,8 +74,12 @@ public class ImportPositionEntity extends TasklistEntity {
   }
 
   public static ImportPositionEntity createFrom(
-      ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
+      final long sequence,
+      ImportPositionEntity importPositionEntity,
+      long newPosition,
+      String indexName) {
     return new ImportPositionEntity()
+        .setSequence(sequence)
         .setAliasName(importPositionEntity.getAliasName())
         .setPartitionId(importPositionEntity.getPartitionId())
         .setIndexName(indexName)
@@ -91,13 +100,14 @@ public class ImportPositionEntity extends TasklistEntity {
     final ImportPositionEntity that = (ImportPositionEntity) o;
     return partitionId == that.partitionId
         && position == that.position
+        && sequence == that.sequence
         && Objects.equals(aliasName, that.aliasName)
         && Objects.equals(indexName, that.indexName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), aliasName, partitionId, position, indexName);
+    return Objects.hash(super.hashCode(), sequence, aliasName, partitionId, position, indexName);
   }
 
   @Override
@@ -106,6 +116,8 @@ public class ImportPositionEntity extends TasklistEntity {
         + "aliasName='"
         + aliasName
         + '\''
+        + ", sequence="
+        + sequence
         + ", partitionId="
         + partitionId
         + ", position="
