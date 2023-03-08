@@ -1,3 +1,9 @@
+ARG JVM="eclipse-temurin"
+ARG JAVA_VERSION="17"
+ARG BASE_IMAGE="${JVM}:${JAVA_VERSION}-jre-focal"
+ARG BASE_DIGEST_AMD64="sha256:0b13d4000b27dd78fb76f121bce7a9d8d05d4e05f8e85cd1c261de8ecaff9c31"
+ARG BASE_DIGEST_ARM64="sha256:aac95bed0847a83d646fe1e371da4999c4fbe24d944d132dc3cb4714bd0adde5"
+
 # Prepare Operate Distribution
 FROM alpine:3.13.2 as prepare
 
@@ -10,8 +16,54 @@ RUN rm operate.tar.gz
 COPY docker-notice.txt notice.txt
 RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
-# Operate Image
-FROM eclipse-temurin:17-jre-focal
+### AMD64 base image ###
+# BASE_DIGEST_AMD64 is defined at the top of the Dockerfile
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST_AMD64} as base-amd64
+ARG BASE_DIGEST_AMD64
+ARG BASE_DIGEST="${BASE_DIGEST_AMD64}"
+
+### ARM64 base image ##
+# BASE_DIGEST_ARM64 is defined at the top of the Dockerfile
+# hadolint ignore=DL3006
+FROM ${BASE_IMAGE}@${BASE_DIGEST_ARM64} as base-arm64
+ARG BASE_DIGEST_ARM64
+ARG BASE_DIGEST="${BASE_DIGEST_ARM64}"
+
+### Application Image ###
+# TARGETARCH is provided by buildkit
+# https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
+# hadolint ignore=DL3006
+FROM base-${TARGETARCH} as app
+# leave unset to use the default value at the top of the file
+ARG BASE_IMAGE
+ARG BASE_DIGEST
+ARG VERSION=""
+ARG DATE=""
+ARG REVISION=""
+
+# OCI labels: https://github.com/opencontainers/image-spec/blob/main/annotations.md
+LABEL org.opencontainers.image.base.name="docker.io/library/${BASE_IMAGE}"
+LABEL org.opencontainers.image.base.digest="${BASE_DIGEST}"
+LABEL org.opencontainers.image.created="${DATE}"
+LABEL org.opencontainers.image.authors="operate@camunda.com"
+LABEL org.opencontainers.image.url="https://camunda.com/platform/operate/"
+LABEL org.opencontainers.image.documentation="https://docs.camunda.io/docs/self-managed/operate-deployment/install-and-start/"
+LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-operate"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.revision="${REVISION}"
+LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
+LABEL org.opencontainers.image.licenses="Proprietary"
+LABEL org.opencontainers.image.title="Camunda Operate"
+LABEL org.opencontainers.image.description="Tool for process observability and troubleshooting processes running in Camunda Platform 8"
+
+# OpenShift labels: https://docs.openshift.com/container-platform/4.10/openshift_images/create-images.html#defining-image-metadata
+LABEL io.openshift.tags="bpmn,operate,camunda"
+LABEL io.openshift.wants="zeebe,elasticsearch"
+LABEL io.openshift.non-scalable="false"
+LABEL io.openshift.min-memory="512Mi"
+LABEL io.openshift.min-cpu="1"
+LABEL io.k8s.description="Tool for process observability and troubleshooting processes running in Camunda Platform 8"
 
 EXPOSE 8080
 

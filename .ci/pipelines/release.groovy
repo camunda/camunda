@@ -197,6 +197,9 @@ pipeline {
           IMAGE_NAME = 'camunda/operate'
           IMAGE_TAG = "${params.RELEASE_VERSION}"
           DOCKER_HUB = credentials('camunda-dockerhub')
+          VERSION = "${params.RELEASE_VERSION}"
+          REVISION = getGitCommitHash()
+          DATE = java.time.Instant.now().toString()
           IS_LATEST = "${params.IS_LATEST}"
         }
         steps {
@@ -204,10 +207,57 @@ pipeline {
             sh """
               docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
               docker buildx create --use
-              docker buildx build . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:${IMAGE_TAG}  --push
+
+              export VERSION=${VERSION}
+              export DATE=${DATE}
+              export REVISION=${REVISION}
+              export BASE_IMAGE=eclipse-temurin:17-jre-focal
+              apk update
+              apk add jq
+              apk --no-cache add bash
+
+              # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
+              # able to perform the checks before pushing
+              # First amd64
+              docker buildx build \\
+                -t ${IMAGE_NAME}:${IMAGE_TAG} \\
+                --build-arg VERSION=${VERSION} \\
+                --build-arg DATE=${DATE} \\
+                --build-arg REVISION=${REVISION} \\
+                --platform linux/amd64 \\
+                --load \\
+                .
+              export ARCHITECTURE=amd64
+              bash ./.ci/docker/test/verify.sh ${IMAGE_NAME}:${IMAGE_TAG}
+
+              # Now arm64
+              docker buildx build \\
+                -t ${IMAGE_NAME}:${IMAGE_TAG} \\
+                --build-arg VERSION=${VERSION} \\
+                --build-arg DATE=${DATE} \\
+                --build-arg REVISION=${REVISION} \\
+                --platform linux/arm64 \\
+                --load \\
+                .
+              export ARCHITECTURE=arm64
+              bash ./.ci/docker/test/verify.sh ${IMAGE_NAME}:${IMAGE_TAG}
+
+              docker buildx build . \
+              --platform linux/arm64,linux/amd64 \
+              --build-arg VERSION=${VERSION} \
+              --build-arg REVISION=${REVISION} \
+              --build-arg DATE=${DATE} \
+              -t ${IMAGE_NAME}:${IMAGE_TAG}  \
+              --push
 
               if ${IS_LATEST}; then
-                docker buildx build . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:latest --push
+                docker buildx build . \
+                --platform linux/arm64,linux/amd64 \
+                --build-arg VERSION=${VERSION} \
+                --build-arg REVISION=${REVISION} \
+                --build-arg DATE=${DATE} \
+                -t ${IMAGE_NAME}:latest \
+                --push
               fi
             """
           }

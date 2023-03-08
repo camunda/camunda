@@ -1,0 +1,22 @@
+{
+  "io.k8s.description": "Tool for process observability and troubleshooting processes running in Camunda Platform 8",
+  "io.openshift.min-cpu": "1",
+  "io.openshift.min-memory": "512Mi",
+  "io.openshift.non-scalable": "false",
+  "io.openshift.wants": "zeebe,elasticsearch",
+  "io.openshift.tags": "bpmn,operate,camunda",
+  "org.opencontainers.image.authors": "operate@camunda.com",
+  "org.opencontainers.image.base.name": "docker.io/library/eclipse-temurin:17-jre-focal",
+  "org.opencontainers.image.base.digest": $BASEDIGEST,
+  "org.opencontainers.image.created": $DATE,
+  "org.opencontainers.image.description": "Tool for process observability and troubleshooting processes running in Camunda Platform 8",
+  "org.opencontainers.image.documentation": "https://docs.camunda.io/docs/self-managed/operate-deployment/install-and-start/",
+  "org.opencontainers.image.licenses": "Proprietary",
+  "org.opencontainers.image.ref.name": "ubuntu",
+  "org.opencontainers.image.revision": $REVISION,
+  "org.opencontainers.image.source": "https://github.com/camunda/camunda-operate",
+  "org.opencontainers.image.title": "Camunda Operate",
+  "org.opencontainers.image.url": "https://camunda.com/platform/operate/",
+  "org.opencontainers.image.vendor": "Camunda Services GmbH",
+  "org.opencontainers.image.version": $VERSION
+}

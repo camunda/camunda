@@ -27,6 +27,14 @@ String getCiImageTag() {
   return "ci-${getGitCommitHash()}"
 }
 
+String getVersion() {
+  return readMavenPom(file: 'pom.xml').getVersion()
+}
+
+String getRevision() {
+    return getGitCommitHash()
+}
+
 /******** START PIPELINE *******/
 
 pipeline {
@@ -88,16 +96,71 @@ pipeline {
       environment {
         IMAGE_TAG = getImageTag()
         CI_IMAGE_TAG = getCiImageTag()
+        VERSION = getVersion()
+        REVISION = getRevision()
+        DATE = java.time.Instant.now().toString()
       }
       steps {
         lock('operate-dockerimage-upload') {
           container('docker') {
             sh """
               docker buildx create --use
-              docker buildx build . --platform linux/arm64,linux/amd64 -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} --push
-              
+
+              export VERSION=${VERSION}
+              export DATE=${DATE}
+              export REVISION=${REVISION}
+              export BASE_IMAGE=eclipse-temurin:17-jre-focal
+              apk update
+              apk add jq
+              apk --no-cache add bash
+
+              # Since docker buildx doesn't allow to use --load for a multi-platform build, we do it one at a time to be
+              # able to perform the checks before pushing
+              # First amd64
+              docker buildx build \
+                -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                --build-arg VERSION=${VERSION} \
+                --build-arg DATE=${DATE} \
+                --build-arg REVISION=${REVISION} \
+                --platform linux/amd64 \
+                --load \
+                .
+              export ARCHITECTURE=amd64
+              bash ./.ci/docker/test/verify.sh ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+
+              # Now arm64
+              docker buildx build \
+                -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                --build-arg VERSION=${VERSION} \
+                --build-arg DATE=${DATE} \
+                --build-arg REVISION=${REVISION} \
+                --platform linux/arm64 \
+                --load \
+                .
+              export ARCHITECTURE=arm64
+              bash ./.ci/docker/test/verify.sh ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG}
+
+              # If we made it to here, all checks were successful. So let's build it to push. This is not as
+              # inefficient as it looks, since docker retrieves the previously generated images from the build cache
+              docker buildx build . \
+                --platform linux/arm64,linux/amd64 \
+                --build-arg VERSION=${VERSION} \
+                --build-arg REVISION=${REVISION} \
+                --build-arg DATE=${DATE} \
+                -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                -t ${OPERATE_DOCKER_IMAGE()}:${CI_IMAGE_TAG} \
+                --push
+
               if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                docker buildx build . --platform linux/arm64,linux/amd64 -t ${OPERATE_DOCKER_IMAGE()}:latest --push
+                docker buildx build . \
+                --platform linux/arm64,linux/amd64 \
+                --build-arg VERSION=${VERSION} \
+                --build-arg REVISION=${REVISION} \
+                --build-arg DATE=${DATE} \
+                -t ${OPERATE_DOCKER_IMAGE()}:latest \
+                --push
               fi
             """
           }
@@ -178,13 +241,22 @@ pipeline {
           environment {
             IMAGE_NAME = 'camunda/operate'
             IMAGE_TAG = 'SNAPSHOT'
+            VERSION = getVersion()
+            REVISION = getRevision()
+            DATE = java.time.Instant.now().toString()
           }
           steps {
             lock('operate-dockerimage-snapshot-upload') {
               container('docker') {
                 sh """
                   docker buildx create --use
-                  docker buildx build . --platform linux/arm64,linux/amd64 -t ${IMAGE_NAME}:${IMAGE_TAG} --push
+                  docker buildx build . \
+                  --platform linux/arm64,linux/amd64 \
+                  --build-arg VERSION=${VERSION} \
+                  --build-arg REVISION=${REVISION} \
+                  --build-arg DATE=${DATE} \
+                  -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                  --push
                 """
               }
             }
