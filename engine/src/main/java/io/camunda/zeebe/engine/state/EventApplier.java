@@ -20,5 +20,5 @@ public interface EventApplier {
    * @param intent the intent of the event
    * @param recordValue the value of the event
    */
-  void applyState(long key, Intent intent, RecordValue recordValue);
+  void applyState(long key, Intent intent, RecordValue recordValue, final String brokerVersion);
 }

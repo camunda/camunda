@@ -296,7 +296,8 @@ public final class EventAppliers implements EventApplier {
   }
 
   @Override
-  public void applyState(final long key, final Intent intent, final RecordValue value) {
+  public void applyState(
+      final long key, final Intent intent, final RecordValue value, final String brokerVersion) {
     final var eventApplier =
         mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
     eventApplier.applyState(key, value);

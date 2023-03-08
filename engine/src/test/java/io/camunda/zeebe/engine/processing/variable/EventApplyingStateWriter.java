@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWrit
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.util.VersionUtil;
 
 /**
  * A state writer that uses the event applier, to alter the state for each written event.
@@ -35,7 +36,7 @@ public final class EventApplyingStateWriter implements StateWriter {
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     eventWriter.appendFollowUpEvent(key, intent, value);
-    eventApplier.applyState(key, intent, value);
+    eventApplier.applyState(key, intent, value, VersionUtil.getVersion());
   }
 
   @Override
