@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -34,9 +35,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 /**
  * Applies state changes from events to the {@link MutableProcessingState}.
@@ -45,10 +47,8 @@ import java.util.function.Function;
  */
 public final class EventAppliers implements EventApplier {
 
-  private static final Function<Intent, TypedEventApplier<?, ?>> UNIMPLEMENTED_EVENT_APPLIER =
-      intent -> (key, value) -> {};
-
-  private final Map<Intent, TypedEventApplier> mapping = new HashMap<>();
+  private static final TypedEventApplier UNIMPLEMENTED_EVENT_APPLIER = (key, value) -> {};
+  private final Map<Intent, Deque<VersionedEventApplier>> mapping = new HashMap<>();
 
   public EventAppliers(final MutableProcessingState state) {
     registerProcessInstanceEventAppliers(state);
@@ -292,14 +292,35 @@ public final class EventAppliers implements EventApplier {
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
-    mapping.put(intent, applier);
+    register(intent, applier, VersionInfo.UNKNOWN);
+  }
+
+  private <I extends Intent> void register(
+      final I intent, final TypedEventApplier<I, ?> applier, final VersionInfo versionInfo) {
+    final var versionedEventApplier = new VersionedEventApplier(versionInfo, applier);
+    mapping.computeIfAbsent(intent, k -> new ArrayDeque<>()).push(versionedEventApplier);
   }
 
   @Override
   public void applyState(
       final long key, final Intent intent, final RecordValue value, final String brokerVersion) {
-    final var eventApplier =
-        mapping.getOrDefault(intent, UNIMPLEMENTED_EVENT_APPLIER.apply(intent));
+    final VersionInfo eventBrokerVersion = VersionInfo.parse(brokerVersion);
+
+    final var versionedEventAppliers = mapping.getOrDefault(intent, new ArrayDeque<>());
+    final TypedEventApplier eventApplier =
+        versionedEventAppliers.stream()
+            // Event applier must have a smaller version than the broker version at the time of
+            // writing the event
+            .filter(
+                versionedEventApplier ->
+                    versionedEventApplier.versionInfo.compareTo(eventBrokerVersion) < 1)
+            .map(versionedEventApplier -> versionedEventApplier.eventApplier)
+            .findFirst()
+            .orElse(UNIMPLEMENTED_EVENT_APPLIER);
+
     eventApplier.applyState(key, value);
   }
+
+  private record VersionedEventApplier(
+      VersionInfo versionInfo, TypedEventApplier<?, ?> eventApplier) {}
 }
