@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.backpressure;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -34,7 +35,8 @@ public final class CommandRateLimiter extends AbstractLimiter<Intent>
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,
-          DeploymentDistributionIntent.COMPLETE);
+          DeploymentDistributionIntent.COMPLETE,
+          CommandDistributionIntent.ACKNOWLEDGE);
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
   private final int partitionId;
   private final BackpressureMetrics metrics = new BackpressureMetrics();
