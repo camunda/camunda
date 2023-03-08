@@ -13,6 +13,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviorsImpl;
+import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.CompleteDeploymentDistributionProcessor;
@@ -44,6 +45,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 
@@ -55,7 +57,7 @@ public final class EngineProcessors {
       final TypedRecordProcessorContext typedRecordProcessorContext,
       final int partitionsCount,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
+      final InterPartitionCommandSender interPartitionCommandSender,
       final FeatureFlags featureFlags) {
 
     final var processingState = typedRecordProcessorContext.getProcessingState();
@@ -90,6 +92,19 @@ public final class EngineProcessors {
             timerChecker,
             jobMetrics,
             decisionBehavior);
+
+    final DeploymentDistributionCommandSender deploymentDistributionCommandSender =
+        new DeploymentDistributionCommandSender(
+            typedRecordProcessorContext.getPartitionId(), interPartitionCommandSender);
+    // TODO unused for now, will be used with the implementation of
+    // https://github.com/camunda/zeebe/issues/11661
+    final var commandDistributionBehavior =
+        new CommandDistributionBehavior(
+            writers,
+            typedRecordProcessorContext.getPartitionId(),
+            partitionsCount,
+            interPartitionCommandSender,
+            processingState.getKeyGenerator());
 
     addDeploymentRelatedProcessorAndServices(
         bpmnBehaviors,

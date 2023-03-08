@@ -24,12 +24,13 @@ public interface InterPartitionCommandSender {
 
   /**
    * Uses the given record key when writing the command. Otherwise, behaves like {@link
-   * InterPartitionCommandSender#sendCommand}
+   * InterPartitionCommandSender#sendCommand}. This may be used in cases where the key has been
+   * provided to the users, and the entity must be available on the receiving partition with that
+   * specific key. This also helps inform the receiving partition that this command was sent from
+   * another partition (and from which partition as the key encodes the partition id).
    *
-   * @deprecated This is only available for compatability with deployment distribution.
    * @param recordKey Record key to use when writing the command. Ignored if null.
    */
-  @Deprecated(forRemoval = true)
   void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
