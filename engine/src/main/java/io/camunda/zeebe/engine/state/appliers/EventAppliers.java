@@ -152,6 +152,10 @@ public final class EventAppliers implements EventApplier {
 
     register(DeploymentIntent.CREATED, new DeploymentCreatedApplier(state.getDeploymentState()));
     register(
+        DeploymentIntent.CREATED,
+        new io.camunda.zeebe.engine.state.appliers.v2.DeploymentCreatedApplier(),
+        VersionInfo.parse("8.2.0"));
+    register(
         DeploymentIntent.DISTRIBUTED,
         new DeploymentDistributedApplier(state.getProcessState(), state.getDecisionState()));
     register(
