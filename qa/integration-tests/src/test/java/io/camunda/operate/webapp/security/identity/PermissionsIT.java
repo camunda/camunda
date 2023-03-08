@@ -18,10 +18,12 @@ import java.util.Map;
 
 import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
+import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
@@ -45,6 +47,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})
 public class PermissionsIT {
 
+  private static final String READ = "READ";
+  private static final String DELETE = "DELETE";
+  private static final String UPDATE = "UPDATE";
+
   @Autowired
   private PermissionsService permissionsService;
 
@@ -65,9 +71,9 @@ public class PermissionsIT {
     IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);
     Mockito.when(authentication.getAuthorizations()).thenReturn(Arrays.asList(
         new IdentityAuthorization().setResourceKey(demoProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
-            .setPermissions(new HashSet<>(Arrays.asList("READ", "DELETE", "UPDATE"))),
+            .setPermissions(new HashSet<>(Arrays.asList(READ, DELETE, UPDATE))),
         new IdentityAuthorization().setResourceKey(orderProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
-            .setPermissions(new HashSet<>(Arrays.asList("READ", "DELETE")))));
+            .setPermissions(new HashSet<>(Arrays.asList(READ, DELETE)))));
     SecurityContext securityContext = Mockito.mock(SecurityContext.class);
     Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);
@@ -79,11 +85,11 @@ public class PermissionsIT {
 
     final ProcessGroupDto demoProcessProcessGroup = processGroupDtos.stream().filter(x -> x.getBpmnProcessId().equals(demoProcessId)).findFirst().get();
     assertThat(demoProcessProcessGroup.getPermissions()).hasSize(3);
-    assertThat(demoProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "DELETE", "UPDATE");
+    assertThat(demoProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, DELETE, UPDATE);
 
     final ProcessGroupDto orderProcessProcessGroup = processGroupDtos.stream().filter(x -> x.getBpmnProcessId().equals(orderProcessId)).findFirst().get();
     assertThat(orderProcessProcessGroup.getPermissions()).hasSize(2);
-    assertThat(orderProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "DELETE");
+    assertThat(orderProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, DELETE);
 
     final ProcessGroupDto loanProcessProcessGroup = processGroupDtos.stream().filter(x -> x.getBpmnProcessId().equals(loanProcessId)).findFirst().get();
     assertThat(loanProcessProcessGroup.getPermissions()).isEmpty();
@@ -106,11 +112,11 @@ public class PermissionsIT {
     IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);
     Mockito.when(authentication.getAuthorizations()).thenReturn(Arrays.asList(
         new IdentityAuthorization().setResourceKey(demoProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
-            .setPermissions(new HashSet<>(List.of("DELETE"))),
+            .setPermissions(new HashSet<>(List.of(DELETE))),
         new IdentityAuthorization().setResourceKey(orderProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
-            .setPermissions(new HashSet<>(List.of("UPDATE"))),
+            .setPermissions(new HashSet<>(List.of(UPDATE))),
         new IdentityAuthorization().setResourceKey(PermissionsService.RESOURCE_KEY_ALL).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
-            .setPermissions(new HashSet<>(List.of("READ")))));
+            .setPermissions(new HashSet<>(List.of(READ)))));
     SecurityContext securityContext = Mockito.mock(SecurityContext.class);
     Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);
@@ -122,15 +128,15 @@ public class PermissionsIT {
 
     final ProcessGroupDto demoProcessProcessGroup = processGroupDtos.stream().filter(x -> x.getBpmnProcessId().equals(demoProcessId)).findFirst().get();
     assertThat(demoProcessProcessGroup.getPermissions()).hasSize(2);
-    assertThat(demoProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "DELETE");
+    assertThat(demoProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, DELETE);
 
     final ProcessGroupDto orderProcessProcessGroup = processGroupDtos.stream().filter(x -> x.getBpmnProcessId().equals(orderProcessId)).findFirst().get();
     assertThat(orderProcessProcessGroup.getPermissions()).hasSize(2);
-    assertThat(orderProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "UPDATE");
+    assertThat(orderProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, UPDATE);
 
     final ProcessGroupDto loanProcessProcessGroup = processGroupDtos.stream().filter(x -> x.getBpmnProcessId().equals(loanProcessId)).findFirst().get();
     assertThat(loanProcessProcessGroup.getPermissions()).hasSize(1);
-    assertThat(loanProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ");
+    assertThat(loanProcessProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ);
   }
 
   @Test
@@ -150,9 +156,9 @@ public class PermissionsIT {
     IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);
     Mockito.when(authentication.getAuthorizations()).thenReturn(Arrays.asList(
         new IdentityAuthorization().setResourceKey(demoDecisionId).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
-            .setPermissions(new HashSet<>(Arrays.asList("READ", "DELETE", "UPDATE"))),
+            .setPermissions(new HashSet<>(Arrays.asList(READ, DELETE, UPDATE))),
         new IdentityAuthorization().setResourceKey(orderDecisionId).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
-            .setPermissions(new HashSet<>(Arrays.asList("READ", "DELETE")))));
+            .setPermissions(new HashSet<>(Arrays.asList(READ, DELETE)))));
     SecurityContext securityContext = Mockito.mock(SecurityContext.class);
     Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);
@@ -164,11 +170,11 @@ public class PermissionsIT {
 
     final DecisionGroupDto demoDecisionProcessGroup = decisionGroupDtos.stream().filter(x -> x.getDecisionId().equals(demoDecisionId)).findFirst().get();
     assertThat(demoDecisionProcessGroup.getPermissions()).hasSize(3);
-    assertThat(demoDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "DELETE", "UPDATE");
+    assertThat(demoDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, DELETE, UPDATE);
 
     final DecisionGroupDto orderDecisionProcessGroup = decisionGroupDtos.stream().filter(x -> x.getDecisionId().equals(orderDecisionId)).findFirst().get();
     assertThat(orderDecisionProcessGroup.getPermissions()).hasSize(2);
-    assertThat(orderDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "DELETE");
+    assertThat(orderDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, DELETE);
 
     final DecisionGroupDto loanDecisionProcessGroup = decisionGroupDtos.stream().filter(x -> x.getDecisionId().equals(loanDecisionId)).findFirst().get();
     assertThat(loanDecisionProcessGroup.getPermissions()).isEmpty();
@@ -191,11 +197,11 @@ public class PermissionsIT {
     IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);
     Mockito.when(authentication.getAuthorizations()).thenReturn(Arrays.asList(
         new IdentityAuthorization().setResourceKey(demoDecisionId).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
-            .setPermissions(new HashSet<>(List.of("DELETE"))),
+            .setPermissions(new HashSet<>(List.of(DELETE))),
         new IdentityAuthorization().setResourceKey(orderDecisionId).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
-            .setPermissions(new HashSet<>(List.of("UPDATE"))),
+            .setPermissions(new HashSet<>(List.of(UPDATE))),
         new IdentityAuthorization().setResourceKey(PermissionsService.RESOURCE_KEY_ALL).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
-            .setPermissions(new HashSet<>(List.of("READ")))));
+            .setPermissions(new HashSet<>(List.of(READ)))));
     SecurityContext securityContext = Mockito.mock(SecurityContext.class);
     Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
     SecurityContextHolder.setContext(securityContext);
@@ -207,14 +213,66 @@ public class PermissionsIT {
 
     final DecisionGroupDto demoDecisionProcessGroup = decisionGroupDtos.stream().filter(x -> x.getDecisionId().equals(demoDecisionId)).findFirst().get();
     assertThat(demoDecisionProcessGroup.getPermissions()).hasSize(2);
-    assertThat(demoDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "DELETE");
+    assertThat(demoDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, DELETE);
 
     final DecisionGroupDto orderDecisionProcessGroup = decisionGroupDtos.stream().filter(x -> x.getDecisionId().equals(orderDecisionId)).findFirst().get();
     assertThat(orderDecisionProcessGroup.getPermissions()).hasSize(2);
-    assertThat(orderDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ", "UPDATE");
+    assertThat(orderDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ, UPDATE);
 
     final DecisionGroupDto loanDecisionProcessGroup = decisionGroupDtos.stream().filter(x -> x.getDecisionId().equals(loanDecisionId)).findFirst().get();
     assertThat(loanDecisionProcessGroup.getPermissions()).hasSize(1);
-    assertThat(loanDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder("READ");
+    assertThat(loanDecisionProcessGroup.getPermissions()).containsExactlyInAnyOrder(READ);
+  }
+
+  @Test
+  public void testProcessInstances() {
+
+    // given
+    final String demoProcessId = "demoProcess";
+
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    entity.setBpmnProcessId(demoProcessId);
+
+    // when
+    IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);
+    Mockito.when(authentication.getAuthorizations()).thenReturn(List.of(
+        new IdentityAuthorization().setResourceKey(demoProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ, DELETE, UPDATE)))));
+    SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+    Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+    SecurityContextHolder.setContext(securityContext);
+
+    final ListViewProcessInstanceDto listViewProcessInstanceDto = ListViewProcessInstanceDto.createFrom(entity, List.of(), List.of(), permissionsService);
+
+    // then
+    assertThat(listViewProcessInstanceDto.getPermissions()).hasSize(3);
+    assertThat(listViewProcessInstanceDto.getPermissions()).containsExactlyInAnyOrder(READ, DELETE, UPDATE);
+  }
+
+  @Test
+  public void testProcessInstancesWithWildcardPermission() {
+
+    // given
+    final String demoProcessId = "demoProcess";
+
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    entity.setBpmnProcessId(demoProcessId);
+
+    // when
+    IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);
+    Mockito.when(authentication.getAuthorizations()).thenReturn(List.of(
+        new IdentityAuthorization().setResourceKey(demoProcessId).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(UPDATE))),
+        new IdentityAuthorization().setResourceKey(PermissionsService.RESOURCE_KEY_ALL).setResourceType(PermissionsService.RESOURCE_TYPE_PROCESS_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+    Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+    SecurityContextHolder.setContext(securityContext);
+
+    final ListViewProcessInstanceDto listViewProcessInstanceDto = ListViewProcessInstanceDto.createFrom(entity, List.of(), List.of(), permissionsService);
+
+    // then
+    assertThat(listViewProcessInstanceDto.getPermissions()).hasSize(2);
+    assertThat(listViewProcessInstanceDto.getPermissions()).containsExactlyInAnyOrder(READ, UPDATE);
   }
 }

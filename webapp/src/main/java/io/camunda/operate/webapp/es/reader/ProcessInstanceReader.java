@@ -33,6 +33,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -82,6 +83,9 @@ public class ProcessInstanceReader extends AbstractReader {
    @Autowired
   private OperationReader operationReader;
 
+  @Autowired(required = false)
+  protected PermissionsService permissionsService;
+
   /**
    * Searches for process instance by key.
    * @param processInstanceKey
@@ -96,7 +100,8 @@ public class ProcessInstanceReader extends AbstractReader {
 
       return ListViewProcessInstanceDto.createFrom(processInstance,
             operationReader.getOperationsByProcessInstanceKey(processInstanceKey),
-            callHierarchy
+            callHierarchy,
+            permissionsService
       );
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining process instance with operations: %s", e.getMessage());

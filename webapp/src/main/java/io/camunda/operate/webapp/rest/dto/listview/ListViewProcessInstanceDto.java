@@ -14,13 +14,16 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.zeebeimport.util.TreePath;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ListViewProcessInstanceDto {
@@ -53,6 +56,8 @@ public class ListViewProcessInstanceDto {
    * for previous or following page.
    */
   private String[] sortValues;
+
+  private Set<String> permissions;
 
   public String getId() {
     return id;
@@ -181,13 +186,26 @@ public class ListViewProcessInstanceDto {
     return this;
   }
 
-  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations) {
-    return createFrom(processInstanceEntity, operations, null);
+  public Set<String> getPermissions() {
+    return permissions;
+  }
+
+  public void setPermissions(Set<String> permissions) {
+    this.permissions = permissions;
   }
 
   public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
-    List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy) {
+      List<OperationEntity> operations) {
+    return createFrom(processInstanceEntity, operations, null, null);
+  }
+
+  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
+      List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy) {
+    return createFrom(processInstanceEntity, operations, callHierarchy, null);
+  }
+
+  public static ListViewProcessInstanceDto createFrom(ProcessInstanceForListViewEntity processInstanceEntity,
+    List<OperationEntity> operations, List<ProcessInstanceReferenceDto> callHierarchy, PermissionsService permissionsService) {
     if (processInstanceEntity == null) {
       return null;
     }
@@ -233,6 +251,8 @@ public class ListViewProcessInstanceDto {
       }
     }
     processInstance.setCallHierarchy(callHierarchy);
+    processInstance.setPermissions(permissionsService == null ? new HashSet<>() :
+        permissionsService.getProcessDefinitionPermission(processInstanceEntity.getBpmnProcessId()));
     return processInstance;
   }
 
@@ -270,14 +290,15 @@ public class ListViewProcessInstanceDto {
         Objects.equals(parentInstanceId, that.parentInstanceId) &&
         Objects.equals(rootInstanceId, that.rootInstanceId) &&
         Objects.equals(callHierarchy, that.callHierarchy) &&
-        Arrays.equals(sortValues, that.sortValues);
+        Arrays.equals(sortValues, that.sortValues) &&
+        Objects.equals(permissions, that.permissions);
   }
 
   @Override
   public int hashCode() {
     int result = Objects
         .hash(id, processId, processName, processVersion, startDate, endDate, state, bpmnProcessId,
-            hasActiveOperation, operations, parentInstanceId, rootInstanceId, callHierarchy);
+            hasActiveOperation, operations, parentInstanceId, rootInstanceId, callHierarchy, permissions);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
