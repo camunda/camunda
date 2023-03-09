@@ -75,15 +75,15 @@ public class ExecutableEndEvent extends ExecutableFlowNode implements Executable
     return jobWorkerProperties != null;
   }
 
+  public boolean isSignalEndEvent() {
+    return signal != null;
+  }
+
   public boolean isTerminateEndEvent() {
     return isTerminateEndEvent;
   }
 
   public void setTerminateEndEvent(final boolean isTerminateEndEvent) {
     this.isTerminateEndEvent = isTerminateEndEvent;
-  }
-
-  public boolean isSignalEndEvent() {
-    return signal != null;
   }
 }
