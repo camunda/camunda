@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -58,5 +61,22 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> closeAsync() {
     throw new UnsupportedOperationException();
+  }
+
+  public static Storage buildClient(GcsBackupConfig config) {
+    return StorageOptions.newBuilder()
+        .setHost(config.connection().host())
+        .setCredentials(config.connection().auth().credentials())
+        .build()
+        .getService();
+  }
+
+  public static void validateConfig(GcsBackupConfig config) throws Exception {
+    try (final var storage = buildClient(config)) {
+      final var bucket = storage.get(config.bucketName());
+      if (bucket == null) {
+        throw new BucketDoesNotExistException(config.bucketName());
+      }
+    }
   }
 }
