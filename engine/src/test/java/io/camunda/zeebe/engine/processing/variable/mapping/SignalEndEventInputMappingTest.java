@@ -17,6 +17,7 @@ import io.camunda.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
@@ -172,8 +173,7 @@ public final class SignalEndEventInputMappingTest {
         .hasSize(expectedActivityVariables.size())
         .containsAll(expectedActivityVariables);
 
-    final var signalRecord =
-        RecordingExporter.signalRecords().withSignalName(SIGNAL_NAME_1).getFirst();
+    final var signalRecord = RecordingExporter.signalRecords(SignalIntent.BROADCASTED).getFirst();
     Assertions.assertThat(signalRecord.getValue()).hasSignalName(SIGNAL_NAME_1);
   }
 

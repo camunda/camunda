@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -74,8 +75,7 @@ public class SignalEndEventTest {
         .hasElementId("end")
         .hasFlowScopeKey(processInstance.getKey());
 
-    final var signalRecord =
-        RecordingExporter.signalRecords().withSignalName(SIGNAL_NAME_1).getFirst();
+    final var signalRecord = RecordingExporter.signalRecords(SignalIntent.BROADCASTED).getFirst();
     Assertions.assertThat(signalRecord.getValue()).hasSignalName(SIGNAL_NAME_1);
   }
 
@@ -117,9 +117,10 @@ public class SignalEndEventTest {
         .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
         .contains(tuple("y", "1"));
 
-    final var signalRecord =
-        RecordingExporter.signalRecords().withSignalName(SIGNAL_NAME_1).getFirst();
-    Assertions.assertThat(signalRecord.getValue()).hasSignalName(SIGNAL_NAME_1);
+    final var signalRecord = RecordingExporter.signalRecords(SignalIntent.BROADCASTED).getFirst();
+    Assertions.assertThat(signalRecord.getValue())
+        .hasSignalName(SIGNAL_NAME_1)
+        .hasVariables(Map.of("y", 1));
   }
 
   @Test
@@ -162,8 +163,7 @@ public class SignalEndEventTest {
         .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
         .contains(tuple("y", "1"));
 
-    final var signalRecord =
-        RecordingExporter.signalRecords().withSignalName(SIGNAL_NAME_1).getFirst();
+    final var signalRecord = RecordingExporter.signalRecords(SignalIntent.BROADCASTED).getFirst();
     Assertions.assertThat(signalRecord.getValue()).hasSignalName(SIGNAL_NAME_1);
   }
 }
