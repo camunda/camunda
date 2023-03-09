@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 final class StreamPusher<P extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(StreamPusher.class);
+  private final JobStreamMetrics metrics = new JobStreamMetrics();
 
   private final StreamId streamId;
   private final Transport transport;
@@ -58,6 +59,7 @@ final class StreamPusher<P extends BufferWriter> {
             streamId.streamId());
       }
     } catch (final Exception e) {
+      metrics.jobPushFailed();
       LOG.debug(
           "Failed to push {} to receiver {} of stream {}",
           payload,
@@ -70,6 +72,7 @@ final class StreamPusher<P extends BufferWriter> {
 
   private void onPush(final P payload, final ErrorHandler<P> errorHandler, final Throwable error) {
     if (error != null) {
+      metrics.jobPushFailed();
       LOG.debug(
           "Failed to push {} to receiver {} of stream {}",
           payload,
@@ -77,6 +80,8 @@ final class StreamPusher<P extends BufferWriter> {
           streamId.streamId(),
           error);
       errorHandler.handleError(error, payload);
+    } else {
+      metrics.jobPushed();
     }
   }
 
