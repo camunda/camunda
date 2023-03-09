@@ -11,7 +11,7 @@ import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.util.Objects;
 
-public class GCSBackupStoreConfig implements ConfigurationEntry {
+public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
   private String basePath;
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
@@ -40,7 +40,7 @@ public class GCSBackupStoreConfig implements ConfigurationEntry {
     this.auth = auth;
   }
 
-  public static GcsBackupConfig toStoreConfig(GCSBackupStoreConfig config) {
+  public static GcsBackupConfig toStoreConfig(GcsBackupStoreConfig config) {
     final var storeConfig =
         new GcsBackupConfig.Builder()
             .withBucketName(config.getBucketName())
@@ -61,7 +61,7 @@ public class GCSBackupStoreConfig implements ConfigurationEntry {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final GCSBackupStoreConfig that = (GCSBackupStoreConfig) o;
+    final GcsBackupStoreConfig that = (GcsBackupStoreConfig) o;
     return Objects.equals(bucketName, that.bucketName)
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(auth, that.auth);

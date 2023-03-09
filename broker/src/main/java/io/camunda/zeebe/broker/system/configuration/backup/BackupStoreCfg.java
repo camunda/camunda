@@ -14,7 +14,7 @@ public class BackupStoreCfg implements ConfigurationEntry {
   private BackupStoreType store = BackupStoreType.NONE;
 
   private S3BackupStoreConfig s3 = new S3BackupStoreConfig();
-  private GCSBackupStoreConfig gcs = new GCSBackupStoreConfig();
+  private GcsBackupStoreConfig gcs = new GcsBackupStoreConfig();
 
   public S3BackupStoreConfig getS3() {
     return s3;
@@ -24,11 +24,11 @@ public class BackupStoreCfg implements ConfigurationEntry {
     this.s3 = s3;
   }
 
-  public GCSBackupStoreConfig getGcs() {
+  public GcsBackupStoreConfig getGcs() {
     return gcs;
   }
 
-  public void setGcs(final GCSBackupStoreConfig gcs) {
+  public void setGcs(final GcsBackupStoreConfig gcs) {
     this.gcs = gcs;
   }
 

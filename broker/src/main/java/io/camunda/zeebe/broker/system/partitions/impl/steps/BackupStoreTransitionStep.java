@@ -12,7 +12,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.GCSBackupStoreConfig;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
@@ -93,7 +93,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final ActorFuture<Void> installed) {
     try {
       final var brokerGcsConfig = backupCfg.getGcs();
-      final var storeGcsConfig = GCSBackupStoreConfig.toStoreConfig(brokerGcsConfig);
+      final var storeGcsConfig = GcsBackupStoreConfig.toStoreConfig(brokerGcsConfig);
       final var gcsStore = new GcsBackupStore(storeGcsConfig);
       context.setBackupStore(gcsStore);
       installed.complete(null);
