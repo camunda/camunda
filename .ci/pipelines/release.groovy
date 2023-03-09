@@ -3,8 +3,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
-// We can't use maven-alpine because 'frontend-maven-plugin' is incompatible
-// Issue: https://github.com/eirslett/frontend-maven-plugin/issues/633
+
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.9.0-eclipse-temurin-17-focal" }
 
 String getGitCommitMsg() {
@@ -25,7 +24,6 @@ void runRelease(params) {
   }
   configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
     sh("""
-
     mvn release:prepare release:perform -P -docker -DpushChanges=${pushChanges} -DlocalCheckout=true -DskipTests=true -B -T\$LIMITS_CPU --fail-at-end \
       -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --settings=\$MAVEN_SETTINGS_XML \
       -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
@@ -149,13 +147,14 @@ pipeline {
             poll: false
 
         container('maven') {
-          sh ('''
+          sh ("""
             # git is required for maven release
-            apt-get update && apt-get install -y git
-
+            apt-get update apt-get install -y git
+            echo 'Add safe.directory git param'
+            git config --global --add safe.directory "\$PWD"
             git config --global user.email "ci@tasklist.camunda.cloud"
             git config --global user.name "github-tasklist-app"
-          ''')
+          """)
         }
       }
     }
