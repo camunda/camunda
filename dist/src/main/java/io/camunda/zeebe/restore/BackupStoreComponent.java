@@ -8,11 +8,11 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupConfig.Builder;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.GCSBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -49,16 +49,7 @@ final class BackupStoreComponent {
   }
 
   private static GcsBackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var gcsConfig = backupStoreCfg.getGcs();
-    final var builder =
-        new Builder()
-            .withBucketName(gcsConfig.getBucketName())
-            .withBasePath(gcsConfig.getBasePath());
-    final var authenticated =
-        switch (gcsConfig.getAuth()) {
-          case NONE -> builder.withoutAuthentication();
-          case AUTO -> builder.withAutoAuthentication();
-        };
-    return new GcsBackupStore(authenticated.build());
+    final var storeConfig = GCSBackupStoreConfig.toStoreConfig(backupStoreCfg.getGcs());
+    return new GcsBackupStore(storeConfig);
   }
 }

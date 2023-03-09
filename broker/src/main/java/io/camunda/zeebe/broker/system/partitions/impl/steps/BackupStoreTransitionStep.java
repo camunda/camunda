@@ -9,10 +9,10 @@ package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.GCSBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
@@ -92,17 +92,9 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
-      final var gcsConfig = backupCfg.getGcs();
-      final var storeConfig =
-          new GcsBackupConfig.Builder()
-              .withBucketName(gcsConfig.getBucketName())
-              .withBasePath(gcsConfig.getBasePath());
-      final var authenticated =
-          switch (gcsConfig.getAuth()) {
-            case NONE -> storeConfig.withoutAuthentication();
-            case AUTO -> storeConfig.withAutoAuthentication();
-          };
-      final var gcsStore = new GcsBackupStore(authenticated.build());
+      final var brokerGcsConfig = backupCfg.getGcs();
+      final var storeGcsConfig = GCSBackupStoreConfig.toStoreConfig(brokerGcsConfig);
+      final var gcsStore = new GcsBackupStore(storeGcsConfig);
       context.setBackupStore(gcsStore);
       installed.complete(null);
     } catch (final Exception error) {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backup;
 
+import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.util.Objects;
 
@@ -37,6 +38,19 @@ public class GCSBackupStoreConfig implements ConfigurationEntry {
 
   public void setAuth(final GcsBackupStoreAuth auth) {
     this.auth = auth;
+  }
+
+  public static GcsBackupConfig toStoreConfig(GCSBackupStoreConfig config) {
+    final var storeConfig =
+        new GcsBackupConfig.Builder()
+            .withBucketName(config.getBucketName())
+            .withBasePath(config.getBasePath());
+    final var authenticated =
+        switch (config.getAuth()) {
+          case NONE -> storeConfig.withoutAuthentication();
+          case AUTO -> storeConfig.withAutoAuthentication();
+        };
+    return authenticated.build();
   }
 
   @Override
