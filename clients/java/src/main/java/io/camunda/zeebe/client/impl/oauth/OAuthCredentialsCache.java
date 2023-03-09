@@ -22,6 +22,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.util.FunctionWithIO;
+import io.camunda.zeebe.client.impl.util.SupplierWithIO;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -74,6 +76,41 @@ public final class OAuthCredentialsCache {
 
   public synchronized Optional<ZeebeClientCredentials> get(final String endpoint) {
     return Optional.ofNullable(audiences.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
+  }
+
+  public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
+      final String endpoint,
+      final SupplierWithIO<ZeebeClientCredentials> zeebeClientCredentialsConsumer)
+      throws IOException {
+    final Optional<ZeebeClientCredentials> optionalCredentials =
+        readCache()
+            .get(endpoint)
+            .flatMap(
+                zeebeClientCredentials -> {
+                  if (!zeebeClientCredentials.isValid()) {
+                    return Optional.empty();
+                  } else {
+                    return Optional.of(zeebeClientCredentials);
+                  }
+                });
+    if (optionalCredentials.isPresent()) {
+      return optionalCredentials.get();
+    } else {
+      final ZeebeClientCredentials credentials = zeebeClientCredentialsConsumer.get();
+      put(endpoint, credentials).writeCache();
+      return credentials;
+    }
+  }
+
+  public synchronized <T> Optional<T> withCache(
+      final String endpoint, final FunctionWithIO<ZeebeClientCredentials, T> function)
+      throws IOException {
+    final Optional<ZeebeClientCredentials> optionalCredentials = readCache().get(endpoint);
+    if (optionalCredentials.isPresent()) {
+      return Optional.ofNullable(function.apply(optionalCredentials.get()));
+    } else {
+      return Optional.empty();
+    }
   }
 
   public synchronized OAuthCredentialsCache put(

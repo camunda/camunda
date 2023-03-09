@@ -234,13 +234,22 @@ public final class OAuthCredentialsCacheTest {
     final List<Callable<Object>> cacheOperations = new ArrayList<>();
 
     for (int i = 0; i < 5; i++) {
-      cacheOperations.add(() -> cache.readCache().get(WOMBAT_ENDPOINT));
       cacheOperations.add(
-          () -> {
-            final OAuthCredentialsCache credentialsCache = cache.put(WOMBAT_ENDPOINT, WOMBAT);
-            credentialsCache.writeCache();
-            return credentialsCache;
-          });
+          () ->
+              cache.computeIfMissingOrInvalid(
+                  WOMBAT_ENDPOINT,
+                  () -> {
+                    cache.put(WOMBAT_ENDPOINT, WOMBAT).writeCache();
+                    return WOMBAT;
+                  }));
+      cacheOperations.add(
+          () ->
+              cache.withCache(
+                  WOMBAT_ENDPOINT,
+                  value -> {
+                    cache.put(WOMBAT_ENDPOINT, WOMBAT).writeCache();
+                    return WOMBAT;
+                  }));
     }
 
     final ExecutorService pool = Executors.newFixedThreadPool(threads);
