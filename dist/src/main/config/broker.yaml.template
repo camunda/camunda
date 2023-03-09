@@ -279,6 +279,13 @@
           # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_BASEPATH
           # basePath:
 
+          # Configures which authentication method is used for connecting to GCS. Can be either 'default' or 'none'.
+          # Choosing 'auto' means that the GCS client uses application default credentials which automatically
+          # discovers appropriate credentials from the runtime environment: https://cloud.google.com/docs/authentication/application-default-credentials
+          # Choosing 'none' means that no authentication is attempted which is only applicable for testing with emulated GCS.
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_BACKUP_GCS_AUTH.
+          # auth: auto
+
     # cluster:
       # This section contains all cluster related configurations, to setup a zeebe cluster
 

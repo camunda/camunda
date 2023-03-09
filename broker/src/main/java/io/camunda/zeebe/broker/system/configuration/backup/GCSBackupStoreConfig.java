@@ -13,6 +13,7 @@ import java.util.Objects;
 public class GCSBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
   private String basePath;
+  private GcsBackupStoreAuth auth;
 
   public String getBucketName() {
     return bucketName;
@@ -30,6 +31,14 @@ public class GCSBackupStoreConfig implements ConfigurationEntry {
     this.basePath = basePath;
   }
 
+  public GcsBackupStoreAuth getAuth() {
+    return auth;
+  }
+
+  public void setAuth(final GcsBackupStoreAuth auth) {
+    this.auth = auth;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -39,12 +48,14 @@ public class GCSBackupStoreConfig implements ConfigurationEntry {
       return false;
     }
     final GCSBackupStoreConfig that = (GCSBackupStoreConfig) o;
-    return Objects.equals(bucketName, that.bucketName) && Objects.equals(basePath, that.basePath);
+    return Objects.equals(bucketName, that.bucketName)
+        && Objects.equals(basePath, that.basePath)
+        && Objects.equals(auth, that.auth);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bucketName, basePath);
+    return Objects.hash(bucketName, basePath, auth);
   }
 
   @Override
@@ -56,6 +67,14 @@ public class GCSBackupStoreConfig implements ConfigurationEntry {
         + ", basePath='"
         + basePath
         + '\''
+        + ", auth='"
+        + auth
+        + '\''
         + '}';
+  }
+
+  public enum GcsBackupStoreAuth {
+    NONE,
+    AUTO
   }
 }
