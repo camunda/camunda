@@ -752,12 +752,15 @@
       "durationSLI": "Prozessdauer SLI-Tracking"
     },
     "addButton": {
-      "addReport": "Einen Report hinzufügen",
+      "addTile": "Einen Kachel hinzufügen",
       "optimizeReport": "Optimize Report",
       "addReportLabel": "Report hinzufügen",
+      "addTileLabel": "Kachel hinzufügen",
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
-      "newReport": "Neuer Bericht aus einer Vorlage"
+      "externalWebsite": "Externe Webseite",
+      "newReport": "Neuer Bericht aus einer Vorlage",
+      "text": "Text"
     },
     "textReportEditNotification": "Dies ist eine Funktion, die wir zu bauen planen",
     "noAuthorization": "Fehlende Berechtigung",

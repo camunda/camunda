@@ -45,11 +45,11 @@ function ReportModal({close, confirm, location}) {
 
   const getReportConfig = (tabOpen, externalUrl, text, selectedReportId) => {
     if (tabOpen === 'external') {
-      return {id: '', configuration: {external: externalUrl}};
+      return {id: '', configuration: {external: externalUrl}, type: 'external_url'};
     } else if (tabOpen === 'text') {
-      return {id: '', configuration: {text}};
+      return {id: '', configuration: {text}, type: 'text'};
     }
-    return {id: selectedReportId};
+    return {id: selectedReportId, type: 'optimize_report'};
   };
 
   const isExternalUrlValid = (url) => {
@@ -81,7 +81,7 @@ function ReportModal({close, confirm, location}) {
       onClose={close}
       onConfirm={!isInvalid ? addReport : undefined}
     >
-      <Modal.Header>{t('dashboard.addButton.addReport')}</Modal.Header>
+      <Modal.Header>{t('dashboard.addButton.addTile')}</Modal.Header>
       <Modal.Content>
         <Form>
           <Tabs value={tabOpen} onChange={setTabOpen}>
@@ -114,9 +114,9 @@ function ReportModal({close, confirm, location}) {
                 {loading && <LoadingIndicator />}
               </Form.Group>
             </Tabs.Tab>
-            <Tabs.Tab value="external" title={t('report.externalUrl')}>
+            <Tabs.Tab value="external" title={t('dashboard.addButton.externalWebsite')}>
               <Form.Group>
-                <Labeled label={t('report.externalUrl')}>
+                <Labeled label={t('dashboard.addButton.externalWebsite')}>
                   <Input
                     name="externalInput"
                     className="externalInput"
@@ -127,9 +127,9 @@ function ReportModal({close, confirm, location}) {
                 </Labeled>
               </Form.Group>
             </Tabs.Tab>
-            <Tabs.Tab value="text" title={t('report.textReport')}>
+            <Tabs.Tab value="text" title={t('dashboard.addButton.text')}>
               <Form.Group className="Labeled">
-                <span className="label before">{t('report.textReport')}</span>
+                <span className="label before">{t('dashboard.addButton.text')}</span>
                 <TextEditor initialValue={initialTextReportValue} onChange={setText} />
                 <TextEditor.CharCount editorState={text} />
               </Form.Group>
@@ -142,7 +142,7 @@ function ReportModal({close, confirm, location}) {
           {t('common.cancel')}
         </Button>
         <Button main primary onClick={addReport} disabled={isInvalid}>
-          {t('dashboard.addButton.addReportLabel')}
+          {t('dashboard.addButton.addTileLabel')}
         </Button>
       </Modal.Actions>
     </Modal>

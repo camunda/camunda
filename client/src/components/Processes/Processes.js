@@ -87,7 +87,7 @@ export function Processes({mightFail, user}) {
       </h1>
       {dashboard && (
         <DashboardView
-          reports={dashboard.reports}
+          tiles={dashboard.tiles}
           availableFilters={dashboard.availableFilters}
           customizeReportLink={(id) => `/processes/report/${id}/`}
           simplifiedDateFilter

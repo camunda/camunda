@@ -249,7 +249,7 @@ test('external datasources', async (t) => {
   await t.click(e.externalSourceLink);
   await t.typeText(e.externalSourceInput, 'http://example.com/');
 
-  await t.click(e.addReportButton);
+  await t.click(e.addTileButton);
 
   const checkIframeLoaded = ClientFunction(() => {
     return new Promise((resolve) => {
@@ -410,7 +410,7 @@ test('add a report from the dashboard', async (t) => {
     .click(e.addButton)
     .click(e.reportModalOptionsButton)
     .click(e.reportModalDropdownOption.withText('New Report from a template'))
-    .click(e.addReportButton)
+    .click(e.addTileButton)
     .click(e.templateModalProcessField)
     .click(e.option('Invoice Receipt with alternative correlation variable'))
     .click(e.blankReportButton)
@@ -421,7 +421,7 @@ test('add a report from the dashboard', async (t) => {
     .click(e.addButton)
     .click(e.reportModalOptionsButton)
     .click(e.reportModalDropdownOption.withText('New Report from a template'))
-    .click(e.addReportButton);
+    .click(e.addTileButton);
 
   await t
     .expect(

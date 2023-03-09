@@ -23,7 +23,7 @@ export default function DashboardRenderer({
   disableReportInteractions,
   disableNameLink,
   customizeReportLink,
-  reports,
+  tiles,
   filter = [],
   loadReport,
   addons,
@@ -38,7 +38,7 @@ export default function DashboardRenderer({
     // in edit mode, we add the background grid
     const lowerEdge = Math.max(
       0,
-      ...reports.map(({position, dimensions}) => position.y + dimensions.height)
+      ...tiles.map(({position, dimensions}) => position.y + dimensions.height)
     );
 
     style.backgroundImage = constructBackgroundGrid();
@@ -66,16 +66,16 @@ export default function DashboardRenderer({
       onDragStart={() => setIsDragging(true)}
       onResizeStart={() => setIsDragging(true)}
     >
-      {reports.map((report, idx) => {
+      {tiles.map((tile, idx) => {
         return (
           <div
             className="grid-entry"
-            key={getReportKey(report, idx)}
+            key={getReportKey(tile, idx)}
             data-grid={{
-              x: report.position.x,
-              y: report.position.y,
-              w: report.dimensions.width,
-              h: report.dimensions.height,
+              x: tile.position.x,
+              y: tile.position.y,
+              w: tile.dimensions.width,
+              h: tile.dimensions.height,
               minW: 2,
               minH: 2,
             }}
@@ -84,7 +84,7 @@ export default function DashboardRenderer({
               disableNameLink={disableReportInteractions || disableNameLink}
               customizeReportLink={customizeReportLink}
               loadReport={loadReport}
-              report={report}
+              report={tile}
               filter={filter.map((filter) => ({...filter, appliedTo: ['all']}))}
               addons={addons}
               onReportUpdate={onReportUpdate}
@@ -117,13 +117,13 @@ function constructBackgroundGrid() {
   );
 }
 
-function getReportKey(report, idx) {
+function getReportKey(tile, idx) {
   return (
     idx +
     '_' +
-    (report.id ||
-      report.report?.name ||
-      report.configuration?.external ||
-      JSON.stringify(report.configuration?.text || '').substring(20))
+    (tile.id ||
+      tile.report?.name ||
+      tile.configuration?.external ||
+      JSON.stringify(tile.configuration?.text || '').substring(20))
   );
 }

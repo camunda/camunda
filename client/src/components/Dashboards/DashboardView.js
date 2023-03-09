@@ -46,7 +46,7 @@ export function DashboardView(props) {
     currentUserRole,
     isAuthorizedToShare,
     sharingEnabled,
-    reports,
+    tiles,
     availableFilters,
     theme,
     toggleTheme,
@@ -184,7 +184,7 @@ export function DashboardView(props) {
               )}
               {!fullScreenHandle.active &&
                 (optimizeProfile === 'cloud' || optimizeProfile === 'platform') && (
-                  <AlertsDropdown dashboardReports={reports} />
+                  <AlertsDropdown dashboardReports={tiles} />
                 )}
               <Button
                 main
@@ -208,7 +208,7 @@ export function DashboardView(props) {
         </div>
         {filtersShown && (
           <FiltersView
-            reports={reports}
+            reports={tiles}
             availableFilters={availableFilters}
             filter={filter}
             setFilter={setFilter}
@@ -224,7 +224,7 @@ export function DashboardView(props) {
         <div className="content">
           <DashboardRenderer
             loadReport={evaluateReport}
-            reports={reports}
+            tiles={tiles}
             filter={filter}
             disableNameLink={disableNameLink}
             customizeReportLink={customizeReportLink}

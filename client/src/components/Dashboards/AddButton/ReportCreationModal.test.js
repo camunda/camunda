@@ -52,7 +52,7 @@ it('should create the report when confirming the template modal and invoke onCon
     },
     'dashboard'
   );
-  expect(spy).toHaveBeenCalledWith({id: '123'});
+  expect(spy).toHaveBeenCalledWith({id: '123', type: 'optimize_report'});
 });
 
 it('should invoke onClose when closing the template modal', () => {

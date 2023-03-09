@@ -752,12 +752,15 @@
       "durationSLI": "Process Duration SLI Tracking"
     },
     "addButton": {
-      "addReport": "Add a Report",
+      "addTile": "Add a Tile",
       "optimizeReport": "Optimize Report",
       "addReportLabel": "Add Report",
+      "addTileLabel": "Add Tile",
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",
-      "newReport": "New Report from a template"
+      "externalWebsite": "External Website",
+      "newReport": "New Report from a template",
+      "text": "Text"
     },
     "textReportEditNotification": "This is a feature we plan to build",
     "noAuthorization": "Missing authorization",

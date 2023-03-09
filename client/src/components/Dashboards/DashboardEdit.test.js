@@ -53,9 +53,9 @@ it('should pass the isNew prop to the EntityNameForm', () => {
 });
 
 it('should notify the saveGuard of changes', () => {
-  const node = shallow(<DashboardEdit initialReports={[]} />);
+  const node = shallow(<DashboardEdit initialTiles={[]} />);
 
-  node.setState({reports: ['someReport']});
+  node.setState({tiles: ['someReport']});
 
   expect(nowDirty).toHaveBeenCalled();
 });
@@ -63,7 +63,7 @@ it('should notify the saveGuard of changes', () => {
 it('should react to layout changes', () => {
   const node = shallow(
     <DashboardEdit
-      initialReports={[
+      initialTiles={[
         {
           id: '1',
           position: {x: 0, y: 0},
@@ -83,7 +83,7 @@ it('should react to layout changes', () => {
     {x: 3, y: 2, h: 4, w: 3},
   ]);
 
-  expect(node.state('reports')).toMatchSnapshot();
+  expect(node.state('tiles')).toMatchSnapshot();
 });
 
 it('should show FiltersEdit section if there are filters defined', () => {
@@ -103,7 +103,7 @@ it('should save the dashboard when going to the report edit mode', async () => {
 
   const node = shallow(
     <DashboardEdit
-      initialReports={[report]}
+      initialTiles={[report]}
       saveChanges={saveSpy}
       history={{push: historySpy}}
       location={{pathname: 'dashboard/1/edit'}}
@@ -114,9 +114,9 @@ it('should save the dashboard when going to the report edit mode', async () => {
 
   await flushPromises();
 
-  // Parent component takes care of saving the reports and assigning ids
+  // Parent component takes care of saving the tiles and assigning ids
   node.setProps({
-    initialReports: [
+    initialTiles: [
       {
         position: {x: 0, y: 0},
         dimensions: {height: 2, width: 2},
@@ -141,7 +141,7 @@ it('should not prompt to save the dashboard when going to the edit mode when the
 
   const node = shallow(
     <DashboardEdit
-      initialReports={[report]}
+      initialTiles={[report]}
       history={{push: historySpy}}
       location={{pathname: 'dashboard/1/edit'}}
     />
@@ -160,7 +160,7 @@ it('should save basic dashboard info', async () => {
   const stayInEditMode = false;
   const dashboardName = 'dashboardName';
 
-  const node = shallow(<DashboardEdit initialReports={[]} saveChanges={saveSpy} />);
+  const node = shallow(<DashboardEdit initialTiles={[]} saveChanges={saveSpy} />);
 
   node.find(AutoRefreshSelect).simulate('change', intervalSeconds * 1000);
   node.find(EntityNameForm).simulate('change', {target: {value: dashboardName}});
@@ -177,7 +177,7 @@ it('should update report', () => {
     id: '',
     configuration: {text: 'text'},
   };
-  const node = shallow(<DashboardEdit initialReports={[report]} />);
+  const node = shallow(<DashboardEdit initialTiles={[report]} />);
 
   const newReport = {
     ...report,
@@ -185,5 +185,5 @@ it('should update report', () => {
   };
   node.find('DashboardRenderer').prop('onReportUpdate')(newReport);
 
-  expect(node.state('reports')[0]).toEqual(newReport);
+  expect(node.state('tiles')[0]).toEqual(newReport);
 });

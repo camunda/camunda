@@ -11,7 +11,7 @@ import {shallow} from 'enzyme';
 
 import DashboardRenderer from './DashboardRenderer';
 
-const reports = [
+const tiles = [
   {
     position: {x: 0, y: 0},
     dimensions: {width: 3, height: 1},
@@ -30,7 +30,7 @@ const reports = [
 ];
 
 it('should render a Dashboard Report for every Report in the props', () => {
-  const node = shallow(<DashboardRenderer reports={reports} />);
+  const node = shallow(<DashboardRenderer tiles={tiles} />);
 
   expect(node).toMatchSnapshot();
 });

@@ -91,6 +91,7 @@ it('should call the callback when adding a report', async () => {
 
   expect(spy).toHaveBeenCalledWith({
     id: 'a',
+    type: 'optimize_report',
   });
 });
 
@@ -100,10 +101,10 @@ it('should show a loading message while loading available reports', () => {
   expect(node.find('LoadingIndicator')).toExist();
 });
 
-it('should contain an External URL field', () => {
+it('should contain an External Website field', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External URL');
+  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('External Website');
 });
 
 it('should hide the typeahead when external mode is enabled', () => {
@@ -133,10 +134,10 @@ it('should  disable the submit button if the url does not start with http in ext
   expect(node.find('[primary]')).toBeDisabled();
 });
 
-it('should contain an Text Report field', () => {
+it('should contain an Text field', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  expect(node.find(Tabs.Tab).at(2).prop('title')).toBe('Text Report');
+  expect(node.find(Tabs.Tab).at(2).prop('title')).toBe('Text');
 });
 
 it('should contain text editor if in text report mode', () => {

@@ -41,7 +41,7 @@ export function ReportCreationModal({onClose, existingReport, mightFail, onConfi
     mightFail(
       createEntity('report/process/single', {...report, collectionId}, 'dashboard'),
       (id) => {
-        onConfirm({id});
+        onConfirm({id, type: 'optimize_report'});
         addNotification({
           type: 'success',
           text: t('common.collection.created', {name: report.name}),

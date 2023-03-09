@@ -124,7 +124,7 @@ it('should create a new dashboard when saving a new one', async () => {
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: null,
     name: 'testname',
-    reports: [{id: 'reportID'}],
+    tiles: [{id: 'reportID'}],
     availableFilters: [{type: 'state'}],
   });
 });
@@ -143,7 +143,7 @@ it('should create a new dashboard in a collection', async () => {
   expect(createEntity).toHaveBeenCalledWith('dashboard', {
     collectionId: '123',
     name: 'testname',
-    reports: [],
+    tiles: [],
     availableFilters: [],
   });
 });
@@ -163,7 +163,7 @@ it('should redirect to the Overview page on dashboard deletion', async () => {
   expect(node.find('Redirect')).toExist();
 });
 
-it('should initialize reports based on location state', async () => {
+it('should initialize tiles based on location state', async () => {
   const node = shallow(
     <Dashboard
       {...props}
@@ -176,14 +176,14 @@ it('should initialize reports based on location state', async () => {
 
   await flushPromises();
 
-  const reports = node.find(DashboardView).prop('reports');
+  const tiles = node.find(DashboardView).prop('tiles');
 
-  expect(reports.length).toBe(1);
-  expect(reports[0].report.name).toBe('A Report Name');
-  expect(reports[0].report.data.view.entity).toBe('processInstance');
+  expect(tiles.length).toBe(1);
+  expect(tiles[0].report.name).toBe('A Report Name');
+  expect(tiles[0].report.data.view.entity).toBe('processInstance');
 });
 
-it('should save unsaved reports when saving dashboard', async () => {
+it('should save unsaved tiles when saving dashboard', async () => {
   const node = shallow(
     <Dashboard
       {...props}
@@ -198,13 +198,13 @@ it('should save unsaved reports when saving dashboard', async () => {
 
   node.find(DashboardEdit).prop('saveChanges')(
     'new Dashboard Name',
-    node.find(DashboardEdit).prop('initialReports'),
+    node.find(DashboardEdit).prop('initialTiles'),
     []
   );
 
   const firstSave = createEntity.mock.calls[0];
   expect(firstSave[0]).toBe('report/process/single');
-  expect(firstSave[1].data).toEqual(node.find(DashboardEdit).prop('initialReports')[0].report.data);
+  expect(firstSave[1].data).toEqual(node.find(DashboardEdit).prop('initialTiles')[0].report.data);
 });
 
 it('should display DashboardView component when displaying instant dashboard', () => {

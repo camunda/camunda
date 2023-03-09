@@ -31,9 +31,9 @@ export class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
-    const {name, initialAvailableFilters, initialReports, refreshRateSeconds} = props;
+    const {name, initialAvailableFilters, initialTiles, refreshRateSeconds} = props;
     this.state = {
-      reports: initialReports,
+      tiles: initialTiles,
       availableFilters: initialAvailableFilters || [],
       refreshRateSeconds,
       filter: getDefaultFilter(initialAvailableFilters),
@@ -104,18 +104,18 @@ export class DashboardEdit extends React.Component {
   };
 
   updateLayout = (layout) => {
-    this.setState(({reports}) => {
-      const newReports = reports.map((oldReport, idx) => {
+    this.setState(({tiles}) => {
+      const newTiles = tiles.map((oldTile, idx) => {
         const newPosition = layout[idx];
 
         return {
-          ...oldReport,
+          ...oldTile,
           position: {x: newPosition.x, y: newPosition.y},
           dimensions: {height: newPosition.h, width: newPosition.w},
         };
       });
 
-      return {reports: newReports};
+      return {tiles: newTiles};
     });
   };
 
@@ -124,7 +124,7 @@ export class DashboardEdit extends React.Component {
   };
 
   addReport = (newReport) => {
-    this.setState({reports: update(this.state.reports, {$push: [newReport]})}, () => {
+    this.setState({tiles: update(this.state.tiles, {$push: [newReport]})}, () => {
       const node = document.querySelector('.react-grid-layout').lastChild;
       const nodePos = node.getBoundingClientRect();
 
@@ -154,33 +154,30 @@ export class DashboardEdit extends React.Component {
   };
 
   updateReport = (report) => {
-    this.setState(({reports}) => {
-      const newReports = reports.map((oldReport) => {
-        if (
-          report.position.x === oldReport.position.x &&
-          report.position.y === oldReport.position.y
-        ) {
+    this.setState(({tiles}) => {
+      const newReports = tiles.map((oldTile) => {
+        if (report.position.x === oldTile.position.x && report.position.y === oldTile.position.y) {
           return report;
         }
-        return oldReport;
+        return oldTile;
       });
 
-      return {reports: newReports};
+      return {tiles: newReports};
     });
   };
 
   deleteReport = ({report: reportToRemove}) => {
     this.setState({
-      reports: this.state.reports.filter((report) => report !== reportToRemove),
+      tiles: this.state.tiles.filter((tile) => tile !== reportToRemove),
     });
   };
 
   componentDidUpdate(prevProps) {
     if (
-      this.state.reports.every(
+      this.state.tiles.every(
         ({id, configuration}) => id || configuration?.external || configuration?.text
       ) &&
-      deepEqual(this.state.reports, this.props.initialReports) &&
+      deepEqual(this.state.tiles, this.props.initialTiles) &&
       deepEqual(this.state.availableFilters, this.props.initialAvailableFilters) &&
       this.state.name === this.props.name
     ) {
@@ -189,10 +186,10 @@ export class DashboardEdit extends React.Component {
       nowDirty(t('dashboard.label'), this.save);
     }
 
-    if (prevProps.initialReports !== this.props.initialReports) {
+    if (prevProps.initialTiles !== this.props.initialTiles) {
       // initial reports might change because of a save without leaving the edit mode
       // This happens for example if the dashboard is saved for the variable filter
-      this.setState({reports: this.props.initialReports}, () => {
+      this.setState({tiles: this.props.initialTiles}, () => {
         this.waitingForDashboardSave.forEach((resolve) => resolve());
         this.waitingForDashboardSave.length = 0;
       });
@@ -203,13 +200,13 @@ export class DashboardEdit extends React.Component {
   save = (stayInEditMode) => {
     return new Promise((resolve) => {
       const promises = [];
-      const {name, reports, availableFilters, filter, refreshRateSeconds} = this.state;
+      const {name, tiles, availableFilters, filter, refreshRateSeconds} = this.state;
 
       nowPristine();
       promises.push(
         this.props.saveChanges(
           name,
-          reports,
+          tiles,
           availableFilters.map((availableFilter) => {
             return {
               type: availableFilter.type,
@@ -250,10 +247,10 @@ export class DashboardEdit extends React.Component {
           // unsaved reports don't have ids yet. As their report object gets overwritten on save
           // we keep track of their position in the reports array instead to match the old
           // report object with the new one that has an id after the save
-          const reportIdx = this.state.reports.indexOf(report);
+          const reportIdx = this.state.tiles.indexOf(report);
           await this.save(true);
           const savedDashboardPath = this.props.location.pathname;
-          const reportId = this.state.reports[reportIdx].id;
+          const reportId = this.state.tiles[reportIdx].id;
           history.push('report/' + reportId + '/edit?returnTo=' + savedDashboardPath);
         }
       );
@@ -264,9 +261,9 @@ export class DashboardEdit extends React.Component {
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-    const {reports, name, availableFilters, refreshRateSeconds, filter} = this.state;
+    const {tiles, name, availableFilters, refreshRateSeconds, filter} = this.state;
 
-    const optimizeReports = reports?.filter(({id, report}) => !!id || !!report);
+    const optimizeReports = tiles?.filter(({id, report}) => !!id || !!report);
 
     return (
       <div className="DashboardEdit">
@@ -281,7 +278,7 @@ export class DashboardEdit extends React.Component {
             onSave={this.save}
             onCancel={nowPristine}
           >
-            <AddButton addReport={this.addReport} existingReport={reports?.[0]} />
+            <AddButton addReport={this.addReport} existingReport={tiles?.[0]} />
             <AddFiltersButton
               reports={optimizeReports}
               persistReports={() => this.save(true)}
@@ -310,7 +307,7 @@ export class DashboardEdit extends React.Component {
         <div className="content" ref={this.contentContainer}>
           <DashboardRenderer
             disableReportInteractions
-            reports={reports}
+            tiles={tiles}
             filter={filter}
             loadReport={evaluateReport}
             addons={[

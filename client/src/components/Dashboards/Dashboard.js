@@ -38,7 +38,7 @@ export class Dashboard extends React.Component {
       currentUserRole: null,
       loaded: false,
       redirect: '',
-      reports: [],
+      tiles: [],
       availableFilters: [],
       serverError: null,
       isAuthorizedToShare: false,
@@ -78,7 +78,7 @@ export class Dashboard extends React.Component {
       name: initialData?.name ?? t('dashboard.new'),
       ...modifierData,
       currentUserRole: 'editor',
-      reports:
+      tiles:
         initialData?.data?.map((config) => {
           return {
             ...config,
@@ -121,7 +121,7 @@ export class Dashboard extends React.Component {
           currentUserRole,
           lastModified,
           owner,
-          reports,
+          tiles,
           availableFilters,
           refreshRateSeconds,
         } = response;
@@ -134,7 +134,7 @@ export class Dashboard extends React.Component {
           currentUserRole,
           loaded: true,
           name,
-          reports: reports || [],
+          tiles: tiles || [],
           availableFilters: availableFilters || [],
           isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
           refreshRateSeconds,
@@ -164,12 +164,12 @@ export class Dashboard extends React.Component {
     });
   };
 
-  updateDashboard = (id, name, reports, availableFilters, refreshRateSeconds, stayInEditMode) => {
+  updateDashboard = (id, name, tiles, availableFilters, refreshRateSeconds, stayInEditMode) => {
     return new Promise((resolve, reject) => {
       this.props.mightFail(
         updateEntity('dashboard', id, {
           name,
-          reports,
+          tiles,
           availableFilters,
           refreshRateSeconds,
         }),
@@ -178,7 +178,7 @@ export class Dashboard extends React.Component {
             this.updateDashboardState(
               id,
               name,
-              reports,
+              tiles,
               availableFilters,
               refreshRateSeconds,
               stayInEditMode
@@ -192,7 +192,7 @@ export class Dashboard extends React.Component {
   updateDashboardState = async (
     id,
     name,
-    reports,
+    tiles,
     availableFilters,
     refreshRateSeconds,
     stayInEditMode
@@ -203,7 +203,7 @@ export class Dashboard extends React.Component {
     const update = {
       id,
       name,
-      reports,
+      tiles,
       availableFilters,
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
       lastModified: getFormattedNowDate(),
@@ -220,18 +220,18 @@ export class Dashboard extends React.Component {
     this.setState(update);
   };
 
-  saveChanges = (name, reports, availableFilters, refreshRateSeconds, stayInEditMode) => {
+  saveChanges = (name, tiles, availableFilters, refreshRateSeconds, stayInEditMode) => {
     return new Promise(async (resolve, reject) => {
       if (this.isNew()) {
         const collectionId = getCollection(this.props.location.pathname);
 
-        const reportIds = await Promise.all(
-          reports.map((report) => {
+        const tilesIds = await Promise.all(
+          tiles.map((tile) => {
             return (
-              report.id ||
-              (report.report &&
+              tile.id ||
+              (tile.report &&
                 new Promise((resolve, reject) => {
-                  const {name, data, reportType, combined} = report.report;
+                  const {name, data, reportType, combined} = tile.report;
                   const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
                   this.props.mightFail(
                     createEntity(endpoint, {collectionId, name, data}),
@@ -244,12 +244,13 @@ export class Dashboard extends React.Component {
           })
         );
 
-        const savedReports = reports.map(({configuration, dimensions, position}, idx) => {
+        const savedtiles = tiles.map(({configuration, dimensions, position, type}, idx) => {
           return {
+            type,
             configuration,
             dimensions,
             position,
-            id: reportIds[idx],
+            id: tilesIds[idx],
           };
         });
 
@@ -257,7 +258,7 @@ export class Dashboard extends React.Component {
           createEntity('dashboard', {
             collectionId,
             name,
-            reports: savedReports,
+            tiles: savedtiles,
             availableFilters,
             refreshRateSeconds,
           }),
@@ -266,7 +267,7 @@ export class Dashboard extends React.Component {
               this.updateDashboardState(
                 id,
                 name,
-                savedReports,
+                savedtiles,
                 availableFilters,
                 refreshRateSeconds,
                 stayInEditMode
@@ -279,7 +280,7 @@ export class Dashboard extends React.Component {
           this.updateDashboard(
             this.state.id,
             name,
-            reports,
+            tiles,
             availableFilters,
             refreshRateSeconds,
             stayInEditMode
@@ -310,7 +311,7 @@ export class Dashboard extends React.Component {
       owner,
       sharingEnabled,
       isAuthorizedToShare,
-      reports,
+      tiles,
       availableFilters,
       refreshRateSeconds,
     } = this.state;
@@ -344,7 +345,7 @@ export class Dashboard extends React.Component {
             {...commonProps}
             isNew={this.isNew()}
             saveChanges={this.saveChanges}
-            initialReports={reports}
+            initialTiles={tiles}
             initialAvailableFilters={availableFilters}
           />
         ) : (
@@ -355,7 +356,7 @@ export class Dashboard extends React.Component {
             loadDashboard={this.loadDashboard}
             onDelete={this.goHome}
             currentUserRole={currentUserRole}
-            reports={reports}
+            tiles={tiles}
             availableFilters={availableFilters}
           />
         )}

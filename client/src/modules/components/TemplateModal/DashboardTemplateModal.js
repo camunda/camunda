@@ -77,6 +77,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 3, y: 0},
@@ -109,6 +110,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 7, y: 0},
@@ -141,6 +143,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 11, y: 0},
@@ -176,6 +179,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 14, y: 0},
@@ -206,6 +210,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 2},
@@ -225,6 +230,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 9, y: 2},
@@ -245,6 +251,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 7},
@@ -257,6 +264,7 @@ export default function DashboardTemplateModal({onClose}) {
                   visualization: 'heat',
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 9, y: 7},
@@ -273,6 +281,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 12},
@@ -285,6 +294,7 @@ export default function DashboardTemplateModal({onClose}) {
                   visualization: 'heat',
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 9, y: 12},
@@ -304,6 +314,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 17},
@@ -323,6 +334,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
           ],
         },
@@ -356,6 +368,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 4, y: 0},
@@ -383,6 +396,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 9, y: 0},
@@ -403,6 +417,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 13, y: 0},
@@ -424,6 +439,7 @@ export default function DashboardTemplateModal({onClose}) {
                   ],
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 3},
@@ -450,6 +466,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 9, y: 3},
@@ -481,6 +498,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 8},
@@ -506,6 +524,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 9, y: 8},
@@ -535,6 +554,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
             {
               position: {x: 0, y: 13},
@@ -556,6 +576,7 @@ export default function DashboardTemplateModal({onClose}) {
                   },
                 },
               },
+              type: 'optimize_report',
             },
           ],
         },
@@ -583,6 +604,7 @@ export default function DashboardTemplateModal({onClose}) {
                 configuration: {userTaskDurationTimes: ['idle']},
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 9, y: 0},
@@ -600,6 +622,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 0, y: 5},
@@ -613,6 +636,7 @@ export default function DashboardTemplateModal({onClose}) {
                 configuration: {userTaskDurationTimes: ['work']},
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 9, y: 5},
@@ -630,6 +654,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
         ],
       },
@@ -658,6 +683,7 @@ export default function DashboardTemplateModal({onClose}) {
                 ],
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 9, y: 0},
@@ -674,6 +700,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 0, y: 4},
@@ -700,6 +727,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 6, y: 4},
@@ -718,6 +746,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 12, y: 4},
@@ -749,6 +778,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 15, y: 4},
@@ -780,6 +810,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 0, y: 8},
@@ -800,6 +831,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 6, y: 8},
@@ -824,6 +856,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
           {
             position: {x: 12, y: 8},
@@ -849,6 +882,7 @@ export default function DashboardTemplateModal({onClose}) {
                 },
               },
             },
+            type: 'optimize_report',
           },
         ],
       }
@@ -878,6 +912,7 @@ export default function DashboardTemplateModal({onClose}) {
               ],
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 3, y: 0},
@@ -898,6 +933,7 @@ export default function DashboardTemplateModal({onClose}) {
               ],
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 6, y: 0},
@@ -919,6 +955,7 @@ export default function DashboardTemplateModal({onClose}) {
               ],
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 12, y: 0},
@@ -939,6 +976,7 @@ export default function DashboardTemplateModal({onClose}) {
               ],
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 0, y: 3},
@@ -955,6 +993,7 @@ export default function DashboardTemplateModal({onClose}) {
               },
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 9, y: 3},
@@ -981,6 +1020,7 @@ export default function DashboardTemplateModal({onClose}) {
               },
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 0, y: 8},
@@ -994,6 +1034,7 @@ export default function DashboardTemplateModal({onClose}) {
               visualization: 'line',
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 9, y: 8},
@@ -1012,6 +1053,7 @@ export default function DashboardTemplateModal({onClose}) {
               },
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 0, y: 13},
@@ -1040,6 +1082,7 @@ export default function DashboardTemplateModal({onClose}) {
               },
             },
           },
+          type: 'optimize_report',
         },
         {
           position: {x: 9, y: 13},
@@ -1055,6 +1098,7 @@ export default function DashboardTemplateModal({onClose}) {
               },
             },
           },
+          type: 'optimize_report',
         },
       ],
     });

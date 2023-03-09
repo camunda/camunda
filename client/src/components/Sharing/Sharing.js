@@ -88,7 +88,7 @@ export class Sharing extends React.Component {
       return (
         <DashboardRenderer
           loadReport={createLoadReportCallback(this.getId())}
-          reports={this.state.evaluationResult.reports}
+          tiles={this.state.evaluationResult.tiles}
           filter={filter && JSON.parse(filter)}
           addons={[<DiagramScrollLock key="diagramScrollLock" />]}
           disableNameLink
