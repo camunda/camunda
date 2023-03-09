@@ -10,10 +10,10 @@ package io.camunda.zeebe.restore;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig.Builder;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -44,18 +44,7 @@ final class BackupStoreComponent {
   }
 
   private static S3BackupStore buildS3BackupStore(final BackupStoreCfg backupStoreCfg) {
-    final var s3Config = backupStoreCfg.getS3();
-    final S3BackupConfig storeConfig =
-        new S3BackupConfig.Builder()
-            .withBucketName(s3Config.getBucketName())
-            .withEndpoint(s3Config.getEndpoint())
-            .withRegion(s3Config.getRegion())
-            .withCredentials(s3Config.getAccessKey(), s3Config.getSecretKey())
-            .withApiCallTimeout(s3Config.getApiCallTimeout())
-            .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
-            .withCompressionAlgorithm(s3Config.getCompression())
-            .withBasePath(s3Config.getBasePath())
-            .build();
+    final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupStoreCfg.getS3());
     return new S3BackupStore(storeConfig);
   }
 

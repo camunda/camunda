@@ -10,8 +10,6 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.atomix.cluster.AtomixCluster;
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
-import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -22,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -175,17 +174,7 @@ public final class SystemContext {
     if (backup.getStore() == BackupStoreType.S3) {
       final var s3Config = backup.getS3();
       try {
-        final S3BackupConfig storeConfig =
-            new Builder()
-                .withBucketName(s3Config.getBucketName())
-                .withEndpoint(s3Config.getEndpoint())
-                .withRegion(s3Config.getRegion())
-                .withCredentials(s3Config.getAccessKey(), s3Config.getSecretKey())
-                .withApiCallTimeout(s3Config.getApiCallTimeout())
-                .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
-                .withCompressionAlgorithm(s3Config.getCompression())
-                .withBasePath(s3Config.getBasePath())
-                .build();
+        final var storeConfig = S3BackupStoreConfig.toStoreConfig(s3Config);
         S3BackupStore.validateConfig(storeConfig);
       } catch (final Exception e) {
         throw new InvalidConfigurationException("Cannot configure S3 backup store.", e);

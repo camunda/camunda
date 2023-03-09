@@ -11,9 +11,9 @@ import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
-import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
+import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -78,19 +78,8 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final BackupStoreCfg backupCfg,
       final ActorFuture<Void> installed) {
     try {
-      final var s3Config = backupCfg.getS3();
-      final S3BackupConfig storeConfig =
-          new S3BackupConfig.Builder()
-              .withBucketName(s3Config.getBucketName())
-              .withEndpoint(s3Config.getEndpoint())
-              .withRegion(s3Config.getRegion())
-              .withCredentials(s3Config.getAccessKey(), s3Config.getSecretKey())
-              .withApiCallTimeout(s3Config.getApiCallTimeout())
-              .forcePathStyleAccess(s3Config.isForcePathStyleAccess())
-              .withCompressionAlgorithm(s3Config.getCompression())
-              .withBasePath(s3Config.getBasePath())
-              .build();
-      final S3BackupStore backupStore = new S3BackupStore(storeConfig);
+      final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupCfg.getS3());
+      final var backupStore = new S3BackupStore(storeConfig);
       context.setBackupStore(backupStore);
       installed.complete(null);
     } catch (final Exception error) {
