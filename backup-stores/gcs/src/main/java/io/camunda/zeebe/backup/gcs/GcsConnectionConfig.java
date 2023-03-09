@@ -15,9 +15,10 @@ import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import java.io.IOException;
 import java.util.Objects;
 
-record GcsConnectionConfig(Authentication auth) {
+record GcsConnectionConfig(String host, Authentication auth) {
 
-  GcsConnectionConfig(Authentication auth) {
+  GcsConnectionConfig(String host, Authentication auth) {
+    this.host = host;
     this.auth = Objects.requireNonNullElseGet(auth, Auto::new);
   }
 

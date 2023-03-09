@@ -50,6 +50,7 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
   public static final class Builder {
     private String bucketName;
     private String basePath;
+    private String host;
     private GcsConnectionConfig.Authentication auth;
 
     public Builder withBucketName(final String bucketName) {
@@ -59,6 +60,11 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
 
     public Builder withBasePath(final String basePath) {
       this.basePath = basePath;
+      return this;
+    }
+
+    public Builder withHost(String host) {
+      this.host = host;
       return this;
     }
 
@@ -73,7 +79,7 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
     }
 
     public GcsBackupConfig build() {
-      return new GcsBackupConfig(bucketName, basePath, new GcsConnectionConfig(auth));
+      return new GcsBackupConfig(bucketName, basePath, new GcsConnectionConfig(host, auth));
     }
   }
 }
