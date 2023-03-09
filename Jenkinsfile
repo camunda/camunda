@@ -490,7 +490,7 @@ String itZeebePodSpec(String camBpmVersion, String esVersion) {
 
 String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled headless Chrome and Maven
-  return basePodSpec(3, 3, 'markhobson/maven-chrome:jdk-11') +
+  return basePodSpec(3, 6, 'markhobson/maven-chrome:jdk-11') +
       camBpmContainerSpec(camBpmVersion, true, 2, 4, false) +
       elasticSearchContainerSpec(esVersion) +
       postgresContainerSpec() +
@@ -507,7 +507,7 @@ pipeline {
   agent {
     kubernetes {
       cloud 'optimize-ci'
-      label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+      inheritFrom "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
       yamlFile '.ci/podSpecs/builderAgent.yml'
     }
@@ -598,7 +598,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-static-analysis_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-it-static-analysis_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml basePodSpec(1, 3)
             }
@@ -629,7 +629,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml upgradeTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
@@ -653,7 +653,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml upgradeTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
@@ -673,7 +673,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml itLatestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
@@ -693,7 +693,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml itLatestPodSpecES8(env.CAMBPM_VERSION, env.ES8_VERSION)
             }
@@ -713,7 +713,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-it-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-it-zeebe_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
@@ -732,7 +732,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-e2e_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-e2e_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml e2eTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
@@ -752,7 +752,7 @@ pipeline {
           agent {
             kubernetes {
               cloud 'optimize-ci'
-              label "optimize-ci-build-e2e-cloud_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              inheritFrom "optimize-ci-build-e2e-cloud_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
               yaml e2eCloudTestPodSpec(env.ES_VERSION)
             }
@@ -868,7 +868,7 @@ pipeline {
               agent {
                 kubernetes {
                   cloud 'optimize-ci'
-                  label "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+                  inheritFrom "optimize-ci-build_smoke_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
                   defaultContainer 'jnlp'
                   yaml smoketestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
                 }
