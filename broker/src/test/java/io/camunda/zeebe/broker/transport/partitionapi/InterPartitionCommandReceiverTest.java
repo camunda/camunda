@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import java.util.function.Function;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -242,7 +243,12 @@ final class InterPartitionCommandReceiverTest {
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
-        .unicast(eq(TOPIC_PREFIX + receiverPartitionId), messageCaptor.capture(), any());
+        .unicast(
+            eq(TOPIC_PREFIX + receiverPartitionId),
+            messageCaptor.capture(),
+            eq(Function.identity()),
+            any(),
+            eq(true));
 
     return messageCaptor.getValue();
   }
