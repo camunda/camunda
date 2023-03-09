@@ -8,7 +8,7 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
+import io.camunda.zeebe.backup.gcs.GcsBackupConfig.Builder;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
@@ -61,11 +61,15 @@ final class BackupStoreComponent {
 
   private static GcsBackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
     final var gcsConfig = backupStoreCfg.getGcs();
-    final GcsBackupConfig storeConfig =
-        new GcsBackupConfig.Builder()
+    final var builder =
+        new Builder()
             .withBucketName(gcsConfig.getBucketName())
-            .withBasePath(gcsConfig.getBasePath())
-            .build();
-    return new GcsBackupStore(storeConfig);
+            .withBasePath(gcsConfig.getBasePath());
+    final var authenticated =
+        switch (gcsConfig.getAuth()) {
+          case NONE -> builder.withoutAuthentication();
+          case AUTO -> builder.withDefaultApplicationCredentials();
+        };
+    return new GcsBackupStore(authenticated.build());
   }
 }
