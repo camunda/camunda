@@ -422,7 +422,7 @@ final class SystemContextTest {
     // when - then
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
-        .hasMessageContaining("Cannot configure S3 backup store");
+        .hasMessageContaining("Failed configuring backup store S3");
   }
 
   private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
