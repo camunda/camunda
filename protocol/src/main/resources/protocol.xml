@@ -181,4 +181,9 @@
   <sbe:message name="RemoveStreamRequest" id="401" description="Removes a gateway stream from a broker">
     <field name="id" id="1" type="UUID" />
   </sbe:message>
+
+  <sbe:message name="PushStreamRequest" id="402" description="Pushes a payload over a stream">
+    <field name="id" id="1" type="UUID" />
+    <data name="payload" id="2" type="varDataEncoding"/>
+  </sbe:message>
 </sbe:messageSchema>

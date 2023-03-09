@@ -41,7 +41,9 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     final var requestHandler = new StreamApiHandler<>(registry, DummyActivationProperties::new);
     final var server =
         new JobStreamApiServer(clusterServices.getCommunicationService(), requestHandler);
-    final var streamer = new JobGatewayStreamer(clusterServices.getEventService(), registry);
+    final var streamer =
+        new JobGatewayStreamer(
+            clusterServices.getEventService(), clusterServices.getCommunicationService(), registry);
     final var service = new JobStreamService(server, streamer);
 
     // only register listener and apply service to context if the actors are scheduled successfully
@@ -100,7 +102,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       DirectBuffer worker, long timeout, Collection<DirectBuffer> fetchVariables)
       implements JobActivationProperties {
 
-    DummyActivationProperties() {
+    private DummyActivationProperties() {
       this(new UnsafeBuffer(), -1L, Collections.emptyList());
     }
 
