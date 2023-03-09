@@ -13,15 +13,12 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import java.util.HashMap;
-import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class BackupStoreCfgTest {
-
-  public final Map<String, String> environment = new HashMap<>();
+final class BackupStoreCfgTest {
 
   @Test
-  public void shouldSetPartialS3Config() {
+  void shouldSetPartialS3Config() {
     // given
     final S3BackupStoreConfig expectedConfig = new S3BackupStoreConfig();
     expectedConfig.setBucketName("bucket");
@@ -31,7 +28,7 @@ public final class BackupStoreCfgTest {
     expectedConfig.setSecretKey(null);
 
     // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("backup-cfg", environment);
+    final BrokerCfg cfg = TestConfigReader.readConfig("backup-cfg", new HashMap<>());
     final BackupStoreCfg backup = cfg.getData().getBackup();
 
     // then
