@@ -67,7 +67,7 @@ camunda-platform:
     fullnameOverride: zeebe
     # Defines the version of Zeebe to use
     image:
-      tag: 8.2.0-alpha4
+      tag: 8.2.0-alpha5
     partitionCount: 1
     # Enable the creation of persistent volumes.
     persistenceType: disk
@@ -90,7 +90,7 @@ camunda-platform:
   zeebe-gateway:
     # Defines the version of Zeebe to use
     image:
-      tag: 8.2.0-alpha4
+      tag: 8.2.0-alpha5
     fullnameOverride: zeebe-gateway
     replicas: 1
     nodeSelector:
