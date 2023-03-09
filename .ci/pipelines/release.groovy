@@ -149,9 +149,8 @@ pipeline {
         container('maven') {
           sh ("""
             # git is required for maven release
-            apt-get update
-            apt-get install -y git
-            echo 'Add safe.directory git param'
+            apt-get update && apt-get install -y git
+
             git config --global --add safe.directory "\$PWD"
             git config --global user.email "ci@tasklist.camunda.cloud"
             git config --global user.name "github-tasklist-app"
