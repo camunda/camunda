@@ -33,9 +33,10 @@ public class OptimizeElasticsearchClientFactory {
                                                    final ElasticsearchCustomHeaderProvider elasticsearchCustomHeaderProvider,
                                                    final BackoffCalculator backoffCalculator) throws IOException {
     log.info("Initializing Elasticsearch rest client...");
+    final RestHighLevelClient esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
+
     final RequestOptionsProvider requestOptionsProvider =
       new RequestOptionsProvider(elasticsearchCustomHeaderProvider.getPlugins(), configurationService);
-    final RestHighLevelClient esClient = ElasticsearchHighLevelRestClientBuilder.build(configurationService);
     waitForElasticsearch(esClient, backoffCalculator, requestOptionsProvider.getRequestOptions());
     log.info("Elasticsearch client has successfully been started");
 

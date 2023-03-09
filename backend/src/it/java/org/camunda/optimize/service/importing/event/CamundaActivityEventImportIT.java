@@ -608,9 +608,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     final CamundaActivityEventIndex newIndex = new CamundaActivityEventIndex(key);
     CreateIndexRequest request = new CreateIndexRequest(
       indexNameService.getOptimizeIndexNameWithVersion(newIndex)
-    );
-    request.alias(new Alias(indexNameService.getOptimizeIndexAliasForIndex(newIndex.getIndexName())).writeIndex(true));
-    request.mapping(newIndex.getSource());
+    ).alias(new Alias(indexNameService.getOptimizeIndexAliasForIndex(newIndex.getIndexName())));
     esClient
       .getHighLevelClient()
       .indices()

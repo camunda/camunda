@@ -5,12 +5,16 @@
  */
 package org.camunda.optimize.service.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 
@@ -24,7 +28,6 @@ import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
-import static org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder.getCurrentESVersion;
 
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -42,8 +45,6 @@ public class ESVersionChecker {
     supportedVersions.add("7.15.0");
     supportedVersions.add("7.16.2");
     supportedVersions.add("7.17.0");
-    supportedVersions.add("8.5.0");
-    supportedVersions.add("8.6.0");
   }
 
   private static final Comparator<String> MAJOR_COMPARATOR = Comparator.comparingInt(major -> Integer.parseInt(
@@ -61,6 +62,7 @@ public class ESVersionChecker {
 
     if (!isCurrentVersionSupported(currentVersion)) {
       String latestSupportedES = getLatestSupportedESVersion();
+
       if (doesVersionNeedWarning(currentVersion, latestSupportedES)) {
         log.warn("The version of Elasticsearch you're using is not officially supported by Camunda Optimize." +
                    "\nWe can not guarantee full functionality." +
@@ -72,11 +74,18 @@ public class ESVersionChecker {
   }
 
   public static boolean doesVersionNeedWarning(String currentVersion, String latestSupportedES) {
-    if (Integer.parseInt(getMajorVersionFrom(currentVersion)) > Integer.parseInt(getMajorVersionFrom(latestSupportedES))) {
-      return true;
-    } else {
-      return Integer.parseInt(getMinorVersionFrom(currentVersion)) > Integer.parseInt(getMinorVersionFrom(latestSupportedES));
-    }
+    return getMajorVersionFrom(latestSupportedES).equals(getMajorVersionFrom(currentVersion)) &&
+      Integer.parseInt(getMinorVersionFrom(latestSupportedES)) < Integer.parseInt(getMinorVersionFrom(currentVersion));
+  }
+
+  private static String getCurrentESVersion(final RestHighLevelClient esClient,
+                                            final RequestOptions requestOptions) throws IOException {
+    final Request request = new Request("GET", "/");
+    request.setOptions(requestOptions);
+    final String responseJson = EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
+    ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
+
+    return node.get("version").get("number").toString().replace("\"", "");
   }
 
   public static boolean isCurrentVersionSupported(String currentVersion) {
