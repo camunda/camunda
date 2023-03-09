@@ -52,20 +52,11 @@ final class StreamPusher<P extends BufferWriter> {
           .send(request, streamId.receiver())
           .whenCompleteAsync((ok, error) -> onPush(payload, errorHandler, error), executor);
       if (LOG.isTraceEnabled()) {
-        LOG.trace(
-            "Pushed {} to receiver {} of stream {}",
-            payload,
-            streamId.receiver(),
-            streamId.streamId());
+        LOG.trace("Pushed {} to stream {}", payload, streamId);
       }
     } catch (final Exception e) {
       metrics.jobPushFailed();
-      LOG.debug(
-          "Failed to push {} to receiver {} of stream {}",
-          payload,
-          streamId.receiver(),
-          streamId.streamId(),
-          e);
+      LOG.debug("Failed to push {} to stream {}", payload, streamId, e);
       errorHandler.handleError(e, payload);
     }
   }
@@ -73,12 +64,7 @@ final class StreamPusher<P extends BufferWriter> {
   private void onPush(final P payload, final ErrorHandler<P> errorHandler, final Throwable error) {
     if (error != null) {
       metrics.jobPushFailed();
-      LOG.debug(
-          "Failed to push {} to receiver {} of stream {}",
-          payload,
-          streamId.receiver(),
-          streamId.streamId(),
-          error);
+      LOG.debug("Failed to push {} to stream {}", payload, streamId, error);
       errorHandler.handleError(error, payload);
     } else {
       metrics.jobPushed();
