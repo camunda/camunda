@@ -98,7 +98,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     Optional<DashboardShareRestDto> dashboardShare = findShareForDashboard(updatedDashboard.getId());
 
     dashboardShare.ifPresent(share -> {
-      share.setReportShares(updatedDashboard.getReports());
+      share.setTileShares(updatedDashboard.getTiles());
       sharingWriter.updateDashboardShare(share);
     });
   }
@@ -128,7 +128,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   private void addReportInformation(DashboardShareRestDto createSharingDto, String userId) {
     DashboardDefinitionRestDto dashboardDefinition =
       dashboardService.getDashboardDefinition(createSharingDto.getDashboardId(), userId).getDefinitionDto();
-    createSharingDto.setReportShares(dashboardDefinition.getReports());
+    createSharingDto.setTileShares(dashboardDefinition.getTiles());
   }
 
   public void validateAndCheckAuthorization(String dashboardId, String userId) {
@@ -142,9 +142,9 @@ public class SharingService implements ReportReferencingService, DashboardRefere
 
       final Set<String> authorizedReportIdsOnDashboard = reportService.filterAuthorizedReportIds(
         userId,
-        dashboardDefinition.getReportIds()
+        dashboardDefinition.getTileIds()
       );
-      final Set<String> unauthorizedReportIds = new HashSet<>(dashboardDefinition.getReportIds());
+      final Set<String> unauthorizedReportIds = new HashSet<>(dashboardDefinition.getTileIds());
       unauthorizedReportIds.removeAll(authorizedReportIdsOnDashboard);
 
       if (!unauthorizedReportIds.isEmpty()) {
@@ -213,7 +213,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         "Could not find dashboard share for id [%s]",
         dashboardShareId
       )));
-    boolean dashboardContainsReport = dashboard.getReports()
+    boolean dashboardContainsReport = dashboard.getTiles()
       .stream()
       .anyMatch(r -> Objects.equals(r.getId(), reportId));
     if (!dashboardContainsReport) {

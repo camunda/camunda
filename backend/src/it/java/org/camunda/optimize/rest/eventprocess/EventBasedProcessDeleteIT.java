@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -177,8 +177,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .hasSize(1)
       .extracting(CollectionDefinitionDto.Fields.data + "." + CollectionDataDto.Fields.scope)
       .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports())
-      .extracting(ReportLocationDto.Fields.id)
+    assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
+      .extracting(DashboardReportTileDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessDefinitionKeyToDelete)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();
@@ -652,8 +652,8 @@ public class EventBasedProcessDeleteIT extends AbstractEventProcessIT {
       .hasSize(1)
       .extracting(CollectionDefinitionDto.Fields.data + "." + CollectionDataDto.Fields.scope)
       .contains(Collections.singletonList(new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY)));
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports())
-      .extracting(ReportLocationDto.Fields.id)
+    assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
+      .extracting(DashboardReportTileDto.Fields.id)
       .containsExactlyInAnyOrder(reportIdWithDefaultDefKey, reportIdWithNoDefKey);
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(firstDeletingEventProcessDefinitionKey)).isEmpty();
     assertThat(eventInstanceIndexForPublishStateExists(publishState)).isFalse();

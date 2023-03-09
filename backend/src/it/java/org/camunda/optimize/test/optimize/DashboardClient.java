@@ -9,7 +9,8 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 
@@ -111,15 +112,16 @@ public class DashboardClient {
 
   public Response updateDashboardWithReports(final String dashboardId,
                                              final List<String> reportIds) {
-    final List<ReportLocationDto> reports = reportIds.stream()
+    final List<DashboardReportTileDto> reports = reportIds.stream()
       .map(reportId -> {
-        ReportLocationDto reportLocationDto = new ReportLocationDto();
-        reportLocationDto.setId(reportId);
-        return reportLocationDto;
+        DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
+        dashboardTileDto.setId(reportId);
+        dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
+        return dashboardTileDto;
       })
       .collect(Collectors.toList());
     DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
-    dashboard.setReports(reports);
+    dashboard.setTiles(reports);
     return updateDashboard(dashboardId, dashboard);
   }
 
@@ -205,9 +207,9 @@ public class DashboardClient {
     DashboardDefinitionRestDto definitionDto = new DashboardDefinitionRestDto();
     definitionDto.setName("MyAwesomeDashboard");
     definitionDto.setCollectionId(collectionId);
-    definitionDto.setReports(
+    definitionDto.setTiles(
       reportIds.stream()
-        .map(reportId -> ReportLocationDto.builder().id(reportId).build())
+        .map(reportId -> DashboardReportTileDto.builder().id(reportId).type(DashboardTileType.OPTIMIZE_REPORT).build())
         .collect(Collectors.toList())
     );
     return definitionDto;

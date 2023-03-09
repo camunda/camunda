@@ -9,7 +9,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -28,6 +27,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardSh
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateUnit;
@@ -298,7 +299,8 @@ public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
       .setProcessDefinitionVersion(deployedInstanceWithAllVariables.getProcessDefinitionVersion());
     final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
     final DashboardDefinitionRestDto dashboardDefinitionDto = generateDashboardDefinitionDto();
-    dashboardDefinitionDto.setReports(Collections.singletonList(ReportLocationDto.builder().id(reportId).build()));
+    dashboardDefinitionDto.setTiles(Collections.singletonList(
+      DashboardReportTileDto.builder().id(reportId).type(DashboardTileType.OPTIMIZE_REPORT).build()));
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
     return dashboardDefinitionDto;
   }
@@ -508,6 +510,14 @@ public abstract class AbstractDashboardRestServiceIT extends AbstractIT {
       defaultValues
     ));
     return candidateGroupFilter;
+  }
+
+  protected static Stream<DashboardReportTileDto> getInvalidReportIdAndTypes() {
+    return Stream.of(
+      DashboardReportTileDto.builder().id(null).type(DashboardTileType.OPTIMIZE_REPORT).build(),
+      DashboardReportTileDto.builder().id("someId").type(DashboardTileType.EXTERNAL_URL).build(),
+      DashboardReportTileDto.builder().id("someId").type(DashboardTileType.TEXT).build()
+    );
   }
 
 }

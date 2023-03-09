@@ -89,7 +89,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
     assertThat(dashboard).isNotNull();
-    assertThat(dashboard.getReports()).hasSize(5);
+    assertThat(dashboard.getTiles()).hasSize(5);
   }
 
   @ParameterizedTest
@@ -124,7 +124,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     assertThat(returnedDashboard.getId()).isEqualTo(instantPreviewDashboardDto.getDashboardId());
     final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(returnedDashboard.getId());
     assertThat(dashboard).isNotNull();
-    assertThat(dashboard.getReports()).hasSize(12);
+    assertThat(dashboard.getTiles()).hasSize(12);
   }
 
   @Test
@@ -179,7 +179,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       dashboardJsonTemplate
     );
     // Let's keep track of the report IDs that belong to this dashboard, this will be important later
-    Set<String> originalReportIds = originalDashboard.getReportIds();
+    Set<String> originalReportIds = originalDashboard.getTileIds();
 
     // when
     // now fiddle with the stored hash in the database so that the code thinks a change has happened
@@ -197,7 +197,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     //Since the entry had been de-validated, I expect that a new dashboard with a new ID has been created
     assertThat(newDashboard.getId()).isNotEqualTo(originalDashboard.getId());
     // I expect that the reports from the new dashboard were newly generated
-    assertThat(newDashboard.getReportIds()).doesNotContainAnyElementsOf(originalReportIds);
+    assertThat(newDashboard.getTileIds()).doesNotContainAnyElementsOf(originalReportIds);
     // Moreover I expect the old dashboard to be deleted
     dashboardClient.assertDashboardIsDeleted(originalDashboard.getId());
     // I also expect the old report IDs to be deleted
@@ -227,7 +227,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       dashboardJsonTemplate
     );
     // Let's keep track of the report IDs that belong to this dashboard, this will be important later
-    Set<String> originalReportIds = originalDashboard.getReportIds();
+    Set<String> originalReportIds = originalDashboard.getTileIds();
 
     // when
     // Perform the check that is done at the start-up from Optimize
@@ -241,7 +241,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // then
     assertThat(newDashboard.getId()).isEqualTo(originalDashboard.getId());
     // I expect that the reports from the dashboard also remain the same
-    assertThat(newDashboard.getReportIds()).isEqualTo(originalReportIds);
+    assertThat(newDashboard.getTileIds()).isEqualTo(originalReportIds);
   }
 
   @Test
@@ -267,7 +267,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       dashboardJsonTemplate
     );
     // Let's keep track of the report IDs that belong to this dashboard, this will be important later
-    Set<String> originalReportIds = originalDashboard.getReportIds();
+    Set<String> originalReportIds = originalDashboard.getTileIds();
 
     // when
     // Let's retrieve the dashboard again and see what happens
@@ -280,7 +280,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // I expect the same old dashboard with the same ID
     assertThat(hopefullyExistingDashboard.getId()).isEqualTo(originalDashboard.getId());
     // I expect that the reports from the dashboard also remain the same
-    assertThat(hopefullyExistingDashboard.getReportIds()).isEqualTo(originalReportIds);
+    assertThat(hopefullyExistingDashboard.getTileIds()).isEqualTo(originalReportIds);
   }
 
   @Test
@@ -305,7 +305,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // given
     DashboardDefinitionRestDto originalDashboard =
       dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
-    originalDashboard.getReportIds().forEach(reportId -> {
+    originalDashboard.getTileIds().forEach(reportId -> {
       // when
       Response response = reportClient.evaluateReportAsUserRawResponse(reportId, KERMIT_USER, KERMIT_USER);
       // then
@@ -329,7 +329,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     String dashboardJsonTemplate = "template1.json";
     DashboardDefinitionRestDto originalDashboard =
       dashboardClient.getInstantPreviewDashboard(processDefKey, dashboardJsonTemplate);
-    final Set<String> reportIds = originalDashboard.getReportIds();
+    final Set<String> reportIds = originalDashboard.getTileIds();
     assertThat(reportIds).isNotEmpty();
     return reportIds;
   }
@@ -363,7 +363,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       processDefKey,
       "template1.json"
     );
-    final Optional<String> instantReportId = originalDashboard.getReportIds().stream().findFirst();
+    final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
     // when
@@ -391,7 +391,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       processDefKey,
       "template1.json"
     );
-    final Optional<String> instantReportId = originalDashboard.getReportIds().stream().findFirst();
+    final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
     // when
@@ -438,7 +438,7 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
       processDefKey,
       "template1.json"
     );
-    final Optional<String> instantReportId = originalDashboard.getReportIds().stream().findFirst();
+    final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
     // when
@@ -472,8 +472,8 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
     // when
     final DashboardDefinitionRestDto localizedDashboard =
       dashboardClient.getInstantPreviewDashboardLocalized(processDefKey, template, locale);
-    final Set<String> reportNames = localizedDashboard.getReportIds().stream()
-      .map(reportId -> reportClient.evaluateProcessReportLocalized(reportId, locale)
+    final Set<String> reportNames = localizedDashboard.getTileIds().stream()
+      .map(tileId -> reportClient.evaluateProcessReportLocalized(tileId, locale)
         .getReportDefinition()
         .getName())
       .collect(toSet());
@@ -611,13 +611,11 @@ public class InstantPreviewDashboardIT extends AbstractDashboardRestServiceIT {
   private Long calculateExpectedChecksum(final String dashboardJsonTemplate) {
     InputStream templateInputStream = getClass().getClassLoader()
       .getResourceAsStream(INSTANT_PREVIEW_DASHBOARD_TEMPLATES_PATH + dashboardJsonTemplate);
-    long checksum = 0L;
     try {
-      checksum = getChecksumCRC32(templateInputStream, 8192);
+      return getChecksumCRC32(templateInputStream, 8192);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Failed to calculate expected checksum for template", e);
     }
-    return checksum;
   }
 
   @SuppressWarnings(UNUSED)

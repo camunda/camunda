@@ -22,7 +22,8 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -297,9 +298,9 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
 
   private void addDashboardsToOptimize(final int numOfDashboards, final String collectionId) {
     DashboardDefinitionRestDto definition = new DashboardDefinitionRestDto();
-    definition.setReports(Arrays.asList(
-      ReportLocationDto.builder().id("firstReportId").build(),
-      ReportLocationDto.builder().id("secondReportId").build()
+    definition.setTiles(Arrays.asList(
+      DashboardReportTileDto.builder().id("firstReportId").type(DashboardTileType.OPTIMIZE_REPORT).build(),
+      DashboardReportTileDto.builder().id("secondReportId").type(DashboardTileType.OPTIMIZE_REPORT).build()
     ));
     definition.setCollectionId(collectionId);
     definition.setName(IdGenerator.getNextId());

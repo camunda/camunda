@@ -134,7 +134,7 @@ public class EntityImportService {
     try {
       //@formatter:off
       final Set<OptimizeEntityExportDto> exportDtos =
-        objectMapper.readValue(exportedDtoJson, new TypeReference<Set<OptimizeEntityExportDto>>() {});
+        objectMapper.readValue(exportedDtoJson, new TypeReference<>() {});
       //@formatter:on
       final Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
       Set<ConstraintViolation<OptimizeEntityExportDto>> violations = new HashSet<>();
@@ -200,7 +200,7 @@ public class EntityImportService {
         requiredReportIds.addAll(((CombinedProcessReportDefinitionExportDto) entity).getData().getReportIds());
 
       } else if (DASHBOARD.equals(entity.getExportEntityType())) {
-        requiredReportIds.addAll(((DashboardDefinitionExportDto) entity).getReportIds());
+        requiredReportIds.addAll(((DashboardDefinitionExportDto) entity).getTileIds());
       }
     });
 

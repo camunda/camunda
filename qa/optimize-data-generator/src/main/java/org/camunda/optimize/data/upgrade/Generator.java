@@ -20,9 +20,10 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceConfigDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.CamundaEventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.source.EventScopeType;
@@ -342,9 +343,10 @@ public class Generator {
   }
 
   private static DashboardDefinitionRestDto prepareDashboard(final List<String> reportIds, final String collectionId) {
-    List<ReportLocationDto> reportLocations = reportIds.stream().map(reportId -> {
-      ReportLocationDto report = new ReportLocationDto();
+    List<DashboardReportTileDto> reportLocations = reportIds.stream().map(reportId -> {
+      DashboardReportTileDto report = new DashboardReportTileDto();
       report.setId(reportId);
+      report.setType(DashboardTileType.OPTIMIZE_REPORT);
 
       PositionDto position = new PositionDto();
       position.setX((reportIds.indexOf(reportId) % 3) * 6);
@@ -361,7 +363,7 @@ public class Generator {
 
     DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setCollectionId(collectionId);
-    dashboard.setReports(reportLocations);
+    dashboard.setTiles(reportLocations);
 
     return dashboard;
   }

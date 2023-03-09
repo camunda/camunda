@@ -15,9 +15,10 @@ import org.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceEndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
@@ -366,10 +367,11 @@ public abstract class AbstractExportImportEntityDefinitionIT extends AbstractIT 
     final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
     dashboard.setName("A Dashboard Name");
     dashboard.setId("dashboardId");
-    dashboard.setReports(
+    dashboard.setTiles(
       reportIds.stream()
-        .map(reportId -> ReportLocationDto.builder()
+        .map(reportId -> DashboardReportTileDto.builder()
           .id(reportId)
+          .type(DashboardTileType.OPTIMIZE_REPORT)
           .dimensions(new DimensionDto(5, 15))
           .position(new PositionDto(20, 25))
           .build())

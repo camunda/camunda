@@ -287,11 +287,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     // then
     assertThat(dashboardShareDto).isNotNull();
     assertThat(dashboardShareDto.getId()).isEqualTo(dashboardId);
-    assertThat(dashboardShareDto.getReports()).isNotNull();
-    assertThat(dashboardShareDto.getReports()).hasSize(1);
+    assertThat(dashboardShareDto.getTiles()).isNotNull();
+    assertThat(dashboardShareDto.getTiles()).hasSize(1);
 
     // when
-    String reportShareId = dashboardShareDto.getReports().get(0).getId();
+    String reportShareId = dashboardShareDto.getTiles().get(0).getId();
     HashMap<?, ?> evaluatedReportAsMap =
       embeddedOptimizeExtension
         .getRequestExecutor()

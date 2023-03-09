@@ -7,10 +7,10 @@ package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.xcontent.XContentBuilder;
 
@@ -36,22 +36,23 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
   public static final String OWNER = BaseDashboardDefinitionDto.Fields.owner;
   public static final String LAST_MODIFIER = BaseDashboardDefinitionDto.Fields.lastModifier;
   public static final String REFRESH_RATE_SECONDS = BaseDashboardDefinitionDto.Fields.refreshRateSeconds;
-  public static final String REPORTS = DashboardDefinitionRestDto.Fields.reports;
+  public static final String TILES = DashboardDefinitionRestDto.Fields.tiles;
   public static final String COLLECTION_ID = BaseDashboardDefinitionDto.Fields.collectionId;
   public static final String MANAGEMENT_DASHBOARD = BaseDashboardDefinitionDto.Fields.managementDashboard;
   public static final String INSTANT_PREVIEW_DASHBOARD = BaseDashboardDefinitionDto.Fields.instantPreviewDashboard;
   public static final String AVAILABLE_FILTERS = BaseDashboardDefinitionDto.Fields.availableFilters;
 
-  public static final String POSITION = ReportLocationDto.Fields.position;
+  public static final String POSITION = DashboardReportTileDto.Fields.position;
   public static final String X_POSITION = PositionDto.Fields.x;
   public static final String Y_POSITION = PositionDto.Fields.y;
 
-  public static final String DIMENSION = ReportLocationDto.Fields.dimensions;
+  public static final String DIMENSION = DashboardReportTileDto.Fields.dimensions;
   public static final String HEIGHT = DimensionDto.Fields.height;
   public static final String WIDTH = DimensionDto.Fields.width;
 
-  public static final String REPORT_ID = ReportLocationDto.Fields.id;
-  public static final String CONFIGURATION = ReportLocationDto.Fields.configuration;
+  public static final String REPORT_ID = DashboardReportTileDto.Fields.id;
+  public static final String REPORT_TILE_TYPE = DashboardReportTileDto.Fields.type;
+  public static final String CONFIGURATION = DashboardReportTileDto.Fields.configuration;
 
   public static final String FILTER_TYPE = "type";
   public static final String FILTER_DATA = DashboardFilterDto.Fields.data;
@@ -93,7 +94,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
       .startObject(REFRESH_RATE_SECONDS)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
       .endObject()
-      .startObject(REPORTS)
+      .startObject(TILES)
         .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)
         .startObject("properties");
           addNestedReportsField(newBuilder)
@@ -128,6 +129,9 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(REPORT_TILE_TYPE)
+        .field(REPORT_TILE_TYPE, TYPE_KEYWORD)
       .endObject()
       .startObject(POSITION)
         .field(MAPPING_PROPERTY_TYPE, TYPE_NESTED)

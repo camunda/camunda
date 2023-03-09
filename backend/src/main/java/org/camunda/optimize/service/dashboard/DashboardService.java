@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardAssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardCandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
@@ -196,11 +196,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
     validateEntityEditorAuthorization(dashboardDefinition.getCollectionId(), userId);
 
-    final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
+    final List<DashboardReportTileDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getTiles());
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
       newDashboardReports.clear();
       containingReportsComplyWithNewCollectionScope(userId, collectionId, dashboardDefinition);
-      dashboardDefinition.getReports().stream().sequential().forEach(reportLocationDto -> {
+      dashboardDefinition.getTiles().stream().sequential().forEach(reportLocationDto -> {
         final String originalReportId = reportLocationDto.getId();
         if (IdGenerator.isValidId(originalReportId)) {
           String reportCopyId = uniqueReportCopies.get(originalReportId);
@@ -227,7 +227,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     DashboardDefinitionRestDto newDashboardDefinitionDto = new DashboardDefinitionRestDto();
     newDashboardDefinitionDto.setCollectionId(collectionId);
     newDashboardDefinitionDto.setName(newDashboardName);
-    newDashboardDefinitionDto.setReports(newDashboardReports);
+    newDashboardDefinitionDto.setTiles(newDashboardReports);
     newDashboardDefinitionDto.setAvailableFilters(dashboardDefinition.getAvailableFilters());
     return dashboardWriter.createNewDashboard(userId, newDashboardDefinitionDto);
   }
@@ -239,9 +239,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       .stream()
       .filter(dashboard -> !extractFilters(dashboard.getAvailableFilters(), DashboardVariableFilterDto.class).isEmpty())
       .forEach(dashboard -> {
-        final List<String> otherReportIdsInDashboard = dashboard.getReports()
+        final List<String> otherReportIdsInDashboard = dashboard.getTiles()
           .stream()
-          .map(ReportLocationDto::getId)
+          .map(DashboardReportTileDto::getId)
           .filter(reportInDashboardId -> !reportId.equals(reportInDashboardId))
           .collect(toList());
         final List<SingleProcessReportDefinitionRequestDto> allReportsForIdsOmitXml =
@@ -277,9 +277,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private void containingReportsComplyWithNewCollectionScope(final String userId, final String collectionId,
                                                              final DashboardDefinitionRestDto dashboardDefinition) {
     dashboardDefinition
-      .getReports()
+      .getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .filter(IdGenerator::isValidId)
       .forEach(reportId -> reportService.ensureCompliesWithCollectionScope(userId, collectionId, reportId));
   }
@@ -359,10 +359,10 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDtoWithModifier(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
     validateDashboardFilters(userId, updatedDashboard);
-    updateDto.getReports().forEach(reportLocationDto -> {
-      if (IdGenerator.isValidId(reportLocationDto.getId())) {
+    updateDto.getTiles().forEach(tileDto -> {
+      if (IdGenerator.isValidId(tileDto.getId())) {
         final ReportDefinitionDto reportDefinition =
-          reportService.getReportDefinition(reportLocationDto.getId(), userId).getDefinitionDto();
+          reportService.getReportDefinition(tileDto.getId(), userId).getDefinitionDto();
         if (!Objects.equals(dashboardCollectionId, reportDefinition.getCollectionId())) {
           throw new BadRequestException(String.format(
             "Report %s does not reside in the same collection as the dashboard %s or are both not private entities",
@@ -392,7 +392,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public void validateDashboardFilters(final String userId,
                                        final List<DashboardFilterDto<?>> availableFilters,
-                                       final List<ReportLocationDto> reportsInDashboard) {
+                                       final List<DashboardReportTileDto> reportsInDashboard) {
     if (!CollectionUtils.isEmpty(availableFilters)) {
       final Map<String, List<DashboardFilterDto<?>>> filtersByClass =
         availableFilters
@@ -428,7 +428,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   private void validateDashboardFilters(final String userId, final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    validateDashboardFilters(userId, dashboardDefinitionDto.getAvailableFilters(), dashboardDefinitionDto.getReports());
+    validateDashboardFilters(userId, dashboardDefinitionDto.getAvailableFilters(), dashboardDefinitionDto.getTiles());
   }
 
   private void validateFiltersHaveData(final List<DashboardFilterDto<?>> availableFilters) {
@@ -444,13 +444,13 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   private void validateVariableFiltersExistInReports(final String userId,
-                                                     final List<ReportLocationDto> reportsInDashboard,
+                                                     final List<DashboardReportTileDto> reportsInDashboard,
                                                      final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
     final List<DashboardFilterDto<?>> variableFilters =
       filtersByClass.get(DashboardVariableFilterDto.class.getSimpleName());
     if (!CollectionUtils.isEmpty(variableFilters)) {
       final List<String> reportIdsInDashboard = reportsInDashboard.stream()
-        .map(ReportLocationDto::getId)
+        .map(DashboardReportTileDto::getId)
         .filter(IdGenerator::isValidId)
         .collect(toList());
       final Map<String, List<VariableType>> possibleVarTypesByName =
@@ -591,7 +591,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private DashboardDefinitionUpdateDto convertToUpdateDto(final DashboardDefinitionRestDto updatedDashboard) {
     final DashboardDefinitionUpdateDto updateDto = new DashboardDefinitionUpdateDto();
     updateDto.setName(updatedDashboard.getName());
-    updateDto.setReports(updatedDashboard.getReports());
+    updateDto.setTiles(updatedDashboard.getTiles());
     updateDto.setAvailableFilters(updatedDashboard.getAvailableFilters());
     updateDto.setRefreshRateSeconds(updatedDashboard.getRefreshRateSeconds());
     return updateDto;

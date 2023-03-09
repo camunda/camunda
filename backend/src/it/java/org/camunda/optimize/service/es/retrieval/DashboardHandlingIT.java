@@ -9,7 +9,8 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.get.GetRequest;
@@ -111,15 +112,15 @@ public class DashboardHandlingIT extends AbstractIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getReports()
+    final List<String> newReportIds = dashboard.getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .collect(Collectors.toList());
 
     assertThat(newReportIds.isEmpty()).isFalse();
     assertThat(newReportIds)
-      .doesNotContainAnyElementsOf(oldDashboard.getReports().stream()
-                                     .map(ReportLocationDto::getId)
+      .doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
+                                     .map(DashboardReportTileDto::getId)
                                      .collect(Collectors.toList()));
   }
 
@@ -143,9 +144,9 @@ public class DashboardHandlingIT extends AbstractIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getReports()
+    final List<String> newReportIds = dashboard.getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .collect(Collectors.toList());
 
     assertThat(newReportIds.isEmpty()).isFalse();
@@ -172,14 +173,14 @@ public class DashboardHandlingIT extends AbstractIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getReports()
+    final List<String> newReportIds = dashboard.getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .collect(Collectors.toList());
 
     assertThat(newReportIds).hasSize(2);
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getReports().stream()
-                                                           .map(ReportLocationDto::getId)
+    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
+                                                           .map(DashboardReportTileDto::getId)
                                                            .collect(Collectors.toList()));
     assertThat(newReportIds).allSatisfy(str -> assertThat(str).isEqualTo(newReportIds.get(0)));
 
@@ -272,14 +273,14 @@ public class DashboardHandlingIT extends AbstractIT {
     assertThat(dashboard.getCollectionId()).isEqualTo(collectionId);
     assertThat(oldDashboard.getCollectionId()).isNull();
 
-    final List<String> newReportIds = dashboard.getReports()
+    final List<String> newReportIds = dashboard.getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .collect(Collectors.toList());
 
     assertThat(newReportIds).hasSize(2);
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getReports().stream()
-                                                           .map(ReportLocationDto::getId)
+    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
+                                                           .map(DashboardReportTileDto::getId)
                                                            .collect(Collectors.toList()));
 
     final List<EntityResponseDto> collectionEntities = collectionClient.getEntitiesForCollection(collectionId);
@@ -306,14 +307,14 @@ public class DashboardHandlingIT extends AbstractIT {
     assertThat(dashboard.getCollectionId()).isNull();
     assertThat(oldDashboard.getCollectionId()).isEqualTo(collectionId);
 
-    final List<String> newReportIds = dashboard.getReports()
+    final List<String> newReportIds = dashboard.getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .collect(Collectors.toList());
 
     assertThat(newReportIds).isNotEmpty();
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getReports().stream()
-                                                           .map(ReportLocationDto::getId)
+    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
+                                                           .map(DashboardReportTileDto::getId)
                                                            .collect(Collectors.toList()));
   }
 
@@ -339,14 +340,14 @@ public class DashboardHandlingIT extends AbstractIT {
     assertThat(newDashboard.getCollectionId()).isEqualTo(newCollectionId);
     assertThat(oldDashboard.getCollectionId()).isEqualTo(oldCollectionId);
 
-    final List<String> newReportIds = newDashboard.getReports()
+    final List<String> newReportIds = newDashboard.getTiles()
       .stream()
-      .map(ReportLocationDto::getId)
+      .map(DashboardReportTileDto::getId)
       .collect(Collectors.toList());
 
     assertThat(newReportIds).isNotEmpty();
-    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getReports().stream()
-                                                           .map(ReportLocationDto::getId)
+    assertThat(newReportIds).doesNotContainAnyElementsOf(oldDashboard.getTiles().stream()
+                                                           .map(DashboardReportTileDto::getId)
                                                            .collect(Collectors.toList()));
   }
 
@@ -357,12 +358,13 @@ public class DashboardHandlingIT extends AbstractIT {
     final OffsetDateTime shouldBeIgnoredDate = OffsetDateTime.now().plusHours(1);
     final String id = addEmptyPrivateDashboard();
     final String reportId = createNewSingleProcessReport();
-    final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId(reportId);
-    reportLocationDto.setConfiguration("testConfiguration");
+    final DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
+    dashboardTileDto.setId(reportId);
+    dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
+    dashboardTileDto.setConfiguration("testConfiguration");
 
     final DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
-    dashboard.setReports(Collections.singletonList(reportLocationDto));
+    dashboard.setTiles(Collections.singletonList(dashboardTileDto));
     dashboard.setId(shouldBeIgnoredString);
     dashboard.setLastModifier("shouldNotBeUpdatedManually");
     dashboard.setName("MyDashboard");
@@ -375,8 +377,8 @@ public class DashboardHandlingIT extends AbstractIT {
     DashboardDefinitionRestDto updatedDashboard = dashboardClient.getDashboard(id);
 
     // then
-    assertThat(updatedDashboard.getReports()).hasSize(1);
-    ReportLocationDto retrievedLocation = updatedDashboard.getReports().get(0);
+    assertThat(updatedDashboard.getTiles()).hasSize(1);
+    DashboardReportTileDto retrievedLocation = updatedDashboard.getTiles().get(0);
     assertThat(retrievedLocation.getId()).isEqualTo(reportId);
     assertThat(retrievedLocation.getConfiguration()).isEqualTo("testConfiguration");
     assertThat(updatedDashboard.getId()).isEqualTo(id);
@@ -489,11 +491,12 @@ public class DashboardHandlingIT extends AbstractIT {
     String dashboardId = addEmptyPrivateDashboard();
     String reportIdToDelete = createNewSingleProcessReport();
 
-    ReportLocationDto reportToBeDeletedReportLocationDto = new ReportLocationDto();
-    reportToBeDeletedReportLocationDto.setId(reportIdToDelete);
-    reportToBeDeletedReportLocationDto.setConfiguration("testConfiguration");
+    DashboardReportTileDto reportToBeDeletedDashboardTileDto = new DashboardReportTileDto();
+    reportToBeDeletedDashboardTileDto.setId(reportIdToDelete);
+    reportToBeDeletedDashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
+    reportToBeDeletedDashboardTileDto.setConfiguration("testConfiguration");
     DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
-    dashboard.setReports(Collections.singletonList(reportToBeDeletedReportLocationDto));
+    dashboard.setTiles(Collections.singletonList(reportToBeDeletedDashboardTileDto));
     dashboardClient.updateDashboard(dashboardId, dashboard);
 
     // when
@@ -501,7 +504,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
     // then
     DashboardDefinitionRestDto updatedDashboard = dashboardClient.getDashboard(dashboardId);
-    updatedDashboard.getReports().forEach(
+    updatedDashboard.getTiles().forEach(
       reportLocationDto -> assertThat(reportLocationDto.getId()).isNotEqualTo(reportIdToDelete));
   }
 
@@ -530,14 +533,15 @@ public class DashboardHandlingIT extends AbstractIT {
   }
 
   private Response addSingleReportToDashboard(final String dashboardId, final String privateReportId) {
-    final ReportLocationDto reportLocationDto = new ReportLocationDto();
-    reportLocationDto.setId(privateReportId);
+    final DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
+    dashboardTileDto.setId(privateReportId);
+    dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
 
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateDashboardRequest(
         dashboardId,
-        new DashboardDefinitionRestDto(Collections.singletonList(reportLocationDto))
+        new DashboardDefinitionRestDto(Collections.singletonList(dashboardTileDto))
       )
       .execute();
   }

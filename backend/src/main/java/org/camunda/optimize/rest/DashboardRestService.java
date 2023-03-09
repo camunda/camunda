@@ -6,9 +6,11 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionResponseDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.service.dashboard.DashboardService;
@@ -17,6 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.ForbiddenException;
@@ -63,12 +66,13 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdResponseDto createNewDashboard(@Context final ContainerRequestContext requestContext,
-                                          DashboardDefinitionRestDto dashboardDefinitionDto) {
+                                          @Valid DashboardDefinitionRestDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     if (dashboardDefinitionDto != null) {
       if (dashboardDefinitionDto.isManagementDashboard() || dashboardDefinitionDto.isInstantPreviewDashboard()) {
         throw new OptimizeValidationException("Management and Instant Preview Dashboards cannot be created");
       }
+      validateDashboardTileTypes(dashboardDefinitionDto);
       validateExternalDashboardLinks(dashboardDefinitionDto);
     }
     return dashboardService.createNewDashboardAndReturnId(
@@ -153,9 +157,10 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateDashboard(@Context ContainerRequestContext requestContext, @PathParam("id") String dashboardId,
-                              DashboardDefinitionRestDto updatedDashboard) {
+                              @Valid DashboardDefinitionRestDto updatedDashboard) {
     updatedDashboard.setId(dashboardId);
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateDashboardTileTypes(updatedDashboard);
     validateExternalDashboardLinks(updatedDashboard);
     dashboardService.updateDashboard(updatedDashboard, userId);
   }
@@ -171,10 +176,24 @@ public class DashboardRestService {
     dashboardService.deleteDashboardAsUser(dashboardId, userId);
   }
 
+  private void validateDashboardTileTypes(final DashboardDefinitionRestDto dashboardDefinitionDto) {
+    dashboardDefinitionDto.getTiles()
+      .forEach(report -> {
+        if (report.getType() == DashboardTileType.OPTIMIZE_REPORT) {
+          if (StringUtils.isEmpty(report.getId())) {
+            throw new OptimizeValidationException("All Optimize Reports must have an ID");
+          }
+        } else if (!StringUtils.isEmpty(report.getId())) {
+          throw new OptimizeValidationException("Text and external URL tiles must not have an ID");
+        }
+      });
+  }
+
   private void validateExternalDashboardLinks(final DashboardDefinitionRestDto dashboardDefinitionDto) {
-    final List<String> invalidExternalLinks = dashboardDefinitionDto.getReports()
+    final List<String> invalidExternalLinks = dashboardDefinitionDto.getTiles()
       .stream()
-      .map(ReportLocationDto::getConfiguration)
+      .filter(dashboard -> dashboard.getType() == DashboardTileType.EXTERNAL_URL)
+      .map(DashboardReportTileDto::getConfiguration)
       .filter(Objects::nonNull)
       .filter(Map.class::isInstance)
       .map(Map.class::cast)

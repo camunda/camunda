@@ -132,8 +132,8 @@ public class DashboardReader {
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = boolQuery()
       .filter(QueryBuilders.nestedQuery(
-        "reports",
-        QueryBuilders.termQuery("reports.id", reportId),
+        DashboardIndex.TILES,
+        QueryBuilders.termQuery(DashboardIndex.TILES + "." + DashboardIndex.REPORT_ID, reportId),
         ScoreMode.None
       ));
 

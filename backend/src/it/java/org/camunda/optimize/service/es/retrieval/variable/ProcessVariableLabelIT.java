@@ -9,7 +9,8 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import org.camunda.optimize.dto.optimize.query.variable.LabelDto;
@@ -297,8 +298,11 @@ public class ProcessVariableLabelIT extends AbstractVariableIT {
 
   private void createEmptyDashboardAndAddReports(final List<String> reportIds, final String collectionId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
-    dashboardDefinitionDto.setReports(reportIds.stream()
-                                        .map(id -> ReportLocationDto.builder().id(id).build())
+    dashboardDefinitionDto.setTiles(reportIds.stream()
+                                        .map(id -> DashboardReportTileDto.builder()
+                                          .id(id)
+                                          .type(DashboardTileType.OPTIMIZE_REPORT)
+                                          .build())
                                         .collect(Collectors.toList()));
     Optional.ofNullable(collectionId).ifPresent(dashboardDefinitionDto::setCollectionId);
     dashboardClient.createDashboard(dashboardDefinitionDto);

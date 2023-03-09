@@ -6,13 +6,15 @@
 package org.camunda.optimize.rest.pub;
 
 import com.google.common.collect.Sets;
+import com.google.gson.JsonObject;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.BaseDashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -48,6 +50,7 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.ViewProperty.RAW_DATA;
 import static org.camunda.optimize.service.entities.EntityImportService.API_IMPORT_OWNER_NAME;
+import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitionIT {
@@ -178,14 +181,21 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
     final SingleProcessReportDefinitionExportDto processReportExport = createSimpleProcessExportDto();
     final SingleDecisionReportDefinitionExportDto decisionReportExport = createSimpleDecisionExportDto();
     final CombinedProcessReportDefinitionExportDto combinedReportExport = createSimpleCombinedExportDto();
-    final String externalResourceId = "my.external-resource.com";
+    final String externalResourceUrl = "my.external-resource.com";
     final DashboardDefinitionExportDto dashboardExport =
       createDashboardExportDtoWithResources(Arrays.asList(
         processReportExport.getId(),
         decisionReportExport.getId(),
-        combinedReportExport.getId(),
-        externalResourceId
+        combinedReportExport.getId()
       ));
+    final JsonObject config = new JsonObject();
+    config.addProperty("external", externalResourceUrl);
+    dashboardExport.getTiles()
+      .add(DashboardReportTileDto.builder()
+             .id("")
+             .type(DashboardTileType.EXTERNAL_URL)
+             .configuration(config.toString())
+             .build());
 
     // when
     final List<EntityIdResponseDto> importedIds =
@@ -219,16 +229,16 @@ public class PublicApiEntityImportIT extends AbstractExportImportEntityDefinitio
       );
 
     // the dashboard resources have been imported with correct IDs
-    assertThat(importedDashboard.get().getReports())
+    assertThat(importedDashboard.get().getTiles())
       .hasSize(4)
-      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ReportLocationDto.Fields.id)
-      .containsAll(dashboardExport.getReports());
-    assertThat(importedDashboard.get().getReportIds())
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(DashboardReportTileDto.Fields.id)
+      .containsAll(dashboardExport.getTiles());
+    assertThat(importedDashboard.get().getTileIds())
       .hasSize(3)
       .containsAll(importedReports.stream().map(ReportDefinitionDto::getId).collect(toList()));
-    assertThat(importedDashboard.get().getExternalResourceUrls())
+    assertThat(getExternalResourceUrls(importedDashboard.get()))
       .singleElement()
-      .isEqualTo(externalResourceId);
+      .isEqualTo(externalResourceUrl);
   }
 
   @Test

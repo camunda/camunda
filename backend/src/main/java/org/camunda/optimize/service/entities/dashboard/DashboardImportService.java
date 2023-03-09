@@ -93,7 +93,7 @@ public class DashboardImportService {
                                              final DashboardDefinitionExportDto dashboardToImport,
                                              final Map<String, EntityIdResponseDto> originalIdToNewIdMap) {
     // adjust the ID of each report resource within dashboard, filtering out external resources where the ID is a URL
-    dashboardToImport.getReports().stream()
+    dashboardToImport.getTiles().stream()
       .filter(reportLocationDto -> IdGenerator.isValidId(reportLocationDto.getId()))
       .forEach(
         reportLocationDto -> reportLocationDto.setId(originalIdToNewIdMap.get(reportLocationDto.getId()).getId())
@@ -130,7 +130,7 @@ public class DashboardImportService {
       dashboardService.validateDashboardFilters(
         userId,
         dashboardToImport.getAvailableFilters(),
-        dashboardToImport.getReports()
+        dashboardToImport.getTiles()
       );
     } catch (Exception e) {
       throw new OptimizeImportFileInvalidException(
@@ -145,7 +145,7 @@ public class DashboardImportService {
     dashboardDefinition.setName(dashboardToImport.getName());
     dashboardDefinition.setCollectionId(collectionId);
     dashboardDefinition.setAvailableFilters(dashboardToImport.getAvailableFilters());
-    dashboardDefinition.setReports(dashboardToImport.getReports());
+    dashboardDefinition.setTiles(dashboardToImport.getTiles());
     dashboardDefinition.setManagementDashboard(false);
     dashboardDefinition.setInstantPreviewDashboard(dashboardToImport.isInstantPreviewDashboard());
     return dashboardDefinition;

@@ -11,7 +11,9 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
@@ -64,7 +66,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
-    List<ReportLocationDto> reportLocations = dashboardShareDto.getReports();
+    List<DashboardReportTileDto> reportLocations = dashboardShareDto.getTiles();
     assertThat(reportLocations).isEmpty();
   }
 
@@ -81,7 +83,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
-    List<ReportLocationDto> reportLocation = dashboardShareDto.getReports();
+    List<DashboardReportTileDto> reportLocation = dashboardShareDto.getTiles();
     assertThat(reportLocation).hasSize(2);
     assertThat(reportLocation.get(0).getPosition().getX()).isNotEqualTo(reportLocation.get(1).getPosition().getX());
   }
@@ -266,7 +268,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     // given
     String dashboardId = addEmptyDashboardToOptimize();
     String externalResourceReportId = "";
-    addReportToDashboard(dashboardId, externalResourceReportId);
+    addExternalReportToDashboard(dashboardId, externalResourceReportId);
 
     // when
     DashboardShareRestDto share = createDashboardShareDto(dashboardId);
@@ -534,7 +536,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     // when
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId2);
 
-    assertThat(dashboardShareDto.getReports()).hasSize(2);
+    assertThat(dashboardShareDto.getTiles()).hasSize(2);
 
     Response response =
       embeddedOptimizeExtension
@@ -555,7 +557,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId2);
 
-    assertThat(dashboardShareDto.getReports()).hasSize(2);
+    assertThat(dashboardShareDto.getTiles()).hasSize(2);
   }
 
   @Test
@@ -573,7 +575,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     // then
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
-    assertThat(dashboardShareDto.getReports()).isEmpty();
+    assertThat(dashboardShareDto.getTiles()).isEmpty();
   }
 
   @Test
@@ -600,12 +602,13 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardId = addEmptyDashboardToOptimize();
     String dashboardShareId = addShareForDashboard(dashboardId);
 
-    ReportLocationDto reportLocationDto = new ReportLocationDto();
+    DashboardReportTileDto dashboardTileDto = new DashboardReportTileDto();
     final String reportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionRequestDto());
-    reportLocationDto.setId(reportId);
-    reportLocationDto.setConfiguration("testConfiguration");
+    dashboardTileDto.setId(reportId);
+    dashboardTileDto.setType(DashboardTileType.OPTIMIZE_REPORT);
+    dashboardTileDto.setConfiguration("testConfiguration");
     DashboardDefinitionRestDto dashboard = new DashboardDefinitionRestDto();
-    dashboard.setReports(Collections.singletonList(reportLocationDto));
+    dashboard.setTiles(Collections.singletonList(dashboardTileDto));
     dashboard.setId(shouldBeIgnoredString);
     dashboard.setLastModifier("shouldNotBeUpdatedManually");
     dashboard.setName("MyDashboard");
@@ -619,8 +622,8 @@ public class SharingServiceIT extends AbstractSharingIT {
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
-    assertThat(dashboardShareDto.getReports()).hasSize(1);
-    ReportLocationDto retrievedLocation = dashboardShareDto.getReports().get(0);
+    assertThat(dashboardShareDto.getTiles()).hasSize(1);
+    DashboardReportTileDto retrievedLocation = dashboardShareDto.getTiles().get(0);
     assertThat(retrievedLocation.getId()).isEqualTo(reportId);
     assertThat(retrievedLocation.getConfiguration()).isEqualTo("testConfiguration");
     assertThat(dashboardShareDto.getId()).isEqualTo(dashboardId);
@@ -643,7 +646,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
-    assertThat(dashboardShareDto.getReports()).extracting(ReportLocationDto::getId).containsExactly(reportId);
+    assertThat(dashboardShareDto.getTiles()).extracting(DashboardReportTileDto::getId).containsExactly(reportId);
 
     // and then
     final ReportDefinitionDto<?> authorizedEvaluationResultDto =
@@ -670,8 +673,8 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
-    assertThat(dashboardShareDto.getReports())
-      .extracting(ReportLocationDto::getId)
+    assertThat(dashboardShareDto.getTiles())
+      .extracting(DashboardReportTileDto::getId)
       .containsExactly(reportIdToStayInDashboard);
 
     // and then
@@ -702,7 +705,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     // then
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
-    assertThat(dashboardShareDto.getReports()).hasSize(1);
+    assertThat(dashboardShareDto.getTiles()).hasSize(1);
   }
 
   @Test
@@ -714,7 +717,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String reportShareId = addShareForReport(reportId);
 
     DashboardDefinitionRestDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
-    String dashboardReportShareId = dashboardShareDto.getReports().get(0).getId();
+    String dashboardReportShareId = dashboardShareDto.getTiles().get(0).getId();
 
     // when
     Response response =
@@ -1021,7 +1024,7 @@ public class SharingServiceIT extends AbstractSharingIT {
       .getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(
         dashboardShareId,
-        dashboardShareDto.getReports().get(0).getId()
+        dashboardShareDto.getTiles().get(0).getId()
       )
       .execute(ReportEvaluationException.class, Response.Status.BAD_REQUEST.getStatusCode());
 
@@ -1152,6 +1155,21 @@ public class SharingServiceIT extends AbstractSharingIT {
   private AdditionalProcessReportEvaluationFilterDto candidateFilter() {
     return new AdditionalProcessReportEvaluationFilterDto(
       ProcessFilterBuilder.filter().candidateGroups().operator(IN).id("someId").add().buildList());
+  }
+
+  private void addExternalReportToDashboard(String dashboardId, String reportId) {
+    DashboardDefinitionRestDto fullBoard = new DashboardDefinitionRestDto();
+    fullBoard.setId(dashboardId);
+    DashboardReportTileDto dashboardTile = new DashboardReportTileDto();
+    dashboardTile.setId(reportId);
+    dashboardTile.setType(DashboardTileType.EXTERNAL_URL);
+    PositionDto position = new PositionDto();
+    position.setX(0);
+    position.setY(0);
+    dashboardTile.setPosition(position);
+    fullBoard.setTiles(List.of(dashboardTile));
+
+    dashboardClient.updateDashboard(dashboardId, fullBoard);
   }
 
 }

@@ -9,8 +9,9 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -120,27 +121,28 @@ public abstract class AbstractSharingIT extends AbstractIT {
     return dashboardId;
   }
 
-  void addReportToDashboard(String dashboardId, String... reportIds) {
+  protected void addReportToDashboard(String dashboardId, String... reportIds) {
     DashboardDefinitionRestDto fullBoard = new DashboardDefinitionRestDto();
     fullBoard.setId(dashboardId);
 
-    List<ReportLocationDto> reports = new ArrayList<>();
+    List<DashboardReportTileDto> reports = new ArrayList<>();
 
     if (reportIds != null) {
       int i = 0;
       for (String reportId : reportIds) {
-        ReportLocationDto reportLocation = new ReportLocationDto();
-        reportLocation.setId(reportId);
+        DashboardReportTileDto dashboardTile = new DashboardReportTileDto();
+        dashboardTile.setId(reportId);
+        dashboardTile.setType(DashboardTileType.OPTIMIZE_REPORT);
         PositionDto position = new PositionDto();
         position.setX(i);
         position.setY(i);
-        reportLocation.setPosition(position);
-        reports.add(reportLocation);
+        dashboardTile.setPosition(position);
+        reports.add(dashboardTile);
         i = i + 2;
       }
     }
 
-    fullBoard.setReports(reports);
+    fullBoard.setTiles(reports);
 
     dashboardClient.updateDashboard(dashboardId, fullBoard);
   }

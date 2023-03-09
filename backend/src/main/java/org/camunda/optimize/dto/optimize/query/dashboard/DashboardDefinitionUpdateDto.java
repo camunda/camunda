@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.dashboard;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -19,7 +20,7 @@ public class DashboardDefinitionUpdateDto {
   protected String name;
   protected OffsetDateTime lastModified;
   protected String lastModifier;
-  protected List<ReportLocationDto> reports;
+  protected List<DashboardReportTileDto> tiles;
   protected String collectionId;
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   @JsonInclude

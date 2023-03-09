@@ -51,7 +51,7 @@ public class DashboardRestServiceIT extends AbstractDashboardRestServiceIT {
     DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(copyId.getId());
     assertThat(dashboard).hasToString(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
-    assertThat(dashboard.getReports()).containsExactlyElementsOf(oldDashboard.getReports());
+    assertThat(dashboard.getTiles()).containsExactlyElementsOf(oldDashboard.getTiles());
   }
 
   @Test

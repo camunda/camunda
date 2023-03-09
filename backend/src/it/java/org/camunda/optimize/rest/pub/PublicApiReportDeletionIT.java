@@ -61,7 +61,7 @@ public class PublicApiReportDeletionIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
     DashboardDefinitionRestDto originalDashboard =
       dashboardClient.getInstantPreviewDashboard(processDefKey, "template1.json");
-    final Optional<String> instantReportId = originalDashboard.getReportIds().stream().findFirst();
+    final Optional<String> instantReportId = originalDashboard.getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
 
     // when

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.alert.AlertIntervalUnit;
 import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
@@ -431,7 +431,7 @@ public class ReportConflictIT extends AbstractIT {
           .buildGetDashboardRequest(dashboardId)
           .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
         assertThat(dashboard).isNotNull();
-        assertThat(dashboard.getReports()).extracting(ReportLocationDto::getId).contains(reportId);
+        assertThat(dashboard.getTiles()).extracting(DashboardReportTileDto::getId).contains(reportId);
       });
   }
 

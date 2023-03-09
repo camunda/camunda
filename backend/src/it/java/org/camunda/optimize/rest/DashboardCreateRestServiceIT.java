@@ -8,10 +8,12 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.util.MarkdownUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -128,12 +130,13 @@ public class DashboardCreateRestServiceIT extends AbstractDashboardRestServiceIT
     final List<DashboardFilterDto<?>> dashboardFilters = variableFilter();
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilters);
-    final ReportLocationDto variableReport = dashboardDefinitionDto.getReports().get(0);
+    final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
 
-    ReportLocationDto externalReport = new ReportLocationDto();
+    DashboardReportTileDto externalReport = new DashboardReportTileDto();
+    externalReport.setType(DashboardTileType.EXTERNAL_URL);
     externalReport.setId("");
     externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
-    dashboardDefinitionDto.setReports(Arrays.asList(externalReport, variableReport));
+    dashboardDefinitionDto.setTiles(Arrays.asList(externalReport, variableReport));
 
     // when
     final IdResponseDto idDto = embeddedOptimizeExtension
@@ -146,9 +149,76 @@ public class DashboardCreateRestServiceIT extends AbstractDashboardRestServiceIT
     final DashboardDefinitionRestDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(idDto.getId())
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
-    assertThat(savedDefinition.getReports())
+    assertThat(savedDefinition.getTiles())
       .containsExactlyInAnyOrder(variableReport, externalReport);
     assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
+  }
+
+  @Test
+  public void createNewDashboard_dashboardContainsTextReport() {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+
+    DashboardReportTileDto textReport = new DashboardReportTileDto();
+    textReport.setType(DashboardTileType.TEXT);
+    textReport.setId("");
+    textReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport("I _love_ *markdown*."));
+    dashboardDefinitionDto.setTiles(List.of(textReport));
+
+    // when
+    final IdResponseDto idDto = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(idDto.getId()).isNotNull();
+    final DashboardDefinitionRestDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDashboardRequest(idDto.getId())
+      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    assertThat(savedDefinition.getTiles()).containsExactlyInAnyOrder(textReport);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getInvalidReportIdAndTypes")
+  public void createNewDashboard_invalidIdAndTypeCombinations(final DashboardReportTileDto dashboardReportTileDto) {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+
+    dashboardDefinitionDto.setTiles(List.of(dashboardReportTileDto));
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewDashboard_dashboardTileDoesNotSpecifyType() {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+
+    DashboardReportTileDto externalReport = new DashboardReportTileDto();
+    externalReport.setType(null);
+    externalReport.setId("");
+    externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
+    dashboardDefinitionDto.setTiles(List.of(externalReport));
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -161,10 +231,11 @@ public class DashboardCreateRestServiceIT extends AbstractDashboardRestServiceIT
     // given
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(Collections.emptyList());
-    ReportLocationDto externalReport = new ReportLocationDto();
+    DashboardReportTileDto externalReport = new DashboardReportTileDto();
     externalReport.setId("");
+    externalReport.setType(DashboardTileType.EXTERNAL_URL);
     externalReport.setConfiguration(ImmutableMap.of("external", url));
-    dashboardDefinitionDto.setReports(List.of(externalReport));
+    dashboardDefinitionDto.setTiles(List.of(externalReport));
 
     // when
     final Response response = embeddedOptimizeExtension

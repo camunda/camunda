@@ -11,13 +11,14 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardStateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardBooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardStateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
@@ -199,9 +200,9 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     assertThat(dashboard.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
 
     // then the report has not been removed from the dashboard
-    assertThat(dashboard.getReports())
+    assertThat(dashboard.getTiles())
       .hasSize(1)
-      .extracting(ReportLocationDto::getId)
+      .extracting(DashboardReportTileDto::getId)
       .containsExactlyInAnyOrder(reportId);
   }
 
@@ -692,8 +693,11 @@ public class DashboardFilterHandlingIT extends AbstractIT {
                                                                                     final List<String> reportIds,
                                                                                     final String collectionId) {
     final DashboardDefinitionRestDto dashboardDefinitionDto = new DashboardDefinitionRestDto();
-    dashboardDefinitionDto.setReports(reportIds.stream()
-                                        .map(id -> ReportLocationDto.builder().id(id).build())
+    dashboardDefinitionDto.setTiles(reportIds.stream()
+                                        .map(id -> DashboardReportTileDto.builder()
+                                          .id(id)
+                                          .type(DashboardTileType.OPTIMIZE_REPORT)
+                                          .build())
                                         .collect(Collectors.toList()));
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
     Optional.ofNullable(collectionId).ifPresent(dashboardDefinitionDto::setCollectionId);

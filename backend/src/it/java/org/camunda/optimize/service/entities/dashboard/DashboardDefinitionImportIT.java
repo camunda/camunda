@@ -6,10 +6,14 @@
 package org.camunda.optimize.service.entities.dashboard;
 
 import com.google.common.collect.Sets;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ImportIndexMismatchDto;
@@ -28,8 +32,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
@@ -46,14 +52,21 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
     final SingleProcessReportDefinitionExportDto processReportExport = createSimpleProcessExportDto();
     final SingleDecisionReportDefinitionExportDto decisionReportExport = createSimpleDecisionExportDto();
     final CombinedProcessReportDefinitionExportDto combinedReportExport = createSimpleCombinedExportDto();
-    final String externalResourceId = "my.external-resource.com";
+    final String externalResourceUrl = "my.external-resource.com";
     final DashboardDefinitionExportDto dashboardExport =
       createDashboardExportDtoWithResources(Arrays.asList(
         processReportExport.getId(),
         decisionReportExport.getId(),
-        combinedReportExport.getId(),
-        externalResourceId
+        combinedReportExport.getId()
       ));
+    final JsonObject config = new JsonObject();
+    config.addProperty("external", externalResourceUrl);
+    dashboardExport.getTiles()
+      .add(DashboardReportTileDto.builder()
+             .id("")
+             .type(DashboardTileType.EXTERNAL_URL)
+             .configuration(config.toString())
+             .build());
 
     // when
     final List<EntityIdResponseDto> importedIds =
@@ -82,16 +95,16 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
     assertThat(importedDashboard.get().getAvailableFilters()).isEqualTo(dashboardExport.getAvailableFilters());
 
     // the dashboard resources have been imported with correct IDs
-    assertThat(importedDashboard.get().getReports())
+    assertThat(importedDashboard.get().getTiles())
       .hasSize(4)
-      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(ReportLocationDto.Fields.id)
-      .containsAll(dashboardExport.getReports());
-    assertThat(importedDashboard.get().getReportIds())
+      .usingRecursiveFieldByFieldElementComparatorIgnoringFields(DashboardReportTileDto.Fields.id)
+      .containsAll(dashboardExport.getTiles());
+    assertThat(importedDashboard.get().getTileIds())
       .hasSize(3)
       .containsAll(importedReports.stream().map(ReportDefinitionDto::getId).collect(toList()));
-    assertThat(importedDashboard.get().getExternalResourceUrls())
+    assertThat(getExternalResourceUrls(importedDashboard.get()))
       .singleElement()
-      .isEqualTo(externalResourceId);
+      .isEqualTo(externalResourceUrl);
   }
 
   @Test
@@ -121,8 +134,8 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
     // the report within the dashboard is imported once and referenced correctly in the new dashboard
     assertThat(importedReports).hasSize(1);
     assertThat(importedDashboard).isPresent();
-    assertThat(importedDashboard.get().getReports()).hasSize(2);
-    assertThat(importedDashboard.get().getReportIds())
+    assertThat(importedDashboard.get().getTiles()).hasSize(2);
+    assertThat(importedDashboard.get().getTileIds())
       .singleElement()
       .isEqualTo(importedReports.get(0).getId());
   }
@@ -203,12 +216,13 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
     assertThat(importedDashboard.get().getLastModified()).isEqualTo(LocalDateUtil.getCurrentDateTime());
     assertThat(importedDashboard.get().getCollectionId()).isEqualTo(collectionId);
     assertThat(importedDashboard.get().getAvailableFilters()).isEqualTo(dashboardExport.getAvailableFilters());
-    assertThat(importedDashboard.get().getReports())
+    assertThat(importedDashboard.get().getTiles())
       .singleElement()
-      .isEqualTo(ReportLocationDto.builder()
+      .isEqualTo(DashboardReportTileDto.builder()
                    .id(importedReports.get(0).getId())
-                   .position(dashboardExport.getReports().get(0).getPosition())
-                   .dimensions(dashboardExport.getReports().get(0).getDimensions())
+                   .type(DashboardTileType.OPTIMIZE_REPORT)
+                   .position(dashboardExport.getTiles().get(0).getPosition())
+                   .dimensions(dashboardExport.getTiles().get(0).getDimensions())
                    .build());
   }
 
@@ -220,6 +234,17 @@ public class DashboardDefinitionImportIT extends AbstractExportImportEntityDefin
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+  }
+
+  public static Set<String> getExternalResourceUrls(final DashboardDefinitionRestDto dashboardDefinitionRestDto) {
+    Gson gson = new Gson();
+    return dashboardDefinitionRestDto.getTiles().stream()
+      .filter(tile -> tile.getType() == DashboardTileType.EXTERNAL_URL)
+      .map(tile -> gson.fromJson(String.valueOf(tile.getConfiguration()), JsonElement.class)
+        .getAsJsonObject()
+        .get("external")
+        .getAsString())
+      .collect(toSet());
   }
 
 }

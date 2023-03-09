@@ -1284,7 +1284,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     Optional<String> instantReportId = dashboardClient.getInstantPreviewDashboard(
       processDefKey,
       "template1.json"
-    ).getReportIds().stream().findFirst();
+    ).getTileIds().stream().findFirst();
     assertThat(instantReportId).isPresent();
     final SingleProcessReportDefinitionRequestDto updatedReport = new SingleProcessReportDefinitionRequestDto();
     updatedReport.getData().setInstantPreviewReport(true);

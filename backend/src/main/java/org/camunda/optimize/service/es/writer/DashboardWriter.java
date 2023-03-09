@@ -144,13 +144,13 @@ public class DashboardWriter {
     Script removeReportFromDashboardScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
-      "ctx._source.reports.removeIf(report -> report.id.equals(params.idToRemove))",
+      "ctx._source.tiles.removeIf(report -> report.id.equals(params.idToRemove))",
       Collections.singletonMap("idToRemove", reportId)
     );
 
     NestedQueryBuilder query = QueryBuilders.nestedQuery(
-      DashboardIndex.REPORTS,
-      QueryBuilders.termQuery(DashboardIndex.REPORTS + "." + DashboardIndex.REPORT_ID, reportId),
+      DashboardIndex.TILES,
+      QueryBuilders.termQuery(DashboardIndex.TILES + "." + DashboardIndex.REPORT_ID, reportId),
       ScoreMode.None
     );
 

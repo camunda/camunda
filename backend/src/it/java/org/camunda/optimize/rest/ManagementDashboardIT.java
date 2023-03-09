@@ -11,12 +11,13 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
@@ -60,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator.LESS_THAN;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_ID;
+import static org.camunda.optimize.service.entities.dashboard.DashboardDefinitionImportIT.getExternalResourceUrls;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.MANAGEMENT_DASHBOARD_LOCALIZATION_CODE;
 import static org.camunda.optimize.service.dashboard.ManagementDashboardService.PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -137,14 +139,14 @@ public class ManagementDashboardIT extends AbstractIT {
     assertThat(managementDashboard.getLastModifier()).isNull();
     assertThat(managementDashboard.getOwner()).isNull();
     assertThat(managementDashboard.getCreated()).isEqualTo(now);
-    assertThat(managementDashboard.getExternalResourceUrls()).isEqualTo(Collections.emptySet());
+    assertThat(getExternalResourceUrls(managementDashboard)).isEqualTo(Collections.emptySet());
     assertThat(managementDashboard.getRefreshRateSeconds()).isNull();
     assertThat(managementDashboard.getAvailableFilters()).isEqualTo(List.of(
       createDashboardStartDateFilterWithDefaultValues(
         new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS))
       )
     ));
-    assertThat(managementDashboard.getReports())
+    assertThat(managementDashboard.getTiles())
       .hasSize(6)
       .containsExactlyInAnyOrderElementsOf(
         expectedReportsAndLocationsByName.keySet()
@@ -186,11 +188,12 @@ public class ManagementDashboardIT extends AbstractIT {
     assertThat(returnedDashboard.getName()).isEqualTo(expectedName);
   }
 
-  private ReportLocationDto getExpectedDashboardForReportWithName(final String reportName,
-                                                                  final Map<String, String> managementReportIdsByName) {
+  private DashboardReportTileDto getExpectedDashboardForReportWithName(final String reportName,
+                                                                       final Map<String, String> managementReportIdsByName) {
     final ExpectedReportConfigurationAndLocation expected = expectedReportsAndLocationsByName.get(reportName);
-    return ReportLocationDto.builder()
+    return DashboardReportTileDto.builder()
       .id(managementReportIdsByName.get(reportName))
+      .type(DashboardTileType.OPTIMIZE_REPORT)
       .position(expected.getPositionDto())
       .dimensions(expected.getDimensionDto())
       .build();

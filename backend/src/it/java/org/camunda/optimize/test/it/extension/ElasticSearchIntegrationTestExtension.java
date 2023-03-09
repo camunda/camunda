@@ -688,8 +688,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     );
     // @formatter:off
     final String updateScript = substitutor.replace(
-      "for(def flowNode : ctx._source.${flowNodesField}){" +
-          "if(flowNode.${flowNodeTypeField}.equals(\"${userTaskFlowNodeType}\")){" +
+      "for (def flowNode : ctx._source.${flowNodesField}) {" +
+          "if (flowNode.${flowNodeTypeField}.equals(\"${userTaskFlowNodeType}\")) {" +
             "flowNode.${totalDurationField} = ${newDuration};" +
             "flowNode.${workDurationField} = ${newDuration};" +
             "flowNode.${idleDurationField} = ${newDuration};" +

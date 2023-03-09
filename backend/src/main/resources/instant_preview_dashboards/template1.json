@@ -1444,8 +1444,9 @@
   "exportEntityType" : "dashboard",
   "name" : "dashboardName",
   "sourceIndexVersion" : 7,
-  "reports" : [ {
+  "tiles" : [ {
     "id" : "f69bfb9e-2853-4d5e-8640-667d2c10c220",
+    "type": "optimize_report",
     "position" : {
       "x" : 0,
       "y" : 0
@@ -1457,6 +1458,7 @@
     "configuration" : null
   }, {
     "id" : "a6f36410-de07-4403-a27b-a02e2e1c30c6",
+    "type": "optimize_report",
     "position" : {
       "x" : 3,
       "y" : 0
@@ -1468,6 +1470,7 @@
     "configuration" : null
   }, {
     "id" : "d615daa1-dfff-488a-8b15-4a0d49a110f7",
+    "type": "optimize_report",
     "position" : {
       "x" : 7,
       "y" : 0
@@ -1479,6 +1482,7 @@
     "configuration" : null
   }, {
     "id" : "ed074e77-c858-4dbf-9d97-5976833cfe9c",
+    "type": "optimize_report",
     "position" : {
       "x" : 11,
       "y" : 0
@@ -1490,6 +1494,7 @@
     "configuration" : null
   }, {
     "id" : "9e2aa98e-645a-4ddd-973f-bf529d27fac4",
+    "type": "optimize_report",
     "position" : {
       "x" : 14,
       "y" : 0
@@ -1501,6 +1506,7 @@
     "configuration" : null
   }, {
     "id" : "1b61bacb-6c3a-49ab-883d-bc4d2e68c990",
+    "type": "optimize_report",
     "position" : {
       "x" : 0,
       "y" : 2
@@ -1512,6 +1518,7 @@
     "configuration" : null
   }, {
     "id" : "a1794d51-b6c7-48b0-8cbd-aa1145097385",
+    "type": "optimize_report",
     "position" : {
       "x" : 9,
       "y" : 2
@@ -1523,6 +1530,7 @@
     "configuration" : null
   }, {
     "id" : "16a124c6-869b-4d16-b01a-363026ab888e",
+    "type": "optimize_report",
     "position" : {
       "x" : 0,
       "y" : 7
@@ -1534,6 +1542,7 @@
     "configuration" : null
   }, {
     "id" : "31db7857-85b1-46ce-936f-7afecc36b4df",
+    "type": "optimize_report",
     "position" : {
       "x" : 9,
       "y" : 7
@@ -1545,6 +1554,7 @@
     "configuration" : null
   }, {
     "id" : "a972ff98-aa84-4e24-82c0-154881104598",
+    "type": "optimize_report",
     "position" : {
       "x" : 0,
       "y" : 12
@@ -1556,6 +1566,7 @@
     "configuration" : null
   }, {
     "id" : "d5d98acb-0012-431c-901f-92c882712e39",
+    "type": "optimize_report",
     "position" : {
       "x" : 9,
       "y" : 12
@@ -1567,6 +1578,7 @@
     "configuration" : null
   }, {
     "id" : "b8760b8e-56b3-4fcf-83f4-2d2367090287",
+    "type": "optimize_report",
     "position" : {
       "x" : 0,
       "y" : 17

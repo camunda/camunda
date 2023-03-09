@@ -3,7 +3,7 @@
  * Licensed under a proprietary license. See the License.txt file for more information.
  * You may not use this file except in compliance with the proprietary license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.migrate39To310.indices;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
@@ -16,13 +16,13 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_ENABLED_SETTING;
 
-public class DashboardShareIndex extends DefaultIndexMappingCreator {
+public class DashboardShareIndexV3 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 3;
 
   public static final String ID = "id";
   public static final String DASHBOARD_ID = "dashboardId";
-  public static final String TILE_SHARES = "tileShares";
+  public static final String REPORT_SHARES = "reportShares";
 
   public static final String POSITION = DashboardReportTileDto.Fields.position;
   public static final String X_POSITION = PositionDto.Fields.x;
@@ -33,7 +33,6 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
   public static final String WIDTH = DimensionDto.Fields.width;
 
   public static final String REPORT_ID = DashboardReportTileDto.Fields.id;
-  public static final String REPORT_TILE_TYPE = DashboardReportTileDto.Fields.type;
   public static final String REPORT_NAME = "name";
 
   public static final String CONFIGURATION = DashboardReportTileDto.Fields.configuration;
@@ -53,16 +52,16 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
-      .startObject(TILE_SHARES)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedReportsField(newBuilder)
-        .endObject()
+      .startObject(REPORT_SHARES)
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedReportsField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(DASHBOARD_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
     // @formatter:on
     return newBuilder;
@@ -72,28 +71,25 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(REPORT_TILE_TYPE)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(REPORT_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(POSITION)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedPositionField(newBuilder)
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedPositionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(DIMENSION)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedDimensionField(newBuilder)
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedDimensionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(CONFIGURATION)
-        .field(MAPPING_ENABLED_SETTING, false)
+      .field(MAPPING_ENABLED_SETTING, false)
       .endObject();
     // @formatter:on
     return newBuilder;
@@ -103,10 +99,10 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(X_POSITION)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(Y_POSITION)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
     // @formatter:on
   }
@@ -115,10 +111,10 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return builder
       .startObject(WIDTH)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(HEIGHT)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
     // @formatter:on
   }

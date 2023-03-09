@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.sharing;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 
 import java.util.List;
 
@@ -15,5 +15,5 @@ public class DashboardShareRestDto {
 
   private String id;
   private String dashboardId;
-  private List<ReportLocationDto> reportShares;
+  private List<DashboardReportTileDto> tileShares;
 }

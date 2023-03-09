@@ -210,7 +210,7 @@ public class InstantPreviewDashboardService {
         final DashboardDefinitionRestDto dashboardDefinition =
           dashboardService.getDashboardDefinitionAsService(dashboardIdToDelete);
         if (dashboardDefinition.isInstantPreviewDashboard()) {
-          final Set<String> reportsToDelete = dashboardDefinition.getReportIds();
+          final Set<String> reportsToDelete = dashboardDefinition.getTileIds();
           for (String reportId : reportsToDelete) {
             reportService.deleteManagementOrInstantPreviewReport(reportId);
           }

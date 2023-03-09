@@ -8,10 +8,12 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.query.IdResponseDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.dashboard.ManagementDashboardService;
+import org.camunda.optimize.util.MarkdownUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -19,6 +21,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -140,7 +143,7 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     final List<DashboardFilterDto<?>> dashboardFilters = variableFilter();
     final DashboardDefinitionRestDto dashboardDefinitionDto =
       createDashboardForReportContainingAllVariables(dashboardFilters);
-    final ReportLocationDto variableReport = dashboardDefinitionDto.getReports().get(0);
+    final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
     // then
@@ -149,10 +152,11 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     assertThat(savedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
 
     // when an external report is added to the dashboard
-    ReportLocationDto externalReport = new ReportLocationDto();
+    DashboardReportTileDto externalReport = new DashboardReportTileDto();
     externalReport.setId("");
+    externalReport.setType(DashboardTileType.EXTERNAL_URL);
     externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
-    dashboardDefinitionDto.setReports(Arrays.asList(externalReport, variableReport));
+    dashboardDefinitionDto.setTiles(Arrays.asList(externalReport, variableReport));
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
@@ -162,8 +166,133 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
     assertThat(dashboardId).isNotNull();
     final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
     assertThat(updatedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
-    assertThat(updatedDefinition.getReports())
+    assertThat(updatedDefinition.getTiles())
       .containsExactlyInAnyOrder(externalReport, variableReport);
+  }
+
+  @Test
+  public void updateDashboard_addTextReportToDashboard() {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+    final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+
+    // when a text report is added to the dashboard
+    DashboardReportTileDto textReport = new DashboardReportTileDto();
+    textReport.setId("");
+    textReport.setType(DashboardTileType.TEXT);
+    textReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport("I _love_ *markdown*."));
+    // adding also an empty text report to the dashboard
+    DashboardReportTileDto emptyTextReport = new DashboardReportTileDto();
+    emptyTextReport.setId("");
+    emptyTextReport.setType(DashboardTileType.TEXT);
+    emptyTextReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport(""));
+    dashboardDefinitionDto.setTiles(Arrays.asList(textReport, variableReport, emptyTextReport));
+
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+
+    // then
+    assertThat(dashboardId).isNotNull();
+    final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(updatedDefinition.getTiles())
+      .containsExactlyInAnyOrder(textReport, variableReport, emptyTextReport);
+  }
+
+  @Test
+  public void updateDashboard_updateExistingTextReport() {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+    final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+
+    // when a text report is added to the dashboard
+    DashboardReportTileDto textReport = new DashboardReportTileDto();
+    textReport.setId("");
+    textReport.setType(DashboardTileType.TEXT);
+    textReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport("I _love_ *markdown*."));
+    dashboardDefinitionDto.setTiles(Arrays.asList(textReport, variableReport));
+
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+
+    // then
+    assertThat(dashboardId).isNotNull();
+    final DashboardDefinitionRestDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(updatedDefinition.getTiles())
+      .containsExactlyInAnyOrder(textReport, variableReport);
+
+    // when the text report is updated
+    DashboardReportTileDto updatedTextReport = new DashboardReportTileDto();
+    updatedTextReport.setId("");
+    updatedTextReport.setType(DashboardTileType.TEXT);
+    updatedTextReport.setConfiguration(MarkdownUtil.getMarkdownForTextReport("Updated text"));
+    dashboardDefinitionDto.setTiles(Arrays.asList(updatedTextReport, variableReport));
+
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute(IdResponseDto.class, Response.Status.NO_CONTENT.getStatusCode());
+
+    // then
+    final DashboardDefinitionRestDto newlyUpdatedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(newlyUpdatedDefinition.getTiles())
+      .containsExactlyInAnyOrder(updatedTextReport, variableReport);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getInvalidReportIdAndTypes")
+  public void updateDashboard_invalidIdAndTypeCombinations(final DashboardReportTileDto dashboardReportTileDto) {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+    final DashboardReportTileDto variableReport = dashboardDefinitionDto.getTiles().get(0);
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+
+    // when an invalid tile is added to dashboard
+    dashboardDefinitionDto.setTiles(Arrays.asList(dashboardReportTileDto, variableReport));
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void updateDashboard_dashboardTileDoesNotSpecifyType() {
+    // given
+    final DashboardDefinitionRestDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(Collections.emptyList());
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+
+    // when an external report without a type specified is added to the dashboard
+    DashboardReportTileDto externalReport = new DashboardReportTileDto();
+    externalReport.setId("");
+    externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
+    dashboardDefinitionDto.setTiles(List.of(externalReport));
+
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -178,10 +307,10 @@ public class DashboardUpdateRestServiceIT extends AbstractDashboardRestServiceIT
 
     // when an external report is added to the dashboard
     final DashboardDefinitionRestDto dashboardDefinitionDto = dashboardClient.getDashboard(dashboardId);
-    ReportLocationDto externalReport = new ReportLocationDto();
+    DashboardReportTileDto externalReport = new DashboardReportTileDto();
     externalReport.setId("");
     externalReport.setConfiguration(ImmutableMap.of("external", url));
-    dashboardDefinitionDto.setReports(List.of(externalReport));
+    dashboardDefinitionDto.setTiles(List.of(externalReport));
 
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)

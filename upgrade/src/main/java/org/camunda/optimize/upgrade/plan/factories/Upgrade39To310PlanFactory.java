@@ -6,6 +6,7 @@
 package org.camunda.optimize.upgrade.plan.factories;
 
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.InstantPreviewDashboardMetadataIndex;
 import org.camunda.optimize.service.es.schema.index.index.PositionBasedImportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
@@ -24,6 +25,7 @@ public class Upgrade39To310PlanFactory implements UpgradePlanFactory {
       .toVersion("3.10.0")
       .addUpgradeStep(addZeebeRecordSequenceFieldToPositionBasedImportIndex())
       .addUpgradeStep(updateDashboardIndexWithNewField())
+      .addUpgradeStep(updateDashboardShareIndexWithNewField())
       .addUpgradeStep(new CreateIndexStep(new InstantPreviewDashboardMetadataIndex()))
       .addUpgradeStep(updateSingleProcessReportIndexWithNewField())
       .build();
@@ -39,10 +41,36 @@ public class Upgrade39To310PlanFactory implements UpgradePlanFactory {
   }
 
   private UpdateIndexStep updateDashboardIndexWithNewField() {
-    // @formatter:off
     final String updateScript =
-      "ctx._source.instantPreviewDashboard = false;";
-    // @formatter:on
+      getUpdateReportTileScript("reports", DashboardIndex.TILES) +
+        "ctx._source.instantPreviewDashboard = false;";
     return new UpdateIndexStep(new DashboardIndex(), updateScript);
+  }
+
+  private UpdateIndexStep updateDashboardShareIndexWithNewField() {
+    final String updateScript = getUpdateReportTileScript("reportShares", DashboardShareIndex.TILE_SHARES);
+    return new UpdateIndexStep(new DashboardShareIndex(), updateScript);
+  }
+
+  private static String getUpdateReportTileScript(final String currentReportProperty, final String newTileProperty) {
+    return
+      // @formatter:off
+      "List tiles = new ArrayList();" +
+      "ctx._source." + currentReportProperty + ".forEach(report -> {" +
+      "  Map config = report.configuration;" +
+      "  if (config != null) {" +
+      "    if (config.get('external') != null) {" +
+      "      report.type = 'external_url'" +
+      "    } else {" +
+      "      report.type = 'optimize_report'" +
+      "    }" +
+      "  } else {" +
+      "    report.type = 'optimize_report'" +
+      "  }" +
+      "  tiles.add(report);" +
+      "});" +
+      "ctx._source." + newTileProperty + " = tiles;\n" +
+      "ctx._source.remove('" + currentReportProperty + "');\n";
+      // @formatter:on
   }
 }

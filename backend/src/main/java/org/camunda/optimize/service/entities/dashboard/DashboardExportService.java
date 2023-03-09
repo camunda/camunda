@@ -85,7 +85,7 @@ public class DashboardExportService {
   private List<ReportDefinitionDto<?>> retrieveRelevantReportDefinitionsOrFailIfMissing(
     final List<DashboardDefinitionRestDto> dashboards) {
     final Set<String> reportIds = dashboards.stream()
-      .flatMap(d -> d.getReportIds().stream())
+      .flatMap(d -> d.getTileIds().stream())
       .collect(toSet());
     try {
       return reportExportService.retrieveReportDefinitionsOrFailIfMissing(reportIds);

@@ -8,11 +8,12 @@ package org.camunda.optimize.service.dashboard;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardInstanceStartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.data.DashboardDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.CountProgressDto;
@@ -82,8 +83,8 @@ public class ManagementDashboardService {
     );
   }
 
-  private ReportLocationDto createProcessInstanceByStartMonthReport(final PositionDto positionDto,
-                                                                    final DimensionDto dimensionDto) {
+  private DashboardReportTileDto createProcessInstanceByStartMonthReport(final PositionDto positionDto,
+                                                                         final DimensionDto dimensionDto) {
     final ProcessReportDataDto processInstanceGroupedByMonth = ProcessReportDataDto.builder()
       .definitions(Collections.emptyList())
       .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, ViewProperty.FREQUENCY))
@@ -94,10 +95,11 @@ public class ManagementDashboardService {
     final String reportId = reportWriter.createNewSingleProcessReport(
       null, processInstanceGroupedByMonth, PROCESS_INSTANCE_USAGE_REPORT_LOCALIZATION_CODE, null
     ).getId();
-    return buildReportLocationDto(positionDto, dimensionDto, reportId);
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
-  private ReportLocationDto createOverallIncidentFreeRateReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
+  private DashboardReportTileDto createOverallIncidentFreeRateReport(final PositionDto positionDto,
+                                                                     final DimensionDto dimensionDto) {
     final SingleReportTargetValueDto targetConfig = new SingleReportTargetValueDto();
     targetConfig.setActive(true);
     final CountProgressDto countProgressConfig = new CountProgressDto();
@@ -115,10 +117,10 @@ public class ManagementDashboardService {
     final String reportId = reportWriter.createNewSingleProcessReport(
       null, overAllIncidentFreeRate, INCIDENT_FREE_RATE_REPORT_LOCALIZATION_CODE, null
     ).getId();
-    return buildReportLocationDto(positionDto, dimensionDto, reportId);
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
-  private ReportLocationDto createAutomationRateReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
+  private DashboardReportTileDto createAutomationRateReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
     final SingleReportTargetValueDto targetConfig = new SingleReportTargetValueDto();
     targetConfig.setActive(true);
     final CountProgressDto countProgressConfig = new CountProgressDto();
@@ -142,10 +144,11 @@ public class ManagementDashboardService {
     final String reportId = reportWriter.createNewSingleProcessReport(
       null, automationRate, AUTOMATION_RATE_REPORT_LOCALIZATION_CODE, null
     ).getId();
-    return buildReportLocationDto(positionDto, dimensionDto, reportId);
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
-  private ReportLocationDto createLongRunningInstancesReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
+  private DashboardReportTileDto createLongRunningInstancesReport(final PositionDto positionDto,
+                                                                  final DimensionDto dimensionDto) {
     final ProcessReportDataDto longRunningInstances = ProcessReportDataDto.builder()
       .definitions(Collections.emptyList())
       .view(new ProcessViewDto(ProcessViewEntity.PROCESS_INSTANCE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
@@ -166,10 +169,11 @@ public class ManagementDashboardService {
     final String reportId = reportWriter.createNewSingleProcessReport(
       null, longRunningInstances, LONG_RUNNING_INSTANCES_REPORT_LOCALIZATION_CODE, null
     ).getId();
-    return buildReportLocationDto(positionDto, dimensionDto, reportId);
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
-  private ReportLocationDto createAutomationCandidatesReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
+  private DashboardReportTileDto createAutomationCandidatesReport(final PositionDto positionDto,
+                                                                  final DimensionDto dimensionDto) {
     final ProcessReportDataDto automationCandidates = ProcessReportDataDto.builder()
       .definitions(Collections.emptyList())
       .view(new ProcessViewDto(ProcessViewEntity.USER_TASK, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
@@ -180,10 +184,10 @@ public class ManagementDashboardService {
     final String reportId = reportWriter.createNewSingleProcessReport(
       null, automationCandidates, AUTOMATION_CANDIDATES_REPORT_LOCALIZATION_CODE, null
     ).getId();
-    return buildReportLocationDto(positionDto, dimensionDto, reportId);
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
-  private ReportLocationDto createActiveBottlenecksReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
+  private DashboardReportTileDto createActiveBottlenecksReport(final PositionDto positionDto, final DimensionDto dimensionDto) {
     final ProcessReportDataDto automationCandidates = ProcessReportDataDto.builder()
       .definitions(Collections.emptyList())
       .view(new ProcessViewDto(ProcessViewEntity.FLOW_NODE, List.of(ViewProperty.FREQUENCY, ViewProperty.DURATION)))
@@ -194,23 +198,24 @@ public class ManagementDashboardService {
     final String reportId = reportWriter.createNewSingleProcessReport(
       null, automationCandidates, ACTIVE_BOTTLENECKS_REPORT_LOCALIZATION_CODE, null
     ).getId();
-    return buildReportLocationDto(positionDto, dimensionDto, reportId);
+    return buildDashboardReportTileDto(positionDto, dimensionDto, reportId);
   }
 
-  private ReportLocationDto buildReportLocationDto(final PositionDto positionDto, final DimensionDto dimensionDto,
-                                                   final String reportId) {
-    return ReportLocationDto.builder()
+  private DashboardReportTileDto buildDashboardReportTileDto(final PositionDto positionDto, final DimensionDto dimensionDto,
+                                                             final String reportId) {
+    return DashboardReportTileDto.builder()
       .id(reportId)
+      .type(DashboardTileType.OPTIMIZE_REPORT)
       .position(positionDto)
       .dimensions(dimensionDto)
       .build();
   }
 
-  private void createManagementDashboardForReports(final List<ReportLocationDto> reportsForDashboard) {
+  private void createManagementDashboardForReports(final List<DashboardReportTileDto> reportsForDashboard) {
     final DashboardDefinitionRestDto dashboardDefinition = new DashboardDefinitionRestDto();
     dashboardDefinition.setId(MANAGEMENT_DASHBOARD_ID);
     dashboardDefinition.setName(MANAGEMENT_DASHBOARD_LOCALIZATION_CODE);
-    dashboardDefinition.setReports(reportsForDashboard);
+    dashboardDefinition.setTiles(reportsForDashboard);
 
     DashboardInstanceStartDateFilterDto filterDto = new DashboardInstanceStartDateFilterDto();
     RollingDateFilterDataDto rollingFilter = new RollingDateFilterDataDto(new RollingDateFilterStartDto(12L, DateUnit.MONTHS));

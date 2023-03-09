@@ -11,7 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import org.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
@@ -31,7 +31,7 @@ import static java.util.stream.Collectors.toSet;
 @EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
   @NotNull
-  private List<ReportLocationDto> reports = new ArrayList<>();
+  private List<DashboardReportTileDto> tiles = new ArrayList<>();
   @NotNull
   private List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   private String collectionId;
@@ -44,18 +44,18 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
       dashboardDefinition.getName(),
       DashboardIndex.VERSION
     );
-    this.reports = dashboardDefinition.getReports();
+    this.tiles = dashboardDefinition.getTiles();
     this.availableFilters = dashboardDefinition.getAvailableFilters();
     this.collectionId = dashboardDefinition.getCollectionId();
   }
 
   @JsonIgnore
-  public Set<String> getReportIds() {
-    return reports.stream().map(ReportLocationDto::getId).filter(IdGenerator::isValidId).collect(toSet());
+  public Set<String> getTileIds() {
+    return tiles.stream().map(DashboardReportTileDto::getId).filter(IdGenerator::isValidId).collect(toSet());
   }
 
   @JsonIgnore
   public Set<String> getExternalResourceUrls() {
-    return reports.stream().map(ReportLocationDto::getId).filter(id -> !IdGenerator.isValidId(id)).collect(toSet());
+    return tiles.stream().map(DashboardReportTileDto::getId).filter(id -> !IdGenerator.isValidId(id)).collect(toSet());
   }
 }

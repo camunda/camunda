@@ -24,9 +24,10 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUp
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardTileType;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -614,10 +615,11 @@ public class CollectionHandlingIT extends AbstractIT {
 
     DashboardDefinitionRestDto dashboardDefinition = dashboardClient.getDashboard(dashboardId);
 
-    dashboardDefinition.setReports(Collections.singletonList(new ReportLocationDto(
+    dashboardDefinition.setTiles(Collections.singletonList(new DashboardReportTileDto(
       originalReportId,
       new PositionDto(),
       new DimensionDto(),
+      DashboardTileType.OPTIMIZE_REPORT,
       null
     )));
 
@@ -643,7 +645,7 @@ public class CollectionHandlingIT extends AbstractIT {
       originalReportId);
     // then
     //the dashboard references the same report entity as the report itself
-    assertThat(copiedDashboard.getReports().get(0).getId()).isEqualTo(copiedReportId);
+    assertThat(copiedDashboard.getTiles().get(0).getId()).isEqualTo(copiedReportId);
 
     assertThat(copiedDashboard.getName()).isEqualTo(dashboardDefinition.getName());
     assertThat(copiedReportDefinition.getName()).isEqualTo(originalReportDefinition.getName());
@@ -669,21 +671,23 @@ public class CollectionHandlingIT extends AbstractIT {
 
     reportClient.updateCombinedReport(combinedReportId, Lists.newArrayList(originalReportId));
 
-    ArrayList<ReportLocationDto> reportLocationDtos = new ArrayList<>();
-    reportLocationDtos.add(new ReportLocationDto(
+    ArrayList<DashboardReportTileDto> dashboardTileDtos = new ArrayList<>();
+    dashboardTileDtos.add(new DashboardReportTileDto(
       combinedReportId,
       new PositionDto(),
       new DimensionDto(),
+      DashboardTileType.OPTIMIZE_REPORT,
       null
     ));
-    reportLocationDtos.add(new ReportLocationDto(
+    dashboardTileDtos.add(new DashboardReportTileDto(
       originalReportId,
       new PositionDto(),
       new DimensionDto(),
+      DashboardTileType.OPTIMIZE_REPORT,
       null
     ));
 
-    dashboardDefinition.setReports(reportLocationDtos);
+    dashboardDefinition.setTiles(dashboardTileDtos);
 
     dashboardClient.updateDashboard(dashboardId, dashboardDefinition);
 
@@ -818,7 +822,7 @@ public class CollectionHandlingIT extends AbstractIT {
     collectionClient.deleteScopeEntry(collectionId, scopeEntry, true);
 
     // then
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
+    assertThat(dashboardClient.getDashboard(dashboardId).getTiles()).isEmpty();
     assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
     assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
     assertThat(collectionClient.getCollectionScope(collectionId)).isEmpty();
@@ -853,7 +857,7 @@ public class CollectionHandlingIT extends AbstractIT {
     collectionClient.deleteScopeEntry(collectionId, scopeEntry2, true);
 
     // then
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
+    assertThat(dashboardClient.getDashboard(dashboardId).getTiles()).isEmpty();
     assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
     assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
     assertThat(collectionClient.getCollectionScope(collectionId))
@@ -948,8 +952,8 @@ public class CollectionHandlingIT extends AbstractIT {
     );
 
     // then
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports())
-      .extracting(ReportLocationDto::getId)
+    assertThat(dashboardClient.getDashboard(dashboardId).getTiles())
+      .extracting(DashboardReportTileDto::getId)
       .contains(singleReportId);
     assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting(AuthorizedReportDefinitionResponseDto::getDefinitionDto)

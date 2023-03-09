@@ -13,6 +13,7 @@ public class SuppressionConstants {
 
   public static final String UNUSED = "unused";
   public static final String UNCHECKED_CAST = "unchecked";
+  public static final String RAW_TYPES = "rawtypes";
   public static final String SAME_PARAM_VALUE = "SameParameterValue";
   public static final String OPTIONAL_FIELD_OR_PARAM = "OptionalUsedAsFieldOrParameterType";
   public static final String OPTIONAL_ASSIGNED_TO_NULL = "OptionalAssignedToNull";
