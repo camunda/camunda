@@ -15,6 +15,8 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A naive implementation to push jobs out, which performs no retries of any kind, but reports
@@ -23,6 +25,7 @@ import java.util.concurrent.Executor;
  * @param <P> the payload type to be pushed out
  */
 final class StreamPusher<P extends BufferWriter> {
+  private static final Logger LOG = LoggerFactory.getLogger(StreamPusher.class);
 
   private final StreamId streamId;
   private final Transport transport;
@@ -47,13 +50,32 @@ final class StreamPusher<P extends BufferWriter> {
       transport
           .send(request, streamId.receiver())
           .whenCompleteAsync((ok, error) -> onPush(payload, errorHandler, error), executor);
+      if (LOG.isTraceEnabled()) {
+        LOG.trace(
+            "Pushed {} to receiver {} of stream {}",
+            payload,
+            streamId.receiver(),
+            streamId.streamId());
+      }
     } catch (final Exception e) {
+      LOG.debug(
+          "Failed to push {} to receiver {} of stream {}",
+          payload,
+          streamId.receiver(),
+          streamId.streamId(),
+          e);
       errorHandler.handleError(e, payload);
     }
   }
 
   private void onPush(final P payload, final ErrorHandler<P> errorHandler, final Throwable error) {
     if (error != null) {
+      LOG.debug(
+          "Failed to push {} to receiver {} of stream {}",
+          payload,
+          streamId.receiver(),
+          streamId.streamId(),
+          error);
       errorHandler.handleError(error, payload);
     }
   }
