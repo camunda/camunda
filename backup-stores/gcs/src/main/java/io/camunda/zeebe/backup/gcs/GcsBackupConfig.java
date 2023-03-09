@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.gcs;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 
 public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
@@ -20,7 +21,7 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
 
   private static String requireBucketName(final String bucketName) {
     if (bucketName == null || bucketName.isBlank()) {
-      throw new IllegalArgumentException("bucketName must be provided");
+      throw new ConfigurationException("bucketName must be provided");
     }
     return bucketName;
   }
@@ -40,7 +41,7 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
     }
 
     if (sanitized.isBlank()) {
-      throw new IllegalArgumentException(
+      throw new ConfigurationException(
           "After removing leading and trailing '/' characters from basePath '%s', the remainder is empty and not a valid base path"
               .formatted(basePath));
     }

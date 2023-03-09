@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.BucketInfo;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
@@ -26,7 +27,7 @@ final class ConfigTest {
 
     // then
     Assertions.assertThatThrownBy(config::build)
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("bucketName");
   }
 
@@ -39,7 +40,7 @@ final class ConfigTest {
 
     // then
     Assertions.assertThatThrownBy(config::build)
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("bucketName");
   }
 
@@ -80,7 +81,7 @@ final class ConfigTest {
 
     // then
     Assertions.assertThatThrownBy(config::build)
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("basePath");
   }
 
