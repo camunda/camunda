@@ -15,60 +15,73 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import org.agrona.DirectBuffer;
 
 public final class BpmnSignalBehavior {
 
+  private final SignalRecord signalRecord =
+      new SignalRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
   private final KeyGenerator keyGenerator;
-  private final StateWriter stateWriter;
+  private final VariableState variableState;
+  private final TypedCommandWriter commandWriter;
   private final ExpressionProcessor expressionBehavior;
 
   public BpmnSignalBehavior(
       final KeyGenerator keyGenerator,
+      final VariableState variableState,
       final Writers writers,
       final ExpressionProcessor expressionBehavior) {
     this.keyGenerator = keyGenerator;
     this.expressionBehavior = expressionBehavior;
-    stateWriter = writers.state();
+    this.variableState = variableState;
+    commandWriter = writers.command();
   }
 
   public Either<Failure, ?> broadcastNewSignal(
       final BpmnElementContext context, final ExecutableEndEvent element) {
+
     final var signal = element.getSignal();
-    final var scopeKey = context.getElementInstanceKey();
+    final var variables =
+        variableState.getVariablesLocalAsDocument(context.getElementInstanceKey());
+
     return evaluateSignalName(signal, context)
         .map(
             signalName -> {
-              writeSignalBroadcastEvent(signalName);
+              triggerSignalBroadcast(signalName, variables);
               return null;
             });
   }
 
   private Either<Failure, String> evaluateSignalName(
       final ExecutableSignal signal, final BpmnElementContext context) {
+
     ensureNotNull("signal", signal);
 
-    if (signal.getSignalName().isPresent()) {
-      return Either.right(signal.getSignalName().get());
+    if (signal.getSignalName().isEmpty()) {
+      return expressionBehavior.evaluateStringExpression(
+          signal.getSignalNameExpression(), context.getElementInstanceKey());
     }
 
-    return expressionBehavior.evaluateStringExpression(
-        signal.getSignalNameExpression(), context.getElementInstanceKey());
+    return Either.right(signal.getSignalName().get());
   }
 
-  private void writeSignalBroadcastEvent(final String signalName) {
+  private void triggerSignalBroadcast(final String signalName, final DirectBuffer variables) {
 
     ensureNotNullOrEmpty("signalName", signalName);
 
-    final var record = new SignalRecord();
-    record.setSignalName(signalName);
+    signalRecord.reset();
+    signalRecord.setSignalName(signalName);
+    signalRecord.setVariables(variables);
 
     final var key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, SignalIntent.BROADCAST, record);
+    commandWriter.appendFollowUpCommand(key, SignalIntent.BROADCAST, signalRecord);
   }
 }

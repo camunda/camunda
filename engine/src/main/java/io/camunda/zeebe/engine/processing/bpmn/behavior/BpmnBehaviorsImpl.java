@@ -140,7 +140,11 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getElementInstanceState());
 
     signalBehavior =
-        new BpmnSignalBehavior(processingState.getKeyGenerator(), writers, expressionBehavior);
+        new BpmnSignalBehavior(
+            processingState.getKeyGenerator(),
+            processingState.getVariableState(),
+            writers,
+            expressionBehavior);
   }
 
   @Override
