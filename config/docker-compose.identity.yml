@@ -39,7 +39,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.2.0-alpha4
+    image: camunda/identity:8.2.0-alpha5
     ports:
       - "8084:8084"
     environment:
@@ -62,7 +62,7 @@ services:
     depends_on:
       - elasticsearch
     container_name: zeebe
-    image: camunda/zeebe:8.2.0-alpha4
+    image: camunda/zeebe:8.2.0-alpha5
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
