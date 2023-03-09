@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionRespo
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -34,28 +35,26 @@ public class DashboardClient {
   }
 
   public DashboardDefinitionRestDto getManagementDashboard() {
-    return getRequestExecutor()
-      .buildGetManagementDashboardRequest()
-      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    return getManagementDashboardLocalized(null);
   }
 
   public DashboardDefinitionRestDto getManagementDashboardLocalized(final String locale) {
-    return getRequestExecutor()
-      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
+    final OptimizeRequestExecutor requestExecutor = getRequestExecutor();
+    Optional.ofNullable(locale).ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale));
+    return requestExecutor
       .buildGetManagementDashboardRequest()
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
   public DashboardDefinitionRestDto getInstantPreviewDashboard(String processDefinitionKey, String template) {
-    return getRequestExecutor()
-      .buildGetInstantPreviewDashboardRequest(processDefinitionKey, template)
-      .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+    return getInstantPreviewDashboardLocalized(processDefinitionKey, template, null);
   }
 
   public DashboardDefinitionRestDto getInstantPreviewDashboardLocalized(final String processDefinitionKey,
                                                                         final String template, final String locale) {
-    return getRequestExecutor()
-      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
+    final OptimizeRequestExecutor requestExecutor = getRequestExecutor();
+    Optional.ofNullable(locale).ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale));
+    return requestExecutor
       .buildGetInstantPreviewDashboardRequest(processDefinitionKey, template)
       .execute(DashboardDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }

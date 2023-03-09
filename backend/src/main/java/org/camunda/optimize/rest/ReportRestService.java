@@ -219,8 +219,8 @@ public class ReportRestService {
         reportDefinitionDto,
         PaginationDto.fromPaginationRequest(paginationRequestDto)
       );
-    return reportRestMapper.mapToLocalizedEvaluationResponseDto(reportEvaluationResult,
-                                                                requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
+    return reportRestMapper.mapToLocalizedEvaluationResponseDto(
+      reportEvaluationResult, requestContext.getHeaderString(X_OPTIMIZE_CLIENT_LOCALE));
   }
 
   /**

@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.rest.RestTestConstants.DEFAULT_PASSWORD;
@@ -64,12 +65,10 @@ public class EntitiesClient {
 
   private EntityNameResponseDto getEntityNamesAsUser(final String collectionId, final String dashboardId,
                                                      final String reportId, final String eventProcessId,
-                                                     final String username, final String password, String locale) {
-    if (locale == null) {
-      locale = "";
-    }
-    return getRequestExecutor()
-      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
+                                                     final String username, final String password, final String locale) {
+    final OptimizeRequestExecutor requestExecutor = getRequestExecutor();
+    Optional.ofNullable(locale).ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, loc));
+    return requestExecutor
       .withUserAuthentication(username, password)
       .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
       .execute(EntityNameResponseDto.class, Response.Status.OK.getStatusCode());
@@ -84,4 +83,5 @@ public class EntitiesClient {
   private OptimizeRequestExecutor getRequestExecutor() {
     return requestExecutorSupplier.get();
   }
+
 }

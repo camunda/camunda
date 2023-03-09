@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestConstants {
-  public static final String PROMETHEUS_ENDPOINT = "/prometheus";
 
   public static final String BACKUP_ENDPOINT = "/backups";
 

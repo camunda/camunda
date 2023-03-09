@@ -44,6 +44,7 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -385,8 +386,8 @@ public class ReportClient {
   }
 
   public AuthorizedProcessReportEvaluationResponseDto<List<MapResultEntryDto>> evaluateReportAsUser(final String reportId,
-                                                                                                     final String username,
-                                                                                                     final String password) {
+                                                                                                    final String username,
+                                                                                                    final String password) {
     return getRequestExecutor()
       .withUserAuthentication(username, password)
       .buildEvaluateSavedReportRequest(reportId)
@@ -790,9 +791,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(
-        new TypeReference<>() {}
-      );
+      .execute(new TypeReference<>() {});
       // @formatter:on
   }
 
@@ -801,9 +800,7 @@ public class ReportClient {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(
-        new TypeReference<>() {}
-      );
+      .execute(new TypeReference<>() {});
       // @formatter:off
   }
 
@@ -825,9 +822,11 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public <T, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResponseDto<T> evaluateProcessReportLocalized(final String reportId, final String locale) {
-    return getRequestExecutor()
-      .addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, locale)
+  public <T> AuthorizedProcessReportEvaluationResponseDto<T> evaluateProcessReportLocalized(final String reportId,
+                                                                                            final String locale) {
+    final OptimizeRequestExecutor requestExecutor = getRequestExecutor();
+    Optional.ofNullable(locale).ifPresent(loc -> requestExecutor.addSingleHeader(X_OPTIMIZE_CLIENT_LOCALE, loc));
+    return requestExecutor
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
       .execute(new TypeReference<>() {});
@@ -839,6 +838,6 @@ public class ReportClient {
       .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
       // @formatter:off
       .execute(new TypeReference<>() {});
-    // @formatter:on
+      // @formatter:on
   }
 }
