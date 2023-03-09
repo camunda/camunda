@@ -13,7 +13,7 @@ import java.util.Objects;
 public class GCSBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
   private String basePath;
-  private GcsBackupStoreAuth auth;
+  private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
   public String getBucketName() {
     return bucketName;
