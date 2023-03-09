@@ -11,11 +11,48 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.GCSBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 final class BackupStoreCfgTest {
+
+  @Test
+  void canConfigureBackupStore() {
+    // given
+    final var env = Map.of("zeebe.broker.data.backup.store", "gcs");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getStore()).isEqualTo(BackupStoreType.GCS);
+  }
+
+  @Test
+  void shouldUseDefaultGcsAuth() {
+    // given
+    final var env = Map.<String, String>of();
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getGcs().getAuth()).isEqualTo(GcsBackupStoreAuth.AUTO);
+  }
+
+  @Test
+  void canConfigureGcsAuth() {
+    // given
+    final var env =
+        Map.of(
+            "zeebe.broker.data.backup.store", "gcs", "zeebe.broker.data.backup.gcs.auth", "none");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getGcs().getAuth()).isEqualTo(GcsBackupStoreAuth.NONE);
+  }
 
   @Test
   void shouldSetPartialS3Config() {
