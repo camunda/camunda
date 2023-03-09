@@ -1,3 +1,63 @@
+# v8.2.0-alpha5
+## 🚀 New Features
+* **backend**: use sequence field for import ([#2512](https://github.com/camunda/tasklist/issues/2512))
+* improve error handling when invalid auth token provided ([#2591](https://github.com/camunda/tasklist/issues/2591))
+* Update left panel layout ([#2545](https://github.com/camunda/tasklist/issues/2545))
+* **backend**: use Elasticsearch client compatibility mode to run on Elasticsearch 8 ([#2510](https://github.com/camunda/tasklist/issues/2510))
+* increase batch size ([#2484](https://github.com/camunda/tasklist/issues/2484))
+* use runtime indexes for searching CREATED tasks ([#2476](https://github.com/camunda/tasklist/issues/2476))
+
+## 💊 Bugfixes
+* invalid operate token ([#2571](https://github.com/camunda/tasklist/issues/2571))
+* **deps**: update dependency @apollo/client to v3.7.10 ([#2593](https://github.com/camunda/tasklist/issues/2593))
+* **deps**: update dependency @camunda/camunda-composite-components to v0.0.30 ([#2575](https://github.com/camunda/tasklist/issues/2575))
+* **deps**: update dependency react-router-dom to v6.8.2 ([#2562](https://github.com/camunda/tasklist/issues/2562))
+* Add new message for readonly users ([#2538](https://github.com/camunda/tasklist/issues/2538))
+* **deps**: update all non-major dependencies ([#2499](https://github.com/camunda/tasklist/issues/2499))
+* upgrade-insecure-requests ([#2542](https://github.com/camunda/tasklist/issues/2542))
+* **deps**: update dependency @carbon/react to v1.23.0 ([#2520](https://github.com/camunda/tasklist/issues/2520))
+* Fix empty assignee field for restricted users ([#2526](https://github.com/camunda/tasklist/issues/2526))
+* resolve GraphQL vulnerability ([#2509](https://github.com/camunda/tasklist/issues/2509))
+* get processes returning duplicated processes ([#2514](https://github.com/camunda/tasklist/issues/2514))
+* fix vulnerability issues [snakeyaml] ([#2488](https://github.com/camunda/tasklist/issues/2488))
+* Fix form-js placeholder color ([#2511](https://github.com/camunda/tasklist/issues/2511))
+* **deps**: update dependency mobx to v6.8.0 ([#2497](https://github.com/camunda/tasklist/issues/2497))
+
+## 🧹 Chore
+* **backend**: update Zeebe and Identity to 8.2.0-alpha5
+* **backend**: update Zeebe and Identity to 8.2.0-alpha5 ([#2605](https://github.com/camunda/tasklist/issues/2605))
+* **deps**: update dependency testcafe to v2.4.0 ([#2596](https://github.com/camunda/tasklist/issues/2596))
+* Adding how to build and run tasklist ([#2518](https://github.com/camunda/tasklist/issues/2518))
+* Preload main fonts ([#2579](https://github.com/camunda/tasklist/issues/2579))
+* **deps**: update hashicorp/vault-action digest to 3a9100e ([#2581](https://github.com/camunda/tasklist/issues/2581))
+* **pom**: fix Maven filtering ([#2577](https://github.com/camunda/tasklist/issues/2577))
+* **deps**: update all non-major dependencies ([#2573](https://github.com/camunda/tasklist/issues/2573))
+* **deps**: update hashicorp/vault-action digest to 3bbbc68 ([#2570](https://github.com/camunda/tasklist/issues/2570))
+* **deps**: update hashicorp/vault-action digest to 74bc2a6 ([#2565](https://github.com/camunda/tasklist/issues/2565))
+* **deps**: update dependency monaco-editor to v0.36.1 ([#2564](https://github.com/camunda/tasklist/issues/2564))
+* Remove custom JSDOM
+* **deps**: update hashicorp/vault-action digest to 76780d4 ([#2563](https://github.com/camunda/tasklist/issues/2563))
+* Make transition when changing filters more smooth ([#2544](https://github.com/camunda/tasklist/issues/2544))
+* **deps**: update actions/add-to-project digest to 4756e63 ([#2560](https://github.com/camunda/tasklist/issues/2560))
+* **deps**: update all non-major dependencies ([#2543](https://github.com/camunda/tasklist/issues/2543))
+* **deps**: update dependency monaco-editor to v0.36.0 ([#2558](https://github.com/camunda/tasklist/issues/2558))
+* Update React, CRA and testing library deps ([#2537](https://github.com/camunda/tasklist/issues/2537))
+* **deps**: update dependency @playwright/test to v1.31.0 ([#2540](https://github.com/camunda/tasklist/issues/2540))
+* **deps**: update actions/add-to-project digest to 11ef9e1 ([#2539](https://github.com/camunda/tasklist/issues/2539))
+* **deps**: update dependency @types/node to v18.14.0 ([#2521](https://github.com/camunda/tasklist/issues/2521))
+* Refactor polling + infinite scrolling ([#2522](https://github.com/camunda/tasklist/issues/2522))
+* Replace set-output ([#2536](https://github.com/camunda/tasklist/issues/2536))
+* Improve lodash code splitting ([#2535](https://github.com/camunda/tasklist/issues/2535))
+* Update Browserlist DB
+* **deps**: update actions/add-to-project digest to 5b15b1a ([#2515](https://github.com/camunda/tasklist/issues/2515))
+* **deps**: update actions/add-to-project digest to 8434539 ([#2513](https://github.com/camunda/tasklist/issues/2513))
+* **deps**: update actions/add-to-project digest to ba4c19d ([#2504](https://github.com/camunda/tasklist/issues/2504))
+* Add tracking to process start ([#2498](https://github.com/camunda/tasklist/issues/2498))
+* Update Browserlist DB
+* Cache Playwright install on GHA ([#2491](https://github.com/camunda/tasklist/issues/2491))
+* Update visual regression setup ([#2487](https://github.com/camunda/tasklist/issues/2487))
+* **deps**: update all non-major dependencies ([#2463](https://github.com/camunda/tasklist/issues/2463))
+* update CHANGELOG.md
 # v8.2.0-alpha4
 ## 🚀 New Features
 * Replace feature flag with conditional rendering of processes menu item ([#2485](https://github.com/camunda/tasklist/issues/2485))
