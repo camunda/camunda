@@ -14,6 +14,7 @@ import java.util.Objects;
 public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
   private String basePath;
+  private String host;
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
   public String getBucketName() {
@@ -32,6 +33,14 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     this.basePath = basePath;
   }
 
+  public String getHost() {
+    return host;
+  }
+
+  public void setHost(final String host) {
+    this.host = host;
+  }
+
   public GcsBackupStoreAuth getAuth() {
     return auth;
   }
@@ -44,7 +53,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     final var storeConfig =
         new GcsBackupConfig.Builder()
             .withBucketName(config.getBucketName())
-            .withBasePath(config.getBasePath());
+            .withBasePath(config.getBasePath())
+            .withHost(config.getHost());
     final var authenticated =
         switch (config.getAuth()) {
           case NONE -> storeConfig.withoutAuthentication();
@@ -64,26 +74,29 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     final GcsBackupStoreConfig that = (GcsBackupStoreConfig) o;
     return Objects.equals(bucketName, that.bucketName)
         && Objects.equals(basePath, that.basePath)
-        && Objects.equals(auth, that.auth);
+        && Objects.equals(host, that.host)
+        && auth == that.auth;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bucketName, basePath, auth);
+    return Objects.hash(bucketName, basePath, host, auth);
   }
 
   @Override
   public String toString() {
-    return "GCSBackupStoreConfig{"
+    return "GcsBackupStoreConfig{"
         + "bucketName='"
         + bucketName
         + '\''
         + ", basePath='"
         + basePath
         + '\''
-        + ", auth='"
-        + auth
+        + ", host='"
+        + host
         + '\''
+        + ", auth="
+        + auth
         + '}';
   }
 
