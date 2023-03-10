@@ -29,6 +29,7 @@ import {Operations} from 'modules/components/Operations';
 import {Link} from 'modules/components/Link';
 
 import {ProcessContainer, CircleBlock, ProcessBlock, State} from './styled';
+import {processesStore} from 'modules/stores/processes';
 
 type SkeletonColumns = React.ComponentProps<
   typeof SortableTable
@@ -271,6 +272,9 @@ const List: React.FC = observer(() => {
                             source: 'instances-list',
                           });
                         }}
+                        permissions={processesStore.getPermissions(
+                          instance.bpmnProcessId
+                        )}
                       />
                     ),
                   },

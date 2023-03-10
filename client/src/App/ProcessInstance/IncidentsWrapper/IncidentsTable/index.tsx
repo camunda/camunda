@@ -24,7 +24,7 @@ import {tracking} from 'modules/tracking';
 import {authenticationStore} from 'modules/stores/authentication';
 import {SortableTable} from 'modules/components/SortableTable';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
-import {useResourceBasedPermissions} from 'modules/hooks/useResourceBasedPermissions';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 const IncidentsTable: React.FC = observer(function IncidentsTable() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -61,10 +61,9 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
   );
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
-  const {hasResourceBasedPermission} = useResourceBasedPermissions();
   const hasPermissionForRetryOperation =
     authenticationStore.hasPermission(['write']) &&
-    hasResourceBasedPermission(['UPDATE_PROCESS_INSTANCE']);
+    processInstanceDetailsStore.hasPermission(['UPDATE_PROCESS_INSTANCE']);
 
   return (
     <>

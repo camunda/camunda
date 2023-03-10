@@ -16,6 +16,7 @@ import {getProcessInstanceFilters} from 'modules/utils/filter';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {sortOptions} from 'modules/utils/sortOptions';
+import {PERMISSIONS} from 'modules/constants';
 
 type State = {
   processes: ProcessDto[];
@@ -142,16 +143,18 @@ class Processes extends NetworkReconnectionHandler {
     this.retryCount = 0;
   };
 
-  getProcessPermissions = (processId?: string) => {
+  getPermissions = (processId?: string) => {
+    if (!window.clientConfig?.resourcePermissionsEnabled) {
+      return PERMISSIONS;
+    }
+
     if (processId === undefined) {
       return [];
     }
 
-    return (
-      this.state.processes.find(
-        (process) => process.bpmnProcessId === processId
-      )?.permissions ?? []
-    );
+    return this.state.processes.find(
+      (process) => process.bpmnProcessId === processId
+    )?.permissions;
   };
 
   reset() {

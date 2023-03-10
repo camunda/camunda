@@ -56,7 +56,7 @@ interface InstanceOperationEntity {
   errorMessage: null | string;
 }
 
-type PermissionDto =
+type ResourceBasedPermissionDto =
   | 'READ'
   | 'DELETE'
   | 'UPDATE_PROCESS_INSTANCE'
@@ -80,7 +80,7 @@ interface ProcessInstanceEntity {
     instanceId: string;
     processDefinitionName: string;
   }>;
-  permissions?: PermissionDto[] | null;
+  permissions?: ResourceBasedPermissionDto[] | null;
 }
 
 interface DecisionInstanceEntity {

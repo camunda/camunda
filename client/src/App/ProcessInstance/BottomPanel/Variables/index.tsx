@@ -292,6 +292,8 @@ const Variables: React.FC<Props> = observer(
                                           scopes={['write']}
                                           resourceBasedRestrictions={{
                                             scopes: ['UPDATE_PROCESS_INSTANCE'],
+                                            permissions:
+                                              processInstanceDetailsStore.getPermissions(),
                                           }}
                                           fallback={
                                             isPreview ? (
@@ -385,6 +387,7 @@ const Variables: React.FC<Props> = observer(
             scopes={['write']}
             resourceBasedRestrictions={{
               scopes: ['UPDATE_PROCESS_INSTANCE'],
+              permissions: processInstanceDetailsStore.getPermissions(),
             }}
           >
             <Styled.Footer

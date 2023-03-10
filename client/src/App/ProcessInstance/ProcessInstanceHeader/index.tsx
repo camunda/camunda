@@ -154,6 +154,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['UPDATE_PROCESS_INSTANCE', 'DELETE_PROCESS_INSTANCE'],
+          permissions: processInstanceDetailsStore.getPermissions(),
         }}
       >
         <>
@@ -182,6 +183,7 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             isInstanceModificationVisible={
               !modificationsStore.isModificationModeEnabled
             }
+            permissions={processInstanceDetailsStore.getPermissions()}
           />
         </>
       </Restricted>

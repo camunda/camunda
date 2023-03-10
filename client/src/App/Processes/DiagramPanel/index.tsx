@@ -114,8 +114,8 @@ const DiagramPanel: React.FC = observer(() => {
             <Restricted
               scopes={['write']}
               resourceBasedRestrictions={{
-                resourceDefinitionId: bpmnProcessId,
                 scopes: ['DELETE'],
+                permissions: processesStore.getPermissions(bpmnProcessId),
               }}
             >
               <ProcessOperations

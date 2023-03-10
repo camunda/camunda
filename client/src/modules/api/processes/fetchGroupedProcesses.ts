@@ -18,7 +18,7 @@ type ProcessDto = {
   bpmnProcessId: string;
   name: string | null;
   processes: ProcessVersionDto[];
-  permissions?: PermissionDto[] | null;
+  permissions?: ResourceBasedPermissionDto[] | null;
 };
 
 const fetchGroupedProcesses = async () => {

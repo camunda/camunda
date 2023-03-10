@@ -34,6 +34,7 @@ type Props = {
   onSuccess?: (operationType: OperationEntityType) => void;
   forceSpinner?: boolean;
   isInstanceModificationVisible?: boolean;
+  permissions?: ResourceBasedPermissionDto[] | null;
 };
 
 const Operations: React.FC<Props> = observer(
@@ -44,6 +45,7 @@ const Operations: React.FC<Props> = observer(
     onSuccess,
     forceSpinner,
     isInstanceModificationVisible = false,
+    permissions,
   }) => {
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [isCancellationModalVisible, setIsCancellationModalVisible] =
@@ -101,7 +103,7 @@ const Operations: React.FC<Props> = observer(
               scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['UPDATE_PROCESS_INSTANCE'],
-                resourceDefinitionId: instance.bpmnProcessId,
+                permissions,
               }}
             >
               <OperationItem
@@ -117,7 +119,7 @@ const Operations: React.FC<Props> = observer(
               scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['UPDATE_PROCESS_INSTANCE'],
-                resourceDefinitionId: instance.bpmnProcessId,
+                permissions,
               }}
             >
               <OperationItem
@@ -133,7 +135,7 @@ const Operations: React.FC<Props> = observer(
               scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['DELETE_PROCESS_INSTANCE'],
-                resourceDefinitionId: instance.bpmnProcessId,
+                permissions,
               }}
             >
               <OperationItem
@@ -151,7 +153,7 @@ const Operations: React.FC<Props> = observer(
                 scopes={['write']}
                 resourceBasedRestrictions={{
                   scopes: ['UPDATE_PROCESS_INSTANCE'],
-                  resourceDefinitionId: instance.bpmnProcessId,
+                  permissions,
                 }}
               >
                 <OperationItem

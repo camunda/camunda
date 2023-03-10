@@ -25,6 +25,13 @@ const SORT_ORDER = {
   DESC: 'desc',
 } as const;
 
+const PERMISSIONS: ResourceBasedPermissionDto[] = [
+  'READ',
+  'DELETE',
+  'UPDATE_PROCESS_INSTANCE',
+  'DELETE_PROCESS_INSTANCE',
+];
+
 const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 const STATISTICS_OVERLAY_ID = 'flow-nodes-statistics';
 
@@ -70,4 +77,5 @@ export {
   MODIFICATION_HEADER_HEIGHT,
   FOOTER_HEIGHT,
   PAGE_TOP_PADDING,
+  PERMISSIONS,
 };

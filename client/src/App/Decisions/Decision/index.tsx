@@ -113,8 +113,10 @@ const Decision: React.FC = observer(() => {
             <Restricted
               scopes={['write']}
               resourceBasedRestrictions={{
-                resourceDefinitionId: decisionId ?? undefined,
                 scopes: ['DELETE'],
+                permissions: groupedDecisionsStore.getPermissions(
+                  decisionId ?? undefined
+                ),
               }}
             >
               <DecisionOperations

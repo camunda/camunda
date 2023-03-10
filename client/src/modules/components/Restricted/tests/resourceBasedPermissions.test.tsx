@@ -74,7 +74,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: [],
-          resourceDefinitionId: 'demoProcess',
+          permissions: processesStore.getPermissions('demoProcess'),
         }}
       >
         <div>test content</div>
@@ -103,7 +103,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['UPDATE_PROCESS_INSTANCE'],
-          resourceDefinitionId: 'demoProcess',
+          permissions: processesStore.getPermissions('demoProcess'),
         }}
       >
         <div>test content</div>
@@ -134,7 +134,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
-          resourceDefinitionId: 'demoProcess',
+          permissions: processesStore.getPermissions('demoProcess'),
         }}
       >
         <div>test content</div>
@@ -164,7 +164,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['UPDATE_PROCESS_INSTANCE'],
-          resourceDefinitionId: 'demoProcess',
+          permissions: processesStore.getPermissions('demoProcess'),
         }}
       >
         <div>test content</div>
@@ -179,7 +179,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
-          resourceDefinitionId: 'demoProcess',
+          permissions: processesStore.getPermissions('demoProcess'),
         }}
       >
         <div>test content</div>
@@ -193,7 +193,9 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE'],
-          resourceDefinitionId: 'eventBasedGatewayProcess',
+          permissions: processesStore.getPermissions(
+            'eventBasedGatewayProcess'
+          ),
         }}
       >
         <div>test content</div>
@@ -207,7 +209,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE_PROCESS_INSTANCE'],
-          resourceDefinitionId: 'bigVarProcess',
+          permissions: processesStore.getPermissions('bigVarProcess'),
         }}
       >
         <div>test content</div>
@@ -221,7 +223,7 @@ describe('Restricted', () => {
         scopes={['write']}
         resourceBasedRestrictions={{
           scopes: ['DELETE_PROCESS_INSTANCE'],
-          resourceDefinitionId: 'orderProcess',
+          permissions: processesStore.getPermissions('orderProcess'),
         }}
       >
         <div>test content</div>

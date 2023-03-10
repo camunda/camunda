@@ -7,33 +7,38 @@
 
 import {authenticationStore, Permissions} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
-import {useResourceBasedPermissions} from 'modules/hooks/useResourceBasedPermissions';
 
 type Props = {
   children: React.ReactNode;
   scopes: Permissions;
   resourceBasedRestrictions?: {
-    scopes: PermissionDto[];
-    resourceDefinitionId?: string;
+    scopes: ResourceBasedPermissionDto[];
+    permissions?: ResourceBasedPermissionDto[] | null;
   };
   fallback?: React.ReactNode;
 };
 
 const Restricted: React.FC<Props> = observer(
-  ({children, scopes, resourceBasedRestrictions, fallback}) => {
-    const {hasResourceBasedPermission} = useResourceBasedPermissions();
-
-    if (!authenticationStore.hasPermission(scopes)) {
+  ({children, scopes: generalScopes, resourceBasedRestrictions, fallback}) => {
+    if (!authenticationStore.hasPermission(generalScopes)) {
       return fallback ? <>{fallback}</> : null;
     }
 
     if (
-      resourceBasedRestrictions !== undefined &&
-      !hasResourceBasedPermission(
-        resourceBasedRestrictions.scopes,
-        resourceBasedRestrictions.resourceDefinitionId
-      )
+      !window.clientConfig?.resourcePermissionsEnabled ||
+      resourceBasedRestrictions === undefined ||
+      resourceBasedRestrictions.scopes.length === 0
     ) {
+      return <>{children}</>;
+    }
+
+    const {scopes, permissions} = resourceBasedRestrictions;
+
+    const hasResourceBasedPermission = scopes.some((permission) =>
+      permissions?.includes(permission)
+    );
+
+    if (!hasResourceBasedPermission) {
       return fallback ? <>{fallback}</> : null;
     }
 

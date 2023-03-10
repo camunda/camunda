@@ -21,6 +21,7 @@ import {sortOptions} from 'modules/utils/sortOptions';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {getDecisionInstanceFilters} from 'modules/utils/filter';
+import {PERMISSIONS} from 'modules/constants';
 
 type State = {
   decisions: DecisionDto[];
@@ -175,16 +176,18 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     this.retryCount = 0;
   };
 
-  getDecisionPermissions = (decisionId?: string) => {
+  getPermissions = (decisionId?: string) => {
+    if (!window.clientConfig?.resourcePermissionsEnabled) {
+      return PERMISSIONS;
+    }
+
     if (decisionId === undefined) {
       return [];
     }
 
-    return (
-      this.state.decisions.find(
-        (decision) => decision.decisionId === decisionId
-      )?.permissions ?? []
-    );
+    return this.state.decisions.find(
+      (decision) => decision.decisionId === decisionId
+    )?.permissions;
   };
 
   reset() {
