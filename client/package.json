@@ -15,7 +15,7 @@
     "graphql": "16.6.0",
     "mixpanel-browser": "2.45.0",
     "mobx": "6.8.0",
-    "mobx-react-lite": "3.4.0",
+    "mobx-react-lite": "3.4.3",
     "polished": "4.2.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -54,7 +54,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
-    "@playwright/test": "1.31.1",
+    "@playwright/test": "1.31.2",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
     "@testing-library/testcafe": "5.0.0",
@@ -63,7 +63,7 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.4.0",
     "@types/mixpanel-browser": "2.38.1",
-    "@types/node": "18.14.4",
+    "@types/node": "18.14.6",
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.11",
     "@types/react-transition-group": "4.4.5",
