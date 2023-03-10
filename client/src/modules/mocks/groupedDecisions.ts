@@ -5,7 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-const groupedDecisions = [
+import {DecisionDto} from 'modules/api/decisions/fetchGroupedDecisions';
+
+const groupedDecisions: DecisionDto[] = [
   {
     decisionId: 'invoice-assign-approver',
     name: 'Assign Approver Group',
@@ -21,6 +23,7 @@ const groupedDecisions = [
         decisionId: 'invoice-assign-approver',
       },
     ],
+    permissions: ['READ'],
   },
   {
     decisionId: 'invoiceClassification',
@@ -32,6 +35,7 @@ const groupedDecisions = [
         decisionId: 'invoiceClassification',
       },
     ],
+    permissions: ['READ', 'DELETE'],
   },
   {
     decisionId: 'calc-key-figures',
@@ -43,6 +47,7 @@ const groupedDecisions = [
         decisionId: 'calc-key-figures',
       },
     ],
+    permissions: ['READ'],
   },
 ];
 

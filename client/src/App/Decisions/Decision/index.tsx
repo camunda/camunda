@@ -110,7 +110,13 @@ const Decision: React.FC = observer(() => {
         {IS_DECISION_DEFINITION_DELETION_ENABLED &&
           isVersionSelected &&
           decisionDefinitionId !== null && (
-            <Restricted scopes={['write']}>
+            <Restricted
+              scopes={['write']}
+              resourceBasedRestrictions={{
+                resourceDefinitionId: decisionId ?? undefined,
+                scopes: ['DELETE'],
+              }}
+            >
               <DecisionOperations
                 decisionDefinitionId={decisionDefinitionId}
                 decisionName={decisionName || 'Decision'}

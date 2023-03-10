@@ -15,6 +15,7 @@ type DecisionDto = {
     version: number;
     decisionId: string;
   }[];
+  permissions?: PermissionDto[] | null;
 };
 
 const fetchGroupedDecisions = async () => {

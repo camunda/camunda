@@ -21,11 +21,10 @@ jest.mock('modules/feature-flags', () => ({
 describe('<Decision /> - operations', () => {
   beforeEach(() => {
     mockFetchGroupedDecisions().withSuccess(groupedDecisions);
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
   });
 
   it('should show delete button when version is selected', async () => {
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
-
     render(<Decision />, {
       wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
     });
@@ -62,8 +61,6 @@ describe('<Decision /> - operations', () => {
   });
 
   it('should not show delete button when user has no permissions', () => {
-    mockFetchDecisionXML().withSuccess(mockDmnXml);
-
     authenticationStore.setUser({
       displayName: 'demo',
       permissions: ['read'],
@@ -83,5 +80,35 @@ describe('<Decision /> - operations', () => {
         name: /delete decision definition/i,
       })
     ).not.toBeInTheDocument();
+  });
+
+  it('should not show delete button when user has no resource based permissions', async () => {
+    window.clientConfig = {
+      resourcePermissionsEnabled: true,
+    };
+
+    authenticationStore.setUser({
+      displayName: 'demo',
+      permissions: ['write'],
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+    });
+
+    render(<Decision />, {
+      wrapper: createWrapper(
+        '/decisions?name=invoice-assign-approver&version=1'
+      ),
+    });
+
+    expect(
+      screen.queryByRole('button', {
+        name: /delete decision definition/i,
+      })
+    ).not.toBeInTheDocument();
+
+    window.clientConfig = undefined;
   });
 });

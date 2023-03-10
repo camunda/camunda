@@ -10,6 +10,7 @@ import {Paths} from 'modules/routes';
 import {processesStore} from 'modules/stores/processes';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {isNil} from 'lodash';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 const useResourceBasedPermissions = () => {
   const processesMatch = useMatch(Paths.processes());
@@ -33,8 +34,10 @@ const useResourceBasedPermissions = () => {
 
       return scopes.some((permission) => permissions.includes(permission));
     } else if (decisionsMatch !== null) {
-      // TODO https://github.com/camunda/operate/issues/4116
-      return true;
+      const permissions =
+        groupedDecisionsStore.getDecisionPermissions(resourceDefinitionId);
+
+      return scopes.some((permission) => permissions.includes(permission));
     } else if (processInstanceDetailMatch !== null) {
       const permissions =
         processInstanceDetailsStore.state.processInstance?.permissions;

@@ -175,6 +175,18 @@ class GroupedDecisions extends NetworkReconnectionHandler {
     this.retryCount = 0;
   };
 
+  getDecisionPermissions = (decisionId?: string) => {
+    if (decisionId === undefined) {
+      return [];
+    }
+
+    return (
+      this.state.decisions.find(
+        (decision) => decision.decisionId === decisionId
+      )?.permissions ?? []
+    );
+  };
+
   reset() {
     super.reset();
     this.state = {...DEFAULT_STATE};
