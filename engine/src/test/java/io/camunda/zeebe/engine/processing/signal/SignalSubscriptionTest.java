@@ -34,8 +34,10 @@ public final class SignalSubscriptionTest {
   private static final String SIGNAL_NAME2 = "startSignal2";
   private static final String EVENT_ID2 = "startEventId2";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
-  @Rule public final BrokerClassRuleHelper brokerClassRuleHelper = new BrokerClassRuleHelper();
+  @Rule
+  public final EngineRule engine = EngineRule.singlePartition();
+  @Rule
+  public final BrokerClassRuleHelper brokerClassRuleHelper = new BrokerClassRuleHelper();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -127,12 +129,34 @@ public final class SignalSubscriptionTest {
 
     // then
     assertThat(
-            RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
-                .withBpmnProcessId(processId)
-                .limit(2))
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.DELETED)
+            .withBpmnProcessId(processId)
+            .limit(2))
         .extracting(r -> r.getValue().getProcessDefinitionKey(), r -> r.getValue().getSignalName())
         .contains(
             tuple(processDefinitionKey, SIGNAL_NAME1), tuple(processDefinitionKey, SIGNAL_NAME2));
+  }
+
+  @Test
+  public void shouldOpenSingleSignalSubscriptionOnMultipleDeployments() {
+    // give
+    final String processId = "signalProcess";
+    final var process = createProcessWithOneSignalStartEvent(processId);
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.deployment().withXmlResource(process).deploy();
+
+    // then
+    assertThat(
+        RecordingExporter.signalSubscriptionRecords(SignalSubscriptionIntent.CREATED)
+            .withBpmnProcessId(processId).limit(2))
+        .extracting(Record::getValue)
+        .extracting(SignalSubscriptionRecordValue::getSignalName,
+            SignalSubscriptionRecordValue::getCatchEventId)
+        .hasSize(1)
+        .containsExactly(tuple(SIGNAL_NAME1, EVENT_ID1));
   }
 
   private static BpmnModelInstance createProcessWithOneSignalStartEvent(final String processId) {
