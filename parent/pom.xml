@@ -112,7 +112,7 @@
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.16</version.jnr-posix>
-    <version.zpt>8.1.8</version.zpt>
+    <version.zpt>8.1.9</version.zpt>
     <version.feign>12.1</version.feign>
     <version.awssdk>2.20.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
