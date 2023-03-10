@@ -52,7 +52,7 @@ public class StartEventSubscriptionManager {
       final DeploymentRecord deploymentRecord, final StateWriter stateWriter) {
 
     for (final ProcessMetadata processRecord : deploymentRecord.processesMetadata()) {
-      if (isLatestProcess(processRecord)) {
+      if (!processRecord.isDuplicate() && isLatestProcess(processRecord)) {
         closeExistingStartEventSubscriptions(processRecord, stateWriter);
         openStartEventSubscriptions(processRecord, stateWriter);
       }
