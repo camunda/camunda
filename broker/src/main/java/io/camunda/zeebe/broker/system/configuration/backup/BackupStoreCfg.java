@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration.backup;
 
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 
 public class BackupStoreCfg implements ConfigurationEntry {
@@ -38,6 +39,12 @@ public class BackupStoreCfg implements ConfigurationEntry {
 
   public void setStore(final BackupStoreType store) {
     this.store = store;
+  }
+
+  @Override
+  public void init(final BrokerCfg globalConfig, final String brokerBase) {
+    s3.init(globalConfig, brokerBase);
+    gcs.init(globalConfig, brokerBase);
   }
 
   @Override
