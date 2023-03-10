@@ -74,7 +74,7 @@ export function InsertLinkModal({editor, onClose}) {
   };
 
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} className="InsertModal">
       <Modal.Header>{t('textEditor.plugins.link.title')}</Modal.Header>
       <Modal.Content>
         <Form>

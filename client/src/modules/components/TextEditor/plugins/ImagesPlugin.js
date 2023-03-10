@@ -35,7 +35,7 @@ export function InsertImageModal({editor, onClose}) {
   };
 
   return (
-    <Modal open onClose={onClose}>
+    <Modal open onClose={onClose} className="InsertModal">
       <Modal.Header>{t('textEditor.plugins.images.title')}</Modal.Header>
       <Modal.Content>
         <Form>

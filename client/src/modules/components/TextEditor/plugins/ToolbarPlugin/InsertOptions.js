@@ -15,7 +15,12 @@ import {InsertLinkModal} from '../LinkPlugin';
 
 export default function InsertOptions({editor, disabled, showModal}) {
   return (
-    <Dropdown small disabled={disabled} label={t('textEditor.toolbar.insert.label')}>
+    <Dropdown
+      small
+      disabled={disabled}
+      label={t('textEditor.toolbar.insert.label')}
+      className="InsertOptions"
+    >
       <Dropdown.Option
         onClick={() => {
           editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined);

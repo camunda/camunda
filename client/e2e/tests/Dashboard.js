@@ -249,6 +249,8 @@ test('external datasources', async (t) => {
   await t.click(e.externalSourceLink);
   await t.typeText(e.externalSourceInput, 'http://example.com/');
 
+  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal-externalReport.png');
+
   await t.click(e.addTileButton);
 
   const checkIframeLoaded = ClientFunction(() => {
@@ -265,6 +267,43 @@ test('external datasources', async (t) => {
   await t.switchToIframe(e.externalReport);
 
   await t.expect(e.exampleHeading.textContent).contains('Example Domain');
+});
+
+test('text report', async (t) => {
+  await u.createNewDashboard(t);
+
+  await t.click(e.addButton);
+  await t.click(e.textReportLink);
+  await t.typeText(e.textReportInput, 'This is a text report ');
+
+  await t.click(e.textReportToolButton('Bold'));
+  await t.typeText(e.textReportInput, 'with Bold text ');
+  await t.click(e.textReportToolButton('Bold'));
+
+  await t.click(e.textReportToolButton('Italic'));
+  await t.typeText(e.textReportInput, 'with Italic text');
+  await t.click(e.textReportToolButton('Italic'));
+
+  await t.click(e.textReportInsertDropdown);
+  await t.click(e.option('Link'));
+  await t.typeText(e.textReportUrlInput, 'https://example.com/');
+  await t.typeText(e.textReportAltInput, 'This is a link to example.com');
+  await t.click(e.textReportInsertAddButton);
+
+  await t.click(e.textReportInsertDropdown);
+  await t.click(e.option('Image'));
+  await t.typeText(e.textReportUrlInput, 'https://avatars3.githubusercontent.com/u/2443838');
+  await t.typeText(e.textReportAltInput, 'This is a camunda logo');
+  await t.click(e.textReportInsertAddButton);
+
+  await t.takeElementScreenshot(e.reportModal, 'img/dashboard-addAReportModal-textReport.png');
+
+  await t.click(e.addTileButton);
+  await t.click('.DashboardRenderer');
+
+  await t
+    .expect(await e.textReport.textContent)
+    .contains('This is a text report with Bold text with Italic textThis is a link to example.com');
 });
 
 test('deleting', async (t) => {

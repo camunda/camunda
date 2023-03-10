@@ -18,7 +18,12 @@ export default function AlignOptions({disabled, editor}) {
   const ALIGN_TYPES = ['left', 'center', 'right'];
 
   return (
-    <Dropdown small disabled={disabled} label="Align" className="AlignOptions">
+    <Dropdown
+      small
+      disabled={disabled}
+      label={t('textEditor.toolbar.align.label')}
+      className="AlignOptions"
+    >
       {ALIGN_TYPES.map((type) => (
         <Dropdown.Option key={type} onClick={onAlign(type)}>
           {t(`textEditor.toolbar.align.${type}`)}
