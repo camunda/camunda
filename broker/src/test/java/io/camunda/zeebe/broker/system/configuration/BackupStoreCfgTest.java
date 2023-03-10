@@ -55,6 +55,23 @@ final class BackupStoreCfgTest {
   }
 
   @Test
+  void canConfigureGcsHost() {
+    // given
+    final var configuredHost = "localhost";
+    final var env =
+        Map.of(
+            "zeebe.broker.data.backup.store",
+            "gcs",
+            "zeebe.broker.data.backup.gcs.host",
+            configuredHost);
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getGcs().getHost()).isEqualTo(configuredHost);
+  }
+
+  @Test
   void shouldSetPartialS3Config() {
     // given
     final S3BackupStoreConfig expectedConfig = new S3BackupStoreConfig();
