@@ -10,9 +10,22 @@ import {Link, MemoryRouter} from 'react-router-dom';
 import {NotificationProvider} from 'modules/notifications';
 import {ListFooter} from '../ListFooter';
 import {createInstance, createOperation} from 'modules/testUtils';
+import {useEffect} from 'react';
+import {processInstancesStore} from 'modules/stores/processInstances';
+import {panelStatesStore} from 'modules/stores/panelStates';
+import {authenticationStore} from 'modules/stores/authentication';
+import {processesStore} from 'modules/stores/processes';
 
 function createWrapper(initialPath: string = '/') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        processInstancesStore.reset();
+        panelStatesStore.reset();
+        authenticationStore.reset();
+        processesStore.reset();
+      };
+    });
     return (
       <ThemeProvider>
         <NotificationProvider>

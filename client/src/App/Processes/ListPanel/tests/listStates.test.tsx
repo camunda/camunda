@@ -13,27 +13,11 @@ import {
 import {ListPanel} from '../index';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {authenticationStore} from 'modules/stores/authentication';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {createWrapper, INSTANCE, ACTIVE_INSTANCE} from './mocks';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
+import {act} from 'react-dom/test-utils';
 
 describe('display instances List', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    processInstancesStore.reset();
-    panelStatesStore.reset();
-    authenticationStore.reset();
-  });
-
   it('should render a skeleton', async () => {
     mockFetchProcessInstances().withSuccess({
       processInstances: [],
@@ -127,7 +111,9 @@ describe('display instances List', () => {
       wrapper: createWrapper(),
     });
 
-    processInstancesStore.fetchProcessInstancesFromFilters();
+    act(() => {
+      processInstancesStore.fetchProcessInstancesFromFilters();
+    });
 
     expect(
       await screen.findByText('Data could not be fetched')
@@ -141,7 +127,9 @@ describe('display instances List', () => {
 
     mockFetchProcessInstances().withNetworkError();
 
-    processInstancesStore.fetchProcessInstancesFromFilters();
+    act(() => {
+      processInstancesStore.fetchProcessInstancesFromFilters();
+    });
 
     render(<ListPanel />, {
       wrapper: createWrapper(),

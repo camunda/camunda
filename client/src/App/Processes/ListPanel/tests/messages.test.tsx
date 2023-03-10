@@ -12,26 +12,10 @@ import {
 } from 'modules/testing-library';
 import {ListPanel} from '../index';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {createWrapper} from './mocks';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 
 describe('messages', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    processInstancesStore.reset();
-    panelStatesStore.reset();
-  });
-
   it('should display a message for empty list when no filter is selected', async () => {
     mockFetchProcessInstances().withSuccess({
       processInstances: [],

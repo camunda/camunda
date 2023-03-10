@@ -15,27 +15,12 @@ import {createBatchOperation} from 'modules/testUtils';
 import {INSTANCE} from '../index.setup';
 import {ListPanel} from '../index';
 import {processInstancesStore} from 'modules/stores/processInstances';
-import {panelStatesStore} from 'modules/stores/panelStates';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {createWrapper} from './mocks';
+import {act} from 'react-dom/test-utils';
 
 describe('ListPanel', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    processInstancesStore.reset();
-    panelStatesStore.reset();
-  });
-
   it('should start operation on an instance from list', async () => {
     jest.useFakeTimers();
 
@@ -74,7 +59,9 @@ describe('ListPanel', () => {
       totalCount: 1,
     });
 
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
 
     mockFetchProcessInstances().withSuccess({
       processInstances: [INSTANCE],

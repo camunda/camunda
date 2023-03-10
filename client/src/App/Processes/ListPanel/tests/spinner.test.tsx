@@ -13,23 +13,9 @@ import {panelStatesStore} from 'modules/stores/panelStates';
 import {createWrapper} from './mocks';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
+import {act} from 'react-dom/test-utils';
 
 describe('spinner', () => {
-  beforeAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = false;
-  });
-
-  afterAll(() => {
-    //@ts-ignore
-    IS_REACT_ACT_ENVIRONMENT = true;
-  });
-
-  afterEach(() => {
-    processInstancesStore.reset();
-    panelStatesStore.reset();
-  });
-
   it('should display spinners on batch operation', async () => {
     jest.useFakeTimers();
 
@@ -56,7 +42,9 @@ describe('spinner', () => {
 
     mockFetchProcessInstances().withSuccess(mockProcessInstances);
 
-    processInstancesStore.fetchProcessInstancesFromFilters();
+    act(() => {
+      processInstancesStore.fetchProcessInstancesFromFilters();
+    });
 
     await waitFor(() =>
       expect(processInstancesStore.state.status).toBe('fetched')
