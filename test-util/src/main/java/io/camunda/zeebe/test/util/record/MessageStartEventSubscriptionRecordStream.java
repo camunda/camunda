@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 public final class MessageStartEventSubscriptionRecordStream
     extends ExporterRecordStream<
-        MessageStartEventSubscriptionRecordValue, MessageStartEventSubscriptionRecordStream> {
+    MessageStartEventSubscriptionRecordValue, MessageStartEventSubscriptionRecordStream> {
 
   public MessageStartEventSubscriptionRecordStream(
       final Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
@@ -24,6 +24,10 @@ public final class MessageStartEventSubscriptionRecordStream
   protected MessageStartEventSubscriptionRecordStream supply(
       final Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
     return new MessageStartEventSubscriptionRecordStream((wrappedStream));
+  }
+
+  public MessageStartEventSubscriptionRecordStream withBpmnProcessId(final String bpmnProcessId) {
+    return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
   }
 
   public MessageStartEventSubscriptionRecordStream withProcessDefinitionKey(
