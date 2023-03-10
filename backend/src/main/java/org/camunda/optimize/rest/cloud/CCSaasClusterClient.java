@@ -50,6 +50,8 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
   public CCSaasClusterClient(final ConfigurationService configurationService,
                              final ObjectMapper objectMapper) {
     super(objectMapper, configurationService);
+    // To make sure we don't crash when an unknown app is sent, ignore the unknowns
+    objectMapper.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
   }
 
   public Map<AppName, String> getWebappLinks(final String accessToken) {
@@ -74,8 +76,6 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
             "Unexpected response when fetching cluster metadata: %s", response.getStatusLine().getStatusCode()));
         }
         log.info("Processing response from Cluster metadata");
-        // To make sure we don't crash when an unknown app is sent, ignore the unknowns
-        objectMapper.enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL);
         metadataForAllClusters = objectMapper.readValue(
           response.getEntity().getContent(),
           ClusterMetadata[].class
@@ -105,10 +105,12 @@ public class CCSaasClusterClient extends AbstractCCSaaSClient {
     final String clusterId = getCloudAuthConfiguration().getClusterId();
     urls.computeIfAbsent(MODELER, key -> String.format(MODELER_URL_TEMPLATE, domain, organizationId));
     urls.computeIfAbsent(CONSOLE, key -> String.format(CONSOLE_URL_TEMPLATE, domain, organizationId, clusterId));
+
     // remove any webapps URL the UI does not require
     return urls.entrySet()
       .stream()
-      .filter(entry -> REQUIRED_WEBAPPS_LINKS.contains(entry.getKey()))
+      // Null entries can happen if there is an App that is not present in the AppName Enum
+      .filter(entry -> entry.getValue() != null && entry.getKey() != null && REQUIRED_WEBAPPS_LINKS.contains(entry.getKey()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
