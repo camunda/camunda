@@ -9,11 +9,11 @@ package io.camunda.zeebe.backup.gcs;
 
 import static java.util.Objects.requireNonNull;
 
-public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig conn) {
-  public GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig conn) {
+public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
+  public GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
-    this.conn = requireNonNull(conn);
+    this.connection = requireNonNull(connection);
   }
 
   private static String requireBucketName(final String bucketName) {

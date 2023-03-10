@@ -88,7 +88,7 @@ final class ConfigTest {
     final var config = new GcsBackupConfig.Builder().withBucketName(bucketName).build();
 
     // then
-    Assertions.assertThat(config.conn().auth())
+    Assertions.assertThat(config.connection().auth())
         .isInstanceOf(GcsConnectionConfig.Authentication.Default.class);
   }
 
@@ -102,7 +102,7 @@ final class ConfigTest {
         new GcsBackupConfig.Builder().withBucketName(bucketName).withoutAuthentication().build();
 
     // then
-    Assertions.assertThat(config.conn().auth())
+    Assertions.assertThat(config.connection().auth())
         .isInstanceOf(GcsConnectionConfig.Authentication.None.class);
   }
 }
