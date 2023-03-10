@@ -11,13 +11,13 @@ import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionComma
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.utils.serializer.serializers.DefaultSerializers;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import java.util.Map;
-import java.util.function.Function;
 import org.slf4j.Logger;
 
 /**
@@ -60,7 +60,10 @@ public final class InterPartitionCommandReceiverActor extends Actor
   @Override
   protected void onActorStarting() {
     communicationService.subscribe(
-        TOPIC_PREFIX + partitionId, Function.identity(), this::tryHandleMessage, actor::run);
+        TOPIC_PREFIX + partitionId,
+        DefaultSerializers.BASIC::decode,
+        this::tryHandleMessage,
+        actor::run);
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.utils.serializer.serializers.DefaultSerializers;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageEncoder;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
-import java.util.function.Function;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -77,7 +77,7 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId,
         message,
-        Function.identity(),
+        DefaultSerializers.BASIC::encode,
         MemberId.from("" + partitionLeader),
         true);
   }
