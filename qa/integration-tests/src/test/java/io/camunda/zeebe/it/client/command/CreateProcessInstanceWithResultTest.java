@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -164,6 +166,88 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("y", "bar"));
+  }
+
+  @Test
+  public void shouldRespondResultWhenCompletedByPublishedMessage() {
+    // given
+    final var client = CLIENT_RULE.getClient();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .intermediateCatchEvent()
+                .message(message -> message.name("a").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join();
+
+    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .variables(Map.of("key", "key-1"))
+            .withResult()
+            .send();
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("a")
+        .correlationKey("key-1")
+        .variables(Map.of("message", "correlated"))
+        .send()
+        .join();
+
+    // then
+    assertThat(processInstanceResult.join().getVariablesAsMap())
+        .containsEntry("message", "correlated");
+  }
+
+  @Test
+  public void shouldRespondResultWhenCompletedByCompletedJob() {
+    // given
+    final var client = CLIENT_RULE.getClient();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join();
+
+    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .withResult()
+            .send();
+
+    final List<ActivatedJob> jobs =
+        client
+            .newActivateJobsCommand()
+            .jobType("task")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs();
+    assertThat(jobs).hasSize(1);
+
+    // when
+    jobs.forEach(
+        job -> client.newCompleteCommand(job).variables(Map.of("job", "completed")).send().join());
+
+    // then
+    assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("job", "completed");
   }
 
   private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
