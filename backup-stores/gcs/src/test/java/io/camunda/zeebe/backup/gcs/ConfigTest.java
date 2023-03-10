@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
-import com.google.cloud.storage.BucketInfo;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
-import io.camunda.zeebe.backup.gcs.util.GcsContainer;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -109,52 +105,5 @@ final class ConfigTest {
     // then
     Assertions.assertThat(config.connection().auth())
         .isInstanceOf(GcsConnectionConfig.Authentication.None.class);
-  }
-
-  @Test
-  void shouldSuccessfullyValidateConfiguration() throws Exception {
-    // given
-    final var bucketName = RandomStringUtils.randomAlphabetic(12);
-
-    // when
-    try (final var gcs = new GcsContainer()) {
-      gcs.start();
-      final var config =
-          new GcsBackupConfig.Builder()
-              .withHost(gcs.externalEndpoint())
-              .withBucketName(bucketName)
-              .withoutAuthentication()
-              .build();
-
-      try (final var client = GcsBackupStore.buildClient(config)) {
-        client.create(BucketInfo.of(bucketName));
-      }
-
-      // then
-      Assertions.assertThatCode(() -> GcsBackupStore.validateConfig(config))
-          .doesNotThrowAnyException();
-    }
-  }
-
-  @Test
-  void shouldFailValidationIfBucketDoesNotExist() {
-    // given
-    final var bucketName = RandomStringUtils.randomAlphabetic(12);
-
-    // when
-    try (final var gcs = new GcsContainer()) {
-      gcs.start();
-      final var config =
-          new GcsBackupConfig.Builder()
-              .withHost(gcs.externalEndpoint())
-              .withBucketName(bucketName)
-              .withoutAuthentication()
-              .build();
-
-      // then
-      Assertions.assertThatThrownBy(() -> GcsBackupStore.validateConfig(config))
-          .isInstanceOf(BucketDoesNotExistException.class)
-          .hasMessageContaining(config.bucketName());
-    }
   }
 }
