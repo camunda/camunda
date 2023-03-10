@@ -15,6 +15,7 @@ import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.VersionUtil;
@@ -35,6 +36,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.containers.ContainerState;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
@@ -68,6 +70,10 @@ final class RollingUpdateTest {
           .withReplicationFactor(3)
           .withNetwork(network)
           .build();
+
+  @SuppressWarnings("unused")
+  @RegisterExtension
+  private final ContainerLogsDumper logsPrinter = new ContainerLogsDumper(cluster::getNodes);
 
   @BeforeEach
   public void setup() {
@@ -330,6 +336,8 @@ final class RollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT", "1s")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT", "2s")
         .withEnv("ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES", "2")
+        // ensure we have an exporter present to test sharing exporter state across nodes
+        .withEnv("ZEEBE_BROKER_EXECUTIONMETRICSEXPORTERENABLED", "true")
         .withEnv("ZEEBE_LOG_LEVEL", "DEBUG");
     broker.setDockerImageName(PREVIOUS_VERSION.asCanonicalNameString());
   }
