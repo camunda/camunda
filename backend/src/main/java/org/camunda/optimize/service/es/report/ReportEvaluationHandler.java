@@ -105,7 +105,7 @@ public abstract class ReportEvaluationHandler {
             .collect(Collectors.toList());
         processReportData.setDefinitions(definitionsForManagementReport);
       }
-      else if (processReportData.isInstantPreviewReport()) {
+      else if (processReportData.isInstantPreviewReport() && !reportEvaluationInfo.isSharedReport()) {
         // Same logic as above, but just for the single process definition in the report
         String key =
           ((SingleReportDataDto) reportEvaluationInfo.getReport().getData()).getDefinitionKey();
