@@ -392,7 +392,7 @@ es:
       # Optimize uses nested documents to store list information such as activities or variables belonging to a
       # process instance. So this setting defines the maximum number of activities/variables that a single
       # process instance can contain. This limit helps to prevent out of memory errors and should be used with care.
-      nested_documents_limit: 10000
+      nested_documents_limit: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_SETTINGS_INDEX_NESTED_DOCUMENTS_LIMIT:10000}
 
 plugin:
   # Defines the directory path in the local Optimize file system which should be checked for plugins
