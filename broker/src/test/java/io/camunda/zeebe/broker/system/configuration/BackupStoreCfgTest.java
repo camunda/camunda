@@ -11,17 +11,51 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
+import io.camunda.zeebe.broker.system.configuration.backup.GCSBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-public final class BackupStoreCfgTest {
-
-  public final Map<String, String> environment = new HashMap<>();
+final class BackupStoreCfgTest {
 
   @Test
-  public void shouldSetPartialS3Config() {
+  void canConfigureBackupStore() {
+    // given
+    final var env = Map.of("zeebe.broker.data.backup.store", "gcs");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getStore()).isEqualTo(BackupStoreType.GCS);
+  }
+
+  @Test
+  void shouldUseDefaultGcsAuth() {
+    // given
+    final var env = Map.<String, String>of();
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getGcs().getAuth()).isEqualTo(GcsBackupStoreAuth.AUTO);
+  }
+
+  @Test
+  void canConfigureGcsAuth() {
+    // given
+    final var env =
+        Map.of(
+            "zeebe.broker.data.backup.store", "gcs", "zeebe.broker.data.backup.gcs.auth", "none");
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getGcs().getAuth()).isEqualTo(GcsBackupStoreAuth.NONE);
+  }
+
+  @Test
+  void shouldSetPartialS3Config() {
     // given
     final S3BackupStoreConfig expectedConfig = new S3BackupStoreConfig();
     expectedConfig.setBucketName("bucket");
@@ -31,7 +65,7 @@ public final class BackupStoreCfgTest {
     expectedConfig.setSecretKey(null);
 
     // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("backup-cfg", environment);
+    final BrokerCfg cfg = TestConfigReader.readConfig("backup-cfg", new HashMap<>());
     final BackupStoreCfg backup = cfg.getData().getBackup();
 
     // then

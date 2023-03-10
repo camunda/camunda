@@ -104,12 +104,16 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final ActorFuture<Void> installed) {
     try {
       final var gcsConfig = backupCfg.getGcs();
-      final GcsBackupConfig storeConfig =
+      final var storeConfig =
           new GcsBackupConfig.Builder()
               .withBucketName(gcsConfig.getBucketName())
-              .withBasePath(gcsConfig.getBasePath())
-              .build();
-      final var gcsStore = new GcsBackupStore(storeConfig);
+              .withBasePath(gcsConfig.getBasePath());
+      final var authenticated =
+          switch (gcsConfig.getAuth()) {
+            case NONE -> storeConfig.withoutAuthentication();
+            case AUTO -> storeConfig.withAutoAuthentication();
+          };
+      final var gcsStore = new GcsBackupStore(authenticated.build());
       context.setBackupStore(gcsStore);
       installed.complete(null);
     } catch (final Exception error) {

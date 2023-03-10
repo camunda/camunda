@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -77,5 +78,31 @@ final class ConfigTest {
     Assertions.assertThatThrownBy(config::build)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("basePath");
+  }
+
+  @Test
+  void shouldUseDefaultApplicationCredentialsByDefault() {
+    // given
+    final var bucketName = "test";
+
+    // when
+    final var config = new GcsBackupConfig.Builder().withBucketName(bucketName).build();
+
+    // then
+    Assertions.assertThat(config.connection().auth()).isInstanceOf(Auto.class);
+  }
+
+  @Test
+  void shouldUseNoAuthenticationWhenRequested() {
+    // given
+    final var bucketName = "test";
+
+    // when
+    final var config =
+        new GcsBackupConfig.Builder().withBucketName(bucketName).withoutAuthentication().build();
+
+    // then
+    Assertions.assertThat(config.connection().auth())
+        .isInstanceOf(GcsConnectionConfig.Authentication.None.class);
   }
 }
