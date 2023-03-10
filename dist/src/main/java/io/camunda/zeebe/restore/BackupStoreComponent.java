@@ -68,7 +68,7 @@ final class BackupStoreComponent {
     final var authenticated =
         switch (gcsConfig.getAuth()) {
           case NONE -> builder.withoutAuthentication();
-          case AUTO -> builder.withDefaultApplicationCredentials();
+          case AUTO -> builder.withAutoAuthentication();
         };
     return new GcsBackupStore(authenticated.build());
   }

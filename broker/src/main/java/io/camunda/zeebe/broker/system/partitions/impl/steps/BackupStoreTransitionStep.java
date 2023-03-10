@@ -111,7 +111,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var authenticated =
           switch (gcsConfig.getAuth()) {
             case NONE -> storeConfig.withoutAuthentication();
-            case AUTO -> storeConfig.withDefaultApplicationCredentials();
+            case AUTO -> storeConfig.withAutoAuthentication();
           };
       final var gcsStore = new GcsBackupStore(authenticated.build());
       context.setBackupStore(gcsStore);

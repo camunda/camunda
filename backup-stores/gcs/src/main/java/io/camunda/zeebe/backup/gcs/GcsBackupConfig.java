@@ -9,6 +9,8 @@ package io.camunda.zeebe.backup.gcs;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
+
 public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
   public GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
     this.bucketName = requireBucketName(bucketName);
@@ -65,8 +67,8 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
       return this;
     }
 
-    public Builder withDefaultApplicationCredentials() {
-      this.auth = new GcsConnectionConfig.Authentication.Default();
+    public Builder withAutoAuthentication() {
+      this.auth = new Auto();
       return this;
     }
 
