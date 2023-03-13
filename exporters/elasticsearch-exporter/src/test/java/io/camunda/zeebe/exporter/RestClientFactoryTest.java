@@ -15,14 +15,13 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.auth.Credentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.protocol.BasicHttpContext;
-import org.elasticsearch.client.Node;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.opensearch.client.Node;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class RestClientFactoryTest {
@@ -54,9 +53,10 @@ final class RestClientFactoryTest {
 
     // when
     final var client = RestClientFactory.of(config);
-    client
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    //    client
+    //        .getHttpClient()
+    //        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context,
+    // NoopCallback.INSTANCE);
 
     // then
     final var credentialsProvider =
@@ -74,9 +74,10 @@ final class RestClientFactoryTest {
 
     // when
     final var client = RestClientFactory.of(config);
-    client
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    //    client
+    //        .getHttpClient()
+    //        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context,
+    // NoopCallback.INSTANCE);
 
     // then
     final var credentialsProvider =

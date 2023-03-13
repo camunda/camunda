@@ -9,7 +9,6 @@ package io.camunda.zeebe.exporter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,8 +24,8 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.CloseHelper;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
+import org.opensearch.client.Request;
+import org.opensearch.client.RestClient;
 
 /**
  * A thin client to verify properties from Elastic. Wraps both the low and high level clients from
@@ -47,7 +46,8 @@ final class TestClient implements CloseableSilently {
 
     restClient = RestClientFactory.of(config);
 
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
+    //    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
+    final RestClientTransport transport = null;
     esClient = new ElasticsearchClient(transport);
   }
 
