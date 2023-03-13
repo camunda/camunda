@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>optimize-plugin-parent</artifactId>
-    <version>3.10.0-alpha5-RC2</version>
+    <version>3.10.0-alpha5-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
