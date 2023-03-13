@@ -1,3 +1,6 @@
+## Instant preview dashboard
+Für jeden Prozess bietet Optimize ein vorbereitetes Dashboard. Das Dashboard bietet neuen Nutzern einen Überblick zu den Status- und Ausführungsmetriken eines Prozesses.
+
 ## Textberichte
 
 Mit Textberichten können Benutzer formatierte Beschreibungen und Bilder zu einem Dashboard hinzufügen. Hiermit kann der Inhalt des Dashboards für andere Benutzer leichter verständlich gemacht werden. 
