@@ -47,6 +47,8 @@ export function InsertImageModal({editor, onClose}) {
                 value={src}
               />
             </Labeled>
+          </Form.Group>
+          <Form.Group>
             <Labeled label={t('textEditor.plugins.images.altTextLabel')}>
               <Input
                 placeholder={t('textEditor.plugins.images.altTextPlaceholder')}

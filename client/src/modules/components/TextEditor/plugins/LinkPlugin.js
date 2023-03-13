@@ -86,6 +86,8 @@ export function InsertLinkModal({editor, onClose}) {
                 value={url}
               />
             </Labeled>
+          </Form.Group>
+          <Form.Group>
             <Labeled label={t('textEditor.plugins.link.altTextLabel')}>
               <Input
                 placeholder={t('textEditor.plugins.link.altTextPlaceholder')}
