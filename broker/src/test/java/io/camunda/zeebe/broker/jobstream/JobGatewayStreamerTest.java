@@ -67,15 +67,11 @@ final class JobGatewayStreamerTest {
 
   @Test
   void shouldNotifyAvailableJobsWhenNoConsumers() {
-    // given
-    final var type = BufferUtil.wrapString("foo");
-
-    // when
-    final var maybeStream = streamer.streamFor(type);
+    // given - when
+    streamer.notifyWorkAvailable("foo");
     scheduler.workUntilDone();
 
     // then
-    assertThat(maybeStream).isEmpty();
     Mockito.verify(eventService, Mockito.times(1))
         .broadcast(JobStreamTopics.JOB_AVAILABLE.topic(), "foo");
   }

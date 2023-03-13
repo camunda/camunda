@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.JobActivationProperties;
-import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.Objects;
@@ -57,12 +56,15 @@ public final class JobGatewayStreamer extends Actor
   }
 
   @Override
+  public void notifyWorkAvailable(final String streamType) {
+    actor.run(() -> eventService.broadcast(JobStreamTopics.JOB_AVAILABLE.topic(), streamType));
+  }
+
+  @Override
   public Optional<GatewayStream<JobActivationProperties, ActivatedJob>> streamFor(
-      final DirectBuffer streamId) {
-    final var consumers = registry.get(new UnsafeBuffer(streamId));
+      final DirectBuffer streamType) {
+    final var consumers = registry.get(new UnsafeBuffer(streamType));
     if (consumers.isEmpty()) {
-      final var jobType = BufferUtil.bufferAsString(streamId);
-      actor.run(() -> eventService.broadcast(JobStreamTopics.JOB_AVAILABLE.topic(), jobType));
       return Optional.empty();
     }
 
