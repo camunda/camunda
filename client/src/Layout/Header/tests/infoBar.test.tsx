@@ -66,7 +66,7 @@ describe('Info bar', () => {
       screen.getByRole('button', {name: 'Slack Community Channel'}),
     );
     expect(mockOpenFn).toHaveBeenLastCalledWith(
-      'https://camunda-slack-invite.herokuapp.com/',
+      'https://camunda.com/slack',
       '_blank',
     );
 
