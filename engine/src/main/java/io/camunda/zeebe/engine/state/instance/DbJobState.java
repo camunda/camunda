@@ -346,10 +346,9 @@ public final class DbJobState implements JobState, MutableJobState {
 
   private void notifyJobAvailable(final DirectBuffer jobType) {
     if (jobStreamer != null) {
-      // ignore the result for now
       // TODO: remove the cloneBuffer eventually, but it's required now due to the
       //  ActivatableJobsNotificationTests
-      jobStreamer.streamFor(BufferUtil.cloneBuffer(jobType));
+      jobStreamer.notifyWorkAvailable(BufferUtil.bufferAsString(jobType));
     }
   }
 
