@@ -156,6 +156,12 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>identity-sdk</artifactId>
+      <version>${version.identity}</version>
+    </dependency>
+
+    <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
       <scope>test</scope>
@@ -297,6 +303,31 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <repositories>
+    <repository>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>camunda-identity</id>
+      <name>Camunda Identity Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <id>camunda-identity-snapshots</id>
+      <name>Camunda Identity Snapshot Repository</name>
+      <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
+    </repository>
+  </repositories>
 
   <build>
     <plugins>

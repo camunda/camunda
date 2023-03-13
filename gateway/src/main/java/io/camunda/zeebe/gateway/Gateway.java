@@ -11,12 +11,14 @@ import io.camunda.zeebe.gateway.health.GatewayHealthManager;
 import io.camunda.zeebe.gateway.health.Status;
 import io.camunda.zeebe.gateway.health.impl.GatewayHealthManagerImpl;
 import io.camunda.zeebe.gateway.impl.broker.BrokerClient;
+import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.InterceptorRepository;
@@ -235,6 +237,9 @@ public final class Gateway {
     Collections.reverse(interceptors);
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
+    if (gatewayCfg.getSecurity().getAuthentication().getMode() != AuthMode.NONE) {
+      interceptors.add(new AuthenticationInterceptor(gatewayCfg.getSecurity().getAuthentication()));
+    }
 
     return ServerInterceptors.intercept(service, interceptors);
   }

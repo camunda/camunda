@@ -41,6 +41,12 @@ zeebe:
         # Enables TLS authentication between clients and the gateway
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED.
         enabled: false
+        authentication:
+          # Controls which authentication mode is active, supported modes are 'none' and 'identity'.
+          # If 'identity' is set, authentication will be done using camunda-identity, which needs to
+          # be configured in the corresponding subsection. See also https://docs.camunda.io/docs/self-managed/identity/what-is-identity/ .
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE.
+          mode: none
 
     network:
       # Controls the default host the broker should bind to. Can be overwritten on a

@@ -228,6 +228,13 @@
     </dependency>
 
     <dependency>
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <version>2.5.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>toxiproxy</artifactId>
       <scope>test</scope>
@@ -412,6 +419,24 @@
     </dependency>
 
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemProperties>
+            <property>
+              <name>identity.docker.image.version</name>
+              <!-- Can be set to ${version.identity} after 8.2.0. -->
+              <value>SNAPSHOT</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <profiles>
     <!--

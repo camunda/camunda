@@ -157,6 +157,26 @@
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
 
+        # authentication:
+          # Controls which authentication mode is active, supported modes are 'none' and 'identity'.
+          # If 'identity' is set, authentication will be done using camunda-identity, which needs to
+          # be configured in the corresponding subsection. See also https://docs.camunda.io/docs/self-managed/identity/what-is-identity/ .
+          # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE.
+          # mode: none
+
+          # identity:
+            # The URL to the auth provider backend, used to validate tokens.
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL.
+            # issuerBackendUrl: http://keycloak:8080/auth/realms/camunda-platform
+
+            # The required audience of the auth token.
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE.
+            # audience: zeebe-api
+
+            # The identity auth type to apply, one of `keycloak` or `auth0`.
+            # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_TYPE.
+            # type: keycloak
+
       # Configure compression algorithm for all messages sent between the gateway and
       # the brokers. Available options are NONE, GZIP and SNAPPY.
       # This feature is useful when the network latency between the nodes is very high (for example when nodes are deployed in different data centers).
