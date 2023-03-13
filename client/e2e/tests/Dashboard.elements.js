@@ -30,6 +30,7 @@ export const textReportInsertAddButton = Selector('.InsertModal .Button').withTe
 export const blankReportButton = Selector('.Button').withText('Blank report');
 export const externalReport = Selector('iframe');
 export const textReport = Selector('.TextReport .editor');
+export const textReportField = (element) => textReport.find(element);
 export const exampleHeading = Selector('h1');
 export const fullscreenButton = Selector('.fullscreen-button');
 export const header = Selector('.cds--header');

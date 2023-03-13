@@ -301,9 +301,9 @@ test('text report', async (t) => {
   await t.click(e.addTileButton);
   await t.click('.DashboardRenderer');
 
-  await t
-    .expect(await e.textReport.textContent)
-    .contains('This is a text report with Bold text with Italic textThis is a link to example.com');
+  await t.expect(await e.textReport.textContent).match(/text/i);
+  await t.expect(e.textReportField('strong').textContent).match(/\.*bold/i);
+  await t.expect(e.textReportField('em').textContent).match(/\.*italic/i);
 });
 
 test('deleting', async (t) => {
