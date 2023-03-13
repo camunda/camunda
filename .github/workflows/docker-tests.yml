@@ -8,6 +8,7 @@ jobs:
     timeout-minutes: 45
     env:
       TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist:current-test
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     services:
       registry:
         image: registry:2
@@ -49,6 +50,8 @@ jobs:
         run: mvn clean install -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Build Docker and push to local registry
         run: mvn -pl webapp jib:build -Dimage=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} -Djib.allowInsecureRegistries=true
+        env:
+          IMAGE_TAG: ${{ env.BRANCH_NAME }}
       - name: Run Docker tests
         run: mvn -f qa/integration-tests -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report

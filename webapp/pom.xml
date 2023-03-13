@@ -246,6 +246,28 @@
             <ports>
               <port>8080</port>
             </ports>
+            <labels>
+              <org.opencontainers.image.base.name>docker.io/library/ubuntu:20.04</org.opencontainers.image.base.name>
+              <org.opencontainers.image.base.digest>sha256:3626dff0d616e8ee7065a9ac8c7117e904a4178725385910eeecd7f1872fc12d</org.opencontainers.image.base.digest>
+              <org.opencontainers.image.created>${maven.build.timestamp}</org.opencontainers.image.created>
+              <org.opencontainers.image.authors>hto@camunda.com</org.opencontainers.image.authors>
+              <org.opencontainers.image.url>https://docs.camunda.io/docs/components/tasklist/introduction-to-tasklist/</org.opencontainers.image.url>
+              <org.opencontainers.image.documentation>https://docs.camunda.io/docs/self-managed/tasklist-deployment/install-and-start/</org.opencontainers.image.documentation>
+              <org.opencontainers.image.source>https://github.com/camunda/tasklist</org.opencontainers.image.source>
+              <org.opencontainers.image.version>${project.version}</org.opencontainers.image.version>
+              <org.opencontainers.image.revision>${env.IMAGE_TAG}</org.opencontainers.image.revision>
+              <org.opencontainers.image.vendor>Camunda Services GmbH</org.opencontainers.image.vendor>
+              <org.opencontainers.image.licenses>Proprietary</org.opencontainers.image.licenses>
+              <org.opencontainers.image.title>Camunda Tasklist</org.opencontainers.image.title>
+              <org.opencontainers.image.description>Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe</org.opencontainers.image.description>
+              <!-- OpenShift Labels -->
+              <io.openshift.tags>bpmn,tasklist,camunda</io.openshift.tags>
+              <io.openshift.wants>zeebe,elasticsearch</io.openshift.wants>
+              <io.openshift.non-scalable>false</io.openshift.non-scalable>
+              <io.openshift.min-memory>1Gi</io.openshift.min-memory>
+              <io.openshift.min-cpu>1</io.openshift.min-cpu>
+              <io.k8s.description>Tasklist is a ready-to-use application to rapidly implement business processes alongside user tasks in Zeebe</io.k8s.description>
+            </labels>
           </container>
         </configuration>
       </plugin>
