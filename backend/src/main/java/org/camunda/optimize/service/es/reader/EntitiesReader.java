@@ -52,10 +52,12 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
+import static org.camunda.optimize.service.es.schema.index.DashboardIndex.INSTANT_PREVIEW_DASHBOARD;
 import static org.camunda.optimize.service.es.schema.index.DashboardIndex.MANAGEMENT_DASHBOARD;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.INSTANT_PREVIEW_REPORT;
 import static org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex.MANAGEMENT_REPORT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
@@ -93,11 +95,24 @@ public class EntitiesReader {
   public List<CollectionEntity> getAllPrivateEntities(final String userId) {
     log.debug("Fetching all available entities for user [{}]", userId);
 
-    final BoolQueryBuilder query = boolQuery().mustNot(existsQuery(COLLECTION_ID))
-      .minimumShouldMatch(1)
-      .should(termQuery(MANAGEMENT_DASHBOARD, false))
-      .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
-      .should(boolQuery().mustNot(existsQuery(MANAGEMENT_DASHBOARD)).mustNot(existsQuery(DATA + "." + MANAGEMENT_DASHBOARD)));
+    final BoolQueryBuilder query = boolQuery()
+      .mustNot(existsQuery(COLLECTION_ID))
+      .must(boolQuery()
+              .minimumShouldMatch(1)
+              .should(termQuery(MANAGEMENT_DASHBOARD, false))
+              .should(termQuery(DATA + "." + MANAGEMENT_REPORT, false))
+              .should(boolQuery()
+                        .mustNot(existsQuery(MANAGEMENT_DASHBOARD))
+                        .mustNot(existsQuery(DATA + "." + MANAGEMENT_REPORT)))
+      )
+      .must(boolQuery()
+              .minimumShouldMatch(1)
+              .should(termQuery(INSTANT_PREVIEW_DASHBOARD, false))
+              .should(termQuery(DATA + "." + INSTANT_PREVIEW_REPORT, false))
+              .should(boolQuery()
+                        .mustNot(existsQuery(INSTANT_PREVIEW_DASHBOARD))
+                        .mustNot(existsQuery(DATA + "." + INSTANT_PREVIEW_REPORT)))
+      );
 
     if (userId != null) {
       query.must(termQuery(OWNER, userId));
