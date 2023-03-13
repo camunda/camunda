@@ -16,7 +16,7 @@
 
   <properties>
     <version.java>8</version.java>
-    <version.maven-jar-plugin>3.2.2</version.maven-jar-plugin>
+    <version.maven-jar-plugin>3.3.0</version.maven-jar-plugin>
   </properties>
 
   <dependencies>
@@ -29,7 +29,38 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.36</version>
+      <version>2.0.6</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>surefire-extensions-api</artifactId>
+      <version>3.0.0-M9</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.maven.surefire</groupId>
+      <artifactId>maven-surefire-common</artifactId>
+      <version>3.0.0-M9</version>
+      <exclusions>
+        <!-- the following are licensed under EPL, which is not compatible with our license policy -->
+        <exclusion>
+          <groupId>org.eclipse.aether</groupId>
+          <artifactId>aether-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.aether</groupId>
+          <artifactId>aether-impl</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.aether</groupId>
+          <artifactId>aether-spi</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.aether</groupId>
+          <artifactId>aether-util</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 
