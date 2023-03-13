@@ -17,11 +17,13 @@ package io.camunda.zeebe.client.impl.worker;
 
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
+import io.camunda.zeebe.client.impl.command.ActivateJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.CompleteJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.FailJobCommandImpl;
 import io.camunda.zeebe.client.impl.command.ThrowErrorCommandImpl;
@@ -77,5 +79,10 @@ public final class JobClientImpl implements JobClient {
   @Override
   public ThrowErrorCommandStep1 newThrowErrorCommand(final ActivatedJob job) {
     return newThrowErrorCommand(job.getKey());
+  }
+
+  @Override
+  public ActivateJobsCommandStep1 newActivateJobsCommand() {
+    return new ActivateJobsCommandImpl(asyncStub, config, jsonMapper, retryPredicate);
   }
 }

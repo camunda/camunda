@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.api.worker;
 
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
@@ -149,4 +150,25 @@ public interface JobClient {
    * @return a builder for the command
    */
   ThrowErrorCommandStep1 newThrowErrorCommand(ActivatedJob job);
+
+  /**
+   * Command to activate multiple jobs of a given type.
+   *
+   * <pre>
+   * jobClient
+   *  .newActivateJobsCommand()
+   *  .jobType("payment")
+   *  .maxJobsToActivate(10)
+   *  .workerName("paymentWorker")
+   *  .timeout(Duration.ofMinutes(10))
+   *  .send();
+   * </pre>
+   *
+   * <p>The command will try to use {@code maxJobsToActivate} for given {@code jobType}. If less
+   * then the requested {@code maxJobsToActivate} jobs of the {@code jobType} are available for
+   * activation the returned list will have fewer elements.
+   *
+   * @return a builder for the command
+   */
+  ActivateJobsCommandStep1 newActivateJobsCommand();
 }

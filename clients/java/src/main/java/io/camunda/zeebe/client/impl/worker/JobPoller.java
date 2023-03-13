@@ -15,33 +15,31 @@
  */
 package io.camunda.zeebe.client.impl.worker;
 
-import io.camunda.zeebe.client.api.JsonMapper;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.impl.Loggers;
-import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
-import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest.Builder;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.IntConsumer;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 
-public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
+public final class JobPoller {
 
   private static final Logger LOG = Loggers.JOB_POLLER_LOGGER;
 
-  private final GatewayStub gatewayStub;
-  private final Builder requestBuilder;
-  private final JsonMapper jsonMapper;
-  private final long requestTimeout;
-  private final Predicate<Throwable> retryPredicate;
+  private final JobClient jobClient;
+  private final Duration requestTimeout;
+  private final String jobType;
+  private final String workerName;
+  private final Duration timeout;
+  private final List<String> fetchVariables;
+
+  private int maxJobsToActivate;
 
   private Consumer<ActivatedJob> jobConsumer;
   private IntConsumer doneCallback;
@@ -50,16 +48,20 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   private BooleanSupplier openSupplier;
 
   public JobPoller(
-      final GatewayStub gatewayStub,
-      final Builder requestBuilder,
-      final JsonMapper jsonMapper,
+      final JobClient jobClient,
       final Duration requestTimeout,
-      final Predicate<Throwable> retryPredicate) {
-    this.gatewayStub = gatewayStub;
-    this.requestBuilder = requestBuilder;
-    this.jsonMapper = jsonMapper;
-    this.requestTimeout = requestTimeout.toMillis();
-    this.retryPredicate = retryPredicate;
+      final String jobType,
+      final String workerName,
+      final Duration timeout,
+      final List<String> fetchVariables,
+      final int maxJobsToActivate) {
+    this.requestTimeout = requestTimeout;
+    this.jobClient = jobClient;
+    this.jobType = jobType;
+    this.workerName = workerName;
+    this.timeout = timeout;
+    this.fetchVariables = fetchVariables;
+    this.maxJobsToActivate = maxJobsToActivate;
   }
 
   private void reset() {
@@ -83,7 +85,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
       final BooleanSupplier openSupplier) {
     reset();
 
-    requestBuilder.setMaxJobsToActivate(maxJobsToActivate);
+    this.maxJobsToActivate = maxJobsToActivate;
     this.jobConsumer = jobConsumer;
     this.doneCallback = doneCallback;
     this.errorCallback = errorCallback;
@@ -95,40 +97,50 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   private void poll() {
     LOG.trace(
         "Polling at max {} jobs for worker {} and job type {}",
-        requestBuilder.getMaxJobsToActivate(),
-        requestBuilder.getWorker(),
-        requestBuilder.getType());
-    gatewayStub
-        .withDeadlineAfter(requestTimeout, TimeUnit.MILLISECONDS)
-        .activateJobs(requestBuilder.build(), this);
-  }
-
-  @Override
-  public void onNext(final ActivateJobsResponse activateJobsResponse) {
-    activatedJobs += activateJobsResponse.getJobsCount();
-    activateJobsResponse.getJobsList().stream()
-        .map(job -> new ActivatedJobImpl(jsonMapper, job))
-        .forEach(jobConsumer);
-  }
-
-  @Override
-  public void onError(final Throwable throwable) {
-    if (retryPredicate.test(throwable)) {
-      poll();
-    } else {
-      if (openSupplier.getAsBoolean()) {
-        try {
-          logFailure(throwable);
-        } finally {
-          errorCallback.accept(throwable);
-        }
-      }
+        maxJobsToActivate,
+        workerName,
+        jobType);
+    final ActivateJobsCommandStep3 activateCommand =
+        jobClient
+            .newActivateJobsCommand()
+            .jobType(jobType)
+            .maxJobsToActivate(maxJobsToActivate)
+            .timeout(timeout)
+            .workerName(workerName);
+    if (fetchVariables != null) {
+      activateCommand.fetchVariables(fetchVariables);
     }
-  }
-
-  @Override
-  public void onCompleted() {
-    pollingDone();
+    activateCommand
+        .requestTimeout(requestTimeout)
+        .send()
+        .exceptionally(
+            throwable -> {
+              if (openSupplier.getAsBoolean()) {
+                try {
+                  logFailure(throwable);
+                } finally {
+                  errorCallback.accept(throwable);
+                }
+              }
+              return null;
+            })
+        .thenApply(
+            activateJobsResponse -> {
+              final List<ActivatedJob> jobs = activateJobsResponse.getJobs();
+              activatedJobs += jobs.size();
+              jobs.forEach(jobConsumer);
+              if (activatedJobs > 0) {
+                LOG.debug(
+                    "Activated {} jobs for worker {} and job type {}",
+                    activatedJobs,
+                    workerName,
+                    jobType);
+              } else {
+                LOG.trace("No jobs activated for worker {} and job type {}", workerName, jobType);
+              }
+              doneCallback.accept(activatedJobs);
+              return null;
+            });
   }
 
   private void logFailure(final Throwable throwable) {
@@ -141,27 +153,11 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
         // noisy. Furthermore it is not worth to be a warning since it is expected on a fully
         // loaded cluster. It should be handled by our backoff mechanism, but if there is an
         // issue or an configuration mistake the user can turn on trace logging to see this.
-        LOG.trace(errorMsg, requestBuilder.getWorker(), requestBuilder.getType(), throwable);
+        LOG.trace(errorMsg, workerName, jobType, throwable);
         return;
       }
     }
 
-    LOG.warn(errorMsg, requestBuilder.getWorker(), requestBuilder.getType(), throwable);
-  }
-
-  private void pollingDone() {
-    if (activatedJobs > 0) {
-      LOG.debug(
-          "Activated {} jobs for worker {} and job type {}",
-          activatedJobs,
-          requestBuilder.getWorker(),
-          requestBuilder.getType());
-    } else {
-      LOG.trace(
-          "No jobs activated for worker {} and job type {}",
-          requestBuilder.getWorker(),
-          requestBuilder.getType());
-    }
-    doneCallback.accept(activatedJobs);
+    LOG.warn(errorMsg, workerName, jobType, throwable);
   }
 }

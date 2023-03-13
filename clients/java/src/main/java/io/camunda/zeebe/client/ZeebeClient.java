@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client;
 
-import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -341,27 +340,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
-
-  /**
-   * Command to activate multiple jobs of a given type.
-   *
-   * <pre>
-   * zeebeClient
-   *  .newActivateJobsCommand()
-   *  .jobType("payment")
-   *  .maxJobsToActivate(10)
-   *  .workerName("paymentWorker")
-   *  .timeout(Duration.ofMinutes(10))
-   *  .send();
-   * </pre>
-   *
-   * <p>The command will try to use {@code maxJobsToActivate} for given {@code jobType}. If less
-   * then the requested {@code maxJobsToActivate} jobs of the {@code jobType} are available for
-   * activation the returned list will have fewer elements.
-   *
-   * @return a builder for the command
-   */
-  ActivateJobsCommandStep1 newActivateJobsCommand();
 
   /**
    * Command to delete a resource.

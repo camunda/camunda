@@ -41,7 +41,6 @@ import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.zeebe.client.impl.command.ActivateJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -340,20 +339,12 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public JobWorkerBuilderStep1 newWorker() {
-    return new JobWorkerBuilderImpl(
-        config,
-        asyncStub,
-        jobClient,
-        jsonMapper,
-        executorService,
-        closeables,
-        credentialsProvider::shouldRetryRequest);
+    return new JobWorkerBuilderImpl(config, jobClient, executorService, closeables);
   }
 
   @Override
   public ActivateJobsCommandStep1 newActivateJobsCommand() {
-    return new ActivateJobsCommandImpl(
-        asyncStub, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+    return jobClient.newActivateJobsCommand();
   }
 
   @Override
