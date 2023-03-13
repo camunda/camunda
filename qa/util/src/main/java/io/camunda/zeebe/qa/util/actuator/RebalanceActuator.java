@@ -64,7 +64,7 @@ public interface RebalanceActuator {
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
-  @RequestLine("POST /")
+  @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void rebalance();
 }
