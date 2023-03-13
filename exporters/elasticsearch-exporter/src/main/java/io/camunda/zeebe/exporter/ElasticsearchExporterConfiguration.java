@@ -24,6 +24,7 @@ public class ElasticsearchExporterConfiguration {
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private final AwsConfiguration awsConfiguration = new AwsConfiguration();
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -31,6 +32,10 @@ public class ElasticsearchExporterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public AwsConfiguration getAwsConfiguration() {
+    return awsConfiguration;
   }
 
   @Override
@@ -306,6 +311,30 @@ public class ElasticsearchExporterConfiguration {
     public String toString() {
       // we don't want to expose this information
       return "AuthenticationConfiguration{Confidential information}";
+    }
+  }
+
+  public static class AwsConfiguration {
+    // Hardcoded for now, these should obviously be configured
+    private String serviceName = "es";
+    private String region = "eu-central-1";
+
+    public String getServiceName() {
+      return serviceName;
+    }
+
+    public AwsConfiguration setServiceName(final String serviceName) {
+      this.serviceName = serviceName;
+      return this;
+    }
+
+    public String getRegion() {
+      return region;
+    }
+
+    public AwsConfiguration setRegion(final String region) {
+      this.region = region;
+      return this;
     }
   }
 }
