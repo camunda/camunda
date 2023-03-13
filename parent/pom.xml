@@ -116,7 +116,7 @@
     <version.feign>12.1</version.feign>
     <version.awssdk>2.20.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
-    <version.validation-api>2.0.1.Final</version.validation-api>
+    <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.5</version.jackson-databind-nullable>
     <version.jackson-annotations>2.14.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.7</version.swagger-annotations>
@@ -1058,8 +1058,8 @@
       </dependency>
 
       <dependency>
-        <groupId>javax.validation</groupId>
-        <artifactId>validation-api</artifactId>
+        <groupId>jakarta.validation</groupId>
+        <artifactId>jakarta.validation-api</artifactId>
         <version>${version.validation-api}</version>
       </dependency>
 
