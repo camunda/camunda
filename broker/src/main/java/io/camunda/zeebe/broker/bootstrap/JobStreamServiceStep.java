@@ -7,15 +7,14 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.jobstream.JobGatewayStreamer;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
-import io.camunda.zeebe.broker.jobstream.StreamRegistry;
-import io.camunda.zeebe.broker.transport.streamapi.JobStreamApiServer;
-import io.camunda.zeebe.broker.transport.streamapi.StreamApiHandler;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.JobActivationProperties;
+import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.stream.Stream;
@@ -36,32 +35,22 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var clusterServices = brokerStartupContext.getClusterServices();
     final var scheduler = brokerStartupContext.getActorSchedulingService();
+    final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =
+        new TransportFactory(brokerStartupContext.getActorSchedulingService())
+            .createRemoteStreamServer(
+                brokerStartupContext.getClusterServices().getCommunicationService(),
+                DummyActivationProperties::new,
+                eventService);
 
-    final StreamRegistry<JobActivationProperties> registry = new StreamRegistry<>();
-    final var requestHandler = new StreamApiHandler<>(registry, DummyActivationProperties::new);
-    final var server =
-        new JobStreamApiServer(clusterServices.getCommunicationService(), requestHandler);
-    final var streamer =
-        new JobGatewayStreamer(
-            clusterServices.getEventService(), clusterServices.getCommunicationService(), registry);
-    final var service = new JobStreamService(server, streamer);
-
-    // only register listener and apply service to context if the actors are scheduled successfully
-    final var result =
-        Stream.of(scheduler.submitActor(server), scheduler.submitActor(streamer))
-            .collect(new ActorFutureCollector<>(concurrencyControl));
+    final var startFuture = remoteStreamService.start();
     concurrencyControl.runOnCompletion(
-        result,
-        (ok, error) -> {
-          if (error != null) {
-            startupFuture.completeExceptionally(error);
-            return;
-          }
+        startFuture,
+        (result, error) -> {
+          // TODO: Put it into context
 
-          clusterServices.getMembershipService().addListener(server);
-          brokerStartupContext.setJobStreamService(service);
-          startupFuture.complete(brokerStartupContext);
         });
+
+    startFuture.onComplete(startFuture);
   }
 
   @Override
