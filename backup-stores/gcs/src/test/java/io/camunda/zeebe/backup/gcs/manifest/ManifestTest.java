@@ -8,6 +8,8 @@
 package io.camunda.zeebe.backup.gcs.manifest;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.gcs.manifest.ManifestTest.BackupStatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.gcs.manifest.ManifestTest.BackupStatusCode.FAILED;
 import static io.camunda.zeebe.backup.gcs.manifest.ManifestTest.BackupStatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -99,14 +101,89 @@ public class ManifestTest {
     assertThat(actualJson).isEqualTo(expectedJson);
   }
 
+  @Test
+  public void shouldCreateManifestWithInProgress() throws JsonProcessingException {
+    // given
+
+    // when
+    final Manifest manifest =
+        Manifest.createManifest(
+            new BackupIdentifierImpl(1, 2, 43),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+
+    // then
+    assertThat(manifest.statusCode).isEqualTo(IN_PROGRESS);
+    assertThat(manifest.createdAt.getEpochSecond()).isGreaterThan(0);
+    assertThat(manifest.modifiedAt.getEpochSecond()).isGreaterThan(0);
+    assertThat(manifest.createdAt).isEqualTo(manifest.modifiedAt);
+  }
+
+  @Test
+  public void shouldUpdateManifestToCompleted() {
+    // given
+    final Manifest created =
+        Manifest.createManifest(
+            new BackupIdentifierImpl(1, 2, 43),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+
+    // when
+    final var completed = created.complete();
+
+    // then
+    assertThat(completed.statusCode).isEqualTo(COMPLETED);
+    assertThat(completed.createdAt.getEpochSecond()).isGreaterThan(0);
+    assertThat(completed.modifiedAt.getEpochSecond()).isGreaterThan(0);
+    assertThat(completed.createdAt).isBefore(completed.modifiedAt);
+    assertThat(completed.createdAt).isEqualTo(created.modifiedAt);
+    assertThat(completed.modifiedAt).isNotEqualTo(created.modifiedAt);
+  }
+
+  @Test
+  public void shouldUpdateManifestToFailed() {
+    // given
+    final Manifest created =
+        Manifest.createManifest(
+            new BackupIdentifierImpl(1, 2, 43),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+
+    // when
+    final var failed = created.fail();
+
+    // then
+    assertThat(failed.statusCode).isEqualTo(FAILED);
+    assertThat(failed.createdAt.getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.modifiedAt.getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.createdAt).isBefore(failed.modifiedAt);
+    assertThat(failed.createdAt).isEqualTo(created.modifiedAt);
+    assertThat(failed.modifiedAt).isNotEqualTo(created.modifiedAt);
+  }
+
   record Manifest(
       BackupIdentifierImpl id,
       BackupDescriptorImpl descriptor,
       BackupStatusCode statusCode,
       Instant createdAt,
-      Instant modifiedAt) {}
+      Instant modifiedAt) {
+
+    public static Manifest createManifest(
+        final BackupIdentifierImpl id, final BackupDescriptorImpl descriptor) {
+      final Instant creationTime = Instant.now();
+      return new Manifest(id, descriptor, IN_PROGRESS, creationTime, creationTime);
+    }
+
+    public Manifest complete() {
+      return new Manifest(id, descriptor, COMPLETED, createdAt, Instant.now());
+    }
+
+    public Manifest fail() {
+      return new Manifest(id, descriptor, FAILED, createdAt, Instant.now());
+    }
+  }
 
   enum BackupStatusCode {
-    IN_PROGRESS
+    IN_PROGRESS,
+    COMPLETED,
+
+    FAILED
   }
 }
