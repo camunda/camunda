@@ -29,6 +29,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  * @param <M> the type of the properties of the stream.
  */
 public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
+  private final StreamMetrics metrics = new StreamMetrics();
+
   // Needs to be thread-safe for readers
   private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =
       new ConcurrentHashMap<>();
@@ -62,6 +64,7 @@ public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
 
     idToConsumer.put(uniqueId, streamConsumer);
     typeToConsumers.get(streamType).add(streamConsumer);
+    metrics.addStream();
   }
 
   /**
@@ -80,6 +83,7 @@ public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
             consumerSet.remove(consumer);
             return consumerSet.isEmpty() ? null : consumerSet;
           });
+      metrics.removeStream();
     }
   }
 

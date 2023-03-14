@@ -15,6 +15,8 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A naive implementation to push jobs out, which performs no retries of any kind, but reports
@@ -23,6 +25,8 @@ import java.util.concurrent.Executor;
  * @param <P> the payload type to be pushed out
  */
 final class StreamPusher<P extends BufferWriter> {
+  private static final Logger LOG = LoggerFactory.getLogger(StreamPusher.class);
+  private final StreamMetrics metrics = new StreamMetrics();
 
   private final StreamId streamId;
   private final Transport transport;
@@ -38,7 +42,17 @@ final class StreamPusher<P extends BufferWriter> {
     Objects.requireNonNull(payload, "must specify a payload");
     Objects.requireNonNull(errorHandler, "must specify a error handler");
 
-    executor.execute(() -> push(payload, errorHandler));
+    executor.execute(() -> push(payload, instrumentingErrorHandler(errorHandler)));
+  }
+
+  private ErrorHandler<P> instrumentingErrorHandler(final ErrorHandler<P> errorHandler) {
+    return (error, payload) -> {
+      if (error != null) {
+        metrics.pushFailed();
+        LOG.debug("Failed to push {} to stream {}", payload, streamId, error);
+        errorHandler.handleError(error, payload);
+      }
+    };
   }
 
   private void push(final P payload, final ErrorHandler<P> errorHandler) {
@@ -47,6 +61,7 @@ final class StreamPusher<P extends BufferWriter> {
       transport
           .send(request, streamId.receiver())
           .whenCompleteAsync((ok, error) -> onPush(payload, errorHandler, error), executor);
+      LOG.trace("Pushed {} to stream {}", payload, streamId);
     } catch (final Exception e) {
       errorHandler.handleError(e, payload);
     }
@@ -55,6 +70,8 @@ final class StreamPusher<P extends BufferWriter> {
   private void onPush(final P payload, final ErrorHandler<P> errorHandler, final Throwable error) {
     if (error != null) {
       errorHandler.handleError(error, payload);
+    } else {
+      metrics.pushSucceeded();
     }
   }
 
