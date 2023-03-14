@@ -13,6 +13,7 @@ import io.atomix.cluster.messaging.MessagingService;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamClient;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.StreamRegistry;
@@ -52,5 +53,11 @@ public final class TransportFactory {
         new StreamRegistry<>(),
         metadataFactory,
         actorSchedulingService);
+  }
+
+  public <M extends BufferReader, P extends BufferWriter>
+      RemoteStreamClient<M, P> createRemoteStreamClient() {
+    // TODO
+    return null;
   }
 }
