@@ -35,8 +35,16 @@ public interface GatewayStreamer<M extends Metadata, Payload> {
     return streamId -> Optional.empty();
   }
 
+  /**
+   * Can be used to notify listeners that there are items available to be streamed out for a given
+   * stream type.
+   *
+   * @param streamType the type of the stream which has items available
+   */
+  default void notifyWorkAvailable(final String streamType) {}
+
   /** Returns a valid stream for the given ID, or {@link Optional#empty()} if there is none. */
-  Optional<GatewayStream<M, Payload>> streamFor(final DirectBuffer streamId);
+  Optional<GatewayStream<M, Payload>> streamFor(final DirectBuffer streamType);
 
   /**
    * A {@link GatewayStream} allows consumers to push out {@link Payload} types to a stream with the
