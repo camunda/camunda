@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "mappings": {
+      "dynamic": "strict",
+      "properties": {
+        "position": {
+          "type": "long"
+        },
+        "sourceRecordPosition": {
+          "type": "long"
+        },
+        "key": {
+          "type": "long"
+        },
+        "timestamp": {
+          "type": "date"
+        },
+        "intent": {
+          "type": "keyword"
+        },
+        "partitionId": {
+          "type": "integer"
+        },
+        "recordType": {
+          "type": "keyword"
+        },
+        "rejectionType": {
+          "type": "keyword"
+        },
+        "rejectionReason": {
+          "type": "text"
+        },
+        "valueType": {
+          "type": "keyword"
+        },
+        "brokerVersion": {
+          "type": "keyword"
+        },
+        "sequence": {
+          "type": "long"
+        }
+      }
+    }
+  }
+}

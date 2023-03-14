@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+    elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.12.1
+        ports:
+            - "9200:9200"
+            - "9300:9300"
+        environment:
+            - discovery.type=single-node
+            - cluster.name=test
+            - ES_JAVA_OPTS=-Xmx750m -Xms750m
+
+    kibana:
+        image: docker.elastic.co/kibana/kibana:7.12.1
+        ports:
+            - "5601:5601"
+        links:
+            - elasticsearch

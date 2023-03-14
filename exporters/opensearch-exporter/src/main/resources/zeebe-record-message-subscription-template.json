@@ -1,0 +1,54 @@
+{
+  "index_patterns": [
+    "zeebe-record_message-subscription_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-message-subscription": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "processInstancePartitionId": {
+              "type": "integer"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "elementInstanceKey": {
+              "type": "long"
+            },
+            "messageName": {
+              "type": "keyword"
+            },
+            "correlationKey": {
+              "type": "text"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "messageKey": {
+              "type": "long"
+            },
+            "variables": {
+              "enabled": false
+            },
+            "interrupting": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  }
+}
