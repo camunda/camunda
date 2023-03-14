@@ -307,6 +307,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>zeebe-opensearch-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>zeebe-exporter-test</artifactId>
         <version>${project.version}</version>
       </dependency>
