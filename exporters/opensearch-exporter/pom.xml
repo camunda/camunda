@@ -10,10 +10,10 @@
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>zeebe-elasticsearch-exporter</artifactId>
+  <artifactId>zeebe-opensearch-exporter</artifactId>
   <packaging>jar</packaging>
 
-  <name>Zeebe Elasticsearch Exporter</name>
+  <name>Zeebe Opensearch Exporter</name>
 
   <dependencies>
     <dependency>
