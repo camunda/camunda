@@ -12,7 +12,7 @@ import {
   IncidentByErrorDto,
 } from 'modules/api/incidents/fetchIncidentsByError';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 type State = {
   incidents: IncidentByErrorDto[];

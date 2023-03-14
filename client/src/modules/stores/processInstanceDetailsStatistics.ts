@@ -23,7 +23,7 @@ import {
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
 import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 type Statistic = ProcessInstanceDetailStatisticsDto & {filteredActive: number};
 

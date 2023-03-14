@@ -15,7 +15,7 @@ import {useEffect} from 'react';
 import {ArrowRight} from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme, ThemeType} from 'modules/stores/currentTheme';
-import {capitalize} from 'lodash';
+import capitalize from 'lodash/capitalize';
 import {InlineLink} from './styled';
 
 const orderedApps = [

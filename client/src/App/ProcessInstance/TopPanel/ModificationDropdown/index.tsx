@@ -25,7 +25,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {tracking} from 'modules/tracking';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {modificationRulesStore} from 'modules/stores/modificationRules';
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {flip, offset} from '@floating-ui/react-dom';
 
 type Props = {

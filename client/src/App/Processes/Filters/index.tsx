@@ -8,7 +8,8 @@
 import {useEffect, useState} from 'react';
 import {Field, Form} from 'react-final-form';
 import {useLocation, Location} from 'react-router-dom';
-import {isEqual, intersection} from 'lodash';
+import isEqual from 'lodash/isEqual';
+import intersection from 'lodash/intersection';
 import {
   FiltersForm,
   ResetButtonContainer,

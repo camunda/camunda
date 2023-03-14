@@ -12,7 +12,7 @@ import NavigatedViewer, {
 // @ts-expect-error Could not find a declaration file for module '@bpmn-io/element-templates-icons-renderer'
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
 import {IReactionDisposer, reaction} from 'mobx';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 import {theme} from 'modules/theme';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';

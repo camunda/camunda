@@ -16,7 +16,7 @@ import {
   NewValueTD,
 } from './styled';
 import {TD, EditInputContainer} from '../styled';
-import {get} from 'lodash';
+import get from 'lodash/get';
 import {createNewVariableFieldName} from '../createVariableFieldName';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {ActionButton} from 'modules/components/ActionButton';

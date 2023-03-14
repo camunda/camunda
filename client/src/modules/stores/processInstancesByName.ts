@@ -11,7 +11,7 @@ import {
   ProcessInstanceByNameDto,
 } from 'modules/api/incidents/fetchProcessInstancesByName';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 type State = {
   processInstances: ProcessInstanceByNameDto[];

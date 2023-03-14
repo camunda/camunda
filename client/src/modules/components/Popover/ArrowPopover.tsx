@@ -16,7 +16,7 @@ import {
 
 import {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {Container, Arrow, getArrowPosition} from './styled';
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {createPortal} from 'react-dom';
 
 function getSide(placement: Placement) {

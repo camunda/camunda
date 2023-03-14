@@ -10,7 +10,7 @@ import {isValidJSON} from 'modules/utils';
 import {variablesStore} from 'modules/stores/variables';
 import {promisifyValidator} from 'modules/utils/validators/promisifyValidator';
 import {ERRORS, VALIDATION_DELAY} from './constants';
-import {get} from 'lodash';
+import get from 'lodash/get';
 import {getNewVariablePrefix} from './getNewVariablePrefix';
 import {VariableFormValues} from 'modules/types/variables';
 

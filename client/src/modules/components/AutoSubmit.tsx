@@ -7,7 +7,7 @@
 
 import {useEffect, useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
-import {throttle} from 'lodash';
+import throttle from 'lodash/throttle';
 
 type Props = {
   fieldsToSkipTimeout?: string[];

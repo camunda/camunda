@@ -13,6 +13,7 @@
     "strictFunctionTypes": true,
     "strictPropertyInitialization": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true
   }
 }

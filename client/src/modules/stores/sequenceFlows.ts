@@ -20,7 +20,7 @@ import {getProcessedSequenceFlows} from './mappers';
 import {isInstanceRunning} from './utils/isInstanceRunning';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 type State = {
   items: string[];

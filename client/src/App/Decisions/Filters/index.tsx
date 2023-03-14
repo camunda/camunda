@@ -30,7 +30,7 @@ import {
 } from './styled';
 import {observer} from 'mobx-react';
 import {Button} from 'modules/components/Button';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {DecisionsFormGroup} from './DecisionsFormGroup';
 import {

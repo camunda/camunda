@@ -32,7 +32,7 @@ import {Paths} from 'modules/routes';
 import {Link} from 'modules/components/Link';
 import {tracking} from 'modules/tracking';
 import {getExecutionDuration} from './getExecutionDuration';
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {Anchor} from 'modules/components/Anchor/styled';
 import {flip, offset} from '@floating-ui/react-dom';
 

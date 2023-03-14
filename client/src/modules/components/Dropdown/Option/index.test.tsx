@@ -6,7 +6,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {noop} from 'lodash';
+import noop from 'lodash/noop';
 import Option from './index';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 

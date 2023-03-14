@@ -22,7 +22,7 @@ import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 import {hasActiveOperations} from './utils/hasActiveOperations';
 import {tracking} from 'modules/tracking';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 
 type State = {
   processInstance: null | ProcessInstanceEntity;

@@ -52,7 +52,7 @@
     "test:ci-browserstack": "cross-env PORT=8080 node e2e/scripts/browserstack.js",
     "postinstall": "cd .. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
-    "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'"
+    "analyze-bundle": "react-scripts build && source-map-explorer 'build/static/js/*.js'"
   },
   "jest": {
     "transformIgnorePatterns": [

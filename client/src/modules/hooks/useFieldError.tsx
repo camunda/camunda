@@ -7,7 +7,7 @@
 
 import {useField, useFormState} from 'react-final-form';
 import {useEffect, useState} from 'react';
-import {get} from 'lodash';
+import get from 'lodash/get';
 
 const useFieldError = (name: string) => {
   const {

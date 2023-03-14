@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {isNil} from 'lodash';
+import isNil from 'lodash/isNil';
 import {makeAutoObservable} from 'mobx';
 import {flowNodeMetaDataStore} from './flowNodeMetaData';
 import {flowNodeSelectionStore} from './flowNodeSelection';

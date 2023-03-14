@@ -22,7 +22,7 @@ import {
 } from 'modules/api/fetchFlowNodeInstances';
 import {logger} from 'modules/logger';
 import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {isEqual} from 'lodash';
+import isEqual from 'lodash/isEqual';
 import {modificationsStore} from './modifications';
 
 const MAX_PROCESS_INSTANCES_STORED = 200;
