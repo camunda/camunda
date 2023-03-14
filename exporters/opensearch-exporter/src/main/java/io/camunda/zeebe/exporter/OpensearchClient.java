@@ -24,23 +24,23 @@ import org.apache.http.entity.EntityTemplate;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 
-class ElasticsearchClient implements AutoCloseable {
+class OpensearchClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private final RestClient client;
-  private final ElasticsearchExporterConfiguration configuration;
+  private final OpensearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
 
-  private ElasticsearchMetrics metrics;
+  private OpensearchMetrics metrics;
 
-  ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
+  OpensearchClient(final OpensearchExporterConfiguration configuration) {
     this(configuration, new BulkIndexRequest());
   }
 
-  ElasticsearchClient(
-      final ElasticsearchExporterConfiguration configuration,
+  OpensearchClient(
+      final OpensearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest) {
     this(
         configuration,
@@ -51,13 +51,13 @@ class ElasticsearchClient implements AutoCloseable {
         null);
   }
 
-  ElasticsearchClient(
-      final ElasticsearchExporterConfiguration configuration,
+  OpensearchClient(
+      final OpensearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
       final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
-      final ElasticsearchMetrics metrics) {
+      final OpensearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
     this.client = client;
@@ -73,7 +73,7 @@ class ElasticsearchClient implements AutoCloseable {
 
   public void index(final Record<?> record, final RecordSequence recordSequence) {
     if (metrics == null) {
-      metrics = new ElasticsearchMetrics(record.getPartitionId());
+      metrics = new OpensearchMetrics(record.getPartitionId());
     }
 
     final BulkIndexAction action =
@@ -85,9 +85,9 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   /**
-   * Flushes the bulk request to Elastic, unless it's currently empty.
+   * Flushes the bulk request to Opensearch, unless it's currently empty.
    *
-   * @throws ElasticsearchExporterException if not all items of the bulk were flushed successfully
+   * @throws OpensearchExporterException if not all items of the bulk were flushed successfully
    */
   public void flush() {
     if (bulkIndexRequest.isEmpty()) {
@@ -102,7 +102,7 @@ class ElasticsearchClient implements AutoCloseable {
 
       // all records where flushed, create new bulk request, otherwise retry next time
       bulkIndexRequest.clear();
-    } catch (final ElasticsearchExporterException e) {
+    } catch (final OpensearchExporterException e) {
       metrics.recordFailedFlush();
       throw e;
     }
@@ -135,8 +135,8 @@ class ElasticsearchClient implements AutoCloseable {
   }
 
   /**
-   * Creates or updates the component template on the target Elasticsearch. The template is read
-   * from {@link TemplateReader#readComponentTemplate()}.
+   * Creates or updates the component template on the target Opensearch. The template is read from
+   * {@link TemplateReader#readComponentTemplate()}.
    */
   public boolean putComponentTemplate() {
     final Template template = templateReader.readComponentTemplate();
@@ -153,7 +153,7 @@ class ElasticsearchClient implements AutoCloseable {
 
       response = sendRequest(request, BulkIndexResponse.class);
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to flush bulk", e);
+      throw new OpensearchExporterException("Failed to flush bulk", e);
     }
 
     if (response.errors()) {
@@ -174,7 +174,7 @@ class ElasticsearchClient implements AutoCloseable {
                         "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
                         errors.size(), errorType, errors.get(0).reason())));
 
-    throw new ElasticsearchExporterException("Failed to flush bulk request: " + collectedErrors);
+    throw new OpensearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   private boolean putIndexTemplate(final String templateName, final Template template) {
@@ -185,7 +185,7 @@ class ElasticsearchClient implements AutoCloseable {
       final var response = sendRequest(request, PutIndexTemplateResponse.class);
       return response.acknowledged();
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to put index template", e);
+      throw new OpensearchExporterException("Failed to put index template", e);
     }
   }
 
@@ -197,7 +197,7 @@ class ElasticsearchClient implements AutoCloseable {
       final var response = sendRequest(request, PutIndexTemplateResponse.class);
       return response.acknowledged();
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to put component template", e);
+      throw new OpensearchExporterException("Failed to put component template", e);
     }
   }
 

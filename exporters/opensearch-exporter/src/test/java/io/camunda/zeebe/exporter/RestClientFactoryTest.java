@@ -26,8 +26,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class RestClientFactoryTest {
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
 
   @Test
   void shouldConfigureMultipleHosts() {

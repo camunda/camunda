@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter;
 
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;

@@ -41,7 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 @Execution(ExecutionMode.CONCURRENT)
-final class ElasticsearchClientTest {
+final class OpensearchClientTest {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
@@ -49,20 +49,19 @@ final class ElasticsearchClientTest {
 
   private final RestClient restClient = mock(RestClient.class);
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final TemplateReader templateReader = new TemplateReader(config.index);
 
-  private final ElasticsearchClient client =
-      new ElasticsearchClient(
+  private final OpensearchClient client =
+      new OpensearchClient(
           config,
           bulkRequest,
           restClient,
           indexRouter,
           templateReader,
-          new ElasticsearchMetrics(PARTITION_ID));
+          new OpensearchMetrics(PARTITION_ID));
 
   @ParameterizedTest(name = "{0}")
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
@@ -209,7 +208,7 @@ final class ElasticsearchClientTest {
     void shouldNotClearBulkOnFailure() throws IOException {
       // given
       config.bulk.size = 1;
-      final var failure = new ElasticsearchExporterException("Injected failure");
+      final var failure = new OpensearchExporterException("Injected failure");
       doThrow(failure).when(restClient).performRequest(any());
 
       // when

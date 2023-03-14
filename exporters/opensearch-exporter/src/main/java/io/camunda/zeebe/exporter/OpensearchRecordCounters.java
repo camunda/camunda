@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumMap;
 import java.util.Map;
 
-public final class ElasticsearchRecordCounters {
+public final class OpensearchRecordCounters {
 
   private static final long INITIAL_RECORD_COUNTER = 0L;
 
@@ -21,11 +21,11 @@ public final class ElasticsearchRecordCounters {
    */
   private final Map<ValueType, Long> recordCountersByValueType;
 
-  public ElasticsearchRecordCounters() {
+  public OpensearchRecordCounters() {
     recordCountersByValueType = new EnumMap<>(ValueType.class);
   }
 
-  public ElasticsearchRecordCounters(final Map<ValueType, Long> recordCounters) {
+  public OpensearchRecordCounters(final Map<ValueType, Long> recordCounters) {
     recordCountersByValueType = new EnumMap<>(recordCounters);
   }
 

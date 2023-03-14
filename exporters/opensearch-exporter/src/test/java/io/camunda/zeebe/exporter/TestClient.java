@@ -29,19 +29,19 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 
 /**
- * A thin client to verify properties from Elastic. Wraps both the low and high level clients from
- * Elastic in a closeable resource.
+ * A thin client to verify properties from Opensearch. Wraps both the low and high level clients
+ * from Opensearch in a closeable resource.
  */
 final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
-  private final ElasticsearchExporterConfiguration config;
+  private final OpensearchExporterConfiguration config;
   private final RestClient restClient;
   private final ElasticsearchClient esClient;
   private final RecordIndexRouter indexRouter;
 
-  TestClient(final ElasticsearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
+  TestClient(final OpensearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
     this.config = config;
     this.indexRouter = indexRouter;
 

@@ -9,7 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -22,7 +22,7 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchExporter implements Exporter {
+public class OpensearchExporter implements Exporter {
 
   // by default, the bulk request may not be bigger than 100MB
   private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
@@ -30,13 +30,12 @@ public class ElasticsearchExporter implements Exporter {
   private Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final ObjectMapper exporterMetadataObjectMapper = new ObjectMapper();
 
-  private final ElasticsearchExporterMetadata exporterMetadata =
-      new ElasticsearchExporterMetadata();
+  private final OpensearchExporterMetadata exporterMetadata = new OpensearchExporterMetadata();
 
   private Controller controller;
-  private ElasticsearchExporterConfiguration configuration;
-  private ElasticsearchClient client;
-  private ElasticsearchRecordCounters recordCounters;
+  private OpensearchExporterConfiguration configuration;
+  private OpensearchClient client;
+  private OpensearchRecordCounters recordCounters;
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
@@ -44,13 +43,12 @@ public class ElasticsearchExporter implements Exporter {
   @Override
   public void configure(final Context context) {
     log = context.getLogger();
-    configuration =
-        context.getConfiguration().instantiate(ElasticsearchExporterConfiguration.class);
+    configuration = context.getConfiguration().instantiate(OpensearchExporterConfiguration.class);
     log.debug("Exporter configured with {}", configuration);
 
     validate(configuration);
 
-    context.setFilter(new ElasticsearchRecordFilter(configuration));
+    context.setFilter(new OpensearchRecordFilter(configuration));
   }
 
   @Override
@@ -62,9 +60,9 @@ public class ElasticsearchExporter implements Exporter {
         controller
             .readMetadata()
             .map(this::deserializeExporterMetadata)
-            .map(ElasticsearchExporterMetadata::getRecordCountersByValueType)
-            .map(ElasticsearchRecordCounters::new)
-            .orElse(new ElasticsearchRecordCounters());
+            .map(OpensearchExporterMetadata::getRecordCountersByValueType)
+            .map(OpensearchRecordCounters::new)
+            .orElse(new OpensearchRecordCounters());
 
     scheduleDelayedFlush();
     log.info("Exporter opened");
@@ -83,7 +81,7 @@ public class ElasticsearchExporter implements Exporter {
     try {
       client.close();
     } catch (final Exception e) {
-      log.warn("Failed to close elasticsearch client", e);
+      log.warn("Failed to close opensearch client", e);
     }
 
     log.info("Exporter closed");
@@ -113,11 +111,11 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private void validate(final ElasticsearchExporterConfiguration configuration) {
+  private void validate(final OpensearchExporterConfiguration configuration) {
     if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
       throw new ExporterException(
           String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
+              "Opensearch prefix must not contain underscore. Current value: %s",
               configuration.index.prefix));
     }
 
@@ -131,20 +129,20 @@ public class ElasticsearchExporter implements Exporter {
     if (numberOfShards != null && numberOfShards < 1) {
       throw new ExporterException(
           String.format(
-              "Elasticsearch numberOfShards must be >= 1. Current value: %d", numberOfShards));
+              "Opensearch numberOfShards must be >= 1. Current value: %d", numberOfShards));
     }
 
     final Integer numberOfReplicas = configuration.index.getNumberOfReplicas();
     if (numberOfReplicas != null && numberOfReplicas < 0) {
       throw new ExporterException(
           String.format(
-              "Elasticsearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
+              "Opensearch numberOfReplicas must be >= 0. Current value: %d", numberOfReplicas));
     }
   }
 
   // TODO: remove this and instead allow client to be inject-able for testing
-  protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration);
+  protected OpensearchClient createClient() {
+    return new OpensearchClient(configuration);
   }
 
   private void flushAndReschedule() {
@@ -172,19 +170,19 @@ public class ElasticsearchExporter implements Exporter {
     controller.updateLastExportedRecordPosition(lastPosition, serializeExporterMetadata);
   }
 
-  private byte[] serializeExporterMetadata(final ElasticsearchExporterMetadata metadata) {
+  private byte[] serializeExporterMetadata(final OpensearchExporterMetadata metadata) {
     try {
       return exporterMetadataObjectMapper.writeValueAsBytes(metadata);
     } catch (final JsonProcessingException e) {
-      throw new ElasticsearchExporterException("Failed to serialize exporter metadata", e);
+      throw new OpensearchExporterException("Failed to serialize exporter metadata", e);
     }
   }
 
-  private ElasticsearchExporterMetadata deserializeExporterMetadata(final byte[] metadata) {
+  private OpensearchExporterMetadata deserializeExporterMetadata(final byte[] metadata) {
     try {
-      return exporterMetadataObjectMapper.readValue(metadata, ElasticsearchExporterMetadata.class);
+      return exporterMetadataObjectMapper.readValue(metadata, OpensearchExporterMetadata.class);
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException("Failed to deserialize exporter metadata", e);
+      throw new OpensearchExporterException("Failed to deserialize exporter metadata", e);
     }
   }
 
@@ -294,11 +292,11 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
+  private static class OpensearchRecordFilter implements Context.RecordFilter {
 
-    private final ElasticsearchExporterConfiguration configuration;
+    private final OpensearchExporterConfiguration configuration;
 
-    ElasticsearchRecordFilter(final ElasticsearchExporterConfiguration configuration) {
+    OpensearchRecordFilter(final OpensearchExporterConfiguration configuration) {
       this.configuration = configuration;
     }
 

@@ -75,7 +75,7 @@ final class BulkIndexRequestTest {
     final var serializedRecord = MAPPER.writeValueAsBytes(record);
     final var recordAsMap = MAPPER.readValue(serializedRecord, MAP_TYPE_REFERENCE);
     // The sequence property is not part of the record itself. It is added additionally in the
-    // Elasticsearch exporter. We need to do the same in the test to get the correct memory usage.
+    // Opensearch exporter. We need to do the same in the test to get the correct memory usage.
     recordAsMap.put("sequence", recordSequence.sequence());
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }

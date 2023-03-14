@@ -41,18 +41,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 
-final class ElasticsearchExporterTest {
+final class OpensearchExporterTest {
 
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ExporterTestContext context =
       new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", config));
   private final ExporterTestController controller = new ExporterTestController();
-  private final ElasticsearchClient client = mock(ElasticsearchClient.class);
-  private final ElasticsearchExporter exporter =
-      new ElasticsearchExporter() {
+  private final OpensearchClient client = mock(OpensearchClient.class);
+  private final OpensearchExporter exporter =
+      new OpensearchExporter() {
         @Override
-        protected ElasticsearchClient createClient() {
+        protected OpensearchClient createClient() {
           return client;
         }
       };
@@ -64,9 +63,9 @@ final class ElasticsearchExporterTest {
   }
 
   @Test
-  void shouldNotFailOnOpenIfElasticIsUnreachable() {
+  void shouldNotFailOnOpenIfOpensearchIsUnreachable() {
     // given
-    final var exporter = new ElasticsearchExporter();
+    final var exporter = new OpensearchExporter();
     exporter.configure(context);
 
     // when
@@ -74,7 +73,7 @@ final class ElasticsearchExporterTest {
 
     // then
     assertThatThrownBy(() -> exporter.export(mock(Record.class)))
-        .isInstanceOf(ElasticsearchExporterException.class);
+        .isInstanceOf(OpensearchExporterException.class);
   }
 
   @Nested
@@ -304,11 +303,10 @@ final class ElasticsearchExporterTest {
       when(client.shouldFlush()).thenReturn(true);
 
       // when
-      doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
+      doThrow(new OpensearchExporterException("failed to flush")).when(client).flush();
 
       // then
-      assertThatCode(() -> exporter.export(record))
-          .isInstanceOf(ElasticsearchExporterException.class);
+      assertThatCode(() -> exporter.export(record)).isInstanceOf(OpensearchExporterException.class);
       assertThat(controller.getPosition()).isEqualTo(-1L);
     }
   }
@@ -441,12 +439,9 @@ final class ElasticsearchExporterTest {
       final var record = newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE);
 
       // when
-      doThrow(new ElasticsearchExporterException("failed to index"))
-          .when(client)
-          .index(any(), any());
+      doThrow(new OpensearchExporterException("failed to index")).when(client).index(any(), any());
 
-      assertThatCode(() -> exporter.export(record))
-          .isInstanceOf(ElasticsearchExporterException.class);
+      assertThatCode(() -> exporter.export(record)).isInstanceOf(OpensearchExporterException.class);
 
       // retry index successfully
       doNothing().when(client).index(any(), any());
@@ -470,10 +465,9 @@ final class ElasticsearchExporterTest {
       final var record = newRecord(PARTITION_ID, ValueType.PROCESS_INSTANCE);
 
       // when
-      doThrow(new ElasticsearchExporterException("failed to flush")).when(client).flush();
+      doThrow(new OpensearchExporterException("failed to flush")).when(client).flush();
 
-      assertThatCode(() -> exporter.export(record))
-          .isInstanceOf(ElasticsearchExporterException.class);
+      assertThatCode(() -> exporter.export(record)).isInstanceOf(OpensearchExporterException.class);
 
       // retry flush successfully
       doNothing().when(client).flush();

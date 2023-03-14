@@ -37,22 +37,21 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * Tests here should be purely about verifying changes made to Elasticsearch with default
+ * Tests here should be purely about verifying changes made to Opensearch with default
  * configuration. Testing flushing behavior, template configuration, etc., isn't necessary here.
  *
- * <p>Similarly, testing against a secured Elasticsearch, or testing fault tolerance when Elastic is
+ * <p>Similarly, testing against a secured Opensearch, or testing fault tolerance when Opensearch is
  * down, should be done elsewhere (e.g. {@link FaultToleranceIT}
  */
 @Testcontainers
-final class ElasticsearchExporterIT {
+final class OpensearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
   private final ExporterTestController controller = new ExporterTestController();
-  private final ElasticsearchExporter exporter = new ElasticsearchExporter();
+  private final OpensearchExporter exporter = new OpensearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
 
   private TestClient testClient;
@@ -70,7 +69,7 @@ final class ElasticsearchExporterIT {
 
     exporter.configure(
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", config)));
+            .setConfiguration(new ExporterTestConfiguration<>("opensearch", config)));
     exporter.open(controller);
   }
 

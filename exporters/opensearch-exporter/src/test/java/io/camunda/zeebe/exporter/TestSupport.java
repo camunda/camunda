@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.exporter;
 
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
@@ -18,7 +18,7 @@ import org.testcontainers.utility.DockerImageName;
 
 /** Collection of utilities for unit and integration tests. */
 final class TestSupport {
-  private static final DockerImageName ELASTIC_IMAGE =
+  private static final DockerImageName OPENSEARCH_IMAGE =
       DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
           .withTag(RestClient.class.getPackage().getImplementationVersion());
 
@@ -33,7 +33,7 @@ final class TestSupport {
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   static ElasticsearchContainer createDefaultContainer() {
-    return new ElasticsearchContainer(ELASTIC_IMAGE)
+    return new ElasticsearchContainer(OPENSEARCH_IMAGE)
         .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
         .withEnv("action.auto_create_index", "true")
         .withEnv("xpack.security.enabled", "false");

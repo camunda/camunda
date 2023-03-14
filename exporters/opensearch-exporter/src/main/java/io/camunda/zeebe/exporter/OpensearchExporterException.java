@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.exporter;
 
-public class ElasticsearchExporterException extends RuntimeException {
+public class OpensearchExporterException extends RuntimeException {
 
-  public ElasticsearchExporterException(final String message) {
+  public OpensearchExporterException(final String message) {
     super(message);
   }
 
-  public ElasticsearchExporterException(final String message, final Throwable cause) {
+  public OpensearchExporterException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

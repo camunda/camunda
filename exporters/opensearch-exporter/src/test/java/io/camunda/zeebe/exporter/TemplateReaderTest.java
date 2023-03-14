@@ -9,7 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.Map;

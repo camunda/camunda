@@ -29,7 +29,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-final class ElasticsearchClientIT {
+final class OpensearchClientIT {
   // configuring a superuser will allow us to create more users, which will let us test
   // authentication
   @Container
@@ -44,14 +44,13 @@ final class ElasticsearchClientIT {
   private static final int PARTITION_ID = 1;
 
   private final ProtocolFactory recordFactory = new ProtocolFactory();
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final TemplateReader templateReader = new TemplateReader(config.index);
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
 
   private TestClient testClient;
-  private ElasticsearchClient client;
+  private OpensearchClient client;
 
   @BeforeEach
   public void beforeEach() {
@@ -61,13 +60,13 @@ final class ElasticsearchClientIT {
 
     testClient = new TestClient(config, indexRouter);
     client =
-        new ElasticsearchClient(
+        new OpensearchClient(
             config,
             bulkRequest,
             RestClientFactory.of(config),
             indexRouter,
             templateReader,
-            new ElasticsearchMetrics(PARTITION_ID));
+            new OpensearchMetrics(PARTITION_ID));
   }
 
   @AfterEach
@@ -87,7 +86,7 @@ final class ElasticsearchClientIT {
 
     // when/then
     assertThatThrownBy(client::flush)
-        .isInstanceOf(ElasticsearchExporterException.class)
+        .isInstanceOf(OpensearchExporterException.class)
         .hasMessageContaining(
             "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse field [timestamp]");
   }
@@ -155,7 +154,7 @@ final class ElasticsearchClientIT {
 
     // when
     // force recreating the client
-    final var authenticatedClient = new ElasticsearchClient(config, bulkRequest);
+    final var authenticatedClient = new OpensearchClient(config, bulkRequest);
     authenticatedClient.putComponentTemplate();
 
     // then

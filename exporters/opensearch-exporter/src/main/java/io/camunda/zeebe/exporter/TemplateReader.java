@@ -8,7 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.io.IOException;
@@ -25,7 +25,7 @@ final class TemplateReader {
   private static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private final ElasticsearchExporterConfiguration.IndexConfiguration config;
+  private final OpensearchExporterConfiguration.IndexConfiguration config;
 
   public TemplateReader(final IndexConfiguration config) {
     this.config = config;
@@ -87,11 +87,10 @@ final class TemplateReader {
   }
 
   private Template getTemplateFromClasspath(final String filename) {
-    try (final InputStream inputStream =
-        ElasticsearchExporter.class.getResourceAsStream(filename)) {
+    try (final InputStream inputStream = OpensearchExporter.class.getResourceAsStream(filename)) {
       return MAPPER.readValue(inputStream, Template.class);
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
+      throw new OpensearchExporterException(
           "Failed to load index template from classpath " + filename, e);
     }
   }

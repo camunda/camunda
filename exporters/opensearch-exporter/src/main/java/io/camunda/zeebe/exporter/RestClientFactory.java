@@ -27,11 +27,11 @@ final class RestClientFactory {
    * comma separated list of "host:port" formatted strings. Authentication is supported only as
    * basic auth; if there is no authentication present, then nothing is configured for it.
    */
-  static RestClient of(final ElasticsearchExporterConfiguration config) {
+  static RestClient of(final OpensearchExporterConfiguration config) {
     return INSTANCE.createRestClient(config);
   }
 
-  private RestClient createRestClient(final ElasticsearchExporterConfiguration config) {
+  private RestClient createRestClient(final OpensearchExporterConfiguration config) {
     final HttpHost[] httpHosts = parseUrl(config);
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
@@ -45,7 +45,7 @@ final class RestClientFactory {
   }
 
   private HttpAsyncClientBuilder configureHttpClient(
-      final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
+      final OpensearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
     // use single thread for rest client
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
@@ -57,7 +57,7 @@ final class RestClientFactory {
   }
 
   private void setupBasicAuthentication(
-      final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
+      final OpensearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
     final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
     credentialsProvider.setCredentials(
         AuthScope.ANY,
@@ -67,7 +67,7 @@ final class RestClientFactory {
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
-  private HttpHost[] parseUrl(final ElasticsearchExporterConfiguration config) {
+  private HttpHost[] parseUrl(final OpensearchExporterConfiguration config) {
     final var urls = config.url.split(",");
     final var hosts = new HttpHost[urls.length];
 

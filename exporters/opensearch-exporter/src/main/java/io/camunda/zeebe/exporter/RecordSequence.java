@@ -10,7 +10,7 @@ package io.camunda.zeebe.exporter;
 /**
  * The record sequence is a combination of the partition id and the counter.
  *
- * <p>The Elasticsearch exporter puts the sequence together with the record in the index. It can be
+ * <p>The Opensearch exporter puts the sequence together with the record in the index. It can be
  * used to limit the number of records when reading from the index, for example, by using a range
  * query.
  *

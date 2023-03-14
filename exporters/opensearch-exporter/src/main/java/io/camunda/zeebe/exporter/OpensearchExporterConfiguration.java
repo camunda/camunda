@@ -11,14 +11,14 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 
-public class ElasticsearchExporterConfiguration {
+public class OpensearchExporterConfiguration {
 
   private static final String DEFAULT_URL = "http://localhost:9200";
 
-  /** Comma-separated Elasticsearch http urls */
+  /** Comma-separated Opensearch http urls */
   public String url = DEFAULT_URL;
 
-  /** The request timeout for the elastic search client. The timeout unit is milliseconds. */
+  /** The request timeout for the opensearch client. The timeout unit is milliseconds. */
   public int requestTimeoutMs = 30_000;
 
   public final IndexConfiguration index = new IndexConfiguration();
@@ -35,7 +35,7 @@ public class ElasticsearchExporterConfiguration {
 
   @Override
   public String toString() {
-    return "ElasticsearchExporterConfiguration{"
+    return "OpensearchExporterConfiguration{"
         + "url='"
         + url
         + '\''

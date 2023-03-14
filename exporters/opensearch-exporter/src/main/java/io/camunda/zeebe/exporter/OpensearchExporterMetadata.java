@@ -11,7 +11,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumMap;
 import java.util.Map;
 
-public final class ElasticsearchExporterMetadata {
+public final class OpensearchExporterMetadata {
 
   private Map<ValueType, Long> recordCountersByValueType = new EnumMap<>(ValueType.class);
 

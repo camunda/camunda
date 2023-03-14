@@ -171,7 +171,7 @@ exporters:
     # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
     #
 
-    className: io.camunda.zeebe.exporter.ElasticsearchExporter
+    className: io.camunda.zeebe.exporter.OpensearchExporter
 
     args:
       # A comma separated list of URLs pointing to the Elasticsearch instances you wish to export to.

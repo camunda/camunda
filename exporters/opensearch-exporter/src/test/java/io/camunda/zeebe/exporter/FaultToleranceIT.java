@@ -21,20 +21,19 @@ import org.testcontainers.containers.SocatContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /**
- * A separate suite to run tests when Elasticsearch is down, and that exporting works again once it
- * is back up.
+ * A separate suite to run tests when Opensearch is down, and that exporting works again once it is
+ * back up.
  */
 final class FaultToleranceIT {
 
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();
   private final ExporterTestController controller = new ExporterTestController();
-  private final ElasticsearchExporter exporter = new ElasticsearchExporter();
+  private final OpensearchExporter exporter = new OpensearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
 
   @Test
-  void shouldExportEvenIfElasticNotInitiallyReachable() {
+  void shouldExportEvenIfOpensearchNotInitiallyReachable() {
     // given
     final var record = factory.generateRecord(ValueType.VARIABLE);
     config.bulk.size = 1; // force flushing after a single record
@@ -44,23 +43,23 @@ final class FaultToleranceIT {
     try (final Network network = Network.newNetwork();
         final SocatContainer proxy =
             new SocatContainer()
-                .withTarget(9200, "elastic")
+                .withTarget(9200, "opensearch")
                 .withNetwork(network)
                 .withNetworkAliases("proxy");
         final ElasticsearchContainer container =
             TestSupport.createDefaultContainer()
                 .withNetwork(network)
-                .withNetworkAliases("elastic")) {
+                .withNetworkAliases("opensearch")) {
       // fix the ports beforehand - since we don't know the container port until it starts, and we
       // want to start it after the exporter is running, we need a fixed, predictable endpoint; this
-      // can be done by using socat to proxy Elastic's 9200 port to a predictable endpoint without
-      // starting Elastic
+      // can be done by using socat to proxy Open's 9200 port to a predictable endpoint without
+      // starting Open
       proxy.start();
       config.url = container.getHost() + ":" + proxy.getMappedPort(9200);
 
       exporter.configure(
           new ExporterTestContext()
-              .setConfiguration(new ExporterTestConfiguration<>("elastic", config)));
+              .setConfiguration(new ExporterTestConfiguration<>("opensearch", config)));
       exporter.open(controller);
 
       // when

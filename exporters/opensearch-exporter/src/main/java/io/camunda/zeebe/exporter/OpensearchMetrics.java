@@ -11,8 +11,8 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
 
-public class ElasticsearchMetrics {
-  private static final String NAMESPACE = "zeebe_elasticsearch_exporter";
+public class OpensearchMetrics {
+  private static final String NAMESPACE = "zeebe_opensearch_exporter";
   private static final String PARTITION_LABEL = "partition";
 
   private static final Histogram FLUSH_DURATION =
@@ -50,7 +50,7 @@ public class ElasticsearchMetrics {
 
   private final String partitionIdLabel;
 
-  public ElasticsearchMetrics(final int partitionId) {
+  public OpensearchMetrics(final int partitionId) {
     partitionIdLabel = String.valueOf(partitionId);
   }
 

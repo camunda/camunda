@@ -40,8 +40,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   /**
    * Indexes the given record for the given bulk action. See
-   * https://www.elastic.co/guide/en/elasticsearch/reference/7.17/docs-bulk.html for the types of
-   * actions.
+   * https://opensearch.org/docs/2.6/api-reference/document-apis/bulk/ for the types of actions.
    *
    * <p>The call is a no-op if the last indexed action is the same as the given one.
    *
@@ -61,7 +60,7 @@ final class BulkIndexRequest implements ContentProducer {
       source = serializeRecord(record, recordSequence);
 
     } catch (final IOException e) {
-      throw new ElasticsearchExporterException(
+      throw new OpensearchExporterException(
           String.format("Failed to serialize record to JSON for indexing action %s", action), e);
     }
 
@@ -76,7 +75,7 @@ final class BulkIndexRequest implements ContentProducer {
     return MAPPER
         .writer()
         // Enhance the serialized record by its sequence number. The sequence number is not a part
-        // of the record itself but a special property for Elasticsearch. It can be used to limit
+        // of the record itself but a special property for Opensearch. It can be used to limit
         // the number of records when reading from the index, for example, by using a range query.
         // Read https://github.com/camunda/zeebe/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
