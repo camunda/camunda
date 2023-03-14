@@ -12,10 +12,137 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public final class ClusterCfgTest {
+
+  private static final String ZEEBE_BROKER_CLUSTER_NODE_ID = "zeebe.broker.cluster.nodeId";
+  private static final String ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS =
+      "zeebe.broker.cluster.initialContactPoints";
+  private static final String ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT =
+      "zeebe.broker.cluster.partitionsCount";
+  private static final String ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR =
+      "zeebe.broker.cluster.replicationFactor";
+  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE =
+      "zeebe.broker.cluster.clusterSize";
+  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
+      "zeebe.broker.cluster.clusterName";
+
+  @Test
+  public void shouldUseDefaults() {
+    // given
+
+    // when
+    final ClusterCfg emptyCfg = TestConfigReader.readConfig("empty", Map.of()).getCluster();
+    final ClusterCfg defaultCfg = TestConfigReader.readConfig("default", Map.of()).getCluster();
+
+    // then
+    assertThat(emptyCfg.getNodeId()).isEqualTo(0);
+    assertThat(emptyCfg.getPartitionsCount()).isEqualTo(1);
+    assertThat(emptyCfg.getReplicationFactor()).isEqualTo(1);
+    assertThat(emptyCfg.getClusterSize()).isEqualTo(1);
+    assertThat(emptyCfg.getInitialContactPoints()).isEqualTo(List.of());
+
+    assertThat(defaultCfg.getNodeId()).isEqualTo(0);
+    assertThat(defaultCfg.getPartitionsCount()).isEqualTo(1);
+    assertThat(defaultCfg.getReplicationFactor()).isEqualTo(1);
+    assertThat(defaultCfg.getClusterSize()).isEqualTo(1);
+    assertThat(defaultCfg.getInitialContactPoints()).isEqualTo(List.of());
+  }
+
+  @Test
+  public void shouldOverrideAllClusterPropertiesViaEnvironment() {
+    // given
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "3");
+    environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
+    environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "3");
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(3);
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(3);
+    assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldUseClusterNameFromEnvironment() {
+    // given
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_NAME, "test-cluster");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getClusterName()).isEqualTo("test-cluster");
+  }
+
+  @Test
+  public void shouldUseSpecifiedClusterName() {
+    // given
+
+    // when
+    final BrokerCfg cfg =
+        TestConfigReader.readConfig("specific-cluster-name", Collections.emptyMap());
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getClusterName()).isEqualTo("cluster-name");
+  }
+
+  @Test
+  public void shouldUseNodeIdFromEnvironment() {
+    // given
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
+    // cluster size must be larger than node id
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "6");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldUseSpecifiedNodeId() {
+    // given
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("specific-node-id", Collections.emptyMap());
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldUseNodeIdFromEnvironmentWithSpecifiedNodeIdInConfig() {
+    // given
+    final var environment = new HashMap<String, String>();
+    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "2");
+    // cluster size must be larger than node id
+    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "6");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("specific-node-id", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+  }
 
   @Test
   public void shouldSanitizeContactPoints() {
@@ -55,6 +182,17 @@ public final class ClusterCfgTest {
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Node id -1 needs to be non negative and smaller then cluster size 1.");
+  }
+
+  @Test
+  public void shouldThrowExceptionIfNodeIdIsInvalid() {
+    // given
+    final var environment = Collections.singletonMap(ZEEBE_BROKER_CLUSTER_NODE_ID, "a");
+
+    // when - then
+    assertThatCode(() -> TestConfigReader.readConfig("default", environment))
+        .hasRootCauseInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("to int"); // spring related exception
   }
 
   @Test
@@ -136,5 +274,133 @@ public final class ClusterCfgTest {
     assertThatCode(() -> TestConfigReader.readConfig("default", environment))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("heartbeatInterval PT0S must be at least 1ms");
+  }
+
+  @Test
+  public void shouldOverrideReplicationFactorViaEnvironment() {
+    // given
+    final var environment = Collections.singletonMap(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "2");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverridePartitionsCountViaEnvironment() {
+    // given
+    final var environment = Collections.singletonMap(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverrideClusterSizeViaEnvironment() {
+    // given
+    final var environment = Collections.singletonMap(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "8");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(8);
+  }
+
+  @Test
+  public void shouldUseDefaultContactPoints() {
+    // given
+    final List<String> defaultContactPoints = Collections.emptyList();
+
+    // when
+    final ClusterCfg emptyCfg = TestConfigReader.readConfig("empty", Map.of()).getCluster();
+    final ClusterCfg defaultCfg = TestConfigReader.readConfig("default", Map.of()).getCluster();
+
+    // then
+    assertThat(emptyCfg.getInitialContactPoints()).containsExactlyElementsOf(defaultContactPoints);
+    assertThat(defaultCfg.getInitialContactPoints())
+        .containsExactlyElementsOf(defaultContactPoints);
+  }
+
+  @Test
+  public void shouldUseSpecifiedContactPoints() {
+    // given
+    final List<String> expectedContactPoints = List.of("broker1", "broker2", "broker3");
+
+    // when
+    final ClusterCfg contactPointsCfg =
+        TestConfigReader.readConfig("contact-points", Map.of()).getCluster();
+
+    // then
+    assertThat(contactPointsCfg.getInitialContactPoints())
+        .containsExactlyElementsOf(expectedContactPoints);
+  }
+
+  @Test
+  public void shouldUseContactPointsFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "foo,bar");
+
+    // when
+    final ClusterCfg emptyCfg = TestConfigReader.readConfig("empty", environment).getCluster();
+    final ClusterCfg defaultCfg = TestConfigReader.readConfig("default", environment).getCluster();
+
+    // then
+    assertThat(emptyCfg.getInitialContactPoints()).containsExactlyElementsOf(List.of("foo", "bar"));
+    assertThat(defaultCfg.getInitialContactPoints())
+        .containsExactlyElementsOf(List.of("foo", "bar"));
+  }
+
+  @Test
+  public void shouldUseContactPointsFromEnvironmentWithSpecifiedContactPoints() {
+    // given
+    final var environment =
+        Collections.singletonMap(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "1.1.1.1,2.2.2.2");
+
+    // when
+    final ClusterCfg contactPointsCfg =
+        TestConfigReader.readConfig("contact-points", environment).getCluster();
+
+    // then
+    assertThat(contactPointsCfg.getInitialContactPoints())
+        .containsExactlyElementsOf(List.of("1.1.1.1", "2.2.2.2"));
+  }
+
+  @Test
+  public void shouldUseSingleContactPointFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "hello");
+
+    // when
+    final ClusterCfg contactPointsCfg =
+        TestConfigReader.readConfig("contact-points", environment).getCluster();
+
+    // then
+    assertThat(contactPointsCfg.getInitialContactPoints())
+        .containsExactlyElementsOf(List.of("hello"));
+  }
+
+  @Test
+  public void shouldClearContactPointFromEnvironment() {
+    // given
+    final var environment =
+        Collections.singletonMap(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "");
+
+    // when
+    final ClusterCfg contactPointsCfg =
+        TestConfigReader.readConfig("contact-points", environment).getCluster();
+
+    // then
+    assertThat(contactPointsCfg.getInitialContactPoints()).containsExactlyElementsOf(List.of());
   }
 }

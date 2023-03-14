@@ -1,4 +1,5 @@
 zeebe:
   broker:
     cluster:
-      nodeId: 123
+      clusterSize: 4
+      nodeId: 2
