@@ -8,11 +8,17 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.camunda.zeebe.broker.transport.streamapi.JobStreamApiServer;
+import io.camunda.zeebe.stream.api.ActivatedJob;
+import io.camunda.zeebe.stream.api.GatewayStreamer;
+import io.camunda.zeebe.stream.api.JobActivationProperties;
 import java.util.Objects;
 
-public record JobStreamService(JobStreamApiServer server, JobGatewayStreamer jobStreamer) {
+public record JobStreamService(
+    JobStreamApiServer server, GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
 
-  public JobStreamService(final JobStreamApiServer server, final JobGatewayStreamer jobStreamer) {
+  public JobStreamService(
+      final JobStreamApiServer server,
+      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
     this.server = Objects.requireNonNull(server, "must provide a stream server");
     this.jobStreamer = Objects.requireNonNull(jobStreamer, "must provide a job streamer");
   }
