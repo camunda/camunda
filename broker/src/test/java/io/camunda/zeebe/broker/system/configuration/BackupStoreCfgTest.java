@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
-import io.camunda.zeebe.broker.system.configuration.backup.GCSBackupStoreConfig.GcsBackupStoreAuth;
+import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig.GcsBackupStoreAuth;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import java.util.HashMap;
 import java.util.Map;
@@ -52,6 +52,23 @@ final class BackupStoreCfgTest {
     final var cfg = TestConfigReader.readConfig("empty", env);
     // then
     assertThat(cfg.getData().getBackup().getGcs().getAuth()).isEqualTo(GcsBackupStoreAuth.NONE);
+  }
+
+  @Test
+  void canConfigureGcsHost() {
+    // given
+    final var configuredHost = "localhost";
+    final var env =
+        Map.of(
+            "zeebe.broker.data.backup.store",
+            "gcs",
+            "zeebe.broker.data.backup.gcs.host",
+            configuredHost);
+
+    // when
+    final var cfg = TestConfigReader.readConfig("empty", env);
+    // then
+    assertThat(cfg.getData().getBackup().getGcs().getHost()).isEqualTo(configuredHost);
   }
 
   @Test

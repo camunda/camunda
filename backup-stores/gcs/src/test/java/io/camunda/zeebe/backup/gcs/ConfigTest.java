@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,7 @@ final class ConfigTest {
 
     // then
     Assertions.assertThatThrownBy(config::build)
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("bucketName");
   }
 
@@ -35,7 +36,7 @@ final class ConfigTest {
 
     // then
     Assertions.assertThatThrownBy(config::build)
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("bucketName");
   }
 
@@ -76,7 +77,7 @@ final class ConfigTest {
 
     // then
     Assertions.assertThatThrownBy(config::build)
-        .isInstanceOf(IllegalArgumentException.class)
+        .isInstanceOf(ConfigurationException.class)
         .hasMessageContaining("basePath");
   }
 
