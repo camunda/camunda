@@ -29,7 +29,7 @@ import org.agrona.concurrent.UnsafeBuffer;
  * @param <M> the type of the properties of the stream.
  */
 public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
-  private final JobStreamMetrics metrics = new JobStreamMetrics();
+  private final StreamMetrics metrics = new StreamMetrics();
 
   // Needs to be thread-safe for readers
   private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =

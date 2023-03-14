@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  */
 final class StreamPusher<P extends BufferWriter> {
   private static final Logger LOG = LoggerFactory.getLogger(StreamPusher.class);
-  private final JobStreamMetrics metrics = new JobStreamMetrics();
+  private final StreamMetrics metrics = new StreamMetrics();
 
   private final StreamId streamId;
   private final Transport transport;
@@ -42,7 +42,17 @@ final class StreamPusher<P extends BufferWriter> {
     Objects.requireNonNull(payload, "must specify a payload");
     Objects.requireNonNull(errorHandler, "must specify a error handler");
 
-    executor.execute(() -> push(payload, errorHandler));
+    executor.execute(() -> push(payload, instrumentingErrorHandler(errorHandler)));
+  }
+
+  private ErrorHandler<P> instrumentingErrorHandler(final ErrorHandler<P> errorHandler) {
+    return (error, payload) -> {
+      if (error != null) {
+        metrics.pushFailed();
+        LOG.debug("Failed to push {} to stream {}", payload, streamId, error);
+        errorHandler.handleError(error, payload);
+      }
+    };
   }
 
   private void push(final P payload, final ErrorHandler<P> errorHandler) {
@@ -51,23 +61,17 @@ final class StreamPusher<P extends BufferWriter> {
       transport
           .send(request, streamId.receiver())
           .whenCompleteAsync((ok, error) -> onPush(payload, errorHandler, error), executor);
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("Pushed {} to stream {}", payload, streamId);
-      }
+      LOG.trace("Pushed {} to stream {}", payload, streamId);
     } catch (final Exception e) {
-      metrics.jobPushFailed();
-      LOG.debug("Failed to push {} to stream {}", payload, streamId, e);
       errorHandler.handleError(e, payload);
     }
   }
 
   private void onPush(final P payload, final ErrorHandler<P> errorHandler, final Throwable error) {
     if (error != null) {
-      metrics.jobPushFailed();
-      LOG.debug("Failed to push {} to stream {}", payload, streamId, error);
       errorHandler.handleError(error, payload);
     } else {
-      metrics.jobPushed();
+      metrics.pushSucceeded();
     }
   }
 

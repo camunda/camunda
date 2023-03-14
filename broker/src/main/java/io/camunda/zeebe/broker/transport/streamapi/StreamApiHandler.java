@@ -56,14 +56,14 @@ public final class StreamApiHandler<M extends Metadata> implements CloseableSile
       final String errorMessage =
           "Expected a stream type of length > 0, but it has %d"
               .formatted(request.streamType().capacity());
-      LOG.warn("Failed to open stream. {}", errorMessage);
+      LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
       throw new IllegalArgumentException(errorMessage);
     }
 
     if (request.streamId() == null || request.streamId().equals(NULL_ID)) {
       final String errorMessage =
           "Expected a stream ID, but received a nil UUID ([%s])".formatted(request.streamId());
-      LOG.warn("Failed to open stream. {}", errorMessage);
+      LOG.warn("Failed to open stream for '{}': [{}]", sender, errorMessage);
       throw new IllegalArgumentException(errorMessage);
     }
 
