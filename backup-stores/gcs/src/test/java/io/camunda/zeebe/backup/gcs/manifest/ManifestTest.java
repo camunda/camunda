@@ -49,7 +49,7 @@ public class ManifestTest {
         """;
 
     // when
-    final Manifest manifest = MAPPER.readValue(json, Manifest.class);
+    final ManifestImpl manifest = MAPPER.readValue(json, ManifestImpl.class);
 
     // then
     final BackupIdentifierImpl id = manifest.id;
@@ -73,7 +73,7 @@ public class ManifestTest {
   public void shouldSerialize() throws JsonProcessingException {
     // given
     final var manifest =
-        new Manifest(
+        new ManifestImpl(
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
             IN_PROGRESS,
@@ -106,23 +106,23 @@ public class ManifestTest {
     // given
 
     // when
-    final Manifest manifest =
-        Manifest.createManifest(
+    final var manifest =
+        ManifestImpl.createManifest(
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
 
     // then
-    assertThat(manifest.statusCode).isEqualTo(IN_PROGRESS);
-    assertThat(manifest.createdAt.getEpochSecond()).isGreaterThan(0);
-    assertThat(manifest.modifiedAt.getEpochSecond()).isGreaterThan(0);
-    assertThat(manifest.createdAt).isEqualTo(manifest.modifiedAt);
+    assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
+    assertThat(manifest.createdAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(manifest.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(manifest.createdAt()).isEqualTo(manifest.modifiedAt());
   }
 
   @Test
   public void shouldUpdateManifestToCompleted() {
     // given
-    final Manifest created =
-        Manifest.createManifest(
+    final var created =
+        ManifestImpl.createManifest(
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
 
@@ -130,19 +130,19 @@ public class ManifestTest {
     final var completed = created.complete();
 
     // then
-    assertThat(completed.statusCode).isEqualTo(COMPLETED);
-    assertThat(completed.createdAt.getEpochSecond()).isGreaterThan(0);
-    assertThat(completed.modifiedAt.getEpochSecond()).isGreaterThan(0);
-    assertThat(completed.createdAt).isBefore(completed.modifiedAt);
-    assertThat(completed.createdAt).isEqualTo(created.modifiedAt);
-    assertThat(completed.modifiedAt).isNotEqualTo(created.modifiedAt);
+    assertThat(completed.statusCode()).isEqualTo(COMPLETED);
+    assertThat(completed.createdAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(completed.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(completed.createdAt()).isBefore(completed.modifiedAt());
+    assertThat(completed.createdAt()).isEqualTo(created.modifiedAt());
+    assertThat(completed.modifiedAt()).isNotEqualTo(created.modifiedAt());
   }
 
   @Test
   public void shouldUpdateManifestToFailed() {
     // given
-    final Manifest created =
-        Manifest.createManifest(
+    final var created =
+        ManifestImpl.createManifest(
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
 
@@ -150,34 +150,82 @@ public class ManifestTest {
     final var failed = created.fail();
 
     // then
-    assertThat(failed.statusCode).isEqualTo(FAILED);
-    assertThat(failed.createdAt.getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.modifiedAt.getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.createdAt).isBefore(failed.modifiedAt);
-    assertThat(failed.createdAt).isEqualTo(created.modifiedAt);
-    assertThat(failed.modifiedAt).isNotEqualTo(created.modifiedAt);
+    assertThat(failed.statusCode()).isEqualTo(FAILED);
+    assertThat(failed.createdAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
+    assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
+    assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
   }
 
-  record Manifest(
+  @Test
+  public void shouldUpdateManifestToFailedFromComplete() {
+    // given
+    final var created =
+        ManifestImpl.createManifest(
+            new BackupIdentifierImpl(1, 2, 43),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+
+    final var completed = created.complete();
+
+    // when
+    final var failed = completed.fail();
+
+    // then
+    assertThat(failed.statusCode()).isEqualTo(FAILED);
+    assertThat(failed.createdAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.modifiedAt().getEpochSecond()).isGreaterThan(0);
+    assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
+    assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
+    assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
+  }
+
+  record ManifestImpl(
       BackupIdentifierImpl id,
       BackupDescriptorImpl descriptor,
       BackupStatusCode statusCode,
       Instant createdAt,
-      Instant modifiedAt) {
+      Instant modifiedAt)
+      implements InProgressManifest, CompletedManifest {
 
-    public static Manifest createManifest(
+    public static InProgressManifest createManifest(
         final BackupIdentifierImpl id, final BackupDescriptorImpl descriptor) {
       final Instant creationTime = Instant.now();
-      return new Manifest(id, descriptor, IN_PROGRESS, creationTime, creationTime);
+      return new ManifestImpl(id, descriptor, IN_PROGRESS, creationTime, creationTime);
     }
 
-    public Manifest complete() {
-      return new Manifest(id, descriptor, COMPLETED, createdAt, Instant.now());
+    @Override
+    public CompletedManifest complete() {
+      return new ManifestImpl(id, descriptor, COMPLETED, createdAt, Instant.now());
     }
 
+    @Override
     public Manifest fail() {
-      return new Manifest(id, descriptor, FAILED, createdAt, Instant.now());
+      return new ManifestImpl(id, descriptor, FAILED, createdAt, Instant.now());
     }
+  }
+
+  public interface Manifest {
+    BackupIdentifierImpl id();
+
+    BackupDescriptorImpl descriptor();
+
+    BackupStatusCode statusCode();
+
+    Instant createdAt();
+
+    Instant modifiedAt();
+  }
+
+  public interface InProgressManifest extends Manifest {
+
+    CompletedManifest complete();
+
+    Manifest fail();
+  }
+
+  public interface CompletedManifest extends Manifest {
+    Manifest fail();
   }
 
   enum BackupStatusCode {
