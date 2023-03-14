@@ -175,7 +175,7 @@ public final class CreateProcessInstanceWithResultTest {
     client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess("process")
+            Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .intermediateCatchEvent()
                 .message(message -> message.name("a").zeebeCorrelationKeyExpression("key"))
@@ -188,7 +188,7 @@ public final class CreateProcessInstanceWithResultTest {
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId("process")
+            .bpmnProcessId(processId)
             .latestVersion()
             .variables(Map.of("key", "key-1"))
             .withResult()
@@ -215,7 +215,7 @@ public final class CreateProcessInstanceWithResultTest {
     client
         .newDeployResourceCommand()
         .addProcessModel(
-            Bpmn.createExecutableProcess("process")
+            Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType("task"))
                 .endEvent()
@@ -227,7 +227,7 @@ public final class CreateProcessInstanceWithResultTest {
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
         client
             .newCreateInstanceCommand()
-            .bpmnProcessId("process")
+            .bpmnProcessId(processId)
             .latestVersion()
             .withResult()
             .send();
