@@ -60,7 +60,7 @@
       <groupId>com.unboundid</groupId>
       <artifactId>unboundid-ldapsdk</artifactId>
       <!-- Needed because: from version 5 on under Apache License 2.0 -->
-      <version>6.0.7</version>
+      <version>6.0.8</version>
     </dependency>
 
     <!-- TEST CONTAINERS -->
