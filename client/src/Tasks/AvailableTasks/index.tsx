@@ -16,12 +16,10 @@ import {
   EmptyListIcon,
 } from './styled';
 import {Task} from './Task';
-import {useLocation} from 'react-router-dom';
-import {getSearchParam} from 'modules/utils/getSearchParam';
-import {FilterValues} from 'modules/constants/filterValues';
 import {Stack} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {QueryTask} from 'modules/queries/get-tasks';
+import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 
 type Props = {
   onScrollUp: () => Promise<ReadonlyArray<QueryTask>>;
@@ -38,9 +36,7 @@ const AvailableTasks: React.FC<Props> = ({
 }) => {
   const taskRef = useRef<HTMLDivElement>(null);
   const scrollableListRef = useRef<HTMLDivElement>(null);
-  const location = useLocation();
-  const filter =
-    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
+  const {filter} = useTaskFilters();
 
   useEffect(() => {
     scrollableListRef?.current?.scrollTo?.(0, 0);
@@ -83,6 +79,8 @@ const AvailableTasks: React.FC<Props> = ({
                 processName={task.processName}
                 assignee={task.assignee}
                 creationTime={task.creationTime}
+                followUpDate={task.followUpDate}
+                dueDate={task.dueDate}
               />
             );
           })}

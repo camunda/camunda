@@ -6,7 +6,6 @@
  */
 
 import {NetworkStatus, useQuery, FetchMoreOptions} from '@apollo/client';
-import {FilterValues} from 'modules/constants/filterValues';
 import {
   GetCurrentUser,
   GET_CURRENT_USER,
@@ -17,9 +16,8 @@ import {
   GetTasksVariables,
 } from 'modules/queries/get-tasks';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
-import {getSearchParam} from 'modules/utils/getSearchParam';
 import {useEffect, useState} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useTaskFilters} from './useTaskFilters';
 
 const POLLING_INTERVAL = 5000;
 const MAX_TASKS_DISPLAYED = 200;
@@ -28,12 +26,10 @@ const MAX_TASKS_PER_REQUEST = 50;
 type UpdateQuery = FetchMoreOptions<GetTasks, GetTasksVariables>['updateQuery'];
 
 function useTasks() {
-  const location = useLocation();
-  const filter =
-    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
+  const filters = useTaskFilters();
   const currentUserResult = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const [variables, setVariables] = useState(
-    getQueryVariables(filter, {
+    getQueryVariables(filters, {
       userId: currentUserResult.data?.currentUser.userId,
       pageSize: MAX_TASKS_PER_REQUEST,
     }),
@@ -76,7 +72,7 @@ function useTasks() {
         currentResult.tasks ?? [],
         fetchMoreResult?.tasks ?? [],
       );
-      const newVariables = getQueryVariables(filter, {
+      const newVariables = getQueryVariables(filters, {
         userId: currentUserResult.data?.currentUser.userId,
         pageSize: newTasks.length,
         searchAfterOrEqual: newTasks[0].sortValues,
@@ -100,12 +96,12 @@ function useTasks() {
 
   useEffect(() => {
     setVariables(
-      getQueryVariables(filter, {
+      getQueryVariables(filters, {
         userId: currentUserResult.data?.currentUser.userId,
         pageSize: MAX_TASKS_PER_REQUEST,
       }),
     );
-  }, [filter, currentUserResult.data?.currentUser.userId]);
+  }, [filters, currentUserResult.data?.currentUser.userId]);
 
   const fetchNextTasks = async () => {
     const tasks = data?.tasks;
@@ -119,7 +115,7 @@ function useTasks() {
       stopPolling();
 
       const newTasks = await fetchMore({
-        variables: getQueryVariables(filter, {
+        variables: getQueryVariables(filters, {
           userId: currentUserResult.data?.currentUser.userId,
           pageSize: MAX_TASKS_PER_REQUEST,
           searchAfter: lastTask.sortValues,
@@ -152,7 +148,7 @@ function useTasks() {
       stopPolling();
 
       const newTasks = await fetchMore({
-        variables: getQueryVariables(filter, {
+        variables: getQueryVariables(filters, {
           userId: currentUserResult.data?.currentUser.userId,
           pageSize: MAX_TASKS_PER_REQUEST,
           searchBefore: firstTask.sortValues,

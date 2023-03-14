@@ -24,6 +24,8 @@ const tasks: ReadonlyArray<Task> = [
     isFirst: true,
     formKey: null,
     processDefinitionId: null,
+    followUpDate: null,
+    dueDate: null,
   },
   {
     __typename: 'Task',
@@ -54,6 +56,8 @@ const tasks: ReadonlyArray<Task> = [
     isFirst: false,
     formKey: null,
     processDefinitionId: null,
+    followUpDate: null,
+    dueDate: null,
   },
   {
     __typename: 'Task',
@@ -69,6 +73,8 @@ const tasks: ReadonlyArray<Task> = [
     isFirst: false,
     formKey: null,
     processDefinitionId: null,
+    followUpDate: null,
+    dueDate: null,
   },
 ];
 
@@ -88,7 +94,7 @@ const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
   taskState: TaskStates.Completed,
 }));
 
-const generateTask = (id: string, name?: string) => {
+const generateTask = (id: string, name?: string): Task => {
   return {
     id,
     name: name ?? `TASK ${id}`,
@@ -97,8 +103,14 @@ const generateTask = (id: string, name?: string) => {
     creationTime: '2021-01-13T12:13:18.655Z',
     taskState: 'CREATED',
     sortValues: [id, id],
-    __typename: 'Task',
+    followUpDate: null,
+    dueDate: null,
     isFirst: false,
+    __typename: 'Task',
+    processDefinitionId: null,
+    completionTime: null,
+    formKey: null,
+    variables: [],
   };
 };
 

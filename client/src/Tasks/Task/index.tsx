@@ -29,8 +29,7 @@ import {tracking} from 'modules/tracking';
 import {notificationsStore} from 'modules/stores/notifications';
 import {Skeleton} from './Skeleton';
 import {storeStateLocally} from 'modules/utils/localStorage';
-import {FilterValues} from 'modules/constants/filterValues';
-import {getSearchParam} from 'modules/utils/getSearchParam';
+import {useTaskFilters} from 'modules/hooks/useTaskFilters';
 
 const CAMUNDA_FORMS_PREFIX = 'camunda-forms:bpmn:';
 
@@ -61,8 +60,7 @@ const Task: React.FC<Props> = ({hasRemainingTasks, onCompleted}) => {
       onCompleted,
     },
   );
-  const filter =
-    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
+  const {filter} = useTaskFilters();
   const {formKey, processDefinitionId, id: taskId} = data?.task ?? {};
 
   useEffect(() => {

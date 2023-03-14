@@ -5,11 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-const FilterValues = {
-  AllOpen: 'all-open',
-  ClaimedByMe: 'claimed-by-me',
-  Unclaimed: 'unclaimed',
-  Completed: 'completed',
-} as const;
+const IS_SORTING_ENABLED = true;
 
-export {FilterValues};
+export {IS_SORTING_ENABLED};

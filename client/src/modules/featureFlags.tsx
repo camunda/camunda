@@ -5,4 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-export {};
+const IS_SORTING_ENABLED = false;
+
+export {IS_SORTING_ENABLED};

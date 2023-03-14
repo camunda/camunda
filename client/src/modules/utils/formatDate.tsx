@@ -8,9 +8,12 @@
 import {format, parseISO} from 'date-fns';
 import {logger} from './logger';
 
-const formatDate = (dateString: string) => {
+const formatDate = (dateString: string, showTime = true) => {
   try {
-    return format(parseISO(dateString), 'dd MMM yyyy - hh:mm a');
+    return format(
+      parseISO(dateString),
+      showTime ? 'dd MMM yyyy - hh:mm a' : 'dd MMM yyyy',
+    );
   } catch (error) {
     logger.error(error);
     return '';

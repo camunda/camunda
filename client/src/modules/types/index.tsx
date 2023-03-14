@@ -38,6 +38,8 @@ type Task = Readonly<{
   name: string;
   processName: string;
   creationTime: string;
+  followUpDate: string | null;
+  dueDate: string | null;
   completionTime: string | null;
   assignee: string | null;
   variables: ReadonlyArray<Variable>;

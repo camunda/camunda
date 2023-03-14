@@ -6,70 +6,73 @@
  */
 
 import {Form, Field} from 'react-final-form';
-import {useLocation, useNavigate} from 'react-router-dom';
-import {Pages} from 'modules/constants/pages';
-import {Container} from './styled';
-import {OPTIONS} from './constants';
-import {getSearchParam} from 'modules/utils/getSearchParam';
-import {FilterValues} from 'modules/constants/filterValues';
+import {useSearchParams} from 'react-router-dom';
+import {Container, FormElement, SortItemContainer} from './styled';
+import {taskFilters} from 'modules/constants/taskFilters';
 import {tracking} from 'modules/tracking';
-import {Dropdown} from '@carbon/react';
+import {Dropdown, OverflowMenu, OverflowMenuItem} from '@carbon/react';
+import {SortAscending, Checkmark} from '@carbon/react/icons';
 import {useRef} from 'react';
+import {useTaskFilters, TaskFilters} from 'modules/hooks/useTaskFilters';
+import {IS_SORTING_ENABLED} from 'modules/featureFlags';
 
-type FilterOption = keyof typeof OPTIONS;
+type FormValues = Pick<TaskFilters, 'filter' | 'sortBy'>;
 
-function isFilterOption(filter: unknown): filter is FilterOption {
-  return Object.keys(OPTIONS).includes(`${filter}`);
-}
-
-type FormValues = {
-  filter: FilterOption;
+const SORTING_OPTIONS: Record<TaskFilters['sortBy'], string> = {
+  creation: 'Creation date',
+  'follow-up': 'Follow-up date',
+  due: 'Due date',
 };
+const SORTING_OPTIONS_ORDER: TaskFilters['sortBy'][] = [
+  'creation',
+  'due',
+  'follow-up',
+];
 
 type Props = {
   disabled: boolean;
 };
 
 const Filters: React.FC<Props> = ({disabled}) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const selectedFilter = getSearchParam('filter', location.search);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const {filter, sortBy} = useTaskFilters();
   const dropdownRef = useRef<null | HTMLButtonElement>(null);
+  const initialValues = IS_SORTING_ENABLED ? {filter, sortBy} : {filter};
 
   return (
     <Container title="Filters">
       <Form<FormValues>
         onSubmit={(values) => {
-          const searchParams = new URLSearchParams(location.search);
+          const updatedParams = new URLSearchParams(
+            Object.assign(
+              Object.fromEntries(new URLSearchParams(searchParams).entries()),
+              values,
+            ),
+          );
 
           tracking.track({
             eventName: 'tasks-filtered',
             filter: values.filter,
           });
 
-          searchParams.set('filter', values.filter);
+          if (!IS_SORTING_ENABLED) {
+            updatedParams.delete('sortBy');
+          }
 
-          navigate({
-            pathname: Pages.Initial(),
-            search: searchParams.toString(),
-          });
+          setSearchParams(updatedParams);
         }}
-        initialValues={{
-          filter: isFilterOption(selectedFilter)
-            ? selectedFilter
-            : FilterValues.AllOpen,
-        }}
+        initialValues={initialValues}
       >
         {({handleSubmit, form}) => (
-          <form onSubmit={handleSubmit}>
+          <FormElement onSubmit={handleSubmit}>
             <Field<FormValues['filter']> name="filter">
               {({input}) => (
-                <Dropdown<{id: FilterOption; text: string}>
+                <Dropdown<{id: TaskFilters['filter']; text: string}>
                   ref={dropdownRef}
                   id={input.name}
                   titleText="Filter options"
                   label="Filter options"
-                  items={Object.values(OPTIONS)}
+                  items={Object.values(taskFilters)}
                   itemToString={(item) => (item ? item.text : '')}
                   disabled={disabled}
                   onChange={(event) => {
@@ -79,14 +82,52 @@ const Filters: React.FC<Props> = ({disabled}) => {
                       dropdownRef.current?.focus();
                     }
                   }}
-                  selectedItem={OPTIONS[input.value]}
+                  selectedItem={taskFilters[input.value]}
                   onBlur={input.onBlur}
                   onFocus={input.onFocus}
-                  size="sm"
+                  size="md"
                 />
               )}
             </Field>
-          </form>
+            {IS_SORTING_ENABLED ? (
+              <Field<FormValues['sortBy']> name="sortBy">
+                {({input}) => (
+                  <OverflowMenu
+                    ariaLabel="Sort tasks"
+                    iconDescription="Sort tasks"
+                    renderIcon={SortAscending}
+                    size="md"
+                    onFocus={input.onFocus}
+                    onBlur={input.onBlur}
+                    disabled={disabled}
+                  >
+                    {SORTING_OPTIONS_ORDER.map((id) => (
+                      <OverflowMenuItem
+                        key={id}
+                        itemText={
+                          <SortItemContainer>
+                            <Checkmark
+                              aria-label=""
+                              size={20}
+                              style={{
+                                visibility:
+                                  input.value === id ? undefined : 'hidden',
+                              }}
+                            />
+                            {SORTING_OPTIONS[id]}
+                          </SortItemContainer>
+                        }
+                        onClick={() => {
+                          input.onChange(id);
+                          form.submit();
+                        }}
+                      />
+                    ))}
+                  </OverflowMenu>
+                )}
+              </Field>
+            ) : null}
+          </FormElement>
         )}
       </Form>
     </Container>

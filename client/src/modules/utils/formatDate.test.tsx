@@ -19,4 +19,10 @@ describe('formatDate', () => {
 
     expect(formattedDate).toEqual('');
   });
+
+  it('should hide time', () => {
+    const formattedDate = formatDate('2020-06-02T15:29:12.766', false);
+
+    expect(formattedDate).toEqual('02 Jun 2020');
+  });
 });

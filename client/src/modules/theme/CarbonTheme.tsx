@@ -8,7 +8,7 @@
 import {observer} from 'mobx-react-lite';
 import {themeStore} from 'modules/stores/theme';
 import {THEME_TOKENS} from './themes';
-import {Theme} from '@carbon/react';
+import {GlobalTheme} from '@carbon/react';
 
 type Props = {
   children?: React.ReactNode;
@@ -19,9 +19,9 @@ const CarbonTheme: React.FC<Props> = observer(({children, className}) => {
   const theme = THEME_TOKENS[themeStore.actualTheme];
 
   return (
-    <Theme theme={theme} className={className}>
+    <GlobalTheme theme={theme} className={className}>
       {children}
-    </Theme>
+    </GlobalTheme>
   );
 });
 

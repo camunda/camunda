@@ -27,6 +27,8 @@ type QueryTask = Pick<
   | 'taskState'
   | 'sortValues'
   | 'isFirst'
+  | 'followUpDate'
+  | 'dueDate'
 >;
 
 interface GetTasks {
@@ -42,6 +44,7 @@ type GetTasksVariables = {
   assignee?: string;
   state?: (typeof TaskStates)[keyof typeof TaskStates];
   isPolling?: boolean;
+  sort?: readonly [{field: string; order: string}];
 };
 
 const GET_TASKS = gql`
@@ -55,6 +58,7 @@ const GET_TASKS = gql`
     $searchAfterOrEqual: [String!]
     $processInstanceId: String
     $processDefinitionId: String
+    $sort: [TaskOrderBy!]
   ) {
     tasks(
       query: {
@@ -67,6 +71,7 @@ const GET_TASKS = gql`
         searchAfterOrEqual: $searchAfterOrEqual
         processInstanceId: $processInstanceId
         processDefinitionId: $processDefinitionId
+        sort: $sort
       }
     ) {
       id
@@ -74,6 +79,8 @@ const GET_TASKS = gql`
       processName
       assignee
       creationTime
+      followUpDate
+      dueDate
       taskState
       sortValues
       isFirst

@@ -63,7 +63,7 @@ test('update task list according to user actions', async (t) => {
     .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
     .click(screen.getByRole('option', {name: /unclaimed/i}));
 
-  await t.expect(await getURL()).contains('/?filter=unclaimed');
+  await t.expect(await getURL()).contains('?filter=unclaimed');
 
   await t
     .click(withinExpandedPanel.getByText('usertask_to_be_claimed'))
@@ -77,7 +77,7 @@ test('update task list according to user actions', async (t) => {
     .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
     .click(screen.getByRole('option', {name: /claimed by me/i}));
 
-  await t.expect(await getURL()).contains('/?filter=claimed-by-me');
+  await t.expect(await getURL()).contains('?filter=claimed-by-me');
 
   await t
     .click(withinExpandedPanel.queryByText('usertask_to_be_claimed'))
@@ -91,7 +91,7 @@ test('update task list according to user actions', async (t) => {
     .click(withinExpandedPanel.getByRole('button', {name: 'Filter options'}))
     .click(screen.queryByRole('option', {name: /completed/i}));
 
-  await t.expect(await getURL()).contains('/?filter=completed');
+  await t.expect(await getURL()).contains('?filter=completed');
 
   await t
     .expect(
@@ -106,7 +106,7 @@ test('scrolling', async (t) => {
   const availableTasks = screen.queryByTitle('Available tasks');
 
   await t
-    .expect(within(availableTasks).getAllByRole('article').count)
+    .expect(within(availableTasks).queryAllByRole('article').count)
     .eql(50)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();

@@ -5,25 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {FilterValues} from 'modules/constants/filterValues';
-
-const OPTIONS = {
-  [FilterValues.AllOpen]: {
-    id: FilterValues.AllOpen,
+const taskFilters = {
+  'all-open': {
+    id: 'all-open',
     text: 'All open',
   },
-  [FilterValues.ClaimedByMe]: {
-    id: FilterValues.ClaimedByMe,
+  'claimed-by-me': {
+    id: 'claimed-by-me',
     text: 'Claimed by me',
   },
-  [FilterValues.Unclaimed]: {
-    id: FilterValues.Unclaimed,
+  unclaimed: {
+    id: 'unclaimed',
     text: 'Unclaimed',
   },
-  [FilterValues.Completed]: {
-    id: FilterValues.Completed,
+  completed: {
+    id: 'completed',
     text: 'Completed',
   },
 } as const;
 
-export {OPTIONS};
+export {taskFilters};

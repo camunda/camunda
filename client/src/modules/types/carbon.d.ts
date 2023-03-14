@@ -34,6 +34,12 @@ declare module '@carbon/react' {
     className?: string;
   }>;
 
+  export const GlobalTheme: React.FunctionComponent<{
+    children: React.ReactNode;
+    theme?: ThemeType;
+    className?: string;
+  }>;
+
   type StackProps<C extends React.ElementType> =
     PolymorphicComponentPropWithRef<
       C,
@@ -172,6 +178,8 @@ declare module '@carbon/react/icons' {
   export const Popup: Icon;
   export const Add: Icon;
   export const RowCollapse: Icon;
+  export const SortAscending: Icon;
+  export const Checkmark: Icon;
 }
 
 declare module '@carbon/elements' {

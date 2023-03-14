@@ -6,17 +6,7 @@
  */
 
 import React from 'react';
-import {
-  Row,
-  Name,
-  Process,
-  Assignee,
-  CreationTime,
-  TaskLink,
-  Stack,
-  Container,
-  Tag,
-} from './styled';
+import {Row, Name, Label, TaskLink, Stack, Container, Tag} from './styled';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
 import {Task as TaskType} from 'modules/types';
@@ -26,6 +16,8 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
+import {useTaskFilters} from 'modules/hooks/useTaskFilters';
+import {IS_SORTING_ENABLED} from 'modules/featureFlags';
 
 type Props = {
   taskId: TaskType['id'];
@@ -33,10 +25,15 @@ type Props = {
   processName: TaskType['processName'];
   assignee: TaskType['assignee'];
   creationTime: TaskType['creationTime'];
+  followUpDate: TaskType['followUpDate'];
+  dueDate: TaskType['dueDate'];
 };
 
 const Task = React.forwardRef<HTMLElement, Props>(
-  ({taskId, name, processName, assignee, creationTime}, ref) => {
+  (
+    {taskId, name, processName, assignee, creationTime, followUpDate, dueDate},
+    ref,
+  ) => {
     const {data} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
     const {
       currentUser: {userId, displayName},
@@ -50,11 +47,21 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const isAssignedToMe = assignee === userId;
     const match = useMatch('/:id');
     const location = useLocation();
+    const isActive = match?.params?.id === taskId;
+    const {sortBy} = useTaskFilters();
+    const showFolloupDate =
+      followUpDate !== null &&
+      formatDate(followUpDate) !== '' &&
+      sortBy === 'follow-up' &&
+      IS_SORTING_ENABLED;
+    const showDueDate =
+      dueDate !== null &&
+      formatDate(dueDate) !== '' &&
+      sortBy !== 'follow-up' &&
+      IS_SORTING_ENABLED;
 
     return (
-      <Container
-        className={match?.params?.id === taskId ? 'active' : undefined}
-      >
+      <Container className={isActive ? 'active' : undefined}>
         <TaskLink
           to={{
             ...location,
@@ -71,15 +78,15 @@ const Task = React.forwardRef<HTMLElement, Props>(
           <Stack data-testid={`task-${taskId}`} gap={3} ref={ref}>
             <Row>
               <Name>{name}</Name>
-              <Process>{processName}</Process>
+              <Label $variant="secondary">{processName}</Label>
             </Row>
             <Row>
-              <Assignee>
+              <Label $variant="secondary">
                 {isUnassigned ? (
                   'Unassigned'
                 ) : (
                   <Tag
-                    type="gray"
+                    type={isActive ? 'high-contrast' : 'gray'}
                     size="sm"
                     title={
                       isAssignedToMe
@@ -91,16 +98,39 @@ const Task = React.forwardRef<HTMLElement, Props>(
                     {isAssignedToMe ? 'Assigned to me' : 'Assigned'}
                   </Tag>
                 )}
-              </Assignee>
+              </Label>
             </Row>
-            <Row data-testid="creation-time">
+            <Row data-testid="creation-time" $direction="row">
               {formatDate(creationTime) === '' ? null : (
-                <CreationTime title={`Created at ${formatDate(creationTime)}`}>
-                  Created
+                <Label
+                  $variant="primary"
+                  title={`Created at ${formatDate(creationTime)}`}
+                >
+                  <Label $variant="secondary">Created</Label>
                   <br />
                   {formatDate(creationTime)}
-                </CreationTime>
+                </Label>
               )}
+              {showFolloupDate ? (
+                <Label
+                  $variant="primary"
+                  title={`Follow-up at ${formatDate(followUpDate!, false)}`}
+                >
+                  <Label $variant="secondary">Follow-up</Label>
+                  <br />
+                  {formatDate(followUpDate!, false)}
+                </Label>
+              ) : null}
+              {showDueDate ? (
+                <Label
+                  $variant="primary"
+                  title={`Due at ${formatDate(dueDate!, false)}`}
+                >
+                  <Label $variant="secondary">Due</Label>
+                  <br />
+                  {formatDate(dueDate!, false)}
+                </Label>
+              ) : null}
             </Row>
           </Stack>
         </TaskLink>

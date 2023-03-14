@@ -43,34 +43,28 @@ const Name = styled.span`
     `}
 `;
 
-const Process = styled.span`
-  ${({theme}) => css`
-    color: var(--cds-text-secondary);
+type LabelProps = {
+  $variant: 'primary' | 'secondary';
+};
+
+const Label = styled.span<LabelProps>`
+  ${({theme, $variant}) => css`
+    color: var(--cds-text-${$variant});
     ${theme.label01};
   `}
 `;
 
-const Assignee = styled.span`
-  ${({theme}) =>
-    css`
-      color: var(--cds-text-secondary);
-      ${theme.label01};
-    `}
-`;
+type RowProps = {
+  $direction?: 'row' | 'column';
+};
 
-const CreationTime = styled.span`
-  ${({theme}) =>
-    css`
-      color: var(--cds-text-primary);
-      ${theme.label01};
-    `}
-`;
-
-const Row = styled.div`
-  min-height: ${rem(20)};
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+const Row = styled.div<RowProps>`
+  ${({$direction = 'column'}) => css`
+    min-height: ${rem(20)};
+    display: flex;
+    flex-direction: ${$direction};
+    justify-content: ${$direction === 'row' ? 'space-between' : 'center'};
+  `}
 `;
 
 const TaskLink = styled(NavLink)`
@@ -176,15 +170,4 @@ const Tag = styled(BaseTag)`
   cursor: pointer;
 `;
 
-export {
-  Row,
-  Name,
-  Process,
-  Assignee,
-  CreationTime,
-  TaskLink,
-  Stack,
-  Container,
-  SkeletonContainer,
-  Tag,
-};
+export {Row, Name, Label, TaskLink, Stack, Container, SkeletonContainer, Tag};

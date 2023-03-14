@@ -22,6 +22,8 @@ const unclaimedTask = (id = '0'): Omit<Task, 'variables'> => ({
   sortValues: ['1', '2'],
   formKey: null,
   processDefinitionId: null,
+  followUpDate: null,
+  dueDate: null,
 });
 
 const unclaimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
@@ -37,6 +39,8 @@ const unclaimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
   processDefinitionId: 'process',
+  followUpDate: null,
+  dueDate: null,
 });
 
 const completedTask = (id = '0'): Omit<Task, 'variables'> => ({
@@ -52,6 +56,8 @@ const completedTask = (id = '0'): Omit<Task, 'variables'> => ({
   sortValues: ['1', '2'],
   formKey: null,
   processDefinitionId: null,
+  followUpDate: null,
+  dueDate: null,
 });
 
 const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
@@ -67,6 +73,8 @@ const completedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
   processDefinitionId: 'process',
+  followUpDate: null,
+  dueDate: null,
 });
 
 const claimedTask = (id = '0'): Omit<Task, 'variables'> => ({
@@ -82,6 +90,8 @@ const claimedTask = (id = '0'): Omit<Task, 'variables'> => ({
   sortValues: ['1', '2'],
   formKey: null,
   processDefinitionId: null,
+  followUpDate: null,
+  dueDate: null,
 });
 
 const claimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
@@ -97,6 +107,8 @@ const claimedTaskWithForm = (id = '0'): Omit<Task, 'variables'> => ({
   sortValues: ['1', '2'],
   formKey: 'camunda-forms:bpmn:form-0',
   processDefinitionId: 'process',
+  followUpDate: null,
+  dueDate: null,
 });
 
 export {

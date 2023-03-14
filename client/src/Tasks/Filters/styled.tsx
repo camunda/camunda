@@ -5,14 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 
 const Container = styled.section`
-  ${({theme}) =>
-    css`
-      padding: ${theme.spacing04} ${theme.spacing05};
-      border-bottom: 1px solid var(--cds-border-subtle);
-    `}
+  width: 100%;
+  padding: var(--cds-spacing-04) var(--cds-spacing-05);
+  border-bottom: 1px solid var(--cds-border-subtle);
 `;
 
-export {Container};
+const FormElement = styled.form`
+  display: grid;
+  align-items: flex-end;
+  grid-template-columns: 1fr min-content;
+  gap: var(--cds-spacing-03);
+  width: 100%;
+`;
+
+const SortItemContainer = styled.div`
+  width: 100%;
+  display: flex;
+
+  gap: var(--cds-spacing-03);
+`;
+
+export {Container, FormElement, SortItemContainer};

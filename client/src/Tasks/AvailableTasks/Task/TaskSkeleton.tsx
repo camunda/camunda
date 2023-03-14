@@ -5,14 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import {
-  Assignee,
-  CreationTime,
-  SkeletonContainer,
-  Name,
-  Process,
-  Row,
-} from './styled';
+import {Label, SkeletonContainer, Name, Row} from './styled';
 import {SkeletonText, Stack} from '@carbon/react';
 
 const TaskSkeleton: React.FC = () => {
@@ -23,19 +16,19 @@ const TaskSkeleton: React.FC = () => {
           <Name>
             <SkeletonText width="250px" />
           </Name>
-          <Process>
+          <Label $variant="secondary">
             <SkeletonText width="200px" />
-          </Process>
+          </Label>
         </Row>
         <Row>
-          <Assignee>
+          <Label $variant="secondary">
             <SkeletonText width="50px" />
-          </Assignee>
+          </Label>
         </Row>
         <Row>
-          <CreationTime>
+          <Label $variant="secondary">
             <SkeletonText width="100px" />
-          </CreationTime>
+          </Label>
         </Row>
       </Stack>
     </SkeletonContainer>

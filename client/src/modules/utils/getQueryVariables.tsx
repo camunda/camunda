@@ -5,12 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import {FilterValues} from 'modules/constants/filterValues';
 import {TaskStates} from 'modules/constants/taskStates';
+import {TaskFilters} from 'modules/hooks/useTaskFilters';
 import {GetTasksVariables} from 'modules/queries/get-tasks';
 
 const getQueryVariables = (
-  filter: string,
+  filters: TaskFilters,
   {
     userId,
     pageSize,
@@ -25,7 +25,15 @@ const getQueryVariables = (
     searchAfterOrEqual?: string[];
   },
 ): GetTasksVariables => {
+  const {filter, sortBy, sortOrder} = filters;
   const BASE_QUERY_VARIABLES = {
+    sort: [
+      {
+        field: sortBy,
+        order: sortOrder,
+      },
+    ],
+    sortOrder,
     pageSize,
     searchBefore,
     searchAfter,
@@ -33,7 +41,7 @@ const getQueryVariables = (
   } as const;
 
   switch (filter) {
-    case FilterValues.ClaimedByMe: {
+    case 'claimed-by-me': {
       return {
         ...BASE_QUERY_VARIABLES,
         assigned: true,
@@ -41,20 +49,20 @@ const getQueryVariables = (
         state: TaskStates.Created,
       };
     }
-    case FilterValues.Unclaimed: {
+    case 'unclaimed': {
       return {
         ...BASE_QUERY_VARIABLES,
         assigned: false,
         state: TaskStates.Created,
       };
     }
-    case FilterValues.Completed: {
+    case 'completed': {
       return {
         ...BASE_QUERY_VARIABLES,
         state: TaskStates.Completed,
       };
     }
-    case FilterValues.AllOpen:
+    case 'all-open':
     default: {
       return {
         ...BASE_QUERY_VARIABLES,

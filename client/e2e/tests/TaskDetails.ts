@@ -172,7 +172,11 @@ test('task completion with form on Claimed by Me filter', async (t) => {
     .notOk()
     .click(screen.queryByText('All open'))
     .click(screen.queryByText('Claimed by me'))
-    .click(screen.queryByText(/^user registration$/i))
+    .click(
+      within(screen.getByTitle('Left panel')).queryByText(
+        /^user registration$/i,
+      ),
+    )
     .typeText(screen.queryByLabelText(/name/i), 'Gaius Julius Caesar')
     .typeText(screen.queryByLabelText(/address/i), 'Rome')
     .typeText(screen.queryByLabelText(/age/i), '55')

@@ -17,6 +17,8 @@ import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {client} from 'modules/apollo-client';
 import {ApolloProvider} from '@apollo/client';
 
+jest.mock('modules/featureFlags');
+
 const createWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
@@ -55,6 +57,8 @@ describe('<Task />', () => {
         processName="processName"
         creationTime="2020-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate={null}
       />,
       {
         wrapper: createWrapper(),
@@ -77,6 +81,8 @@ describe('<Task />', () => {
         processName="processName"
         creationTime="2020-05-29T14:00:00.000Z"
         assignee={null}
+        followUpDate={null}
+        dueDate={null}
       />,
       {
         wrapper: createWrapper(),
@@ -94,6 +100,8 @@ describe('<Task />', () => {
         processName="processName"
         creationTime="invalid date"
         assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate={null}
       />,
       {
         wrapper: createWrapper(),
@@ -111,6 +119,8 @@ describe('<Task />', () => {
         processName="processName"
         creationTime="2020-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate={null}
       />,
       {
         wrapper: createWrapper(),
@@ -129,6 +139,8 @@ describe('<Task />', () => {
         processName="processName"
         creationTime="2020-05-29T14:00:00.000Z"
         assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate={null}
       />,
       {
         wrapper: createWrapper(['/?filter=all-open']),
@@ -139,5 +151,64 @@ describe('<Task />', () => {
 
     expect(screen.getByTestId('pathname')).toHaveTextContent('/1');
     expect(screen.getByTestId('search')).toHaveTextContent('filter=all-open');
+  });
+
+  it('should render a task with due date', async () => {
+    render(
+      <Task
+        taskId="1"
+        name="name"
+        processName="processName"
+        creationTime="2020-05-29T14:00:00.000Z"
+        assignee={currentUser.userId}
+        followUpDate={null}
+        dueDate="2021-05-29T14:00:00.000Z"
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(screen.getByTitle('Due at 29 May 2021')).toBeInTheDocument();
+  });
+
+  it('should render a task with due date when filtered', async () => {
+    render(
+      <Task
+        taskId="1"
+        name="name"
+        processName="processName"
+        creationTime="2020-05-29T14:00:00.000Z"
+        assignee={currentUser.userId}
+        followUpDate="2021-05-29T14:00:00.000Z"
+        dueDate="2021-05-29T14:00:00.000Z"
+      />,
+      {
+        wrapper: createWrapper(['/?sortBy=due']),
+      },
+    );
+
+    expect(screen.getByTitle('Due at 29 May 2021')).toBeInTheDocument();
+    expect(screen.queryByText('Follow-up at')).not.toBeInTheDocument();
+  });
+
+  it('should render a task with follow-up date when filtered', async () => {
+    render(
+      <Task
+        taskId="1"
+        name="name"
+        processName="processName"
+        creationTime="2020-05-29T14:00:00.000Z"
+        assignee={currentUser.userId}
+        followUpDate="2021-05-29T14:00:00.000Z"
+        dueDate="2021-05-29T14:00:00.000Z"
+      />,
+      {
+        wrapper: createWrapper(['/?sortBy=follow-up']),
+      },
+    );
+
+    expect(screen.getByTitle('Follow-up at 29 May 2021')).toBeInTheDocument();
+    expect(screen.queryByText('Due at')).not.toBeInTheDocument();
   });
 });
