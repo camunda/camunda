@@ -11,6 +11,7 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
+import io.atomix.utils.serializer.serializers.DefaultSerializers;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import java.nio.ByteBuffer;
 import java.util.Collection;
@@ -39,35 +40,20 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
   @Override
   public void subscribe(
       final String subject, final Consumer<ByteBuffer> consumer, final Executor executor) {
-    communicationService.subscribe(subject, ByteBuffer::wrap, consumer, executor);
+    communicationService.subscribe(subject, DefaultSerializers.BASIC::decode, consumer, executor);
   }
 
   @Override
   public void broadcast(final String subject, final ByteBuffer payload) {
     final var reachableMembers =
         otherMembers.stream().filter(this::isReachable).collect(Collectors.toUnmodifiableSet());
-    communicationService.multicast(subject, payload, this::serializeBuffer, reachableMembers, true);
+    communicationService.multicast(
+        subject, payload, DefaultSerializers.BASIC::encode, reachableMembers, true);
   }
 
   @Override
   public void unsubscribe(final String subject) {
     communicationService.unsubscribe(subject);
-  }
-
-  private byte[] serializeBuffer(final ByteBuffer payload) {
-    if (payload.hasArray()
-        && payload.arrayOffset() == 0
-        && payload.position() == 0
-        && payload.remaining() == payload.array().length) {
-      return payload.array();
-    }
-
-    final var serialized = new byte[payload.remaining()];
-    payload.mark();
-    payload.get(serialized);
-    payload.reset();
-
-    return serialized;
   }
 
   private Set<MemberId> getOtherMemberIds(
