@@ -15,7 +15,10 @@ export async function setup() {
   ]);
 
   await createInstances('usertask_for_scrolling_3', 1, 1);
-  await createInstances('usertask_for_scrolling_2', 1, 200);
+  await createInstances('usertask_for_scrolling_2', 1, 50);
+  await createInstances('usertask_for_scrolling_2', 1, 50);
+  await createInstances('usertask_for_scrolling_2', 1, 50);
+  await createInstances('usertask_for_scrolling_2', 1, 50);
   await createInstances('usertask_for_scrolling_1', 1, 1);
   await createInstances('usertask_to_be_claimed', 1, 1); // this task will be seen on top since it is created last
 }

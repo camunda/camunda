@@ -18,7 +18,6 @@ fixture('Left panel')
     await setup();
     await wait();
   })
-
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
   });
