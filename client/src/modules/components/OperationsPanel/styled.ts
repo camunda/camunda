@@ -6,7 +6,7 @@
  */
 
 import styled, {css} from 'styled-components';
-import {CollapsablePanel as CollapsablePanelBase} from 'modules/components/CollapsablePanel';
+import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/CollapsablePanel';
 import {styles} from '@carbon/elements';
 
 type OperationsListProps = {
@@ -46,7 +46,7 @@ const EmptyMessage = styled.div`
   }}
 `;
 
-const CollapsablePanel = styled(CollapsablePanelBase)`
+const CollapsablePanel = styled(BaseCollapsablePanel)`
   ${({theme}) => {
     return css`
       border-left: 1px solid ${theme.colors.borderColor};

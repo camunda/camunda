@@ -242,4 +242,27 @@ describe('<DecisionInstance />', () => {
       })
     ).toBeInTheDocument();
   });
+
+  it('should display forbidden content', async () => {
+    mockFetchDecisionInstance().withServerError(403);
+
+    render(<DecisionInstance />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText(
+        '403 - You do not have permission to view this information'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Contact your administrator to get access.')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {name: 'Learn more about Operate'})
+    ).toHaveAttribute(
+      'href',
+      'https://docs.camunda.io/docs/components/operate/operate-introduction/'
+    );
+  });
 });

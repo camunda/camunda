@@ -6,9 +6,9 @@
  */
 
 import styled, {css} from 'styled-components';
-import {CollapsablePanel as CollapsablePanelBase} from 'modules/components/CollapsablePanel';
+import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/CollapsablePanel';
 
-const CollapsablePanel = styled(CollapsablePanelBase)`
+const CollapsablePanel = styled(BaseCollapsablePanel)`
   ${({theme}) =>
     css`
       border-right: 1px solid ${theme.colors.borderColor};

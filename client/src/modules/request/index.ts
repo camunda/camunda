@@ -33,7 +33,7 @@ async function request({url, method, body, headers, signal}: RequestParams) {
     }
   );
 
-  if ([401, 403].includes(response.status)) {
+  if (response.status === 401) {
     authenticationStore.expireSession();
   }
 

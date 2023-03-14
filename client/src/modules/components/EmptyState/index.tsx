@@ -22,6 +22,7 @@ type Props = {
     href: string;
     onClick?: () => void;
   };
+  className?: string;
 };
 
 const EmptyState: React.FC<Props> = ({
@@ -30,9 +31,10 @@ const EmptyState: React.FC<Props> = ({
   icon,
   button,
   link,
+  className,
 }) => {
   return (
-    <Grid>
+    <Grid className={className}>
       <div>{icon}</div>
       <div>
         <Title>{heading}</Title>

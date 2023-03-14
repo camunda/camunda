@@ -24,6 +24,7 @@ import {
 } from 'modules/components/ResizablePanel';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
+import {Forbidden} from 'modules/components/Forbidden';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
@@ -72,29 +73,36 @@ const DecisionInstance: React.FC = observer(() => {
 
   return (
     <Container>
-      {drdStore.state.panelState === 'maximized' ? (
-        <Drd />
-      ) : (
-        <DecisionInstanceContainer>
-          <Header />
-          <PanelContainer ref={containerRef}>
-            <ResizablePanel
-              panelId="decision-instance-vertical-panel"
-              direction={SplitDirection.Vertical}
-              minHeights={[panelMinHeight, panelMinHeight]}
-            >
-              <DecisionPanel />
-              <VariablesPanel />
-            </ResizablePanel>
-          </PanelContainer>
+      {(() => {
+        if (decisionInstanceDetailsStore.state.status === 'forbidden') {
+          return <Forbidden />;
+        }
+        if (drdStore.state.panelState === 'maximized') {
+          return <Drd />;
+        }
 
-          {drdStore.state.panelState === 'minimized' && (
-            <DrdPanel>
-              <Drd />
-            </DrdPanel>
-          )}
-        </DecisionInstanceContainer>
-      )}
+        return (
+          <DecisionInstanceContainer>
+            <Header />
+            <PanelContainer ref={containerRef}>
+              <ResizablePanel
+                panelId="decision-instance-vertical-panel"
+                direction={SplitDirection.Vertical}
+                minHeights={[panelMinHeight, panelMinHeight]}
+              >
+                <DecisionPanel />
+                <VariablesPanel />
+              </ResizablePanel>
+            </PanelContainer>
+
+            {drdStore.state.panelState === 'minimized' && (
+              <DrdPanel>
+                <Drd />
+              </DrdPanel>
+            )}
+          </DecisionInstanceContainer>
+        );
+      })()}
     </Container>
   );
 });

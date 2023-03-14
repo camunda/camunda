@@ -643,6 +643,9 @@ const theme = {
             },
           },
         },
+        forbidden: {
+          backgroundColor: DARK_COLORS.ui02,
+        },
         iconButton: {
           icon: {
             default: {
@@ -1595,6 +1598,9 @@ const theme = {
               color: rgba(LIGHT_COLORS.ui06, 0.6),
             },
           },
+        },
+        forbidden: {
+          backgroundColor: LIGHT_COLORS.ui04,
         },
         iconButton: {
           icon: {

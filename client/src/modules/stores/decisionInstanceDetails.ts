@@ -16,7 +16,7 @@ import {NetworkReconnectionHandler} from './networkReconnectionHandler';
 type State = {
   decisionInstance: DecisionInstanceDto | null;
   decisionInstanceId: string | null;
-  status: 'initial' | 'fetched' | 'error';
+  status: 'initial' | 'fetched' | 'error' | 'forbidden';
 };
 
 const DEFAULT_STATE: State = {
@@ -45,7 +45,7 @@ class DecisionInstanceDetails extends NetworkReconnectionHandler {
       if (response.isSuccess) {
         this.handleFetchSuccess(response.data, decisionInstanceId);
       } else {
-        this.handleFetchFailure();
+        this.handleFetchFailure(response.statusCode);
       }
     }
   );
@@ -59,13 +59,14 @@ class DecisionInstanceDetails extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = (error?: unknown) => {
-    this.state.status = 'error';
-
+  handleFetchFailure = (statusCode: number) => {
     logger.error('Failed to fetch decision instance');
-    if (error !== undefined) {
-      logger.error(error);
+    if (statusCode === 403) {
+      this.state.status = 'forbidden';
+      return;
     }
+
+    this.state.status = 'error';
   };
 
   reset() {

@@ -6,8 +6,8 @@
  */
 
 import styled, {css} from 'styled-components';
-import {ReactComponent as ErrorIconBase} from 'modules/components/Icon/notification-icon-error.svg';
-import {ReactComponent as WarningIconBase} from 'modules/components/Icon/warning.svg';
+import {ReactComponent as BaseErrorIcon} from 'modules/components/Icon/notification-icon-error.svg';
+import {ReactComponent as BaseWarningIcon} from 'modules/components/Icon/warning.svg';
 
 const containerStyles = css`
   display: flex;
@@ -49,11 +49,11 @@ const iconStyles = css`
   align-self: flex-start;
 `;
 
-const ErrorIcon = styled(ErrorIconBase)`
+const ErrorIcon = styled(BaseErrorIcon)`
   ${iconStyles}
 `;
 
-const WarningIcon = styled(WarningIconBase)`
+const WarningIcon = styled(BaseWarningIcon)`
   ${({theme}) => {
     return css`
       ${iconStyles};
