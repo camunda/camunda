@@ -222,10 +222,7 @@ const AppHeader: React.FC = observer(() => {
                 link: 'slack',
               });
 
-              window.open(
-                'https://camunda-slack-invite.herokuapp.com/',
-                '_blank'
-              );
+              window.open('https://camunda.com/slack', '_blank');
             },
           },
         ],
