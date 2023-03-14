@@ -48,8 +48,6 @@
     "fix:prettier": "prettier --write \"**/*.ts\"",
     "test:e2e": "cross-env ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 testcafe chrome e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
     "test:e2e:ci": "cross-env PORT=8080 testcafe chrome:headless e2e/tests/*.ts --compiler-options typescript.configPath='e2e/tsconfig.json'",
-    "test:browserstack": "cross-env ZEEBE_GATEWAY_ADDRESS=localhost:26503 PORT=3001 node e2e/scripts/browserstack.js",
-    "test:ci-browserstack": "cross-env PORT=8080 node e2e/scripts/browserstack.js",
     "postinstall": "cd .. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/master --watchAll=false --passWithNoTests",
     "analyze-bundle": "react-scripts build && source-map-explorer 'build/static/js/*.js'"
@@ -92,7 +90,6 @@
     "react-test-renderer": "18.2.0",
     "source-map-explorer": "2.5.3",
     "testcafe": "2.3.1",
-    "testcafe-browser-provider-browserstack": "1.14.1",
     "ts-toolbelt": "9.6.0",
     "typescript": "4.9.4",
     "zeebe-node": "8.1.2"
