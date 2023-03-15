@@ -18,11 +18,13 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.nio.client.HttpAsyncClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.opensearch.client.Node;
+import org.opensearch.client.RestClient;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class RestClientFactoryTest {
@@ -45,7 +47,7 @@ final class RestClientFactoryTest {
   }
 
   @Test
-  void shouldConfigureBasicAuth() {
+  void shouldConfigureBasicAuth() throws Exception {
     // given
     config.getAuthentication().setUsername("user");
     config.getAuthentication().setPassword("password");
@@ -53,9 +55,9 @@ final class RestClientFactoryTest {
 
     // when
     final var client = RestClientFactory.of(config);
-    client
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+    final HttpAsyncClient httpClient = getHttpClient(client);
+    httpClient.execute(
+        HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
 
     // then
     final var credentialsProvider =
@@ -67,20 +69,25 @@ final class RestClientFactoryTest {
   }
 
   @Test
-  void shouldNotConfigureAuthenticationByDefault() {
+  void shouldNotConfigureAuthenticationByDefault() throws Exception {
     // given
     final var context = new BasicHttpContext();
 
     // when
     final var client = RestClientFactory.of(config);
-    client
-        .getHttpClient()
+    getHttpClient(client)
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
 
     // then
     final var credentialsProvider =
         (CredentialsProvider) context.getAttribute(HttpClientContext.CREDS_PROVIDER);
     assertThat(credentialsProvider.getCredentials(AuthScope.ANY)).isNull();
+  }
+
+  private static HttpAsyncClient getHttpClient(final RestClient client) throws Exception {
+    final var field = client.getClass().getDeclaredField("client");
+    field.setAccessible(true);
+    return (HttpAsyncClient) field.get(client);
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {
