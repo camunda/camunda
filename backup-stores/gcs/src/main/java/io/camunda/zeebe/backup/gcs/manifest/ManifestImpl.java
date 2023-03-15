@@ -24,12 +24,13 @@ record ManifestImpl(
     String failureReason)
     implements InProgressManifest, CompletedManifest, FailedManifest {
 
+  public static final String ERROR_MSG_AS_CAST = "Expected to be in '%s' state, but was in '%s'";
+  public static final String ERROR_MSG_CREATION_FAILURE =
+      "Expected to set failureReason '%s', with status code 'FAILED' but was '%s'";
+
   ManifestImpl {
     if (failureReason != null && statusCode != FAILED) {
-      final var errorMessage =
-          String.format(
-              "Expected to set failureReason '%s', with status code 'FAILED' but was '%s'",
-              failureReason, statusCode);
+      final var errorMessage = String.format(ERROR_MSG_CREATION_FAILURE, failureReason, statusCode);
       throw new InvalidPersistedManifestState(errorMessage);
     }
   }
@@ -56,8 +57,7 @@ record ManifestImpl(
   @Override
   public InProgressManifest asInProgress() {
     if (statusCode != IN_PROGRESS) {
-      final String errorMsg =
-          String.format("Expected to be in 'IN_PROGRESS' state, but was in '%s'", statusCode);
+      final String errorMsg = String.format(ERROR_MSG_AS_CAST, IN_PROGRESS, statusCode);
       throw new IllegalStateException(errorMsg);
     }
 
@@ -67,8 +67,7 @@ record ManifestImpl(
   @Override
   public CompletedManifest asCompleted() {
     if (statusCode != COMPLETED) {
-      final String errorMsg =
-          String.format("Expected to be in 'COMPLETED' state, but was in '%s'", statusCode);
+      final String errorMsg = String.format(ERROR_MSG_AS_CAST, COMPLETED, statusCode);
       throw new IllegalStateException(errorMsg);
     }
 
@@ -78,8 +77,7 @@ record ManifestImpl(
   @Override
   public FailedManifest asFailed() {
     if (statusCode != FAILED) {
-      final String errorMsg =
-          String.format("Expected to be in 'FAILED' state, but was in '%s'", statusCode);
+      final String errorMsg = String.format(ERROR_MSG_AS_CAST, FAILED, statusCode);
       throw new IllegalStateException(errorMsg);
     }
 
