@@ -52,24 +52,24 @@ public class ManifestTest {
         """;
 
     // when
-    final ManifestImpl manifest = MAPPER.readValue(json, ManifestImpl.class);
+    final var manifest = MAPPER.readValue(json, Manifest.class);
 
     // then
-    final BackupIdentifierImpl id = manifest.id;
+    final BackupIdentifierImpl id = manifest.id();
     assertThat(id).isNotNull();
     assertThat(id.nodeId()).isEqualTo(1);
-    assertThat(manifest.id.partitionId()).isEqualTo(2);
-    assertThat(manifest.id.checkpointId()).isEqualTo(43);
+    assertThat(manifest.id().partitionId()).isEqualTo(2);
+    assertThat(manifest.id().checkpointId()).isEqualTo(43);
 
-    final BackupDescriptorImpl descriptor = manifest.descriptor;
+    final BackupDescriptorImpl descriptor = manifest.descriptor();
     assertThat(descriptor.brokerVersion()).isEqualTo("1.2.0-SNAPSHOT");
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
     assertThat(descriptor.snapshotId()).isNotPresent();
 
-    assertThat(manifest.statusCode).isEqualTo(IN_PROGRESS);
-    assertThat(manifest.createdAt).isEqualTo(Instant.ofEpochMilli(1678790708000L));
-    assertThat(manifest.modifiedAt).isEqualTo(Instant.ofEpochMilli(1678790708000L));
+    assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
+    assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
+    assertThat(manifest.modifiedAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
   }
 
   @Test
@@ -289,25 +289,24 @@ public class ManifestTest {
         """;
 
     // when
-    final var manifest = MAPPER.readValue(json, ManifestImpl.class);
+    final var manifest = MAPPER.readValue(json, Manifest.class);
 
     // then
-    final BackupIdentifierImpl id = manifest.id;
+    final BackupIdentifierImpl id = manifest.id();
     assertThat(id).isNotNull();
     assertThat(id.nodeId()).isEqualTo(1);
-    assertThat(manifest.id.partitionId()).isEqualTo(2);
-    assertThat(manifest.id.checkpointId()).isEqualTo(43);
+    assertThat(manifest.id().partitionId()).isEqualTo(2);
+    assertThat(manifest.id().checkpointId()).isEqualTo(43);
 
-    final BackupDescriptorImpl descriptor = manifest.descriptor;
+    final BackupDescriptorImpl descriptor = manifest.descriptor();
     assertThat(descriptor.brokerVersion()).isEqualTo("1.2.0-SNAPSHOT");
     assertThat(descriptor.checkpointPosition()).isEqualTo(2345234L);
     assertThat(descriptor.numberOfPartitions()).isEqualTo(3);
     assertThat(descriptor.snapshotId()).isNotPresent();
 
-    assertThat(manifest.statusCode).isEqualTo(COMPLETED);
-    assertThat(manifest.createdAt).isEqualTo(Instant.ofEpochMilli(1678790708000L));
-    assertThat(manifest.modifiedAt).isEqualTo(Instant.ofEpochMilli(1678790708000L));
-    assertThat(manifest.failureReason).isNull();
+    assertThat(manifest.statusCode()).isEqualTo(COMPLETED);
+    assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
+    assertThat(manifest.modifiedAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
   }
 
   @Test
