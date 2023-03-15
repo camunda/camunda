@@ -61,7 +61,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
     final var service = brokerShutdownContext.getJobStreamService();
-    if (service == null) {
+    if (service != null) {
       service
           .server()
           .closeAsync()
