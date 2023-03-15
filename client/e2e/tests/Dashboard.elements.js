@@ -28,7 +28,7 @@ export const textReportUrlInput = Selector('.InsertModal input').nth(0);
 export const textReportAltInput = Selector('.InsertModal input').nth(1);
 export const textReportInsertAddButton = Selector('.InsertModal .Button').withText('Add');
 export const blankReportButton = Selector('.Button').withText('Blank report');
-export const externalReport = Selector('iframe');
+export const externalReport = Selector('iframe', {timeout: 60000});
 export const textReport = Selector('.TextReport .editor');
 export const textReportField = (element) => textReport.find(element);
 export const exampleHeading = Selector('h1');

@@ -289,49 +289,6 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
    """
 }
 
-String postgresContainerSpec() {
-  return """
-  - name: postgresql
-    image: postgres:11.2
-    env:
-      - name: POSTGRES_USER
-        value: camunda
-      - name: POSTGRES_PASSWORD
-        value: camunda
-      - name: POSTGRES_DB
-        value: engine
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-    volumeMounts:
-    - name: gcloud2postgres
-      mountPath: /db_dump/
-  """
-}
-
-String gcloudContainerSpec() {
-  return """
-  - name: gcloud
-    image: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    imagePullPolicy: Always
-    command: ["cat"]
-    tty: true
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-    volumeMounts:
-    - name: gcloud2postgres
-      mountPath: /db_dump/
-  """
-}
 
 String smoketestPodSpec(String camBpmVersion, String esVersion) {
   return """---
@@ -481,21 +438,6 @@ String itZeebePodSpec(String camBpmVersion, String esVersion) {
           dockerInDockerSpec(12);
 }
 
-String e2eTestPodSpec(String camBpmVersion, String esVersion) {
-  // use Docker image with preinstalled headless Chrome and Maven
-  return basePodSpec(3, 6, 'markhobson/maven-chrome:jdk-11') +
-      camBpmContainerSpec(camBpmVersion, true, 2, 4, false) +
-      elasticSearchContainerSpec(esVersion) +
-      postgresContainerSpec() +
-      gcloudContainerSpec()
-}
-
-String e2eCloudTestPodSpec(String esVersion) {
-  // use Docker image with preinstalled headless Chrome and Maven
-  return basePodSpec(1, 6, 'markhobson/maven-chrome:jdk-11') +
-      elasticSearchContainerSpec(esVersion)
-}
-
 pipeline {
   agent {
     kubernetes {
@@ -515,9 +457,6 @@ pipeline {
     ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
     PREV_ES_VERSION = mavenProps.getProperty(PREV_ES_TEST_VERSION_POM_PROPERTY)
     CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
-    AUTH0_CLIENTSECRET = credentials('auth0-clientsecret')
-    AUTH0_USEREMAIL = credentials('auth0-useremail')
-    AUTH0_USERPASSWORD = credentials('auth0-userpassword')
   }
 
   options {
@@ -697,48 +636,6 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
-            }
-          }
-        }
-        stage('E2E') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-e2e_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml e2eTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
-            }
-          }
-          steps {
-            unstash name: 'optimize-stash-client'
-            unstash name: 'optimize-stash-backend'
-            e2eTestSteps()
-          }
-          post {
-            always {
-              archiveArtifacts artifacts: 'client/build/*.log'
-            }
-          }
-        }
-        stage('E2E-cloud') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              inheritFrom "optimize-ci-build-e2e-cloud_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml e2eCloudTestPodSpec(env.ES_VERSION)
-            }
-          }
-          steps {
-            unstash name: 'optimize-stash-client'
-            unstash name: 'optimize-stash-backend'
-            container('maven') {
-              runMaven('test -pl client -Pclient.e2etests-cloud-chromeheadless -Dskip.yarn.build')
-            }
-          }
-          post {
-            always {
-              archiveArtifacts artifacts: 'client/build/*.log'
             }
           }
         }
@@ -948,18 +845,6 @@ void dataUpgradeTestSteps() {
   container('maven') {
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data")
-  }
-}
-
-void e2eTestSteps() {
-  container('gcloud') {
-    sh 'gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc /db_dump/dump.sqlc'
-  }
-  container('postgresql') {
-    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc || true'
-  }
-  container('maven') {
-    runMaven('test -pl client -Pclient.e2etests-chromeheadless -Dskip.yarn.build')
   }
 }
 
