@@ -570,6 +570,12 @@
   <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
   <repositories>
     <repository>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
+    </repository>
+
+    <repository>
       <id>test</id>
       <url>http://repository</url>
       <releases>
