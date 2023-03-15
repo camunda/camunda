@@ -14,8 +14,8 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
 import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
-import io.camunda.zeebe.transport.stream.impl.messages.JobStreamTopics;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
@@ -94,7 +94,7 @@ final class RemoteStreamerTest {
     // then
     Mockito.verify(communicationService, Mockito.timeout(5_000).times(1))
         .send(
-            Mockito.eq(JobStreamTopics.PUSH.topic()),
+            Mockito.eq(StreamTopics.PUSH.topic()),
             Mockito.eq(new PushStreamRequest().streamId(streamId.streamId()).payload(payload)),
             Mockito.any(),
             Mockito.any(),

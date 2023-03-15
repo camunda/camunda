@@ -12,8 +12,8 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
-import io.camunda.zeebe.transport.stream.impl.messages.JobStreamTopics;
 import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
@@ -63,7 +63,7 @@ public final class RemoteStreamerImpl<M extends BufferReader, P extends BufferWr
   private CompletableFuture<Void> send(final PushStreamRequest request, final MemberId receiver) {
     return transport
         .send(
-            JobStreamTopics.PUSH.topic(),
+            StreamTopics.PUSH.topic(),
             request,
             this::serialize,
             Function.identity(),

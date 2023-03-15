@@ -14,8 +14,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
-import io.camunda.zeebe.transport.stream.impl.messages.JobStreamTopics;
 import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.StreamTopics;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -44,21 +44,18 @@ public final class RemoteStreamApiServer<M extends BufferReader> extends Actor
   @Override
   protected void onActorStarting() {
     transport.subscribe(
-        JobStreamTopics.ADD.topic(), this::parseAddRequest, requestHandler::add, actor::run);
+        StreamTopics.ADD.topic(), this::parseAddRequest, requestHandler::add, actor::run);
     transport.subscribe(
-        JobStreamTopics.REMOVE.topic(),
-        this::parseRemoveRequest,
-        requestHandler::remove,
-        actor::run);
+        StreamTopics.REMOVE.topic(), this::parseRemoveRequest, requestHandler::remove, actor::run);
     transport.subscribe(
-        JobStreamTopics.REMOVE_ALL.topic(), Function.identity(), this::onRemoveAll, actor::run);
+        StreamTopics.REMOVE_ALL.topic(), Function.identity(), this::onRemoveAll, actor::run);
   }
 
   @Override
   protected void onActorClosing() {
-    transport.unsubscribe(JobStreamTopics.ADD.topic());
-    transport.unsubscribe(JobStreamTopics.REMOVE.topic());
-    transport.unsubscribe(JobStreamTopics.REMOVE_ALL.topic());
+    transport.unsubscribe(StreamTopics.ADD.topic());
+    transport.unsubscribe(StreamTopics.REMOVE.topic());
+    transport.unsubscribe(StreamTopics.REMOVE_ALL.topic());
     requestHandler.close();
   }
 

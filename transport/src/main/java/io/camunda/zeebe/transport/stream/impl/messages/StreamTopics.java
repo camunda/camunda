@@ -7,16 +7,15 @@
  */
 package io.camunda.zeebe.transport.stream.impl.messages;
 
-public enum JobStreamTopics {
-  ADD("job-stream-add"),
-  PUSH("job-stream-push"),
-  REMOVE("job-stream-remove"),
-  REMOVE_ALL("job-stream-remove-all"),
-  JOB_AVAILABLE("jobsAvailable");
+public enum StreamTopics {
+  ADD("stream-add"),
+  PUSH("stream-push"),
+  REMOVE("stream-remove"),
+  REMOVE_ALL("stream-remove-all");
 
   private final String topic;
 
-  JobStreamTopics(final String topic) {
+  StreamTopics(final String topic) {
     this.topic = topic;
   }
 
