@@ -7,19 +7,16 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
+import io.camunda.zeebe.broker.jobstream.JobGatewayStreamer;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer.ErrorHandler;
 import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.TransportFactory;
-import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
-import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -35,11 +32,11 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerStartupContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
+    final var clusterServices = brokerStartupContext.getClusterServices();
     final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =
         new TransportFactory(brokerStartupContext.getActorSchedulingService())
             .createRemoteStreamServer(
-                brokerStartupContext.getClusterServices().getCommunicationService(),
-                DummyActivationProperties::new);
+                clusterServices.getCommunicationService(), DummyActivationProperties::new);
 
     final var startFuture = remoteStreamService.start();
     concurrencyControl.runOnCompletion(
@@ -49,7 +46,9 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
             startupFuture.completeExceptionally(error);
           } else {
             final var jobStreamService =
-                new JobStreamService(remoteStreamService, new JobGatewayStreamer(streamer));
+                new JobStreamService(
+                    remoteStreamService,
+                    new JobGatewayStreamer(streamer, clusterServices.getEventService()));
             brokerStartupContext.setJobStreamService(jobStreamService);
             startupFuture.complete(brokerStartupContext);
           }
@@ -94,45 +93,5 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
 
     @Override
     public void wrap(final DirectBuffer buffer, final int offset, final int length) {}
-  }
-
-  private static final class JobGatewayStream
-      implements io.camunda.zeebe.stream.api.GatewayStreamer.GatewayStream<
-          JobActivationProperties, ActivatedJob> {
-
-    private final RemoteStream<JobActivationProperties, ActivatedJob> remoteStream;
-
-    private JobGatewayStream(
-        final RemoteStream<JobActivationProperties, ActivatedJob> remoteStream) {
-      this.remoteStream = remoteStream;
-    }
-
-    @Override
-    public JobActivationProperties metadata() {
-      return remoteStream.metadata();
-    }
-
-    @Override
-    public void push(final ActivatedJob p, final ErrorHandler<ActivatedJob> errorHandler) {
-      remoteStream.push(p, errorHandler::handleError);
-    }
-  }
-
-  private static final class JobGatewayStreamer
-      implements io.camunda.zeebe.stream.api.GatewayStreamer<
-          JobActivationProperties, ActivatedJob> {
-
-    private final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate;
-
-    private JobGatewayStreamer(
-        final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public Optional<GatewayStream<JobActivationProperties, ActivatedJob>> streamFor(
-        final DirectBuffer streamId) {
-      return delegate.streamFor(streamId).map(JobGatewayStream::new);
-    }
   }
 }
