@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.agrona.CloseHelper;
@@ -23,7 +24,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.opensearch.client.opensearch._types.Refresh;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -144,11 +144,7 @@ final class OpensearchClientIT {
   @Test
   void shouldAuthenticateWithBasicAuth() throws IOException {
     // given
-    testClient
-        .getOsClient()
-        .security()
-        .putUser(
-            b -> b.username("user").password("password").refresh(Refresh.True).roles("superuser"));
+    testClient.putUser("user", "password", List.of("superuser"));
     config.getAuthentication().setUsername("user");
     config.getAuthentication().setPassword("password");
 

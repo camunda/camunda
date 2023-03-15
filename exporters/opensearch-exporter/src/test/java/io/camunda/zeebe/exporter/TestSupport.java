@@ -18,9 +18,9 @@ import org.testcontainers.utility.DockerImageName;
 
 /** Collection of utilities for unit and integration tests. */
 final class TestSupport {
+  // TODO switch to opensearch image
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
+      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch").withTag("7.17.9");
 
   private TestSupport() {}
 

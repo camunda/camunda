@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
@@ -88,6 +90,19 @@ final class TestClient implements CloseableSilently {
     }
   }
 
+  void putUser(final String username, final String password, final List<String> roles) {
+    try {
+      // TODO Opensearch exposed the security endpoint under
+      // TODO _plugins/_security/api/internalusers/<username>
+      final var request = new Request("PUT", "/_security/user/" + username + "?refresh=true");
+      final var putUserRequest = new PutUserRequest(password, roles);
+      request.setJsonEntity(MAPPER.writeValueAsString(putUserRequest));
+      restClient.performRequest(request);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   OpenSearchClient getOsClient() {
     return osClient;
   }
@@ -106,4 +121,8 @@ final class TestClient implements CloseableSilently {
     record ComponentTemplateWrapper(
         String name, @JsonProperty("component_template") Template template) {}
   }
+
+  @JsonInclude(Include.NON_EMPTY)
+  private record PutUserRequest(
+      String password, List<String> roles) {} // TODO Opensearch calls roles backend_roles
 }
