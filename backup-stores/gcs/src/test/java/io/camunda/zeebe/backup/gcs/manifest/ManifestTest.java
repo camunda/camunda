@@ -18,8 +18,6 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -432,119 +430,5 @@ public class ManifestTest {
     assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
     assertThat(failed.failureReason()).isEqualTo("expected failure reason");
-  }
-
-  private record ManifestImpl(
-      BackupIdentifierImpl id,
-      BackupDescriptorImpl descriptor,
-      BackupStatusCode statusCode,
-      Instant createdAt,
-      Instant modifiedAt,
-      String failureReason)
-      implements InProgressManifest, CompletedManifest, FailedManifest {
-
-    ManifestImpl {
-      if (failureReason != null && statusCode != FAILED) {
-        final var errorMessage =
-            String.format(
-                "Expected to set failureReason '%s', with status code 'FAILED' but was '%s'",
-                failureReason, statusCode);
-        throw new InvalidPersistedManifestState(errorMessage);
-      }
-    }
-
-    private ManifestImpl(
-        final BackupIdentifierImpl id,
-        final BackupDescriptorImpl descriptor,
-        final BackupStatusCode statusCode,
-        final Instant createdAt,
-        final Instant modifiedAt) {
-      this(id, descriptor, statusCode, createdAt, modifiedAt, null);
-    }
-
-    @Override
-    public CompletedManifest complete() {
-      return new ManifestImpl(id, descriptor, COMPLETED, createdAt, Instant.now());
-    }
-
-    @Override
-    public FailedManifest fail(final String failureReason) {
-      return new ManifestImpl(id, descriptor, FAILED, createdAt, Instant.now(), failureReason);
-    }
-
-    @Override
-    public InProgressManifest asInProgress() {
-      if (statusCode != IN_PROGRESS) {
-        final String errorMsg =
-            String.format("Expected to be in 'IN_PROGRESS' state, but was in '%s'", statusCode);
-        throw new IllegalStateException(errorMsg);
-      }
-
-      return this;
-    }
-
-    @Override
-    public CompletedManifest asCompleted() {
-      if (statusCode != COMPLETED) {
-        final String errorMsg =
-            String.format("Expected to be in 'COMPLETED' state, but was in '%s'", statusCode);
-        throw new IllegalStateException(errorMsg);
-      }
-
-      return this;
-    }
-
-    @Override
-    public FailedManifest asFailed() {
-      if (statusCode != FAILED) {
-        final String errorMsg =
-            String.format("Expected to be in 'FAILED' state, but was in '%s'", statusCode);
-        throw new IllegalStateException(errorMsg);
-      }
-
-      return this;
-    }
-  }
-
-  @JsonSerialize(as = ManifestImpl.class)
-  @JsonDeserialize(as = ManifestImpl.class)
-  public interface Manifest {
-
-    static InProgressManifest createManifest(
-        final BackupIdentifierImpl id, final BackupDescriptorImpl descriptor) {
-      final Instant creationTime = Instant.now();
-      return new ManifestImpl(id, descriptor, IN_PROGRESS, creationTime, creationTime);
-    }
-
-    BackupIdentifierImpl id();
-
-    BackupDescriptorImpl descriptor();
-
-    BackupStatusCode statusCode();
-
-    Instant createdAt();
-
-    Instant modifiedAt();
-
-    InProgressManifest asInProgress();
-
-    CompletedManifest asCompleted();
-
-    FailedManifest asFailed();
-  }
-
-  public interface InProgressManifest extends Manifest {
-
-    CompletedManifest complete();
-
-    FailedManifest fail(final String failureReason);
-  }
-
-  public interface CompletedManifest extends Manifest {
-    FailedManifest fail(final String failureReason);
-  }
-
-  public interface FailedManifest extends Manifest {
-    String failureReason();
   }
 }
