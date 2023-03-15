@@ -29,10 +29,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class Worker extends App {
-
   private final AppCfg appCfg;
 
-  Worker(AppCfg appCfg) {
+  Worker(final AppCfg appCfg) {
     this.appCfg = appCfg;
   }
 
@@ -62,7 +61,7 @@ public class Worker extends App {
                   } else {
                     try {
                       Thread.sleep(completionDelay);
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                       e.printStackTrace();
                     }
                     requestFutures.add(command.send());
@@ -109,7 +108,7 @@ public class Worker extends App {
     return builder.build();
   }
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     createApp(Worker::new);
   }
 

@@ -66,6 +66,7 @@ abstract class App implements Runnable {
   }
 
   void printTopology(final ZeebeClient client) {
+    var failureCount = 0;
     while (true) {
       try {
         final Topology topology = client.newTopologyRequest().send().join();
@@ -80,6 +81,9 @@ abstract class App implements Runnable {
         break;
       } catch (final Exception e) {
         // retry
+        if ((failureCount++ % 1000) == 0) {
+          LOG.warn("Topology request failed", e);
+        }
       }
     }
   }
