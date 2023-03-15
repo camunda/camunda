@@ -84,6 +84,14 @@ public final class Protocol {
   public static final String USER_TASK_CANDIDATE_USERS_HEADER_NAME =
       RESERVED_HEADER_NAME_PREFIX + "candidateUsers";
 
+  /** Task header key used for due date */
+  public static final String USER_TASK_DUE_DATE_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "dueDate";
+
+  /** Task header key used for follow-up date */
+  public static final String USER_TASK_FOLLOW_UP_DATE_HEADER_NAME =
+      RESERVED_HEADER_NAME_PREFIX + "followUpDate";
+
   public static long encodePartitionId(final int partitionId, final long key) {
     return ((long) partitionId << KEY_BITS) + key;
   }
