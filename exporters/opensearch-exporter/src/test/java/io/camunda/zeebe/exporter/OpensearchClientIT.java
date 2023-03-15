@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import co.elastic.clients.elasticsearch._types.Refresh;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.dto.Template;
@@ -24,6 +23,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -145,7 +145,7 @@ final class OpensearchClientIT {
   void shouldAuthenticateWithBasicAuth() throws IOException {
     // given
     testClient
-        .getEsClient()
+        .getOsClient()
         .security()
         .putUser(
             b -> b.username("user").password("password").refresh(Refresh.True).roles("superuser"));

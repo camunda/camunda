@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
+import org.opensearch.client.Request;
+import org.opensearch.client.RestClient;
 
 class OpensearchClient implements AutoCloseable {
   private static final ObjectMapper MAPPER = new ObjectMapper();

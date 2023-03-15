@@ -7,10 +7,6 @@
  */
 package io.camunda.zeebe.exporter;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
@@ -25,8 +21,12 @@ import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Optional;
 import org.agrona.CloseHelper;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
+import org.opensearch.client.Request;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.transport.rest_client.RestClientTransport;
 
 /**
  * A thin client to verify properties from Opensearch. Wraps both the low and high level clients
@@ -38,7 +38,7 @@ final class TestClient implements CloseableSilently {
 
   private final OpensearchExporterConfiguration config;
   private final RestClient restClient;
-  private final ElasticsearchClient esClient;
+  private final OpenSearchClient osClient;
   private final RecordIndexRouter indexRouter;
 
   TestClient(final OpensearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
@@ -48,7 +48,7 @@ final class TestClient implements CloseableSilently {
     restClient = RestClientFactory.of(config);
 
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
-    esClient = new ElasticsearchClient(transport);
+    osClient = new OpenSearchClient(transport);
   }
 
   @SuppressWarnings("rawtypes")
@@ -56,8 +56,8 @@ final class TestClient implements CloseableSilently {
     final var indexName = indexRouter.indexFor(record);
 
     try {
-      esClient.indices().refresh(b -> b.index(indexName)); // ensure latest data is visible
-      return esClient.get(b -> b.id(indexRouter.idFor(record)).index(indexName), Record.class);
+      osClient.indices().refresh(b -> b.index(indexName)); // ensure latest data is visible
+      return osClient.get(b -> b.id(indexRouter.idFor(record)).index(indexName), Record.class);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -88,13 +88,13 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  ElasticsearchClient getEsClient() {
-    return esClient;
+  OpenSearchClient getOsClient() {
+    return osClient;
   }
 
   @Override
   public void close() {
-    CloseHelper.quietCloseAll(esClient._transport());
+    CloseHelper.quietCloseAll(osClient._transport());
   }
 
   record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {

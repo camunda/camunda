@@ -71,6 +71,8 @@
     <version.msgpack>0.9.3</version.msgpack>
     <version.netty>4.1.89.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
+    <version.opensearch>2.6.0</version.opensearch>
+    <version.opensearch-java>2.2.0</version.opensearch-java>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.11</version.protobuf>
     <version.protobuf-common>2.12.0</version.protobuf-common>
@@ -672,6 +674,18 @@
         <groupId>co.elastic.clients</groupId>
         <artifactId>elasticsearch-java</artifactId>
         <version>${version.elasticsearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-rest-client</artifactId>
+        <version>${version.opensearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-java</artifactId>
+        <version>${version.opensearch-java}</version>
       </dependency>
 
       <dependency>

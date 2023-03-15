@@ -19,10 +19,10 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.protocol.BasicHttpContext;
-import org.elasticsearch.client.Node;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.opensearch.client.Node;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class RestClientFactoryTest {

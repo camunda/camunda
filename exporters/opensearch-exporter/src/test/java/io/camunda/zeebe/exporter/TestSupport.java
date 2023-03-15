@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
 import java.util.stream.Stream;
-import org.elasticsearch.client.RestClient;
+import org.opensearch.client.RestClient;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
