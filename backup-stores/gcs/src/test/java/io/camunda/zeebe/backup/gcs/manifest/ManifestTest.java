@@ -8,9 +8,9 @@
 package io.camunda.zeebe.backup.gcs.manifest;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.camunda.zeebe.backup.gcs.manifest.ManifestTest.BackupStatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.ManifestTest.BackupStatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.ManifestTest.BackupStatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.FAILED;
+import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -547,12 +547,5 @@ public class ManifestTest {
 
   public interface FailedManifest extends Manifest {
     String failureReason();
-  }
-
-  enum BackupStatusCode {
-    IN_PROGRESS,
-    COMPLETED,
-
-    FAILED
   }
 }
