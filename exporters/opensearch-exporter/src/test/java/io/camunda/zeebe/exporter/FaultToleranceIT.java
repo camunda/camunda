@@ -16,9 +16,9 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.SocatContainer;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 /**
  * A separate suite to run tests when Opensearch is down, and that exporting works again once it is
@@ -46,7 +46,7 @@ final class FaultToleranceIT {
                 .withTarget(9200, "opensearch")
                 .withNetwork(network)
                 .withNetworkAliases("proxy");
-        final ElasticsearchContainer container =
+        final OpensearchContainer container =
             TestSupport.createDefaultContainer()
                 .withNetwork(network)
                 .withNetworkAliases("opensearch")) {

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.opensearch.core.GetResponse;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -46,7 +46,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 final class OpensearchExporterIT {
   @Container
-  private static final ElasticsearchContainer CONTAINER = TestSupport.createDefaultContainer();
+  private static final OpensearchContainer CONTAINER = TestSupport.createDefaultContainer();
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final ProtocolFactory factory = new ProtocolFactory();

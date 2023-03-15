@@ -47,7 +47,7 @@ final class TestClient implements CloseableSilently {
     this.config = config;
     this.indexRouter = indexRouter;
 
-    restClient = RestClientFactory.of(config);
+    restClient = RestClientFactory.of(config, true);
 
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
     osClient = new OpenSearchClient(transport);
@@ -92,9 +92,7 @@ final class TestClient implements CloseableSilently {
 
   void putUser(final String username, final String password, final List<String> roles) {
     try {
-      // TODO Opensearch exposed the security endpoint under
-      // TODO _plugins/_security/api/internalusers/<username>
-      final var request = new Request("PUT", "/_security/user/" + username + "?refresh=true");
+      final var request = new Request("PUT", "/_plugins/_security/api/internalusers/" + username);
       final var putUserRequest = new PutUserRequest(password, roles);
       request.setJsonEntity(MAPPER.writeValueAsString(putUserRequest));
       restClient.performRequest(request);
@@ -124,5 +122,5 @@ final class TestClient implements CloseableSilently {
 
   @JsonInclude(Include.NON_EMPTY)
   private record PutUserRequest(
-      String password, List<String> roles) {} // TODO Opensearch calls roles backend_roles
+      String password, @JsonProperty("backend_roles") List<String> roles) {}
 }

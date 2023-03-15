@@ -15,7 +15,6 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,22 +23,15 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 final class OpensearchClientIT {
-  // configuring a superuser will allow us to create more users, which will let us test
-  // authentication
   @Container
-  private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefaultContainer()
-          .withEnv("xpack.license.self_generated.type", "trial")
-          .withEnv("xpack.security.enabled", "true")
-          .withEnv("xpack.security.authc.anonymous.username", "anon")
-          .withEnv("xpack.security.authc.anonymous.roles", "superuser")
-          .withEnv("xpack.security.authc.anonymous.authz_exception", "true");
+  private static final OpensearchContainer CONTAINER =
+      TestSupport.createDefaultContainer().withSecurityEnabled();
 
   private static final int PARTITION_ID = 1;
 
@@ -57,13 +49,14 @@ final class OpensearchClientIT {
     // as all tests use the same endpoint, we need a per-test unique prefix
     config.index.prefix = UUID.randomUUID() + "-test-record";
     config.url = CONTAINER.getHttpHostAddress();
-
+    config.getAuthentication().setUsername(CONTAINER.getUsername());
+    config.getAuthentication().setPassword(CONTAINER.getPassword());
     testClient = new TestClient(config, indexRouter);
     client =
         new OpensearchClient(
             config,
             bulkRequest,
-            RestClientFactory.of(config),
+            RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
             new OpensearchMetrics(PARTITION_ID));
@@ -142,15 +135,22 @@ final class OpensearchClientIT {
   }
 
   @Test
-  void shouldAuthenticateWithBasicAuth() throws IOException {
+  void shouldAuthenticateWithBasicAuth() {
     // given
-    testClient.putUser("user", "password", List.of("superuser"));
+    testClient.putUser("user", "password", List.of("admin"));
     config.getAuthentication().setUsername("user");
     config.getAuthentication().setPassword("password");
 
     // when
     // force recreating the client
-    final var authenticatedClient = new OpensearchClient(config, bulkRequest);
+    final var authenticatedClient =
+        new OpensearchClient(
+            config,
+            bulkRequest,
+            RestClientFactory.of(config, true),
+            indexRouter,
+            templateReader,
+            new OpensearchMetrics(PARTITION_ID));
     authenticatedClient.putComponentTemplate();
 
     // then
