@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import static io.camunda.zeebe.broker.Broker.LOG;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
@@ -25,6 +26,17 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
+  private static final String NODE_ID_ERROR_MSG =
+      "Node id %s needs to be non negative and smaller then cluster size %s.";
+  private static final String REPLICATION_FACTOR_ERROR_MSG =
+      "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
+
+  private static final String REPLICATION_FACTOR_WARN_MSG =
+      "Expected to have odd replication factor, but was even ({}). Even replication factor has no benefit over "
+          + "the previous odd value and is weaker than next odd. Quorum is calculated as:"
+          + " quorum = floor(replication factor / 2) + 1. In this current case the quorum will be"
+          + " quorum = {}. If you want to ensure high fault-tolerance and availability,"
+          + " make sure to use an odd replication factor.";
   private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
   private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(2500);
 
@@ -45,6 +57,38 @@ public final class ClusterCfg implements ConfigurationEntry {
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     initPartitionIds();
+
+    if (partitionsCount < 1) {
+      throw new IllegalArgumentException("Partition count must not be smaller then 1.");
+    }
+
+    if (nodeId < 0 || nodeId >= clusterSize) {
+      throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
+    }
+
+    if (replicationFactor < 1 || replicationFactor > clusterSize) {
+      throw new IllegalArgumentException(
+          String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
+    }
+
+    if (replicationFactor % 2 == 0) {
+      LOG.warn(REPLICATION_FACTOR_WARN_MSG, replicationFactor, (replicationFactor / 2) + 1);
+    }
+
+    if (heartbeatInterval.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("heartbeatInterval %s must be at least 1ms", heartbeatInterval));
+    }
+    if (electionTimeout.toMillis() < 1) {
+      throw new IllegalArgumentException(
+          String.format("electionTimeout %s must be at least 1ms", electionTimeout));
+    }
+    if (electionTimeout.compareTo(heartbeatInterval) < 1) {
+      throw new IllegalArgumentException(
+          String.format(
+              "electionTimeout %s must be greater than heartbeatInterval %s",
+              electionTimeout, heartbeatInterval));
+    }
   }
 
   private void initPartitionIds() {

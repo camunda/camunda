@@ -8,11 +8,6 @@
 package io.camunda.zeebe.broker.system.configuration;
 
 import static io.camunda.zeebe.broker.system.configuration.BrokerCfg.ENV_DEBUG_EXPORTER;
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CLUSTER_SIZE;
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
-import static io.camunda.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
 import static io.camunda.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_COMMAND_API_PORT;
 import static io.camunda.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
@@ -27,8 +22,6 @@ import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg
 import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,17 +38,6 @@ public final class BrokerCfgTest {
 
   public static final String BROKER_BASE = "test";
 
-  private static final String ZEEBE_BROKER_CLUSTER_NODE_ID = "zeebe.broker.cluster.nodeId";
-  private static final String ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS =
-      "zeebe.broker.cluster.initialContactPoints";
-  private static final String ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT =
-      "zeebe.broker.cluster.partitionsCount";
-  private static final String ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR =
-      "zeebe.broker.cluster.replicationFactor";
-  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE =
-      "zeebe.broker.cluster.clusterSize";
-  private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
-      "zeebe.broker.cluster.clusterName";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPENDS_PER_FOLLOWER =
       "zeebe.broker.experimental.maxAppendsPerFollower";
   private static final String ZEEBE_BROKER_EXPERIMENTAL_MAX_APPEND_BATCH_SIZE =
@@ -78,44 +60,6 @@ public final class BrokerCfgTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   public final Map<String, String> environment = new HashMap<>();
-
-  @Test
-  public void shouldUseSpecifiedClusterName() {
-    assertClusterName("specific-cluster-name", "cluster-name");
-  }
-
-  @Test
-  public void shouldUseClusterNameFromEnvironment() {
-    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_NAME, "test-cluster");
-    assertDefaultClusterName("test-cluster");
-  }
-
-  @Test
-  public void shouldUseSpecifiedNodeId() {
-    assertNodeId("specific-node-id", 123);
-  }
-
-  @Test
-  public void shouldUseNodeIdFromEnvironment() {
-    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "42");
-    assertDefaultNodeId(42);
-  }
-
-  @Test
-  public void shouldUseNodeIdFromEnvironmentWithSpecifiedNodeId() {
-    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "42");
-    assertNodeId("specific-node-id", 42);
-  }
-
-  @Test
-  public void shouldRejectInvalidNodeIdFromEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "a");
-
-    // when + then
-    Assertions.assertThatThrownBy(() -> assertDefaultNodeId(DEFAULT_NODE_ID))
-        .isInstanceOf(BindException.class);
-  }
 
   @Test
   public void shouldUseDefaultPorts() {
@@ -284,40 +228,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseDefaultContactPoints() {
-    assertDefaultContactPoints(DEFAULT_CONTACT_POINTS);
-  }
-
-  @Test
-  public void shouldUseSpecifiedContactPoints() {
-    assertContactPoints("contact-points", "broker1", "broker2", "broker3");
-  }
-
-  @Test
-  public void shouldUseContactPointsFromEnvironment() {
-    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "foo,bar");
-    assertDefaultContactPoints("foo", "bar");
-  }
-
-  @Test
-  public void shouldUseContactPointsFromEnvironmentWithSpecifiedContactPoints() {
-    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "1.1.1.1,2.2.2.2");
-    assertContactPoints("contact-points", "1.1.1.1", "2.2.2.2");
-  }
-
-  @Test
-  public void shouldUseSingleContactPointFromEnvironment() {
-    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "hello");
-    assertContactPoints("contact-points", "hello");
-  }
-
-  @Test
-  public void shouldClearContactPointFromEnvironment() {
-    environment.put(ZEEBE_BROKER_CLUSTER_INITIAL_CONTACT_POINTS, "");
-    assertContactPoints("contact-points");
-  }
-
-  @Test
   public void shouldUseDefaultDirectory() {
     // given
     final String expectedDataDirectory = Paths.get(BROKER_BASE, DEFAULT_DIRECTORY).toString();
@@ -349,16 +259,6 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldReadDefaultSystemClusterConfiguration() {
-    assertDefaultSystemClusterConfiguration(
-        DEFAULT_NODE_ID,
-        DEFAULT_PARTITIONS_COUNT,
-        DEFAULT_REPLICATION_FACTOR,
-        DEFAULT_CLUSTER_SIZE,
-        Collections.emptyList());
-  }
-
-  @Test
   public void shouldReadSpecificSystemClusterConfiguration() {
     // given
     final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
@@ -383,45 +283,6 @@ public final class BrokerCfgTest {
     final List<Integer> partitionIds = cfgCluster.getPartitionIds();
     final int startId = START_PARTITION_ID;
     assertThat(partitionIds).contains(startId, startId + 1, startId + 2);
-  }
-
-  @Test
-  public void shouldOverrideReplicationFactorViaEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "2");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
-    final ClusterCfg cfgCluster = cfg.getCluster();
-
-    // then
-    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(2);
-  }
-
-  @Test
-  public void shouldOverridePartitionsCountViaEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
-    final ClusterCfg cfgCluster = cfg.getCluster();
-
-    // then
-    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
-  }
-
-  @Test
-  public void shouldOverrideClusterSizeViaEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "2");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
-    final ClusterCfg cfgCluster = cfg.getCluster();
-
-    // then
-    assertThat(cfgCluster.getClusterSize()).isEqualTo(2);
   }
 
   @Test
@@ -535,25 +396,6 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(experimentalCfg.getQueryApi().isEnabled()).isTrue();
-  }
-
-  @Test
-  public void shouldOverrideAllClusterPropertiesViaEnvironment() {
-    // given
-    environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "1");
-    environment.put(ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT, "2");
-    environment.put(ZEEBE_BROKER_CLUSTER_REPLICATION_FACTOR, "3");
-    environment.put(ZEEBE_BROKER_CLUSTER_NODE_ID, "4");
-
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
-    final ClusterCfg cfgCluster = cfg.getCluster();
-
-    // then
-    assertThat(cfgCluster.getClusterSize()).isEqualTo(1);
-    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
-    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(3);
-    assertThat(cfgCluster.getNodeId()).isEqualTo(4);
   }
 
   @Test
@@ -707,26 +549,6 @@ public final class BrokerCfgTest {
     assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
   }
 
-  private void assertDefaultNodeId(final int nodeId) {
-    assertNodeId("default", nodeId);
-    assertNodeId("empty", nodeId);
-  }
-
-  private void assertNodeId(final String configFileName, final int nodeId) {
-    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
-    assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
-  }
-
-  private void assertDefaultClusterName(final String clusterName) {
-    assertClusterName("default", clusterName);
-    assertClusterName("empty", clusterName);
-  }
-
-  private void assertClusterName(final String configFileName, final String clusterName) {
-    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
-    assertThat(cfg.getCluster().getClusterName()).isEqualTo(clusterName);
-  }
-
   private void assertDefaultPorts(final int command, final int internal) {
     assertPorts("default", command, internal);
     assertPorts("empty", command, internal);
@@ -778,24 +600,6 @@ public final class BrokerCfgTest {
     assertThat(networkCfg.getCommandApi().getAdvertisedAddress().getPort()).isEqualTo(port);
   }
 
-  private void assertDefaultContactPoints(final String... contactPoints) {
-    assertDefaultContactPoints(Arrays.asList(contactPoints));
-  }
-
-  private void assertDefaultContactPoints(final List<String> contactPoints) {
-    assertContactPoints("default", contactPoints);
-    assertContactPoints("empty", contactPoints);
-  }
-
-  private void assertContactPoints(final String configFileName, final String... contactPoints) {
-    assertContactPoints(configFileName, Arrays.asList(contactPoints));
-  }
-
-  private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
-    final ClusterCfg cfg = TestConfigReader.readConfig(configFileName, environment).getCluster();
-    assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
-  }
-
   private void assertDefaultEmbeddedGatewayEnabled(final boolean enabled) {
     assertEmbeddedGatewayEnabled("default", enabled);
     assertEmbeddedGatewayEnabled("empty", enabled);
@@ -819,35 +623,6 @@ public final class BrokerCfgTest {
     assertThat(brokerCfg.getExporters().values())
         .usingRecursiveFieldByFieldElementComparator()
         .contains(exporterCfg);
-  }
-
-  private void assertDefaultSystemClusterConfiguration(
-      final int nodeId,
-      final int partitionsCount,
-      final int replicationFactor,
-      final int clusterSize,
-      final List<String> initialContactPoints) {
-    assertSystemClusterConfiguration(
-        "default", nodeId, partitionsCount, replicationFactor, clusterSize, initialContactPoints);
-    assertSystemClusterConfiguration(
-        "empty", nodeId, partitionsCount, replicationFactor, clusterSize, initialContactPoints);
-  }
-
-  private void assertSystemClusterConfiguration(
-      final String configFileName,
-      final int nodeId,
-      final int partitionsCount,
-      final int replicationFactor,
-      final int clusterSize,
-      final List<String> initialContactPoints) {
-    final BrokerCfg cfg = TestConfigReader.readConfig(configFileName, environment);
-    final ClusterCfg cfgCluster = cfg.getCluster();
-
-    assertThat(cfgCluster.getNodeId()).isEqualTo(nodeId);
-    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(partitionsCount);
-    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(replicationFactor);
-    assertThat(cfgCluster.getClusterSize()).isEqualTo(clusterSize);
-    assertThat(cfgCluster.getInitialContactPoints()).isEqualTo(initialContactPoints);
   }
 
   private void assertWithDefaultConfigurations(final Consumer<BrokerCfg> assertions) {
