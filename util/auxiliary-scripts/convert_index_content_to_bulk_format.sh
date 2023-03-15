@@ -4,17 +4,19 @@
 # Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under one or more contributor license agreements.
 # Licensed under a proprietary license. See the License.txt file for more information.
 # You may not use this file except in compliance with the proprietary license.
-#
-# Define the Elasticsearch host, index name and number of returned documents
+
+### BEGIN EXECUTION PARAMETERS ###
+# Elastic search host address
 host="http://localhost:9200"
-# Add the index name that you want to dump here
+# Add the index name that you want to dump to bulk format here
 index="optimize-single-process-report_v9"
+# Maximum number of records to dump
 size=1000
-
-# Define the output file
+# Define the output file, this is where the bulk will be written to
 output_file="39-singleprocessreport-index.json"
+### END EXECUTION PARAMETERS ###
 
-# Initialize the bulk_data variable
+# Initialization of the bulk_data variable (not an execution parameter)
 bulk_data=""
 
 # Perform the search request
