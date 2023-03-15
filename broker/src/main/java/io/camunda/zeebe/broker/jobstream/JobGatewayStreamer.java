@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.atomix.cluster.messaging.ClusterEventService;
-import io.camunda.zeebe.protocol.impl.stream.JobStreamTopics;
 import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.JobActivationProperties;
@@ -19,6 +18,7 @@ import org.agrona.DirectBuffer;
 public final class JobGatewayStreamer
     implements GatewayStreamer<JobActivationProperties, ActivatedJob> {
 
+  private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate;
   private final ClusterEventService eventService;
 
@@ -31,7 +31,8 @@ public final class JobGatewayStreamer
 
   @Override
   public void notifyWorkAvailable(final String streamType) {
-    eventService.broadcast(JobStreamTopics.JOB_AVAILABLE.topic(), streamType);
+
+    eventService.broadcast(JOBS_AVAILABLE_TOPIC, streamType);
   }
 
   @Override

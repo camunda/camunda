@@ -8,9 +8,9 @@
 package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.protocol.impl.stream.AddStreamRequest;
-import io.camunda.zeebe.protocol.impl.stream.RemoveStreamRequest;
-import io.camunda.zeebe.protocol.record.UUIDEncoder;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.UUID;

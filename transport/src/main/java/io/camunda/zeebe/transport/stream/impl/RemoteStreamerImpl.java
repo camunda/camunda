@@ -9,11 +9,11 @@ package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.camunda.zeebe.protocol.impl.stream.JobStreamTopics;
-import io.camunda.zeebe.protocol.impl.stream.PushStreamRequest;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
+import io.camunda.zeebe.transport.stream.impl.messages.JobStreamTopics;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
