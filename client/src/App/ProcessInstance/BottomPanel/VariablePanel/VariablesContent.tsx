@@ -94,9 +94,11 @@ const VariablesContent: React.FC = observer(() => {
               });
               form.reset({});
             },
-            onError: () => {
+            onError: (statusCode: number) => {
               notifications.displayNotification('error', {
                 headline: 'Variable could not be saved',
+                description:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
               });
               form.reset({});
             },

@@ -363,12 +363,14 @@ const ModificationSummaryModal: React.FC<Props> = observer(
                       headline: 'Modifications applied',
                     });
                   },
-                  onError: () => {
+                  onError: (statusCode: number) => {
                     tracking.track({eventName: 'modification-failed'});
                     notifications.displayNotification('error', {
                       headline: 'Modification failed',
                       description:
-                        'Unable to apply modifications, please try again.',
+                        statusCode === 403
+                          ? 'You do not have permission'
+                          : 'Unable to apply modifications, please try again.',
                     });
                   },
                 });

@@ -8,7 +8,7 @@
 import React, {useState} from 'react';
 
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
-import {operationsStore} from 'modules/stores/operations';
+import {ErrorHandler, operationsStore} from 'modules/stores/operations';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {observer} from 'mobx-react';
@@ -30,7 +30,7 @@ import {Restricted} from '../Restricted';
 type Props = {
   instance: ProcessInstanceEntity;
   onOperation?: (operationType: OperationEntityType) => void;
-  onError?: (operationType: OperationEntityType) => void;
+  onError?: ErrorHandler;
   onSuccess?: (operationType: OperationEntityType) => void;
   forceSpinner?: boolean;
   isInstanceModificationVisible?: boolean;

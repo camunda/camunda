@@ -574,6 +574,43 @@ describe('Modification Summary Modal', () => {
     expect(modificationsStore.isModificationModeEnabled).toBe(false);
   });
 
+  it('should display error notification when modifications are applied with failure because of auth error', async () => {
+    modificationsStore.enableModificationMode();
+    const mockOnClose = jest.fn();
+
+    mockModify().withServerError(403);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: '123',
+        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
+        affectedTokenCount: 3,
+        visibleAffectedTokenCount: 3,
+        parentScopeIds: {},
+      },
+    });
+
+    const {user} = render(
+      <ModificationSummaryModal isVisible onClose={mockOnClose} />,
+      {
+        wrapper: ThemeProvider,
+      }
+    );
+
+    await user.click(screen.getByRole('button', {name: 'Apply'}));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Modification failed',
+        description: 'You do not have permission',
+      })
+    );
+    expect(mockOnClose).toHaveBeenCalled();
+    expect(modificationsStore.isModificationModeEnabled).toBe(false);
+  });
+
   it('should display/hide warning message if all modifications are about to be canceled', async () => {
     mockFetchProcessInstanceDetailStatistics().withSuccess([
       {

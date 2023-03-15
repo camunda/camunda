@@ -115,11 +115,13 @@ const ProcessOperations: React.FC<Props> = ({
           operationsStore.applyDeleteProcessDefinitionOperation({
             processDefinitionId,
             onSuccess: panelStatesStore.expandOperationsPanel,
-            onError: () => {
+            onError: (statusCode: number) => {
               setIsOperationRunning(false);
 
               notifications.displayNotification('error', {
                 headline: 'Operation could not be created',
+                description:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
               });
             },
           });

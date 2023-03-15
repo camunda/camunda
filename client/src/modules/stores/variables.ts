@@ -409,7 +409,7 @@ class Variables extends NetworkReconnectionHandler {
   handlePollingOperation = async (
     operationId: string,
     onSuccess: () => void,
-    onError: () => void
+    onError: (statusCode: number) => void
   ) => {
     this.isPollOperationRequestRunning = true;
     const response = await getOperation(operationId);
@@ -424,7 +424,7 @@ class Variables extends NetworkReconnectionHandler {
         } else if (operationDetail.state === 'FAILED') {
           this.setPendingItem(null);
           this.stopPollingOperation();
-          onError();
+          onError(response.statusCode);
         }
       }
     }
@@ -500,7 +500,7 @@ class Variables extends NetworkReconnectionHandler {
     name: string;
     value: string;
     onSuccess: () => void;
-    onError: () => void;
+    onError: (statusCode: number) => void;
   }) => {
     this.setPendingItem({
       name,
@@ -531,7 +531,7 @@ class Variables extends NetworkReconnectionHandler {
         return 'VALIDATION_ERROR';
       }
 
-      onError();
+      onError(response.statusCode);
       return 'FAILED';
     }
   };
@@ -545,7 +545,7 @@ class Variables extends NetworkReconnectionHandler {
     id: string;
     name: string;
     value: string;
-    onError: () => void;
+    onError: (statusCode: number) => void;
   }) => {
     const {items} = this.state;
 
@@ -573,7 +573,7 @@ class Variables extends NetworkReconnectionHandler {
 
     if (!response.isSuccess) {
       this.setSingleVariable(originalVariable);
-      onError();
+      onError(response.statusCode);
     }
   };
 
@@ -631,7 +631,7 @@ class Variables extends NetworkReconnectionHandler {
   }: {
     operationId: string;
     onSuccess: () => void;
-    onError: () => void;
+    onError: (statusCode: number) => void;
   }) => {
     this.onPollingOperationSuccess = onSuccess;
     this.operationIntervalId = setInterval(() => {

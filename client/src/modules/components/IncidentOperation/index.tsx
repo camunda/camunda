@@ -8,7 +8,7 @@
 import React, {useState} from 'react';
 
 import {OperationSpinner} from 'modules/components/OperationSpinner';
-import {operationsStore} from 'modules/stores/operations';
+import {ErrorHandler, operationsStore} from 'modules/stores/operations';
 import {useNotifications} from 'modules/notifications';
 
 import {OperationItems} from 'modules/components/OperationItems';
@@ -29,10 +29,12 @@ const IncidentOperation: React.FC<Props> = observer(
     const [hasActiveOperation, setHasActiveOperation] = useState(false);
     const notifications = useNotifications();
 
-    const handleError = () => {
+    const handleError: ErrorHandler = ({statusCode}) => {
       setHasActiveOperation(false);
       notifications.displayNotification('error', {
         headline: 'Operation could not be created',
+        description:
+          statusCode === 403 ? 'You do not have permission' : undefined,
       });
     };
 

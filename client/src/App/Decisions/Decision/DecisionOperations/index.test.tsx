@@ -182,6 +182,42 @@ describe('<DecisionOperations />', () => {
     });
   });
 
+  it('should show notification on operation auth error', async () => {
+    mockApplyDeleteDefinitionOperation().withServerError(403);
+
+    const {user} = render(
+      <DecisionOperations
+        decisionName="myDecision"
+        decisionVersion="2"
+        decisionDefinitionId="2251799813687094"
+      />,
+      {wrapper: Wrapper}
+    );
+
+    user.click(
+      screen.getByRole('button', {
+        name: /^delete decision definition "myDecision - version 2"$/i,
+      })
+    );
+
+    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
+
+    user.click(
+      await screen.findByLabelText(
+        'Yes, I confirm I want to delete this DRD and all related instances.'
+      )
+    );
+
+    user.click(await screen.findByTestId('delete-button'));
+    await waitForElementToBeRemoved(screen.getByTestId('modal'));
+
+    expect(panelStatesStore.state.isOperationsCollapsed).toBe(true);
+    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+      headline: 'Operation could not be created',
+      description: 'You do not have permission',
+    });
+  });
+
   it('should disable button and show spinner when delete operation is triggered', async () => {
     mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
 

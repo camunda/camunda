@@ -254,7 +254,7 @@ const List: React.FC = observer(() => {
                             }
                           )
                         }
-                        onError={(operationType) => {
+                        onError={({operationType, statusCode}) => {
                           processInstancesStore.unmarkProcessInstancesWithActiveOperations(
                             {
                               instanceIds: [instance.id],
@@ -263,6 +263,10 @@ const List: React.FC = observer(() => {
                           );
                           notifications.displayNotification('error', {
                             headline: 'Operation could not be created',
+                            description:
+                              statusCode === 403
+                                ? 'You do not have permission'
+                                : undefined,
                           });
                         }}
                         onSuccess={(operationType) => {

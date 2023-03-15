@@ -15,6 +15,16 @@ import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetc
 import {mockApplyBatchOperation} from 'modules/mocks/api/processInstances/operations';
 import {act} from 'react-dom/test-utils';
 
+const mockDisplayNotification = jest.fn();
+
+jest.mock('modules/notifications', () => {
+  return {
+    useNotifications: () => {
+      return {displayNotification: mockDisplayNotification};
+    },
+  };
+});
+
 describe('spinner', () => {
   it('should display spinners on batch operation', async () => {
     jest.useFakeTimers();

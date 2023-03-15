@@ -710,7 +710,7 @@ class Modifications {
   }: {
     processInstanceId: string;
     onSuccess: () => void;
-    onError: () => void;
+    onError: (statusCode: number) => void;
   }) => {
     this.startApplyingModifications();
 
@@ -723,7 +723,7 @@ class Modifications {
       onSuccess();
     } else {
       logger.error('Failed to modify Process Instance');
-      onError();
+      onError(response.statusCode);
     }
 
     this.reset();

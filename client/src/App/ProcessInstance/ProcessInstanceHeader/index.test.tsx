@@ -46,14 +46,12 @@ import * as operationApi from 'modules/api/getOperation';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
-jest.mock('modules/notifications', () => {
-  const mockUseNotifications = {
-    displayNotification: jest.fn(),
-  };
+const mockDisplayNotification = jest.fn();
 
+jest.mock('modules/notifications', () => {
   return {
     useNotifications: () => {
-      return mockUseNotifications;
+      return {displayNotification: mockDisplayNotification};
     },
   };
 });
@@ -339,6 +337,51 @@ describe('InstanceHeader', () => {
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+  });
+
+  it('should display error notification when operation fails', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockApplyOperation().withServerError();
+
+    const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    processInstanceDetailsDiagramStore.init();
+    processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    await user.click(screen.getByRole('button', {name: /Apply/}));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Operation could not be created',
+      })
+    );
+  });
+
+  it('should display error notification when operation fails with auth error', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchProcessXML().withSuccess(mockProcessXML);
+    mockApplyOperation().withServerError(403);
+
+    const {user} = render(<ProcessInstanceHeader />, {wrapper: Wrapper});
+    processInstanceDetailsDiagramStore.init();
+    processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+
+    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
+    await user.click(screen.getByRole('button', {name: /Apply/}));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Operation could not be created',
+        description: 'You do not have permission',
+      })
+    );
   });
 
   it('should show operation buttons for running process instance when user has permission', async () => {

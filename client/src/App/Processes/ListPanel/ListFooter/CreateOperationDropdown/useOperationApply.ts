@@ -60,7 +60,7 @@ export default function useOperationApply() {
             operationType,
           });
         },
-        onError: (operationType: OperationEntityType) => {
+        onError: ({operationType, statusCode}) => {
           processInstancesStore.unmarkProcessInstancesWithActiveOperations({
             instanceIds: ids,
             operationType,
@@ -68,6 +68,8 @@ export default function useOperationApply() {
           });
           notifications.displayNotification('error', {
             headline: 'Operation could not be created',
+            description:
+              statusCode === 403 ? 'You do not have permission' : undefined,
           });
         },
       });

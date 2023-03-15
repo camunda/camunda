@@ -163,10 +163,13 @@ const ProcessInstanceHeader: React.FC = observer(() => {
             onOperation={(operationType: OperationEntityType) =>
               processInstanceDetailsStore.activateOperation(operationType)
             }
-            onError={(operationType) => {
+            onError={({operationType, statusCode}) => {
               processInstanceDetailsStore.deactivateOperation(operationType);
+
               notifications.displayNotification('error', {
                 headline: 'Operation could not be created',
+                description:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
               });
             }}
             onSuccess={(operationType) => {

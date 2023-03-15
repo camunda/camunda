@@ -28,6 +28,13 @@ import {deleteProcessDefinition} from 'modules/api/processes/operations';
 
 type Query = Parameters<typeof applyBatchOperation>['1'];
 type OperationPayload = Parameters<typeof applyOperation>['1'];
+type ErrorHandler = ({
+  operationType,
+  statusCode,
+}: {
+  operationType: OperationEntityType;
+  statusCode?: number;
+}) => void;
 
 type State = {
   operations: OperationEntity[];
@@ -117,7 +124,7 @@ class Operations extends NetworkReconnectionHandler {
     operationType: OperationEntityType;
     query: Query;
     onSuccess: () => void;
-    onError: (operationType: OperationEntityType) => void;
+    onError: ErrorHandler;
   }) => {
     try {
       const response = await applyBatchOperation(operationType, query);
@@ -126,10 +133,10 @@ class Operations extends NetworkReconnectionHandler {
         this.prependOperations(response.data);
         onSuccess();
       } else {
-        onError(operationType);
+        onError({operationType, statusCode: response.statusCode});
       }
     } catch {
-      onError(operationType);
+      onError({operationType});
     }
   };
 
@@ -141,7 +148,7 @@ class Operations extends NetworkReconnectionHandler {
   }: {
     instanceId: string;
     payload: OperationPayload;
-    onError?: (operationType: OperationEntityType) => void;
+    onError?: ErrorHandler;
     onSuccess?: (operationType: OperationEntityType) => void;
   }) => {
     const response = await applyOperation(instanceId, payload);
@@ -150,7 +157,10 @@ class Operations extends NetworkReconnectionHandler {
       this.prependOperations(response.data);
       onSuccess?.(payload.operationType);
     } else {
-      onError?.(payload.operationType);
+      onError?.({
+        operationType: payload.operationType,
+        statusCode: response.statusCode,
+      });
     }
   };
 
@@ -160,7 +170,7 @@ class Operations extends NetworkReconnectionHandler {
     onSuccess,
   }: {
     decisionDefinitionId: string;
-    onError?: () => void;
+    onError?: (statusCode: number) => void;
     onSuccess?: () => void;
   }) => {
     const response = await deleteDecisionDefinition(decisionDefinitionId);
@@ -169,7 +179,7 @@ class Operations extends NetworkReconnectionHandler {
       this.prependOperations(response.data);
       onSuccess?.();
     } else {
-      onError?.();
+      onError?.(response.statusCode);
     }
   };
 
@@ -179,7 +189,7 @@ class Operations extends NetworkReconnectionHandler {
     onSuccess,
   }: {
     processDefinitionId: string;
-    onError?: () => void;
+    onError?: (statusCode: number) => void;
     onSuccess?: () => void;
   }) => {
     const response = await deleteProcessDefinition(processDefinitionId);
@@ -188,7 +198,7 @@ class Operations extends NetworkReconnectionHandler {
       this.prependOperations(response.data);
       onSuccess?.();
     } else {
-      onError?.();
+      onError?.(response.statusCode);
     }
   };
 
@@ -282,3 +292,4 @@ class Operations extends NetworkReconnectionHandler {
 }
 
 export const operationsStore = new Operations();
+export type {ErrorHandler};

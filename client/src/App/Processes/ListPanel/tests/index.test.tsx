@@ -20,6 +20,16 @@ import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations'
 import {createWrapper} from './mocks';
 import {act} from 'react-dom/test-utils';
 
+const mockDisplayNotification = jest.fn();
+
+jest.mock('modules/notifications', () => {
+  return {
+    useNotifications: () => {
+      return {displayNotification: mockDisplayNotification};
+    },
+  };
+});
+
 describe('ListPanel', () => {
   it('should start operation on an instance from list', async () => {
     jest.useFakeTimers();
@@ -72,5 +82,68 @@ describe('ListPanel', () => {
 
     jest.clearAllTimers();
     jest.useRealTimers();
+  });
+
+  it('should display error notification when error occurs on operation', async () => {
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [INSTANCE],
+      totalCount: 1,
+    });
+
+    mockApplyOperation().withServerError();
+
+    processInstancesStore.fetchProcessInstancesFromFilters();
+
+    await waitFor(() =>
+      expect(processInstancesStore.state.status).toBe('fetched')
+    );
+
+    const {user} = render(<ListPanel />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(
+      screen.queryByTitle(/has scheduled operations/i)
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByTitle('Cancel Instance 1'));
+    await user.click(screen.getByTitle('Apply'));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Operation could not be created',
+      })
+    );
+  });
+
+  it('should display error notification when an auth error occurs on operation', async () => {
+    mockFetchProcessInstances().withSuccess({
+      processInstances: [INSTANCE],
+      totalCount: 1,
+    });
+
+    mockApplyOperation().withServerError(403);
+
+    processInstancesStore.fetchProcessInstancesFromFilters();
+
+    await waitFor(() =>
+      expect(processInstancesStore.state.status).toBe('fetched')
+    );
+
+    const {user} = render(<ListPanel />, {
+      wrapper: createWrapper(),
+    });
+
+    expect(
+      screen.queryByTitle(/has scheduled operations/i)
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByTitle('Cancel Instance 1'));
+    await user.click(screen.getByTitle('Apply'));
+
+    await waitFor(() =>
+      expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+        headline: 'Operation could not be created',
+        description: 'You do not have permission',
+      })
+    );
   });
 });

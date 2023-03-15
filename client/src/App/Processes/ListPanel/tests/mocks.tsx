@@ -7,7 +7,6 @@
 
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Link, MemoryRouter} from 'react-router-dom';
-import {NotificationProvider} from 'modules/notifications';
 import {ListFooter} from '../ListFooter';
 import {createInstance, createOperation} from 'modules/testUtils';
 import {useEffect} from 'react';
@@ -28,15 +27,13 @@ function createWrapper(initialPath: string = '/') {
     });
     return (
       <ThemeProvider>
-        <NotificationProvider>
-          <MemoryRouter initialEntries={[initialPath]}>
-            {children}
-            <ListFooter />
-            <Link to="/processes?incidents=true&active=true&process=bigVarProcess">
-              go to big var
-            </Link>
-          </MemoryRouter>
-        </NotificationProvider>
+        <MemoryRouter initialEntries={[initialPath]}>
+          {children}
+          <ListFooter />
+          <Link to="/processes?incidents=true&active=true&process=bigVarProcess">
+            go to big var
+          </Link>
+        </MemoryRouter>
       </ThemeProvider>
     );
   };

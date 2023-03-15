@@ -387,7 +387,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should display error notification if add variable operation could not be created', async () => {
+  it('should display error notification if add variable operation could not be created', async () => {
     const {user} = render(<VariablePanel />, {wrapper: Wrapper});
     await waitFor(() =>
       expect(screen.getByTitle(/add variable/i)).toBeEnabled()
@@ -415,6 +415,38 @@ describe('VariablePanel', () => {
 
     expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
       headline: 'Variable could not be saved',
+    });
+  });
+
+  it('should display error notification if add variable operation could not be created because of auth error', async () => {
+    const {user} = render(<VariablePanel />, {wrapper: Wrapper});
+    await waitFor(() =>
+      expect(screen.getByTitle(/add variable/i)).toBeEnabled()
+    );
+
+    await user.click(screen.getByTitle(/add variable/i));
+    expect(screen.queryByTitle(/add variable/i)).not.toBeInTheDocument();
+
+    await user.type(screen.getByTestId('add-variable-name'), 'foo');
+    await user.type(screen.getByTestId('add-variable-value'), '"bar"');
+
+    mockApplyOperation().withServerError(403);
+
+    await waitFor(() =>
+      expect(screen.getByTitle(/save variable/i)).toBeEnabled()
+    );
+
+    await user.click(screen.getByTitle(/save variable/i));
+
+    await waitForElementToBeRemoved(
+      within(screen.getByTestId('foo')).getByTestId('edit-variable-spinner')
+    );
+
+    expect(screen.getByTitle(/add variable/i)).toBeInTheDocument();
+
+    expect(mockDisplayNotification).toHaveBeenCalledWith('error', {
+      headline: 'Variable could not be saved',
+      description: 'You do not have permission',
     });
   });
 

@@ -78,11 +78,13 @@ const DecisionOperations: React.FC<Props> = ({
           operationsStore.applyDeleteDecisionDefinitionOperation({
             decisionDefinitionId,
             onSuccess: panelStatesStore.expandOperationsPanel,
-            onError: () => {
+            onError: (statusCode: number) => {
               setIsOperationRunning(false);
 
               notifications.displayNotification('error', {
                 headline: 'Operation could not be created',
+                description:
+                  statusCode === 403 ? 'You do not have permission' : undefined,
               });
             },
           });
