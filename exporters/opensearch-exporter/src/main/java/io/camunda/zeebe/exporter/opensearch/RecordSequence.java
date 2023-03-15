@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.opensearch;
 
 /**
  * The record sequence is a combination of the partition id and the counter.

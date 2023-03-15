@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
+import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -79,7 +79,7 @@ final class OpensearchExporterIT {
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldExportRecord(final ValueType valueType) {
     // given
     final var record = factory.generateRecord(valueType);
@@ -152,7 +152,7 @@ final class OpensearchExporterIT {
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldPutIndexTemplate(final ValueType valueType) {
     // assuming
     Assumptions.assumeTrue(

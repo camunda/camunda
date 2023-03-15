@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -17,9 +17,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
-import io.camunda.zeebe.exporter.dto.Template;
+import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -64,7 +64,7 @@ final class OpensearchClientTest {
           new OpensearchMetrics(PARTITION_ID));
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+  @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldPutIndexTemplate(final ValueType valueType) throws IOException {
     // given
     final Template expectedTemplate =

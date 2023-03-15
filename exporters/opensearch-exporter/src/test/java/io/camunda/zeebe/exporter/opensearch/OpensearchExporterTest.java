@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -79,7 +79,7 @@ final class OpensearchExporterTest {
   @Nested
   final class RecordFilterTest {
     @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
     void shouldRejectDisabledValueType(final ValueType valueType) {
       // given
       TestSupport.setIndexingForValueType(config.index, valueType, false);
@@ -96,7 +96,7 @@ final class OpensearchExporterTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
     void shouldAcceptEnabledValueType(final ValueType valueType) {
       // given
       TestSupport.setIndexingForValueType(config.index, valueType, true);
@@ -188,7 +188,7 @@ final class OpensearchExporterTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
     void shouldPutValueTypeTemplate(final ValueType valueType) {
       // given
       config.index.createTemplate = true;
@@ -206,7 +206,7 @@ final class OpensearchExporterTest {
     }
 
     @ParameterizedTest(name = "{0}")
-    @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
+    @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
     void shouldNotPutValueTypeTemplate(final ValueType valueType) {
       // given
       config.index.createTemplate = true;

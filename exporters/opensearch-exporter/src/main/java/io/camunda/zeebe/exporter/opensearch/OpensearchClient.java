@@ -5,14 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.dto.BulkIndexAction;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
-import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
-import io.camunda.zeebe.exporter.dto.Template;
+import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
+import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Histogram;

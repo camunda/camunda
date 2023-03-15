@@ -5,15 +5,9 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.exporter;
+package io.camunda.zeebe.exporter.opensearch.dto;
 
-public class OpensearchExporterException extends RuntimeException {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-  public OpensearchExporterException(final String message) {
-    super(message);
-  }
-
-  public OpensearchExporterException(final String message, final Throwable cause) {
-    super(message, cause);
-  }
-}
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record PutIndexTemplateResponse(boolean acknowledged) {}
