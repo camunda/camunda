@@ -7,9 +7,11 @@
 package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,6 +26,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -45,6 +48,13 @@ public class ProcessIT extends OperateZeebeIntegrationTest {
 
   @MockBean
   private PermissionsService permissionsService;
+
+  @Before
+  public void before()
+  {
+    super.before();
+    when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
+  }
 
   @Test
   public void testProcessCreated() {

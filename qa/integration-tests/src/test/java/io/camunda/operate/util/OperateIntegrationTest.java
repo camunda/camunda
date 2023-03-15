@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.Permission;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -134,6 +135,24 @@ public abstract class OperateIntegrationTest {
             .andExpect(status()
             .isBadRequest())
             .andReturn();
+  }
+
+  protected MvcResult getRequestShouldFailWithNoAuthorization(String requestUrl) throws Exception {
+    MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
+
+    return mockMvc.perform(request)
+        .andExpect(status().isForbidden())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotAuthorizedException.class))
+        .andReturn();
+  }
+
+  protected MvcResult postRequestShouldFailWithNoAuthorization(String requestUrl, Object query) throws Exception {
+    MockHttpServletRequestBuilder request = post(requestUrl).content(mockMvcTestRule.json(query)).contentType(mockMvcTestRule.getContentType());
+
+    return mockMvc.perform(request)
+        .andExpect(status().isForbidden())
+        .andExpect(result -> assertThat(result.getResolvedException()).isInstanceOf(NotAuthorizedException.class))
+        .andReturn();
   }
 
   protected void assertErrorMessageContains(MvcResult mvcResult, String text) {

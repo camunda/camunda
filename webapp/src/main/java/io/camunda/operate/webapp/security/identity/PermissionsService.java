@@ -6,9 +6,11 @@
  */
 package io.camunda.operate.webapp.security.identity;
 
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,6 +31,9 @@ public class PermissionsService {
   public static final String RESOURCE_TYPE_DECISION_DEFINITION = "decision-definition";
 
   private static final Logger log = LoggerFactory.getLogger(PermissionsService.class);
+
+  @Autowired
+  private OperateProperties operateProperties;
 
   /**
    * getProcessDefinitionPermission
@@ -105,6 +110,21 @@ public class PermissionsService {
   }
 
   /**
+   * hasPermissionForProcess
+   * @return true if the user has the given permission for the process
+   */
+  public boolean hasPermissionForProcess(String bpmnProcessId, IdentityPermission permission) {
+
+    if (!permissionsEnabled()) {
+      return true;
+    }
+    if (permission == null) {
+      throw new IllegalStateException("Identity permission can't be null");
+    }
+    return getProcessDefinitionPermission(bpmnProcessId).stream().anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
+  }
+
+  /**
    * getIdentityAuthorizations
    */
   private List<IdentityAuthorization> getIdentityAuthorizations() {
@@ -114,5 +134,9 @@ public class PermissionsService {
       list = ((IdentityAuthentication) authentication).getAuthorizations();
     }
     return (list == null) ? new ArrayList<>() : list;
+  }
+
+  private boolean permissionsEnabled() {
+    return operateProperties.getIdentity().isResourcePermissionsEnabled();
   }
 }

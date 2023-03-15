@@ -23,15 +23,20 @@ import io.camunda.operate.webapp.es.reader.VariableReader;
 import io.camunda.operate.webapp.es.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
+import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -83,6 +88,16 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
   @MockBean
   private OperationReader operationReader;
+
+  @MockBean
+  private PermissionsService permissionsService;
+
+  @Before
+  public void before()
+  {
+    super.before();
+    when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
+  }
 
   @Test
   public void testQueryWithWrongSortBy() throws Exception {
@@ -212,8 +227,8 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     String validId = "123";
     // when
     ListViewProcessInstanceDto expectedDto = new ListViewProcessInstanceDto().setId("one id");
-    when(processInstanceReader.getProcessInstanceWithOperationsByKey(123L))
-        .thenReturn(expectedDto);
+    when(processInstanceReader.getProcessInstanceWithOperationsByKey(123L)).thenReturn(expectedDto);
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(validId))).thenReturn(new ProcessInstanceForListViewEntity());
     MvcResult mvcResult = getRequest(getInstanceByIdUrl(validId));
     // then
     ListViewProcessInstanceDto actualResult = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
@@ -319,6 +334,97 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
     assertErrorMessageContains( mvcResult,"No variables given for process instance with key 123");
   }
 
+  @Test
+  public void testProcessInstanceByIdFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getInstanceByIdUrl(processInstanceId));
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceIncidentsFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getIncidentsByIdUrl(processInstanceId));
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceSequenceFlowsFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getSequenceFlowsByIdUrl(processInstanceId));
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceVariablesFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getVariablesByIdUrl(processInstanceId), new VariableRequestDto());
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceFlowNodeStatesFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getFlowNodeStatesByIdUrl(processInstanceId));
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceStatisticsFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = getRequestShouldFailWithNoAuthorization(getFlowNodeStatisticsByIdUrl(processInstanceId));
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
+  @Test
+  public void testProcessInstanceFlowNodeMetadataFailsWhenNoPermissions() throws Exception {
+    // given
+    String processInstanceId = "123";
+    String bpmnProcessId = "processId";
+    // when
+    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId))).thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)).thenReturn(false);
+    MvcResult mvcResult = postRequestShouldFailWithNoAuthorization(getFlowNodeMetadataByIdUrl(processInstanceId), new FlowNodeMetadataRequestDto());
+    // then
+    assertErrorMessageContains(mvcResult, "No read permission for process instance");
+  }
+
   public String getBatchOperationUrl() {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/batch-operation";
   }
@@ -345,6 +451,10 @@ public class ProcessInstanceRestServiceTest extends OperateIntegrationTest {
 
   public String getFlowNodeStatesByIdUrl(String id) {
     return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/flow-node-states";
+  }
+
+  public String getFlowNodeStatisticsByIdUrl(String id) {
+    return ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/" + id + "/statistics";
   }
 
   public String getFlowNodeMetadataByIdUrl(String id) {

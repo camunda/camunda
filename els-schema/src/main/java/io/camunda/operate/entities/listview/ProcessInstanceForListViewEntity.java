@@ -112,8 +112,9 @@ public class ProcessInstanceForListViewEntity extends OperateZeebeEntity<Process
     return bpmnProcessId;
   }
 
-  public void setBpmnProcessId(String bpmnProcessId) {
+  public ProcessInstanceForListViewEntity setBpmnProcessId(String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
+    return this;
   }
 
   public Long getParentProcessInstanceKey() {

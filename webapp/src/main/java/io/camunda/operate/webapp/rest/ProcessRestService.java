@@ -10,6 +10,8 @@ import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,13 +48,17 @@ public class ProcessRestService extends InternalAPIErrorController {
   @Operation(summary = "Get process BPMN XML")
   @GetMapping(path = "/{id}/xml")
   public String getProcessDiagram(@PathVariable("id") String processId) {
-    return processReader.getDiagram(Long.valueOf(processId));
+    final Long processDefinitionKey = Long.valueOf(processId);
+    final ProcessEntity processEntity = processReader.getProcess(processDefinitionKey);
+    checkIdentityReadPermission(processEntity.getBpmnProcessId());
+    return processReader.getDiagram(processDefinitionKey);
   }
 
   @Operation(summary = "Get process by id")
   @GetMapping(path = "/{id}")
   public ProcessDto getProcess(@PathVariable("id") String processId) {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
+    checkIdentityReadPermission(processEntity.getBpmnProcessId());
     return DtoCreator.create(processEntity, ProcessDto.class);
   }
 
@@ -61,5 +67,11 @@ public class ProcessRestService extends InternalAPIErrorController {
   public List<ProcessGroupDto> getProcessesGrouped() {
     final Map<String, List<ProcessEntity>> processesGrouped = processReader.getProcessesGrouped();
     return ProcessGroupDto.createFrom(processesGrouped, permissionsService);
+  }
+
+  private void checkIdentityReadPermission(String bpmnProcessId) {
+    if (permissionsService != null && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)) {
+      throw new NotAuthorizedException(String.format("No read permission for process %s", bpmnProcessId));
+    }
   }
 }

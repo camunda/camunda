@@ -42,6 +42,9 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.zeebe.operation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.micrometer.core.annotation.Timed;
@@ -101,6 +104,9 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   @Autowired
   private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
+
+  @Autowired(required = false)
+  protected PermissionsService permissionsService;
 
   @Operation(summary = "Query process instances by different parameters")
   @PostMapping
@@ -191,18 +197,21 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get process instance by id")
   @GetMapping("/{id}")
   public ListViewProcessInstanceDto queryProcessInstanceById(@PathVariable @ValidLongId String id) {
+    checkIdentityReadPermission(Long.parseLong(id));
     return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
   }
 
   @Operation(summary = "Get incidents by process instance id")
   @GetMapping("/{id}/incidents")
   public IncidentResponseDto queryIncidentsByProcessInstanceId(@PathVariable @ValidLongId String id) {
+    checkIdentityReadPermission(Long.parseLong(id));
     return incidentReader.getIncidentsByProcessInstanceId(id);
   }
 
   @Operation(summary = "Get sequence flows by process instance id")
   @GetMapping("/{id}/sequence-flows")
   public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(@PathVariable @ValidLongId String id) {
+    checkIdentityReadPermission(Long.parseLong(id));
     final List<SequenceFlowEntity> sequenceFlows = sequenceFlowReader.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
     return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
   }
@@ -211,6 +220,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PostMapping("/{processInstanceId}/variables")
   public List<VariableDto> getVariables(
       @PathVariable @ValidLongId String processInstanceId, @RequestBody VariableRequestDto variableRequest) {
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     validate(variableRequest);
     return variableReader.getVariables(processInstanceId, variableRequest);
   }
@@ -218,12 +228,14 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @Operation(summary = "Get flow node states by process instance id")
   @GetMapping("/{processInstanceId}/flow-node-states")
   public Map<String, FlowNodeStateDto> getFlowNodeStates(@PathVariable @ValidLongId String processInstanceId) {
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
   @Operation(summary = "Get flow node statistic by process instance id")
   @GetMapping("/{processInstanceId}/statistics")
   public Collection<FlowNodeStatisticsDto> getStatistics(@PathVariable @ValidLongId String processInstanceId) {
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(Long.parseLong(processInstanceId));
   }
 
@@ -231,6 +243,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   @PostMapping("/{processInstanceId}/flow-node-metadata")
   public FlowNodeMetadataDto getFlowNodeMetadata(@PathVariable @ValidLongId String processInstanceId,
       @RequestBody FlowNodeMetadataRequestDto request) {
+    checkIdentityReadPermission(Long.parseLong(processInstanceId));
     validate(request);
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
   }
@@ -276,4 +289,9 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
         .body(exception.getMessage());
   }
 
+  private void checkIdentityReadPermission(Long processInstanceKey) {
+    if (permissionsService != null && !permissionsService.hasPermissionForProcess(processInstanceReader.getProcessInstanceByKey(processInstanceKey).getBpmnProcessId(), IdentityPermission.READ)) {
+      throw new NotAuthorizedException(String.format("No read permission for process instance %s", processInstanceKey));
+    }
+  }
 }

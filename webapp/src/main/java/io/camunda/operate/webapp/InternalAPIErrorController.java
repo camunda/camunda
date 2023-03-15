@@ -9,6 +9,7 @@ package io.camunda.operate.webapp;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.rest.exception.Error;
 import io.camunda.operate.webapp.rest.exception.InternalAPIException;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.OperateProfileService;
 import org.slf4j.Logger;
@@ -65,4 +66,16 @@ public abstract class InternalAPIErrorController {
         .body(error);
   }
 
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  @ExceptionHandler(NotAuthorizedException.class)
+  public ResponseEntity<Error> handleNotAuthorized(NotAuthorizedException exception) {
+    LOGGER.warn(String.format("Instance: %s; %s", exception.getInstance(), exception.getMessage()));
+    final Error error = new Error()
+        .setStatus(HttpStatus.FORBIDDEN.value())
+        .setInstance(exception.getInstance())
+        .setMessage(operateProfileService.getMessageByProfileFor(exception));
+    return ResponseEntity.status(HttpStatus.FORBIDDEN)
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .body(error);
+  }
 }
