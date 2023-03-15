@@ -28,7 +28,7 @@ var (
 )
 
 var evaluateDecisionCmd = &cobra.Command{
-	Use:     "decision <processId or processKey>",
+	Use:     "decision <decisionId or decisionKey>",
 	Short:   "Evaluates a decision defined by the decision ID or decision key",
 	Args:    cobra.ExactArgs(1),
 	PreRunE: initClient,
