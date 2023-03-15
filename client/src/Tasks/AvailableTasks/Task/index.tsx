@@ -50,16 +50,15 @@ const Task = React.forwardRef<HTMLElement, Props>(
     const isActive = match?.params?.id === taskId;
     const {sortBy} = useTaskFilters();
     const showFolloupDate =
+      IS_SORTING_ENABLED &&
       followUpDate !== null &&
       formatDate(followUpDate) !== '' &&
-      sortBy === 'follow-up' &&
-      IS_SORTING_ENABLED;
+      sortBy === 'follow-up';
     const showDueDate =
+      IS_SORTING_ENABLED &&
       dueDate !== null &&
       formatDate(dueDate) !== '' &&
-      sortBy !== 'follow-up' &&
-      IS_SORTING_ENABLED;
-
+      sortBy !== 'follow-up';
     return (
       <Container className={isActive ? 'active' : undefined}>
         <TaskLink

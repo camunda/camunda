@@ -27,16 +27,10 @@ const getURL = ClientFunction(() => window.location.href);
 test('filter selection', async (t) => {
   const withinExpandedPanel = within(screen.getByTitle('Left panel'));
 
-  await t
-    .expect(
-      screen
-        .getByRole('button', {name: 'Filter options'})
-        .hasAttribute('disabled'),
-    )
-    .notOk();
+  await t.expect(screen.queryAllByText('Some user activity').exists).ok();
 
   await t
-    .click(withinExpandedPanel.getByText('All open'))
+    .click(screen.getByRole('button', {name: 'Filter options'}))
     .click(screen.getByText('Claimed by me'));
 
   await t.expect(await getURL()).contains('/?filter=claimed-by-me');
@@ -52,7 +46,7 @@ test('filter selection', async (t) => {
   await t
     .expect(withinExpandedPanel.queryByText('No tasks found').exists)
     .notOk()
-    .expect(withinExpandedPanel.getAllByRole('article').count)
+    .expect(screen.queryAllByText('Some user activity').count)
     .eql(50);
 });
 
@@ -103,50 +97,48 @@ test('update task list according to user actions', async (t) => {
 });
 
 test('scrolling', async (t) => {
-  const availableTasks = screen.queryByTitle('Available tasks');
-
   await t
-    .expect(within(availableTasks).queryAllByRole('article').count)
+    .expect(screen.queryAllByText('Created').count)
     .eql(50)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(within(availableTasks).getAllByRole('article').nth(49));
+  await t.hover(screen.queryAllByText('Created').nth(49));
   await t
-    .expect(within(availableTasks).queryAllByRole('link').count)
+    .expect(screen.queryAllByText('Created').count)
     .eql(100)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(within(availableTasks).getAllByRole('article').nth(99));
+  await t.hover(screen.queryAllByText('Created').nth(99));
   await t
-    .expect(within(availableTasks).queryAllByRole('link').count)
+    .expect(screen.queryAllByText('Created').count)
     .eql(150)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(within(availableTasks).getAllByRole('article').nth(149));
+  await t.hover(screen.queryAllByText('Created').nth(149));
   await t
-    .expect(within(availableTasks).queryAllByRole('link').count)
+    .expect(screen.queryAllByText('Created').count)
     .eql(200)
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok();
 
-  await t.hover(within(availableTasks).getAllByRole('article').nth(199));
+  await t.hover(screen.queryAllByText('Created').nth(199));
   await t
     .expect(screen.getByText('usertask_for_scrolling_3').exists)
     .ok()
     .expect(screen.queryByText('usertask_for_scrolling_1').exists)
     .notOk()
-    .expect(within(availableTasks).queryAllByRole('link').count)
+    .expect(screen.queryAllByText('Created').count)
     .eql(200);
 
-  await t.hover(within(availableTasks).getAllByRole('article').nth(0));
+  await t.hover(screen.queryAllByText('Some user activity').nth(0));
   await t
     .expect(screen.getByText('usertask_for_scrolling_1').exists)
     .ok()
     .expect(screen.queryByText('usertask_for_scrolling_3').exists)
     .notOk()
-    .expect(within(availableTasks).queryAllByRole('link').count)
+    .expect(screen.queryAllByText('Created').count)
     .eql(200);
 });

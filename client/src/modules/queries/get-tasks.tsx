@@ -16,6 +16,7 @@ import {
 } from 'modules/mock-schema/mocks/tasks';
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
+import {IS_SORTING_ENABLED} from 'modules/featureFlags';
 
 type QueryTask = Pick<
   Task,
@@ -47,46 +48,83 @@ type GetTasksVariables = {
   sort?: readonly [{field: string; order: string}];
 };
 
-const GET_TASKS = gql`
-  query GetTasks(
-    $assignee: String
-    $assigned: Boolean
-    $state: TaskState
-    $pageSize: Int
-    $searchAfter: [String!]
-    $searchBefore: [String!]
-    $searchAfterOrEqual: [String!]
-    $processInstanceId: String
-    $processDefinitionId: String
-    $sort: [TaskOrderBy!]
-  ) {
-    tasks(
-      query: {
-        assignee: $assignee
-        assigned: $assigned
-        state: $state
-        pageSize: $pageSize
-        searchAfter: $searchAfter
-        searchBefore: $searchBefore
-        searchAfterOrEqual: $searchAfterOrEqual
-        processInstanceId: $processInstanceId
-        processDefinitionId: $processDefinitionId
-        sort: $sort
+const GET_TASKS = IS_SORTING_ENABLED
+  ? gql`
+      query GetTasks(
+        $assignee: String
+        $assigned: Boolean
+        $state: TaskState
+        $pageSize: Int
+        $searchAfter: [String!]
+        $searchBefore: [String!]
+        $searchAfterOrEqual: [String!]
+        $processInstanceId: String
+        $processDefinitionId: String
+        $sort: [TaskOrderBy!]
+      ) {
+        tasks(
+          query: {
+            assignee: $assignee
+            assigned: $assigned
+            state: $state
+            pageSize: $pageSize
+            searchAfter: $searchAfter
+            searchBefore: $searchBefore
+            searchAfterOrEqual: $searchAfterOrEqual
+            processInstanceId: $processInstanceId
+            processDefinitionId: $processDefinitionId
+            sort: $sort
+          }
+        ) {
+          id
+          name
+          processName
+          assignee
+          creationTime
+          followUpDate
+          dueDate
+          taskState
+          sortValues
+          isFirst
+        }
       }
-    ) {
-      id
-      name
-      processName
-      assignee
-      creationTime
-      followUpDate
-      dueDate
-      taskState
-      sortValues
-      isFirst
-    }
-  }
-`;
+    `
+  : gql`
+      query GetTasks(
+        $assignee: String
+        $assigned: Boolean
+        $state: TaskState
+        $pageSize: Int
+        $searchAfter: [String!]
+        $searchBefore: [String!]
+        $searchAfterOrEqual: [String!]
+        $processInstanceId: String
+        $processDefinitionId: String
+      ) {
+        tasks(
+          query: {
+            assignee: $assignee
+            assigned: $assigned
+            state: $state
+            pageSize: $pageSize
+            searchAfter: $searchAfter
+            searchBefore: $searchBefore
+            searchAfterOrEqual: $searchAfterOrEqual
+            processInstanceId: $processInstanceId
+            processDefinitionId: $processDefinitionId
+          }
+        ) {
+          id
+          name
+          processName
+          assignee
+          creationTime
+          taskState
+          sortValues
+          isFirst
+        }
+      }
+    `;
 
 const mockGetAllOpenTasks: ReadonlyArray<QueryTask> = tasks;
 const mockGetAllOpenTasksUnclaimed: ReadonlyArray<QueryTask> = unclaimedTasks;
