@@ -38,21 +38,21 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
             .createRemoteStreamServer(
                 clusterServices.getCommunicationService(), DummyActivationProperties::new);
 
-    final var startFuture = remoteStreamService.start();
-    concurrencyControl.runOnCompletion(
-        startFuture,
-        (streamer, error) -> {
-          if (error != null) {
-            startupFuture.completeExceptionally(error);
-          } else {
-            final var jobStreamService =
-                new JobStreamService(
-                    remoteStreamService,
-                    new JobGatewayStreamer(streamer, clusterServices.getEventService()));
-            brokerStartupContext.setJobStreamService(jobStreamService);
-            startupFuture.complete(brokerStartupContext);
-          }
-        });
+    remoteStreamService
+        .start()
+        .onComplete(
+            (streamer, error) -> {
+              if (error != null) {
+                startupFuture.completeExceptionally(error);
+              } else {
+                final var jobStreamService =
+                    new JobStreamService(
+                        remoteStreamService,
+                        new JobGatewayStreamer(streamer, clusterServices.getEventService()));
+                brokerStartupContext.setJobStreamService(jobStreamService);
+                startupFuture.complete(brokerStartupContext);
+              }
+            });
   }
 
   @Override
@@ -63,7 +63,6 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     final var service = brokerShutdownContext.getJobStreamService();
     if (service != null) {
       service
-          .server()
           .closeAsync()
           .onComplete(
               (ok, error) -> {
