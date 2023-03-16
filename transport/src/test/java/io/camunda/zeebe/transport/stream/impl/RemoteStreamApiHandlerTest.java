@@ -5,19 +5,18 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.streamapi;
+package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamConsumer;
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamId;
-import io.camunda.zeebe.broker.jobstream.StreamRegistry;
-import io.camunda.zeebe.protocol.impl.stream.AddStreamRequest;
-import io.camunda.zeebe.protocol.impl.stream.RemoveStreamRequest;
-import io.camunda.zeebe.protocol.record.UUIDEncoder;
-import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -26,13 +25,13 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-final class StreamApiHandlerTest {
+final class RemoteStreamApiHandlerTest {
   private static final UnsafeBuffer SERIALIZED_METADATA =
       new UnsafeBuffer(ByteBuffer.allocate(4).order(ByteOrder.nativeOrder()).putInt(0, 1));
 
-  private final StreamRegistry<TestMetadata> registry = new StreamRegistry<>();
-  private final StreamApiHandler<TestMetadata> server =
-      new StreamApiHandler<>(registry, TestMetadata::new);
+  private final RemoteStreamRegistry<TestMetadata> registry = new RemoteStreamRegistry<>();
+  private final RemoteStreamApiHandler<TestMetadata> server =
+      new RemoteStreamApiHandler<>(registry, TestMetadata::new);
 
   @Test
   void shouldNotAddOnMetadataReadError() {
@@ -146,7 +145,7 @@ final class StreamApiHandlerTest {
     assertThat(consumers).isEmpty();
   }
 
-  private static final class TestMetadata implements Metadata {
+  private static final class TestMetadata implements BufferReader {
     private int version;
 
     private TestMetadata() {}

@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.jobstream;
+package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
 import java.util.Collections;
@@ -28,8 +28,8 @@ import org.agrona.concurrent.UnsafeBuffer;
  *
  * @param <M> the type of the properties of the stream.
  */
-public class StreamRegistry<M> implements ImmutableStreamRegistry<M> {
-  private final StreamMetrics metrics = new StreamMetrics();
+public class RemoteStreamRegistry<M> implements ImmutableStreamRegistry<M> {
+  private final RemoteStreamMetrics metrics = new RemoteStreamMetrics();
 
   // Needs to be thread-safe for readers
   private final ConcurrentMap<UnsafeBuffer, Set<StreamConsumer<M>>> typeToConsumers =

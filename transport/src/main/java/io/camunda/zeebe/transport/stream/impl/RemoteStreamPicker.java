@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.jobstream;
+package io.camunda.zeebe.transport.stream.impl;
 
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
 import java.util.Set;
 
 @FunctionalInterface
-interface StreamPicker<M> {
+interface RemoteStreamPicker<M> {
   StreamConsumer<M> pickStream(final Set<StreamConsumer<M>> consumers);
 }

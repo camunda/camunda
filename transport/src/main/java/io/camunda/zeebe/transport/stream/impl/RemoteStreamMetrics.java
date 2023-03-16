@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.jobstream;
+package io.camunda.zeebe.transport.stream.impl;
 
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 
-public class StreamMetrics {
+public class RemoteStreamMetrics {
   private static final String NAMESPACE = "zeebe";
 
   private static final Gauge STREAM_COUNT =

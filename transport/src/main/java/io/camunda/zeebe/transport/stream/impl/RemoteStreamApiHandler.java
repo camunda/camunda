@@ -5,15 +5,14 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.transport.streamapi;
+package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.jobstream.StreamRegistry;
-import io.camunda.zeebe.protocol.impl.stream.AddStreamRequest;
-import io.camunda.zeebe.protocol.impl.stream.RemoveStreamRequest;
-import io.camunda.zeebe.protocol.record.UUIDEncoder;
-import io.camunda.zeebe.stream.api.GatewayStreamer.Metadata;
+import io.camunda.zeebe.transport.stream.impl.messages.AddStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.RemoveStreamRequest;
+import io.camunda.zeebe.transport.stream.impl.messages.UUIDEncoder;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.UUID;
 import java.util.function.Supplier;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,8 +24,8 @@ import org.slf4j.LoggerFactory;
  *
  * @param <M> the metadata type of the registered streams
  */
-public final class StreamApiHandler<M extends Metadata> implements CloseableSilently {
-  private static final Logger LOG = LoggerFactory.getLogger(StreamApiHandler.class);
+public final class RemoteStreamApiHandler<M extends BufferReader> implements CloseableSilently {
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamApiHandler.class);
 
   // differs from the UUID RFC, which describes the nil-UUID as (0L, 0L), but there is no real way
   // to configure SBE null values. at the same time, the chances of generating the same ID as this
@@ -35,10 +34,11 @@ public final class StreamApiHandler<M extends Metadata> implements CloseableSile
   private static final UUID NULL_ID =
       new UUID(UUIDEncoder.highNullValue(), UUIDEncoder.lowNullValue());
 
-  private final StreamRegistry<M> registry;
+  private final RemoteStreamRegistry<M> registry;
   private final Supplier<M> metadataFactory;
 
-  public StreamApiHandler(final StreamRegistry<M> registry, final Supplier<M> metadataFactory) {
+  public RemoteStreamApiHandler(
+      final RemoteStreamRegistry<M> registry, final Supplier<M> metadataFactory) {
     this.registry = registry;
     this.metadataFactory = metadataFactory;
   }

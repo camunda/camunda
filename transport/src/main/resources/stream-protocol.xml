@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Zeebe Community License 1.1. You may not use this file
+  ~ except in compliance with the Zeebe Community License 1.1.
+  -->
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+  xmlns:xi="http://www.w3.org/2001/XInclude" package="io.camunda.zeebe.transport.stream.impl.messages"
+  id="0" version="1" semanticVersion="${project.version}"
+  description="Zeebe Protocol" byteOrder="littleEndian">
+
+  <xi:include href="../../../protocol/src/main/resources/common-types.xml"/>
+
+  <types>
+    <composite name="UUID" description="Universally Unique ID">
+      <type name="high" primitiveType="int64" />
+      <type name="low" primitiveType="int64" />
+    </composite>
+  </types>
+
+
+  <!-- Gateway Stream messages 400-499 -->
+  <sbe:message name="AddStreamRequest" id="400" description="Adds a gateway stream to a broker">
+    <field name="id" id="1" type="UUID" />
+    <data name="streamType" id="2" type="varDataEncoding" />
+    <data name="metadata" id="3" type="varDataEncoding" />
+  </sbe:message>
+
+  <sbe:message name="RemoveStreamRequest" id="401" description="Removes a gateway stream from a broker">
+    <field name="id" id="1" type="UUID" />
+  </sbe:message>
+
+  <sbe:message name="PushStreamRequest" id="402" description="Pushes a payload over a stream">
+    <field name="id" id="1" type="UUID" />
+    <data name="payload" id="2" type="varDataEncoding"/>
+  </sbe:message>
+</sbe:messageSchema>

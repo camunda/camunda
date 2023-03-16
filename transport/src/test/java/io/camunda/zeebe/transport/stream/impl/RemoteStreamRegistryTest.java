@@ -5,21 +5,21 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.jobstream;
+package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamConsumer;
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamId;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamConsumer;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
-final class StreamRegistryTest {
+final class RemoteStreamRegistryTest {
 
-  private final StreamRegistry<Integer> streamRegistry = new StreamRegistry<>();
+  private final RemoteStreamRegistry<Integer> streamRegistry = new RemoteStreamRegistry<>();
   private final MemberId gateway = MemberId.from("gateway");
   private final MemberId otherGateway = MemberId.from("gateway-other");
   private final UnsafeBuffer typeBar = new UnsafeBuffer(BufferUtil.wrapString("bar"));

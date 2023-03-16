@@ -9,22 +9,20 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import io.camunda.zeebe.broker.jobstream.JobGatewayStreamer;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
-import io.camunda.zeebe.broker.jobstream.StreamRegistry;
-import io.camunda.zeebe.broker.transport.streamapi.JobStreamApiServer;
-import io.camunda.zeebe.broker.transport.streamapi.StreamApiHandler;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.JobActivationProperties;
+import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Sets up the {@link JobStreamService}, which manages the lifecycle of the job specific stream API
- * server, pusher, and registry.
+ * remoteStreamService, pusher, and registry.
  */
 @SuppressWarnings("resource")
 public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
@@ -35,33 +33,27 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> startupFuture) {
     final var clusterServices = brokerStartupContext.getClusterServices();
-    final var scheduler = brokerStartupContext.getActorSchedulingService();
+    final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService =
+        new TransportFactory(brokerStartupContext.getActorSchedulingService())
+            .createRemoteStreamServer(
+                clusterServices.getCommunicationService(), DummyActivationProperties::new);
 
-    final StreamRegistry<JobActivationProperties> registry = new StreamRegistry<>();
-    final var requestHandler = new StreamApiHandler<>(registry, DummyActivationProperties::new);
-    final var server =
-        new JobStreamApiServer(clusterServices.getCommunicationService(), requestHandler);
-    final var streamer =
-        new JobGatewayStreamer(
-            clusterServices.getEventService(), clusterServices.getCommunicationService(), registry);
-    final var service = new JobStreamService(server, streamer);
-
-    // only register listener and apply service to context if the actors are scheduled successfully
-    final var result =
-        Stream.of(scheduler.submitActor(server), scheduler.submitActor(streamer))
-            .collect(new ActorFutureCollector<>(concurrencyControl));
-    concurrencyControl.runOnCompletion(
-        result,
-        (ok, error) -> {
-          if (error != null) {
-            startupFuture.completeExceptionally(error);
-            return;
-          }
-
-          clusterServices.getMembershipService().addListener(server);
-          brokerStartupContext.setJobStreamService(service);
-          startupFuture.complete(brokerStartupContext);
-        });
+    remoteStreamService
+        .start(brokerStartupContext.getActorSchedulingService(), concurrencyControl)
+        .onComplete(
+            (streamer, error) -> {
+              if (error != null) {
+                startupFuture.completeExceptionally(error);
+              } else {
+                final var jobStreamService =
+                    new JobStreamService(
+                        remoteStreamService,
+                        new JobGatewayStreamer(streamer, clusterServices.getEventService()));
+                clusterServices.getMembershipService().addListener(remoteStreamService);
+                brokerStartupContext.setJobStreamService(jobStreamService);
+                startupFuture.complete(brokerStartupContext);
+              }
+            });
   }
 
   @Override
@@ -69,27 +61,24 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       final BrokerStartupContext brokerShutdownContext,
       final ConcurrencyControl concurrencyControl,
       final ActorFuture<BrokerStartupContext> shutdownFuture) {
-    final var clusterServices = brokerShutdownContext.getClusterServices();
     final var service = brokerShutdownContext.getJobStreamService();
-    if (service == null) {
-      return;
+    if (service != null) {
+      service
+          .closeAsync(concurrencyControl)
+          .onComplete(
+              (ok, error) -> {
+                if (error != null) {
+                  shutdownFuture.completeExceptionally(error);
+                } else {
+                  brokerShutdownContext
+                      .getClusterServices()
+                      .getMembershipService()
+                      .removeListener(service.remoteStreamService());
+                  brokerShutdownContext.setJobStreamService(null);
+                  shutdownFuture.complete(brokerShutdownContext);
+                }
+              });
     }
-
-    clusterServices.getMembershipService().removeListener(service.server());
-    final var result =
-        Stream.of(service.server().closeAsync(), service.jobStreamer().closeAsync())
-            .collect(new ActorFutureCollector<>(concurrencyControl));
-    concurrencyControl.runOnCompletion(
-        result,
-        (ok, error) -> {
-          if (error != null) {
-            shutdownFuture.completeExceptionally(error);
-            return;
-          }
-
-          brokerShutdownContext.setJobStreamService(null);
-          shutdownFuture.complete(brokerShutdownContext);
-        });
   }
 
   @Override

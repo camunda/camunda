@@ -5,16 +5,16 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.jobstream;
+package io.camunda.zeebe.transport.stream.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamId;
-import io.camunda.zeebe.broker.jobstream.StreamPusher.Transport;
-import io.camunda.zeebe.protocol.impl.stream.PushStreamRequest;
-import io.camunda.zeebe.stream.api.GatewayStreamer.ErrorHandler;
+import io.camunda.zeebe.transport.stream.api.RemoteStream.ErrorHandler;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
+import io.camunda.zeebe.transport.stream.impl.RemoteStreamPusher.Transport;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,11 +24,12 @@ import java.util.concurrent.Executor;
 import org.agrona.MutableDirectBuffer;
 import org.junit.jupiter.api.Test;
 
-final class StreamPusherTest {
+final class RemoteStreamPusherTest {
   private final StreamId streamId = new StreamId(UUID.randomUUID(), MemberId.anonymous());
   private final TestTransport transport = new TestTransport();
   private final Executor executor = Runnable::run;
-  private final StreamPusher<Payload> pusher = new StreamPusher<>(streamId, transport, executor);
+  private final RemoteStreamPusher<Payload> pusher =
+      new RemoteStreamPusher<>(streamId, transport, executor);
 
   @Test
   void shouldPushPayload() {

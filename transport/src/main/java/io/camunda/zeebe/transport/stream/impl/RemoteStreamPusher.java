@@ -5,12 +5,12 @@
  * Licensed under the Zeebe Community License 1.1. You may not use this file
  * except in compliance with the Zeebe Community License 1.1.
  */
-package io.camunda.zeebe.broker.jobstream;
+package io.camunda.zeebe.transport.stream.impl;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.jobstream.ImmutableStreamRegistry.StreamId;
-import io.camunda.zeebe.protocol.impl.stream.PushStreamRequest;
-import io.camunda.zeebe.stream.api.GatewayStreamer.ErrorHandler;
+import io.camunda.zeebe.transport.stream.api.RemoteStream.ErrorHandler;
+import io.camunda.zeebe.transport.stream.impl.ImmutableStreamRegistry.StreamId;
+import io.camunda.zeebe.transport.stream.impl.messages.PushStreamRequest;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -24,15 +24,15 @@ import org.slf4j.LoggerFactory;
  *
  * @param <P> the payload type to be pushed out
  */
-final class StreamPusher<P extends BufferWriter> {
-  private static final Logger LOG = LoggerFactory.getLogger(StreamPusher.class);
-  private final StreamMetrics metrics = new StreamMetrics();
+final class RemoteStreamPusher<P extends BufferWriter> {
+  private static final Logger LOG = LoggerFactory.getLogger(RemoteStreamPusher.class);
+  private final RemoteStreamMetrics metrics = new RemoteStreamMetrics();
 
   private final StreamId streamId;
   private final Transport transport;
   private final Executor executor;
 
-  StreamPusher(final StreamId streamId, final Transport transport, final Executor executor) {
+  RemoteStreamPusher(final StreamId streamId, final Transport transport, final Executor executor) {
     this.streamId = Objects.requireNonNull(streamId, "must specify a target stream ID");
     this.transport = Objects.requireNonNull(transport, "must provide a network transport");
     this.executor = Objects.requireNonNull(executor, "must provide an asynchronous executor");
