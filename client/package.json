@@ -44,7 +44,7 @@
     "coverage:ci": "CI=true yarn coverage --maxWorkers=$LIMITS_CPU --ci",
     "postinstall": "cd .. && husky install",
     "analyze-bundle": "yarn build && source-map-explorer 'build/static/js/*.js'",
-    "test:visual-regression": "playwright test",
+    "playwright": "playwright test",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.31.1-focal /bin/bash",
     "start:visual-regression": "serve build/ -p 8080 -n -s -L"
   },
@@ -55,6 +55,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "@axe-core/playwright": "4.6.0",
     "@playwright/test": "1.31.2",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "14.0.0",
@@ -69,6 +70,7 @@
     "@types/react-dom": "18.0.11",
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.26",
+    "axe-core": "4.6.3",
     "eslint-config-prettier": "8.7.0",
     "eslint-plugin-camunda-licensed": "0.4.6",
     "eslint-plugin-prettier": "4.2.1",

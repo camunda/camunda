@@ -36,7 +36,7 @@ To run these locally you can follow the steps below:
 1. Inside the client folder run `yarn build`
 2. After the build is finished start the Docker container with `yarn start-visual-regression-docker`
 3. Inside the container, run `yarn start:visual-regression &`
-4. After that, run `yarn test:visual-regression`
+4. After that, run `yarn playwright`
 
-If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn test:visual-regression --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn playwright --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
 

@@ -56,6 +56,7 @@ type Props = {
   name: string | null;
   processDefinitionId: string;
   className?: string;
+  isFirst: boolean;
   isStartButtonDisabled: boolean;
   'data-testid'?: string;
 };
@@ -63,6 +64,7 @@ type Props = {
 const ProcessTile: React.FC<Props> = ({
   name,
   processDefinitionId,
+  isFirst,
   isStartButtonDisabled,
   ...props
 }) => {
@@ -92,6 +94,8 @@ const ProcessTile: React.FC<Props> = ({
             type: 'button',
             kind: 'tertiary',
             size: 'sm',
+            id: isFirst ? 'main-content' : '',
+            autoFocus: isFirst,
             disabled: isStartButtonDisabled,
             onClick: async () => {
               setStatus('active');

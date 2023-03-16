@@ -193,6 +193,7 @@ const Details: React.FC = () => {
                           onClick: handleClick,
                           disabled: isLoading,
                           autoFocus: true,
+                          id: 'main-content',
                         }}
                         status={getAsyncActionButtonStatus()}
                         key={id}

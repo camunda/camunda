@@ -1,0 +1,349 @@
+{
+  "components": [
+    {
+      "text": "# Title 1\n## Title 2\n### Title 3\n#### Title 4\n##### Title 5\n###### Title 6\n\n\n\n- list\n- list\n\n1. foo\n2. foo\n\nFoo _italic_ **bold**\n\n&gt; Multiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n\nInline `code`\n\n```\nMultiline code\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus auctor sodales pretium. Donec id volutpat quam, sit amet elementum lectus. \n```\n\n[Link](https://camunda.com)\n",
+      "type": "text",
+      "id": "Field_1bbbwwg"
+    },
+    {
+      "label": "I am a texfield",
+      "type": "textfield",
+      "id": "Field_1l0t1m5",
+      "key": "textfield",
+      "description": "I am a texfield description",
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "value"
+    },
+    {
+      "label": "I am a disabled texfield",
+      "type": "textfield",
+      "id": "Field_1r9b6p2",
+      "key": "disabled_textfield",
+      "description": "I am a disabled texfield description",
+      "disabled": true,
+      "defaultValue": "value"
+    },
+    {
+      "label": "I am a number field",
+      "type": "number",
+      "id": "Field_0ltb6av",
+      "key": "number_field",
+      "description": "I am a number field description",
+      "validate": {
+        "required": true
+      },
+      "defaultValue": 1
+    },
+    {
+      "label": "I am a number field",
+      "type": "number",
+      "id": "Field_1t8wtoa",
+      "key": "disabled_number_field",
+      "description": "I am a disabled number field description",
+      "disabled": true,
+      "defaultValue": 1
+    },
+    {
+      "label": "I am checkbox",
+      "type": "checkbox",
+      "id": "Field_0jqueb7",
+      "key": "checkbox",
+      "description": "I am checkbox description",
+      "defaultValue": false
+    },
+    {
+      "label": "I am disabled checked checkbox",
+      "type": "checkbox",
+      "id": "Field_1klmahz",
+      "key": "disabled_checked_checkbox",
+      "disabled": true,
+      "defaultValue": true,
+      "description": "I am disabled checked checkbox description"
+    },
+    {
+      "label": "I am disabled checkbox",
+      "type": "checkbox",
+      "id": "Field_01h0ngn",
+      "key": "disabled_checkbox",
+      "description": "I am disabled checkbox description",
+      "disabled": true
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am checklist",
+      "type": "checklist",
+      "id": "Field_1d5nfix",
+      "key": "checklist",
+      "description": "I am checklist description"
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_2"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_1"
+        }
+      ],
+      "label": "I am disabled checklist",
+      "type": "checklist",
+      "id": "Field_0l0y6cf",
+      "key": "disabled_checklist",
+      "description": "I am disabled checklist description",
+      "disabled": true
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am a taglist",
+      "type": "taglist",
+      "id": "Field_07zrh4q",
+      "key": "taglist",
+      "description": "I am a taglist description"
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am a disabled taglist",
+      "type": "taglist",
+      "id": "Field_0hm9hgj",
+      "key": "disabled_taglist",
+      "description": "I am a disabled taglist description",
+      "disabled": true
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am a radio",
+      "type": "radio",
+      "id": "Field_0i46s34",
+      "key": "radio",
+      "description": "I am a radio description",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am a disabled radio",
+      "type": "radio",
+      "id": "Field_110t1zy",
+      "key": "disabled_radio",
+      "description": "I am a disabled radio description",
+      "validate": {
+        "required": false
+      },
+      "disabled": true
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am a select",
+      "type": "select",
+      "id": "Field_1iw4ekg",
+      "key": "select",
+      "description": "I am a select description",
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "option_1"
+    },
+    {
+      "values": [
+        {
+          "label": "Option 1",
+          "value": "option_1"
+        },
+        {
+          "label": "Option 2",
+          "value": "option_2"
+        }
+      ],
+      "label": "I am a select",
+      "type": "select",
+      "id": "Field_06g19xn",
+      "key": "disabled_select",
+      "description": "I am a select description",
+      "disabled": true,
+      "defaultValue": "option_2"
+    },
+    {
+      "type": "image",
+      "alt": "An image",
+      "id": "Field_1mv8qs4",
+      "source": "https://via.placeholder.com/150C"
+    },
+    {
+      "label": "I am a text area",
+      "type": "textarea",
+      "id": "Field_1f2xg0s",
+      "key": "textarea",
+      "description": "I am a text area description",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "I am a disabled text area",
+      "type": "textarea",
+      "id": "Field_1ae1pqq",
+      "key": "disabled_textarea",
+      "description": "I am a disabled text area description",
+      "disabled": true
+    },
+    {
+      "subtype": "date",
+      "dateLabel": "I am a date field",
+      "type": "datetime",
+      "id": "Field_0h7fnn7",
+      "key": "date_field",
+      "description": "I am a date field description",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "subtype": "date",
+      "dateLabel": "I am a disabled date field",
+      "type": "datetime",
+      "id": "Field_09ff8mv",
+      "key": "disabled_date_field",
+      "description": "I am a disabled date field description",
+      "disabled": true
+    },
+    {
+      "subtype": "time",
+      "dateLabel": "Date",
+      "type": "datetime",
+      "id": "Field_0dal4g3",
+      "key": "time_field",
+      "timeLabel": "I am a time field",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "use24h": false,
+      "description": "I am time field description"
+    },
+    {
+      "subtype": "time",
+      "dateLabel": "Date",
+      "type": "datetime",
+      "id": "Field_16am9zx",
+      "key": "disabled_time",
+      "timeLabel": "I am a disabled time field",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "description": "I am a disabled time field description",
+      "disabled": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "I am a datetime field date label",
+      "type": "datetime",
+      "id": "Field_0e4j7fb",
+      "key": "datetime_field",
+      "timeLabel": "I am a datetime field time label",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "description": "I am a datetime field description"
+    },
+    {
+      "subtype": "datetime",
+      "dateLabel": "I am a disabled datetime field date label",
+      "type": "datetime",
+      "id": "Field_0qupyln",
+      "key": "disabled_datetime",
+      "timeLabel": "I am a disabled datetime field time label",
+      "timeSerializingFormat": "utc_offset",
+      "timeInterval": 15,
+      "disabled": true,
+      "description": "I am a disabled datetime description",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "I am an adorned field",
+      "type": "textfield",
+      "id": "Field_0k58wk0",
+      "key": "adorned_field",
+      "description": "I am an adorned field description",
+      "appearance": {
+        "prefixAdorner": "prefix",
+        "suffixAdorner": "suffix"
+      }
+    },
+    {
+      "action": "reset",
+      "label": "reset",
+      "type": "button",
+      "id": "Field_1ydujqw",
+      "key": "field_1yi6q4r"
+    }
+  ],
+  "type": "default",
+  "id": "Form_1a82jj2",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.1.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.7.0-nightly.20230103"
+  },
+  "schemaVersion": 6
+}

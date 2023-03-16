@@ -1,4 +1,4 @@
-name: Visual regression tests
+name: a11y tests
 on: push
 
 jobs:
@@ -38,12 +38,6 @@ jobs:
       - name: Start server
         working-directory: ./client
         run: yarn start:visual-regression &
-      - name: Run Playwright tests
+      - name: Run A11y tests
         working-directory: ./client
-        run: yarn playwright e2e-playwright/visual
-      - uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: playwright-report
-          path: client/playwright-report/
-          retention-days: 30
+        run: yarn playwright a11y
