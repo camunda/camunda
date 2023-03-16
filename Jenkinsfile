@@ -666,6 +666,25 @@ pipeline {
             }
           }
         }
+        stage('C7 IT Zeebe Latest ES8') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-zeebe-es8_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml itZeebePodSpec(env.CAMBPM_VERSION, env.ES8_VERSION)
+            }
+          }
+          steps {
+            unstash name: "optimize-stash-client"
+            integrationTestSteps('latest', '', 'Zeebe-test')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: false, keepLongStdio: true
+            }
+          }
+        }
       }
     }
     stage('Deploy') {
