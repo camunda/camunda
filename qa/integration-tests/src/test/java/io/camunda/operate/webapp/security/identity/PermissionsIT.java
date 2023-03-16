@@ -315,6 +315,55 @@ public class PermissionsIT {
     assertThat(hasPermission).isTrue();
   }
 
+  @Test
+  public void testHasPermissionForDecisionWhenPermissionsDisabled()
+  {
+    // given
+    String bpmnDecisionId = "decisionId";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(false));
+    boolean hasPermission = permissionsService.hasPermissionForDecision(bpmnDecisionId, permission);
+
+    // then
+    assertThat(hasPermission).isTrue();
+  }
+
+  @Test
+  public void testNoPermissionForDecisionWhenPermissionsNotFound()
+  {
+    // given
+    String bpmnDecisionId = "decisionId";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of());
+    boolean hasPermission = permissionsService.hasPermissionForDecision(bpmnDecisionId, permission);
+
+    // then
+    assertThat(hasPermission).isFalse();
+  }
+
+  @Test
+  public void testHasPermissionForDecisionWhenPermissionsFound()
+  {
+    // given
+    String bpmnDecisionId = "decisionId";
+    IdentityPermission permission = IdentityPermission.READ;
+
+    // when
+    Mockito.when(operateProperties.getIdentity()).thenReturn(new IdentityProperties().setResourcePermissionsEnabled(true));
+    registerAuthorizations(List.of(
+        new IdentityAuthorization().setResourceKey(bpmnDecisionId).setResourceType(PermissionsService.RESOURCE_TYPE_DECISION_DEFINITION)
+            .setPermissions(new HashSet<>(List.of(READ)))));
+    boolean hasPermission = permissionsService.hasPermissionForDecision(bpmnDecisionId, permission);
+
+    // then
+    assertThat(hasPermission).isTrue();
+  }
+
   private void registerAuthorizations(List<IdentityAuthorization> authorizations) {
 
     IdentityAuthentication authentication = Mockito.mock(IdentityAuthentication.class);

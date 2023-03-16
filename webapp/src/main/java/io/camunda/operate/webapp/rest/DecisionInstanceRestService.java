@@ -15,7 +15,10 @@ import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -40,6 +43,9 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   @Autowired
   private DecisionInstanceReader decisionInstanceReader;
 
+  @Autowired(required = false)
+  protected PermissionsService permissionsService;
+
   @Operation(summary = "Query decision instances by different parameters")
   @PostMapping
   public DecisionInstanceListResponseDto queryDecisionInstances(
@@ -52,13 +58,16 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   @Operation(summary = "Get decision instance by id")
   @GetMapping("/{decisionInstanceId}")
-  public DecisionInstanceDto queryProcessInstanceById(@PathVariable String decisionInstanceId) {
-    return decisionInstanceReader.getDecisionInstance(decisionInstanceId);
+  public DecisionInstanceDto queryDecisionInstanceById(@PathVariable String decisionInstanceId) {
+    DecisionInstanceDto decisionInstanceDto = decisionInstanceReader.getDecisionInstance(decisionInstanceId);
+    checkIdentityReadPermission(decisionInstanceDto);
+    return decisionInstanceDto;
   }
 
   @Operation(summary = "Get DRD data for decision instance")
   @GetMapping("/{decisionInstanceId}/drd-data")
-  public Map<String, List<DRDDataEntryDto>> queryProcessInstanceDRDData(@PathVariable String decisionInstanceId) {
+  public Map<String, List<DRDDataEntryDto>> queryDecisionInstanceDRDData(@PathVariable String decisionInstanceId) {
+    checkIdentityReadPermission(decisionInstanceId);
     final Map<String, List<DRDDataEntryDto>> result = decisionInstanceReader
         .getDecisionInstanceDRDData(decisionInstanceId);
     if (result.isEmpty()) {
@@ -67,4 +76,15 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
     return result;
   }
 
+  private void checkIdentityReadPermission(String decisionInstanceId) {
+    if (permissionsService != null) {
+      checkIdentityReadPermission(decisionInstanceReader.getDecisionInstance(decisionInstanceId));
+    }
+  }
+
+  private void checkIdentityReadPermission(DecisionInstanceDto decisionInstance) {
+    if (permissionsService != null && !permissionsService.hasPermissionForDecision(decisionInstance.getDecisionId(), IdentityPermission.READ)) {
+      throw new NotAuthorizedException(String.format("No read permission for decision instance %s", decisionInstance.getDecisionId()));
+    }
+  }
 }

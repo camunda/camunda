@@ -26,6 +26,7 @@ import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -94,6 +95,31 @@ public class DecisionReader extends AbstractReader {
     } catch (IOException e) {
       final String message = String
           .format("Exception occurred, while obtaining the decision diagram: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  /**
+   * Gets the decision by key
+   * @param decisionDefinitionKey decisionDefinitionKey
+   * @return decision
+   */
+  public DecisionDefinitionEntity getDecision(Long decisionDefinitionKey) {
+    final SearchRequest searchRequest = new SearchRequest(decisionIndex.getAlias())
+        .source(new SearchSourceBuilder()
+            .query(QueryBuilders.termQuery(DecisionIndex.KEY, decisionDefinitionKey)));
+    try {
+      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().getTotalHits().value == 1) {
+        return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
+      } else if (response.getHits().getTotalHits().value > 1) {
+        throw new NotFoundException(String.format("Could not find unique decision with key '%s'.", decisionDefinitionKey));
+      } else {
+        throw new NotFoundException(String.format("Could not find decision with key '%s'.", decisionDefinitionKey));
+      }
+    } catch (IOException e) {
+      final String message = String.format("Exception occurred, while obtaining the decision: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }

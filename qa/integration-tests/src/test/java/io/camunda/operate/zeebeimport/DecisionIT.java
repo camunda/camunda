@@ -7,21 +7,27 @@
 package io.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.operate.data.util.DecisionDataUtil;
+import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.ElasticsearchTestRule;
 import io.camunda.operate.util.OperateZeebeIntegrationTest;
+import io.camunda.operate.webapp.es.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
 import java.util.List;
+import java.util.Map;
 
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +46,17 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
   @Autowired
   private DecisionDataUtil testDataUtil;
 
+  @Autowired
+  private DecisionReader decisionReader;
+
   @MockBean
   private PermissionsService permissionsService;
+
+  @Before
+  public void before() {
+    super.before();
+    when(permissionsService.hasPermissionForDecision(any(), any())).thenReturn(true);
+  }
 
   @Test
   public void testDecisionsGrouped() throws Exception {
@@ -164,6 +179,28 @@ public class DecisionIT extends OperateZeebeIntegrationTest {
     MockHttpServletRequestBuilder request = get(String.format(QUERY_DECISION_XML_URL, decisionDefinitionId));
     mockMvc.perform(request)
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  public void testDecisionReaderGetByDecisionDefinitionKey() {
+    //given
+    final String demoDecisionId1 = "invoiceClassification";
+    final String decision1Name = "Invoice Classification";
+
+    tester.deployDecision("invoiceBusinessDecisions_v_1.dmn").waitUntil()
+        //each DRD has two decisions
+        .decisionsAreDeployed(2);
+
+    //when
+    Map<String, List<DecisionDefinitionEntity>> decisionsGrouped = decisionReader.getDecisionsGrouped();
+    DecisionDefinitionEntity entity1 = decisionsGrouped.get(demoDecisionId1).get(0);
+    Long decisionDefinitionKey = Long.valueOf(entity1.getId());
+    DecisionDefinitionEntity entity2 = decisionReader.getDecision(decisionDefinitionKey);
+
+    //then
+    assertThat(entity2.getId()).isEqualTo(entity1.getId());
+    assertThat(entity2.getName()).isEqualTo(entity1.getName());
+    assertThat(entity2.getDecisionId()).isEqualTo(entity1.getDecisionId());
   }
 
   private void createData() throws PersistenceException {

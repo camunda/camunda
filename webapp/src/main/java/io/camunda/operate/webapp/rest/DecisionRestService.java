@@ -10,6 +10,8 @@ import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.es.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
+import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
+import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,10 +36,10 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   public static final String DECISION_URL = "/api/decisions";
 
-
   @Operation(summary = "Get process BPMN XML")
   @GetMapping(path = "/{id}/xml")
   public String getDecisionDiagram(@PathVariable("id") String decisionDefinitionId) {
+    checkIdentityReadPermission(decisionDefinitionId);
     return decisionReader.getDiagram(decisionDefinitionId);
   }
 
@@ -48,4 +50,12 @@ public class DecisionRestService extends InternalAPIErrorController {
     return DecisionGroupDto.createFrom(decisionsGrouped, permissionsService);
   }
 
+  private void checkIdentityReadPermission(String decisionDefinitionId) {
+    if (permissionsService != null) {
+      String bpmnDecisionId = decisionReader.getDecision(Long.valueOf(decisionDefinitionId)).getDecisionId();
+      if (!permissionsService.hasPermissionForDecision(bpmnDecisionId, IdentityPermission.READ)) {
+        throw new NotAuthorizedException(String.format("No read permission for decision %s", decisionDefinitionId));
+      }
+    }
+  }
 }

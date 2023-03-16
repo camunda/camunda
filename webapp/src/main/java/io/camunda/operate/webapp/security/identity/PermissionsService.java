@@ -85,7 +85,7 @@ public class PermissionsService {
   /**
    * getDecisionDefinitionPermission
    *
-   * @param decisionId                 decisionId
+   * @param decisionId decisionId
    * @param includeWildcardPermissions true to include the wildcard permission, false to not include them
    * @return Identity permissions for the given decisionId
    */
@@ -122,6 +122,21 @@ public class PermissionsService {
       throw new IllegalStateException("Identity permission can't be null");
     }
     return getProcessDefinitionPermission(bpmnProcessId).stream().anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
+  }
+
+  /**
+   * hasPermissionForDecision
+   * @return true if the user has the given permission for the decision
+   */
+  public boolean hasPermissionForDecision(String decisionId, IdentityPermission permission) {
+
+    if (!permissionsEnabled()) {
+      return true;
+    }
+    if (permission == null) {
+      throw new IllegalStateException("Identity permission can't be null");
+    }
+    return getDecisionDefinitionPermission(decisionId).stream().anyMatch(x -> x.equalsIgnoreCase(permission.toString()));
   }
 
   /**
