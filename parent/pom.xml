@@ -99,7 +99,7 @@
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.14.0</version.byte-buddy>
-    <version.revapi>0.28.0</version.revapi>
+    <version.revapi>0.28.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
