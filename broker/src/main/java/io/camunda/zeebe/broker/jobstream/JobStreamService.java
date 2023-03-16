@@ -15,23 +15,19 @@ import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import java.util.Objects;
 
-public class JobStreamService {
-
-  private final RemoteStreamService<JobActivationProperties, ActivatedJob> server;
-  private final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
+public record JobStreamService(
+    RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService,
+    GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
 
   public JobStreamService(
-      final RemoteStreamService<JobActivationProperties, ActivatedJob> server,
+      final RemoteStreamService<JobActivationProperties, ActivatedJob> remoteStreamService,
       final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
-    this.server = Objects.requireNonNull(server, "must provide a stream server");
+    this.remoteStreamService =
+        Objects.requireNonNull(remoteStreamService, "must provide a stream remoteStreamService");
     this.jobStreamer = Objects.requireNonNull(jobStreamer, "must provide a job streamer");
   }
 
   public ActorFuture<Void> closeAsync(final ConcurrencyControl executor) {
-    return server.closeAsync(executor);
-  }
-
-  public GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer() {
-    return jobStreamer;
+    return remoteStreamService.closeAsync(executor);
   }
 }

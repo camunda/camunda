@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
+import io.atomix.cluster.ClusterMembershipEvent;
+import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -66,5 +68,15 @@ public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWri
           }
         });
     return closed;
+  }
+
+  @Override
+  public boolean isRelevant(final ClusterMembershipEvent event) {
+    return event.type() == Type.MEMBER_REMOVED;
+  }
+
+  @Override
+  public void event(final ClusterMembershipEvent event) {
+    apiServer.removeAll(event.subject().id());
   }
 }

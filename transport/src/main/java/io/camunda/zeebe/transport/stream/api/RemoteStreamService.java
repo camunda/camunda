@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.transport.stream.api;
 
+import io.atomix.cluster.ClusterMembershipEventListener;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -19,7 +20,8 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
  * @param <M> associated metadata with a stream
  * @param <P> the payload type that can be pushed to the streams
  */
-public interface RemoteStreamService<M extends BufferReader, P extends BufferWriter> {
+public interface RemoteStreamService<M extends BufferReader, P extends BufferWriter>
+    extends ClusterMembershipEventListener {
   ActorFuture<RemoteStreamer<M, P>> start(
       ActorSchedulingService actorSchedulingService, ConcurrencyControl concurrencyControl);
 

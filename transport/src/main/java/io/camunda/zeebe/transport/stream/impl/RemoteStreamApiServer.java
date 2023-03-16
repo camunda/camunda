@@ -7,9 +7,6 @@
  */
 package io.camunda.zeebe.transport.stream.impl;
 
-import io.atomix.cluster.ClusterMembershipEvent;
-import io.atomix.cluster.ClusterMembershipEvent.Type;
-import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.scheduler.Actor;
@@ -20,8 +17,7 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class RemoteStreamApiServer<M extends BufferReader> extends Actor
-    implements ClusterMembershipEventListener {
+public final class RemoteStreamApiServer<M extends BufferReader> extends Actor {
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
 
@@ -31,14 +27,8 @@ public final class RemoteStreamApiServer<M extends BufferReader> extends Actor
     this.requestHandler = requestHandler;
   }
 
-  @Override
-  public boolean isRelevant(final ClusterMembershipEvent event) {
-    return event.type() == Type.MEMBER_REMOVED;
-  }
-
-  @Override
-  public void event(final ClusterMembershipEvent event) {
-    actor.run(() -> requestHandler.removeAll(event.subject().id()));
+  public void removeAll(final MemberId member) {
+    actor.run(() -> requestHandler.removeAll(member));
   }
 
   @Override

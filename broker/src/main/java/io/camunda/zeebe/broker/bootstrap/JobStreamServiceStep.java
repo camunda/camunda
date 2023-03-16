@@ -22,7 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Sets up the {@link JobStreamService}, which manages the lifecycle of the job specific stream API
- * server, pusher, and registry.
+ * remoteStreamService, pusher, and registry.
  */
 @SuppressWarnings("resource")
 public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
@@ -49,6 +49,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                     new JobStreamService(
                         remoteStreamService,
                         new JobGatewayStreamer(streamer, clusterServices.getEventService()));
+                clusterServices.getMembershipService().addListener(remoteStreamService);
                 brokerStartupContext.setJobStreamService(jobStreamService);
                 startupFuture.complete(brokerStartupContext);
               }
@@ -69,6 +70,10 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 if (error != null) {
                   shutdownFuture.completeExceptionally(error);
                 } else {
+                  brokerShutdownContext
+                      .getClusterServices()
+                      .getMembershipService()
+                      .removeListener(service.remoteStreamService());
                   brokerShutdownContext.setJobStreamService(null);
                   shutdownFuture.complete(brokerShutdownContext);
                 }
