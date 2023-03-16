@@ -40,11 +40,18 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.annotation.concurrent.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class is thread-safe in terms of the next: 1. If you are trying to modify headers of your
+ * request from the several threads there would be sequential calls to the cache 2. If the cache
+ * hasn't a valid token and you are calling from several threads there would be just one call to the
+ * Auth server
+ */
+@ThreadSafe
 public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static final ObjectMapper JSON_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -61,8 +68,6 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private final Duration connectionTimeout;
   private final Duration readTimeout;
 
-  private ZeebeClientCredentials credentials;
-
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
     endpoint = builder.getAudience();
@@ -75,18 +80,18 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
   public void applyCredentials(final Metadata headers) throws IOException {
-    if (credentials == null) {
-      loadCredentials();
-    }
+    final ZeebeClientCredentials zeebeClientCredentials =
+        credentialsCache.computeIfMissingOrInvalid(endpoint, this::fetchCredentials);
 
-    String type = credentials.getTokenType();
+    String type = zeebeClientCredentials.getTokenType();
     if (type == null || type.isEmpty()) {
       throw new IOException(
           String.format("Expected valid token type but was absent or invalid '%s'", type));
     }
 
     type = Character.toUpperCase(type.charAt(0)) + type.substring(1);
-    headers.put(HEADER_AUTH_KEY, String.format("%s %s", type, credentials.getAccessToken()));
+    headers.put(
+        HEADER_AUTH_KEY, String.format("%s %s", type, zeebeClientCredentials.getAccessToken()));
   }
 
   /**
@@ -97,49 +102,19 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   public boolean shouldRetryRequest(final Throwable throwable) {
     try {
       return Status.fromThrowable(throwable).getCode() == Code.UNAUTHENTICATED
-          && refreshCredentials();
+          && credentialsCache
+              .withCache(
+                  endpoint,
+                  value -> {
+                    final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
+                    credentialsCache.put(endpoint, fetchedCredentials).writeCache();
+                    return !fetchedCredentials.equals(value) || !value.isValid();
+                  })
+              .orElse(true);
     } catch (final IOException e) {
       LOG.error("Failed while fetching credentials: ", e);
       return false;
     }
-  }
-
-  /** Attempt to load credentials from cache and, if unsuccessful, fetch new credentials. */
-  private void loadCredentials() throws IOException {
-    Optional<ZeebeClientCredentials> cachedCredentials;
-
-    try {
-      cachedCredentials = credentialsCache.readCache().get(endpoint);
-    } catch (final IOException e) {
-      LOG.debug("Failed to read credentials cache", e);
-      cachedCredentials = Optional.empty();
-    }
-
-    if (cachedCredentials.isPresent() && cachedCredentials.get().isValid()) {
-      credentials = cachedCredentials.get();
-    } else {
-      refreshCredentials();
-    }
-  }
-
-  /**
-   * Fetch new credentials from authorization server and store them in cache.
-   *
-   * @return true if the fetched credentials are different from the previously stored ones,
-   *     otherwise returns false.
-   */
-  private boolean refreshCredentials() throws IOException {
-    final ZeebeClientCredentials fetchedCredentials = fetchCredentials();
-    credentialsCache.put(endpoint, fetchedCredentials).writeCache();
-
-    if (credentials == null || !credentials.isValid() || !fetchedCredentials.equals(credentials)) {
-      credentials = fetchedCredentials;
-      LOG.debug("Refreshed credentials.");
-
-      return true;
-    }
-
-    return false;
   }
 
   private static String createParams(final OAuthCredentialsProviderBuilder builder) {

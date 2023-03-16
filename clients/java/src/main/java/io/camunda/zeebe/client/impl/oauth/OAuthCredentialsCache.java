@@ -22,6 +22,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
+import io.camunda.zeebe.client.impl.util.FunctionWithIO;
+import io.camunda.zeebe.client.impl.util.SupplierWithIO;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +33,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import javax.annotation.concurrent.ThreadSafe;
 
+@ThreadSafe
 public final class OAuthCredentialsCache {
 
   private static final String KEY_AUTH = "auth";
@@ -48,7 +52,7 @@ public final class OAuthCredentialsCache {
     audiences = new HashMap<>();
   }
 
-  public OAuthCredentialsCache readCache() throws IOException {
+  public synchronized OAuthCredentialsCache readCache() throws IOException {
     if (!cacheFile.exists() || cacheFile.length() == 0) {
       return this;
     }
@@ -60,7 +64,7 @@ public final class OAuthCredentialsCache {
     return this;
   }
 
-  public void writeCache() throws IOException {
+  public synchronized void writeCache() throws IOException {
     final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(audiences.size());
     for (final Entry<String, OAuthCachedCredentials> audience : audiences.entrySet()) {
       cache.put(audience.getKey(), Collections.singletonMap(KEY_AUTH, audience.getValue()));
@@ -70,17 +74,52 @@ public final class OAuthCredentialsCache {
     MAPPER.writer().writeValue(cacheFile, cache);
   }
 
-  public Optional<ZeebeClientCredentials> get(final String endpoint) {
+  public synchronized Optional<ZeebeClientCredentials> get(final String endpoint) {
     return Optional.ofNullable(audiences.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
   }
 
-  public OAuthCredentialsCache put(
+  public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
+      final String endpoint,
+      final SupplierWithIO<ZeebeClientCredentials> zeebeClientCredentialsConsumer)
+      throws IOException {
+    final Optional<ZeebeClientCredentials> optionalCredentials =
+        readCache()
+            .get(endpoint)
+            .flatMap(
+                zeebeClientCredentials -> {
+                  if (!zeebeClientCredentials.isValid()) {
+                    return Optional.empty();
+                  } else {
+                    return Optional.of(zeebeClientCredentials);
+                  }
+                });
+    if (optionalCredentials.isPresent()) {
+      return optionalCredentials.get();
+    } else {
+      final ZeebeClientCredentials credentials = zeebeClientCredentialsConsumer.get();
+      put(endpoint, credentials).writeCache();
+      return credentials;
+    }
+  }
+
+  public synchronized <T> Optional<T> withCache(
+      final String endpoint, final FunctionWithIO<ZeebeClientCredentials, T> function)
+      throws IOException {
+    final Optional<ZeebeClientCredentials> optionalCredentials = readCache().get(endpoint);
+    if (optionalCredentials.isPresent()) {
+      return Optional.ofNullable(function.apply(optionalCredentials.get()));
+    } else {
+      return Optional.empty();
+    }
+  }
+
+  public synchronized OAuthCredentialsCache put(
       final String endpoint, final ZeebeClientCredentials credentials) {
     audiences.put(endpoint, new OAuthCachedCredentials(credentials));
     return this;
   }
 
-  public int size() {
+  public synchronized int size() {
     return audiences.size();
   }
 

@@ -25,6 +25,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -216,5 +223,53 @@ public final class OAuthCredentialsCacheTest {
     assertThat(copy.get(WOMBAT_ENDPOINT)).contains(WOMBAT);
     assertThat(copy.get(AARDVARK_ENDPOINT)).contains(AARDVARK);
     assertThat(copy.size()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldBeThreadSafe() throws InterruptedException {
+    // given
+    final OAuthCredentialsCache cache = new OAuthCredentialsCache(cacheFile);
+
+    final int threads = 5;
+    final List<Callable<Object>> cacheOperations = new ArrayList<>();
+
+    for (int i = 0; i < 5; i++) {
+      cacheOperations.add(
+          () ->
+              cache.computeIfMissingOrInvalid(
+                  WOMBAT_ENDPOINT,
+                  () -> {
+                    cache.put(WOMBAT_ENDPOINT, WOMBAT).writeCache();
+                    return WOMBAT;
+                  }));
+      cacheOperations.add(
+          () ->
+              cache.withCache(
+                  WOMBAT_ENDPOINT,
+                  value -> {
+                    cache.put(WOMBAT_ENDPOINT, WOMBAT).writeCache();
+                    return WOMBAT;
+                  }));
+    }
+
+    final ExecutorService pool = Executors.newFixedThreadPool(threads);
+    try {
+      // when
+      pool.invokeAll(cacheOperations)
+          .forEach(
+              future -> {
+                try {
+                  future.get();
+                } catch (final InterruptedException | ExecutionException e) {
+                  throw new RuntimeException(e);
+                }
+              });
+    } finally {
+      pool.shutdownNow();
+      pool.awaitTermination(60, TimeUnit.SECONDS);
+    }
+
+    // then
+    assertThat(cache.get(WOMBAT_ENDPOINT)).isNotEmpty().contains(WOMBAT);
   }
 }
