@@ -5,22 +5,32 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.plugin.ElasticsearchCustomHeaderProvider;
+import org.camunda.optimize.plugin.PluginJarFileLoader;
+import org.camunda.optimize.service.es.schema.RequestOptionsProvider;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ProxyConfiguration;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,22 +48,34 @@ public class ElasticsearchHighLevelRestClientBuilder {
 
   private static final String HTTP = "http";
   private static final String HTTPS = "https";
+  private static RequestOptions requestOptions;
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchHighLevelRestClientBuilder.class);
 
-  public static RestHighLevelClient build(ConfigurationService configurationService) {
+  public static RestHighLevelClient build(final ConfigurationService configurationService) {
+    requestOptions = getRequestOptions(configurationService);
     if (configurationService.getElasticsearchSecuritySSLEnabled()) {
       return buildHttpsRestClient(configurationService);
     }
     return buildHttpRestClient(configurationService);
   }
 
-  private static RestHighLevelClient buildHttpRestClient(ConfigurationService configurationService) {
-    final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTP);
-    return new RestHighLevelClient(builder);
+  public static String getCurrentESVersion(final RestHighLevelClient esClient,
+                                           final RequestOptions requestOptions) throws IOException {
+    final Request request = new Request(HttpGet.METHOD_NAME, "/");
+    request.setOptions(requestOptions);
+    final String responseJson = EntityUtils.toString(esClient.getLowLevelClient().performRequest(request).getEntity());
+    ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
+    return node.get("version").get("number").toString().replace("\"", "");
   }
 
-  private static RestHighLevelClient buildHttpsRestClient(ConfigurationService configurationService) {
+  private static RestHighLevelClient buildHttpRestClient(final ConfigurationService configurationService) {
+    logger.info("Setting up http rest client connection");
+    return getRestHighLevelClient(buildDefaultRestClient(configurationService, HTTP), requestOptions);
+  }
+
+  private static RestHighLevelClient buildHttpsRestClient(final ConfigurationService configurationService) {
+    logger.info("Setting up https rest client connection");
     try {
       final RestClientBuilder builder = buildDefaultRestClient(configurationService, HTTPS);
 
@@ -70,8 +92,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
       }
 
       builder.setHttpClientConfigCallback(createHttpClientConfigCallback(configurationService, sslContext));
-
-      return new RestHighLevelClient(builder);
+      return getRestHighLevelClient(builder, requestOptions);
     } catch (Exception e) {
       String message = "Could not build secured Elasticsearch client.";
       throw new OptimizeRuntimeException(message, e);
@@ -211,6 +232,34 @@ public class ElasticsearchHighLevelRestClientBuilder {
       }
     }
     return cert;
+  }
+
+  private static RestHighLevelClient getRestHighLevelClient(final RestClientBuilder builder,
+                                                            final RequestOptions requestOptions) {
+    RestHighLevelClient restHighLevelClient = new RestHighLevelClientBuilder(builder.build())
+      .build();
+    try {
+      // we only need to turn on the compatibility mode when the server is ES8
+      final String esVersion = getCurrentESVersion(restHighLevelClient, requestOptions);
+      if (esVersion.charAt(0) == '8') {
+        restHighLevelClient = new RestHighLevelClientBuilder(builder.build())
+          .setApiCompatibilityMode(true)
+          .build();
+        logger.info("The ES client has now enabled its compatibility mode for ES8.");
+      }
+      logger.info("Finished setting up HTTP rest client connection.");
+      return restHighLevelClient;
+    } catch (IOException e) {
+      String message = "Could not fetch the version of the Elasticsearch server.";
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  private static RequestOptions getRequestOptions(final ConfigurationService configurationService) {
+    ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(configurationService, new PluginJarFileLoader(configurationService));
+    customHeaderProvider.initPlugins();
+    RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService);
+    return requestOptionsProvider.getRequestOptions();
   }
 
 }
