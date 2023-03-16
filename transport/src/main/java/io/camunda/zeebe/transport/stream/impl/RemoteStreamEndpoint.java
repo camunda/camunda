@@ -17,11 +17,11 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public final class RemoteStreamApiServer<M extends BufferReader> extends Actor {
+public final class RemoteStreamEndpoint<M extends BufferReader> extends Actor {
   private final ClusterCommunicationService transport;
   private final RemoteStreamApiHandler<M> requestHandler;
 
-  public RemoteStreamApiServer(
+  public RemoteStreamEndpoint(
       final ClusterCommunicationService transport, final RemoteStreamApiHandler<M> requestHandler) {
     this.transport = transport;
     this.requestHandler = requestHandler;

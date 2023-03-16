@@ -14,7 +14,7 @@ import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamApiHandler;
-import io.camunda.zeebe.transport.stream.impl.RemoteStreamApiServer;
+import io.camunda.zeebe.transport.stream.impl.RemoteStreamEndpoint;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamRegistry;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamServiceImpl;
 import io.camunda.zeebe.transport.stream.impl.RemoteStreamerImpl;
@@ -50,7 +50,7 @@ public final class TransportFactory {
     final RemoteStreamRegistry<M> registry = new RemoteStreamRegistry<>();
     return new RemoteStreamServiceImpl<>(
         new RemoteStreamerImpl<>(clusterCommunicationService, registry),
-        new RemoteStreamApiServer<>(
+        new RemoteStreamEndpoint<>(
             clusterCommunicationService, new RemoteStreamApiHandler<>(registry, metadataFactory)));
   }
 }

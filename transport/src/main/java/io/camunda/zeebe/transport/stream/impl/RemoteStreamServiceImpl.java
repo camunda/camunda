@@ -23,10 +23,10 @@ import java.util.stream.Stream;
 public class RemoteStreamServiceImpl<M extends BufferReader, P extends BufferWriter>
     implements RemoteStreamService<M, P> {
   private final RemoteStreamerImpl<M, P> streamer;
-  private final RemoteStreamApiServer<M> apiServer;
+  private final RemoteStreamEndpoint<M> apiServer;
 
   public RemoteStreamServiceImpl(
-      final RemoteStreamerImpl<M, P> streamer, final RemoteStreamApiServer<M> apiServer) {
+      final RemoteStreamerImpl<M, P> streamer, final RemoteStreamEndpoint<M> apiServer) {
     this.streamer = streamer;
     this.apiServer = apiServer;
   }
