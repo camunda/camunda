@@ -572,20 +572,21 @@
   <!-- Fix for bug with downloading snapshots from Camunda Nexus using groups with RELEASE and SNAPSHOTS -->
   <repositories>
     <repository>
-      <id>central</id>
-      <name>Maven Central</name>
-      <url>https://repo1.maven.org/maven2/</url>
-    </repository>
-
-    <repository>
-      <id>test</id>
-      <url>http://repository</url>
+      <id>camunda-nexus</id>
+      <name>Camunda Nexus</name>
+      <url>https://artifacts.camunda.com/artifactory/internal/</url>
       <releases>
         <enabled>true</enabled>
       </releases>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
+    </repository>
+
+    <repository>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>https://repo1.maven.org/maven2/</url>
     </repository>
 
     <!-- add the elasticsearch repo -->
