@@ -9,3 +9,4 @@ export {Button} from './Button';
 export {Message} from './Message';
 export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
+export {Input} from './Input';

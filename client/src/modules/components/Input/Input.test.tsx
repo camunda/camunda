@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow, mount} from 'enzyme';
 
 import Input from './Input';
@@ -27,9 +26,9 @@ it('should render a type attribute provided as a property', () => {
 });
 
 it('should render a disabled attribute provided as a property', () => {
-  const node = shallow(<Input disabled="disabled" />);
+  const node = shallow(<Input disabled />);
 
-  expect(node.find('input')).toMatchSelector('input[disabled="disabled"]');
+  expect(node.find('input')).toMatchSelector('input[disabled]');
 });
 
 it('should merge and render additonal classNames provided as a property', () => {
@@ -63,6 +62,12 @@ it('should focus on input when clicking the clear button', () => {
   const spy = jest.fn();
   const node = mount(<Input onClear={jest.fn()} ref={spy} />, {attachTo: container});
   node.find('.searchClear').simulate('mousedown');
-  expect(document.activeElement.getAttribute('class')).toBe('Input');
+  expect(document.activeElement?.getAttribute('class')).toBe('Input');
   expect(spy).toHaveBeenCalled();
+});
+
+it('should throw en error if you pass placeholder thats nor a string', () => {
+  expect(() => shallow(<Input placeholder={[<div />]} />)).toThrow(
+    'Input: Placeholder should be of type string'
+  );
 });
