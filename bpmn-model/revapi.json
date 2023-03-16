@@ -20,8 +20,8 @@
           "justification": "Ignore new methods for Zeebe extensions, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
           "code": "java.method.addedToInterface",
           "new": {
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.model\\.bpmn\\.instance\\.zeebe(\\..*)?/"
+            "matcher": "java",
+            "match": "interface * { * io.camunda.zeebe.model.bpmn.instance.zeebe.**::^*(**); }"
           }
         },
         {
@@ -39,68 +39,6 @@
             "matcher": "java-package",
             "match": "io.camunda.zeebe.model.bpmn.validation.zeebe"
           }
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeCandidateUsers(java.lang.String)",
-          "justification": "Ignore new methods for user task properties builder."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeCandidateUsersExpression(java.lang.String)",
-          "justification": "Ignore new methods for user task properties builder."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeDueDate(java.lang.String)",
-          "justification": "Ignore new methods for user task properties builder."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeDueDateExpression(java.lang.String)",
-          "justification": "Ignore new methods for user task properties builder."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeFollowUpDate(java.lang.String)",
-          "justification": "Ignore new methods for user task properties builder."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method B io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B extends io.camunda.zeebe.model.bpmn.builder.ZeebeUserTaskPropertiesBuilder<B>>::zeebeFollowUpDateExpression(java.lang.String)",
-          "justification": "Ignore new methods for user task properties builder."
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder<B extends io.camunda.zeebe.model.bpmn.builder.AbstractBaseElementBuilder<B, E>, E extends io.camunda.zeebe.model.bpmn.instance.BaseElement>::resizeSubProcess(io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape)",
-          "justification": "change the name to reuse for SubProcess and Link Events"
-
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void io.camunda.zeebe.model.bpmn.builder.ProcessBuilder::setEventSubProcessCoordinates(io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape)",
-          "justification": "change the name to reuse for EventSubProcess and Link Events"
-
-        },
-        {
-          "ignore": true,
-          "code": "java.method.addedToInterface",
-          "new": "method java.util.Optional<T> io.camunda.zeebe.model.bpmn.Query<T extends org.camunda.bpm.model.xml.instance.ModelElementInstance>::findSingleResult()",
-          "justification": "add optional method findSingleResult() for the usage of get single result"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.util.List<java.lang.String> io.camunda.zeebe.model.bpmn.util.ModelUtil::getDuplicateMessageNames(java.util.stream.Stream<io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition>)",
-          "justification": "Remove unused method"
         }
       ]
     }
