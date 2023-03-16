@@ -39,7 +39,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 clusterServices.getCommunicationService(), DummyActivationProperties::new);
 
     remoteStreamService
-        .start()
+        .start(brokerStartupContext.getActorSchedulingService(), concurrencyControl)
         .onComplete(
             (streamer, error) -> {
               if (error != null) {
@@ -63,7 +63,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     final var service = brokerShutdownContext.getJobStreamService();
     if (service != null) {
       service
-          .closeAsync()
+          .closeAsync(concurrencyControl)
           .onComplete(
               (ok, error) -> {
                 if (error != null) {
