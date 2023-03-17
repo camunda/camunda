@@ -99,7 +99,7 @@
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
     <version.byte-buddy>1.14.0</version.byte-buddy>
-    <version.revapi>0.27.0</version.revapi>
+    <version.revapi>0.28.1</version.revapi>
     <version.commons-io>2.11.0</version.commons-io>
     <version.immutables>2.9.3</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
@@ -140,7 +140,7 @@
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.0</plugin.version.resources>
-    <plugin.version.revapi>0.14.7</plugin.version.revapi>
+    <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.scala>4.8.0</plugin.version.scala>
     <plugin.version.shade>3.4.1</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
@@ -155,7 +155,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.1.2</backwards.compat.version>
+    <backwards.compat.version>8.1.9</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--

@@ -23,8 +23,8 @@
           "justification": "Ignore new methods for Protocol Record interfaces, as these are not meant to be implemented but simply consumed; as such, new methods are perfectly fine to add",
           "code": "java.method.addedToInterface",
           "new": {
-            "matcher": "java-package",
-            "match": "/io\\.camunda\\.zeebe\\.protocol\\.record(\\..*)?/"
+            "matcher": "java",
+            "match": "interface * { * io.camunda.zeebe.protocol.record.**::^*(**); }"
           }
         },
         {
