@@ -42,7 +42,7 @@ final class RestClientFactory {
    * basic auth; if there is no authentication present, then nothing is configured for it.
    *
    * @param config the exporter configuration
-   * @param allowAllSelfSignedCertificates if set to true ALL self-signed certificates will be
+   * @param allowAllSelfSignedCertificates if set to true, ALL self-signed certificates will be
    *     accepted. This is meant for testing purposes only!
    * @return the created {@link RestClient}
    */
@@ -81,9 +81,9 @@ final class RestClientFactory {
       // This code makes it so ALL self-signed certificates are accepted. This is meant for testing
       // purposes only.
       try {
-        final var sslcontext =
+        final var sslContext =
             SSLContextBuilder.create().loadTrustMaterial(null, new TrustAllStrategy()).build();
-        builder.setSSLContext(sslcontext);
+        builder.setSSLContext(sslContext);
       } catch (final NoSuchAlgorithmException | KeyManagementException | KeyStoreException e) {
         throw new RuntimeException(e);
       }

@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * Index template representation. You can read more about index templates <a
- * href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index-templates.html">here</a>.
+ * href="https://opensearch.org/docs/latest/im-plugin/index-templates/">here</a>.
  */
 @JsonInclude(Include.NON_EMPTY)
 public record Template(
