@@ -23,6 +23,7 @@ public class OpensearchExporterConfiguration {
 
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
+  public final AwsConfiguration aws = new AwsConfiguration();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   public boolean hasAuthenticationPresent() {
@@ -43,6 +44,8 @@ public class OpensearchExporterConfiguration {
         + index
         + ", bulk="
         + bulk
+        + ", aws="
+        + aws
         + '}';
   }
 
@@ -306,6 +309,17 @@ public class OpensearchExporterConfiguration {
     public String toString() {
       // we don't want to expose this information
       return "AuthenticationConfiguration{Confidential information}";
+    }
+  }
+
+  public static class AwsConfiguration {
+
+    public String serviceName;
+    public String region;
+
+    @Override
+    public String toString() {
+      return "AwsConfiguration{serviceName=" + serviceName + ", region=" + region + '}';
     }
   }
 }
