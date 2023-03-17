@@ -5,10 +5,34 @@
  * except in compliance with the proprietary license.
  */
 
-import * as React from 'react';
-import {$applyNodeReplacement, createEditor, DecoratorNode} from 'lexical';
+import {
+  $applyNodeReplacement,
+  createEditor,
+  DecoratorNode,
+  DOMConversionMap,
+  DOMConversionOutput,
+  DOMExportOutput,
+  EditorConfig,
+  LexicalEditor,
+  LexicalNode,
+  NodeKey,
+  SerializedEditor,
+  SerializedLexicalNode,
+  Spread,
+} from 'lexical';
 
-function convertImageElement(domNode) {
+export interface ImagePayload {
+  src: string;
+  altText: string;
+  width?: number;
+  height?: number;
+  caption?: LexicalEditor;
+  maxWidth?: number;
+  showCaption?: boolean;
+  key?: NodeKey;
+}
+
+function convertImageElement(domNode: Node): null | DOMConversionOutput {
   if (domNode instanceof HTMLImageElement) {
     const {alt: altText, src, width, height} = domNode;
     const node = $createImageNode({altText, height, src, width});
@@ -17,21 +41,36 @@ function convertImageElement(domNode) {
   return null;
 }
 
-export default class ImageNode extends DecoratorNode {
-  src;
-  altText;
-  width;
-  height;
-  maxWidth;
-  showCaption;
-  caption;
+export type SerializedImageNode = Spread<
+  {
+    altText: string;
+    caption: SerializedEditor;
+    height?: number;
+    maxWidth: number;
+    showCaption?: boolean;
+    src: string;
+    width?: number;
+    type: 'image';
+    version: 1;
+  },
+  SerializedLexicalNode
+>;
+
+export default class ImageNode extends DecoratorNode<JSX.Element> {
+  src: string;
+  altText: string;
+  width: 'inherit' | number;
+  height: 'inherit' | number;
+  maxWidth: number;
+  showCaption?: boolean;
+  caption: LexicalEditor;
   // Captions cannot yet be used within editor cells
 
   static getType() {
     return 'image';
   }
 
-  static clone(node) {
+  static clone(node: ImageNode) {
     return new ImageNode(
       node.src,
       node.altText,
@@ -44,7 +83,7 @@ export default class ImageNode extends DecoratorNode {
     );
   }
 
-  static importJSON(serializedNode) {
+  static importJSON(serializedNode: SerializedImageNode): ImageNode {
     const {altText, height, width, maxWidth, caption, src, showCaption} = serializedNode;
     const node = $createImageNode({
       altText,
@@ -62,25 +101,34 @@ export default class ImageNode extends DecoratorNode {
     return node;
   }
 
-  exportDOM() {
+  exportDOM(): DOMExportOutput {
     const element = document.createElement('img');
     element.setAttribute('src', this.src);
-    element.setAttribute('alt', this.altText);
+    element.setAttribute('alt', this.altText || this.src);
     element.setAttribute('width', this.width.toString());
     element.setAttribute('height', this.height.toString());
     return {element};
   }
 
-  static importDOM() {
+  static importDOM(): DOMConversionMap | null {
     return {
-      img: (node) => ({
+      img: (node: Node) => ({
         conversion: convertImageElement,
         priority: 0,
       }),
     };
   }
 
-  constructor(src, altText, maxWidth, width, height, showCaption, caption, key) {
+  constructor(
+    src: string,
+    altText: string,
+    maxWidth: number,
+    width?: 'inherit' | number,
+    height?: 'inherit' | number,
+    showCaption?: boolean,
+    caption?: LexicalEditor,
+    key?: NodeKey
+  ) {
     super(key);
     this.src = src;
     this.altText = altText;
@@ -91,7 +139,7 @@ export default class ImageNode extends DecoratorNode {
     this.caption = caption || createEditor();
   }
 
-  exportJSON() {
+  exportJSON(): SerializedImageNode {
     return {
       altText: this.getAltText(),
       caption: this.caption.toJSON(),
@@ -105,18 +153,18 @@ export default class ImageNode extends DecoratorNode {
     };
   }
 
-  setWidthAndHeight(width, height) {
+  setWidthAndHeight(width: 'inherit' | number, height: 'inherit' | number): void {
     const writable = this.getWritable();
     writable.width = width;
     writable.height = height;
   }
 
-  setShowCaption(showCaption) {
+  setShowCaption(showCaption?: boolean): void {
     const writable = this.getWritable();
     writable.showCaption = showCaption;
   }
 
-  createDOM(config) {
+  createDOM(config: EditorConfig): HTMLElement {
     const span = document.createElement('span');
     const theme = config.theme;
     const className = theme.image;
@@ -126,19 +174,19 @@ export default class ImageNode extends DecoratorNode {
     return span;
   }
 
-  updateDOM() {
+  updateDOM(): false {
     return false;
   }
 
-  getSrc() {
+  getSrc(): string {
     return this.src;
   }
 
-  getAltText() {
+  getAltText(): string {
     return this.altText;
   }
 
-  decorate() {
+  decorate(): JSX.Element {
     return <img src={this.src} alt={this.altText} width={this.width} height={this.height} />;
   }
 }
@@ -152,12 +200,12 @@ export function $createImageNode({
   showCaption,
   caption,
   key,
-}) {
+}: ImagePayload): ImageNode {
   return $applyNodeReplacement(
     new ImageNode(src, altText, maxWidth, width, height, showCaption, caption, key)
   );
 }
 
-export function $isImageNode(node) {
+export function $isImageNode(node: LexicalNode | null | undefined): node is ImageNode {
   return node instanceof ImageNode;
 }
