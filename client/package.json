@@ -63,7 +63,7 @@
     "@testing-library/user-event": "14.4.3",
     "@types/carbon-components-react": "7.55.2",
     "@types/carbon__elements": "11.10.0",
-    "@types/jest": "29.4.4",
+    "@types/jest": "29.5.0",
     "@types/mixpanel-browser": "2.38.1",
     "@types/node": "18.15.3",
     "@types/react": "18.0.28",
