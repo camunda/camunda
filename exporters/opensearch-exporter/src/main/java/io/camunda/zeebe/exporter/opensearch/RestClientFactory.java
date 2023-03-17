@@ -86,14 +86,14 @@ final class RestClientFactory {
       setupBasicAuthentication(config, builder);
       log.info("Basic authentication is enabled.");
     } else {
-      log.info("Basic authentication is disabled. No configuration is present.");
+      log.info("Basic authentication is disabled.");
     }
 
-    if (config.aws.isPresent()) {
+    if (config.aws.enabled) {
       configureAws(builder, config.aws);
       log.info("AWS Signing is enabled.");
     } else {
-      log.info("AWS Signing is disabled. No configuration is present.");
+      log.info("AWS Signing is disabled.");
     }
 
     if (allowAllSelfSignedCertificates) {
