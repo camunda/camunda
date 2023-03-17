@@ -44,65 +44,60 @@ describe('stores/authentication', () => {
     expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
   });
 
-  [{canLogout: false}, {canLogout: true, isLoginDelegated: true}].forEach(
-    (value) => {
-      const {canLogout, isLoginDelegated} = value;
-
-      describe(`when canLogout is ${canLogout} and isLoginDelegated is ${isLoginDelegated}`, () => {
-        it('should handle third-party authentication', async () => {
-          Object.defineProperty(window, 'clientConfig', {
-            value,
-            writable: true,
-          });
-          const originalWindow = {...window};
-          const windowSpy = jest.spyOn(global, 'window', 'get');
-          const mockReload = jest.fn();
-          // @ts-expect-error
-          windowSpy.mockImplementation(() => ({
-            ...originalWindow,
-            location: {
-              ...originalWindow.location,
-              reload: mockReload,
-            },
-          }));
-
-          mockGetUser().withSuccess(mockUserResponse);
-
-          authenticationStore.authenticate();
-
-          await waitFor(() =>
-            expect(authenticationStore.state.status).toBe(
-              'user-information-fetched'
-            )
-          );
-
-          mockGetUser().withServerError(401);
-
-          authenticationStore.authenticate();
-
-          await waitFor(() =>
-            expect(authenticationStore.state.status).toBe(
-              'invalid-third-party-session'
-            )
-          );
-          expect(mockReload).toHaveBeenCalledTimes(1);
-          expect(getStateLocally()?.wasReloaded).toBe(true);
-
-          mockGetUser().withSuccess(mockUserResponse);
-
-          authenticationStore.authenticate();
-
-          await waitFor(() =>
-            expect(authenticationStore.state.status).toBe(
-              'user-information-fetched'
-            )
-          );
-          expect(mockReload).toHaveBeenCalledTimes(1);
-          expect(getStateLocally()?.wasReloaded).toBe(false);
-
-          windowSpy.mockRestore();
-        });
+  it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(
+    'should handle third party authentication when client config is %s',
+    async (config) => {
+      Object.defineProperty(window, 'clientConfig', {
+        ...config,
+        writable: true,
       });
+      const originalWindow = {...window};
+      const windowSpy = jest.spyOn(global, 'window', 'get');
+      const mockReload = jest.fn();
+      // @ts-expect-error
+      windowSpy.mockImplementation(() => ({
+        ...originalWindow,
+        location: {
+          ...originalWindow.location,
+          reload: mockReload,
+        },
+      }));
+
+      mockGetUser().withSuccess(mockUserResponse);
+
+      authenticationStore.authenticate();
+
+      await waitFor(() =>
+        expect(authenticationStore.state.status).toBe(
+          'user-information-fetched'
+        )
+      );
+
+      mockGetUser().withServerError(401);
+
+      authenticationStore.authenticate();
+
+      await waitFor(() =>
+        expect(authenticationStore.state.status).toBe(
+          'invalid-third-party-session'
+        )
+      );
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally()?.wasReloaded).toBe(true);
+
+      mockGetUser().withSuccess(mockUserResponse);
+
+      authenticationStore.authenticate();
+
+      await waitFor(() =>
+        expect(authenticationStore.state.status).toBe(
+          'user-information-fetched'
+        )
+      );
+      expect(mockReload).toHaveBeenCalledTimes(1);
+      expect(getStateLocally()?.wasReloaded).toBe(false);
+
+      windowSpy.mockRestore();
     }
   );
 });
