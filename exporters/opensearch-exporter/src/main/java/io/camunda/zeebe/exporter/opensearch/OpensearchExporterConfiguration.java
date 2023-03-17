@@ -317,6 +317,11 @@ public class OpensearchExporterConfiguration {
     public String serviceName;
     public String region;
 
+    public boolean isPresent() {
+      return (serviceName != null && !serviceName.isEmpty())
+          && (region != null && !region.isEmpty());
+    }
+
     @Override
     public String toString() {
       return "AwsConfiguration{serviceName=" + serviceName + ", region=" + region + '}';
