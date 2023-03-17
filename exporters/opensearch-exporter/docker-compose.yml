@@ -1,0 +1,28 @@
+version: '3'
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:2.6.0
+    ports:
+      - "9200:9200"
+      - "9600:9600"
+    environment:
+      - discovery.type=single-node
+      - cluster.name=test
+      - OPENSEARCH_JAVA_OPTS=-Xmx750m -Xms750m
+    networks:
+      - opensearch-net
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:2.6.0
+    ports:
+      - "5601:5601"
+    expose:
+      - "5601"
+    environment:
+      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
+    networks:
+      - opensearch-net
+
+networks:
+  opensearch-net:

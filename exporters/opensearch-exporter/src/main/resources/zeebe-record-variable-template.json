@@ -1,0 +1,46 @@
+{
+  "index_patterns": [
+    "zeebe-record_variable_*"
+  ],
+  "composed_of": ["zeebe-record"],
+  "priority": 20,
+  "version": 1,
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0,
+      "index.queries.cache.enabled": false
+    },
+    "aliases": {
+      "zeebe-record-variable": {}
+    },
+    "mappings": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "value": {
+              "type": "keyword",
+              "ignore_above": 8191
+            },
+            "scopeKey": {
+              "type": "long"
+            },
+            "processInstanceKey": {
+              "type": "long"
+            },
+            "processDefinitionKey": {
+              "type": "long"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}

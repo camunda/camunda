@@ -43,6 +43,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-opensearch-exporter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
     </dependency>
 
@@ -383,6 +388,7 @@
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
             <dependency>io.camunda:zeebe-elasticsearch-exporter</dependency>
+            <dependency>io.camunda:zeebe-opensearch-exporter</dependency>
 
             <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>

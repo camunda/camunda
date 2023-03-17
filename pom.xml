@@ -41,6 +41,7 @@
     <module>exporter-test</module>
     <module>protocol-asserts</module>
     <module>exporters/elasticsearch-exporter</module>
+    <module>exporters/opensearch-exporter</module>
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
     <module>zb-db</module>

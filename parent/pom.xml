@@ -71,6 +71,9 @@
     <version.msgpack>0.9.3</version.msgpack>
     <version.netty>4.1.89.Final</version.netty>
     <version.objenesis>3.3</version.objenesis>
+    <version.opensearch>2.6.0</version.opensearch>
+    <version.opensearch-java>2.2.0</version.opensearch-java>
+    <version.opensearch.testcontainers>2.0.0</version.opensearch.testcontainers>
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.21.11</version.protobuf>
     <version.protobuf-common>2.12.0</version.protobuf-common>
@@ -302,6 +305,12 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>zeebe-elasticsearch-exporter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>zeebe-opensearch-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -669,6 +678,18 @@
       </dependency>
 
       <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-rest-client</artifactId>
+        <version>${version.opensearch}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensearch.client</groupId>
+        <artifactId>opensearch-java</artifactId>
+        <version>${version.opensearch-java}</version>
+      </dependency>
+
+      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>${version.guava}</version>
@@ -829,6 +850,13 @@
         <version>${version.testcontainers}</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opensearch</groupId>
+        <artifactId>opensearch-testcontainers</artifactId>
+        <version>${version.opensearch.testcontainers}</version>
+        <scope>test</scope>
       </dependency>
 
       <dependency>
