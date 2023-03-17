@@ -5,6 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-export function validateUrl(url) {
+export function validateUrl(url: string): boolean {
   return /^(https|http):\/\/.+/.test(url);
 }

@@ -5,8 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-export function getRandomId() {
-  return Math.random().toString(36).slice(2);
+export const TEXT_REPORT_MAX_CHARACTERS = 3000;
+
+export function isTextReportValid(textLength: number): boolean {
+  return textLength > 0 && !isTextReportTooLong(textLength);
 }
 
-export {TEXT_REPORT_MAX_CHARACTERS, isTextReportTooLong, isTextReportValid} from './reportService';
+export function isTextReportTooLong(textLength: number): boolean {
+  return textLength > TEXT_REPORT_MAX_CHARACTERS;
+}
