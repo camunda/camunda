@@ -50,6 +50,7 @@ import {useCallbackPrompt} from 'modules/hooks/useCallbackPrompt';
 import Modal from 'modules/components/Modal';
 import {tracking} from 'modules/tracking';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
+import {Forbidden} from 'modules/components/Forbidden';
 
 const ProcessInstance: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -176,6 +177,10 @@ const ProcessInstance: React.FC = observer(() => {
     processInstanceDetailsStore.state.processInstance !== null &&
     processInstanceDetailsStore.state.processInstance?.callHierarchy?.length >
       0;
+
+  if (processInstanceDetailsStore.state.status === 'forbidden') {
+    return <Forbidden />;
+  }
 
   return (
     <Container

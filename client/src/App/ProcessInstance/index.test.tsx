@@ -407,6 +407,8 @@ describe('Instance', () => {
       flowNodeId: 'taskD',
     });
 
+    mockFetchVariables().withSuccess([createVariable()]);
+
     await user.click(
       await screen.findByRole('button', {
         name: /add single flow node instance/i,
@@ -853,5 +855,70 @@ describe('Instance', () => {
     await user.click(screen.getByRole('button', {name: 'Leave'}));
 
     expect(await screen.findByText('dashboard page')).toBeInTheDocument();
+  });
+
+  it('should display forbidden content', async () => {
+    mockFetchProcessInstance().withServerError(403);
+
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+
+    expect(
+      await screen.findByText(
+        '403 - You do not have permission to view this information'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Contact your administrator to get access.')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {name: 'Learn more about Operate'})
+    ).toHaveAttribute(
+      'href',
+      'https://docs.camunda.io/docs/components/operate/operate-introduction/'
+    );
+  });
+
+  it('should display forbidden content after polling', async () => {
+    jest.useFakeTimers();
+    render(<ProcessInstance />, {wrapper: getWrapper()});
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
+    expect(screen.queryByTestId('skeleton-rows')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+    expect(screen.getByTestId('diagram-panel-body')).toBeInTheDocument();
+    expect(screen.getByText('Instance History')).toBeInTheDocument();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('instance-header')).getByTestId('INCIDENT-icon')
+    ).toBeInTheDocument();
+
+    mockRequests();
+    mockFetchProcessInstance().withServerError(403);
+
+    jest.runOnlyPendingTimers();
+
+    expect(
+      await screen.findByText(
+        '403 - You do not have permission to view this information'
+      )
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Contact your administrator to get access.')
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('link', {name: 'Learn more about Operate'})
+    ).toHaveAttribute(
+      'href',
+      'https://docs.camunda.io/docs/components/operate/operate-introduction/'
+    );
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

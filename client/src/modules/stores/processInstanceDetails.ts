@@ -26,7 +26,13 @@ import isEqual from 'lodash/isEqual';
 
 type State = {
   processInstance: null | ProcessInstanceEntity;
-  status: 'initial' | 'first-fetch' | 'fetching' | 'fetched' | 'error';
+  status:
+    | 'initial'
+    | 'first-fetch'
+    | 'fetching'
+    | 'fetched'
+    | 'error'
+    | 'forbidden';
 };
 
 const DEFAULT_STATE: State = {
@@ -110,7 +116,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
         if (response.statusCode === 404) {
           this.handleRefetch(id);
         } else {
-          this.handleFetchFailure();
+          this.handleFetchFailure(response.statusCode);
         }
       }
     }
@@ -197,7 +203,12 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     this.state.status = 'fetched';
   };
 
-  handleFetchFailure = () => {
+  handleFetchFailure = (statusCode?: number) => {
+    if (statusCode === 403) {
+      this.state.status = 'forbidden';
+      return;
+    }
+
     this.state.status = 'error';
   };
 
@@ -222,6 +233,8 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
     if (this.intervalId !== null) {
       if (response.isSuccess) {
         this.setProcessInstance(response.data);
+      } else if (response.statusCode === 403) {
+        this.handleFetchFailure(403);
       } else {
         if (
           !isInstanceRunning(this.state.processInstance) &&
@@ -229,6 +242,7 @@ class ProcessInstanceDetails extends NetworkReconnectionHandler {
         ) {
           this.onPollingFailure?.();
         }
+
         logger.error('Failed to poll process instance');
       }
     }
