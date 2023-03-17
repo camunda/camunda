@@ -5,7 +5,9 @@
  * except in compliance with the proprietary license.
  */
 
-import {SortableTable} from './';
+import {SortableTable} from '../';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {MemoryRouter} from 'react-router-dom';
 
 const mockTableData = [
   {
@@ -84,4 +86,12 @@ const mockSelectableProps: {
   selectionType: 'checkbox',
 };
 
-export {mockProps, mockSelectableProps};
+const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children}</MemoryRouter>
+    </ThemeProvider>
+  );
+};
+
+export {mockProps, mockSelectableProps, Wrapper};
