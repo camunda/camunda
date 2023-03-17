@@ -29,7 +29,6 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -107,6 +106,8 @@ public class GatewayAuthenticationIdentityIT {
           .withGatewayConfig(
               zeebeGatewayNode ->
                   zeebeGatewayNode
+                      // as topology check would require auth, we skip it here
+                      .withoutTopologyCheck()
                       .withEnv("ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_MODE", "identity")
                       .withEnv(
                           "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_ISSUERBACKENDURL",
@@ -115,19 +116,6 @@ public class GatewayAuthenticationIdentityIT {
                           "ZEEBE_BROKER_GATEWAY_SECURITY_AUTHENTICATION_IDENTITY_AUDIENCE",
                           ZEEBE_CLIENT_AUDIENCE))
           .build();
-
-  @Test
-  void topologyMethodIsPublic() {
-    // given
-    try (final var client = createAnonymousZeebeClient()) {
-      // when
-      final var topology = client.newTopologyRequest().send();
-
-      // then
-      final var result = topology.join(5L, TimeUnit.SECONDS);
-      assertThat(result.getBrokers()).as("There is one connected broker").hasSize(1);
-    }
-  }
 
   @Test
   void deployModelFailsWithoutAuthToken() {

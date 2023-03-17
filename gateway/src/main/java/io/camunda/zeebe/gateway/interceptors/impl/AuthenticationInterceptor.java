@@ -12,13 +12,11 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
-import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +24,6 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
-
-  private static final Set<String> PUBLIC_FULL_METHOD_NAMES =
-      Set.of(GatewayGrpc.getTopologyMethod().getFullMethodName());
 
   private final Identity identity;
 
@@ -42,13 +37,11 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
 
   private static Identity createIdentity(final IdentityCfg config) {
     return new Identity(
-        new IdentityConfiguration(
-            null,
-            config.getIssuerBackendUrl(),
-            null,
-            null,
-            config.getAudience(),
-            config.getType().name()));
+        new IdentityConfiguration.Builder()
+            .withIssuerBackendUrl(config.getIssuerBackendUrl())
+            .withAudience(config.getAudience())
+            .withType(config.getType().name())
+            .build());
   }
 
   @Override
@@ -57,10 +50,6 @@ public final class AuthenticationInterceptor implements ServerInterceptor {
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
     final var methodDescriptor = call.getMethodDescriptor();
-
-    if (PUBLIC_FULL_METHOD_NAMES.contains(methodDescriptor.getFullMethodName())) {
-      return next.startCall(call, headers);
-    }
 
     final var token = headers.get(AUTH_KEY);
     if (token == null) {
