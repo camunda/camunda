@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+
 import io.camunda.zeebe.engine.api.TypedRecord;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
@@ -40,6 +42,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
    * (particularly when no catch event can be found)
    */
   public static final String NO_CATCH_EVENT_FOUND = "NO_CATCH_EVENT_FOUND";
+
+  private static final int MAX_ERROR_MESSAGE_SIZE = 500;
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
@@ -102,7 +106,8 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     final JobRecord job = jobState.getJob(jobKey);
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
-    job.setErrorMessage(command.getValue().getErrorMessageBuffer());
+    job.setErrorMessage(
+        cloneBuffer(command.getValue().getErrorMessageBuffer(), 0, MAX_ERROR_MESSAGE_SIZE));
 
     final var serviceTaskInstanceKey = job.getElementInstanceKey();
     final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);
