@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAIL;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.FAILED;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -314,5 +316,24 @@ public final class FailJobTest {
         .hasScopeKey(failRecord.getValue().getElementInstanceKey())
         .hasName("foo")
         .hasValue("\"bar\"");
+  }
+
+  @Test
+  public void shouldTruncateErrorMessage() {
+    // given
+    final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
+    final String exceedingErrorMessage = "*".repeat(501);
+
+    // when
+    final Record<JobRecordValue> failedRecord =
+        ENGINE.job().withKey(job.getKey()).withErrorMessage(exceedingErrorMessage).fail();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(CREATED).getFirst();
+
+    // then
+    Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
+    assertThat(failedRecord.getValue().getErrorMessage().length()).isEqualTo(500);
+    assertThat(incident.getValue().getErrorMessage().length()).isEqualTo(500);
   }
 }

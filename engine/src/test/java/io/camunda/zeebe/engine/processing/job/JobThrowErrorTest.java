@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.ERROR_THROWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -386,5 +388,26 @@ public final class JobThrowErrorTest {
             Record::getIntent)
         .describedAs("With event sub process the variables are created at the process instance")
         .containsExactly(tuple("foo", "\"bar\"", processInstanceKey, VariableIntent.CREATED));
+  }
+
+  @Test
+  public void shouldTruncateErrorMessage() {
+    // given
+    final var job = ENGINE.createJob(jobType, PROCESS_ID);
+    final String exceedingErrorMessage = "*".repeat(501);
+
+    // when
+    final Record<JobRecordValue> failedRecord =
+        ENGINE.job().withKey(job.getKey()).withErrorMessage(exceedingErrorMessage).throwError();
+
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(CREATED).getFirst();
+
+    // then
+    Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
+    assertThat(failedRecord.getValue().getErrorMessage().length()).isEqualTo(500);
+    // this size is greater than 500 because we are re-formatting incident error message by
+    // appending explanation sentences when no catch event found
+    assertThat(incident.getValue().getErrorMessage().length()).isEqualTo(633);
   }
 }
