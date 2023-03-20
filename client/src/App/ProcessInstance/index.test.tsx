@@ -210,7 +210,7 @@ describe('Instance', () => {
     expect(screen.getByTestId('diagram-spinner')).toBeInTheDocument();
     expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
 
-    await waitForElementToBeRemoved(
+    await waitForElementToBeRemoved(() =>
       screen.getByTestId('instance-header-skeleton')
     );
 

@@ -6,13 +6,18 @@
  */
 
 import {useEffect} from 'react';
-import {render, screen, waitFor, within} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+  within,
+} from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {DecisionInstance} from './';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
@@ -26,7 +31,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     drdStore.init();
 
     return () => {
-      decisionInstanceDetailsStore.reset();
       drdStore.reset();
     };
   }, []);
@@ -52,6 +56,8 @@ describe('<DecisionInstance />', () => {
   it('should set page title', async () => {
     render(<DecisionInstance />, {wrapper: Wrapper});
 
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+
     expect(
       await screen.findByText('Definitions Name Mock')
     ).toBeInTheDocument();
@@ -62,7 +68,11 @@ describe('<DecisionInstance />', () => {
   });
 
   it('should close DRD panel', async () => {
-    const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
+    const {user} = render(<DecisionInstance />, {
+      wrapper: Wrapper,
+    });
+
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     expect(screen.getByTestId('drd-panel')).toBeInTheDocument();
     expect(screen.getByTestId('drd')).toBeInTheDocument();
@@ -83,6 +93,8 @@ describe('<DecisionInstance />', () => {
   it('should maximize DRD panel and hide other panels', async () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
         name: 'Maximize DRD Panel',
@@ -102,6 +114,8 @@ describe('<DecisionInstance />', () => {
 
   it('should minimize DRD panel', async () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     await user.click(
       within(screen.getByTestId('drd')).getByRole('button', {
@@ -125,6 +139,8 @@ describe('<DecisionInstance />', () => {
 
   it('should show DRD panel on header button click', async () => {
     const {user} = render(<DecisionInstance />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     await user.click(
       await screen.findByRole('button', {
@@ -160,6 +176,8 @@ describe('<DecisionInstance />', () => {
   it('should persist panel state', async () => {
     const {unmount, user} = render(<DecisionInstance />, {wrapper: Wrapper});
 
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
+
     await user.click(
       await screen.findByRole('button', {
         name: 'Close DRD Panel',
@@ -172,8 +190,12 @@ describe('<DecisionInstance />', () => {
     unmount();
 
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockFetchDrdData().withSuccess(mockDrdData);
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
 
     render(<DecisionInstance />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     expect(screen.queryByTestId('drd-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('drd')).not.toBeInTheDocument();
@@ -183,6 +205,8 @@ describe('<DecisionInstance />', () => {
     const {user, unmount, rerender} = render(<DecisionInstance />, {
       wrapper: Wrapper,
     });
+
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     expect(
       screen.getByRole('heading', {
@@ -227,9 +251,13 @@ describe('<DecisionInstance />', () => {
 
     unmount();
 
+    mockFetchDrdData().withSuccess(mockDrdData);
+    mockFetchDecisionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     render(<DecisionInstance />, {wrapper: Wrapper});
+
+    await waitForElementToBeRemoved(screen.queryByTestId('inputs-skeleton'));
 
     expect(
       screen.getByRole('heading', {
@@ -245,7 +273,6 @@ describe('<DecisionInstance />', () => {
 
   it('should display forbidden content', async () => {
     mockFetchDecisionInstance().withServerError(403);
-
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(

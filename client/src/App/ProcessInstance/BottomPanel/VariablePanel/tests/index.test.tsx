@@ -599,6 +599,7 @@ describe('VariablePanel', () => {
       await screen.findByText('No Input Mappings defined')
     ).toBeInTheDocument();
 
+    mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     flowNodeSelectionStore.clearSelection();
 
     await waitForElementToBeRemoved(() =>
@@ -619,6 +620,7 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchVariables().withSuccess([]);
 
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'StartEvent_1',

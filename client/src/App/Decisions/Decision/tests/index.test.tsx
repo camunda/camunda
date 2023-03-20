@@ -5,13 +5,14 @@
  * except in compliance with the proprietary license.
  */
 
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {groupedDecisions} from 'modules/mocks/groupedDecisions';
 import {Decision} from '..';
 import {mockFetchDecisionXML} from 'modules/mocks/api/decisions/fetchDecisionXML';
 import {mockFetchGroupedDecisions} from 'modules/mocks/api/decisions/fetchGroupedDecisions';
 import {createWrapper} from './mocks';
+import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
 
 describe('<Decision />', () => {
   beforeEach(() => {
@@ -47,6 +48,10 @@ describe('<Decision />', () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByRole('heading', {name: 'Decision'}));
+
+    await waitFor(() =>
+      expect(groupedDecisionsStore.state.status).toBe('fetched')
+    );
   });
 
   it('should render text when no version is selected', async () => {
