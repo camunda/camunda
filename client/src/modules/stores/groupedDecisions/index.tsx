@@ -18,7 +18,7 @@ import {
   DecisionDto,
 } from 'modules/api/decisions/fetchGroupedDecisions';
 import {sortOptions} from 'modules/utils/sortOptions';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {getSearchString} from 'modules/utils/getSearchString';
 import {getDecisionInstanceFilters} from 'modules/utils/filter';
 import {PERMISSIONS} from 'modules/constants';
