@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode;
+
 public abstract class GcsBackupStoreException extends RuntimeException {
   public GcsBackupStoreException(final String message) {
     super(message);
@@ -14,6 +16,18 @@ public abstract class GcsBackupStoreException extends RuntimeException {
 
   public GcsBackupStoreException(final String message, final Throwable cause) {
     super(message, cause);
+  }
+
+  public static class InvalidPersistedManifestState extends GcsBackupStoreException {
+    public InvalidPersistedManifestState(final String errorMessage) {
+      super(errorMessage);
+    }
+  }
+
+  public static class UnexpectedManifestState extends GcsBackupStoreException {
+    public UnexpectedManifestState(final StatusCode expected, final StatusCode actual) {
+      super("Expected manifest in state '%s', but was in '%s'".formatted(expected, actual));
+    }
   }
 
   public static class ConfigurationException extends GcsBackupStoreException {
