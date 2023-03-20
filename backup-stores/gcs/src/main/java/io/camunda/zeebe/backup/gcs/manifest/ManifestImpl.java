@@ -13,6 +13,7 @@ import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.IN_PROGRESS;
 
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
 import java.time.Instant;
 
 record ManifestImpl(

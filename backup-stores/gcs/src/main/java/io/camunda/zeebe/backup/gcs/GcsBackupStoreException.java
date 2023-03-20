@@ -16,6 +16,12 @@ public abstract class GcsBackupStoreException extends RuntimeException {
     super(message, cause);
   }
 
+  public static class InvalidPersistedManifestState extends GcsBackupStoreException {
+    public InvalidPersistedManifestState(final String errorMessage) {
+      super(errorMessage);
+    }
+  }
+
   public static class ConfigurationException extends GcsBackupStoreException {
     public ConfigurationException(String message) {
       super(message);

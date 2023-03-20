@@ -22,6 +22,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
