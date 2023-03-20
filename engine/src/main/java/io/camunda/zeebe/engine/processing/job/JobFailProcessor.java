@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.buffer.BufferUtil.trimBufferIfExceeds;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.api.TypedRecord;
@@ -88,7 +88,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
     final JobRecord failedJob = jobState.getJob(jobKey);
     failedJob.setRetries(retries);
-    failedJob.setErrorMessage(cloneBuffer(failJobCommandRecord.getErrorMessageBuffer(), 0, MAX_ERROR_MESSAGE_SIZE));
+    failedJob.setErrorMessage(trimBufferIfExceeds(failJobCommandRecord.getErrorMessageBuffer(), MAX_ERROR_MESSAGE_SIZE));
     failedJob.setRetryBackoff(retryBackOff);
     failedJob.setVariables(failJobCommandRecord.getVariablesBuffer());
 
