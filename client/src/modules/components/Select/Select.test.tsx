@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow} from 'enzyme';
 import {ignoreFragments} from 'services';
 
@@ -56,7 +55,7 @@ it('should render child elements and their props', () => {
 
 it('should select option onClick and add checked property', () => {
   const spy = jest.fn();
-  const node = shallow(
+  const node = shallow<Select>(
     <Select onChange={spy}>
       <Select.Option value="1">Option One</Select.Option>
     </Select>
@@ -67,7 +66,7 @@ it('should select option onClick and add checked property', () => {
 
   node.setProps({value: '1'});
 
-  expect(node.find('Option').props('checked')).toBeTruthy();
+  expect(node.find('Option').prop('checked')).toBeTruthy();
   expect(node.find('Dropdown').prop('label')).toBe('Option One');
 });
 
@@ -117,4 +116,20 @@ it('should invoke ignoreFragments when rendering the list', async () => {
   shallow(<Select>{children}</Select>);
 
   expect(ignoreFragments).toHaveBeenCalledWith(children);
+});
+
+describe('Select.Option', () => {
+  it('should render the option', () => {
+    const node = shallow(<Select.Option label="label" />);
+
+    expect(node.find('ForwardRef(DropdownOption)').prop('label')).toBe('label');
+  });
+});
+
+describe('Select.Submenu', () => {
+  it('should render the submenu', () => {
+    const node = shallow(<Select.Submenu label="label" />);
+
+    expect(node.find('Submenu').prop('label')).toBe('label');
+  });
 });

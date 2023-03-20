@@ -5,7 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-export function findLetterOption(options, letter, startIndex) {
+export function findLetterOption(
+  options: HTMLElement[],
+  letter: string,
+  startIndex: number
+): HTMLElement | undefined {
   const found = findOptionFromIndex(options, letter, startIndex);
   if (found) {
     return found;
@@ -16,8 +20,12 @@ export function findLetterOption(options, letter, startIndex) {
   }
 }
 
-function findOptionFromIndex(options, letter, startIndex) {
+function findOptionFromIndex(
+  options: HTMLElement[],
+  letter: string,
+  startIndex: number
+): HTMLElement | undefined {
   return options
     .slice(startIndex)
-    .find((el) => el.textContent[0]?.toLowerCase() === letter.toLowerCase());
+    .find((el) => el.textContent?.[0]?.toLowerCase() === letter.toLowerCase());
 }

@@ -29,6 +29,7 @@ type ModalProps = {
   noAutoFocus?: boolean;
   open?: boolean;
   className?: string;
+  children?: ReactNode;
   onConfirm?: KeyboardEventHandler<HTMLElement>;
   size?: 'large' | 'max';
 };

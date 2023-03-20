@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {shallow, mount} from 'enzyme';
 
 import {Icon} from 'components';
@@ -16,9 +15,9 @@ import DropdownOption from './DropdownOption';
 import {findLetterOption} from './service';
 
 jest.mock('./DropdownOption', () => {
-  return (props) => {
+  return (props: any) => {
     return (
-      <div tabIndex="0" className="DropdownOption">
+      <div tabIndex={0} className="DropdownOption">
         {props.children}
       </div>
     );
@@ -55,12 +54,12 @@ it('should change focus after pressing an arrow key', () => {
 
   const container = node.find('.childrenContainer');
 
-  container.find(DropdownOption).first().getDOMNode().focus();
+  container.find(DropdownOption).first().getDOMNode<HTMLElement>()?.focus();
 
   container.simulate('keyDown', {key: 'ArrowDown'});
-  expect(document.activeElement.textContent).toBe('bar');
+  expect(document.activeElement?.textContent).toBe('bar');
   container.simulate('keyDown', {key: 'ArrowUp'});
-  expect(document.activeElement.textContent).toBe('foo');
+  expect(document.activeElement?.textContent).toBe('foo');
 });
 
 it('should open/close the submenu on mouseOver/mouseLeave', () => {
@@ -102,7 +101,7 @@ it('should close the submenu when left arrow is pressed', () => {
 it('should open the submenu when right arrow is pressed', () => {
   const spy = jest.fn();
   const node = shallow(
-    <Submenu forceToggle={spy}>
+    <Submenu label="label" forceToggle={spy}>
       <DropdownOption>foo</DropdownOption>
     </Submenu>
   );
@@ -113,8 +112,8 @@ it('should open the submenu when right arrow is pressed', () => {
 });
 
 it('should shift the submenu up when there is no space available', () => {
-  getScreenBounds.mockReturnValueOnce({top: 10, bottom: 100});
-  const node = mount(<Submenu />);
+  (getScreenBounds as jest.Mock).mockReturnValueOnce({top: 10, bottom: 100});
+  const node = mount<Submenu>(<Submenu label="label" />);
 
   node.instance().containerRef = {
     current: {
@@ -124,8 +123,8 @@ it('should shift the submenu up when there is no space available', () => {
         clientHeight: 60,
       }),
       //parentMenu.top
-      getBoundingClientRect: () => ({top: 50}),
-    },
+      getBoundingClientRect: () => ({top: 50} as DOMRect),
+    } as unknown as HTMLDivElement,
   };
 
   node.instance().calculatePlacement();
@@ -134,12 +133,12 @@ it('should shift the submenu up when there is no space available', () => {
 });
 
 it('should invoke findLetterOption when typing a character', () => {
-  const node = shallow(<Submenu open={true} />);
+  const node = shallow<Submenu>(<Submenu label="label" open={true} />);
 
   node.instance().containerRef = {
     current: {
       querySelectorAll: () => [],
-    },
+    } as unknown as HTMLDivElement,
   };
 
   const container = node.find('.childrenContainer');
@@ -150,13 +149,13 @@ it('should invoke findLetterOption when typing a character', () => {
     stopPropagation: jest.fn(),
     preventDefault: jest.fn(),
   });
-  expect(findLetterOption.mock.calls[0][1]).toBe('f');
-  expect(findLetterOption.mock.calls[0][2]).toBe(0);
+  expect((findLetterOption as jest.Mock).mock.calls[0][1]).toBe('f');
+  expect((findLetterOption as jest.Mock).mock.calls[0][2]).toBe(0);
 });
 
 it('should invoke onClose when closing the submenu', () => {
   const spy = jest.fn();
-  const node = shallow(<Submenu onClose={spy} open />);
+  const node = shallow(<Submenu label="label" onClose={spy} open />);
 
   node.setProps({open: false});
 
@@ -164,9 +163,15 @@ it('should invoke onClose when closing the submenu', () => {
 });
 
 it('should open the submenu to left if specified', () => {
-  jest.spyOn(document.activeElement, 'parentNode', 'get').mockReturnValueOnce({
-    closest: () => ({focus: jest.fn()}),
-  });
+  jest
+    .spyOn<Element, 'parentNode', 'get', HTMLElement | null>(
+      document.activeElement!,
+      'parentNode',
+      'get'
+    )
+    .mockReturnValueOnce({
+      closest: () => ({focus: jest.fn()}),
+    } as unknown as HTMLElement);
   const spy = jest.fn();
   const node = shallow(
     <Submenu label="my label" forceToggle={spy} open openToLeft>
@@ -189,4 +194,40 @@ it('should open the submenu to left if specified', () => {
   });
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should call onClick if not disabled', () => {
+  const spy = jest.fn();
+  const node = shallow(<Submenu label="label" onClick={spy} />);
+
+  node.find(DropdownOption).simulate('click');
+
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should exit onClick if disabled', () => {
+  const spy = jest.fn();
+  const node = shallow(<Submenu label="label" disabled onClick={spy} />);
+
+  node.find(DropdownOption).simulate('click');
+
+  expect(spy).not.toHaveBeenCalled();
+});
+
+it('should exit onMouseOver if disabled', () => {
+  const spy = jest.fn();
+  const node = shallow(<Submenu label="label" disabled onOpen={spy} />);
+
+  node.find(DropdownOption).simulate('mouseover');
+
+  expect(spy).not.toHaveBeenCalled();
+});
+
+it('should exit onMouseLeave if disabled', () => {
+  const spy = jest.fn();
+  const node = shallow(<Submenu label="label" disabled setClosed={spy} />);
+
+  node.find(DropdownOption).simulate('mouseleave');
+
+  expect(spy).not.toHaveBeenCalled();
 });

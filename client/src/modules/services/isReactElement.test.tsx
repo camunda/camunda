@@ -5,13 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-export default function getScreenBounds() {
-  return {
-    top: getElRect('header')?.bottom || 0,
-    bottom: getElRect('footer')?.top || window.innerHeight,
-  };
-}
+import isReactElement from './isReactElement';
 
-function getElRect(tagName) {
-  return document.querySelector(tagName)?.getBoundingClientRect?.();
-}
+it('should return true if node is ReactElement', () => {
+  expect(isReactElement(<div />)).toBe(true);
+});
+
+it('should return false if node is not ReactElement', () => {
+  expect(isReactElement('string')).toBe(false);
+});

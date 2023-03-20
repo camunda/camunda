@@ -5,12 +5,13 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {MouseEventHandler} from 'react';
 import {shallow} from 'enzyme';
 import {ignoreFragments} from 'services';
 
 import DropdownOptionsList from './DropdownOptionsList';
 import Dropdown from './Dropdown';
+import {MouseEvent} from 'react';
 
 jest.mock('services', () => ({
   ...jest.requireActual('services'),
@@ -109,7 +110,9 @@ it('should close the submenu immediately when hovering over another option', asy
   );
 
   node.find(Dropdown.Submenu).prop('setOpened')();
-  node.find(Dropdown.Option).prop('onMouseEnter')({target: document.createElement('div')});
+  node.find(Dropdown.Option).prop<MouseEventHandler<HTMLDivElement>>('onMouseEnter')?.({
+    target: document.createElement('div'),
+  } as unknown as MouseEvent<HTMLDivElement>);
 
   expect(node.find(Dropdown.Submenu)).toHaveProp('open', false);
 });

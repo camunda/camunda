@@ -5,8 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
-import {mount} from 'enzyme';
+import {mount, ReactWrapper} from 'enzyme';
+import {ReactNode} from 'react';
 
 import {getScreenBounds} from 'services';
 
@@ -15,20 +15,20 @@ import {findLetterOption} from './service';
 
 jest.mock('components', () => {
   return {
-    Button: ({active, ...props}) => <button {...props} />,
+    Button: ({active, ...props}: {active?: boolean}) => <button {...props} />,
     Icon: () => <span />,
     Select: () => ({Submenu: <div />}),
   };
 });
 
 jest.mock('./DropdownOption', () => {
-  return (props) => {
+  return (props: {children: ReactNode}) => {
     return <button className="DropdownOption">{props.children}</button>;
   };
 });
 
-jest.mock('./Submenu', () => (props) => (
-  <div tabIndex="0" className="Submenu">
+jest.mock('./Submenu', () => (props: object) => (
+  <div tabIndex={0} className="Submenu">
     Submenu: {JSON.stringify(props)}
   </div>
 ));
@@ -49,7 +49,7 @@ Object.defineProperty(window.HTMLElement.prototype, 'offsetParent', {
   },
 });
 
-let container;
+let container: HTMLDivElement;
 
 beforeEach(() => {
   container = document.createElement('div');
@@ -61,8 +61,22 @@ afterEach(() => {
 });
 
 function simulateDropdown(
-  node,
-  {oneItemHeight, buttonPosition, menuHeight, menuPosition, screenBottom, screenTop}
+  node: ReactWrapper<Dropdown['props'], Dropdown['state'], Dropdown>,
+  {
+    oneItemHeight,
+    buttonPosition,
+    menuHeight,
+    menuPosition,
+    screenBottom,
+    screenTop,
+  }: {
+    oneItemHeight: number;
+    buttonPosition: Partial<DOMRect>;
+    menuHeight: number;
+    menuPosition: Partial<DOMRect>;
+    screenBottom: number;
+    screenTop: number;
+  }
 ) {
   node.instance().container = {
     querySelector: () => ({
@@ -75,28 +89,26 @@ function simulateDropdown(
         }),
       },
     }),
-  };
+  } as unknown as HTMLElement;
 
   node.instance().menuContainer = {
     current: {
       clientHeight: menuHeight,
       querySelector: () => ({clientHeight: oneItemHeight}),
       getBoundingClientRect: () => menuPosition,
-    },
+    } as unknown as HTMLDivElement,
   };
 
   const footer = document.createElement('div');
-  getScreenBounds.mockReturnValueOnce({top: screenTop, bottom: screenBottom});
+  (getScreenBounds as jest.Mock).mockReturnValueOnce({top: screenTop, bottom: screenBottom});
   document.body.appendChild(footer);
-  node.instance().footerRef = footer;
 
   const header = document.createElement('div');
   document.body.appendChild(header);
-  node.instance().headerRef = header;
 }
 
 it('should render without crashing', () => {
-  mount(<Dropdown />);
+  mount(<Dropdown label="label" />);
 });
 
 it('should contain the specified label', () => {
@@ -220,7 +232,7 @@ it('should set aria-expanded to false when closed', () => {
 
 it('should set aria-labelledby on the menu as provided as a prop, amended by "-button"', () => {
   const node = mount(
-    <Dropdown id="my-dropdown">
+    <Dropdown label="label" id="my-dropdown">
       <Dropdown.Option>foo</Dropdown.Option>
     </Dropdown>
   );
@@ -252,10 +264,10 @@ it('should not change focus after pressing an arrow key if closed', () => {
     {attachTo: container}
   );
 
-  node.find('button').first().getDOMNode().focus();
+  node.find('button').first().getDOMNode<HTMLElement>().focus();
 
   node.simulate('keyDown', {key: 'ArrowDown'});
-  expect(document.activeElement.textContent).toBe('Click me');
+  expect(document.activeElement?.textContent).toBe('Click me');
 });
 
 it('should change focus after pressing an arrow key if opened', () => {
@@ -267,20 +279,20 @@ it('should change focus after pressing an arrow key if opened', () => {
     {attachTo: container}
   );
 
-  node.find('button').first().getDOMNode().focus();
+  node.find('button').first().getDOMNode<HTMLElement>().focus();
 
   node.instance().setState({open: true});
 
   node.simulate('keyDown', {key: 'ArrowDown'});
-  expect(document.activeElement.textContent).toBe('foo');
+  expect(document.activeElement?.textContent).toBe('foo');
   node.simulate('keyDown', {key: 'ArrowDown'});
-  expect(document.activeElement.textContent).toBe('bar');
+  expect(document.activeElement?.textContent).toBe('bar');
 });
 
 it('should pass open, offset, setOpened, setClosed, forceToggle and closeParent properties to submenus', () => {
   const node = mount(
-    <Dropdown>
-      <Dropdown.Submenu />
+    <Dropdown label="label">
+      <Dropdown.Submenu label="label" />
     </Dropdown>
   );
 
@@ -294,7 +306,7 @@ it('should pass open, offset, setOpened, setClosed, forceToggle and closeParent 
 });
 
 it('should add scrollable class when there is no enough space to show all items', () => {
-  const node = mount(<Dropdown />);
+  const node = mount<Dropdown>(<Dropdown label="label" />);
 
   const specs = {
     oneItemHeight: 30,
@@ -315,8 +327,8 @@ it('should add scrollable class when there is no enough space to show all items'
 });
 
 it('flip dropdown vertically when there is no enough space', () => {
-  const node = mount(
-    <Dropdown>
+  const node = mount<Dropdown>(
+    <Dropdown label="label">
       <Dropdown.Option>1</Dropdown.Option>
       <Dropdown.Option>2</Dropdown.Option>
       <Dropdown.Option>3</Dropdown.Option>
@@ -343,8 +355,8 @@ it('flip dropdown vertically when there is no enough space', () => {
 });
 
 it('should not add scrollable class when the item is flipped and there is enough space above the item', () => {
-  const node = mount(
-    <Dropdown>
+  const node = mount<Dropdown>(
+    <Dropdown label="label">
       <Dropdown.Option>1</Dropdown.Option>
       <Dropdown.Option>2</Dropdown.Option>
       <Dropdown.Option>3</Dropdown.Option>
@@ -370,7 +382,7 @@ it('should not add scrollable class when the item is flipped and there is enough
 
 it('should invoke findLetterOption when typing a character', () => {
   const node = mount(
-    <Dropdown>
+    <Dropdown label="label">
       <Dropdown.Option>foo</Dropdown.Option>
       <Dropdown.Option>far</Dropdown.Option>
       <Dropdown.Option>bar</Dropdown.Option>
@@ -378,9 +390,9 @@ it('should invoke findLetterOption when typing a character', () => {
     {attachTo: container}
   );
 
-  node.find(Dropdown.Option).last().getDOMNode().focus();
+  node.find(Dropdown.Option).last().getDOMNode<HTMLElement>().focus();
 
   node.simulate('keyDown', {key: 'f', keyCode: 70});
-  expect(findLetterOption.mock.calls[0][1]).toBe('f');
-  expect(findLetterOption.mock.calls[0][2]).toBe(3);
+  expect((findLetterOption as jest.Mock).mock.calls[0][1]).toBe('f');
+  expect((findLetterOption as jest.Mock).mock.calls[0][2]).toBe(3);
 });

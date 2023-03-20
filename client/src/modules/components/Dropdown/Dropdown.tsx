@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import React, {CSSProperties, KeyboardEvent, MouseEvent, ReactNode} from 'react';
 import classnames from 'classnames';
 
 import {Button, Icon} from 'components';
@@ -18,10 +18,32 @@ import {findLetterOption} from './service';
 
 import './Dropdown.scss';
 
-export default class Dropdown extends React.Component {
-  menuContainer = React.createRef();
+type DropdownProps = {
+  disabled?: boolean;
+  onOpen?: (open: boolean) => void;
+  icon?: boolean;
+  id?: string;
+  active?: boolean;
+  label: string | JSX.Element[];
+  children?: ReactNode;
+  className?: string;
+  primary?: boolean;
+  main?: boolean;
+  small?: boolean;
+};
 
-  constructor(props) {
+type DropdownState = {
+  open: boolean;
+  menuStyle: CSSProperties;
+  listStyles: CSSProperties;
+  scrollable?: boolean;
+};
+
+export default class Dropdown extends React.Component<DropdownProps, DropdownState> {
+  menuContainer = React.createRef<HTMLDivElement>();
+  container: HTMLElement | null = null;
+
+  constructor(props: DropdownProps) {
     super(props);
 
     this.state = {
@@ -31,7 +53,7 @@ export default class Dropdown extends React.Component {
     };
   }
 
-  toggleOpen = (evt) => {
+  toggleOpen = (evt: MouseEvent<HTMLDivElement>) => {
     evt.preventDefault();
 
     const {disabled, onOpen} = this.props;
@@ -43,15 +65,18 @@ export default class Dropdown extends React.Component {
     }
   };
 
-  close = ({target}) => {
-    if (this.state.open && !this.container.contains(target)) {
+  close = (evt: {target: EventTarget | null} | {}) => {
+    if (
+      this.state.open &&
+      !('target' in evt && this.container?.contains(evt.target as HTMLElement | null))
+    ) {
       this.setState({open: false});
       this.calculateMenuStyle(false);
     }
   };
 
-  handleScroll = ({target}) => {
-    if (target.contains(this.container)) {
+  handleScroll = (evt: {target: EventTarget | null} | {}) => {
+    if ('target' in evt && (evt.target as HTMLElement | null)?.contains(this.container)) {
       this.close({});
     }
   };
@@ -59,10 +84,11 @@ export default class Dropdown extends React.Component {
   componentDidMount() {
     document.body.addEventListener('click', this.close, true);
     document.body.addEventListener('scroll', this.handleScroll, true);
-    new MutationObserver(this.fixPositioning).observe(this.container, {
-      childList: true,
-      subtree: true,
-    });
+    this.container &&
+      new MutationObserver(this.fixPositioning).observe(this.container, {
+        childList: true,
+        subtree: true,
+      });
     window.addEventListener('resize', this.fixPositioning);
   }
 
@@ -71,40 +97,51 @@ export default class Dropdown extends React.Component {
     open && this.calculateMenuStyle(open);
   };
 
-  calculateMenuStyle = (open) => {
-    const activeButton = this.container.querySelector('.activateButton');
-    const menuStyle = {minWidth: this.container.clientWidth + 'px'};
-    const listStyles = {};
+  calculateMenuStyle = (open: boolean) => {
+    const activeButton = this.container?.querySelector<HTMLButtonElement>('.activateButton');
+    const menuStyle: CSSProperties = {minWidth: this.container?.clientWidth + 'px'};
+    const listStyles: CSSProperties = {};
     let scrollable = false;
     const margin = 10;
 
     const bodyWidth = document.body.clientWidth;
     const overlay = this.menuContainer.current;
-    const buttonPosition = activeButton.getBoundingClientRect();
-    const screenBounds = getScreenBounds();
-    const offsetParent = activeButton.offsetParent.getBoundingClientRect();
+    if (activeButton) {
+      const buttonPosition = activeButton?.getBoundingClientRect();
+      const screenBounds = getScreenBounds();
+      const offsetParent = activeButton?.offsetParent?.getBoundingClientRect();
 
-    if (open) {
-      menuStyle.top = buttonPosition.top - offsetParent.top + activeButton.offsetHeight;
-    }
+      if (offsetParent) {
+        if (open) {
+          menuStyle.top = buttonPosition.top - offsetParent.top + activeButton.offsetHeight;
+        }
 
-    menuStyle.left = buttonPosition.left - offsetParent.left;
+        menuStyle.left = buttonPosition.left - offsetParent.left;
+      }
+      if (overlay) {
+        // check to flip menu horizentally
+        if (
+          buttonPosition.left + overlay.clientWidth > bodyWidth &&
+          typeof menuStyle.left === 'number'
+        ) {
+          menuStyle.left -= overlay.clientWidth - buttonPosition.width;
+        }
 
-    // check to flip menu horizentally
-    if (buttonPosition.left + overlay.clientWidth > bodyWidth) {
-      menuStyle.left -= overlay.clientWidth - buttonPosition.width;
-    }
+        if (open && buttonPosition.bottom + overlay.clientHeight > screenBounds.bottom) {
+          scrollable = true;
+          listStyles.height = screenBounds.bottom - buttonPosition.bottom - margin;
 
-    if (open && buttonPosition.bottom + overlay.clientHeight > screenBounds.bottom) {
-      scrollable = true;
-      listStyles.height = screenBounds.bottom - buttonPosition.bottom - margin;
-
-      // check to flip menu vertically
-      if (buttonPosition.bottom + overlay.clientHeight > screenBounds.bottom) {
-        menuStyle.top -= overlay.clientHeight + buttonPosition.height + 6; // 2 x 3px menu margin
-        if (buttonPosition.top - screenBounds.top >= overlay.clientHeight) {
-          scrollable = false;
-          listStyles.height = 'auto';
+          // check to flip menu vertically
+          if (
+            buttonPosition.bottom + overlay.clientHeight > screenBounds.bottom &&
+            typeof menuStyle.top === 'number'
+          ) {
+            menuStyle.top -= overlay.clientHeight + buttonPosition.height + 6; // 2 x 3px menu margin
+            if (buttonPosition.top - screenBounds.top >= overlay.clientHeight) {
+              scrollable = false;
+              listStyles.height = 'auto';
+            }
+          }
         }
       }
     }
@@ -112,45 +149,48 @@ export default class Dropdown extends React.Component {
     this.setState({menuStyle, listStyles, scrollable});
   };
 
-  handleKeyPress = (evt) => {
+  handleKeyPress = (evt: KeyboardEvent<HTMLDivElement>) => {
     evt.stopPropagation();
 
     const options = Array.from(
-      this.container.querySelectorAll('.activateButton, li > :not([disabled])')
+      this.container?.querySelectorAll<HTMLElement>('.activateButton, li > :not([disabled])') || []
     );
 
     evt = evt || window.event;
-    const selectedOption = options.indexOf(document.activeElement);
+    const eventTarget = evt.target as HTMLDivElement | null;
+    const activeElement = document.activeElement as HTMLDivElement | null;
+    const selectedOption = activeElement ? options.indexOf(activeElement) : null;
 
     if (evt.key !== 'Tab') {
       evt.preventDefault();
     }
 
     if (evt.key === 'Enter') {
-      evt.target.click();
+      eventTarget?.click();
     }
 
     if (evt.key === 'Escape') {
+      console.log('first');
       this.close({});
     }
 
     if (evt.key === 'ArrowDown') {
       if (!this.state.open) {
-        evt.target.click();
-      } else {
-        options[Math.min(selectedOption + 1, options.length - 1)].focus();
+        eventTarget?.click();
+      } else if (selectedOption !== null) {
+        options[Math.min(selectedOption + 1, options.length - 1)]?.focus();
       }
     }
 
-    if (evt.key === 'ArrowUp') {
-      options[Math.max(selectedOption - 1, 0)].focus();
+    if (evt.key === 'ArrowUp' && selectedOption !== null) {
+      options[Math.max(selectedOption - 1, 0)]?.focus();
     }
 
-    if (/^\w$/.test(evt.key)) {
+    if (/^\w$/.test(evt.key) && activeElement) {
       const matchedOption = findLetterOption(
         options.slice(1),
         evt.key,
-        options.indexOf(document.activeElement)
+        options.indexOf(activeElement)
       );
       if (matchedOption) {
         matchedOption.focus();
@@ -207,7 +247,7 @@ export default class Dropdown extends React.Component {
     );
   }
 
-  storeContainer = (node) => {
+  storeContainer = (node: HTMLDivElement) => {
     this.container = node;
   };
 
@@ -216,7 +256,7 @@ export default class Dropdown extends React.Component {
     document.body.removeEventListener('scroll', this.handleScroll, true);
     window.removeEventListener('resize', this.fixPositioning);
   }
-}
 
-Dropdown.Option = DropdownOption;
-Dropdown.Submenu = Submenu;
+  static Option = DropdownOption;
+  static Submenu = Submenu;
+}

@@ -5,7 +5,15 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useEffect, useState, useRef} from 'react';
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactElement,
+  UIEvent,
+} from 'react';
 import classnames from 'classnames';
 
 import {Select} from 'components';
@@ -16,12 +24,23 @@ import Submenu from './Submenu';
 
 import './DropdownOptionsList.scss';
 
-export default function DropdownOptionsList({open, closeParent, children, className, ...props}) {
-  const [openSubmenu, setOpenSubmenu] = useState(null);
-  const [fixedSubmenu, setFixedSubmenu] = useState(null);
+interface DropdownOptionsListProps extends ComponentPropsWithoutRef<'ul'> {
+  open?: boolean;
+  closeParent?: () => void;
+}
 
-  const scheduledRemove = useRef();
-  const optionsListRef = useRef();
+export default function DropdownOptionsList({
+  open,
+  closeParent,
+  children,
+  className,
+  ...props
+}: DropdownOptionsListProps) {
+  const [openSubmenu, setOpenSubmenu] = useState<number | null>(null);
+  const [fixedSubmenu, setFixedSubmenu] = useState<number | null>(null);
+
+  const scheduledRemove = useRef<ReturnType<typeof setTimeout>>();
+  const optionsListRef = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     setOpenSubmenu(null);
@@ -30,9 +49,9 @@ export default function DropdownOptionsList({open, closeParent, children, classN
 
   const closeSubmenu = () => setOpenSubmenu(null);
 
-  const renderChild = (child, idx) => {
+  const renderChild = (child: ReactElement, idx: number) => {
     if (child?.type === Submenu || child?.type === Select.Submenu) {
-      return React.cloneElement(child, {
+      return React.cloneElement<ComponentProps<typeof Submenu>>(child, {
         open: fixedSubmenu === idx || (fixedSubmenu === null && openSubmenu === idx),
         fixed: fixedSubmenu === idx,
         offset: optionsListRef.current?.offsetWidth,
@@ -55,10 +74,10 @@ export default function DropdownOptionsList({open, closeParent, children, classN
         closeParent,
       });
     } else if (child?.type === DropdownOption || child?.type === Select.Option) {
-      return React.cloneElement(child, {
-        onMouseEnter: (evt) => {
+      return React.cloneElement<ComponentProps<typeof DropdownOption>>(child, {
+        onMouseEnter: (evt: UIEvent<HTMLElement>) => {
           child.props.onMouseEnter?.(evt);
-          if (!evt.target.classList.contains('disabled')) {
+          if (!(evt.target as HTMLElement | null)?.classList.contains('disabled')) {
             closeSubmenu();
           }
         },

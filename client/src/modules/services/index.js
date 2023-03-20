@@ -63,3 +63,4 @@ export function getCollection(path) {
 
 export {loadAlerts, addAlert, removeAlert, editAlert} from './alertService';
 export {default as ignoreFragments} from './ignoreFragments';
+export {default as isReactElement} from './isReactElement';

@@ -14,3 +14,5 @@ export {Input} from './Input';
 export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
 export {Modal} from './Modal';
+export {Dropdown} from './Dropdown';
+export {Select} from './Select';
