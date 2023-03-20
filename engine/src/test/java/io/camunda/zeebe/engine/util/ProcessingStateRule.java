@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -40,8 +39,7 @@ public final class ProcessingStateRule extends ExternalResource {
 
     final var context = db.createContext();
     final var keyGenerator = new DbKeyGenerator(partition, db, context);
-    processingState =
-        new ProcessingDbState(partition, db, context, keyGenerator, GatewayStreamer.noop());
+    processingState = new ProcessingDbState(partition, db, context, keyGenerator);
   }
 
   @Override

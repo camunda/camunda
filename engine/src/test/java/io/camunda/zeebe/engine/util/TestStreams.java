@@ -35,11 +35,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
@@ -66,7 +63,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
@@ -92,7 +88,6 @@ public final class TestStreams {
   private boolean snapshotWasTaken = false;
   private StreamProcessorMode streamProcessorMode = StreamProcessorMode.PROCESSING;
   private int maxCommandsInBatch = StreamProcessorContext.DEFAULT_MAX_COMMANDS_IN_BATCH;
-  private GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -266,7 +261,6 @@ public final class TestStreams {
             .recordProcessors(List.of(new Engine(wrappedFactory, new EngineConfiguration())))
             .streamProcessorMode(streamProcessorMode)
             .maxCommandsInBatch(maxCommandsInBatch)
-            .jobStreamer(new DelegatingStreamer())
             .partitionCommandSender(mock(InterPartitionCommandSender.class));
 
     final StreamProcessor streamProcessor = builder.build();
@@ -287,11 +281,6 @@ public final class TestStreams {
     closeables.manage(processorContext);
 
     return streamProcessor;
-  }
-
-  public void setJobStreamer(
-      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
-    this.jobStreamer = jobStreamer;
   }
 
   public void pauseProcessing(final String streamName) {
@@ -474,25 +463,6 @@ public final class TestStreams {
         FileUtil.deleteFolder(runtimePath);
       }
       closed = true;
-    }
-  }
-
-  private final class DelegatingStreamer
-      implements GatewayStreamer<JobActivationProperties, ActivatedJob> {
-
-    @Override
-    public void notifyWorkAvailable(final String streamType) {
-      if (jobStreamer == null) {
-        return;
-      }
-
-      jobStreamer.notifyWorkAvailable(streamType);
-    }
-
-    @Override
-    public Optional<GatewayStream<JobActivationProperties, ActivatedJob>> streamFor(
-        final DirectBuffer streamType) {
-      return Optional.ofNullable(jobStreamer).flatMap(s -> s.streamFor(streamType));
     }
   }
 }

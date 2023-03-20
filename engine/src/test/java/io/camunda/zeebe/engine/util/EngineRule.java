@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -49,11 +50,8 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.stream.api.ActivatedJob;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -106,8 +104,7 @@ public final class EngineRule extends ExternalResource {
       new Int2ObjectHashMap<>();
 
   private long lastProcessedPosition = -1L;
-  private GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer =
-      GatewayStreamer.noop();
+  private JobStreamer jobStreamer = JobStreamer.noop();
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, null);
@@ -157,8 +154,7 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(environmentRule::closeStreamProcessor);
   }
 
-  public EngineRule withJobStreamer(
-      final GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer) {
+  public EngineRule withJobStreamer(final JobStreamer jobStreamer) {
     this.jobStreamer = jobStreamer;
     return this;
   }
@@ -200,7 +196,8 @@ public final class EngineRule extends ExternalResource {
                           partitionCount,
                           new SubscriptionCommandSender(partitionId, interPartitionCommandSender),
                           interPartitionCommandSender,
-                          featureFlags)
+                          featureFlags,
+                          jobStreamer)
                       .withListener(
                           new ProcessingExporterTransistor(
                               environmentRule.getLogStream(partitionId)))
@@ -219,8 +216,6 @@ public final class EngineRule extends ExternalResource {
                       onSkippedCallback.accept(skippedRecord);
                     }
                   }));
-          // has to be set after the stream processor is started
-          environmentRule.setJobStreamer(jobStreamer);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
   }
