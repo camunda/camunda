@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
-import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg;
 import io.camunda.zeebe.gateway.impl.configuration.IdentityCfg;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -20,18 +19,18 @@ import io.grpc.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class AuthenticationInterceptor implements ServerInterceptor {
-  private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
+public final class IdentityInterceptor implements ServerInterceptor {
+  private static final Logger LOGGER = LoggerFactory.getLogger(IdentityInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   private final Identity identity;
 
-  public AuthenticationInterceptor(final AuthenticationCfg config) {
-    this(createIdentity(config.getIdentity()));
+  public IdentityInterceptor(final IdentityCfg config) {
+    this(createIdentity(config));
   }
 
-  AuthenticationInterceptor(final Identity identity) {
+  IdentityInterceptor(final Identity identity) {
     this.identity = identity;
   }
 
