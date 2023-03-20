@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.backup.gcs.util;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.images.builder.Transferable;
 import org.testcontainers.utility.DockerImageName;
 
 public final class GcsContainer extends GenericContainer<GcsContainer> {
   private static final DockerImageName IMAGE = DockerImageName.parse("fsouza/fake-gcs-server");
   private static final int PORT = 4443;
+  private static final String STARTER_SCRIPT = "/testcontainers_start.sh";
 
   public GcsContainer() {
     this("1");
@@ -20,7 +23,22 @@ public final class GcsContainer extends GenericContainer<GcsContainer> {
 
   public GcsContainer(String version) {
     super(IMAGE.withTag(version));
-    this.withExposedPorts(PORT).withCommand("-scheme http");
+    this.withExposedPorts(PORT)
+        .withCreateContainerCmdModifier(cmd -> cmd.withEntrypoint("sh"))
+        .withCommand(
+            "-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; " + STARTER_SCRIPT);
+  }
+
+  @Override
+  protected void containerIsStarting(final InspectContainerResponse containerInfo) {
+    super.containerIsStarting(containerInfo);
+    //noinspection OctalInteger
+    copyFileToContainer(
+        Transferable.of(
+            "/bin/fake-gcs-server -data /data -scheme http -external-url %s"
+                .formatted(externalEndpoint()),
+            0777),
+        STARTER_SCRIPT);
   }
 
   @SuppressWarnings("HttpUrlsUsage")
