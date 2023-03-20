@@ -339,14 +339,14 @@ spec:
       value: localhost
 
     livenessProbe:
-      initialDelaySeconds: 50
+      initialDelaySeconds: 100
       periodSeconds: 10
       failureThreshold: 10
       httpGet:
         path: /
         port: 8090
     readinessProbe:
-      initialDelaySeconds: 50
+      initialDelaySeconds: 100
       periodSeconds: 10
       failureThreshold: 10
       httpGet:
