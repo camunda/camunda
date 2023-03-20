@@ -5,19 +5,34 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentPropsWithoutRef, FormEvent} from 'react';
 
 import classnames from 'classnames';
 
 import './Form.scss';
 
-export default function Form({compact, title, description, horizontal, onSubmit, ...props}) {
+interface FormProps extends Omit<ComponentPropsWithoutRef<'form'>, 'title'> {
+  title?: string | JSX.Element[];
+  description?: string | JSX.Element[];
+  compact?: boolean;
+  horizontal?: boolean;
+  onSubmit?: (evt: FormEvent<HTMLFormElement>) => void;
+}
+
+export default function Form({
+  compact,
+  title,
+  description,
+  horizontal,
+  onSubmit,
+  ...props
+}: FormProps) {
   return (
     <form
       {...props}
       onSubmit={(evt) => {
         evt.preventDefault();
-        onSubmit && onSubmit(evt);
+        onSubmit?.(evt);
       }}
       className={classnames('Form', {compact, horizontal}, props.className)}
     >
@@ -28,7 +43,11 @@ export default function Form({compact, title, description, horizontal, onSubmit,
   );
 }
 
-Form.Group = function FormGroup({noSpacing, ...props}) {
+interface FormGroupProps extends ComponentPropsWithoutRef<'div'> {
+  noSpacing?: boolean;
+}
+
+Form.Group = function FormGroup({noSpacing, ...props}: FormGroupProps) {
   return (
     <div {...props} className={classnames('FormGroup', {noSpacing}, props.className)}>
       {props.children}
@@ -36,7 +55,7 @@ Form.Group = function FormGroup({noSpacing, ...props}) {
   );
 };
 
-Form.InputGroup = function InputGroup(props) {
+Form.InputGroup = function InputGroup(props: ComponentPropsWithoutRef<'div'>) {
   return (
     <div {...props} className={classnames('InputGroup', props.className)}>
       {props.children}
