@@ -262,7 +262,7 @@ public final class CreateProcessInstanceWithResultTest {
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType("task"))
                 .boundaryEvent("error", e -> e.errorEventDefinition().error("error"))
-                .zeebeOutputExpression("error", "error") // error variables are not propagated
+                .zeebeOutputExpression("\"thrown\"", "error") // error variables are not propagated
                 .endEvent()
                 .moveToActivity("task")
                 .endEvent()
@@ -296,7 +296,6 @@ public final class CreateProcessInstanceWithResultTest {
                 .newThrowErrorCommand(job)
                 .errorCode("error")
                 .errorMessage("throwing an error")
-                .variables(Map.of("error", "thrown"))
                 .send()
                 .join());
 
