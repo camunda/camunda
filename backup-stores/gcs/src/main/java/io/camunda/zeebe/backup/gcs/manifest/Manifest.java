@@ -11,6 +11,7 @@ import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRE
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import java.time.Instant;
@@ -19,10 +20,14 @@ import java.time.Instant;
 @JsonDeserialize(as = ManifestImpl.class)
 public sealed interface Manifest {
 
-  static InProgressManifest createManifest(
-      final BackupIdentifierImpl id, final BackupDescriptorImpl descriptor) {
+  static InProgressManifest create(Backup backup) {
     final var creationTime = Instant.now();
-    return new ManifestImpl(id, descriptor, IN_PROGRESS, creationTime, creationTime);
+    return new ManifestImpl(
+        BackupIdentifierImpl.from(backup.id()),
+        BackupDescriptorImpl.from(backup.descriptor()),
+        IN_PROGRESS,
+        creationTime,
+        creationTime);
   }
 
   BackupIdentifierImpl id();
