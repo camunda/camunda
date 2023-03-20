@@ -5,14 +5,27 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
+import {ComponentPropsWithoutRef, MouseEvent} from 'react';
 
 import classnames from 'classnames';
 import './Labeled.scss';
 
-export default function Labeled({label, className, appendLabel, children, disabled, ...props}) {
+interface LabeledProps extends ComponentPropsWithoutRef<'label'> {
+  label: string | JSX.Element[];
+  appendLabel?: boolean;
+  disabled?: boolean;
+}
+
+export default function Labeled({
+  label,
+  className,
+  appendLabel,
+  children,
+  disabled,
+  ...props
+}: LabeledProps) {
   return (
-    <div className={classnames('Labeled', className)} disabled={disabled}>
+    <div className={classnames('Labeled', className, {disabled})}>
       <label className={classnames({checkLabel: appendLabel})} onClick={catchClick} {...props}>
         {!appendLabel && <span className="label before">{label}</span>}
         {children}
@@ -22,11 +35,12 @@ export default function Labeled({label, className, appendLabel, children, disabl
   );
 }
 
-function catchClick(evt) {
+function catchClick(evt: MouseEvent<HTMLElement>) {
+  const eventTarget = evt.target as HTMLElement;
   if (
-    !evt.target.classList.contains('label') &&
-    !evt.target.closest('.label') &&
-    !evt.target.classList.contains('Input')
+    !eventTarget.classList.contains('label') &&
+    !eventTarget.closest('.label') &&
+    !eventTarget.classList.contains('Input')
   ) {
     evt.preventDefault();
   }

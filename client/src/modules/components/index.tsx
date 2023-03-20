@@ -11,3 +11,4 @@ export {Icon} from './Icon';
 export {ActionItem} from './ActionItem';
 export {Form} from './Form';
 export {Input} from './Input';
+export {Labeled} from './Labeled';
