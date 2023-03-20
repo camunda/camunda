@@ -30,6 +30,4 @@ public interface RecordProcessorContext {
   InterPartitionCommandSender getPartitionCommandSender();
 
   KeyGenerator getKeyGenerator();
-
-  GatewayStreamer<JobActivationProperties, ActivatedJob> jobStreamer();
 }
