@@ -5,20 +5,16 @@
  * except in compliance with the proprietary license.
  */
 
-import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {processInstanceDetailsStore} from './processInstanceDetails';
-import {
-  createInstance,
-  mockProcessXML,
-  mockCallActivityProcessXML,
-} from 'modules/testUtils';
+import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstanceDetailsDiagram';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {createInstance, mockProcessXML} from 'modules/testUtils';
 import {waitFor} from 'modules/testing-library';
-import {modificationsStore} from './modifications';
+import {modificationsStore} from 'modules/stores/modifications';
 import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {processInstanceDetailsStatisticsStore} from './processInstanceDetailsStatistics';
+import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
-import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 import {open} from 'modules/mocks/diagrams';
+import {mockFetchProcessXML} from 'modules/mocks/api/processes/fetchProcessXML';
 
 describe('stores/processInstanceDiagram', () => {
   beforeEach(() => {
@@ -166,56 +162,6 @@ describe('stores/processInstanceDiagram', () => {
     );
 
     window.addEventListener = originalEventListener;
-  });
-
-  describe('hasCalledProcessInstances', () => {
-    it('should return true for processes with call activity', async () => {
-      mockFetchProcessXML().withSuccess(mockCallActivityProcessXML);
-
-      processInstanceDetailsStore.setProcessInstance(
-        createInstance({
-          id: '123',
-          state: 'ACTIVE',
-          processId: '10',
-        })
-      );
-
-      processInstanceDetailsDiagramStore.init();
-
-      await waitFor(() =>
-        expect(processInstanceDetailsDiagramStore.state.status).toEqual(
-          'fetched'
-        )
-      );
-
-      expect(processInstanceDetailsDiagramStore.hasCalledProcessInstances).toBe(
-        true
-      );
-    });
-
-    it('should return false for processes without call activity', async () => {
-      mockFetchProcessXML().withSuccess(mockProcessXML);
-
-      processInstanceDetailsStore.setProcessInstance(
-        createInstance({
-          id: '123',
-          state: 'ACTIVE',
-          processId: '10',
-        })
-      );
-
-      processInstanceDetailsDiagramStore.init();
-
-      await waitFor(() =>
-        expect(processInstanceDetailsDiagramStore.state.status).toEqual(
-          'fetched'
-        )
-      );
-
-      expect(processInstanceDetailsDiagramStore.hasCalledProcessInstances).toBe(
-        false
-      );
-    });
   });
 
   it('should get modifiable-nonmodifiable flow nodes', async () => {
