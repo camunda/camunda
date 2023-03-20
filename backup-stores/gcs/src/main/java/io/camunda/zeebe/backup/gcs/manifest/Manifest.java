@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -17,11 +17,11 @@ import java.time.Instant;
 
 @JsonSerialize(as = ManifestImpl.class)
 @JsonDeserialize(as = ManifestImpl.class)
-public interface Manifest {
+public sealed interface Manifest {
 
   static InProgressManifest createManifest(
       final BackupIdentifierImpl id, final BackupDescriptorImpl descriptor) {
-    final Instant creationTime = Instant.now();
+    final var creationTime = Instant.now();
     return new ManifestImpl(id, descriptor, IN_PROGRESS, creationTime, creationTime);
   }
 
@@ -40,4 +40,27 @@ public interface Manifest {
   CompletedManifest asCompleted();
 
   FailedManifest asFailed();
+
+  sealed interface InProgressManifest extends Manifest permits ManifestImpl {
+
+    CompletedManifest complete();
+
+    FailedManifest fail(final String failureReason);
+  }
+
+  sealed interface CompletedManifest extends Manifest permits ManifestImpl {
+
+    FailedManifest fail(final String failureReason);
+  }
+
+  sealed interface FailedManifest extends Manifest permits ManifestImpl {
+
+    String failureReason();
+  }
+
+  enum StatusCode {
+    IN_PROGRESS,
+    COMPLETED,
+    FAILED
+  }
 }

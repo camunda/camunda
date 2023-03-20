@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -24,7 +24,7 @@ record ManifestImpl(
     Instant createdAt,
     Instant modifiedAt,
     String failureReason)
-    implements InProgressManifest, CompletedManifest, FailedManifest {
+    implements Manifest.InProgressManifest, Manifest.CompletedManifest, Manifest.FailedManifest {
 
   ManifestImpl {
     if (failureReason != null && statusCode != FAILED) {

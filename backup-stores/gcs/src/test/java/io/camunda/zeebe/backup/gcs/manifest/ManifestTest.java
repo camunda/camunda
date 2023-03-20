@@ -8,9 +8,9 @@
 package io.camunda.zeebe.backup.gcs.manifest;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
-import io.camunda.zeebe.backup.gcs.manifest.StatusCode;
+import io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode;
 
 public abstract class GcsBackupStoreException extends RuntimeException {
   public GcsBackupStoreException(final String message) {
