@@ -12,9 +12,13 @@ import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRE
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.time.Instant;
+import java.util.Optional;
 
 @JsonSerialize(as = ManifestImpl.class)
 @JsonDeserialize(as = ManifestImpl.class)
@@ -28,6 +32,32 @@ public sealed interface Manifest {
         IN_PROGRESS,
         creationTime,
         creationTime);
+  }
+
+  static BackupStatus toStatus(Manifest manifest) {
+    return switch (manifest.statusCode()) {
+      case IN_PROGRESS -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.IN_PROGRESS,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case COMPLETED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.COMPLETED,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case FAILED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.FAILED,
+          Optional.ofNullable(manifest.asFailed().failureReason()),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+    };
   }
 
   BackupIdentifierImpl id();
