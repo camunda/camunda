@@ -171,8 +171,8 @@
 
     <!-- Following are used for generating models from open api spec   -->
     <dependency>
-      <groupId>javax.validation</groupId>
-      <artifactId>validation-api</artifactId>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
     </dependency>
 
     <dependency>
@@ -424,6 +424,7 @@
               <configOptions>
                 <sourceFolder>src/main</sourceFolder>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <useSpringBoot3>true</useSpringBoot3>
               </configOptions>
             </configuration>
           </execution>

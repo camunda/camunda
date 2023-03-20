@@ -79,7 +79,7 @@ public interface BackupActuator {
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
    */
-  @RequestLine("POST /")
+  @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   @Body("%7B\"backupId\": \"{backupId}\"%7D")
   TakeBackupResponse take(@Param("backupId") long backupId);
@@ -88,7 +88,7 @@ public interface BackupActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   BackupInfo status(@Param final long id);
 
-  @RequestLine("GET /")
+  @RequestLine("GET")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   List<BackupInfo> list();
 

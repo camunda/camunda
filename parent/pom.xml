@@ -93,8 +93,8 @@
     <version.feel-scala>1.15.3</version.feel-scala>
     <version.dmn-scala>1.7.4</version.dmn-scala>
     <version.rest-assured>5.3.0</version.rest-assured>
-    <version.spring>5.3.23</version.spring>
-    <version.spring-boot>2.7.5</version.spring-boot>
+    <version.spring>6.0.6</version.spring>
+    <version.spring-boot>3.0.4</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.4.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
@@ -119,7 +119,7 @@
     <version.feign>12.2</version.feign>
     <version.awssdk>2.20.14</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
-    <version.validation-api>2.0.1.Final</version.validation-api>
+    <version.validation-api>3.0.2</version.validation-api>
     <version.jackson-databind-nullable>0.2.5</version.jackson-databind-nullable>
     <version.jackson-annotations>2.14.2</version.jackson-annotations>
     <version.swagger-annotations>2.2.7</version.swagger-annotations>
@@ -1072,6 +1072,13 @@
         <version>${version.gson}</version>
       </dependency>
 
+      <!-- between micrometer-core 1.10.2 and spring-web 6.0.0 -->
+      <dependency>
+        <groupId>io.micrometer</groupId>
+        <artifactId>micrometer-observation</artifactId>
+        <version>${version.micrometer}</version>
+      </dependency>
+
       <dependency>
         <groupId>com.cronutils</groupId>
         <artifactId>cron-utils</artifactId>
@@ -1079,8 +1086,8 @@
       </dependency>
 
       <dependency>
-        <groupId>javax.validation</groupId>
-        <artifactId>validation-api</artifactId>
+        <groupId>jakarta.validation</groupId>
+        <artifactId>jakarta.validation-api</artifactId>
         <version>${version.validation-api}</version>
       </dependency>
 

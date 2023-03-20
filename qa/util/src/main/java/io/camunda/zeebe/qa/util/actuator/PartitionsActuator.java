@@ -66,7 +66,7 @@ public interface PartitionsActuator {
         .target(target);
   }
 
-  @RequestLine("GET /")
+  @RequestLine("GET")
   @Headers("Accept: application/json")
   Map<Integer, PartitionStatus> query();
 
