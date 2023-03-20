@@ -8,21 +8,20 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.atomix.cluster.messaging.ClusterEventService;
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
+import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamer;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public final class JobGatewayStreamer
-    implements GatewayStreamer<JobActivationProperties, ActivatedJob> {
-
+public final class RemoteJobStreamer implements JobStreamer {
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
+
   private final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate;
   private final ClusterEventService eventService;
 
-  public JobGatewayStreamer(
+  public RemoteJobStreamer(
       final RemoteStreamer<JobActivationProperties, ActivatedJob> delegate,
       final ClusterEventService eventService) {
     this.delegate = delegate;
@@ -30,14 +29,12 @@ public final class JobGatewayStreamer
   }
 
   @Override
-  public void notifyWorkAvailable(final String streamType) {
-
-    eventService.broadcast(JOBS_AVAILABLE_TOPIC, streamType);
+  public void notifyWorkAvailable(final String jobType) {
+    eventService.broadcast(JOBS_AVAILABLE_TOPIC, jobType);
   }
 
   @Override
-  public Optional<GatewayStream<JobActivationProperties, ActivatedJob>> streamFor(
-      final DirectBuffer streamId) {
-    return delegate.streamFor(streamId).map(JobGatewayStream::new);
+  public Optional<JobStream> streamFor(final DirectBuffer jobType) {
+    return delegate.streamFor(jobType).map(RemoteJobStream::new);
   }
 }

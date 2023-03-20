@@ -7,27 +7,27 @@
  */
 package io.camunda.zeebe.broker.jobstream;
 
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.GatewayStreamer.ErrorHandler;
-import io.camunda.zeebe.stream.api.GatewayStreamer.GatewayStream;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
+import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.ErrorHandler;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStream;
 
-final class JobGatewayStream implements GatewayStream<JobActivationProperties, ActivatedJob> {
+final class RemoteJobStream implements JobStream {
 
   private final RemoteStream<JobActivationProperties, ActivatedJob> remoteStream;
 
-  JobGatewayStream(final RemoteStream<JobActivationProperties, ActivatedJob> remoteStream) {
+  RemoteJobStream(final RemoteStream<JobActivationProperties, ActivatedJob> remoteStream) {
     this.remoteStream = remoteStream;
   }
 
   @Override
-  public JobActivationProperties metadata() {
+  public JobActivationProperties properties() {
     return remoteStream.metadata();
   }
 
   @Override
-  public void push(final ActivatedJob p, final ErrorHandler<ActivatedJob> errorHandler) {
-    remoteStream.push(p, errorHandler::handleError);
+  public void push(final ActivatedJob job, final ErrorHandler errorHandler) {
+    remoteStream.push(job, errorHandler::handleError);
   }
 }

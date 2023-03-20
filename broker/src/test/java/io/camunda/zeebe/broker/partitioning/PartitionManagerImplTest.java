@@ -23,9 +23,9 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.stream.api.GatewayStreamer;
 import io.camunda.zeebe.util.Environment;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -72,7 +72,7 @@ final class PartitionManagerImplTest {
             null,
             mock(ExporterRepository.class),
             null,
-            GatewayStreamer.noop());
+            JobStreamer.noop());
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -101,7 +101,7 @@ final class PartitionManagerImplTest {
             null,
             mock(ExporterRepository.class),
             null,
-            GatewayStreamer.noop());
+            JobStreamer.noop());
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -128,7 +128,7 @@ final class PartitionManagerImplTest {
             null,
             mock(ExporterRepository.class),
             null,
-            GatewayStreamer.noop());
+            JobStreamer.noop());
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);
@@ -156,7 +156,7 @@ final class PartitionManagerImplTest {
             null,
             mock(ExporterRepository.class),
             null,
-            GatewayStreamer.noop());
+            JobStreamer.noop());
 
     // then
     final var config = getPartitionGroupConfig(partitionManager);

@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.jobstream.JobGatewayStreamer;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
+import io.camunda.zeebe.broker.jobstream.RemoteJobStreamer;
+import io.camunda.zeebe.engine.processing.streamprocessor.ActivatedJob;
+import io.camunda.zeebe.engine.processing.streamprocessor.JobActivationProperties;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.stream.api.ActivatedJob;
-import io.camunda.zeebe.stream.api.JobActivationProperties;
 import io.camunda.zeebe.transport.TransportFactory;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamService;
 import java.util.Collection;
@@ -48,7 +48,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
                 final var jobStreamService =
                     new JobStreamService(
                         remoteStreamService,
-                        new JobGatewayStreamer(streamer, clusterServices.getEventService()));
+                        new RemoteJobStreamer(streamer, clusterServices.getEventService()));
                 clusterServices.getMembershipService().addListener(remoteStreamService);
                 brokerStartupContext.setJobStreamService(jobStreamService);
                 startupFuture.complete(brokerStartupContext);
