@@ -71,8 +71,8 @@ public final class TestBackupProvider implements ArgumentsProvider {
     return new BackupImpl(
         id,
         new BackupDescriptorImpl(Optional.of("test-snapshot-id"), 4, 5, "test"),
-        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)),
-        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)));
+        new NamedFileSetImpl(Map.of("snapshot-file-1", s1, "snapshot-file-2", s2)),
+        new NamedFileSetImpl(Map.of("segment-file-1", seg1, "segment-file-2", seg2)));
   }
 
   public Backup minimalBackupWithId(final BackupIdentifierImpl id) throws IOException {
