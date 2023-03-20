@@ -1,0 +1,8 @@
+{
+  "description": "Add field version ",
+  "@type": "processorStep",
+  "indexName": "task",
+  "version": "8.2.3",
+  "order": 0,
+  "content": "{\"append\": {\"field\": \"candidateUsers\", \"value\":[]}}"
+}

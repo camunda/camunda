@@ -11,6 +11,7 @@ query getTask($taskId: String!){
         }
         taskState
         candidateGroups
+        candidateUsers
         processDefinitionId
         processInstanceId
     }

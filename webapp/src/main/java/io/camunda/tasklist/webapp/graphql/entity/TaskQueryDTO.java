@@ -17,6 +17,7 @@ public class TaskQueryDTO {
   private String assignee;
   private String taskDefinitionId;
   private String candidateGroup;
+  private String candidateUser;
   private String processDefinitionId;
   private String processInstanceId;
   private int pageSize = DEFAULT_PAGE_SIZE;
@@ -112,6 +113,15 @@ public class TaskQueryDTO {
 
   public TaskQueryDTO setCandidateGroup(final String candidateGroup) {
     this.candidateGroup = candidateGroup;
+    return this;
+  }
+
+  public String getCandidateUser() {
+    return candidateUser;
+  }
+
+  public TaskQueryDTO setCandidateUser(String candidateUser) {
+    this.candidateUser = candidateUser;
     return this;
   }
 

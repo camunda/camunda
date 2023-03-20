@@ -25,6 +25,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String STATE = "state";
   public static final String ASSIGNEE = "assignee";
   public static final String CANDIDATE_GROUPS = "candidateGroups";
+  public static final String CANDIDATE_USERS = "candidateUsers";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
 
@@ -35,7 +36,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
 
   @Override
   public String getVersion() {
-    return "1.3.0";
+    return "8.2.3";
   }
 
   @Override

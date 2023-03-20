@@ -46,6 +46,9 @@
 			"candidateGroups": {
 				"type": "keyword"
 			},
+			"candidateUsers": {
+				"type": "keyword"
+			},
 			"formKey": {
 				"type": "keyword"
 			}

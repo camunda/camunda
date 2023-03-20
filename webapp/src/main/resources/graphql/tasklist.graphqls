@@ -30,6 +30,8 @@ type Task {
     processInstanceId: String
     #Candidate groups
     candidateGroups: [String!]
+    #Candidate users
+    candidateUsers: [String!]
 }
 
 #Describes task embedded form
@@ -59,6 +61,8 @@ input TaskQuery {
     assignee: String
     # given group is in candidate groups list
     candidateGroup: String
+    # given user is in candidate users list
+    candidateUser: String
     # process definition id
     processDefinitionId: String
     # process instance id

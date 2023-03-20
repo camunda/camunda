@@ -86,7 +86,7 @@
     <bpmn:userTask id="registerPassenger" name="Register the passenger">
       <bpmn:extensionElements>
         <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1" />
-        <zeebe:assignmentDefinition assignee="=assignee" candidateGroups="=candidateGroups"/>
+        <zeebe:assignmentDefinition assignee="=assignee" candidateGroups="=candidateGroups" candidateUsers="=candidateUsers"/>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0kkr7lf</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1n3aihd</bpmn:outgoing>

@@ -31,7 +31,7 @@ public final class TaskDTO {
   private String completionTime;
   private String assignee;
   private String[] candidateGroups;
-
+  private String[] candidateUsers;
   private TaskState taskState;
 
   private String[] sortValues;
@@ -157,6 +157,19 @@ public final class TaskDTO {
     return this;
   }
 
+  public String[] candidateUsers() {
+    return candidateUsers;
+  }
+
+  public TaskDTO setCandidateUsers(String[] candidateUsers) {
+    this.candidateUsers = candidateUsers;
+    return this;
+  }
+
+  public String[] getCandidateUsers() {
+    return candidateUsers;
+  }
+
   public String getFormKey() {
     return formKey;
   }
@@ -186,7 +199,8 @@ public final class TaskDTO {
             .setFlowNodeBpmnId(taskEntity.getFlowNodeBpmnId())
             .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId())
             .setFormKey(taskEntity.getFormKey())
-            .setCandidateGroups(taskEntity.getCandidateGroups());
+            .setCandidateGroups(taskEntity.getCandidateGroups())
+            .setCandidateUsers(taskEntity.getCandidateUsers());
     if (sortValues != null) {
       taskDTO.setSortValues(toArrayOfStrings(sortValues));
     }
@@ -194,7 +208,7 @@ public final class TaskDTO {
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -213,6 +227,7 @@ public final class TaskDTO {
         && Objects.equals(completionTime, taskDTO.completionTime)
         && Objects.equals(assignee, taskDTO.assignee)
         && Arrays.equals(candidateGroups, taskDTO.candidateGroups)
+        && Arrays.equals(candidateUsers, taskDTO.candidateUsers)
         && taskState == taskDTO.taskState
         && Arrays.equals(sortValues, taskDTO.sortValues)
         && Objects.equals(formKey, taskDTO.formKey);
@@ -235,6 +250,7 @@ public final class TaskDTO {
             isFirst,
             formKey);
     result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
     result = 31 * result + Arrays.hashCode(sortValues);
     return result;
   }
@@ -277,6 +293,12 @@ public final class TaskDTO {
         + isFirst
         + ", formId='"
         + formKey
+        + '\''
+        + ", candidateUsers='"
+        + candidateUsers
+        + '\''
+        + ", candidateGroups='"
+        + candidateGroups
         + '\''
         + '}';
   }

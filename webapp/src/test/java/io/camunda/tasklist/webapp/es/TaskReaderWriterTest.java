@@ -69,9 +69,9 @@ class TaskReaderWriterTest {
 
   @ParameterizedTest
   @CsvSource({
-    "CREATED,tasklist-task-1.3.0_",
-    "COMPLETED,tasklist-task-1.3.0_alias",
-    "CANCELED,tasklist-task-1.3.0_alias"
+    "CREATED,tasklist-task-8.2.3_",
+    "COMPLETED,tasklist-task-8.2.3_alias",
+    "CANCELED,tasklist-task-8.2.3_alias"
   })
   void getTasksForDifferentStates(TaskState taskState, String expectedIndexName) throws Exception {
     // Given

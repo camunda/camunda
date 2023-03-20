@@ -46,7 +46,7 @@
           <zeebe:input source="=total" target="amountToPay" />
           <zeebe:output source="=paid=&#34;true&#34;" target="paidAsBool" />
         </zeebe:ioMapping>
-        <zeebe:assignmentDefinition assignee="demo" candidateGroups="sales, accounting"/>
+        <zeebe:assignmentDefinition assignee="demo" candidateGroups="sales, accounting" candidateUsers="demo,admin"/>
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0j6tsnn</bpmn:incoming>
       <bpmn:incoming>SequenceFlow_1q6ade7</bpmn:incoming>

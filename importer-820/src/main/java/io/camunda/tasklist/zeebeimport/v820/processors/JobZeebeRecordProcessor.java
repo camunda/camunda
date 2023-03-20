@@ -10,8 +10,7 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.tasklist.zeebeimport.v820.record.Intent.CANCELED;
 import static io.camunda.tasklist.zeebeimport.v820.record.Intent.COMPLETED;
 import static io.camunda.tasklist.zeebeimport.v820.record.Intent.CREATED;
-import static io.camunda.zeebe.protocol.Protocol.USER_TASK_ASSIGNEE_HEADER_NAME;
-import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME;
+import static io.camunda.zeebe.protocol.Protocol.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,6 +78,7 @@ public class JobZeebeRecordProcessor {
 
     final String candidateGroups =
         recordValue.getCustomHeaders().get(USER_TASK_CANDIDATE_GROUPS_HEADER_NAME);
+
     if (candidateGroups != null) {
       try {
         entity.setCandidateGroups(objectMapper.readValue(candidateGroups, String[].class));
@@ -86,6 +86,20 @@ public class JobZeebeRecordProcessor {
         LOGGER.warn(
             String.format(
                 "Candidate groups can't be parsed from %s: %s", candidateGroups, e.getMessage()),
+            e);
+      }
+    }
+
+    final String candidateUsers =
+        recordValue.getCustomHeaders().get(USER_TASK_CANDIDATE_USERS_HEADER_NAME);
+
+    if (candidateUsers != null) {
+      try {
+        entity.setCandidateUsers(objectMapper.readValue(candidateUsers, String[].class));
+      } catch (JsonProcessingException e) {
+        LOGGER.warn(
+            String.format(
+                "Candidate users can't be parsed from %s: %s", candidateGroups, e.getMessage()),
             e);
       }
     }

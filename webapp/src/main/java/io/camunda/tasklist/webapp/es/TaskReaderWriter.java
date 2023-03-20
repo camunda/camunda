@@ -324,6 +324,11 @@ public class TaskReaderWriter {
       candidateGroupQ = termQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
     }
 
+    QueryBuilder candidateUserQ = null;
+    if (query.getCandidateUser() != null) {
+      candidateUserQ = termQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
+    }
+
     QueryBuilder processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
       processInstanceIdQ = termQuery(PROCESS_INSTANCE_ID, query.getProcessInstanceId());
@@ -343,6 +348,7 @@ public class TaskReaderWriter {
             idsQuery,
             taskDefinitionQ,
             candidateGroupQ,
+            candidateUserQ,
             processInstanceIdQ,
             processDefinitionIdQ);
     if (jointQ == null) {

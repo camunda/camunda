@@ -833,4 +833,49 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals("1", taskResponse.get("$.errors.length()"));
     assertEquals("Task with id wrongTaskId was not found", taskResponse.get("$.errors[0].message"));
   }
+
+  @Test
+  public void shouldReturnTaskWithCandidateUser() throws IOException {
+    final String candidateUser1 = "user1";
+    final String candidateUser2 = "user2";
+    final String candidateUsers = candidateUser1 + ", " + candidateUser2;
+
+    final List<TaskDTO> tasks =
+        this.startProcessWithCandidateUserAndSearchBy(candidateUsers, candidateUser2);
+    assertEquals(1, tasks.size());
+    assertTrue(Arrays.asList(tasks.get(0).getCandidateUsers()).contains(candidateUser2));
+  }
+
+  @Test
+  public void shouldNotReturnTasksWithCandidateUser() throws IOException {
+    final String candidateUsers = "random1,random2";
+    final List<TaskDTO> tasks = startProcessWithCandidateUserAndSearchBy(candidateUsers, "random3");
+    assertEquals(0, tasks.size());
+  }
+
+  private List<TaskDTO> startProcessWithCandidateUserAndSearchBy(
+      String candidateUsersInput, String candidateUserQuery) {
+
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
+            .startEvent("start")
+            .userTask(
+                ELEMENT_ID,
+                task -> {
+                  task.zeebeCandidateUsers(candidateUsersInput);
+                })
+            .endEvent()
+            .done();
+    return tester
+        .having()
+        .deployProcess(model, "testProcess.bpmn")
+        .waitUntil()
+        .processIsDeployed()
+        .and()
+        .startProcessInstance(BPMN_PROCESS_ID)
+        .waitUntil()
+        .taskIsCreated(ELEMENT_ID)
+        .getTasksByQuery(
+            "{tasks(query: {candidateUser: \"" + candidateUserQuery + "\"}) {id candidateUsers}}");
+  }
 }

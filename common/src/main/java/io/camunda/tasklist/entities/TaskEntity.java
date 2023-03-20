@@ -22,6 +22,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   private TaskState state;
   private String assignee;
   private String[] candidateGroups;
+  private String[] candidateUsers;
   private String formKey;
 
   public String getBpmnProcessId() {
@@ -123,8 +124,16 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
+  public String[] getCandidateUsers() {
+    return candidateUsers;
+  }
+
+  public void setCandidateUsers(String[] candidateUsers) {
+    this.candidateUsers = candidateUsers;
+  }
+
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -145,6 +154,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
         && state == that.state
         && Objects.equals(assignee, that.assignee)
         && Arrays.equals(candidateGroups, that.candidateGroups)
+        && Arrays.equals(candidateUsers, that.candidateUsers)
         && Objects.equals(formKey, that.formKey);
   }
 
@@ -164,6 +174,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
             assignee,
             formKey);
     result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
     return result;
   }
 }
