@@ -5,12 +5,11 @@
  * except in compliance with the proprietary license.
  */
 
-import {variablesStore} from './variables';
-import {processInstanceDetailsStore} from './processInstanceDetails';
-import {flowNodeSelectionStore} from './flowNodeSelection';
+import {variablesStore} from '../';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {waitFor} from 'modules/testing-library';
 import {
-  createBatchOperation,
   createInstance,
   createOperation,
   createVariable,
@@ -20,6 +19,7 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockFetchVariable} from 'modules/mocks/api/fetchVariable';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
+import {mockVariableOperation, mockVariables} from './mocks';
 
 jest.mock('modules/constants/variables', () => ({
   ...jest.requireActual('modules/constants/variables'),
@@ -28,14 +28,6 @@ jest.mock('modules/constants/variables', () => ({
 }));
 
 describe('stores/variables', () => {
-  const mockVariables = [
-    createVariable({name: 'mwst', value: '63.27', isFirst: true}),
-    createVariable({name: 'orderStatus', value: '"NEW"'}),
-    createVariable({name: 'paid', value: 'true'}),
-  ];
-
-  const mockVariableOperation = createBatchOperation({type: 'UPDATE_VARIABLE'});
-
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(
       createInstance({id: '123', state: 'ACTIVE'})
@@ -253,191 +245,6 @@ describe('stores/variables', () => {
       enableLoading: false,
     });
     expect(variablesStore.state.loadingItemId).toBeNull();
-  });
-
-  describe('Add Variable', () => {
-    it('should add variable', async () => {
-      expect(variablesStore.state.items).toEqual([]);
-      expect(variablesStore.state.pendingItem).toBe(null);
-
-      await variablesStore.addVariable({
-        id: '1',
-        name: 'test',
-        value: '1',
-        onSuccess: () => {},
-        onError: () => {},
-      });
-
-      expect(variablesStore.state.items).toEqual([]);
-      expect(variablesStore.state.pendingItem).toEqual({
-        name: 'test',
-        value: '1',
-        isPreview: false,
-        hasActiveOperation: true,
-        isFirst: false,
-        sortValues: null,
-      });
-    });
-
-    it('should not add variable on server error', async () => {
-      expect(variablesStore.state.items).toEqual([]);
-
-      mockApplyOperation().withServerError();
-
-      const mockOnError = jest.fn();
-      await variablesStore.addVariable({
-        id: '1',
-        name: 'test',
-        value: '1',
-        onSuccess: () => {},
-        onError: mockOnError,
-      });
-      expect(variablesStore.state.items).toEqual([]);
-      expect(mockOnError).toHaveBeenCalled();
-    });
-
-    it('should not add variable on network error', async () => {
-      expect(variablesStore.state.items).toEqual([]);
-
-      mockApplyOperation().withNetworkError();
-
-      const mockOnError = jest.fn();
-      await variablesStore.addVariable({
-        id: '1',
-        name: 'test',
-        value: '1',
-        onSuccess: () => {},
-        onError: mockOnError,
-      });
-      expect(variablesStore.state.items).toEqual([]);
-      expect(mockOnError).toHaveBeenCalled();
-    });
-  });
-
-  describe('Update Variable', () => {
-    it('should update variable', async () => {
-      await variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-      expect(variablesStore.state.items).toEqual(mockVariables);
-      await variablesStore.updateVariable({
-        id: '1',
-        name: 'mwst',
-        value: '65',
-        onError: () => {},
-      });
-      expect(variablesStore.state.items).toEqual([
-        {
-          id: '2251799813725337-mwst',
-          isFirst: true,
-          name: 'mwst',
-          value: '65',
-          sortValues: ['mwst'],
-          hasActiveOperation: true,
-          isPreview: false,
-        },
-        {
-          id: '2251799813725337-orderStatus',
-          isFirst: false,
-          name: 'orderStatus',
-          value: '"NEW"',
-          sortValues: ['orderStatus'],
-          hasActiveOperation: false,
-          isPreview: false,
-        },
-        {
-          id: '2251799813725337-paid',
-          isFirst: false,
-          name: 'paid',
-          value: 'true',
-          sortValues: ['paid'],
-          hasActiveOperation: false,
-          isPreview: false,
-        },
-      ]);
-
-      mockApplyOperation().withSuccess(mockVariableOperation);
-
-      await variablesStore.updateVariable({
-        id: '1',
-        name: 'paid',
-        value: 'false',
-        onError: () => {},
-      });
-      expect(variablesStore.state.items).toEqual([
-        {
-          id: '2251799813725337-mwst',
-          isFirst: true,
-          name: 'mwst',
-          value: '65',
-          sortValues: ['mwst'],
-          hasActiveOperation: true,
-          isPreview: false,
-        },
-        {
-          id: '2251799813725337-orderStatus',
-          isFirst: false,
-          name: 'orderStatus',
-          value: '"NEW"',
-          sortValues: ['orderStatus'],
-          hasActiveOperation: false,
-          isPreview: false,
-        },
-        {
-          id: '2251799813725337-paid',
-          isFirst: false,
-          name: 'paid',
-          value: 'false',
-          sortValues: ['paid'],
-          hasActiveOperation: true,
-          isPreview: false,
-        },
-      ]);
-    });
-
-    it('should not update variable on server error', async () => {
-      await variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-      expect(variablesStore.state.items).toEqual(mockVariables);
-
-      mockApplyOperation().withServerError();
-
-      const mockOnError = jest.fn();
-      await variablesStore.updateVariable({
-        id: '1',
-        name: 'mwst',
-        value: '65',
-        onError: mockOnError,
-      });
-      expect(variablesStore.state.items).toEqual(mockVariables);
-      expect(mockOnError).toHaveBeenCalled();
-    });
-
-    it('should not update variable on network error', async () => {
-      await variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-      expect(variablesStore.state.items).toEqual(mockVariables);
-
-      mockApplyOperation().withNetworkError();
-
-      const mockOnError = jest.fn();
-      await variablesStore.updateVariable({
-        id: '1',
-        name: 'mwst',
-        value: '65',
-        onError: mockOnError,
-      });
-      expect(variablesStore.state.items).toEqual(mockVariables);
-      expect(mockOnError).toHaveBeenCalled();
-    });
   });
 
   it('should get scopeId', async () => {

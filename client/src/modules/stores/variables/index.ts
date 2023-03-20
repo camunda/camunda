@@ -29,11 +29,11 @@ import {
   MAX_VARIABLES_PER_REQUEST,
   MAX_VARIABLES_STORED,
 } from 'modules/constants/variables';
-import {isInstanceRunning} from './utils/isInstanceRunning';
+import {isInstanceRunning} from '../utils/isInstanceRunning';
 import {logger} from 'modules/logger';
-import {flowNodeMetaDataStore} from './flowNodeMetaData';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
-import {modificationsStore} from './modifications';
+import {flowNodeMetaDataStore} from '../flowNodeMetaData';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
+import {modificationsStore} from '../modifications';
 
 type FetchType = 'initial' | 'prev' | 'next';
 type State = {
