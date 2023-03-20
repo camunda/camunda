@@ -7,35 +7,25 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.gcs.GcsBackupStore.MAPPER;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
+import io.camunda.zeebe.backup.gcs.manifest.Manifest.InProgressManifest;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class ManifestTest {
-
-  static final ObjectMapper MAPPER =
-      new ObjectMapper()
-          .registerModule(new Jdk8Module())
-          .registerModule(new JavaTimeModule())
-          .disable(WRITE_DATES_AS_TIMESTAMPS)
-          .setSerializationInclusion(Include.NON_ABSENT);
 
   @Test
   public void shouldDeserialize() throws JsonProcessingException {
