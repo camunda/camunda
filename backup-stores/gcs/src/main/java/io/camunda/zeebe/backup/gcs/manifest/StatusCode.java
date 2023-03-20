@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-enum BackupStatusCode {
+public enum StatusCode {
   IN_PROGRESS,
   COMPLETED,
   FAILED

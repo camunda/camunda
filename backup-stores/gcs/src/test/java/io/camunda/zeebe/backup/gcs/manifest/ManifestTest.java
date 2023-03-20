@@ -8,9 +8,9 @@
 package io.camunda.zeebe.backup.gcs.manifest;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.COMPLETED;
-import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.FAILED;
-import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.FAILED;
+import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -23,6 +23,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import java.time.Instant;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -162,7 +163,7 @@ public class ManifestTest {
     assertThatThrownBy(() -> MAPPER.readValue(json, ManifestImpl.class))
         .hasRootCauseInstanceOf(InvalidPersistedManifestState.class)
         .hasMessageContaining(
-            "Expected to set failureReason 'expected failure', with status code 'FAILED' but was 'IN_PROGRESS");
+            "Manifest in state 'IN_PROGRESS' must be 'FAILED to have have failureReason 'expected failure'");
   }
 
   @Test
@@ -320,7 +321,7 @@ public class ManifestTest {
 
     // when expect thrown
     assertThatThrownBy(complete::asInProgress)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(UnexpectedManifestState.class)
         .hasMessageContaining("but was in 'COMPLETED'");
   }
 
@@ -334,7 +335,7 @@ public class ManifestTest {
 
     // when expect thrown
     assertThatThrownBy(manifest::asCompleted)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(UnexpectedManifestState.class)
         .hasMessageContaining("but was in 'IN_PROGRESS'");
   }
 
@@ -348,7 +349,7 @@ public class ManifestTest {
 
     // when expect thrown
     assertThatThrownBy(manifest::asFailed)
-        .isInstanceOf(IllegalStateException.class)
+        .isInstanceOf(UnexpectedManifestState.class)
         .hasMessageContaining("but was in 'IN_PROGRESS'");
   }
 

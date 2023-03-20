@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static io.camunda.zeebe.backup.gcs.manifest.BackupStatusCode.IN_PROGRESS;
+import static io.camunda.zeebe.backup.gcs.manifest.StatusCode.IN_PROGRESS;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -29,7 +29,7 @@ public interface Manifest {
 
   BackupDescriptorImpl descriptor();
 
-  BackupStatusCode statusCode();
+  StatusCode statusCode();
 
   Instant createdAt();
 
