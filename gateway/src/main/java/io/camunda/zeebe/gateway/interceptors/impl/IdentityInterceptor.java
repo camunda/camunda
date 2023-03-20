@@ -68,10 +68,6 @@ public final class IdentityInterceptor implements ServerInterceptor {
           "Denying call {} as the token could not be fully verified. Error message: {}",
           methodDescriptor.getFullMethodName(),
           e.getMessage());
-      if (LOGGER.isTraceEnabled()) {
-        LOGGER.trace(
-            "Token used for call {} was [{}]", methodDescriptor.getFullMethodName(), token, e);
-      }
 
       return deny(
           call,
