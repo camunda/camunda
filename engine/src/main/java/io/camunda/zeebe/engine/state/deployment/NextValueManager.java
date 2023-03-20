@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.SmallColumnFamily;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.DirectBuffer;
 
@@ -18,7 +18,7 @@ public final class NextValueManager {
 
   private final long initialValue;
 
-  private final ColumnFamily<DbString, NextValue> nextValueColumnFamily;
+  private final SmallColumnFamily<ZbColumnFamilies, DbString, NextValue> nextValueColumnFamily;
   private final DbString nextValueKey;
   private final NextValue nextValue = new NextValue();
 
@@ -31,7 +31,7 @@ public final class NextValueManager {
 
     nextValueKey = new DbString();
     nextValueColumnFamily =
-        zeebeDb.createColumnFamily(columnFamily, transactionContext, nextValueKey, nextValue);
+        zeebeDb.createCachedColumnFamily(columnFamily, transactionContext, nextValueKey, nextValue);
   }
 
   public long getNextValue(final String key) {

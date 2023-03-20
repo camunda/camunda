@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.db.impl.rocksdb.transaction.SmallColumnFamily;
 import java.io.File;
 import java.util.Optional;
 
@@ -37,6 +38,13 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
    */
   <KeyType extends DbKey, ValueType extends DbValue>
       ColumnFamily<KeyType, ValueType> createColumnFamily(
+          ColumnFamilyType columnFamily,
+          TransactionContext context,
+          KeyType keyInstance,
+          ValueType valueInstance);
+
+  <KeyType extends DbKey, ValueType extends DbValue>
+      SmallColumnFamily<ColumnFamilyType, KeyType, ValueType> createCachedColumnFamily(
           ColumnFamilyType columnFamily,
           TransactionContext context,
           KeyType keyInstance,

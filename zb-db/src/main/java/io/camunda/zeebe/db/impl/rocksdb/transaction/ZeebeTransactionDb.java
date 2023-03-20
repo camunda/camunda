@@ -21,6 +21,8 @@ import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.OptimisticTransactionDB;
@@ -129,6 +131,58 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           final ValueType valueInstance) {
     return new TransactionalColumnFamily<>(
         this, consistencyChecksSettings, columnFamily, context, keyInstance, valueInstance);
+  }
+
+  @Override
+  public <KeyType extends DbKey, ValueType extends DbValue>
+      SmallColumnFamily<ColumnFamilyNames, KeyType, ValueType> createCachedColumnFamily(
+          final ColumnFamilyNames columnFamily,
+          final TransactionContext context,
+          final KeyType keyInstance,
+          final ValueType valueInstance) {
+    try {
+      final var keyConstructor = keyInstance.getClass().getConstructor();
+      final Function<byte[], KeyType> keyBuilder =
+          (byte[] bytes) -> {
+            try {
+              if (bytes == null) {
+                return null;
+              }
+              final var key = keyConstructor.newInstance();
+              key.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+              return (KeyType) key;
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          };
+      final var valueConstructor = valueInstance.getClass().getConstructor();
+      final Function<byte[], ValueType> valueBuilder =
+          (byte[] bytes) -> {
+            try {
+
+              if (bytes == null) {
+                return null;
+              }
+              final var value = valueConstructor.newInstance();
+              value.wrap(new UnsafeBuffer(bytes), 0, bytes.length);
+              return (ValueType) value;
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          };
+      final var cached =
+          new SmallColumnFamily<>(
+              this,
+              new ColumnFamilyContext(columnFamily.ordinal()),
+              context,
+              valueBuilder,
+              keyBuilder);
+      context.addListener(cached);
+      return cached;
+
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

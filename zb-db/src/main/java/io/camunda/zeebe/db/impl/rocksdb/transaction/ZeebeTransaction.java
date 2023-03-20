@@ -9,9 +9,12 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 
 import static io.camunda.zeebe.db.impl.rocksdb.transaction.RocksDbInternal.isRocksDbExceptionRecoverable;
 
+import io.camunda.zeebe.db.TransactionContext.TransactionListener;
 import io.camunda.zeebe.db.TransactionOperation;
 import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.ZeebeDbTransaction;
+import java.util.ArrayList;
+import java.util.Collection;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDBException;
@@ -25,6 +28,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   private boolean inCurrentTransaction;
   private Transaction transaction;
+  private final Collection<TransactionListener> listeners = new ArrayList<>();
 
   public ZeebeTransaction(
       final Transaction transaction, final TransactionRenovator transactionRenovator) {
@@ -94,6 +98,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   @Override
   public void commit() throws RocksDBException {
     try {
+      listeners.forEach(TransactionListener::commit);
       commitInternal();
     } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
@@ -107,6 +112,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   @Override
   public void rollback() throws RocksDBException {
     try {
+      listeners.forEach(TransactionListener::rollback);
       rollbackInternal();
     } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction rollback.";
@@ -129,5 +135,9 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
 
   public void close() {
     transaction.close();
+  }
+
+  public void addListener(final TransactionListener listener) {
+    this.listeners.add(listener);
   }
 }

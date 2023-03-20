@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.stream.impl.state;
 
-import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.SmallColumnFamily;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 
@@ -21,14 +21,15 @@ public final class DbLastProcessedPositionState implements MutableLastProcessedP
 
   private final DbString positionKey;
   private final LastProcessedPosition position = new LastProcessedPosition();
-  private final ColumnFamily<DbString, LastProcessedPosition> positionColumnFamily;
+  private final SmallColumnFamily<ZbColumnFamilies, DbString, LastProcessedPosition>
+      positionColumnFamily;
 
   public DbLastProcessedPositionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     positionKey = new DbString();
     positionKey.wrapString(LAST_PROCESSED_EVENT_KEY);
     positionColumnFamily =
-        zeebeDb.createColumnFamily(
+        zeebeDb.createCachedColumnFamily(
             ZbColumnFamilies.DEFAULT, transactionContext, positionKey, position);
   }
 

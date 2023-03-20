@@ -55,6 +55,11 @@ public final class DefaultTransactionContext implements TransactionContext {
     return transaction;
   }
 
+  @Override
+  public void addListener(final TransactionListener listener) {
+    transaction.addListener(listener);
+  }
+
   private void runInNewTransaction(final TransactionOperation operations) throws Exception {
     try {
       transaction.resetTransaction();

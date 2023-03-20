@@ -34,4 +34,12 @@ public interface TransactionContext {
    * @return the transaction object
    */
   ZeebeDbTransaction getCurrentTransaction();
+
+  void addListener(TransactionListener listener);
+
+  interface TransactionListener {
+    void commit();
+
+    void rollback();
+  }
 }
