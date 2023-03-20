@@ -31,6 +31,11 @@ on:
         default: null
         required: false
         type: string
+      maxInstanceDuration:
+        description: 'If an instance takes longer than the given duration to complete, test will fail.'
+        default: '15m'
+        required: false
+        type: string
 
   workflow_call:
     inputs:
@@ -59,6 +64,11 @@ on:
         default: null
         required: false
         type: string
+      maxInstanceDuration:
+        description: 'If an instance takes longer than the given duration to complete, test will fail.'
+        default: '15m'
+        required: false
+        type: string
 
 jobs:
   e2e:
@@ -81,7 +91,7 @@ jobs:
         {
         \"maxTestDuration\": \"${{ inputs.maxTestDuration || 'P5D' }}\",
         \"starter\": [ {\"rate\": 50, \"processId\": \"one-task-one-timer\" } ],
-        \"verifier\" : { \"maxInstanceDuration\" : \"15m\" },
+        \"verifier\" : { \"maxInstanceDuration\" : \"${{ inputs.maxInstanceDuration }}\" },
         \"fault\": ${{ inputs.fault || 'null' }}
         }
         }

@@ -31,4 +31,5 @@ jobs:
       maxTestDuration: P1D
       clusterPlan: Multiregion test simulation
       fault: \"2-region-dataloss-failover\"
+      maxInstanceDuration: 40m
     secrets: inherit
