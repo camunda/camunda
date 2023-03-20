@@ -24,17 +24,19 @@ import java.util.Optional;
 @JsonDeserialize(as = ManifestImpl.class)
 public sealed interface Manifest {
 
-  static InProgressManifest create(Backup backup) {
+  static InProgressManifest create(final Backup backup) {
     final var creationTime = Instant.now();
     return new ManifestImpl(
         BackupIdentifierImpl.from(backup.id()),
         BackupDescriptorImpl.from(backup.descriptor()),
         IN_PROGRESS,
+        FileSet.of(backup.snapshot()),
+        FileSet.of(backup.segments()),
         creationTime,
         creationTime);
   }
 
-  static BackupStatus toStatus(Manifest manifest) {
+  static BackupStatus toStatus(final Manifest manifest) {
     return switch (manifest.statusCode()) {
       case IN_PROGRESS -> new BackupStatusImpl(
           manifest.id(),

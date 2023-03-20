@@ -19,9 +19,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
@@ -70,6 +72,8 @@ public class ManifestTest {
             new BackupIdentifierImpl(1, 2, 43),
             new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
             IN_PROGRESS,
+            null,
+            null,
             Instant.ofEpochMilli(1678790708000L),
             Instant.ofEpochMilli(1678790708000L));
     final var expectedJsonString =
@@ -111,6 +115,8 @@ public class ManifestTest {
           "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
           "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT"},
           "statusCode": "FAILED",
+          "snapshot": { "files": [] },
+          "segments": { "files": [] },
           "createdAt": "2023-03-14T10:45:08Z",
           "modifiedAt": "2023-03-14T10:45:08Z",
           "failureReason": "expected failure reason"
@@ -129,12 +135,13 @@ public class ManifestTest {
     assertThat(actualJson.get("statusCode")).isEqualTo(expectedJson.get("statusCode"));
     assertThat(actualJson.get("id")).isEqualTo(expectedJson.get("id"));
     assertThat(actualJson.get("descriptor")).isEqualTo(expectedJson.get("descriptor"));
+    assertThat(actualJson.get("snapshot")).isEqualTo(expectedJson.get("snapshot"));
+    assertThat(actualJson.get("segments")).isEqualTo(expectedJson.get("segments"));
     assertThat(actualJson.get("failureReason")).isEqualTo(expectedJson.get("failureReason"));
 
     assertThat(actualJson.fieldNames())
         .toIterable()
-        .containsExactlyInAnyOrder(
-            "id", "descriptor", "statusCode", "createdAt", "modifiedAt", "failureReason");
+        .containsExactlyElementsOf(expectedJson::fieldNames);
   }
 
   @Test
@@ -329,8 +336,8 @@ public class ManifestTest {
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
+                new NamedFileSetImpl(Map.of()),
+                new NamedFileSetImpl(Map.of())));
 
     // when expect thrown
     assertThatThrownBy(manifest::asCompleted)
