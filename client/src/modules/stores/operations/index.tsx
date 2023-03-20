@@ -20,9 +20,9 @@ import {
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/processInstances/operations';
-import {sortOperations} from './utils/sortOperations';
+import {sortOperations} from '../utils/sortOperations';
 import {logger} from 'modules/logger';
-import {NetworkReconnectionHandler} from './networkReconnectionHandler';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {deleteDecisionDefinition} from 'modules/api/decisions/operations';
 import {deleteProcessDefinition} from 'modules/api/processes/operations';
 
