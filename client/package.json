@@ -71,7 +71,7 @@
     "@types/react-transition-group": "4.4.5",
     "@types/styled-components": "5.1.26",
     "axe-core": "4.6.3",
-    "eslint-config-prettier": "8.7.0",
+    "eslint-config-prettier": "8.8.0",
     "eslint-plugin-camunda-licensed": "0.4.6",
     "eslint-plugin-prettier": "4.2.1",
     "http-proxy-middleware": "2.0.6",
