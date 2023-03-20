@@ -137,6 +137,8 @@ public class AwsSignHttpRequestInterceptor implements HttpRequestInterceptor {
                 .contentStreamProvider()
                 .orElseThrow(() -> new IllegalStateException("There must be content"))
                 .newStream());
+        // reset the position of the input stream as it has been read
+        basicHttpEntity.getContent().reset();
         // wrap into repeatable entity to support retries
         httpEntityEnclosingRequest.setEntity(new BufferedHttpEntity(basicHttpEntity));
       }
