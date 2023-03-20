@@ -74,13 +74,16 @@ public final class GcsBackupStore implements BackupStore {
     final Blob initial;
 
     try {
-
       initial =
           client.create(
               blobInfo, MAPPER.writeValueAsBytes(inProgress), BlobTargetOption.doesNotExist());
     } catch (final StorageException e) {
-      throw new UnexpectedManifestState(
-          "Manifest for backup %s already exists".formatted(backup.id()));
+      if (e.getCode() == 412) { // 412 Precondition Failed, blob must already exist
+        throw new UnexpectedManifestState(
+            "Manifest for backup %s already exists".formatted(backup.id()));
+      } else {
+        throw e;
+      }
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
