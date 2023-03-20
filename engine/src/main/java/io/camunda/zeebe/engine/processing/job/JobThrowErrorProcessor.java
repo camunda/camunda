@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.buffer.BufferUtil.trimBufferIfExceeds;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
@@ -108,7 +108,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final JobRecord job = jobState.getJob(jobKey);
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
     job.setErrorMessage(
-        cloneBuffer(command.getValue().getErrorMessageBuffer(), 0, MAX_ERROR_MESSAGE_SIZE));
+        trimBufferIfExceeds(command.getValue().getErrorMessageBuffer(), MAX_ERROR_MESSAGE_SIZE));
     job.setVariables(command.getValue().getVariablesBuffer());
 
     final var serviceTaskInstanceKey = job.getElementInstanceKey();

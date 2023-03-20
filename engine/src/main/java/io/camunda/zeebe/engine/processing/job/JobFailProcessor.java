@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.camunda.zeebe.util.buffer.BufferUtil.trimBufferIfExceeds;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
@@ -117,7 +117,7 @@ public final class JobFailProcessor implements CommandProcessor<JobRecord> {
     final var retryBackOff = command.getValue().getRetryBackoff();
     failedJob.setRetries(retries);
     failedJob.setErrorMessage(
-        cloneBuffer(command.getValue().getErrorMessageBuffer(), 0, MAX_ERROR_MESSAGE_SIZE));
+        trimBufferIfExceeds(command.getValue().getErrorMessageBuffer(), MAX_ERROR_MESSAGE_SIZE));
     failedJob.setRetryBackoff(retryBackOff);
     failedJob.setVariables(command.getValue().getVariablesBuffer());
 
