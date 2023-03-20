@@ -946,6 +946,12 @@
       </dependency>
 
       <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy-agent</artifactId>
+        <version>${version.byte-buddy}</version>
+      </dependency>
+
+      <dependency>
         <groupId>io.github.classgraph</groupId>
         <artifactId>classgraph</artifactId>
         <version>${version.classgraph}</version>
