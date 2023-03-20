@@ -12,3 +12,4 @@ yarn.lock
 .env
 .prettierignore
 .eslintignore
+public/mockServiceWorker.js
