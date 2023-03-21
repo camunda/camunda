@@ -50,9 +50,14 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           final var manifest =
               manifestManager.createInitialManifest(manifestPrefix(backup.id()), backup);
-          fileSetManager.save(contentPrefix(backup.id()) + "snapshot/", backup.snapshot());
-          fileSetManager.save(contentPrefix(backup.id()) + "segments/", backup.segments());
-          manifestManager.completeManifest(manifest);
+          try {
+            fileSetManager.save(contentPrefix(backup.id()) + "snapshot/", backup.snapshot());
+            fileSetManager.save(contentPrefix(backup.id()) + "segments/", backup.segments());
+            manifestManager.completeManifest(manifest);
+          } catch (final Exception e) {
+            manifestManager.failManifest(manifest, e.getMessage());
+            throw e;
+          }
         },
         executor);
   }

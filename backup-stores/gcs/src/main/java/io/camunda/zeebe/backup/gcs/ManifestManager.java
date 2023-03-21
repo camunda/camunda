@@ -102,5 +102,26 @@ public final class ManifestManager {
         .build();
   }
 
+  public void failManifest(final CurrentManifest currentManifest, final String message) {
+    final var blob = currentManifest.blob();
+    final var failed = currentManifest.manifest().fail(message);
+    try {
+      client.create(
+          blob.asBlobInfo(),
+          MAPPER.writeValueAsBytes(failed),
+          BlobTargetOption.generationMatch(blob.getGeneration()));
+    } catch (final StorageException e) {
+      if (e.getCode() == 412) { // 412 Precondition Failed, blob have changed
+        throw new UnexpectedManifestState(
+            "Tried to mark backup %s as failed but manifest was modified unexpectedly"
+                .formatted(failed.id()));
+      } else {
+        throw e;
+      }
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   record CurrentManifest(Blob blob, InProgressManifest manifest) {}
 }
