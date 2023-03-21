@@ -26,6 +26,10 @@ public final class MessageStartEventSubscriptionRecordStream
     return new MessageStartEventSubscriptionRecordStream((wrappedStream));
   }
 
+  public MessageStartEventSubscriptionRecordStream withBpmnProcessId(final String bpmnProcessId) {
+    return valueFilter(v -> bpmnProcessId.equals(v.getBpmnProcessId()));
+  }
+
   public MessageStartEventSubscriptionRecordStream withProcessDefinitionKey(
       final long processDefinitionKey) {
     return valueFilter(v -> v.getProcessDefinitionKey() == processDefinitionKey);

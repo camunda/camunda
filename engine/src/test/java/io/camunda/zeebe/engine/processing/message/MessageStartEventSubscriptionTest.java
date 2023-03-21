@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -28,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public final class MessageStartEventSubscriptionTest {
+
   private static final String MESSAGE_NAME1 = "startMessage1";
   private static final String EVENT_ID1 = "startEventId1";
 
@@ -285,6 +287,27 @@ public final class MessageStartEventSubscriptionTest {
                 .withCorrelationKey("key")
                 .findAny())
         .isPresent();
+  }
+
+  @Test
+  public void shouldOpenSingleMessageSubscriptionOnMultipleDeployments() {
+    // give
+    final var process = createProcessWithOneMessageStartEvent();
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.deployment().withXmlResource(process).deploy();
+
+    // then
+    // deploy an empty deployment, so we can use the position to limit the recorded stream
+    final var position = engine.deployment().expectRejection().deploy().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= position)
+                .filter(r -> r.getValueType() == ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
+        .describedAs("Expect only one message start event subscription for duplicate deployments")
+        .hasSize(1);
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {

@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
@@ -133,6 +134,28 @@ public final class SignalSubscriptionTest {
         .extracting(r -> r.getValue().getProcessDefinitionKey(), r -> r.getValue().getSignalName())
         .contains(
             tuple(processDefinitionKey, SIGNAL_NAME1), tuple(processDefinitionKey, SIGNAL_NAME2));
+  }
+
+  @Test
+  public void shouldOpenSingleSignalSubscriptionOnMultipleDeployments() {
+    // give
+    final String processId = "signalProcess";
+    final var process = createProcessWithOneSignalStartEvent(processId);
+
+    engine.deployment().withXmlResource(process).deploy();
+
+    // when
+    engine.deployment().withXmlResource(process).deploy();
+
+    // then
+    // deploy an empty deployment, so we can use the position to limit the recorded stream
+    final var position = engine.deployment().expectRejection().deploy().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= position)
+                .filter(r -> r.getValueType() == ValueType.SIGNAL_SUBSCRIPTION))
+        .describedAs("Expect only one signal start event subscription for duplicate deployments")
+        .hasSize(1);
   }
 
   private static BpmnModelInstance createProcessWithOneSignalStartEvent(final String processId) {
