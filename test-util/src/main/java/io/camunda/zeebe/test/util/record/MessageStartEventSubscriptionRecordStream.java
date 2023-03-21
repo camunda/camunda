@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 
 public final class MessageStartEventSubscriptionRecordStream
     extends ExporterRecordStream<
-    MessageStartEventSubscriptionRecordValue, MessageStartEventSubscriptionRecordStream> {
+        MessageStartEventSubscriptionRecordValue, MessageStartEventSubscriptionRecordStream> {
 
   public MessageStartEventSubscriptionRecordStream(
       final Stream<Record<MessageStartEventSubscriptionRecordValue>> wrappedStream) {
