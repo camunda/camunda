@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static io.camunda.zeebe.backup.gcs.GcsBackupStore.MAPPER;
+import static io.camunda.zeebe.backup.gcs.ManifestManager.MAPPER;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
