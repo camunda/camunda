@@ -93,8 +93,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
       return;
     }
 
-    eventPublicationBehavior.throwErrorEvent(
-        foundCatchEvent.get(), job.getVariables(), job.getErrorMessage());
+    eventPublicationBehavior.throwErrorEvent(foundCatchEvent.get(), job.getVariablesBuffer());
   }
 
   private void acceptCommand(

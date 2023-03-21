@@ -42,26 +42,12 @@ public abstract class AbstractErrorEventDefinitionBuilder<
     return myself;
   }
 
-  /**
-   * The attribute specifies a variable that holds the error code. The specified variable will be
-   * created with error code as the value.
-   *
-   * @param errorCodeVariable the name of error code variable
-   * @return the builder object
-   */
   public B errorCodeVariable(final String errorCodeVariable) {
     final ZeebeError error = myself.getCreateSingleExtensionElement(ZeebeError.class);
     error.setErrorCodeVariable(errorCodeVariable);
     return myself;
   }
 
-  /**
-   * The attribute specifies a variable that holds the error message. The specified variable will be
-   * created with error message as the value.
-   *
-   * @param errorMessageVariable the name of error message variable
-   * @return the builder object
-   */
   public B errorMessageVariable(final String errorMessageVariable) {
     final ZeebeError error = myself.getCreateSingleExtensionElement(ZeebeError.class);
     error.setErrorMessageVariable(errorMessageVariable);

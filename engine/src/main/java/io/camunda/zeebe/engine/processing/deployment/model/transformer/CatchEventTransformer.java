@@ -19,7 +19,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutablePro
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSignal;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
-import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ErrorTransformer;
 import io.camunda.zeebe.engine.processing.timer.CronTimer;
 import io.camunda.zeebe.model.bpmn.instance.CatchEvent;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
@@ -31,7 +30,6 @@ import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeError;
 import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -41,8 +39,6 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.format.DateTimeParseException;
 
 public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
-
-  private final ErrorTransformer errorTransformer = new ErrorTransformer();
 
   @Override
   public Class<CatchEvent> getType() {
@@ -166,17 +162,8 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     } else {
       executableError = context.getError(error.getId());
     }
-
-    transformError(errorEventDefinition, executableError);
-
     executableElement.setError(executableError);
     executableElement.setEventType(BpmnEventType.ERROR);
-  }
-
-  private void transformError(
-      final ErrorEventDefinition element, final ExecutableError executableElement) {
-    final var error = element.getSingleExtensionElement(ZeebeError.class);
-    errorTransformer.transform(executableElement, error);
   }
 
   public void transformLinkEventDefinition(

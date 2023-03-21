@@ -108,23 +108,4 @@ class BoundaryEventBuilderTest {
         .extracting(ZeebeError::getErrorCodeVariable, ZeebeError::getErrorMessageVariable)
         .containsExactly(tuple("errorCode", "errorMessage"));
   }
-
-  @Test
-  void testErrorBoundaryEventDoesNotContainZeebeErrorExtensionElement() {
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-            .boundaryEvent("error-boundary-event", b -> b.error(ERROR_CODE))
-            .endEvent()
-            .done();
-
-    final ModelElementInstance errorEventDefinition =
-        instance.getModelElementsByType(ErrorEventDefinition.class).iterator().next();
-
-    assertThat(errorEventDefinition.getUniqueChildElementByType(ExtensionElements.class))
-        .describedAs(
-            "Expect that ZeebeError extension element is not added to error event definition")
-        .isNull();
-  }
 }
