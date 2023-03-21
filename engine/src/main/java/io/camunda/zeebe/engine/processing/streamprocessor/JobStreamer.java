@@ -12,8 +12,7 @@ import org.agrona.DirectBuffer;
 
 /**
  * A {@link JobStreamer} allows the engine to push data back to a single gateway (any). It keeps
- * track of multiple {@link JobStream} instances, each with their own ID. The semantics of the ID,
- * associated with the metadata and payload, are owned by the consumer of the API.
+ * track of multiple {@link JobStream} instances, each with their own jobType.
  *
  * <p>NOTE: {@link JobStream#push(ActivatedJob, ErrorHandler)} is a side effect, and should be
  * treated as a post-commit task for consistency. TODO: see if the platform cannot already enforce
