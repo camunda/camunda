@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
@@ -35,8 +36,7 @@ public final class MessageStartEventSubscriptionTest {
   private static final String MESSAGE_NAME2 = "startMessage2";
   private static final String EVENT_ID2 = "startEventId2";
 
-  @Rule
-  public final EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldOpenMessageSubscriptionOnDeployment() {
@@ -116,9 +116,9 @@ public final class MessageStartEventSubscriptionTest {
 
     // then
     assertThat(
-        RecordingExporter.messageStartEventSubscriptionRecords(
-                MessageStartEventSubscriptionIntent.DELETED)
-            .limit(2))
+            RecordingExporter.messageStartEventSubscriptionRecords(
+                    MessageStartEventSubscriptionIntent.DELETED)
+                .limit(2))
         .extracting(r -> r.getValue().getProcessDefinitionKey(), r -> r.getValue().getMessageName())
         .contains(
             tuple(processDefinitionKey, MESSAGE_NAME1), tuple(processDefinitionKey, MESSAGE_NAME2));
@@ -170,7 +170,7 @@ public final class MessageStartEventSubscriptionTest {
 
   @Test // see #4099
   public void
-  shouldResolveCorrelationKeyDefinedInMessageWhenOpeningSubscriptionForEventSubprocess() {
+      shouldResolveCorrelationKeyDefinedInMessageWhenOpeningSubscriptionForEventSubprocess() {
     final var process =
         Bpmn.createExecutableProcess("process")
             .eventSubProcess(
@@ -196,10 +196,10 @@ public final class MessageStartEventSubscriptionTest {
         .publish();
 
     assertThat(
-        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-            .withMessageName("event_message")
-            .withCorrelationKey("key")
-            .findAny())
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withMessageName("event_message")
+                .withCorrelationKey("key")
+                .findAny())
         .isPresent();
   }
 
@@ -213,7 +213,7 @@ public final class MessageStartEventSubscriptionTest {
    */
   @Test
   public void
-  shouldResolveCorrelationKeyDefinedByOutputMappingInMessageStartEventWhenOpeningSubscriptionForEventSubprocess() {
+      shouldResolveCorrelationKeyDefinedByOutputMappingInMessageStartEventWhenOpeningSubscriptionForEventSubprocess() {
     final var process =
         Bpmn.createExecutableProcess("process")
             .eventSubProcess(
@@ -240,10 +240,10 @@ public final class MessageStartEventSubscriptionTest {
         .publish();
 
     assertThat(
-        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-            .withMessageName("event_message")
-            .withCorrelationKey("key")
-            .findAny())
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withMessageName("event_message")
+                .withCorrelationKey("key")
+                .findAny())
         .isPresent();
   }
 
@@ -257,7 +257,7 @@ public final class MessageStartEventSubscriptionTest {
    */
   @Test
   public void
-  shouldResolveCorrelationKeyDefinedByOutputMappingInNoneStartEventWhenOpeningSubscriptionForEventSubprocess() {
+      shouldResolveCorrelationKeyDefinedByOutputMappingInNoneStartEventWhenOpeningSubscriptionForEventSubprocess() {
     final var process =
         Bpmn.createExecutableProcess("process")
             .eventSubProcess(
@@ -282,10 +282,10 @@ public final class MessageStartEventSubscriptionTest {
         .create();
 
     assertThat(
-        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
-            .withMessageName("event_message")
-            .withCorrelationKey("key")
-            .findAny())
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+                .withMessageName("event_message")
+                .withCorrelationKey("key")
+                .findAny())
         .isPresent();
   }
 
@@ -300,15 +300,14 @@ public final class MessageStartEventSubscriptionTest {
     engine.deployment().withXmlResource(process).deploy();
 
     // then
-    assertThat(RecordingExporter.messageStartEventSubscriptionRecords(
-            MessageStartEventSubscriptionIntent.CREATED)
-        .withBpmnProcessId("processId")
-        .limit(2))
-        .extracting(Record::getValue)
-        .extracting(MessageStartEventSubscriptionRecordValue::getMessageName,
-            MessageStartEventSubscriptionRecordValue::getStartEventId)
-        .hasSize(1)
-        .containsExactly(tuple(MESSAGE_NAME1, EVENT_ID1));
+    // deploy an empty deployment, so we can use the position to limit the recorded stream
+    final var position = engine.deployment().expectRejection().deploy().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= position)
+                .filter(r -> r.getValueType() == ValueType.MESSAGE_START_EVENT_SUBSCRIPTION))
+        .describedAs("Expect only one message start event subscription for duplicate deployments")
+        .hasSize(1);
   }
 
   private static BpmnModelInstance createProcessWithOneMessageStartEvent() {
