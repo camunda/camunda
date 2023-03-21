@@ -31,6 +31,7 @@ import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
+import io.camunda.zeebe.backup.gcs.manifest.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -47,20 +48,22 @@ public final class GcsBackupStore implements BackupStore {
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
 
-  private final GcsBackupConfig config;
   private final Storage client;
   private final BucketInfo bucketInfo;
+  private final String prefix;
   private final Executor executor;
+  private final FileSetManager fileSetManager;
 
   public GcsBackupStore(final GcsBackupConfig config) {
     this(config, buildClient(config));
   }
 
   public GcsBackupStore(final GcsBackupConfig config, final Storage client) {
-    this.config = config;
     this.client = client;
     bucketInfo = BucketInfo.of(config.bucketName());
+    prefix = Optional.ofNullable(config.basePath()).map(basePath -> basePath + "/").orElse("");
     executor = Executors.newWorkStealingPool(4);
+    fileSetManager = new FileSetManager(client, bucketInfo);
   }
 
   @Override
@@ -69,14 +72,24 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   private void saveSync(final Backup backup) {
-    final var inProgress = Manifest.create(backup);
-    final var blobInfo = manifestBlobInfo(backup.id());
-    final Blob initial;
+    final var manifest = createInitialManifest(backup);
+    saveSnapshotFiles(backup);
+    saveSegmentFiles(backup);
+    completeManifest(manifest);
+  }
 
+  record CurrentManifest(Blob blob, InProgressManifest manifest) {}
+
+  private CurrentManifest createInitialManifest(final Backup backup) {
+    final var manifestBlobInfo = manifestBlobInfo(backup.id());
+    final var manifest = Manifest.create(backup);
     try {
-      initial =
+      final var blob =
           client.create(
-              blobInfo, MAPPER.writeValueAsBytes(inProgress), BlobTargetOption.doesNotExist());
+              manifestBlobInfo,
+              MAPPER.writeValueAsBytes(manifest),
+              BlobTargetOption.doesNotExist());
+      return new CurrentManifest(blob, manifest);
     } catch (final StorageException e) {
       if (e.getCode() == 412) { // 412 Precondition Failed, blob must already exist
         throw new UnexpectedManifestState(
@@ -87,19 +100,32 @@ public final class GcsBackupStore implements BackupStore {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
 
-    final var completed = inProgress.complete();
+  private void completeManifest(final CurrentManifest currentManifest) {
+    final var blob = currentManifest.blob();
+    final var completed = currentManifest.manifest().complete();
     try {
       client.create(
-          blobInfo,
+          blob.asBlobInfo(),
           MAPPER.writeValueAsBytes(completed),
-          BlobTargetOption.generationMatch(initial.getGeneration()));
+          BlobTargetOption.generationMatch(blob.getGeneration()));
     } catch (final StorageException e) {
-      throw new UnexpectedManifestState(
-          "Manifest for backup %s was modified unexpectedly".formatted(backup.id()));
+      if (e.getCode() == 412) { // 412 Precondition Failed, blob have changed
+        throw new UnexpectedManifestState(
+            "Manifest for backup %s was modified unexpectedly".formatted(completed.id()));
+      }
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private void saveSnapshotFiles(final Backup backup) {
+    fileSetManager.save(filePrefix(backup.id()) + "snapshot/", backup.snapshot());
+  }
+
+  private void saveSegmentFiles(final Backup backup) {
+    fileSetManager.save(filePrefix(backup.id()) + "segments/", backup.segments());
   }
 
   @Override
@@ -154,7 +180,25 @@ public final class GcsBackupStore implements BackupStore {
     throw new UnsupportedOperationException();
   }
 
-  public static Storage buildClient(GcsBackupConfig config) {
+  private String manifestPrefix(BackupIdentifier id) {
+    return prefix + "manifests/" + backupPath(id);
+  }
+
+  private String filePrefix(BackupIdentifier id) {
+    return prefix + backupPath(id);
+  }
+
+  private String backupPath(BackupIdentifier id) {
+    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
+  }
+
+  private BlobInfo manifestBlobInfo(BackupIdentifier id) {
+    return BlobInfo.newBuilder(bucketInfo, manifestPrefix(id) + "manifest.json")
+        .setContentType("application/json")
+        .build();
+  }
+
+  public static Storage buildClient(final GcsBackupConfig config) {
     return StorageOptions.newBuilder()
         .setHost(config.connection().host())
         .setCredentials(config.connection().auth().credentials())
@@ -162,17 +206,7 @@ public final class GcsBackupStore implements BackupStore {
         .getService();
   }
 
-  private BlobInfo manifestBlobInfo(BackupIdentifier id) {
-    final var base =
-        Optional.ofNullable(config.basePath()).map(basePath -> basePath + "/").orElse("");
-    final var name =
-        "manifests/%s/%s/%s/manifest.json"
-            .formatted(id.partitionId(), id.checkpointId(), id.nodeId());
-
-    return BlobInfo.newBuilder(bucketInfo, base + name).setContentType("application/json").build();
-  }
-
-  public static void validateConfig(GcsBackupConfig config) throws Exception {
+  public static void validateConfig(final GcsBackupConfig config) throws Exception {
     try (final var storage = buildClient(config)) {
       final var bucket = storage.get(config.bucketName());
       if (bucket == null) {
