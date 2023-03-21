@@ -744,6 +744,12 @@ const DATETIME_INPUTS = css`
         .flatpickr-day:hover {
           background: var(--cds-layer-hover);
         }
+
+        .flatpickr-days,
+        .flatpickr-weekdays {
+          padding: unset;
+          width: unset;
+        }
       }
     }
   `}
