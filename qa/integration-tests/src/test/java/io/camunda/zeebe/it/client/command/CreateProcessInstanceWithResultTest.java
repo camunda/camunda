@@ -16,14 +16,17 @@ import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -164,6 +167,182 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("y", "bar"));
+  }
+
+  @Test
+  public void shouldRespondResultWhenCompletedByPublishedMessage() {
+    // given
+    final var client = CLIENT_RULE.getClient();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .intermediateCatchEvent()
+                .message(message -> message.name("a").zeebeCorrelationKeyExpression("key"))
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join();
+
+    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .variables(Map.of("key", "key-1"))
+            .withResult()
+            .send();
+
+    // when
+    client
+        .newPublishMessageCommand()
+        .messageName("a")
+        .correlationKey("key-1")
+        .variables(Map.of("message", "correlated"))
+        .send()
+        .join();
+
+    // then
+    assertThat(processInstanceResult.join().getVariablesAsMap())
+        .containsEntry("message", "correlated");
+  }
+
+  @Test
+  public void shouldRespondResultWhenCompletedByCompletedJob() {
+    // given
+    final var client = CLIENT_RULE.getClient();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join();
+
+    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .withResult()
+            .send();
+
+    final List<ActivatedJob> jobs =
+        client
+            .newActivateJobsCommand()
+            .jobType("task")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs();
+    assertThat(jobs).hasSize(1);
+
+    // when
+    jobs.forEach(
+        job -> client.newCompleteCommand(job).variables(Map.of("job", "completed")).send().join());
+
+    // then
+    assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("job", "completed");
+  }
+
+  @Test
+  public void shouldRespondResultWhenCompletedByThrownError() {
+    // given
+    final var client = CLIENT_RULE.getClient();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType("task"))
+                .boundaryEvent("error", e -> e.errorEventDefinition().error("error"))
+                .zeebeOutputExpression("\"thrown\"", "error") // error variables are not propagated
+                .endEvent()
+                .moveToActivity("task")
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join();
+
+    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .withResult()
+            .send();
+
+    final List<ActivatedJob> jobs =
+        client
+            .newActivateJobsCommand()
+            .jobType("task")
+            .maxJobsToActivate(1)
+            .send()
+            .join()
+            .getJobs();
+    assertThat(jobs).hasSize(1);
+
+    // when
+    jobs.forEach(
+        job ->
+            client
+                .newThrowErrorCommand(job)
+                .errorCode("error")
+                .errorMessage("throwing an error")
+                .send()
+                .join());
+
+    // then
+    assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("error", "thrown");
+  }
+
+  @Test
+  public void shouldRespondResultWhenCompletedByResolvedIncident() {
+    // given
+    final var client = CLIENT_RULE.getClient();
+    client
+        .newDeployResourceCommand()
+        .addProcessModel(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("start_event_with_output_mapping")
+                .zeebeOutputExpression("missing_variable", "output_variable")
+                .endEvent()
+                .done(),
+            "process.bpmn")
+        .send()
+        .join();
+
+    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .withResult()
+            .send();
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withElementId("start_event_with_output_mapping")
+            .getFirst();
+
+    // when
+    client
+        .newSetVariablesCommand(incident.getValue().getElementInstanceKey())
+        .variables(Map.of("missing_variable", "incident resolved"))
+        .send()
+        .join();
+    client.newResolveIncidentCommand(incident.getKey()).send().join();
+
+    // then
+    assertThat(processInstanceResult.join().getVariablesAsMap())
+        .containsEntry("missing_variable", "incident resolved");
   }
 
   private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
