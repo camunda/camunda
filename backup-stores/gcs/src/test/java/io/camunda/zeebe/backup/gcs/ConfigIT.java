@@ -17,7 +17,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class ConfigIntegrationTest {
+public class ConfigIT {
   @Container private static final GcsContainer GCS = new GcsContainer();
 
   @Test
