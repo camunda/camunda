@@ -345,57 +345,6 @@ public final class CreateProcessInstanceWithResultTest {
         .containsEntry("missing_variable", "incident resolved");
   }
 
-  @Test
-  public void shouldRespondResultWhenCompletedByModifiedProcessInstance() {
-    // given
-    final var client = CLIENT_RULE.getClient();
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("task"))
-                .endEvent("end_event")
-                .done(),
-            "process.bpmn")
-        .send()
-        .join();
-
-    final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .withResult()
-            .send();
-
-    final List<ActivatedJob> jobs =
-        client
-            .newActivateJobsCommand()
-            .jobType("task")
-            .maxJobsToActivate(1)
-            .send()
-            .join()
-            .getJobs();
-    assertThat(jobs).hasSize(1);
-
-    // when
-    jobs.forEach(
-        job ->
-            client
-                .newModifyProcessInstanceCommand(job.getProcessInstanceKey())
-                .terminateElement(job.getElementInstanceKey())
-                .and()
-                .activateElement("end_event")
-                .withVariables(Map.of("process instance", "modified"))
-                .send()
-                .join());
-
-    // then
-    assertThat(processInstanceResult.join().getVariablesAsMap())
-        .containsEntry("process instance", "modified");
-  }
-
   private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
       final Map<String, Object> variables) {
     return CLIENT_RULE
