@@ -88,6 +88,21 @@
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
+      <artifactId>regions</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>http-client-spi</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>sdk-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
       <artifactId>sts</artifactId>
     </dependency>
 
@@ -175,6 +190,11 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
+                 classes on the classpath in order to resolve the AWS credentials -->
+            <dep>software.amazon.awssdk:sts</dep>
+          </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
 
