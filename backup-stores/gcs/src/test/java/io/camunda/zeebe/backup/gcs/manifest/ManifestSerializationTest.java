@@ -19,16 +19,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
-import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
-public class ManifestTest {
-
+final class ManifestSerializationTest {
   @Test
   public void shouldDeserialize() throws JsonProcessingException {
     // given
@@ -307,151 +303,5 @@ public class ManifestTest {
     assertThat(manifest.statusCode()).isEqualTo(COMPLETED);
     assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
     assertThat(manifest.modifiedAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
-  }
-
-  @Test
-  public void shouldFailOnAsInProgress() {
-    // given
-    final var manifest =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
-
-    final var complete = manifest.complete();
-
-    // when expect thrown
-    assertThatThrownBy(complete::asInProgress)
-        .isInstanceOf(UnexpectedManifestState.class)
-        .hasMessageContaining("but was in 'COMPLETED'");
-  }
-
-  @Test
-  public void shouldFailOnAsCompleted() {
-    // given
-    final var manifest =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                new NamedFileSetImpl(Map.of()),
-                new NamedFileSetImpl(Map.of())));
-
-    // when expect thrown
-    assertThatThrownBy(manifest::asCompleted)
-        .isInstanceOf(UnexpectedManifestState.class)
-        .hasMessageContaining("but was in 'IN_PROGRESS'");
-  }
-
-  @Test
-  public void shouldFailOnAsFailed() {
-    // given
-    final var manifest =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
-
-    // when expect thrown
-    assertThatThrownBy(manifest::asFailed)
-        .isInstanceOf(UnexpectedManifestState.class)
-        .hasMessageContaining("but was in 'IN_PROGRESS'");
-  }
-
-  @Test
-  public void shouldCreateManifestWithInProgress() {
-    // given
-
-    // when
-    final var manifest =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
-
-    // then
-    assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
-    assertThat(manifest.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(manifest.modifiedAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(manifest.createdAt()).isEqualTo(manifest.modifiedAt());
-  }
-
-  @Test
-  public void shouldUpdateManifestToCompleted() {
-    // given
-    final var created =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
-
-    // when
-    final var completed = created.complete();
-
-    // then
-    assertThat(completed.statusCode()).isEqualTo(COMPLETED);
-    assertThat(completed.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(completed.modifiedAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(completed.createdAt()).isBefore(completed.modifiedAt());
-    assertThat(completed.createdAt()).isEqualTo(created.modifiedAt());
-    assertThat(completed.modifiedAt()).isNotEqualTo(created.modifiedAt());
-  }
-
-  @Test
-  public void shouldUpdateManifestToFailed() {
-    // given
-    final var created =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
-
-    // when
-    final var failed = created.fail("expected failure reason");
-
-    // then
-    assertThat(failed.statusCode()).isEqualTo(FAILED);
-    assertThat(failed.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.modifiedAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
-    assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
-    assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
-    assertThat(failed.failureReason()).isEqualTo("expected failure reason");
-  }
-
-  @Test
-  public void shouldUpdateManifestToFailedFromComplete() {
-    // given
-    final var created =
-        Manifest.create(
-            new BackupImpl(
-                new BackupIdentifierImpl(1, 2, 43),
-                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
-                null,
-                null));
-
-    final var completed = created.complete();
-
-    // when
-    final var failed = completed.fail("expected failure reason");
-
-    // then
-    assertThat(failed.statusCode()).isEqualTo(FAILED);
-    assertThat(failed.createdAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.modifiedAt().getEpochSecond()).isGreaterThan(0);
-    assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
-    assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
-    assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
-    assertThat(failed.failureReason()).isEqualTo("expected failure reason");
   }
 }
