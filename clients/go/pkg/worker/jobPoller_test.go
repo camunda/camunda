@@ -42,17 +42,19 @@ func (suite *JobPollerSuite) BeforeTest(_, _ string) {
 	suite.ctrl = gomock.NewController(suite.T())
 	suite.client = mock_pb.NewMockGatewayClient(suite.ctrl)
 	suite.poller = jobPoller{
-		client:         suite.client,
-		request:        &pb.ActivateJobsRequest{},
-		requestTimeout: utils.DefaultTestTimeout,
-		maxJobsActive:  DefaultJobWorkerMaxJobActive,
-		pollInterval:   DefaultJobWorkerPollInterval,
-		jobQueue:       make(chan entities.Job),
-		workerFinished: make(chan bool),
-		closeSignal:    make(chan struct{}),
-		remaining:      0,
-		threshold:      int(math.Round(float64(DefaultJobWorkerMaxJobActive) * DefaultJobWorkerPollThreshold)),
-		shouldRetry:    func(_ context.Context, _ error) bool { return false },
+		client:              suite.client,
+		request:             &pb.ActivateJobsRequest{},
+		requestTimeout:      utils.DefaultTestTimeout,
+		maxJobsActive:       DefaultJobWorkerMaxJobActive,
+		pollInterval:        DefaultJobWorkerPollInterval,
+		initialPollInterval: DefaultJobWorkerPollInterval,
+		jobQueue:            make(chan entities.Job),
+		workerFinished:      make(chan bool),
+		closeSignal:         make(chan struct{}),
+		remaining:           0,
+		threshold:           int(math.Round(float64(DefaultJobWorkerMaxJobActive) * DefaultJobWorkerPollThreshold)),
+		shouldRetry:         func(_ context.Context, _ error) bool { return false },
+		backoffSupplier:     NewExponentialBackoffBuilder().Build(),
 	}
 	suite.waitGroup.Add(1)
 }
@@ -125,7 +127,7 @@ func (suite *JobPollerSuite) TestShouldNotPollAfterIntervalIfNotThreshold() {
 	suite.consumeJob()
 }
 
-func (suite *JobPollerSuite) TestShoulPolldAfterJobFinsihedIfThresholdIsReached() {
+func (suite *JobPollerSuite) TestShouldPollAfterJobFinishedIfThresholdIsReached() {
 	// given
 	suite.poller.maxJobsActive = 10
 	suite.poller.threshold = 4

@@ -35,52 +35,57 @@ const (
 	DefaultRequestTimeout         = 10 * time.Second
 )
 
+var defaultBackoffSupplier = NewExponentialBackoffBuilder().Build()
+
 type JobWorkerBuilder struct {
 	gatewayClient  pb.GatewayClient
 	jobClient      JobClient
 	request        *pb.ActivateJobsRequest
 	requestTimeout time.Duration
 
-	handler       JobHandler
-	maxJobsActive int
-	concurrency   int
-	pollInterval  time.Duration
-	pollThreshold float64
-	metrics       JobWorkerMetrics
-	shouldRetry   func(context.Context, error) bool
+	handler         JobHandler
+	maxJobsActive   int
+	concurrency     int
+	pollInterval    time.Duration
+	pollThreshold   float64
+	metrics         JobWorkerMetrics
+	shouldRetry     func(context.Context, error) bool
+	backoffSupplier BackoffSupplier
 }
 
 type JobWorkerBuilderStep1 interface {
-	// Set the type of jobs to work on
+	// JobType Set the type of jobs to work on
 	JobType(string) JobWorkerBuilderStep2
 }
 
 type JobWorkerBuilderStep2 interface {
-	// Set the handler to process jobs. The worker should complete or fail the job. The handler implementation
+	// Handler Set the handler to process jobs. The worker should complete or fail the job. The handler implementation
 	// must be thread-safe.
 	Handler(JobHandler) JobWorkerBuilderStep3
 }
 
 type JobWorkerBuilderStep3 interface {
-	// Set the name of the worker owner
+	// Name Set the name of the worker owner
 	Name(string) JobWorkerBuilderStep3
-	// Set the duration no other worker should work on job activated by this worker
+	// Timeout Set the duration no other worker should work on job activated by this worker
 	Timeout(time.Duration) JobWorkerBuilderStep3
-	// Set the timeout for the request
+	// RequestTimeout Set the timeout for the request
 	RequestTimeout(time.Duration) JobWorkerBuilderStep3
-	// Set the maximum number of jobs which will be activated for this worker at the
+	// MaxJobsActive Set the maximum number of jobs which will be activated for this worker at the
 	// same time.
 	MaxJobsActive(int) JobWorkerBuilderStep3
-	// Set the maximum number of concurrent spawned goroutines to complete jobs
+	// Concurrency Set the maximum number of concurrent spawned goroutines to complete jobs
 	Concurrency(int) JobWorkerBuilderStep3
-	// Set the maximal interval between polling for new jobs
+	// PollInterval Set the maximal interval between polling for new jobs
 	PollInterval(time.Duration) JobWorkerBuilderStep3
-	// Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * MaxJobsActive(int)
+	// PollThreshold Set the threshold of buffered activated jobs before polling for new jobs, i.e. threshold * MaxJobsActive(int)
 	PollThreshold(float64) JobWorkerBuilderStep3
-	// Set list of variable names which should be fetched on job activation
+	// FetchVariables Set list of variable names which should be fetched on job activation
 	FetchVariables(...string) JobWorkerBuilderStep3
-	// Set implementation for metrics reporting
+	// Metrics Set implementation for metrics reporting
 	Metrics(metrics JobWorkerMetrics) JobWorkerBuilderStep3
+	// BackoffSupplier Set the backoffSupplier to back off polling on errors
+	BackoffSupplier(supplier BackoffSupplier) JobWorkerBuilderStep3
 	// Open the job worker and start polling and handling jobs
 	Open() JobWorker
 }
@@ -153,6 +158,11 @@ func (builder *JobWorkerBuilder) Metrics(metrics JobWorkerMetrics) JobWorkerBuil
 	return builder
 }
 
+func (builder *JobWorkerBuilder) BackoffSupplier(backoffSupplier BackoffSupplier) JobWorkerBuilderStep3 {
+	builder.backoffSupplier = backoffSupplier
+	return builder
+}
+
 func (builder *JobWorkerBuilder) Open() JobWorker {
 	jobQueue := make(chan entities.Job, builder.maxJobsActive)
 	workerFinished := make(chan bool, builder.maxJobsActive)
@@ -162,19 +172,21 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 	closeWait.Add(2)
 
 	poller := jobPoller{
-		client:         builder.gatewayClient,
-		maxJobsActive:  builder.maxJobsActive,
-		pollInterval:   builder.pollInterval,
-		request:        builder.request,
-		requestTimeout: builder.requestTimeout,
+		client:              builder.gatewayClient,
+		maxJobsActive:       builder.maxJobsActive,
+		pollInterval:        builder.pollInterval,
+		initialPollInterval: builder.pollInterval,
+		request:             builder.request,
+		requestTimeout:      builder.requestTimeout,
 
-		jobQueue:       jobQueue,
-		workerFinished: workerFinished,
-		closeSignal:    closePoller,
-		remaining:      0,
-		threshold:      int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
-		metrics:        builder.metrics,
-		shouldRetry:    builder.shouldRetry,
+		jobQueue:        jobQueue,
+		workerFinished:  workerFinished,
+		closeSignal:     closePoller,
+		remaining:       0,
+		threshold:       int(math.Round(float64(builder.maxJobsActive) * builder.pollThreshold)),
+		metrics:         builder.metrics,
+		shouldRetry:     builder.shouldRetry,
+		backoffSupplier: builder.backoffSupplier,
 	}
 
 	dispatcher := jobDispatcher{
@@ -210,8 +222,9 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: DefaultRequestTimeout.Milliseconds(),
 		},
-		requestTimeout: DefaultRequestTimeout + RequestTimeoutOffset,
-		shouldRetry:    retryPred,
+		requestTimeout:  DefaultRequestTimeout + RequestTimeoutOffset,
+		shouldRetry:     retryPred,
+		backoffSupplier: defaultBackoffSupplier,
 	}
 
 }
