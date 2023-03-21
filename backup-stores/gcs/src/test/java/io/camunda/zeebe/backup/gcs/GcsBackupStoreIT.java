@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
+import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import java.io.IOException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,7 +23,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class GcsBackupStoreIT implements SavingBackup {
+public class GcsBackupStoreIT implements SavingBackup, UpdatingBackupStatus {
   @Container private static final GcsContainer GCS = new GcsContainer();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
@@ -39,7 +40,7 @@ public class GcsBackupStoreIT implements SavingBackup {
             .build();
     try (final var client = GcsBackupStore.buildClient(config)) {
       client.create(BucketInfo.of(BUCKET_NAME));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -70,5 +71,17 @@ public class GcsBackupStoreIT implements SavingBackup {
   @Disabled
   public void backupFailsIfFilesAreMissing(final Backup backup) throws IOException {
     SavingBackup.super.backupFailsIfFilesAreMissing(backup);
+  }
+
+  @Override
+  @Disabled
+  public void backupCanBeMarkedAsFailed(final Backup backup) {
+    UpdatingBackupStatus.super.backupCanBeMarkedAsFailed(backup);
+  }
+
+  @Override
+  @Disabled
+  public void markingAsFailedUpdatesTimestamp(final Backup backup) {
+    UpdatingBackupStatus.super.markingAsFailedUpdatesTimestamp(backup);
   }
 }
