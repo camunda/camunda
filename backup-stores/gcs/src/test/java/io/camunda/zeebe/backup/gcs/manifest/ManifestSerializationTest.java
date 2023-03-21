@@ -20,13 +20,15 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
+import io.camunda.zeebe.backup.gcs.manifest.FileSet.NamedFile;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 final class ManifestSerializationTest {
   @Test
-  public void shouldDeserialize() throws JsonProcessingException {
+  void shouldDeserialize() throws JsonProcessingException {
     // given
     final var json =
         """
@@ -61,7 +63,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldSerialize() throws JsonProcessingException {
+  void shouldSerialize() throws JsonProcessingException {
     // given
     final var manifest =
         new ManifestImpl(
@@ -95,7 +97,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldSerializeFailedManifest() throws JsonProcessingException {
+  void shouldSerializeFailedManifest() throws JsonProcessingException {
     // given
     final var created =
         Manifest.create(
@@ -141,7 +143,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldFailToDeserializeFailedManifestWithWrongStatusCode() {
+  void shouldFailToDeserializeFailedManifestWithWrongStatusCode() {
     // given
     final var json =
         """
@@ -163,7 +165,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldDeserializeFailedManifest() throws JsonProcessingException {
+  void shouldDeserializeFailedManifest() throws JsonProcessingException {
     // given
     final var json =
         """
@@ -200,7 +202,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldDeserializeInProgressManifest() throws JsonProcessingException {
+  void shouldDeserializeInProgressManifest() throws JsonProcessingException {
     // given
     final var json =
         """
@@ -235,7 +237,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldDeserializeInProgressAndComplete() throws JsonProcessingException {
+  void shouldDeserializeInProgressAndComplete() throws JsonProcessingException {
     // given
     final var json =
         """
@@ -271,7 +273,7 @@ final class ManifestSerializationTest {
   }
 
   @Test
-  public void shouldDeserializeCompletedManifest() throws JsonProcessingException {
+  void shouldDeserializeCompletedManifest() throws JsonProcessingException {
     // given
     final var json =
         """
@@ -303,5 +305,40 @@ final class ManifestSerializationTest {
     assertThat(manifest.statusCode()).isEqualTo(COMPLETED);
     assertThat(manifest.createdAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
     assertThat(manifest.modifiedAt()).isEqualTo(Instant.ofEpochMilli(1678790708000L));
+  }
+
+  @Test
+  public void shouldSerializeFileSets() throws JsonProcessingException {
+    // given
+    final var manifest =
+        new ManifestImpl(
+            new BackupIdentifierImpl(1, 2, 43),
+            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+            IN_PROGRESS,
+            new FileSet(List.of(new NamedFile("snapshotFile1"), new NamedFile("snapshotFile2"))),
+            new FileSet(List.of(new NamedFile("segmentFile1"))),
+            Instant.ofEpochMilli(1678790708000L),
+            Instant.ofEpochMilli(1678790708000L));
+    final var expectedJsonString =
+        // language=json
+        """
+          {
+            "id": { "nodeId": 1, "partitionId": 2, "checkpointId": 43 },
+            "descriptor": { "checkpointPosition": 2345234, "numberOfPartitions": 3, "brokerVersion": "1.2.0-SNAPSHOT" },
+            "statusCode": "IN_PROGRESS",
+            "snapshot": { "files": [ { "name": "snapshotFile1" }, { "name": "snapshotFile2" } ] },
+            "segments": { "files": [ { "name": "segmentFile1" } ] },
+            "createdAt": "2023-03-14T10:45:08Z",
+            "modifiedAt": "2023-03-14T10:45:08Z"
+          }
+          """;
+
+    // when
+    final var actualJsonString = MAPPER.writeValueAsString(manifest);
+
+    // then
+    final JsonNode actualJson = MAPPER.readTree(actualJsonString);
+    final JsonNode expectedJson = MAPPER.readTree(expectedJsonString);
+    assertThat(actualJson).isEqualTo(expectedJson);
   }
 }
