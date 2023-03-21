@@ -65,7 +65,7 @@
     "@types/carbon__elements": "11.10.0",
     "@types/jest": "29.5.0",
     "@types/mixpanel-browser": "2.38.1",
-    "@types/node": "18.15.3",
+    "@types/node": "18.15.5",
     "@types/react": "18.0.28",
     "@types/react-dom": "18.0.11",
     "@types/react-transition-group": "4.4.5",
@@ -86,7 +86,7 @@
     "testcafe": "2.4.0",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.0.2",
-    "zeebe-node": "8.1.5"
+    "zeebe-node": "8.1.6"
   },
   "lint-staged": {
     "*": [
