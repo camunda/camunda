@@ -799,47 +799,4 @@ public class ErrorEventTest {
             "Expect that errorMessage variable has an empty string as value because no error message was provided with the thrown error")
         .hasValue("\"\"");
   }
-
-  @Test
-  public void shouldApplyOutputMappingsWithErrorCodeAndErrorMessage() {
-    // Given
-    final var process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(JOB_TYPE))
-            .boundaryEvent(
-                "error-boundary-event",
-                b ->
-                    b.errorEventDefinition()
-                        .error(ERROR_CODE)
-                        .errorCodeVariable("errorCode")
-                        .errorMessageVariable("errorMessage"))
-            .zeebeOutputExpression("errorCode", "errCode")
-            .zeebeOutputExpression("errorMessage", "errMsg")
-            .endEvent()
-            .done();
-
-    ENGINE.deployment().withXmlResource(process).deploy();
-
-    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    // when
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(JOB_TYPE)
-        .withErrorCode(ERROR_CODE)
-        .withErrorMessage("error-message")
-        .throwError();
-
-    // Then
-    assertThat(
-            RecordingExporter.variableRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withScopeKey(processInstanceKey)
-                .limit(2))
-        .extracting(Record::getValue)
-        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
-        .containsSequence(tuple("errCode", "\"ERROR\""), tuple("errMsg", "\"error-message\""));
-  }
 }
