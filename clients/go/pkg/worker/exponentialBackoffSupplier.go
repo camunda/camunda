@@ -22,14 +22,14 @@ type ExponentialBackoffBuilder interface {
 	Build() BackoffSupplier
 }
 
-type ExponentialBackoffBuilderImpl struct {
+type exponentialBackoffBuilderImpl struct {
 	minDelay, maxDelay          time.Duration
 	backoffFactor, jitterFactor float64
 	random                      *rand.Rand
 }
 
-func NewExponentialBackoffBuilder() ExponentialBackoffBuilderImpl {
-	return ExponentialBackoffBuilderImpl{
+func NewExponentialBackoffBuilder() exponentialBackoffBuilderImpl {
+	return exponentialBackoffBuilderImpl{
 		maxDelay:      time.Second * 5,
 		minDelay:      time.Millisecond * 50,
 		backoffFactor: 1.6,
@@ -38,32 +38,32 @@ func NewExponentialBackoffBuilder() ExponentialBackoffBuilderImpl {
 	}
 }
 
-func (e ExponentialBackoffBuilderImpl) MaxDelay(maxDelay time.Duration) ExponentialBackoffBuilder {
+func (e exponentialBackoffBuilderImpl) MaxDelay(maxDelay time.Duration) ExponentialBackoffBuilder {
 	e.maxDelay = maxDelay
 	return e
 }
 
-func (e ExponentialBackoffBuilderImpl) MinDelay(minDelay time.Duration) ExponentialBackoffBuilder {
+func (e exponentialBackoffBuilderImpl) MinDelay(minDelay time.Duration) ExponentialBackoffBuilder {
 	e.minDelay = minDelay
 	return e
 }
 
-func (e ExponentialBackoffBuilderImpl) BackoffFactor(backoffFactor float64) ExponentialBackoffBuilder {
+func (e exponentialBackoffBuilderImpl) BackoffFactor(backoffFactor float64) ExponentialBackoffBuilder {
 	e.backoffFactor = backoffFactor
 	return e
 }
 
-func (e ExponentialBackoffBuilderImpl) JitterFactor(jitterFactor float64) ExponentialBackoffBuilder {
+func (e exponentialBackoffBuilderImpl) JitterFactor(jitterFactor float64) ExponentialBackoffBuilder {
 	e.jitterFactor = jitterFactor
 	return e
 }
 
-func (e ExponentialBackoffBuilderImpl) Random(random *rand.Rand) ExponentialBackoffBuilder {
+func (e exponentialBackoffBuilderImpl) Random(random *rand.Rand) ExponentialBackoffBuilder {
 	e.random = random
 	return e
 }
 
-func (e ExponentialBackoffBuilderImpl) Build() BackoffSupplier {
+func (e exponentialBackoffBuilderImpl) Build() BackoffSupplier {
 	return ExponentialBackoff{
 		minDelay:      e.minDelay,
 		maxDelay:      e.maxDelay,
