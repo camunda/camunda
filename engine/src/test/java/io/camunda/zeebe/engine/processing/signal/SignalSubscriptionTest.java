@@ -151,9 +151,9 @@ public final class SignalSubscriptionTest {
     // deploy an empty deployment, so we can use the position to limit the recorded stream
     final var position = engine.deployment().expectRejection().deploy().getPosition();
     assertThat(
-        RecordingExporter.records()
-            .limit(r -> r.getPosition() >= position)
-            .filter(r -> r.getValueType() == ValueType.SIGNAL_SUBSCRIPTION))
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() >= position)
+                .filter(r -> r.getValueType() == ValueType.SIGNAL_SUBSCRIPTION))
         .describedAs("Expect only one signal start event subscription for duplicate deployments")
         .hasSize(1);
   }
