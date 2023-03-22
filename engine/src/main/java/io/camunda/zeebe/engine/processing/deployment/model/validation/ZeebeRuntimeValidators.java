@@ -176,6 +176,8 @@ public final class ZeebeRuntimeValidators {
             .build(expressionLanguage),
         // Checks signal name expressions of start event signals
         new ProcessSignalStartEventSignalNameValidator(expressionLanguage),
+        // Check that unsupported signal boundary events cannot be deployed
+        new UnsupportedSignalBoundaryEventValidator(),
         // Check that unsupported signal end events cannot be deployed
         new UnsupportedSignalEndEventValidator(),
         // Check that unsupported signal throw events cannot be deployed

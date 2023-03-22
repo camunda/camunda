@@ -203,7 +203,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalBoundaryEvent() {
+  public void shouldRejectSignalBoundaryEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -212,17 +212,22 @@ public final class SignalEventValidationTest {
         Bpmn.createExecutableProcess(processId)
             .startEvent()
             .manualTask()
-            .boundaryEvent("boundary-1", b -> b.signal(m -> m.name("signalName")))
+            .boundaryEvent("signal_boundary_event", b -> b.signal(m -> m.name("signalName")))
             .endEvent()
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal boundary event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_boundary_event
+                - ERROR: Elements of type signal boundary event are currently not supported
+            """);
   }
 
   @Test
