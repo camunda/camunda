@@ -23,7 +23,6 @@ import (
 
 func TestExponentialBackoffSupplier_ShouldReturnDelayWithinBounds(t *testing.T) {
 	iterations := 10
-
 	minDelay := time.Millisecond * 50
 	maxDelay := time.Second * 5
 	e := NewExponentialBackoffBuilder().
@@ -34,6 +33,7 @@ func TestExponentialBackoffSupplier_ShouldReturnDelayWithinBounds(t *testing.T) 
 		Build()
 
 	var retryDelays []time.Duration
+	// when
 	for i := 0; i < iterations; i++ {
 		if len(retryDelays) == 0 {
 			retryDelays = []time.Duration{e.SupplyRetryDelay(0)}
@@ -41,79 +41,76 @@ func TestExponentialBackoffSupplier_ShouldReturnDelayWithinBounds(t *testing.T) 
 		retryDelays = append(retryDelays, e.SupplyRetryDelay(retryDelays[i]))
 	}
 
-	// then - minDelay is equal to the first retryDelay
-	// then - maxDelay is equal to the last retryDelay
+	// then
+	// minDelay is equal to the first retryDelay
+	// maxDelay is equal to the last retryDelay
 	assert.Equal(t, minDelay, retryDelays[0])
 	assert.Equal(t, maxDelay, retryDelays[10])
 }
 
 func TestExponentialBackoffSupplier_IsStrictlyIncreasing(t *testing.T) {
 	iterations := 100
-	t.Run("Backoff is strictly increasing", func(t *testing.T) {
-		e := NewExponentialBackoffBuilder().
-			JitterFactor(0).
-			Build()
-		var retryDelays []time.Duration
-		for i := 0; i < iterations; i++ {
-			if len(retryDelays) == 0 {
-				retryDelays = []time.Duration{e.SupplyRetryDelay(0)}
-			}
-			retryDelays = append(retryDelays, e.SupplyRetryDelay(retryDelays[i]))
+	e := NewExponentialBackoffBuilder().
+		JitterFactor(0).
+		Build()
+	var retryDelays []time.Duration
+	// when
+	for i := 0; i < iterations; i++ {
+		if len(retryDelays) == 0 {
+			retryDelays = []time.Duration{e.SupplyRetryDelay(0)}
 		}
-		for i, delay := range retryDelays {
-			// Skip first delay
-			if i == 0 {
-				continue
-			}
-			// then - as we used 0 for jitter factor, we can guarantee all are increasing or at least equal
-			assert.GreaterOrEqual(t, delay, retryDelays[i-1], "backoff is strictly increasing")
+		retryDelays = append(retryDelays, e.SupplyRetryDelay(retryDelays[i]))
+	}
+	for i, delay := range retryDelays {
+		// Skip first delay
+		if i == 0 {
+			continue
 		}
+		// then - as we used 0 for jitter factor, we can guarantee all are increasing or at least equal
+		assert.GreaterOrEqual(t, delay, retryDelays[i-1], "backoff is strictly increasing")
+	}
 
-	})
 }
 
 func TestExponentialBackoffSupplier_ShouldBeRandomizedWithJitter(t *testing.T) {
-	t.Run("backoff should be randomized with jitter", func(t *testing.T) {
-		iterations := 100
-		maxDelay := time.Second * 5
-		minDelay := time.Millisecond * 50
-		jitterFactor := 0.2
-		e := NewExponentialBackoffBuilder().
-			MaxDelay(maxDelay).
-			MinDelay(minDelay).
-			JitterFactor(jitterFactor).
-			BackoffFactor(1.5).
-			Build()
+	iterations := 100
+	maxDelay := time.Second * 5
+	minDelay := time.Millisecond * 50
+	jitterFactor := 0.2
+	e := NewExponentialBackoffBuilder().
+		MaxDelay(maxDelay).
+		MinDelay(minDelay).
+		JitterFactor(jitterFactor).
+		BackoffFactor(1.5).
+		Build()
 
-		maxDelayMillis := float64(maxDelay.Milliseconds())
-		lowerMaxBound := math.Round(maxDelayMillis + maxDelayMillis*-jitterFactor)
-		upperMaxBound := math.Round(maxDelayMillis + maxDelayMillis*jitterFactor)
+	maxDelayMillis := float64(maxDelay.Milliseconds())
+	lowerMaxBound := math.Round(maxDelayMillis + maxDelayMillis*-jitterFactor)
+	upperMaxBound := math.Round(maxDelayMillis + maxDelayMillis*jitterFactor)
 
-		lowerMaxBoundDuration := time.Duration(lowerMaxBound * float64(time.Millisecond))
-		upperMaxBoundDuration := time.Duration(upperMaxBound * float64(time.Millisecond))
+	lowerMaxBoundDuration := time.Duration(lowerMaxBound * float64(time.Millisecond))
+	upperMaxBoundDuration := time.Duration(upperMaxBound * float64(time.Millisecond))
 
-		var retryDelays []time.Duration
-		// when
-		for i := 0; i < iterations; i++ {
-			if len(retryDelays) == 0 {
-				retryDelays = []time.Duration{e.SupplyRetryDelay(maxDelay)}
-			}
-			retryDelays = append(retryDelays, e.SupplyRetryDelay(retryDelays[i]))
+	var retryDelays []time.Duration
+	// when
+	for i := 0; i < iterations; i++ {
+		if len(retryDelays) == 0 {
+			retryDelays = []time.Duration{e.SupplyRetryDelay(maxDelay)}
 		}
+		retryDelays = append(retryDelays, e.SupplyRetryDelay(retryDelays[i]))
+	}
 
-		// then
-		for i, delay := range retryDelays {
-			// retryDelay is in bounds
-			betweenBounds := delay > lowerMaxBoundDuration && delay < upperMaxBoundDuration
-			assert.True(t, betweenBounds, "is between lower and upper bound")
+	// then
+	for i, delay := range retryDelays {
+		// retryDelay is in bounds
+		betweenBounds := delay > lowerMaxBoundDuration && delay < upperMaxBoundDuration
+		assert.True(t, betweenBounds, "is between lower and upper bound")
 
-			// Skip first delay
-			if i == 0 {
-				continue
-			}
-			// then - as we used 0 for jitter factor, we can guarantee all are sorted
-			assert.IsIncreasing(t, delay, retryDelays[i-1], "backoff is strictly increasing")
+		// Skip first delay
+		if i == 0 {
+			continue
 		}
-
-	})
+		// then - as we used 0 for jitter factor, we can guarantee all are sorted
+		assert.IsIncreasing(t, delay, retryDelays[i-1], "backoff is strictly increasing")
+	}
 }
