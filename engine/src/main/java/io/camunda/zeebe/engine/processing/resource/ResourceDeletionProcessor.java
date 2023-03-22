@@ -28,6 +28,11 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceDeletionRecord> {
 
+  public static final boolean RESOURCE_DELETION_IMPLEMENTED = false;
+  private static final String ERROR_MESSAGE_NOT_IMPLEMENTED =
+      """
+          Resource deletion has not been fully implemented yet. Stay posted on the latest Camunda \
+          releases to know when this feature will become available.""";
   private static final String ERROR_MESSAGE_RESOURCE_NOT_FOUND =
       "Expected to delete resource but no resource found with key `%d`";
 
@@ -48,6 +53,16 @@ public class ResourceDeletionProcessor implements TypedRecordProcessor<ResourceD
 
   @Override
   public void processRecord(final TypedRecord<ResourceDeletionRecord> command) {
+    // Reject resource deletions for now, as the feature is not yet ready for release in Zeebe 8.2
+    // When enabling again please don't forget to un-ignore the tests.
+    if (!RESOURCE_DELETION_IMPLEMENTED) {
+      rejectionWriter.appendRejection(
+          command, RejectionType.PROCESSING_ERROR, ERROR_MESSAGE_NOT_IMPLEMENTED);
+      responseWriter.writeRejectionOnCommand(
+          command, RejectionType.PROCESSING_ERROR, ERROR_MESSAGE_NOT_IMPLEMENTED);
+      return;
+    }
+
     final var value = command.getValue();
 
     final var drgOptional = decisionState.findDecisionRequirementsByKey(value.getResourceKey());
