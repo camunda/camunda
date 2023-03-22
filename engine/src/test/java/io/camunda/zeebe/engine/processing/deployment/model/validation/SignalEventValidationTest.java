@@ -306,6 +306,34 @@ public final class SignalEventValidationTest {
             """);
   }
 
+  @Test
+  public void shouldRejectSignalEventSubprocess() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final BpmnModelInstance processDefinition =
+        Bpmn.createExecutableProcess(processId)
+            .eventSubProcess(
+                "signal_event_subprocess",
+                sub -> sub.startEvent("signal_event", s -> s.signal("signal")))
+            .startEvent()
+            .done();
+
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_event_subprocess
+                - ERROR: Elements of type signal event subprocess are currently not supported
+            """);
+  }
+
   @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndBoundaryEventEvenWithSameSignal() {
