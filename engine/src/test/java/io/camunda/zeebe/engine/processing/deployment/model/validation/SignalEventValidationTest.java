@@ -160,7 +160,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalThrowEvent() {
+  public void shouldRejectSignalThrowEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -168,18 +168,23 @@ public final class SignalEventValidationTest {
     final BpmnModelInstance processDefinition =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .intermediateThrowEvent()
+            .intermediateThrowEvent("signal_throw_event")
             .signal("signalName")
             .endEvent()
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal throw event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_throw_event
+                - ERROR: Elements of type signal throw event are currently not supported
+            """);
   }
 
   @Test
