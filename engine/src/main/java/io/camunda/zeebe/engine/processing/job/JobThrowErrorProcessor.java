@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.trimBufferIfExceeds;
+import static io.camunda.zeebe.util.StringUtil.limitString;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventPublicationBehavior;
@@ -109,8 +109,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     final JobRecord job = jobState.getJob(jobKey);
     job.setErrorCode(command.getValue().getErrorCodeBuffer());
-    job.setErrorMessage(
-        trimBufferIfExceeds(command.getValue().getErrorMessageBuffer(), MAX_ERROR_MESSAGE_SIZE));
+    job.setErrorMessage(limitString(command.getValue().getErrorMessage(), MAX_ERROR_MESSAGE_SIZE));
 
     final var serviceTaskInstanceKey = job.getElementInstanceKey();
     final var serviceTaskInstance = elementInstanceState.getInstance(serviceTaskInstanceKey);

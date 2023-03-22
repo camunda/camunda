@@ -9,7 +9,6 @@ package io.camunda.zeebe.util.buffer;
 
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
-import static io.camunda.zeebe.util.buffer.BufferUtil.trimBufferIfExceeds;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;
@@ -110,34 +109,6 @@ public final class BufferUtilTest {
     // then
     assertThat(buffer.byteArray()).isEqualTo(BYTES1);
     assertThat(bytes).isNotSameAs(BYTES1);
-  }
-
-  @Test
-  public void shouldTrimBufferIfExceeds() {
-    // given
-    final int maxLength = BYTES1.length - 1;
-    final byte[] expected = new byte[maxLength];
-    System.arraycopy(BYTES1, 0, expected, 0, maxLength);
-    final DirectBuffer expectedBuffer = new UnsafeBuffer(expected);
-    final DirectBuffer src = new UnsafeBuffer(BYTES1);
-
-    // when
-    final DirectBuffer dst = trimBufferIfExceeds(src, maxLength);
-
-    // then
-    assertThat(dst).isNotSameAs(expectedBuffer).isEqualTo(expectedBuffer);
-  }
-
-  @Test
-  public void shouldNotTrimBufferIfNotExceeds() {
-    // given
-    final DirectBuffer src = new UnsafeBuffer(BYTES1);
-
-    // when
-    final DirectBuffer dst = trimBufferIfExceeds(src, BYTES1.length);
-
-    // then
-    assertThat(dst).isSameAs(src);
   }
 
   public DirectBuffer asBuffer(final byte[] bytes) {
