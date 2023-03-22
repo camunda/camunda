@@ -28,9 +28,11 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMet
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Ignore("Resoure deletion is disabled for version 8.2")
 public class ResourceDeletionTest {
 
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
