@@ -93,7 +93,7 @@ func (cmd *EvaluateDecisionCommand) DecisionKey(key int64) EvaluateDecisionComma
 	return cmd
 }
 
-//nolint:golint
+//nolint:revive
 func (cmd *EvaluateDecisionCommand) DecisionId(id string) EvaluateDecisionCommandStep2 {
 	cmd.request.DecisionId = id
 	return cmd
