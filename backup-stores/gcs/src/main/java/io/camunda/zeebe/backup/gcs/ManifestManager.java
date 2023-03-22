@@ -18,15 +18,24 @@ import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Collection;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.StreamSupport;
 
 public final class ManifestManager {
   public static final ObjectMapper MAPPER =
@@ -40,11 +49,19 @@ public final class ManifestManager {
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String prefix;
+  private final Pattern backupIdPattern;
 
   ManifestManager(final Storage client, final BucketInfo bucketInfo, final String prefix) {
     this.bucketInfo = bucketInfo;
     this.client = client;
     this.prefix = prefix + MANIFEST_PREFIX;
+    backupIdPattern =
+        Pattern.compile(
+            "^"
+                + Pattern.quote(this.prefix)
+                + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+)/"
+                + Pattern.quote(MANIFEST_BLOB_NAME)
+                + "$");
   }
 
   CurrentManifest createInitialManifest(final Backup backup) {
@@ -135,6 +152,42 @@ public final class ManifestManager {
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
+  }
+
+  public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+    final var spliterator =
+        Spliterators.spliteratorUnknownSize(
+            client
+                .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
+                .iterateAll()
+                .iterator(),
+            Spliterator.IMMUTABLE);
+    return StreamSupport.stream(spliterator, false)
+        .filter(filterBlobsByWildcard(wildcard))
+        .parallel()
+        .map(Blob::getContent)
+        .map(
+            content -> {
+              try {
+                return MAPPER.readValue(content, Manifest.class);
+              } catch (final IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .toList();
+  }
+
+  private Predicate<Blob> filterBlobsByWildcard(final BackupIdentifierWildcard wildcard) {
+    return (blob -> {
+      final var matcher = backupIdPattern.matcher(blob.getName());
+      if (!matcher.matches()) {
+        return false;
+      }
+      final var nodeId = Integer.parseInt(matcher.group("nodeId"));
+      final var partitionId = Integer.parseInt(matcher.group("partitionId"));
+      final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
+      return wildcard.matches(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
+    });
   }
 
   record CurrentManifest(Blob blob, InProgressManifest manifest) {}
