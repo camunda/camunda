@@ -37,6 +37,8 @@ public final class TimerIncidentTest {
   private static final String DURATION_VARIABLE = "timer_duration";
   private static final String DURATION_EXPRESSION = "duration(" + DURATION_VARIABLE + ")";
   private static final String CYCLE_EXPRESSION = "cycle(" + DURATION_EXPRESSION + ")";
+  private static final String DATETIME_EXPRESSION =
+      "date and time(date(" + DURATION_VARIABLE + "),time(\"T00:00:00@UTC\"))";
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -69,6 +71,84 @@ public final class TimerIncidentTest {
                                 .endEvent("boundary-timer-end-event")))
         .endEvent()
         .done();
+  }
+
+  private static BpmnModelInstance createProcessWithTimeDate(final String expression) {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .serviceTask(
+            ELEMENT_ID,
+            serviceTaskBuilder ->
+                serviceTaskBuilder
+                    .zeebeJobTypeExpression("boundary_timer_test")
+                    .boundaryEvent(
+                        "boundary-event-1",
+                        timerBoundaryEventBuilder ->
+                            timerBoundaryEventBuilder
+                                .cancelActivity(false)
+                                .timerWithDateExpression(expression)
+                                .endEvent("boundary-timer-end-event")))
+        .endEvent()
+        .done();
+  }
+
+  @Test
+  public void shouldCreateIncidentIfTimeDateVariableNotFound() {
+    // when
+    ENGINE.deployment().withXmlResource(createProcessWithTimeDate(DATETIME_EXPRESSION)).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasElementInstanceKey(elementInstance.getKey())
+        .hasElementId(elementInstance.getValue().getElementId())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression '"
+                + DATETIME_EXPRESSION
+                + "' to be one of '[DATE_TIME, STRING]', but was 'NULL'");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfTimeDateVariableNotATimeDate() {
+    // when
+    ENGINE.deployment().withXmlResource(createProcessWithTimeDate(DURATION_VARIABLE)).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DURATION_VARIABLE, "not_a_duration_expression")
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> elementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    Assertions.assertThat(incident.getValue())
+        .hasElementInstanceKey(elementInstance.getKey())
+        .hasElementId(elementInstance.getValue().getElementId())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Invalid date-time format 'not_a_duration_expression' for expression '"
+                + DURATION_VARIABLE
+                + "'");
   }
 
   @Test
