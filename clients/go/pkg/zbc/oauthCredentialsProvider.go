@@ -29,7 +29,7 @@ import (
 	"time"
 )
 
-//nolint:golint
+//nolint:revive
 const OAuthClientIdEnvVar = "ZEEBE_CLIENT_ID"
 
 // #nosec 101
@@ -38,7 +38,7 @@ const OAuthClientSecretEnvVar = "ZEEBE_CLIENT_SECRET"
 // #nosec 101
 const OAuthTokenAudienceEnvVar = "ZEEBE_TOKEN_AUDIENCE"
 
-//nolint:golint
+//nolint:revive
 const OAuthAuthorizationUrlEnvVar = "ZEEBE_AUTHORIZATION_SERVER_URL"
 const OAuthRequestTimeoutEnvVar = "ZEEBE_AUTH_REQUEST_TIMEOUT"
 
