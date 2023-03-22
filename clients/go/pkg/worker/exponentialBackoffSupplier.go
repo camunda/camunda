@@ -35,7 +35,7 @@ func NewExponentialBackoffBuilder() ExponentialBackoff {
 		minDelay:      time.Millisecond * 50,
 		backoffFactor: 1.6,
 		jitterFactor:  0.1,
-		random:        rand.New(rand.NewSource(time.Now().Unix())),
+		random:        rand.New(rand.NewSource(time.Now().Unix())), //nolint G404, we dont need a secure random number generator
 	}
 }
 
