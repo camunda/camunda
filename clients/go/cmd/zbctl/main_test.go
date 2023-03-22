@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -230,7 +229,7 @@ func (s *integrationTestSuite) TestCommonCommands() {
 					strings.Join(test.cmd, " "), err, cmdOut)
 			}
 
-			goldenOut, err := ioutil.ReadFile(test.goldenFile)
+			goldenOut, err := os.ReadFile(test.goldenFile)
 			if err != nil {
 				t.Fatal(err)
 			}

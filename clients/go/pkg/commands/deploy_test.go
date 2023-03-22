@@ -20,7 +20,7 @@ import (
 	"github.com/camunda/zeebe/clients/go/v8/internal/utils"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
 	"github.com/golang/mock/gomock"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
@@ -109,7 +109,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 }
 
 func readBytes(t *testing.T, filename string) []byte {
-	bytes, err := ioutil.ReadFile(filename)
+	bytes, err := os.ReadFile(filename)
 	if err != nil {
 		t.Error("Failed to read file ", err)
 	}

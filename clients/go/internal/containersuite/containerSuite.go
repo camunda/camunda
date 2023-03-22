@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,7 +26,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"io/ioutil"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -87,7 +87,7 @@ func printFailedContainerLogs(target wait.StrategyTarget) error {
 	}
 
 	defer func() { _ = reader.Close() }()
-	if bytes, err := ioutil.ReadAll(reader); err == nil {
+	if bytes, err := io.ReadAll(reader); err == nil {
 		_, _ = fmt.Fprintln(os.Stderr, "=====================================")
 		_, _ = fmt.Fprintln(os.Stderr, "Container logs")
 		_, _ = fmt.Fprintln(os.Stderr, "NOTE: these logs are for all tests in the same suite!")

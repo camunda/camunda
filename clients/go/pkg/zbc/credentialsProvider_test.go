@@ -191,9 +191,9 @@ func (d *dummyGateway) ActivateJobs(_ *pb.ActivateJobsRequest, s pb.Gateway_Acti
 }
 
 // recordingInterceptor has several features. For each intercepted gRPC call, it will:
-//  * capture the authorization header (allowing you to check  its value)
-//  * execute an interceptAction, if any exists (allowing you to reject calls with specific codes, modify headers, etc)
-//  * increment an intercept counter (allowing you to verify how many calls were made)
+//   - capture the authorization header (allowing you to check  its value)
+//   - execute an interceptAction, if any exists (allowing you to reject calls with specific codes, modify headers, etc)
+//   - increment an intercept counter (allowing you to verify how many calls were made)
 type recordingInterceptor struct {
 	authHeader       string
 	interceptAction  interceptFunc
