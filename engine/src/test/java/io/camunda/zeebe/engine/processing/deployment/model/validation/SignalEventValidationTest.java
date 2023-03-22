@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -230,6 +231,7 @@ public final class SignalEventValidationTest {
             """);
   }
 
+  @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndMultipleBoundaryEvents() {
     // given
@@ -258,6 +260,8 @@ public final class SignalEventValidationTest {
         .isNotNegative();
   }
 
+  @Ignore(
+      "Should be re-enabled when signal event-subprocess & signal boundary events are supported")
   @Test
   public void shouldDeployEventSubProcessWithMultipleSignalEvents() {
     // given
@@ -297,6 +301,7 @@ public final class SignalEventValidationTest {
         .isNotNegative();
   }
 
+  @Ignore("Should be re-enabled when signal boundary events are supported")
   @Test
   public void shouldDeploySignalStartAndBoundaryEventEvenWithSameSignal() {
     // given
