@@ -117,13 +117,6 @@ public final class ManifestManager {
     }
   }
 
-  private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
-    final var backupPath = "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
-    return BlobInfo.newBuilder(bucketInfo, prefix + backupPath + MANIFEST_BLOB_NAME)
-        .setContentType("application/json")
-        .build();
-  }
-
   public void markAsFailed(final BackupIdentifier id, final String failureReason) {
     final var blobInfo = manifestBlobInfo(id);
     final var blob = client.get(blobInfo.getBlobId());
@@ -175,6 +168,17 @@ public final class ManifestManager {
               }
             })
         .toList();
+  }
+
+  public void deleteManifest(final BackupIdentifier id) {
+    client.delete(manifestBlobInfo(id).getBlobId());
+  }
+
+  private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
+    final var backupPath = "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
+    return BlobInfo.newBuilder(bucketInfo, prefix + backupPath + MANIFEST_BLOB_NAME)
+        .setContentType("application/json")
+        .build();
   }
 
   private Predicate<Blob> filterBlobsByWildcard(final BackupIdentifierWildcard wildcard) {

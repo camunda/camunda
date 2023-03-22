@@ -27,6 +27,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public final class GcsBackupStore implements BackupStore {
+  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
+  public static final String SEGMENTS_FILESET_NAME = "segments";
   private final Executor executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
@@ -50,8 +52,8 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           final var manifest = manifestManager.createInitialManifest(backup);
           try {
-            fileSetManager.save(backup.id(), "snapshot", backup.snapshot());
-            fileSetManager.save(backup.id(), "segments", backup.segments());
+            fileSetManager.save(backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot());
+            fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
             manifestManager.completeManifest(manifest);
           } catch (final Exception e) {
             manifestManager.markAsFailed(backup.id(), e.getMessage());
@@ -90,7 +92,13 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.runAsync(
+        () -> {
+          manifestManager.deleteManifest(id);
+          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
+          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+        },
+        executor);
   }
 
   @Override
