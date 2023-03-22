@@ -35,17 +35,20 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-
+  private static final String MANIFEST_PREFIX = "manifests/";
+  private static final String MANIFEST_BLOB_NAME = "manifest.json";
   private final BucketInfo bucketInfo;
   private final Storage client;
+  private final String prefix;
 
-  ManifestManager(final Storage client, final BucketInfo bucketInfo) {
+  ManifestManager(final Storage client, final BucketInfo bucketInfo, final String prefix) {
     this.bucketInfo = bucketInfo;
     this.client = client;
+    this.prefix = prefix + MANIFEST_PREFIX;
   }
 
-  CurrentManifest createInitialManifest(final String prefix, final Backup backup) {
-    final var manifestBlobInfo = manifestBlobInfo(prefix);
+  CurrentManifest createInitialManifest(final Backup backup) {
+    final var manifestBlobInfo = manifestBlobInfo(backup.id());
     final var manifest = Manifest.create(backup);
     try {
       final var blob =
@@ -84,8 +87,8 @@ public final class ManifestManager {
     }
   }
 
-  Manifest getManifest(final String prefix) {
-    final var blob = client.get(manifestBlobInfo(prefix).getBlobId());
+  Manifest getManifest(final BackupIdentifier id) {
+    final var blob = client.get(manifestBlobInfo(id).getBlobId());
     if (blob == null) {
       return null;
     } else {
@@ -97,15 +100,15 @@ public final class ManifestManager {
     }
   }
 
-  private BlobInfo manifestBlobInfo(final String prefix) {
-    return BlobInfo.newBuilder(bucketInfo, prefix + "manifest.json")
+  private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
+    final var backupPath = "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
+    return BlobInfo.newBuilder(bucketInfo, prefix + backupPath + MANIFEST_BLOB_NAME)
         .setContentType("application/json")
         .build();
   }
 
-  public void markAsFailed(
-      final String prefix, final BackupIdentifier id, final String failureReason) {
-    final var blobInfo = manifestBlobInfo(prefix);
+  public void markAsFailed(final BackupIdentifier id, final String failureReason) {
+    final var blobInfo = manifestBlobInfo(id);
     final var blob = client.get(blobInfo.getBlobId());
     try {
       if (blob == null) {
