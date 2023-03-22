@@ -5,7 +5,6 @@
  * except in compliance with the proprietary license.
  */
 
-import React from 'react';
 import {mount} from 'enzyme';
 
 import Modal from './Modal';
@@ -17,7 +16,7 @@ it('should not render anything if the modal is not opened', () => {
 });
 
 it('should render basic children', () => {
-  const node = mount(<Modal open={true}>ModalContent</Modal>);
+  const node = mount(<Modal open>ModalContent</Modal>);
 
   expect(node).toIncludeText('ModalContent');
 });
@@ -25,7 +24,7 @@ it('should render basic children', () => {
 it('should call the onConfirm function when enter is pressed', () => {
   const spy = jest.fn();
   const node = mount(
-    <Modal open={true} onConfirm={spy}>
+    <Modal open onConfirm={spy}>
       <input />
     </Modal>
   );
@@ -38,7 +37,7 @@ it('should call the onConfirm function when enter is pressed', () => {
 it('should not call the onConfirm function when enter is pressed on radio/checkbox element', () => {
   const spy = jest.fn();
   const node = mount(
-    <Modal open={true} onConfirm={spy}>
+    <Modal open onConfirm={spy}>
       <input />
     </Modal>
   );
@@ -52,7 +51,7 @@ it('should not call the onConfirm function when enter is pressed on radio/checkb
 
 it('should not call the onConfirm function when enter is pressed but the modal is not open', () => {
   const spy = jest.fn();
-  mount(<Modal open={false} onConfirm={spy} />);
+  mount(<Modal onConfirm={spy} />);
 
   const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
   document.body.dispatchEvent(event);
@@ -69,9 +68,22 @@ it('should not call the onConfirm function when enter is pressed but the focus w
   );
 
   const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
-  document.querySelector('button').dispatchEvent(event);
+  document.querySelector('button')?.dispatchEvent(event);
 
   expect(spy).not.toHaveBeenCalled();
+});
+
+it('should call the onClose function when escape is pressed', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <Modal open onClose={spy}>
+      <button>Action Button</button>
+    </Modal>
+  );
+
+  node.find('.Modal').simulate('keydown', {key: 'Escape'});
+
+  expect(spy).toHaveBeenCalled();
 });
 
 it('should automatically focus focusable element in modal', () => {
@@ -81,7 +93,7 @@ it('should automatically focus focusable element in modal', () => {
     </Modal>
   );
 
-  expect(document.activeElement.getAttribute('class')).toBe('focusBtn');
+  expect(document.activeElement?.getAttribute('class')).toBe('focusBtn');
 });
 
 it('should not automatically focus focusable element in modal if noAutoFocus prop is present', () => {
@@ -91,7 +103,7 @@ it('should not automatically focus focusable element in modal if noAutoFocus pro
     </Modal>
   );
 
-  expect(document.activeElement.getAttribute('class')).toBe('Modal__content-container');
+  expect(document.activeElement?.getAttribute('class')).toBe('Modal__content-container');
 });
 
 it('should focus the modal container if all focusable elements are disabled', () => {
@@ -101,7 +113,7 @@ it('should focus the modal container if all focusable elements are disabled', ()
     </Modal>
   );
 
-  expect(document.activeElement.getAttribute('class')).toBe('Modal__content-container');
+  expect(document.activeElement?.getAttribute('class')).toBe('Modal__content-container');
 });
 
 it('should trap focus', () => {
@@ -109,13 +121,24 @@ it('should trap focus', () => {
 
   node.find('.Modal__scroll-container div').last().simulate('focus');
 
-  expect(document.activeElement.getAttribute('class')).toBe('Modal__content-container');
+  expect(document.activeElement?.getAttribute('class')).toBe('Modal__content-container');
+});
+
+it('should clean up on unmount', () => {
+  const spy = jest.fn();
+  document.body.removeChild = spy;
+
+  const node = mount(<Modal />);
+
+  node.unmount();
+
+  expect(spy).toHaveBeenCalled();
 });
 
 describe('Header', () => {
   it('should render children', () => {
     const node = mount(
-      <Modal open={true}>
+      <Modal open>
         <Modal.Header>
           <div className="test">test</div>
         </Modal.Header>
@@ -126,7 +149,7 @@ describe('Header', () => {
 
   it('should contain a close button', () => {
     const node = mount(
-      <Modal open={true}>
+      <Modal open>
         <Modal.Header>
           <div className="test">test</div>
         </Modal.Header>
@@ -138,7 +161,7 @@ describe('Header', () => {
   it('should call the onClose function on close button click', () => {
     const spy = jest.fn();
     const node = mount(
-      <Modal open={true} onClose={spy}>
+      <Modal open onClose={spy}>
         <Modal.Header>
           <div className="test">test</div>
         </Modal.Header>
@@ -152,7 +175,7 @@ describe('Header', () => {
 describe('Content', () => {
   it('should render children', () => {
     const node = mount(
-      <Modal open={true}>
+      <Modal open>
         <Modal.Content>
           <div className="test">test</div>
         </Modal.Content>
@@ -165,7 +188,7 @@ describe('Content', () => {
 describe('Actions', () => {
   it('should render children', () => {
     const node = mount(
-      <Modal open={true}>
+      <Modal open>
         <Modal.Actions>
           <div className="test">test</div>
         </Modal.Actions>

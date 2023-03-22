@@ -13,3 +13,4 @@ export {Form} from './Form';
 export {Input} from './Input';
 export {Labeled} from './Labeled';
 export {Tooltip} from './Tooltip';
+export {Modal} from './Modal';
