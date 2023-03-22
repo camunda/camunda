@@ -8,7 +8,10 @@
 package io.camunda.zeebe.scheduler.testing;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 
 /**
@@ -42,6 +45,24 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   @Override
   public void run(final Runnable action) {
     action.run();
+  }
+
+  @Override
+  public <T> ActorFuture<T> call(final Callable<T> callable) {
+    final T call;
+    try {
+      call = callable.call();
+    } catch (final Exception e) {
+      return TestActorFuture.failedFuture(e);
+    }
+    return TestActorFuture.completedFuture(call);
+  }
+
+  @Override
+  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+    // Schedule immediately
+    runnable.run();
+    return () -> {};
   }
 
   @Override

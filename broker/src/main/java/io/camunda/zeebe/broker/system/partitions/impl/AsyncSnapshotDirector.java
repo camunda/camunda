@@ -101,7 +101,7 @@ public final class AsyncSnapshotDirector extends Actor
   protected void onActorStarting() {
     final var firstSnapshotTime =
         RandomDuration.getRandomDurationMinuteBased(MINIMUM_SNAPSHOT_PERIOD, snapshotRate);
-    actor.runDelayed(firstSnapshotTime, this::scheduleSnapshotOnRate);
+    actor.schedule(firstSnapshotTime, this::scheduleSnapshotOnRate);
   }
 
   @Override

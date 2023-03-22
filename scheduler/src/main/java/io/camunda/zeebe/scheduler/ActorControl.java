@@ -66,29 +66,6 @@ public class ActorControl implements ConcurrencyControl {
    * Callables actions are called while the actor is in the following actor lifecycle phases: {@link
    * ActorLifecyclePhase#STARTED}
    *
-   * @param callable
-   * @return
-   */
-  @SuppressWarnings("unchecked")
-  public <T> ActorFuture<T> call(final Callable<T> callable) {
-    final ActorThread runner = ActorThread.current();
-    if (runner != null && runner.getCurrentTask() == task) {
-      throw new UnsupportedOperationException(
-          "Incorrect usage of actor.call(...) cannot be called from current actor.");
-    }
-
-    final ActorJob job = new ActorJob();
-    final ActorFuture<T> future = job.setCallable(callable);
-    job.onJobAddedToTask(task);
-    task.submit(job);
-
-    return future;
-  }
-
-  /**
-   * Callables actions are called while the actor is in the following actor lifecycle phases: {@link
-   * ActorLifecyclePhase#STARTED}
-   *
    * @param action
    * @return
    */
@@ -100,19 +77,6 @@ public class ActorControl implements ConcurrencyControl {
         };
 
     return call(c);
-  }
-
-  /**
-   * The runnable is is executed while the actor is in the following actor lifecycle phases: {@link
-   * ActorLifecyclePhase#STARTED}
-   *
-   * @param delay
-   * @param runnable
-   * @return
-   */
-  public ScheduledTimer runDelayed(final Duration delay, final Runnable runnable) {
-    ensureCalledFromWithinActor("runDelayed(...)");
-    return scheduleTimer(delay, false, runnable);
   }
 
   /**
@@ -184,6 +148,44 @@ public class ActorControl implements ConcurrencyControl {
   @Override
   public void run(final Runnable action) {
     scheduleRunnable(action);
+  }
+
+  /**
+   * Callables actions are called while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
+   *
+   * @param callable
+   * @return
+   */
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> ActorFuture<T> call(final Callable<T> callable) {
+    final ActorThread runner = ActorThread.current();
+    if (runner != null && runner.getCurrentTask() == task) {
+      throw new UnsupportedOperationException(
+          "Incorrect usage of actor.call(...) cannot be called from current actor.");
+    }
+
+    final ActorJob job = new ActorJob();
+    final ActorFuture<T> future = job.setCallable(callable);
+    job.onJobAddedToTask(task);
+    task.submit(job);
+
+    return future;
+  }
+
+  /**
+   * The runnable is is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
+   *
+   * @param delay
+   * @param runnable
+   * @return
+   */
+  @Override
+  public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
+    ensureCalledFromWithinActor("runDelayed(...)");
+    return scheduleTimer(delay, false, runnable);
   }
 
   /**
