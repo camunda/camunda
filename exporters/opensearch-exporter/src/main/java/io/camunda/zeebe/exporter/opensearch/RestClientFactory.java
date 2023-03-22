@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AwsConfiguration;
+import io.camunda.zeebe.exporter.opensearch.aws.AwsSignHttpRequestInterceptor;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -21,9 +24,15 @@ import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.auth.signer.Aws4Signer;
 
 final class RestClientFactory {
   private static final RestClientFactory INSTANCE = new RestClientFactory();
+  private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
 
   private RestClientFactory() {}
 
@@ -75,6 +84,16 @@ final class RestClientFactory {
 
     if (config.hasAuthenticationPresent()) {
       setupBasicAuthentication(config, builder);
+      log.info("Basic authentication is enabled.");
+    } else {
+      log.info("Basic authentication is disabled.");
+    }
+
+    if (config.aws.enabled) {
+      configureAws(builder, config.aws);
+      log.info("AWS Signing is enabled.");
+    } else {
+      log.info("AWS Signing is disabled.");
     }
 
     if (allowAllSelfSignedCertificates) {
@@ -101,6 +120,22 @@ final class RestClientFactory {
             config.getAuthentication().getUsername(), config.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
+  }
+
+  /**
+   * Adds an interceptor to sign requests to AWS. The signing credentials can be provided in
+   * multiple ways. See {@link DefaultCredentialsProvider} for more details.
+   */
+  public void configureAws(
+      final HttpAsyncClientBuilder builder, final AwsConfiguration awsConfiguration) {
+    final AwsCredentialsProvider credentialsProvider = DefaultCredentialsProvider.create();
+    credentialsProvider.resolveCredentials();
+    final Aws4Signer signer = Aws4Signer.create();
+
+    final HttpRequestInterceptor signInterceptor =
+        new AwsSignHttpRequestInterceptor(
+            awsConfiguration.serviceName, signer, credentialsProvider, awsConfiguration.region);
+    builder.addInterceptorLast(signInterceptor);
   }
 
   private HttpHost[] parseUrl(final OpensearchExporterConfiguration config) {

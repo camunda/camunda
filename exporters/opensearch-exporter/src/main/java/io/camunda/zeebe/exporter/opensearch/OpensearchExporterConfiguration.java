@@ -314,12 +314,24 @@ public class OpensearchExporterConfiguration {
 
   public static class AwsConfiguration {
 
-    public String serviceName;
-    public String region;
+    private static final String AWS_REGION_ENV_VARIABLE = "AWS_REGION";
+    private static final String AWS_OPENSEARCH_SERVICE_NAME = "es";
+
+    public boolean enabled = false;
+    // The service name is defined by AWS. This is currently "es" and is not likely to change.
+    // If it does change this configuration can still be overridden.
+    public String serviceName = AWS_OPENSEARCH_SERVICE_NAME;
+    // The AWS_REGION gets injected into the pod by AWS. If we are running on AWS this should always
+    // be available.
+    public String region = System.getenv(AWS_REGION_ENV_VARIABLE);
 
     @Override
     public String toString() {
-      return "AwsConfiguration{serviceName=" + serviceName + ", region=" + region + '}';
+      if (enabled) {
+        return "AwsConfiguration{serviceName=" + serviceName + ", region=" + region + '}';
+      } else {
+        return "AwsConfiguration{Disabled}";
+      }
     }
   }
 }

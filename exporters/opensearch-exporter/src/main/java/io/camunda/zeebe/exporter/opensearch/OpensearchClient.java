@@ -148,8 +148,7 @@ class OpensearchClient implements AutoCloseable {
     try {
       final var request = new Request("POST", "/_bulk");
       final var body = new EntityTemplate(bulkIndexRequest);
-      body.setContentType("application/x-ndjson");
-      request.setEntity(body);
+      request.setJsonEntity(new String(body.getContent().readAllBytes()));
 
       response = sendRequest(request, BulkIndexResponse.class);
     } catch (final IOException e) {
