@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,7 +22,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -77,7 +76,7 @@ func (s *oauthIntegrationTestSuite) TestFetchOAuthToken() {
 	endpoint, err := s.getEndpoint(publicPort, "oauth2/token")
 	s.Require().NoError(err)
 
-	file, err := ioutil.TempFile("/tmp", "oauthCredsCache")
+	file, err := os.CreateTemp("/tmp", "oauthCredsCache")
 	s.Require().NoError(err)
 	defer os.Remove(file.Name())
 	cache, err := zbc.NewOAuthYamlCredentialsCache(file.Name())

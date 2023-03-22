@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,7 +16,6 @@ package zbc
 import (
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/oauth2"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,7 +49,7 @@ var aardvark = &oauth2.Token{
 
 func (s *oauthCredsCacheTestSuite) SetupSuite() {
 	// overwrite the default cache path for testing
-	file, err := ioutil.TempFile("", "credentialsCache.tmp.yml")
+	file, err := os.CreateTemp("", "credentialsCache.tmp.yml")
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +114,7 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCacheGetDefaultPath()
 
 func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironment() {
 	fakePath := copyCredentialsCacheGoldenFileToTempFile()
-	file, err := ioutil.TempFile("", ".envCache")
+	file, err := os.CreateTemp("", ".envCache")
 	if err != nil {
 		panic(err)
 	}
@@ -132,12 +131,12 @@ func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironm
 }
 
 func copyCredentialsCacheGoldenFileToTempFile() string {
-	cache, err := ioutil.ReadFile("testdata/credentialsCache.yml")
+	cache, err := os.ReadFile("testdata/credentialsCache.yml")
 	if err != nil {
 		panic(err)
 	}
 
-	file, err := ioutil.TempFile("", ".credentialsCache")
+	file, err := os.CreateTemp("", ".credentialsCache")
 	if err != nil {
 		panic(err)
 	}
@@ -152,7 +151,7 @@ func copyCredentialsCacheGoldenFileToTempFile() string {
 		panic(err)
 	}
 
-	err = ioutil.WriteFile(path, cache, 0644)
+	err = os.WriteFile(path, cache, 0644)
 	if err != nil {
 		panic(err)
 	}

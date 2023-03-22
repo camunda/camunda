@@ -17,8 +17,8 @@ package commands
 import (
 	"context"
 	"github.com/camunda/zeebe/clients/go/v8/pkg/pb"
-	"io/ioutil"
 	"log"
+	"os"
 )
 
 type DeployResourceCommand struct {
@@ -27,7 +27,7 @@ type DeployResourceCommand struct {
 }
 
 func (cmd *DeployResourceCommand) AddResourceFile(path string) *DeployResourceCommand {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}

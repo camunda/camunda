@@ -194,8 +194,9 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 }
 
 // NewJobWorkerBuilder should use the same retryPredicate used by the CredentialProvider (ShouldRetry method):
-//   credsProvider, _ := zbc.NewOAuthCredentialsProvider(...)
-//   worker.NewJobWorkerBuilder(..., credsProvider.ShouldRetry)
+//
+//	credsProvider, _ := zbc.NewOAuthCredentialsProvider(...)
+//	worker.NewJobWorkerBuilder(..., credsProvider.ShouldRetry)
 func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, retryPred func(ctx context.Context, err error) bool) JobWorkerBuilderStep1 {
 	return &JobWorkerBuilder{
 		gatewayClient: gatewayClient,

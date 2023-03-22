@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,13 +17,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/spf13/cobra"
-	"io/ioutil"
+	"os"
 )
 
 var resourceNamesFlag []string
 
 // Remove the nolint directive when this command is the only remaining one for deploy
-//nolint
+// nolint
 var deployResourceCmd = &cobra.Command{
 	Use:     "resource <resourcePath>...",
 	Short:   "Deploys a new resource (e.g. process, decision) for each BPMN/DMN resource provided",
@@ -36,7 +36,7 @@ var deployResourceCmd = &cobra.Command{
 
 		zbCmd := client.NewDeployResourceCommand()
 		for i := 0; i < len(resourceNamesFlag); i++ {
-			bytes, err := ioutil.ReadFile(args[i])
+			bytes, err := os.ReadFile(args[i])
 			if err != nil {
 				return err
 			}
