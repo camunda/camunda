@@ -96,6 +96,10 @@ public sealed interface Manifest {
   sealed interface CompletedManifest extends Manifest permits ManifestImpl {
 
     FailedManifest fail(final String failureReason);
+
+    FileSet snapshot();
+
+    FileSet segments();
   }
 
   sealed interface FailedManifest extends Manifest permits ManifestImpl {
