@@ -37,7 +37,7 @@ jobs:
           ref: ${{ steps.target-branch.outputs.branch }}
 
       - name: Calculate changelog
-        uses: dlavrenuek/conventional-changelog-action@v1.2.2
+        uses: dlavrenuek/conventional-changelog-action@v1.2.3
         id: changelog
         with:
           from: ${{ github.event.inputs.commit }}
