@@ -76,8 +76,8 @@ export default function DashboardRenderer({
               y: tile.position.y,
               w: tile.dimensions.width,
               h: tile.dimensions.height,
-              minW: 2,
-              minH: 2,
+              minW: tile.type === 'text' ? 1 : 2,
+              minH: tile.type === 'text' ? 1 : 2,
             }}
           >
             <DashboardReport
