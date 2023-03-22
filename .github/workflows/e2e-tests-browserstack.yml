@@ -11,6 +11,7 @@ permissions:
 jobs:
   e2e-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
 
     steps:
     - name: Checkout code
@@ -110,18 +111,11 @@ jobs:
       working-directory: ./client
       run: yarn start &
 
-    - name: Wait for data import
-      uses: iFaxity/wait-on-action@v1
-      with:
-        resource: http-get://localhost:8100/api/importCompleted
+    - name: Wait for import to complete
+      run: ./.github/scripts/wait-for.sh http://localhost:8100/api/importCompleted
 
-    - name: Wait for front-end app to start
-      working-directory: ./client
-      run: |
-        until curl --output /dev/null --silent --head --fail --max-time 30 http://localhost:3000/ready; do
-            echo "Waiting for front-end app app to start..."
-            sleep 5
-        done
+    - name: Wait for frontend app to start
+      run: ./.github/scripts/wait-for.sh http://localhost:3000/ready
 
     - name: 'start e2e test'
       working-directory: ./client
