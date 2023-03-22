@@ -41,6 +41,8 @@ import org.junit.Test;
 public final class FailJobTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+
+  private static final int MAX_MESSAGE_SIZE = 500;
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -322,7 +324,7 @@ public final class FailJobTest {
   public void shouldTruncateErrorMessage() {
     // given
     final Record<JobRecordValue> job = ENGINE.createJob(jobType, PROCESS_ID);
-    final String exceedingErrorMessage = "*".repeat(501);
+    final String exceedingErrorMessage = "*".repeat(MAX_MESSAGE_SIZE + 1);
 
     // when
     final Record<JobRecordValue> failedRecord =
@@ -333,7 +335,9 @@ public final class FailJobTest {
 
     // then
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
-    assertThat(failedRecord.getValue().getErrorMessage().length()).isEqualTo(500);
-    assertThat(incident.getValue().getErrorMessage().length()).isEqualTo(500);
+
+    final String expectedErrorMessage = "*".repeat(MAX_MESSAGE_SIZE).concat("...");
+    assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
   }
 }

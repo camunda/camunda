@@ -114,14 +114,6 @@ public final class BufferUtil {
     }
   }
 
-  public static DirectBuffer trimBufferIfExceeds(final DirectBuffer src, final int maxLength) {
-    if (src.capacity() > maxLength) {
-      return cloneBuffer(src, 0, maxLength);
-    }
-
-    return src;
-  }
-
   public static String bufferAsHexString(final DirectBuffer buffer) {
     return bufferAsHexString(buffer, DEFAULT_WRAP);
   }
