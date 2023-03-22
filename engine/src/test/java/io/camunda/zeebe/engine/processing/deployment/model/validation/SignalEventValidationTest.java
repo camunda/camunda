@@ -280,7 +280,7 @@ public final class SignalEventValidationTest {
   }
 
   @Test
-  public void shouldDeploySignalIntermediateCatchEvent() {
+  public void shouldRejectSignalIntermediateCatchEvent() {
     // given
     final String processId = Strings.newRandomValidBpmnId();
 
@@ -288,17 +288,22 @@ public final class SignalEventValidationTest {
     final BpmnModelInstance processDefinition =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
-            .intermediateCatchEvent("foo")
+            .intermediateCatchEvent("signal_catch_event")
             .signal("signalName")
             .done();
 
     final Record<DeploymentRecordValue> deployment =
-        ENGINE.deployment().withXmlResource(processDefinition).deploy();
+        ENGINE.deployment().withXmlResource(processDefinition).expectRejection().deploy();
 
     // then
-    assertThat(deployment.getKey())
-        .describedAs("Support signal intermediate catch event process deployment")
-        .isNotNegative();
+    Assertions.assertThat(deployment)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to deploy new resources, but encountered the following errors:
+            'process.xml': - Element: signal_catch_event
+                - ERROR: Elements of type signal intermediate catch event are currently not supported
+            """);
   }
 
   @Ignore("Should be re-enabled when signal boundary events are supported")
