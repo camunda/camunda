@@ -1,10 +1,17 @@
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
- */
+// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package worker
 
 import (
@@ -22,14 +29,8 @@ type ExponentialBackoffBuilder interface {
 	Build() BackoffSupplier
 }
 
-type exponentialBackoffBuilderImpl struct {
-	minDelay, maxDelay          time.Duration
-	backoffFactor, jitterFactor float64
-	random                      *rand.Rand
-}
-
-func NewExponentialBackoffBuilder() exponentialBackoffBuilderImpl {
-	return exponentialBackoffBuilderImpl{
+func NewExponentialBackoffBuilder() ExponentialBackoff {
+	return ExponentialBackoff{
 		maxDelay:      time.Second * 5,
 		minDelay:      time.Millisecond * 50,
 		backoffFactor: 1.6,
@@ -38,32 +39,32 @@ func NewExponentialBackoffBuilder() exponentialBackoffBuilderImpl {
 	}
 }
 
-func (e exponentialBackoffBuilderImpl) MaxDelay(maxDelay time.Duration) ExponentialBackoffBuilder {
+func (e ExponentialBackoff) MaxDelay(maxDelay time.Duration) ExponentialBackoffBuilder {
 	e.maxDelay = maxDelay
 	return e
 }
 
-func (e exponentialBackoffBuilderImpl) MinDelay(minDelay time.Duration) ExponentialBackoffBuilder {
+func (e ExponentialBackoff) MinDelay(minDelay time.Duration) ExponentialBackoffBuilder {
 	e.minDelay = minDelay
 	return e
 }
 
-func (e exponentialBackoffBuilderImpl) BackoffFactor(backoffFactor float64) ExponentialBackoffBuilder {
+func (e ExponentialBackoff) BackoffFactor(backoffFactor float64) ExponentialBackoffBuilder {
 	e.backoffFactor = backoffFactor
 	return e
 }
 
-func (e exponentialBackoffBuilderImpl) JitterFactor(jitterFactor float64) ExponentialBackoffBuilder {
+func (e ExponentialBackoff) JitterFactor(jitterFactor float64) ExponentialBackoffBuilder {
 	e.jitterFactor = jitterFactor
 	return e
 }
 
-func (e exponentialBackoffBuilderImpl) Random(random *rand.Rand) ExponentialBackoffBuilder {
+func (e ExponentialBackoff) Random(random *rand.Rand) ExponentialBackoffBuilder {
 	e.random = random
 	return e
 }
 
-func (e exponentialBackoffBuilderImpl) Build() BackoffSupplier {
+func (e ExponentialBackoff) Build() BackoffSupplier {
 	return ExponentialBackoff{
 		minDelay:      e.minDelay,
 		maxDelay:      e.maxDelay,
