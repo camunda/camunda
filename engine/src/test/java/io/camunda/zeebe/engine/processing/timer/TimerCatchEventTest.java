@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
+import java.time.*;
 import java.util.stream.IntStream;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -36,6 +36,38 @@ public final class TimerCatchEventTest {
           .startEvent()
           .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT1M"))
           .endEvent()
+          .done();
+
+  private static final BpmnModelInstance SINGLE_TIMER_DATETIME_PROCESS =
+      Bpmn.createExecutableProcess("SINGLE_TIMER_DATETIME_PROCESS")
+          .startEvent()
+          .intermediateCatchEvent(
+              "timer", c -> c.timerWithDateExpression("now() + duration(\"PT1M\")"))
+          .endEvent()
+          .done();
+
+  private static final BpmnModelInstance BOUNDARY_EVENT_DATETIME_PROCESS =
+      Bpmn.createExecutableProcess("BOUNDARY_EVENT_DATETIME_PROCESS")
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeJobType("type"))
+          .boundaryEvent("timer")
+          .cancelActivity(true)
+          .timerWithDateExpression("now() + duration(\"PT1M\")")
+          .endEvent("eventEnd")
+          .moveToActivity("task")
+          .endEvent("taskEnd")
+          .done();
+
+  private static final BpmnModelInstance BOUNDARY_EVENT_ABSOLUTE_DATETIME_PROCESS =
+      Bpmn.createExecutableProcess("BOUNDARY_EVENT_ABSOLUTE_DATETIME_PROCESS")
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeJobType("type"))
+          .boundaryEvent("timer")
+          .cancelActivity(true)
+          .timerWithDateExpression("date and time(date(\"2178-11-25\"),time(\"T00:00:00@UTC\"))")
+          .endEvent("eventEnd")
+          .moveToActivity("task")
+          .endEvent("taskEnd")
           .done();
   private static final BpmnModelInstance BOUNDARY_EVENT_PROCESS =
       Bpmn.createExecutableProcess("BOUNDARY_EVENT_PROCESS")
@@ -78,7 +110,10 @@ public final class TimerCatchEventTest {
   @BeforeClass
   public static void init() {
     ENGINE.deployment().withXmlResource(SINGLE_TIMER_PROCESS).deploy();
+    ENGINE.deployment().withXmlResource(SINGLE_TIMER_DATETIME_PROCESS).deploy();
     ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_PROCESS).deploy();
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_DATETIME_PROCESS).deploy();
+    ENGINE.deployment().withXmlResource(BOUNDARY_EVENT_ABSOLUTE_DATETIME_PROCESS).deploy();
     ENGINE.deployment().withXmlResource(TWO_REPS_CYCLE_PROCESS).deploy();
     ENGINE.deployment().withXmlResource(INFINITE_CYCLE_PROCESS).deploy();
   }
@@ -227,6 +262,68 @@ public final class TimerCatchEventTest {
     // given
     final long processInstanceKey =
         ENGINE.processInstance().ofBpmnProcessId("SINGLE_TIMER_PROCESS").create();
+
+    // when
+    RecordingExporter.timerRecords(TimerIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .getFirst();
+
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    final Record<ProcessInstanceRecordValue> activatedEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("timer")
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> completedEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("timer")
+            .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .getFirst();
+
+    assertThat(completedEvent.getKey()).isEqualTo(activatedEvent.getKey());
+    assertThat(completedEvent.getValue()).isEqualTo(activatedEvent.getValue());
+  }
+
+  @Test
+  public void shouldTriggerTimerDateTime() {
+    // given
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("SINGLE_TIMER_DATETIME_PROCESS").create();
+
+    // when
+    final Record<TimerRecordValue> createdEvent =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    ENGINE.increaseTime(Duration.ofMinutes(1));
+
+    // then
+    final Record<TimerRecordValue> triggeredEvent =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(triggeredEvent.getKey()).isEqualTo(createdEvent.getKey());
+    assertThat(triggeredEvent.getValue()).isEqualTo(createdEvent.getValue());
+    // Normally we don't guarantee that a timer gets triggered within a certain time-span. The only
+    // guarantee we have is that the timer gets triggered after a specific point in time.
+    // Because this is an isolated scenario we can test for this with relative accuracy so we do
+    // assert this here with a between.
+    assertThat(Duration.ofMillis(triggeredEvent.getTimestamp() - createdEvent.getTimestamp()))
+        .isBetween(Duration.ofMinutes(1), Duration.ofMinutes(2));
+  }
+
+  @Test
+  public void shouldCompleteTimerEventDateTime() {
+    // given
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("SINGLE_TIMER_DATETIME_PROCESS").create();
 
     // when
     RecordingExporter.timerRecords(TimerIntent.CREATED)
@@ -416,6 +513,35 @@ public final class TimerCatchEventTest {
   }
 
   @Test
+  public void shouldCreateTimerBasedOnBoundaryWithDateTimeEvent() {
+    // given/when
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("BOUNDARY_EVENT_ABSOLUTE_DATETIME_PROCESS").create();
+
+    // then
+    final Record<TimerRecordValue> timerRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> activityRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("task")
+            .getFirst();
+
+    Assertions.assertThat(timerRecord.getValue())
+        .hasElementInstanceKey(activityRecord.getKey())
+        .hasTargetElementId("timer");
+
+    final long expected =
+        ZonedDateTime.of(LocalDate.of(2178, 11, 25), LocalTime.of(0, 0, 0), ZoneId.of("UTC"))
+            .toInstant()
+            .toEpochMilli();
+    assertThat(timerRecord.getValue().getDueDate()).isEqualTo(expected);
+  }
+
+  @Test
   public void shouldTriggerHandlerNodeWhenAttachedToActivity() {
     // given
     final long processInstanceKey =
@@ -428,6 +554,37 @@ public final class TimerCatchEventTest {
             .getFirst();
 
     ENGINE.increaseTime(Duration.ofSeconds(1));
+
+    // then
+    final Record<TimerRecordValue> timerTriggered =
+        RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(timerTriggered.getKey()).isEqualTo(timerCreated.getKey());
+    assertThat(timerTriggered.getValue()).isEqualTo(timerCreated.getValue());
+
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETING)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementId("timer")
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldTriggerHandlerNodeWhenAttachedToActivityDateTime() {
+    // given
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId("BOUNDARY_EVENT_DATETIME_PROCESS").create();
+
+    // when
+    final Record<TimerRecordValue> timerCreated =
+        RecordingExporter.timerRecords(TimerIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    ENGINE.increaseTime(Duration.ofMinutes(1));
 
     // then
     final Record<TimerRecordValue> timerTriggered =
