@@ -719,6 +719,71 @@
         #     timer: true
         #     variable: true
         #     variableDocument: true
+
+      # Opensearch Exporter ----------
+      # An example configuration for the opensearch exporter:
+      #
+      # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_..."
+      #
+      # opensearch:
+        # className: io.camunda.zeebe.exporter.opensearch.OpensearchExporter
+        #
+        # args:
+        #   url: http://localhost:9200
+        #   requestTimeoutMs: 1000
+        #
+        #   bulk:
+        #     delay: 5
+        #     size: 1000
+        #     memoryLimit: 10485760
+        #
+        #   authentication:
+        #     username: opensearch
+        #     password: changeme
+        #
+        #   aws:
+        #     enabled: true
+        #     serviceName: es
+        #     region: eu-west-1
+        #
+        #   index:
+        #     prefix: zeebe-record
+        #     createTemplate: true
+        #
+        #     numberOfShards: 3
+        #     numberOfReplicas: 0
+        #
+        #     command: false
+        #     event: true
+        #     rejection: false
+        #
+        #     commandDistribution: true
+        #     decisionRequirements: true
+        #     decision: true
+        #     decisionEvaluation: true
+        #     deployment: true
+        #     deploymentDistribution: true
+        #     error: true
+        #     escalation: true
+        #     incident: true
+        #     job: true
+        #     jobBatch: false
+        #     message: true
+        #     messageStartSubscription: true
+        #     messageSubscription: true
+        #     process: true
+        #     processEvent: false
+        #     processInstance: true
+        #     processInstanceCreation: true
+        #     processInstanceModification: true
+        #     processMessageSubscription: true
+        #     resourceDeletion: true
+        #     signal: true
+        #     signalSubscription: true
+        #     timer: true
+        #     variable: true
+        #     variableDocument: true
+
     # processing:
       # Sets the maximum number of commands that processed within one batch.
       # The processor will process until no more follow up commands are created by the initial command
