@@ -20,47 +20,31 @@ those as templates in this module's resources folder.
 > once disabled, they will not be deleted, that is up to the administrator. Similarly, data is never deleted by
 > the exporter, and must, again, be deleted by the administrator when it is safe to do so.
 
-## Usage
+## Configuration
 
 > **Note:** As the exporter is packaged with Zeebe, it is not necessary to specify a `jarPath`.
 
-You can configure the Elasticsearch Exporter with the following arguments:
-
-* `url` (`string`): a valid URLs as comma-separated string (
-  e.g. `http://localhost:9200,http://localhost:9201`)
-
-All other options fall under a two categories, both expressed as nested maps: `bulk` and `index`.
-
-### Bulk
-
-To avoid doing too many expensive requests to the Elasticsearch cluster, the exporter performs batch
-updates by default. The size of the batch, along with how often it should be flushed (regardless of
-size) can be controlled by configuration.
-
+The exported can be enabled by configuring it with the classpath in the Broker settings.
 For example:
 
 ```yaml
-...
 exporters:
   elasticsearch:
+    className: io.camunda.zeebe.exporter.ElasticsearchExporter
     args:
-      delay: 5
-      size: 1000
-      memoryLimit: 10485760
+    # Please refer to the table below for the available args options
 ```
 
-With the above example, the exporter would aggregate records and flush them to Elasticsearch either:
+The exporter can be configured by providing `args`. The table below explains all the different
+options, and the default values for these options.
 
-1. when it has aggregated 1000 records
-2. when the batch memory size exceeds 10 MB
-3. 5 seconds have elapsed since the last flush (regardless of how many records were aggregated)
-
-More specifically, each option configures the following:
-
-* `delay` (`integer`): a specific delay, in seconds, before we force flush the current batch. This
-  ensures that even when we have low traffic of records we still export every once in a while.
-* `size` (`integer`): how many records a batch should have before we export.
-* `memoryLimit` (`integer`): the size of the bulk, in bytes, before we export.
+|      Option      |                                       Description                                       |         Default         |
+|------------------|-----------------------------------------------------------------------------------------|-------------------------|
+| url              | Valid URLs as comma-separated string                                                    | `http://localhost:9200` |
+| requestTimeoutMs | Request timeout (in ms) for the Elasticsearch client                                    | `30000`                 |
+| index            | Refer to [Index](#Index) for the index configuration options                            |                         |
+| bulk             | Refer to [Bulk](#Bulk) for the bulk configuration options                               |                         |
+| authentication   | Refer to [Authentication](#Authentication) for the authentication configuration options |                         |
 
 ### Index
 
@@ -69,97 +53,72 @@ cluster, but rather only a subset of them. This can also be configured to limit 
 being exported (e.g. only events, no commands), and the value type of these records (e.g. only job
 and process values).
 
-For example:
+|            Option             |                                               Description                                               |   Default    |
+|-------------------------------|---------------------------------------------------------------------------------------------------------|--------------|
+| prefix                        | This prefix will be appended to every index created by the exporter; must not contain `_` (underscore). | zeebe-record |
+| createTemplate                | If `true` missing indexes will be created automatically.                                                | `true`       |
+| command                       | If `true` command records will be exported                                                              | `false`      |
+| event                         | If `true` event records will be exported                                                                | `true`       |
+| rejection                     | If `true` rejection records will be exported                                                            | `false`      |
+| checkpoint                    | If `true` records related to checkpoints will be exported                                               | `false`      |
+| commandDistribution           | If `true` records related to command distributions will be exported                                     | `true`       |
+| decision                      | If `true` records related to decisions will be exported                                                 | `true`       |
+| decisionEvaluation            | If `true` records related to decision evaluations will be exported                                      | `true`       |
+| decisionRequirements          | If `true` records related to decisionRequirements will be exported                                      | `true`       |
+| deployment                    | If `true` records related to deployments will be exported                                               | `true`       |
+| deploymentDistribution        | If `true` records related to deployment distributions will be exported                                  | `true`       |
+| error                         | If `true` records related to errors will be exported                                                    | `true`       |
+| escalation                    | If `true` records related to escalations will be exported                                               | `true`       |
+| incident                      | If `true` records related to incidents will be exported                                                 | `true`       |
+| job                           | If `true` records related to jobs will be exported                                                      | `true`       |
+| jobBatch                      | If `true` records related to job batches will be exported                                               | `false`      |
+| message                       | If `true` records related to messages will be exported                                                  | `true`       |
+| messageSubscription           | If `true` records related to message subscriptions will be exported                                     | `true`       |
+| messageStartEventSubscription | If `true` records related to message start event subscriptions will be exported                         | `true`       |
+| process                       | If `true` records related to processes will be exported                                                 | `true`       |
+| processEvent                  | If `true` records related to process events will be exported                                            | `false`      |
+| processInstance               | If `true` records related to process instances will be exported                                         | `true`       |
+| processInstanceCreation       | If `true` records related to process instance creations will be exported                                | `true`       |
+| processInstanceModification   | If `true` records related to process instance modifications will be exported                            | `true`       |
+| processMessageSubscription    | If `true` records related to process message subscriptions will be exported                             | `true`       |
+| resourceDeletion              | If `true` records related to resource deletions will be exported                                        | `true`       |
+| signal                        | If `true` records related to signals will be exported                                                   | `true`       |
+| signalSubscription            | If `true` records related to signal subscriptions will be exported                                      | `true`       |
+| timer                         | If `true` records related to timers will be exported                                                    | `true`       |
+| variable                      | If `true` records related to variables will be exported                                                 | `true`       |
+| variableDocument              | If `true` records related to variable documents will be exported                                        | `true`       |
 
-```yaml
-...
-exporters:
-  elasticsearch:
-    args:
-      index:
-        prefix: zeebe-record
-        createTemplate: true
+### Bulk
 
-        command: false
-        event: true
-        rejection: false
+To avoid doing too many expensive requests to the Elasticsearch cluster, the exporter performs batch
+updates by default. The size of the batch, along with how often it should be flushed (regardless of
+size) can be controlled by configuration.
 
-        decisionRequirements: false
-        decision: false
-        decisionEvaluation: false
-        deployment: false
-        error: false
-        incident: true
-        job: false
-        jobBatch: false
-        message: false
-        messageSubscription: false
-        process: false
-        processInstance: false
-        processInstanceCreation: false
-        processInstanceModification: false
-        processMessageSubscription: false
-        resourceDeletion: false
-        signal: false
-        signalSubscription: false
-        variable: false
-        variableDocument: false
-```
+|   Option    |                                                                         Description                                                                          |      Default       |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------|
+| delay       | Delay, in seconds, before we force flush the current batch. This ensures that even when we have low traffic of records we still export every once in a while | `5`                |
+| size        | The amount of records a batch should have before we flush the batch                                                                                          | `1000`             |
+| memoryLimit | The size of the batch, in bytes, before we flush the batch                                                                                                   | `10485760` (10 MB) |
 
-The given example would only export incident events, and nothing else.
+With the default configuration, the exporter would aggregate records and flush them to Elasticsearch
+either:
 
-More specifically, each option configures the following:
+1. when it has aggregated 1000 records
+2. when the batch memory size exceeds 10 MB
+3. 5 seconds have elapsed since the last flush (regardless of how many records were aggregated)
 
-* `prefix` (`string`): this prefix will be appended to every index created by the exporter; must not
-  contain `_` (underscore).
-* `createTemplate` (`boolean`): if true, missing indexes will be created as needed.
+### Authentication
 
+Providing these authentication options will enable Basic Authentication on the Exporter.
 
-* `command` (`boolean`): if true, command records will be exported; if false, ignored.
-* `event` (`boolean`): if true, event records will be exported; if false, ignored.
-* `rejection` (`boolean`): if true, rejection records will be exported; if false, ignored.
+|  Option  |          Description          | Default |
+|----------|-------------------------------|---------|
+| username | Username used to authenticate | N/A     |
+| password | Password used to authenticate | N/A     |
 
+## Example
 
-* `commandDistribution` (`boolean`): if true, records related to command distributions will be exported; if false, ignored.
-* `decisionRequirements` (`boolean`): if true, records related to decision requirements will be
-  exported; if false, ignored.
-* `decision` (`boolean`): if true, records related to decisions will be exported; if false, ignored.
-* `decisionEvaluation` (`boolean`): if true, records related to decision evaluations will be
-  exported; if false, ignored.
-* `deployment` (`boolean`): if true, records related to deployments will be exported; if false,
-  ignored.
-* `deploymentDistribution` (`boolean`): if true, records related to deployment distributions will be exported; if false,
-  ignored.
-* `error` (`boolean`): if true, records related to errors will be exported; if false, ignored.
-* `escalation` (`boolean`): if true, records related to escalations will be exported; if false, ignored.
-* `incident` (`boolean`): if true, records related to incidents will be exported; if false, ignored.
-* `job` (`boolean`): if true, records related to jobs will be exported; if false, ignored.
-* `jobBatch` (`boolean`): if true, records related to job batches will be exported; if false,
-  ignored.
-* `message` (`boolean`): if true, records related to messages will be exported; if false, ignored.
-* `messageSubscription` (`boolean`): if true, records related to message subscriptions will be
-* `messageStartSubscription` (`boolean`): if true, records related to message start subscriptions will be
-  exported; if false, ignored.
-* `process` (`boolean`): if true, records related to processes will be exported; if false, ignored.
-* `processEvent` (`boolean`): if true, records related to process events will be exported; if
-  false, ignored.
-* `processInstance` (`boolean`): if true, records related to process instances will be exported; if
-  false, ignored.
-* `processInstanceCreation` (`boolean`): if true, records related to process instance creations will
-  be exported; if false, ignored.
-* `processInstanceModification` (`boolean`): if true, records related to process instance modifications will
-  be exported; if false, ignored.
-* `processMessageSubscription` (`boolean`): if true, records related to process message
-  subscriptions will be exported; if false, ignored.
-* `resourceDeletion` (`boolean`): if true, records related to resource deletions will be exported; if false, ignored.
-* `signal` (`boolean`): if true, records related to signals will be exported; if false, ignored.
-* `signalSubscription` (`boolean`): if true, records related to signal subscription will be exported; if false, ignored.
-* `timer` (`boolean`): if true, records related to timers will be exported; if false, ignored.
-* `variable` (`boolean`): if true, records related to variables will be exported; if false, ignored.
-* `variableDocument` (`boolean`): if true, records related to variable documents will be exported;
-   if false, ignored.
-
-Here is a complete, default configuration example:
+Here is an example configuration of the Exporter.
 
 ```yaml
 ...
