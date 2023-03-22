@@ -29,6 +29,7 @@ public final class JobThrowErrorTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
+  private static final int MAX_MESSAGE_SIZE = 500;
   private static final String PROCESS_ID = "process";
   private static String jobType;
 
@@ -108,7 +109,7 @@ public final class JobThrowErrorTest {
   public void shouldTruncateErrorMessage() {
     // given
     final var job = ENGINE.createJob(jobType, PROCESS_ID);
-    final String exceedingErrorMessage = "*".repeat(501);
+    final String exceedingErrorMessage = "*".repeat(MAX_MESSAGE_SIZE + 1);
 
     // when
     final Record<JobRecordValue> failedRecord =
@@ -119,9 +120,14 @@ public final class JobThrowErrorTest {
 
     // then
     Assertions.assertThat(failedRecord).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
-    assertThat(failedRecord.getValue().getErrorMessage().length()).isEqualTo(500);
-    // this size is greater than 500 because we are re-formatting incident error message by
-    // appending explanation sentences when no catch event found
-    assertThat(incident.getValue().getErrorMessage().length()).isEqualTo(633);
+
+    final String expectedJobMessage = "*".repeat(MAX_MESSAGE_SIZE).concat("...");
+    assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedJobMessage);
+
+    final String expectedIncidentMessage =
+        "Expected to throw an error event with the code '' with message '"
+            + expectedJobMessage
+            + "', but it was not caught. No error events are available in the scope.";
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedIncidentMessage);
   }
 }
