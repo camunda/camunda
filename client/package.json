@@ -81,13 +81,12 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "typescript": "^4.9.5",
     "@types/enzyme": "^3.10.12",
     "@types/enzyme-adapter-react-16": "^1.0.6",
     "@types/jest": "29.4.0",
     "@types/node": "^18.14.6",
     "@types/react": "^17.0.0",
-    "@types/react-dom": "^17.0.0",
+    "@types/react-dom": "^18.0.11",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.8.0",
     "ansi-html": "^0.0.9",
     "chalk": "^5.2.0",
@@ -114,6 +113,7 @@
     "testcafe": "^2.3.1",
     "testcafe-browser-provider-browserstack": "^1.14.1",
     "tree-kill": "^1.2.2",
+    "typescript": "^4.9.5",
     "ws": "^8.12.1",
     "xml2js": "^0.4.23"
   },

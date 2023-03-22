@@ -5,13 +5,32 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useState, useRef, useEffect} from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  ReactNode,
+  CSSProperties,
+  MouseEvent,
+  ReactPortal,
+  ReactElement,
+} from 'react';
 import ReactDOM from 'react-dom';
 import classnames from 'classnames';
 
-import {getNonOverflowingValues} from './service';
+import {Align, getNonOverflowingValues, Position} from './service';
 
 import './Tooltip.scss';
+
+type TooltipProps = {
+  children?: ReactNode;
+  content?: ReactNode;
+  align?: keyof Align;
+  position?: Position;
+  theme?: 'light' | 'dark';
+  delay?: number;
+  overflowOnly?: boolean;
+};
 
 export default function Tooltip({
   children,
@@ -21,15 +40,15 @@ export default function Tooltip({
   theme = 'light',
   delay = 800,
   overflowOnly = false,
-}) {
+}: TooltipProps) {
   const [hovering, setHovering] = useState(false);
-  const [style, setStyle] = useState();
+  const [style, setStyle] = useState<CSSProperties | undefined>();
   const [tooltipAlign, setTooltipAlign] = useState(align);
   const [tooltipPosition, setTooltipPosition] = useState(position);
 
-  const hoverElement = useRef();
-  const tooltip = useRef();
-  const timeout = useRef();
+  const hoverElement = useRef<HTMLElement | null>();
+  const tooltip = useRef<HTMLDivElement>(null);
+  const timeout = useRef<number>();
 
   useEffect(() => {
     if (!tooltip.current || !hoverElement.current) {
@@ -53,7 +72,7 @@ export default function Tooltip({
   }, [align, hovering, position]);
 
   if (!content) {
-    return children;
+    return <>{children}</>;
   }
 
   let useLightTheme = theme === 'light';
@@ -63,26 +82,29 @@ export default function Tooltip({
 
   return (
     <>
-      {React.Children.map(children, (child) =>
-        React.cloneElement(child, {
-          onMouseEnter: (evt) => {
-            const {currentTarget} = evt;
-            if (!overflowOnly || currentTarget.scrollWidth > currentTarget.clientWidth) {
-              hoverElement.current = currentTarget;
-              timeout.current = window.setTimeout(() => setHovering(true), delay);
-            }
-            child.props.onMouseEnter?.(evt);
-          },
-          onMouseLeave: (evt) => {
-            hoverElement.current = null;
-            window.clearTimeout(timeout.current);
-            timeout.current = window.setTimeout(() => {
-              setHovering(false);
-              setStyle();
-            }, delay);
-            child.props.onMouseLeave?.(evt);
-          },
-        })
+      {React.Children.map(
+        children,
+        (child) =>
+          isReactElement(child) &&
+          React.cloneElement(child, {
+            onMouseEnter: (evt: MouseEvent<HTMLElement>) => {
+              const {currentTarget} = evt;
+              if (!overflowOnly || currentTarget.scrollWidth > currentTarget.clientWidth) {
+                hoverElement.current = currentTarget;
+                timeout.current = window.setTimeout(() => setHovering(true), delay);
+              }
+              child.props.onMouseEnter?.(evt);
+            },
+            onMouseLeave: (evt: MouseEvent<HTMLElement>) => {
+              hoverElement.current = null;
+              window.clearTimeout(timeout.current);
+              timeout.current = window.setTimeout(() => {
+                setHovering(false);
+                setStyle(undefined);
+              }, delay);
+              child.props.onMouseLeave?.(evt);
+            },
+          })
       )}
       {hovering &&
         ReactDOM.createPortal(
@@ -105,4 +127,8 @@ export default function Tooltip({
         )}
     </>
   );
+}
+
+function isReactElement(child: ReactNode): child is ReactElement | ReactPortal {
+  return !!child && typeof child === 'object' && 'props' in child;
 }

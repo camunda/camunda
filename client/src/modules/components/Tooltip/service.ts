@@ -5,10 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-export function getNonOverflowingValues(tooltip, hoverElement, align, position) {
+export type Align = {
+  center: number;
+  left: number;
+  right: number;
+};
+
+export type Position = 'top' | 'bottom';
+
+export function getNonOverflowingValues(
+  tooltip: HTMLElement,
+  hoverElement: HTMLElement,
+  align: keyof Align,
+  position: Position
+) {
   const {width, height} = tooltip.getBoundingClientRect();
   const hoverElementBox = hoverElement.getBoundingClientRect();
-  const left = {
+  const left: Align = {
     center: hoverElementBox.x + hoverElementBox.width / 2,
     left: hoverElementBox.x,
     right: hoverElementBox.x + hoverElementBox.width,
@@ -26,11 +39,10 @@ export function getNonOverflowingValues(tooltip, hoverElement, align, position) 
   };
 }
 
-function getNewAlign(align, tooltipWidth, left) {
+function getNewAlign(align: keyof Align, tooltipWidth: number, left: Align): keyof Align {
   const widthToArrow = align === 'center' ? tooltipWidth / 2 : tooltipWidth;
   const overflowingLeft = widthToArrow > left[align];
   const overflowingRight = left[align] + widthToArrow > getBody().clientWidth;
-
   if (overflowingLeft) {
     return 'left';
   } else if (overflowingRight) {
@@ -39,7 +51,7 @@ function getNewAlign(align, tooltipWidth, left) {
   return align;
 }
 
-function getNewPosition(position, height, hoverElementBox) {
+function getNewPosition(position: Position, height: number, hoverElementBox: DOMRect): Position {
   const overflowingBottom =
     position === 'bottom' && hoverElementBox.bottom + height > getBody().clientHeight;
   const overflowingTop = position === 'top' && hoverElementBox.y - height < 0;
@@ -52,9 +64,10 @@ function getNewPosition(position, height, hoverElementBox) {
   return position;
 }
 
-function getTooltipMargin(tooltip) {
+function getTooltipMargin(tooltip: HTMLElement): number {
   const tooltipStyles = window.getComputedStyle(tooltip);
-  const getProperty = (property) => Number(tooltipStyles.getPropertyValue(property).match(/\d+/));
+  const getProperty = (property: string) =>
+    Number(tooltipStyles.getPropertyValue(property).match(/\d+/));
 
   return getProperty('margin-top') + getProperty('margin-bottom');
 }

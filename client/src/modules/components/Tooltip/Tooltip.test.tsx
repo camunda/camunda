@@ -5,7 +5,8 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {runLastEffect, useRef} from 'react';
+import React, {useRef} from 'react';
+import {runLastEffect} from '__mocks__/react';
 import {mount, shallow} from 'enzyme';
 import {act} from 'react-dom/test-utils';
 
@@ -15,14 +16,14 @@ import Tooltip from './Tooltip';
 jest.useFakeTimers();
 
 jest.mock('react', () => {
-  const outstandingEffects = [];
+  const outstandingEffects: (() => void)[] = [];
   const mUseRef = jest.fn().mockReturnValue({current: {}});
   return {
     ...jest.requireActual('react'),
-    useEffect: (fn) => outstandingEffects.push(fn),
+    useEffect: (fn: () => void) => outstandingEffects.push(fn),
     runLastEffect: () => {
       if (outstandingEffects.length) {
-        outstandingEffects.pop()();
+        outstandingEffects.pop()?.();
       }
     },
     useRef: mUseRef,
@@ -158,8 +159,8 @@ it('should call onMouseEnter and onMouseLeave functions if specified', () => {
 });
 
 it('should invoke getNonOverflowingValues to adjust tooltip alignment, position and styles on open', () => {
-  useRef.mockReturnValue({current: {}});
-  getNonOverflowingValues.mockReturnValue({
+  (useRef as jest.Mock).mockReturnValue({current: {}});
+  (getNonOverflowingValues as jest.Mock).mockReturnValue({
     newAlign: 'left',
     newPosition: 'bottom',
     width: '200',
@@ -177,7 +178,7 @@ it('should invoke getNonOverflowingValues to adjust tooltip alignment, position 
   node.find('p').simulate('mouseEnter', {currentTarget: element});
   jest.runAllTimers();
 
-  expect(node.find('.Tooltip').prop('style').left).toBe('10px');
+  expect(node.find('.Tooltip').prop('style')?.left).toBe('10px');
   expect(node.find('.Tooltip')).toHaveClassName('bottom');
   expect(node.find('.Tooltip')).toHaveClassName('left');
 });
@@ -221,4 +222,18 @@ it('should stop event from propagating when clicked inside the tooltip', () => {
 
     expect(spy).not.toHaveBeenCalled();
   });
+});
+
+it('should inherit dark theme from document body', () => {
+  document.body.classList.add('dark');
+  const node = shallow(
+    <Tooltip content="tooltip content">
+      <p>some content</p>
+    </Tooltip>
+  );
+
+  node.find('p').simulate('mouseEnter', {currentTarget: element});
+  jest.runAllTimers();
+
+  expect(node.find('.Tooltip')).toHaveClassName('dark');
 });
