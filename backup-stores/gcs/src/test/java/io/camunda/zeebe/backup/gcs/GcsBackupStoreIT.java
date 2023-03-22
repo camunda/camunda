@@ -11,6 +11,7 @@ import com.google.cloud.storage.BucketInfo;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
+import io.camunda.zeebe.backup.testkit.DeletingBackup;
 import io.camunda.zeebe.backup.testkit.ListingBackups;
 import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
@@ -23,7 +24,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 public class GcsBackupStoreIT
-    implements SavingBackup, UpdatingBackupStatus, QueryingBackupStatus, ListingBackups {
+    implements SavingBackup,
+        UpdatingBackupStatus,
+        QueryingBackupStatus,
+        ListingBackups,
+        DeletingBackup {
   @Container private static final GcsContainer GCS = new GcsContainer();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
