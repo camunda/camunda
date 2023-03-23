@@ -114,7 +114,7 @@ const Processes: React.FC = observer(() => {
                 feature: 'start-process',
               });
               window.open(
-                'https://forum.camunda.io/',
+                'https://forum.camunda.io/c/camunda-platform-8-topics/camunda-platform-8-user-feedback/41',
                 '_blank',
                 'noopener noreferrer',
               );
