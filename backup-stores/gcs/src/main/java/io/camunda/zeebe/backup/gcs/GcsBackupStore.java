@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
+import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
@@ -18,27 +19,30 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public final class GcsBackupStore implements BackupStore {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
-  private final Executor executor;
+  private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
+  private final Storage client;
 
   public GcsBackupStore(final GcsBackupConfig config) {
     this(config, buildClient(config));
   }
 
   public GcsBackupStore(final GcsBackupConfig config, final Storage client) {
+    this.client = client;
     final var bucketInfo = BucketInfo.of(config.bucketName());
     final var prefix =
         Optional.ofNullable(config.basePath()).map(basePath -> basePath + "/").orElse("");
@@ -141,7 +145,19 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> closeAsync() {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.runAsync(
+        () -> {
+          try {
+            executor.shutdown();
+            final var closed = executor.awaitTermination(1, TimeUnit.MINUTES);
+            if (!closed) {
+              executor.shutdownNow();
+            }
+            client.close();
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
