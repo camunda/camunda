@@ -30,10 +30,13 @@ import io.camunda.zeebe.backup.gcs.manifest.Manifest.InProgressManifest;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class ManifestManager {
@@ -43,8 +46,31 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
+  /**
+   * Format for path to all manifests.
+   *
+   * <ul>
+   *   <li>{@code basePath}
+   *   <li>{@code "manifests"}
+   * </ul>
+   */
+  private static final String MANIFESTS_ROOT_PATH_FORMAT = "%s/manifests/";
+  /**
+   * The path format consists of the following elements:
+   *
+   * <ul>
+   *   <li>{@code basePath}
+   *   <li>{@code "manifests"}
+   *   <li>{@code partitionId}
+   *   <li>{@code checkpointId}
+   *   <li>{@code nodeId}
+   *   <li>{@code "manifest.json"}
+   * </ul>
+   */
+  private static final String MANIFEST_PATH_FORMAT = MANIFESTS_ROOT_PATH_FORMAT + "%s/%s/%s/%s";
+
   private static final String MANIFEST_BLOB_NAME = "manifest.json";
-  private static final String PATH_FORMAT = "%s/manifests/%s/%s/%s/%s";
+
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String basePath;
@@ -142,7 +168,7 @@ public final class ManifestManager {
     final var spliterator =
         Spliterators.spliteratorUnknownSize(
             client
-                .list(bucketInfo.getName(), BlobListOption.prefix(basePath))
+                .list(bucketInfo.getName(), BlobListOption.prefix(wildcardPrefix(wildcard)))
                 .iterateAll()
                 .iterator(),
             Spliterator.IMMUTABLE);
@@ -167,15 +193,29 @@ public final class ManifestManager {
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
     final var blobName =
-        PATH_FORMAT.formatted(
+        MANIFEST_PATH_FORMAT.formatted(
             basePath, id.partitionId(), id.checkpointId(), id.nodeId(), MANIFEST_BLOB_NAME);
     return BlobInfo.newBuilder(bucketInfo, blobName).setContentType("application/json").build();
+  }
+
+  /**
+   * Tries to build the longest possible prefix based on the given wildcard. If the first component
+   * of prefix is not present in the wildcard, the prefix will be empty. If the second component of
+   * the prefix is empty, the prefix will only contain the first prefix component and so forth.
+   */
+  private String wildcardPrefix(final BackupIdentifierWildcard wildcard) {
+    //noinspection OptionalGetWithoutIsPresent -- checked by takeWhile
+    return Stream.of(wildcard.partitionId(), wildcard.checkpointId(), wildcard.nodeId())
+        .takeWhile(Optional::isPresent)
+        .map(Optional::get)
+        .map(Number::toString)
+        .collect(Collectors.joining("/", MANIFESTS_ROOT_PATH_FORMAT.formatted(basePath), ""));
   }
 
   private Predicate<Blob> filterBlobsByWildcard(final BackupIdentifierWildcard wildcard) {
     final var pattern =
         Pattern.compile(
-                PATH_FORMAT.formatted(
+                MANIFEST_PATH_FORMAT.formatted(
                     Pattern.quote(basePath),
                     wildcard.partitionId().map(Number::toString).orElse("\\d+"),
                     wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
