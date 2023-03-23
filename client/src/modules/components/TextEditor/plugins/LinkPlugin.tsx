@@ -13,6 +13,7 @@ import {
   $getSelection,
   $isRangeSelection,
   $createParagraphNode,
+  LexicalEditor,
 } from 'lexical';
 import {$createLinkNode, LinkNode} from '@lexical/link';
 import {mergeRegister, $insertNodeToNearestRoot} from '@lexical/utils';
@@ -23,6 +24,11 @@ import {Button, Form, Input, Labeled, Modal} from 'components';
 import {t} from 'translation';
 
 import {validateUrl} from './service';
+
+type LinkPayload = {
+  altText: string;
+  url: string;
+};
 
 export default function LinkPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -62,15 +68,15 @@ export default function LinkPlugin() {
   return <LexicalLinkPlugin validateUrl={validateUrl} />;
 }
 
-export const INSERT_LINK_COMMAND = createCommand('INSERT_LINK_COMMAND');
+export const INSERT_LINK_COMMAND = createCommand<LinkPayload>('INSERT_LINK_COMMAND');
 
-export function InsertLinkModal({editor, onClose}) {
+export function InsertLinkModal({editor, onClose}: {editor: LexicalEditor; onClose?: () => void}) {
   const [url, setUrl] = useState('');
   const [altText, setAltText] = useState('');
 
   const onClick = () => {
     editor.dispatchCommand(INSERT_LINK_COMMAND, {url, altText: altText || url});
-    onClose();
+    onClose?.();
   };
 
   return (

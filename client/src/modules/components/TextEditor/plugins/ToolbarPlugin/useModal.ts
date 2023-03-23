@@ -8,14 +8,14 @@
 import {useCallback, useState} from 'react';
 
 export default function useModal() {
-  const [modal, setModal] = useState(null);
+  const [modal, setModal] = useState<JSX.Element | null>(null);
 
   const onClose = useCallback(() => {
     setModal(null);
   }, []);
 
   const showModal = useCallback(
-    (getModal) => {
+    (getModal: (onClose: () => void) => JSX.Element) => {
       setModal(getModal(onClose));
     },
     [onClose]

@@ -6,19 +6,24 @@
  */
 
 import {shallow} from 'enzyme';
-import {InsertLinkModal} from './LinkPlugin';
+import {LexicalEditor} from 'lexical';
+import {InsertImageModal} from './ImagesPlugin';
+
+const editor = {
+  dispatchCommand: jest.fn(),
+} as unknown as LexicalEditor;
 
 it('should display the link modal', () => {
-  const node = shallow(<InsertLinkModal />);
+  const node = shallow(<InsertImageModal editor={editor} />);
 
   expect(node).toExist();
 });
 
 it('should call the onClose when modal is closed', () => {
   const spy = jest.fn();
-  const node = shallow(<InsertLinkModal onClose={spy} />);
+  const node = shallow(<InsertImageModal editor={editor} onClose={spy} />);
 
-  node.find('Modal').prop('onClose')();
+  node.find('Modal').prop<() => void>('onClose')();
 
   expect(spy).toHaveBeenCalled();
 
@@ -28,7 +33,7 @@ it('should call the onClose when modal is closed', () => {
 });
 
 it('should disable the button if the url is invalid', () => {
-  const node = shallow(<InsertLinkModal />);
+  const node = shallow(<InsertImageModal editor={editor} />);
 
   expect(node.find('ForwardRef(Button)').at(1).prop('disabled')).toBe(true);
 
@@ -54,10 +59,7 @@ it('should disable the button if the url is invalid', () => {
 
 it('should dispatch insert link command on report add button', () => {
   const spy = jest.fn();
-  const editor = {
-    dispatchCommand: jest.fn(),
-  };
-  const node = shallow(<InsertLinkModal editor={editor} onClose={spy} />);
+  const node = shallow(<InsertImageModal editor={editor} onClose={spy} />);
 
   node
     .find('ForwardRef(Input)')
@@ -73,17 +75,14 @@ it('should dispatch insert link command on report add button', () => {
 
   expect(editor.dispatchCommand).toHaveBeenCalledWith(undefined, {
     altText: 'some link',
-    url: 'http://example.com',
+    src: 'http://example.com',
   });
   expect(spy).toHaveBeenCalled();
 });
 
-it('should dispatch insert link command with alt text defaulted to url when not provided', () => {
+it('should dispatch insert image command with alt text defaulted to url when not provided', () => {
   const spy = jest.fn();
-  const editor = {
-    dispatchCommand: jest.fn(),
-  };
-  const node = shallow(<InsertLinkModal editor={editor} onClose={spy} />);
+  const node = shallow(<InsertImageModal editor={editor} onClose={spy} />);
 
   node
     .find('ForwardRef(Input)')
@@ -94,7 +93,7 @@ it('should dispatch insert link command with alt text defaulted to url when not 
 
   expect(editor.dispatchCommand).toHaveBeenCalledWith(undefined, {
     altText: 'http://example.com',
-    url: 'http://example.com',
+    src: 'http://example.com',
   });
   expect(spy).toHaveBeenCalled();
 });

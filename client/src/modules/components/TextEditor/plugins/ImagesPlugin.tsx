@@ -12,6 +12,7 @@ import {
   $isRootOrShadowRoot,
   COMMAND_PRIORITY_EDITOR,
   createCommand,
+  LexicalEditor,
 } from 'lexical';
 import {$wrapNodeInElement, mergeRegister} from '@lexical/utils';
 import {useLexicalComposerContext} from '@lexical/react/LexicalComposerContext';
@@ -23,15 +24,17 @@ import {validateUrl} from './service';
 
 import {$createImageNode, ImageNode} from '../nodes';
 
-export const INSERT_IMAGE_COMMAND = createCommand('INSERT_IMAGE_COMMAND');
+type ImagePayload = {altText: string; src: string};
 
-export function InsertImageModal({editor, onClose}) {
+export const INSERT_IMAGE_COMMAND = createCommand<ImagePayload>('INSERT_IMAGE_COMMAND');
+
+export function InsertImageModal({editor, onClose}: {editor: LexicalEditor; onClose?: () => void}) {
   const [src, setSrc] = useState('');
-  const [altText, setAltText] = useState('');
+  const [altText, setAltText] = useState<string | undefined>('');
 
   const onClick = () => {
     editor.dispatchCommand(INSERT_IMAGE_COMMAND, {src, altText: altText || src});
-    onClose();
+    onClose?.();
   };
 
   return (
