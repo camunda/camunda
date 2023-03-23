@@ -24,7 +24,6 @@ import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest.InProgressManifest;
@@ -44,24 +43,16 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-  private static final String MANIFEST_PREFIX = "manifests/";
   private static final String MANIFEST_BLOB_NAME = "manifest.json";
+  private static final String PATH_FORMAT = "%s/manifests/%s/%s/%s/%s";
   private final BucketInfo bucketInfo;
   private final Storage client;
-  private final String prefix;
-  private final Pattern backupIdPattern;
+  private final String basePath;
 
-  ManifestManager(final Storage client, final BucketInfo bucketInfo, final String prefix) {
+  ManifestManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
     this.bucketInfo = bucketInfo;
     this.client = client;
-    this.prefix = prefix + MANIFEST_PREFIX;
-    backupIdPattern =
-        Pattern.compile(
-            "^"
-                + Pattern.quote(this.prefix)
-                + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+)/"
-                + Pattern.quote(MANIFEST_BLOB_NAME)
-                + "$");
+    this.basePath = basePath;
   }
 
   CurrentManifest createInitialManifest(final Backup backup) {
@@ -151,7 +142,7 @@ public final class ManifestManager {
     final var spliterator =
         Spliterators.spliteratorUnknownSize(
             client
-                .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
+                .list(bucketInfo.getName(), BlobListOption.prefix(basePath))
                 .iterateAll()
                 .iterator(),
             Spliterator.IMMUTABLE);
@@ -175,23 +166,23 @@ public final class ManifestManager {
   }
 
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
-    final var backupPath = "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
-    return BlobInfo.newBuilder(bucketInfo, prefix + backupPath + MANIFEST_BLOB_NAME)
-        .setContentType("application/json")
-        .build();
+    final var blobName =
+        PATH_FORMAT.formatted(
+            basePath, id.partitionId(), id.checkpointId(), id.nodeId(), MANIFEST_BLOB_NAME);
+    return BlobInfo.newBuilder(bucketInfo, blobName).setContentType("application/json").build();
   }
 
   private Predicate<Blob> filterBlobsByWildcard(final BackupIdentifierWildcard wildcard) {
-    return (blob -> {
-      final var matcher = backupIdPattern.matcher(blob.getName());
-      if (!matcher.matches()) {
-        return false;
-      }
-      final var nodeId = Integer.parseInt(matcher.group("nodeId"));
-      final var partitionId = Integer.parseInt(matcher.group("partitionId"));
-      final var checkpointId = Long.parseLong(matcher.group("checkpointId"));
-      return wildcard.matches(new BackupIdentifierImpl(nodeId, partitionId, checkpointId));
-    });
+    final var pattern =
+        Pattern.compile(
+                PATH_FORMAT.formatted(
+                    Pattern.quote(basePath),
+                    wildcard.partitionId().map(Number::toString).orElse("\\d+"),
+                    wildcard.checkpointId().map(Number::toString).orElse("\\d+"),
+                    wildcard.nodeId().map(Number::toString).orElse("\\d+"),
+                    Pattern.quote(MANIFEST_BLOB_NAME)))
+            .asMatchPredicate();
+    return (blob -> pattern.test(blob.getName()));
   }
 
   record CurrentManifest(Blob blob, InProgressManifest manifest) {}
