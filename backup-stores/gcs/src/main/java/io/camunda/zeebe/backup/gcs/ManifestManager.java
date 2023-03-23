@@ -81,7 +81,7 @@ public final class ManifestManager {
     this.basePath = basePath;
   }
 
-  CurrentManifest createInitialManifest(final Backup backup) {
+  PersistedManifest createInitialManifest(final Backup backup) {
     final var manifestBlobInfo = manifestBlobInfo(backup.id());
     final var manifest = Manifest.create(backup);
     try {
@@ -90,7 +90,7 @@ public final class ManifestManager {
               manifestBlobInfo,
               MAPPER.writeValueAsBytes(manifest),
               BlobTargetOption.doesNotExist());
-      return new CurrentManifest(blob, manifest);
+      return new PersistedManifest(blob.getGeneration(), manifest);
     } catch (final StorageException e) {
       if (e.getCode() == PRECONDITION_FAILED) { // blob must already exist
         throw new UnexpectedManifestState(
@@ -103,14 +103,14 @@ public final class ManifestManager {
     }
   }
 
-  void completeManifest(final CurrentManifest currentManifest) {
-    final var blob = currentManifest.blob();
-    final var completed = currentManifest.manifest().complete();
+  void completeManifest(final PersistedManifest persistedManifest) {
+    final var generation = persistedManifest.generation();
+    final var completed = persistedManifest.manifest().complete();
     try {
       client.create(
-          blob.asBlobInfo(),
+          manifestBlobInfo(completed.id()),
           MAPPER.writeValueAsBytes(completed),
-          BlobTargetOption.generationMatch(blob.getGeneration()));
+          BlobTargetOption.generationMatch(generation));
     } catch (final StorageException e) {
       if (e.getCode() == PRECONDITION_FAILED) { // blob must have changed
         throw new UnexpectedManifestState(
@@ -134,7 +134,7 @@ public final class ManifestManager {
     }
   }
 
-  public void markAsFailed(final BackupIdentifier id, final String failureReason) {
+  void markAsFailed(final BackupIdentifier id, final String failureReason) {
     final var blobInfo = manifestBlobInfo(id);
     final var blob = client.get(blobInfo.getBlobId());
     try {
@@ -143,24 +143,30 @@ public final class ManifestManager {
         client.create(blobInfo, MAPPER.writeValueAsBytes(failed), BlobTargetOption.doesNotExist());
       } else {
         final var existingManifest = MAPPER.readValue(blob.getContent(), Manifest.class);
-        final var updatedManifest =
-            switch (existingManifest.statusCode()) {
-              case FAILED -> existingManifest.asFailed();
-              case COMPLETED -> existingManifest.asCompleted().fail(failureReason);
-              case IN_PROGRESS -> existingManifest.asInProgress().fail(failureReason);
-            };
-
-        if (existingManifest != updatedManifest) {
-          client.create(
-              blobInfo,
-              MAPPER.writeValueAsBytes(updatedManifest),
-              BlobTargetOption.generationMatch(blob.getGeneration()));
-        }
+        markAsFailed(existingManifest, failureReason);
       }
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  void markAsFailed(final Manifest existingManifest, final String failureReason) {
+    final var updatedManifest =
+        switch (existingManifest.statusCode()) {
+          case FAILED -> existingManifest.asFailed();
+          case COMPLETED -> existingManifest.asCompleted().fail(failureReason);
+          case IN_PROGRESS -> existingManifest.asInProgress().fail(failureReason);
+        };
+
+    if (existingManifest != updatedManifest) {
+      try {
+        client.create(
+            manifestBlobInfo(existingManifest.id()), MAPPER.writeValueAsBytes(updatedManifest));
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -225,5 +231,5 @@ public final class ManifestManager {
     return (blob -> pattern.test(blob.getName()));
   }
 
-  record CurrentManifest(Blob blob, InProgressManifest manifest) {}
+  record PersistedManifest(Long generation, InProgressManifest manifest) {}
 }

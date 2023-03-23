@@ -54,13 +54,13 @@ public final class GcsBackupStore implements BackupStore {
   public CompletableFuture<Void> save(final Backup backup) {
     return CompletableFuture.runAsync(
         () -> {
-          final var manifest = manifestManager.createInitialManifest(backup);
+          final var persistedManifest = manifestManager.createInitialManifest(backup);
           try {
             fileSetManager.save(backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot());
             fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
-            manifestManager.completeManifest(manifest);
+            manifestManager.completeManifest(persistedManifest);
           } catch (final Exception e) {
-            manifestManager.markAsFailed(backup.id(), e.getMessage());
+            manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
             throw e;
           }
         },
