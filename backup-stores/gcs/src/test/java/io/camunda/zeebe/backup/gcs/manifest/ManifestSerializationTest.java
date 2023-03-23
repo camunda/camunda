@@ -161,7 +161,7 @@ final class ManifestSerializationTest {
     assertThatThrownBy(() -> MAPPER.readValue(json, ManifestImpl.class))
         .hasRootCauseInstanceOf(InvalidPersistedManifestState.class)
         .hasMessageContaining(
-            "Manifest in state 'IN_PROGRESS' must be 'FAILED to have have failureReason 'expected failure'");
+            "Expected a failed Manifest to set failureReason 'expected failure', but was in state 'IN_PROGRESS'");
   }
 
   @Test

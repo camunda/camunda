@@ -15,6 +15,9 @@ import java.util.stream.Collectors;
 /** FileSet use in Manifest serialization, in order to list all stored files. */
 public record FileSet(List<NamedFile> files) {
 
+  public static final String ERROR_MSG_UNIQUE_FILES =
+      "Expected file name '%s' to be unique, but occurred '%s' times in %s";
+
   public FileSet {
     Objects.requireNonNull(files);
 
@@ -27,8 +30,7 @@ public record FileSet(List<NamedFile> files) {
     for (final var occurrence : countByName.entrySet()) {
       if (occurrence.getValue() > 1) {
         throw new IllegalArgumentException(
-            "File name '%s' must be unique but occurred '%s' times in %s"
-                .formatted(occurrence.getKey(), occurrence.getValue(), files));
+            ERROR_MSG_UNIQUE_FILES.formatted(occurrence.getKey(), occurrence.getValue(), files));
       }
     }
   }

@@ -40,6 +40,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class ManifestManager {
+
+  public static final String ERROR_MSG_MANIFEST_ALREADY_EXISTS =
+      "Expected to create new manifest for backup '%s', but already exists.";
+  public static final String ERROR_MSG_MANIFEST_MODIFICATION =
+      "Expected to complete manifest for backup '%s', but modification was detected unexpectedly.";
   public static final ObjectMapper MAPPER =
       new ObjectMapper()
           .registerModule(new Jdk8Module())
@@ -93,8 +98,7 @@ public final class ManifestManager {
       return new PersistedManifest(blob.getGeneration(), manifest);
     } catch (final StorageException e) {
       if (e.getCode() == PRECONDITION_FAILED) { // blob must already exist
-        throw new UnexpectedManifestState(
-            "Manifest for backup %s already exists".formatted(backup.id()));
+        throw new UnexpectedManifestState(ERROR_MSG_MANIFEST_ALREADY_EXISTS.formatted(backup.id()));
       }
       throw e;
     } catch (final JsonProcessingException e) {
@@ -113,7 +117,7 @@ public final class ManifestManager {
     } catch (final StorageException e) {
       if (e.getCode() == PRECONDITION_FAILED) { // blob must have changed
         throw new UnexpectedManifestState(
-            "Manifest for backup %s was modified unexpectedly".formatted(completed.id()));
+            ERROR_MSG_MANIFEST_MODIFICATION.formatted(completed.id()));
       }
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);

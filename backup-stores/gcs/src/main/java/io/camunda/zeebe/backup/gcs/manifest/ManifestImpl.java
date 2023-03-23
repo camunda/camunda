@@ -28,11 +28,13 @@ record ManifestImpl(
     String failureReason)
     implements Manifest.InProgressManifest, Manifest.CompletedManifest, Manifest.FailedManifest {
 
+  public static final String ERROR_MSG_WRONG_STATE =
+      "Expected a failed Manifest to set failureReason '%s', but was in state '%s'.";
+
   ManifestImpl {
     if (failureReason != null && statusCode != FAILED) {
       throw new InvalidPersistedManifestState(
-          "Manifest in state '%s' must be 'FAILED to have have failureReason '%s'"
-              .formatted(statusCode, failureReason));
+          ERROR_MSG_WRONG_STATE.formatted(failureReason, statusCode));
     }
   }
 
