@@ -30,6 +30,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 public final class GcsBackupStore implements BackupStore {
+  public static final String ERROR_MSG_BACKUP_NOT_FOUND =
+      "Expected to restore from backup with id '%s', but does not exist.";
+  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
+      "Expected to restore from completed backup with id '%s', but was in state '%s'";
+  public static final String ERROR_MSG_ACCESS_FAILED = "Expected to access bucket '%s', but failed";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
   private final ExecutorService executor;
@@ -105,11 +110,11 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
-            throw new RuntimeException("backup does not exist");
+            throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
             case FAILED, IN_PROGRESS -> throw new RuntimeException(
-                "Can't restore backup in state %s".formatted(manifest.statusCode()));
+                ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
               final var snapshot =
@@ -192,7 +197,7 @@ public final class GcsBackupStore implements BackupStore {
       storage.list(config.bucketName(), BlobListOption.pageSize(1));
     } catch (final Exception e) {
       throw new CouldNotAccessBucketException(
-          "Expected to access bucket '%s' but failed".formatted(config.bucketName()), e);
+          ERROR_MSG_ACCESS_FAILED.formatted(config.bucketName()), e);
     }
   }
 }
