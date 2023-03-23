@@ -36,8 +36,8 @@ public record FileSet(List<NamedFile> files) {
     return new FileSet(fileSet.namedFiles().keySet().stream().map(NamedFile::new).toList());
   }
 
-  record NamedFile(String name) {
-    NamedFile {
+  public record NamedFile(String name) {
+    public NamedFile {
       Objects.requireNonNull(name);
     }
   }

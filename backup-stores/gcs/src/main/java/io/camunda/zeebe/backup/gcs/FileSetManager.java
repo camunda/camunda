@@ -14,8 +14,13 @@ import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobWriteOption;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
+import io.camunda.zeebe.backup.common.NamedFileSetImpl;
+import io.camunda.zeebe.backup.gcs.manifest.FileSet;
+import io.camunda.zeebe.backup.gcs.manifest.FileSet.NamedFile;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Path;
+import java.util.stream.Collectors;
 
 final class FileSetManager {
   private static final String FILESET_PREFIX = "contents/";
@@ -52,6 +57,25 @@ final class FileSetManager {
             .iterateAll()) {
       blob.delete();
     }
+  }
+
+  public NamedFileSet restore(
+      final BackupIdentifier id,
+      final String filesetName,
+      final FileSet fileSet,
+      final Path targetFolder) {
+    final var resolved =
+        fileSet.files().stream()
+            .collect(Collectors.toMap(NamedFile::name, (f) -> targetFolder.resolve(f.name())));
+
+    for (final var entry : resolved.entrySet()) {
+      final var fileName = entry.getKey();
+      final var filePath = entry.getValue();
+      client.downloadTo(
+          blobInfo(id, filesetName, fileName).getBlobId(), targetFolder.resolve(filePath));
+    }
+
+    return new NamedFileSetImpl(resolved);
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {

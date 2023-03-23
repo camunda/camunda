@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.BucketDoesNotExistException;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
@@ -103,7 +104,28 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new RuntimeException("backup does not exist");
+          }
+          return switch (manifest.statusCode()) {
+            case FAILED, IN_PROGRESS -> throw new RuntimeException(
+                "Can't restore backup in state %s".formatted(manifest.statusCode()));
+            case COMPLETED -> {
+              final var completed = manifest.asCompleted();
+              final var snapshot =
+                  fileSetManager.restore(
+                      id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
+              final var segments =
+                  fileSetManager.restore(
+                      id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
+              yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
+            }
+          };
+        },
+        executor);
   }
 
   @Override
