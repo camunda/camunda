@@ -74,9 +74,8 @@ public final class GcsBackupStore implements BackupStore {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
             return BackupStatusImpl.doesNotExist(id);
-          } else {
-            return Manifest.toStatus(manifest);
           }
+          return Manifest.toStatus(manifest);
         },
         executor);
   }

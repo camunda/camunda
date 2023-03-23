@@ -95,9 +95,8 @@ public final class ManifestManager {
       if (e.getCode() == PRECONDITION_FAILED) { // blob must already exist
         throw new UnexpectedManifestState(
             "Manifest for backup %s already exists".formatted(backup.id()));
-      } else {
-        throw e;
       }
+      throw e;
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
@@ -125,12 +124,12 @@ public final class ManifestManager {
     final var blob = client.get(manifestBlobInfo(id).getBlobId());
     if (blob == null) {
       return null;
-    } else {
-      try {
-        return MAPPER.readValue(blob.getContent(), Manifest.class);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
+    }
+
+    try {
+      return MAPPER.readValue(blob.getContent(), Manifest.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
