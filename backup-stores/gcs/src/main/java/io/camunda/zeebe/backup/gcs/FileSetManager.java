@@ -77,17 +77,17 @@ final class FileSetManager {
       final String filesetName,
       final FileSet fileSet,
       final Path targetFolder) {
-    final var resolved =
+    final var pathByName =
         fileSet.files().stream()
             .collect(Collectors.toMap(NamedFile::name, (f) -> targetFolder.resolve(f.name())));
 
-    for (final var entry : resolved.entrySet()) {
+    for (final var entry : pathByName.entrySet()) {
       final var fileName = entry.getKey();
       final var filePath = entry.getValue();
       client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
     }
 
-    return new NamedFileSetImpl(resolved);
+    return new NamedFileSetImpl(pathByName);
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
