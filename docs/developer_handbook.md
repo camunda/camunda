@@ -83,6 +83,21 @@ You'll always need to add support for new records in the ES exporter. Even if yo
 5. Document this new filter option in the elasticsearch exporter's [README](../exporters/elasticsearch-exporter/README.md).
 6. Add a mapping for the ValueType to the [TestSupport](../exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
 
+### Support a RecordValue in the Opensearch exporter
+
+You'll always need to add support for new records in the OS exporter. Even if you don't yet want to export a new record,
+our tests will fail if you don't provide this support. Note that in step 3 below, you can choose whether or not the record is exported to OS by default.
+
+1. Add a record template to the exporter's [resources](../exporters/opensearch-exporter/src/main/resources/).
+
+- Tip: start by copying an existing template and change the relevant properties.
+
+2. Add a call to `createValueIndexTemplate` for the `ValueType` in [OpensearchExporter](../exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporter.java).
+3. Allow the record to be filtered through the [configuration](../exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporterConfiguration.java).
+4. Document this new filter option in the dist folder's [broker config templates](../dist/src/main/config/).
+5. Document this new filter option in the opensearch exporter's [README](../exporters/opensearch-exporter/README.md).
+6. Add a mapping for the ValueType to the [TestSupport](../exporters/opensearch-exporter/src/test/java/io/camunda/zeebe/exporter/opensearch/TestSupport.java).
+
 ## How to extend an existing record?
 
 Use case: adding a new property to an existing record.
