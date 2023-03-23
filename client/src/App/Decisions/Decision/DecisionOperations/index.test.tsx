@@ -109,6 +109,11 @@ describe('<DecisionOperations />', () => {
     expect(screen.getByText(/My Definition/)).toBeInTheDocument();
     expect(
       screen.getByText(
+        /Deleting a decision definition will delete the DRD and will impact the following/
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
         /^Yes, I confirm I want to delete this DRD and all related instances.$/
       )
     ).toBeInTheDocument();

@@ -12,6 +12,7 @@ import {Anchor} from 'modules/components/Anchor/styled';
 const Warning = styled.div`
   padding-top: 4px;
 `;
+
 const Information = styled.p`
   ${productiveHeading01};
   margin-top: 0;
@@ -28,9 +29,4 @@ const Link = styled(Anchor)`
   ${bodyShort01};
 `;
 
-const DeleteButtonContainer = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-export {Warning, Information, Ul, Link, DeleteButtonContainer};
+export {Warning, Information, Ul, Link};

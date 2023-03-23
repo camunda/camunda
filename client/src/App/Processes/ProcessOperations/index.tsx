@@ -10,11 +10,17 @@ import {OperationItem} from 'modules/components/OperationItem';
 import {OperationItems} from 'modules/components/OperationItems';
 import {DeleteDefinitionModal} from 'modules/components/DeleteDefinitionModal';
 import {DetailTable} from 'modules/components/DeleteDefinitionModal/DetailTable';
-import {Warning, Information, Ul, Link, DeleteButtonContainer} from './styled';
+import {
+  Warning,
+  Information,
+  Ul,
+  Link,
+} from 'modules/components/DeleteDefinitionModal/Warning/styled';
 import {operationsStore} from 'modules/stores/operations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {useNotifications} from 'modules/notifications';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
+import {DeleteButtonContainer} from 'modules/components/DeleteDefinition/styled';
 
 type Props = {
   processDefinitionId: string;
