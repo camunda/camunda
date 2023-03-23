@@ -12,8 +12,11 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.zeebe.gateway.impl.configuration.AuthenticationCfg.AuthMode;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.probes.health.HealthZeebeClientProperties.SecurityProperties.OAuthSecurityProperties;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import java.util.Map;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Health.Builder;
@@ -57,7 +60,20 @@ public class ResponsiveHealthIndicator implements HealthIndicator {
         zeebeClient.newTopologyRequest().send().get();
         resultBuilder = Health.up();
       } catch (final Throwable t) {
-        resultBuilder = Health.down().withException(t);
+        if (gatewayCfg.getSecurity().getAuthentication().getMode() != AuthMode.NONE
+            && t.getCause() instanceof StatusRuntimeException
+            && ((StatusRuntimeException) t.getCause())
+                .getStatus()
+                .getCode()
+                .equals(Code.UNAUTHENTICATED)) {
+          // If gateway authentication is enabled, the request may result in a 401
+          // as Zeebe itself is not required to have a full client setup itself.
+          // The API is thus evaluated as reachable/responsive given an unauthenticated response is
+          // returned.
+          resultBuilder = Health.up();
+        } else {
+          resultBuilder = Health.down().withException(t);
+        }
       }
     }
 

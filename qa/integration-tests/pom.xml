@@ -413,6 +413,24 @@
 
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <systemProperties>
+            <property>
+              <name>identity.docker.image.version</name>
+              <!-- Can be set to ${version.identity} after 8.2.0. -->
+              <value>SNAPSHOT</value>
+            </property>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
   <profiles>
     <!--
       this profile will run all tests annotated with @SmokeTest. the profile is mainly used to

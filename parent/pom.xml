@@ -59,6 +59,7 @@
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpcomponents>4.4.16</version.httpcomponents>
+    <version.identity>8.2.0-alpha5</version.identity>
     <version.jackson>2.14.2</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.jna>5.13.0</version.jna>
@@ -98,6 +99,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.4.0</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
+    <version.jetbrains-annotations>17.0.0</version.jetbrains-annotations>
     <version.jqwik>1.7.2</version.jqwik>
     <version.jmock>2.12.0</version.jmock>
     <version.json-smart>2.4.8</version.json-smart>
@@ -944,6 +946,12 @@
       </dependency>
 
       <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy-agent</artifactId>
+        <version>${version.byte-buddy}</version>
+      </dependency>
+
+      <dependency>
         <groupId>io.github.classgraph</groupId>
         <artifactId>classgraph</artifactId>
         <version>${version.classgraph}</version>
@@ -1009,6 +1017,13 @@
       </dependency>
 
       <!-- Dependencies present for convergence only -->
+      <!-- between duct-tape (from testcontainers) and kotlin-stdlib (from identity-sdk) -->
+      <dependency>
+        <groupId>org.jetbrains</groupId>
+        <artifactId>annotations</artifactId>
+        <version>${version.jetbrains-annotations}</version>
+      </dependency>
+
       <!-- between log4j2 and commons-compress (from testcontainers) -->
       <dependency>
         <groupId>org.osgi</groupId>
@@ -1554,7 +1569,15 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence></dependencyConvergence>
+                  <dependencyConvergence>
+                    <!-- To be removed once these conflicts are resolved by identity. -->
+                    <!-- See https://github.com/camunda-cloud/identity/issues/1696 -->
+                    <excludes>
+                      <exclude>com.auth0:java-jwt</exclude>
+                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
+                      <exclude>org.jetbrains.kotlin:kotlin-stdlib-jdk8</exclude>
+                    </excludes>
+                  </dependencyConvergence>
                 </rules>
               </configuration>
             </execution>
