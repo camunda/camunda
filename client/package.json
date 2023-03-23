@@ -77,7 +77,7 @@
     "cross-env": "^7.0.3",
     "eslint-plugin-camunda-licensed": "0.4.6",
     "eslint-plugin-prettier": "4.2.1",
-    "glob": "8.0.3",
+    "glob": "8.1.0",
     "http-proxy-middleware": "2.0.6",
     "husky": "8.0.3",
     "jest-styled-components": "7.1.1",
