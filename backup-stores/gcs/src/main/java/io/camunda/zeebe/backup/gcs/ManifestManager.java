@@ -21,6 +21,7 @@ import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobTargetOption;
 import com.google.cloud.storage.StorageException;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest.InProgressManifest;
@@ -102,24 +103,34 @@ public final class ManifestManager {
         .build();
   }
 
-  public void failManifest(final CurrentManifest currentManifest, final String message) {
-    final var blob = currentManifest.blob();
-    final var failed = currentManifest.manifest().fail(message);
+  public void markAsFailed(
+      final String prefix, final BackupIdentifier id, final String failureReason) {
+    final var blobInfo = manifestBlobInfo(prefix);
+    final var blob = client.get(blobInfo.getBlobId());
     try {
-      client.create(
-          blob.asBlobInfo(),
-          MAPPER.writeValueAsBytes(failed),
-          BlobTargetOption.generationMatch(blob.getGeneration()));
-    } catch (final StorageException e) {
-      if (e.getCode() == 412) { // 412 Precondition Failed, blob have changed
-        throw new UnexpectedManifestState(
-            "Tried to mark backup %s as failed but manifest was modified unexpectedly"
-                .formatted(failed.id()));
+      if (blob == null) {
+        final var failed = Manifest.createFailed(id);
+        client.create(blobInfo, MAPPER.writeValueAsBytes(failed), BlobTargetOption.doesNotExist());
       } else {
-        throw e;
+        final var existingManifest = MAPPER.readValue(blob.getContent(), Manifest.class);
+        final var updatedManifest =
+            switch (existingManifest.statusCode()) {
+              case FAILED -> existingManifest.asFailed();
+              case COMPLETED -> existingManifest.asCompleted().fail(failureReason);
+              case IN_PROGRESS -> existingManifest.asInProgress().fail(failureReason);
+            };
+
+        if (existingManifest != updatedManifest) {
+          client.create(
+              blobInfo,
+              MAPPER.writeValueAsBytes(updatedManifest),
+              BlobTargetOption.generationMatch(blob.getGeneration()));
+        }
       }
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 

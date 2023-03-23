@@ -8,21 +8,20 @@
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.BucketInfo;
-import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
+import io.camunda.zeebe.backup.testkit.QueryingBackupStatus;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-public class GcsBackupStoreIT implements SavingBackup, UpdatingBackupStatus {
+public class GcsBackupStoreIT implements SavingBackup, UpdatingBackupStatus, QueryingBackupStatus {
   @Container private static final GcsContainer GCS = new GcsContainer();
   private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
 
@@ -64,17 +63,5 @@ public class GcsBackupStoreIT implements SavingBackup, UpdatingBackupStatus {
   @Override
   public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
     return UnexpectedManifestState.class;
-  }
-
-  @Override
-  @Disabled
-  public void backupCanBeMarkedAsFailed(final Backup backup) {
-    UpdatingBackupStatus.super.backupCanBeMarkedAsFailed(backup);
-  }
-
-  @Override
-  @Disabled
-  public void markingAsFailedUpdatesTimestamp(final Backup backup) {
-    UpdatingBackupStatus.super.markingAsFailedUpdatesTimestamp(backup);
   }
 }

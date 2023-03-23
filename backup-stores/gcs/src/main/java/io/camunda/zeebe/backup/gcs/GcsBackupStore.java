@@ -55,7 +55,7 @@ public final class GcsBackupStore implements BackupStore {
             fileSetManager.save(contentPrefix(backup.id()) + "segments/", backup.segments());
             manifestManager.completeManifest(manifest);
           } catch (final Exception e) {
-            manifestManager.failManifest(manifest, e.getMessage());
+            manifestManager.markAsFailed(manifestPrefix(backup.id()), backup.id(), e.getMessage());
             throw e;
           }
         },
@@ -100,7 +100,12 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () -> {
+          manifestManager.markAsFailed(manifestPrefix(id), id, failureReason);
+          return BackupStatusCode.FAILED;
+        },
+        executor);
   }
 
   @Override

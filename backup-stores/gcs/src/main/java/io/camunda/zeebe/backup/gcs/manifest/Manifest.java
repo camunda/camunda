@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
+import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.camunda.zeebe.backup.api.Backup;
+import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
@@ -34,6 +36,12 @@ public sealed interface Manifest {
         FileSet.of(backup.segments()),
         creationTime,
         creationTime);
+  }
+
+  static FailedManifest createFailed(final BackupIdentifier id) {
+    final var creationTime = Instant.now();
+    return new ManifestImpl(
+        BackupIdentifierImpl.from(id), null, FAILED, null, null, creationTime, creationTime);
   }
 
   static BackupStatus toStatus(final Manifest manifest) {
