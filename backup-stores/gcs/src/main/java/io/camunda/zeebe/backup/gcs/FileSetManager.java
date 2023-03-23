@@ -84,8 +84,7 @@ final class FileSetManager {
     for (final var entry : resolved.entrySet()) {
       final var fileName = entry.getKey();
       final var filePath = entry.getValue();
-      client.downloadTo(
-          blobInfo(id, filesetName, fileName).getBlobId(), targetFolder.resolve(filePath));
+      client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
     }
 
     return new NamedFileSetImpl(resolved);
