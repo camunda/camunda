@@ -54,7 +54,7 @@ public class GatewayAuthenticationIdentityIT {
 
   @Container
   private static final GenericContainer KEYCLOAK =
-      new GenericContainer<>("quay.io/keycloak/keycloak:19.0")
+      new GenericContainer<>("quay.io/keycloak/keycloak:20.0.5")
           .withEnv("KC_HEALTH_ENABLED", "true")
           .withEnv("KEYCLOAK_ADMIN", KEYCLOAK_USER)
           .withEnv("KEYCLOAK_ADMIN_PASSWORD", KEYCLOAK_PASSWORD)
