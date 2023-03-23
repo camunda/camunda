@@ -170,7 +170,6 @@ export default class Dropdown extends React.Component<DropdownProps, DropdownSta
     }
 
     if (evt.key === 'Escape') {
-      console.log('first');
       this.close({});
     }
 

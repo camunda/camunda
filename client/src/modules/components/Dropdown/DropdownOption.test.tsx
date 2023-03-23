@@ -7,6 +7,7 @@
 
 import {shallow} from 'enzyme';
 import {Link} from 'react-router-dom';
+
 import {Icon} from '../Icon';
 
 import DropdownOption from './DropdownOption';

@@ -31,26 +31,28 @@ interface DivProps extends CommonProps, Partial<ComponentPropsWithoutRef<'div'>>
 
 export type DropdownOptionProps = LinkProps | DivProps;
 
-export default forwardRef(function DropdownOption(props: DropdownOptionProps, ref) {
-  const {active, link, disabled, ...rest} = props;
+export default forwardRef(function DropdownOption(
+  {active, link, disabled, ...props}: DropdownOptionProps,
+  ref
+) {
   const commonProps = {
-    ...rest,
-    className: classnames('DropdownOption', rest.className, {'is-active': active, disabled}),
+    ...props,
+    className: classnames('DropdownOption', props.className, {'is-active': active, disabled}),
     tabIndex: disabled ? -1 : 0,
     ref,
   };
 
   const content = (
     <>
-      {rest.checked && <Icon className="checkMark" type="check-small" size="10px" />}
-      {rest.children}
+      {props.checked && <Icon className="checkMark" type="check-small" size="10px" />}
+      {props.children}
     </>
   );
 
-  if (isAnchor(props)) {
+  if (link) {
     return (
       <Tooltip content={content} overflowOnly>
-        <Link {...(commonProps as Partial<LinkProps>)} to={props.link}>
+        <Link {...(commonProps as Partial<LinkProps>)} to={link}>
           {content}
         </Link>
       </Tooltip>
@@ -61,14 +63,10 @@ export default forwardRef(function DropdownOption(props: DropdownOptionProps, re
     <Tooltip content={content} overflowOnly>
       <div
         {...(commonProps as Partial<DivProps>)}
-        onClick={(evt) => !disabled && props.onClick?.(evt)}
+        onClick={(evt) => !disabled && (props as DivProps).onClick?.(evt)}
       >
         {content}
       </div>
     </Tooltip>
   );
 });
-
-function isAnchor(props: DropdownOptionProps): props is LinkProps {
-  return !!props.link;
-}
