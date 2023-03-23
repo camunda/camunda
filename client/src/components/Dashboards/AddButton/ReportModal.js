@@ -28,8 +28,7 @@ function ReportModal({close, confirm, location}) {
   const [selectedReportId, setSelectedReportId] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
   const [tabOpen, setTabOpen] = useState('report');
-  const initialTextReportValue = '';
-  const [text, setText] = useState(initialTextReportValue);
+  const [text, setText] = useState();
 
   useEffect(() => {
     (async () => {
@@ -130,7 +129,7 @@ function ReportModal({close, confirm, location}) {
             <Tabs.Tab value="text" title={t('dashboard.addButton.text')}>
               <Form.Group className="Labeled">
                 <span className="label before">{t('dashboard.addButton.text')}</span>
-                <TextEditor initialValue={initialTextReportValue} onChange={setText} />
+                <TextEditor initialValue={text} onChange={setText} />
                 <TextEditor.CharCount editorState={text} />
               </Form.Group>
             </Tabs.Tab>

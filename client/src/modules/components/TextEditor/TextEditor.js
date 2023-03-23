@@ -19,6 +19,26 @@ function onError(error) {
   console.error(error);
 }
 
+const emptyState = {
+  root: {
+    children: [
+      {
+        children: [],
+        direction: null,
+        format: '',
+        indent: 0,
+        type: 'paragraph',
+        version: 1,
+      },
+    ],
+    direction: null,
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1,
+  },
+};
+
 const theme = {
   paragraph: 'p',
   text: {
@@ -35,9 +55,9 @@ const theme = {
   },
 };
 
-export default function TextEditor({onChange, initialValue}) {
+export default function TextEditor({onChange, initialValue = emptyState}) {
   const initialConfig = {
-    editorState: initialValue ? JSON.stringify(initialValue) : null,
+    editorState: JSON.stringify(initialValue),
     editable: !!onChange,
     namespace: 'Editor',
     nodes: editorNodes,
