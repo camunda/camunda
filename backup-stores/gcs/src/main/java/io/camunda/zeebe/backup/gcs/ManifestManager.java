@@ -46,6 +46,7 @@ public final class ManifestManager {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
+  public static final int PRECONDITION_FAILED = 412;
   /**
    * Format for path to all manifests.
    *
@@ -70,7 +71,6 @@ public final class ManifestManager {
   private static final String MANIFEST_PATH_FORMAT = MANIFESTS_ROOT_PATH_FORMAT + "%s/%s/%s/%s";
 
   private static final String MANIFEST_BLOB_NAME = "manifest.json";
-
   private final BucketInfo bucketInfo;
   private final Storage client;
   private final String basePath;
@@ -92,7 +92,7 @@ public final class ManifestManager {
               BlobTargetOption.doesNotExist());
       return new CurrentManifest(blob, manifest);
     } catch (final StorageException e) {
-      if (e.getCode() == 412) { // 412 Precondition Failed, blob must already exist
+      if (e.getCode() == PRECONDITION_FAILED) { // blob must already exist
         throw new UnexpectedManifestState(
             "Manifest for backup %s already exists".formatted(backup.id()));
       } else {
@@ -112,7 +112,7 @@ public final class ManifestManager {
           MAPPER.writeValueAsBytes(completed),
           BlobTargetOption.generationMatch(blob.getGeneration()));
     } catch (final StorageException e) {
-      if (e.getCode() == 412) { // 412 Precondition Failed, blob have changed
+      if (e.getCode() == PRECONDITION_FAILED) { // blob must have changed
         throw new UnexpectedManifestState(
             "Manifest for backup %s was modified unexpectedly".formatted(completed.id()));
       }
