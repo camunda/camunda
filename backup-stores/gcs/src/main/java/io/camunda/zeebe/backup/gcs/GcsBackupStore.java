@@ -27,7 +27,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public final class GcsBackupStore implements BackupStore {
-  private final String prefix;
   private final Executor executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
@@ -38,24 +37,24 @@ public final class GcsBackupStore implements BackupStore {
 
   public GcsBackupStore(final GcsBackupConfig config, final Storage client) {
     final var bucketInfo = BucketInfo.of(config.bucketName());
-    prefix = Optional.ofNullable(config.basePath()).map(basePath -> basePath + "/").orElse("");
+    final var prefix =
+        Optional.ofNullable(config.basePath()).map(basePath -> basePath + "/").orElse("");
     executor = Executors.newWorkStealingPool(4);
-    manifestManager = new ManifestManager(client, bucketInfo);
-    fileSetManager = new FileSetManager(client, bucketInfo);
+    manifestManager = new ManifestManager(client, bucketInfo, prefix);
+    fileSetManager = new FileSetManager(client, bucketInfo, prefix);
   }
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
     return CompletableFuture.runAsync(
         () -> {
-          final var manifest =
-              manifestManager.createInitialManifest(manifestPrefix(backup.id()), backup);
+          final var manifest = manifestManager.createInitialManifest(backup);
           try {
-            fileSetManager.save(contentPrefix(backup.id()) + "snapshot/", backup.snapshot());
-            fileSetManager.save(contentPrefix(backup.id()) + "segments/", backup.segments());
+            fileSetManager.save(backup.id(), "snapshot", backup.snapshot());
+            fileSetManager.save(backup.id(), "segments", backup.segments());
             manifestManager.completeManifest(manifest);
           } catch (final Exception e) {
-            manifestManager.markAsFailed(manifestPrefix(backup.id()), backup.id(), e.getMessage());
+            manifestManager.markAsFailed(backup.id(), e.getMessage());
             throw e;
           }
         },
@@ -66,7 +65,7 @@ public final class GcsBackupStore implements BackupStore {
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
     return CompletableFuture.supplyAsync(
         () -> {
-          final var manifest = manifestManager.getManifest(manifestPrefix(id));
+          final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
             return new BackupStatusImpl(
                 id,
@@ -84,7 +83,9 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
-    throw new UnsupportedOperationException();
+    return CompletableFuture.supplyAsync(
+        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        executor);
   }
 
   @Override
@@ -102,7 +103,7 @@ public final class GcsBackupStore implements BackupStore {
       final BackupIdentifier id, final String failureReason) {
     return CompletableFuture.supplyAsync(
         () -> {
-          manifestManager.markAsFailed(manifestPrefix(id), id, failureReason);
+          manifestManager.markAsFailed(id, failureReason);
           return BackupStatusCode.FAILED;
         },
         executor);
@@ -111,18 +112,6 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Void> closeAsync() {
     throw new UnsupportedOperationException();
-  }
-
-  private String manifestPrefix(final BackupIdentifier id) {
-    return prefix + "manifests/" + backupPath(id);
-  }
-
-  private String contentPrefix(final BackupIdentifier id) {
-    return prefix + "contents/" + backupPath(id);
-  }
-
-  private String backupPath(final BackupIdentifier id) {
-    return "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
