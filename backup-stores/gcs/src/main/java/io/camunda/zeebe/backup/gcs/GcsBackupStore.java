@@ -75,7 +75,7 @@ public final class GcsBackupStore implements BackupStore {
           if (manifest == null) {
             return BackupStatusImpl.doesNotExist(id);
           }
-          return Manifest.toStatus(manifest);
+          return toStatus(manifest);
         },
         executor);
   }
@@ -83,7 +83,8 @@ public final class GcsBackupStore implements BackupStore {
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
     return CompletableFuture.supplyAsync(
-        () -> manifestManager.listManifests(wildcard).stream().map(Manifest::toStatus).toList(),
+        () ->
+            manifestManager.listManifests(wildcard).stream().map(GcsBackupStore::toStatus).toList(),
         executor);
   }
 
@@ -150,6 +151,32 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
+  }
+
+  private static BackupStatus toStatus(final Manifest manifest) {
+    return switch (manifest.statusCode()) {
+      case IN_PROGRESS -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.IN_PROGRESS,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case COMPLETED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.COMPLETED,
+          Optional.empty(),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+      case FAILED -> new BackupStatusImpl(
+          manifest.id(),
+          Optional.ofNullable(manifest.descriptor()),
+          BackupStatusCode.FAILED,
+          Optional.ofNullable(manifest.asFailed().failureReason()),
+          Optional.ofNullable(manifest.createdAt()),
+          Optional.ofNullable(manifest.modifiedAt()));
+    };
   }
 
   public static Storage buildClient(final GcsBackupConfig config) {
