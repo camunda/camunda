@@ -53,10 +53,7 @@ final class FileSetManager {
       final var filePath = namedFile.getValue();
       try {
         client.createFrom(
-            blobInfo(id, fileSetName, fileName),
-            filePath,
-            BlobWriteOption.doesNotExist(),
-            BlobWriteOption.crc32cMatch());
+            blobInfo(id, fileSetName, fileName), filePath, BlobWriteOption.doesNotExist());
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
