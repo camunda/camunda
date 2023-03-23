@@ -2,6 +2,6 @@
 <project version="4">
   <component name="ExternalDependencies">
     <plugin id="com.dubreuia" />
-    <plugin id="google-java-format" min-version="1.15.0.0" />
+    <plugin id="google-java-format" min-version="1.16.0.0" />
   </component>
 </project>
