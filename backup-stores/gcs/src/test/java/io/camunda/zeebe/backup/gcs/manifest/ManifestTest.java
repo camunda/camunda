@@ -7,21 +7,18 @@
  */
 package io.camunda.zeebe.backup.gcs.manifest;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
+import static io.camunda.zeebe.backup.gcs.GcsBackupStore.MAPPER;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.COMPLETED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.FAILED;
 import static io.camunda.zeebe.backup.gcs.manifest.Manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.InvalidPersistedManifestState;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestState;
 import java.time.Instant;
@@ -29,13 +26,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class ManifestTest {
-
-  static final ObjectMapper MAPPER =
-      new ObjectMapper()
-          .registerModule(new Jdk8Module())
-          .registerModule(new JavaTimeModule())
-          .disable(WRITE_DATES_AS_TIMESTAMPS)
-          .setSerializationInclusion(Include.NON_ABSENT);
 
   @Test
   public void shouldDeserialize() throws JsonProcessingException {
@@ -108,9 +98,12 @@ public class ManifestTest {
   public void shouldSerializeFailedManifest() throws JsonProcessingException {
     // given
     final var created =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
     final var failed = created.fail("expected failure reason");
     final var expectedJsonString =
         """
@@ -313,9 +306,12 @@ public class ManifestTest {
   public void shouldFailOnAsInProgress() {
     // given
     final var manifest =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     final var complete = manifest.complete();
 
@@ -329,9 +325,12 @@ public class ManifestTest {
   public void shouldFailOnAsCompleted() {
     // given
     final var manifest =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     // when expect thrown
     assertThatThrownBy(manifest::asCompleted)
@@ -343,9 +342,12 @@ public class ManifestTest {
   public void shouldFailOnAsFailed() {
     // given
     final var manifest =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     // when expect thrown
     assertThatThrownBy(manifest::asFailed)
@@ -359,9 +361,12 @@ public class ManifestTest {
 
     // when
     final var manifest =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     // then
     assertThat(manifest.statusCode()).isEqualTo(IN_PROGRESS);
@@ -374,9 +379,12 @@ public class ManifestTest {
   public void shouldUpdateManifestToCompleted() {
     // given
     final var created =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     // when
     final var completed = created.complete();
@@ -394,9 +402,12 @@ public class ManifestTest {
   public void shouldUpdateManifestToFailed() {
     // given
     final var created =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     // when
     final var failed = created.fail("expected failure reason");
@@ -415,9 +426,12 @@ public class ManifestTest {
   public void shouldUpdateManifestToFailedFromComplete() {
     // given
     final var created =
-        Manifest.createManifest(
-            new BackupIdentifierImpl(1, 2, 43),
-            new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"));
+        Manifest.create(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
+                null,
+                null));
 
     final var completed = created.complete();
 

@@ -28,6 +28,10 @@ public abstract class GcsBackupStoreException extends RuntimeException {
     public UnexpectedManifestState(final StatusCode expected, final StatusCode actual) {
       super("Expected manifest in state '%s', but was in '%s'".formatted(expected, actual));
     }
+
+    public UnexpectedManifestState(final String message) {
+      super(message);
+    }
   }
 
   public static class ConfigurationException extends GcsBackupStoreException {
