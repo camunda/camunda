@@ -46,9 +46,10 @@ public final class GcsBackupStore implements BackupStore {
     final var bucketInfo = BucketInfo.of(config.bucketName());
     final var prefix =
         Optional.ofNullable(config.basePath()).map(basePath -> basePath + "/").orElse("");
+    final var basePath = Optional.ofNullable(config.basePath()).orElse("");
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, prefix);
-    fileSetManager = new FileSetManager(client, bucketInfo, prefix);
+    fileSetManager = new FileSetManager(client, bucketInfo, basePath);
   }
 
   @Override

@@ -23,15 +23,28 @@ import java.nio.file.Path;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
-  private static final String FILESET_PREFIX = "contents/";
+  /**
+   * The path format consists of the following elements:
+   *
+   * <ul>
+   *   <li>{@code basePath}
+   *   <li>"contents
+   *   <li>{@code partitionId}
+   *   <li>{@code checkpointId}
+   *   <li>{@code nodeId}
+   *   <li>{@code fileSetName}
+   * </ul>
+   */
+  private static final String PATH_FORMAT = "%s/contents/%s/%s/%s/%s/";
+
   private final Storage client;
   private final BucketInfo bucketInfo;
-  private final String prefix;
+  private final String basePath;
 
-  FileSetManager(final Storage client, final BucketInfo bucketInfo, final String prefix) {
+  FileSetManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
     this.client = client;
     this.bucketInfo = bucketInfo;
-    this.prefix = prefix + FILESET_PREFIX;
+    this.basePath = basePath;
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
@@ -79,10 +92,8 @@ final class FileSetManager {
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return prefix
-        + "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId())
-        + fileSetName
-        + "/";
+    return PATH_FORMAT.formatted(
+        basePath, id.partitionId(), id.checkpointId(), id.nodeId(), fileSetName);
   }
 
   private BlobInfo blobInfo(
