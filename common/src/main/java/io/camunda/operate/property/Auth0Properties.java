@@ -7,7 +7,7 @@
 package io.camunda.operate.property;
 
 public class Auth0Properties {
-  public static final String DEFAULT_ORGANIZATIONS_KEY = "https://camunda.com/organizations";
+  public static final String DEFAULT_ORGANIZATIONS_KEY = "https://camunda.com/orgs";
   /**
    * Defines the domain which the user always sees
    */

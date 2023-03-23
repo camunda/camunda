@@ -40,7 +40,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
 
   public static final String ORGANIZATION_ID = "id";
   public static final String ROLES_KEY = "roles";
-  private transient Logger logger = LoggerFactory.getLogger(this.getClass());
+  private static Logger logger = LoggerFactory.getLogger(TokenAuthentication.class);
 
   @Value("${" + OperateProperties.PREFIX + ".auth0.claimName}")
   private String claimName;
@@ -72,23 +72,15 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return orgs.containsKey("id") && orgs.get("id").equals(organization);
   }
 
-  // Need this because this class will be serialized in session
-  private Logger getLogger(){
-    if (logger == null) {
-      logger = LoggerFactory.getLogger(this.getClass());
-    }
-    return logger;
-  }
-
   @Override
   public boolean isAuthenticated() {
     if (hasExpired()) {
-      getLogger().info("Tokens are expired");
+      logger.info("Tokens are expired");
       if (refreshToken == null) {
         setAuthenticated(false);
-        getLogger().info("No refresh token available. Authentication is invalid.");
+        logger.info("No refresh token available. Authentication is invalid.");
       } else {
-        getLogger().info("Get a new tokens by using refresh token");
+        logger.info("Get a new tokens by using refresh token");
         getNewTokenByRefreshToken();
       }
     }
@@ -108,9 +100,9 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       final TokenRequest tokenRequest = getAuthAPI().renewAuth(refreshToken);
       final TokenHolder tokenHolder = tokenRequest.execute();
       authenticate(tokenHolder.getIdToken(), tokenHolder.getRefreshToken(), tokenHolder.getAccessToken());
-      getLogger().info("New tokens received and validated.");
+      logger.info("New tokens received and validated.");
     } catch (Auth0Exception e) {
-      getLogger().error(e.getMessage(), e.getCause());
+      logger.error(e.getMessage(), e.getCause());
       setAuthenticated(false);
     }
   }
@@ -162,7 +154,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
         setAuthenticated(claims.stream().anyMatch(this::isIdEqualsOrganization));
       }
     } catch (JWTDecodeException e) {
-      getLogger().debug("Read organization claim as list of maps failed.", e);
+      logger.debug("Read organization claim as list of maps failed.", e);
     }
   }
 
@@ -183,7 +175,7 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
       final Map<String, Claim> claims = getClaims();
       return findRolesForOrganization(claims, organizationsKey, organization);
     } catch (Exception e) {
-      getLogger().error("Could not get roles. Return empty roles list.", e);
+      logger.error("Could not get roles. Return empty roles list.", e);
     }
     return List.of();
   }
