@@ -210,7 +210,7 @@ public class GatewayAuthenticationIdentityIT {
     final HttpRequest request =
         HttpRequest.newBuilder().uri(URI.create(getKeycloakRealmAddress())).build();
     Awaitility.await()
-        .atMost(Duration.ofSeconds(60))
+        .atMost(Duration.ofSeconds(120))
         .pollInterval(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
