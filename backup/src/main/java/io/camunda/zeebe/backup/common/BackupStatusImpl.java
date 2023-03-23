@@ -21,4 +21,15 @@ public record BackupStatusImpl(
     Optional<String> failureReason,
     Optional<Instant> created,
     Optional<Instant> lastModified)
-    implements BackupStatus {}
+    implements BackupStatus {
+
+  public static BackupStatusImpl doesNotExist(final BackupIdentifier id) {
+    return new BackupStatusImpl(
+        id,
+        Optional.empty(),
+        BackupStatusCode.DOES_NOT_EXIST,
+        Optional.empty(),
+        Optional.empty(),
+        Optional.empty());
+  }
+}
