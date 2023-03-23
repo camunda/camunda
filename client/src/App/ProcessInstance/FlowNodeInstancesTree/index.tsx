@@ -13,6 +13,7 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
   flowNodeInstanceStore,
   FlowNodeInstance,
+  MAX_INSTANCES_STORED,
 } from 'modules/stores/flowNodeInstance';
 import {Bar} from './Bar';
 import {Foldable, Details, Summary} from './Foldable';
@@ -123,12 +124,24 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       }
     };
 
-    const handleEndReach = () => {
+    const handleEndReach = async (scrollUp: (distance: number) => void) => {
       if (flowNodeInstance?.treePath === undefined) {
         return;
       }
       if (flowNodeInstance.treePath !== null) {
-        flowNodeInstanceStore.fetchNext(flowNodeInstance.treePath);
+        const fetchedInstancesCount = await flowNodeInstanceStore.fetchNext(
+          flowNodeInstance.treePath
+        );
+
+        // This ensures that the container is scrolling up when MAX_INSTANCES_STORED is reached.
+        if (
+          fetchedInstancesCount !== undefined &&
+          flowNodeInstanceStore.state.flowNodeInstances[
+            flowNodeInstance.treePath
+          ]?.children.length === MAX_INSTANCES_STORED
+        ) {
+          scrollUp(fetchedInstancesCount * (rowRef.current?.offsetHeight ?? 0));
+        }
       }
     };
 

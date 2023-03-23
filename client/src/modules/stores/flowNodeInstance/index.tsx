@@ -25,7 +25,7 @@ import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import isEqual from 'lodash/isEqual';
 import {modificationsStore} from '../modifications';
 
-const MAX_PROCESS_INSTANCES_STORED = 200;
+const MAX_INSTANCES_STORED = 200;
 const MAX_INSTANCES_PER_REQUEST = 50;
 
 type FlowNodeInstanceType = FlowNodeInstanceDto & {isPlaceholder?: boolean};
@@ -171,13 +171,15 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
       this.handleFetchFailure(`subTree not found: ${treePath}`);
       return;
     }
+    const fetchedInstancesCount = subTree.children.length;
 
     flowNodeInstances[treePath]!.children = [
       ...subTreeChildren,
       ...subTree.children,
-    ].slice(-MAX_PROCESS_INSTANCES_STORED);
+    ].slice(-MAX_INSTANCES_STORED);
 
     this.handleFetchSuccess(flowNodeInstances);
+    return fetchedInstancesCount;
   };
 
   fetchPrevious = async (treePath: string) => {
@@ -224,7 +226,7 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
     flowNodeInstances[treePath]!.children = [
       ...subTree.children,
       ...subTreeChildren,
-    ].slice(0, MAX_PROCESS_INSTANCES_STORED);
+    ].slice(0, MAX_INSTANCES_STORED);
 
     this.handleFetchSuccess(flowNodeInstances);
 
@@ -441,4 +443,5 @@ class FlowNodeInstance extends NetworkReconnectionHandler {
 }
 
 export const flowNodeInstanceStore = new FlowNodeInstance();
+export {MAX_INSTANCES_STORED};
 export type {FlowNodeInstanceType as FlowNodeInstance, FlowNodeInstances};
