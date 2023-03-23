@@ -11,15 +11,29 @@ import {
   $isRangeSelection,
   COMMAND_PRIORITY_CRITICAL,
   FORMAT_TEXT_COMMAND,
+  LexicalEditor,
   SELECTION_CHANGE_COMMAND,
+  TextFormatType,
 } from 'lexical';
-import {TextBold, TextItalic, TextStrikethrough, TextUnderline} from '@carbon/icons-react';
+import {
+  TextBold,
+  TextItalic,
+  TextStrikethrough,
+  TextUnderline,
+  CarbonIconType,
+} from '@carbon/icons-react';
 import {mergeRegister} from '@lexical/utils';
 
 import {Button} from 'components';
 import {t} from 'translation';
 
-export default function InlineStylesButtons({disabled, editor}) {
+export default function InlineStylesButtons({
+  disabled,
+  editor,
+}: {
+  editor: LexicalEditor;
+  disabled?: boolean;
+}) {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
   const [isUnderline, setIsUnderline] = useState(false);
@@ -51,7 +65,9 @@ export default function InlineStylesButtons({disabled, editor}) {
     );
   }, [editor, updateStyles]);
 
-  const BUTTONS = {
+  type ButtonState = {Icon: CarbonIconType; active: boolean};
+
+  const BUTTONS: {[k in TextFormatType]?: ButtonState} = {
     bold: {Icon: TextBold, active: isBold},
     italic: {Icon: TextItalic, active: isItalic},
     underline: {Icon: TextUnderline, active: isUnderline},
@@ -60,20 +76,22 @@ export default function InlineStylesButtons({disabled, editor}) {
 
   return (
     <>
-      {Object.entries(BUTTONS).map(([key, {Icon, active}]) => (
-        <Button
-          key={key}
-          small
-          title={t(`textEditor.toolbar.styles.${key}`)}
-          disabled={disabled}
-          active={active}
-          onClick={() => {
-            editor.dispatchCommand(FORMAT_TEXT_COMMAND, key);
-          }}
-        >
-          <Icon />
-        </Button>
-      ))}
+      {(Object.entries(BUTTONS) as [key: TextFormatType, value: ButtonState][]).map(
+        ([key, {Icon, active}]) => (
+          <Button
+            key={key}
+            small
+            title={t(`textEditor.toolbar.styles.${key}`) as string}
+            disabled={disabled}
+            active={active}
+            onClick={() => {
+              editor.dispatchCommand(FORMAT_TEXT_COMMAND, key);
+            }}
+          >
+            <Icon />
+          </Button>
+        )
+      )}
     </>
   );
 }

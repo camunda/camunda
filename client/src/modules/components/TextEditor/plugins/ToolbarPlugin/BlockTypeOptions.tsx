@@ -10,21 +10,30 @@ import {
   $getSelection,
   $isRangeSelection,
   DEPRECATED_$isGridSelection,
+  LexicalEditor,
 } from 'lexical';
 import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
   REMOVE_LIST_COMMAND,
 } from '@lexical/list';
-import {$createHeadingNode} from '@lexical/rich-text';
+import {$createHeadingNode, HeadingTagType} from '@lexical/rich-text';
 import {$setBlocksType_experimental} from '@lexical/selection';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
 
-export const BLOCK_TYPES = ['paragraph', 'h1', 'h2', 'h3', 'number', 'bullet'];
+export const BLOCK_TYPES = ['paragraph', 'h1', 'h2', 'h3', 'number', 'bullet'] as const;
 
-export default function BlockTypeDropdown({editor, blockType, disabled = false}) {
+export default function BlockTypeDropdown({
+  editor,
+  blockType,
+  disabled = false,
+}: {
+  editor: LexicalEditor;
+  blockType: string;
+  disabled?: boolean;
+}) {
   const formatParagraph = () => {
     if (blockType !== 'paragraph') {
       editor.update(() => {
@@ -36,7 +45,7 @@ export default function BlockTypeDropdown({editor, blockType, disabled = false})
     }
   };
 
-  const formatHeading = (headingSize) => () => {
+  const formatHeading = (headingSize: HeadingTagType) => () => {
     if (blockType !== headingSize) {
       editor.update(() => {
         const selection = $getSelection();
@@ -72,7 +81,7 @@ export default function BlockTypeDropdown({editor, blockType, disabled = false})
     paragraph: formatParagraph,
   };
 
-  if (!BLOCK_TYPES.includes(blockType)) {
+  if (!BLOCK_TYPES.some((type) => type === blockType)) {
     return null;
   }
 

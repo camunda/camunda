@@ -7,7 +7,10 @@
 
 import {useCallback, useState} from 'react';
 
-export default function useModal() {
+export default function useModal(): [
+  modal: JSX.Element | null,
+  showModal: (getModal: (onClose: () => void) => JSX.Element) => void
+] {
   const [modal, setModal] = useState<JSX.Element | null>(null);
 
   const onClose = useCallback(() => {

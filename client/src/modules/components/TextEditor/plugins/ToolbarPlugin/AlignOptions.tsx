@@ -5,17 +5,23 @@
  * except in compliance with the proprietary license.
  */
 
-import {FORMAT_ELEMENT_COMMAND} from 'lexical';
+import {ElementFormatType, FORMAT_ELEMENT_COMMAND, LexicalEditor} from 'lexical';
 
 import {Dropdown} from 'components';
 import {t} from 'translation';
 
-export default function AlignOptions({disabled, editor}) {
-  const onAlign = (alignment) => () => {
+export default function AlignOptions({
+  disabled,
+  editor,
+}: {
+  disabled?: boolean;
+  editor: LexicalEditor;
+}) {
+  const onAlign = (alignment: ElementFormatType) => () => {
     editor.dispatchCommand(FORMAT_ELEMENT_COMMAND, alignment);
   };
 
-  const ALIGN_TYPES = ['left', 'center', 'right'];
+  const ALIGN_TYPES: ElementFormatType[] = ['left', 'center', 'right'];
 
   return (
     <Dropdown

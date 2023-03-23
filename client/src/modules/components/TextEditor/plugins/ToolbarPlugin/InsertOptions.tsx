@@ -8,12 +8,21 @@
 import {INSERT_HORIZONTAL_RULE_COMMAND} from '@lexical/react/LexicalHorizontalRuleNode';
 
 import {Dropdown} from 'components';
+import {LexicalEditor} from 'lexical';
 import {t} from 'translation';
 
 import {InsertImageModal} from '../ImagesPlugin';
 import {InsertLinkModal} from '../LinkPlugin';
 
-export default function InsertOptions({editor, disabled, showModal}) {
+export default function InsertOptions({
+  editor,
+  disabled,
+  showModal,
+}: {
+  editor: LexicalEditor;
+  disabled?: boolean;
+  showModal: (getModal: (onClose: () => void) => JSX.Element) => void;
+}) {
   return (
     <Dropdown
       small

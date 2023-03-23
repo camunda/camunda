@@ -5,11 +5,12 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_CRITICAL,
+  LexicalEditor,
   SELECTION_CHANGE_COMMAND,
 } from 'lexical';
 import {$patchStyleText, $getSelectionStyleValueForProperty} from '@lexical/selection';
@@ -29,9 +30,15 @@ export const FONT_SIZES = [
   '18px',
   '19px',
   '20px',
-];
+] as const;
 
-export default function FontSizeOptions({editor, disabled = false}) {
+export default function FontSizeOptions({
+  editor,
+  disabled = false,
+}: {
+  editor: LexicalEditor;
+  disabled?: boolean;
+}) {
   const [fontSize, setFontSize] = useState('16px');
 
   const updateFontSize = useCallback(() => {
@@ -57,7 +64,7 @@ export default function FontSizeOptions({editor, disabled = false}) {
     );
   }, [editor, updateFontSize]);
 
-  const handleClick = (option) => {
+  const handleClick = (option: string) => {
     editor.update(() => {
       const selection = $getSelection();
       if ($isRangeSelection(selection)) {

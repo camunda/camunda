@@ -5,7 +5,7 @@
  * except in compliance with the proprietary license.
  */
 
-import React, {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {
   $getSelection,
   $isRangeSelection,
