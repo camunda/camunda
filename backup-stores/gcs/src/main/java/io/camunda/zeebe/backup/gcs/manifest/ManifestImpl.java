@@ -21,6 +21,8 @@ record ManifestImpl(
     BackupIdentifierImpl id,
     BackupDescriptorImpl descriptor,
     StatusCode statusCode,
+    FileSet snapshot,
+    FileSet segments,
     Instant createdAt,
     Instant modifiedAt,
     String failureReason)
@@ -38,19 +40,23 @@ record ManifestImpl(
       final BackupIdentifierImpl id,
       final BackupDescriptorImpl descriptor,
       final StatusCode statusCode,
+      final FileSet snapshot,
+      final FileSet segments,
       final Instant createdAt,
       final Instant modifiedAt) {
-    this(id, descriptor, statusCode, createdAt, modifiedAt, null);
+    this(id, descriptor, statusCode, snapshot, segments, createdAt, modifiedAt, null);
   }
 
   @Override
   public CompletedManifest complete() {
-    return new ManifestImpl(id, descriptor, COMPLETED, createdAt, Instant.now());
+    return new ManifestImpl(
+        id, descriptor, COMPLETED, snapshot, segments, createdAt, Instant.now());
   }
 
   @Override
   public FailedManifest fail(final String failureReason) {
-    return new ManifestImpl(id, descriptor, FAILED, createdAt, Instant.now(), failureReason);
+    return new ManifestImpl(
+        id, descriptor, FAILED, snapshot, segments, createdAt, Instant.now(), failureReason);
   }
 
   @Override

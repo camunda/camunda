@@ -14,7 +14,6 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import io.camunda.zeebe.backup.testkit.SavingBackup;
 import io.camunda.zeebe.backup.testkit.UpdatingBackupStatus;
-import java.io.IOException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,12 +64,6 @@ public class GcsBackupStoreIT implements SavingBackup, UpdatingBackupStatus {
   @Override
   public Class<? extends Exception> getBackupInInvalidStateExceptionClass() {
     return UnexpectedManifestState.class;
-  }
-
-  @Override
-  @Disabled
-  public void backupFailsIfFilesAreMissing(final Backup backup) throws IOException {
-    SavingBackup.super.backupFailsIfFilesAreMissing(backup);
   }
 
   @Override
