@@ -18,7 +18,6 @@ package io.camunda.zeebe.model.bpmn.builder;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.Event;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeError;
 
 public abstract class AbstractErrorEventDefinitionBuilder<
         B extends AbstractErrorEventDefinitionBuilder<B>>
@@ -39,32 +38,6 @@ public abstract class AbstractErrorEventDefinitionBuilder<
   /** Sets the error attribute with errorCode. */
   public B error(final String errorCode) {
     element.setError(findErrorForNameAndCode(errorCode));
-    return myself;
-  }
-
-  /**
-   * The attribute specifies a variable that holds the error code. The specified variable will be
-   * created with error code as the value.
-   *
-   * @param errorCodeVariable the name of error code variable
-   * @return the builder object
-   */
-  public B errorCodeVariable(final String errorCodeVariable) {
-    final ZeebeError error = myself.getCreateSingleExtensionElement(ZeebeError.class);
-    error.setErrorCodeVariable(errorCodeVariable);
-    return myself;
-  }
-
-  /**
-   * The attribute specifies a variable that holds the error message. The specified variable will be
-   * created with error message as the value.
-   *
-   * @param errorMessageVariable the name of error message variable
-   * @return the builder object
-   */
-  public B errorMessageVariable(final String errorMessageVariable) {
-    final ZeebeError error = myself.getCreateSingleExtensionElement(ZeebeError.class);
-    error.setErrorMessageVariable(errorMessageVariable);
     return myself;
   }
 

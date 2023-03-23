@@ -22,9 +22,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.util.Either;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public final class EndEventProcessor implements BpmnElementProcessor<ExecutableEndEvent> {
@@ -127,8 +125,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
 
   private class ErrorEndEventBehavior implements EndEventBehavior {
 
-    private static final Map<String, Object> EMPTY_VARIABLES = new HashMap<>();
-
     @Override
     public boolean isSuitableForEvent(final ExecutableEndEvent element) {
       return element.isErrorEndEvent();
@@ -146,7 +142,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           .ifRightOrLeft(
               catchEvent -> {
                 stateTransitionBehavior.transitionToActivated(activating);
-                eventPublicationBehavior.throwErrorEvent(catchEvent, EMPTY_VARIABLES, "");
+                eventPublicationBehavior.throwErrorEvent(catchEvent);
               },
               failure -> incidentBehavior.createIncident(failure, activating));
     }

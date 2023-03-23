@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEvent;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer;
@@ -22,19 +21,16 @@ import io.camunda.zeebe.engine.state.analyzers.CatchEventAnalyzer.CatchEventTupl
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.Map;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
-import org.apache.commons.lang3.StringUtils;
 
 public final class BpmnEventPublicationBehavior {
+
   private final ElementInstanceState elementInstanceState;
   private final EventHandle eventHandle;
   private final CatchEventAnalyzer catchEventAnalyzer;
@@ -68,37 +64,32 @@ public final class BpmnEventPublicationBehavior {
    * interrupted, etc.
    *
    * @param catchEventTuple a tuple representing a catch event and its current instance
-   * @param variables the variables/payload that the event can propagate (can be empty)
-   * @param errorMessage the error message that the event can propagate (can be empty)
    */
-  public void throwErrorEvent(
-      final CatchEventAnalyzer.CatchEventTuple catchEventTuple,
-      final Map<String, Object> variables,
-      final String errorMessage) {
+  public void throwErrorEvent(final CatchEventAnalyzer.CatchEventTuple catchEventTuple) {
     final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
     final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
-    final ExecutableError error = catchEvent.getError();
-    final Optional<String> errorCodeOptional = error.getErrorCode().map(BufferUtil::bufferAsString);
-
-    error
-        .getErrorCodeVariable()
-        .filter(StringUtils::isNotBlank)
-        .ifPresent(
-            errorCodeVariable ->
-                errorCodeOptional.ifPresent(
-                    errorCode -> variables.put(errorCodeVariable, errorCode)));
-
-    error
-        .getErrorMessageVariable()
-        .filter(StringUtils::isNotBlank)
-        .ifPresent(errorMessageVariable -> variables.put(errorMessageVariable, errorMessage));
 
     if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
       eventHandle.activateElement(
-          catchEvent,
-          eventScopeInstance.getKey(),
-          eventScopeInstance.getValue(),
-          new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue());
+    }
+  }
+
+  /**
+   * Throws an error event to the given element instance/catch event pair. Only throws the event if
+   * the given element instance is exists and is accepting events, e.g. isn't terminating, wasn't
+   * interrupted, etc.
+   *
+   * @param catchEventTuple a tuple representing a catch event and its current instance
+   */
+  public void throwErrorEvent(
+      final CatchEventAnalyzer.CatchEventTuple catchEventTuple, final DirectBuffer variables) {
+    final ElementInstance eventScopeInstance = catchEventTuple.getElementInstance();
+    final ExecutableCatchEvent catchEvent = catchEventTuple.getCatchEvent();
+
+    if (eventHandle.canTriggerElement(eventScopeInstance, catchEvent.getId())) {
+      eventHandle.activateElement(
+          catchEvent, eventScopeInstance.getKey(), eventScopeInstance.getValue(), variables);
     }
   }
 
@@ -108,7 +99,7 @@ public final class BpmnEventPublicationBehavior {
    * returned.
    *
    * <p>The returned {@link CatchEventTuple} can be used to throw the event via {@link
-   * #throwErrorEvent(CatchEventTuple, Map, String)}.
+   * #throwErrorEvent(CatchEventTuple)}.
    *
    * @param errorCode the error code of the error event
    * @param context the current element context

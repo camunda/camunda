@@ -48,14 +48,9 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_DECISION_ID = "decisionId";
 
-  public static final String ATTRIBUTE_ERROR_CODE_VARIABLE = "errorCodeVariable";
-  public static final String ATTRIBUTE_ERROR_MESSAGE_VARIABLE = "errorMessageVariable";
-
   public static final String ATTRIBUTE_EXPRESSION = "expression";
 
   public static final String ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
-
-  public static final String ELEMENT_ERROR = "error";
 
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
