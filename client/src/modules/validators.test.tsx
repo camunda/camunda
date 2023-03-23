@@ -424,14 +424,14 @@ describe('validators', () => {
 
   // more fine grained tests for parseFilterTime in utils/filter/index.test.ts
   it('should validate time with delay', async () => {
-    const validate = validateTimeComplete('99:99:99');
+    const validate = validateTimeComplete('99:99:99', {});
     jest.runOnlyPendingTimers();
     await expect(validate).resolves.toBe(TIME_ERROR);
   });
 
   it('should pass validating time', () => {
-    expect(validateTimeComplete('17:30')).toBeUndefined();
-    expect(validateTimeComplete('12:34:56')).toBeUndefined();
+    expect(validateTimeComplete('17:30', {})).toBeUndefined();
+    expect(validateTimeComplete('12:34:56', {})).toBeUndefined();
   });
 
   it('should validate invalid characters without delay', () => {
