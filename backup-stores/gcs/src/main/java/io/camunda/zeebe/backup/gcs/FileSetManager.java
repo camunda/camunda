@@ -10,6 +10,7 @@ package io.camunda.zeebe.backup.gcs;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobWriteOption;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
@@ -44,10 +45,25 @@ final class FileSetManager {
     }
   }
 
+  public void delete(final BackupIdentifier id, final String fileSetName) {
+    for (final var blob :
+        client
+            .list(bucketInfo.getName(), BlobListOption.prefix(fileSetPath(id, fileSetName)))
+            .iterateAll()) {
+      blob.delete();
+    }
+  }
+
+  private String fileSetPath(final BackupIdentifier id, final String fileSetName) {
+    return prefix
+        + "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId())
+        + fileSetName
+        + "/";
+  }
+
   private BlobInfo blobInfo(
       final BackupIdentifier id, final String fileSetName, final String fileName) {
-    final var backupPath = "%s/%s/%s/".formatted(id.partitionId(), id.checkpointId(), id.nodeId());
-    return BlobInfo.newBuilder(bucketInfo, prefix + fileSetName + "/" + backupPath + fileName)
+    return BlobInfo.newBuilder(bucketInfo, fileSetPath(id, fileSetName) + fileName)
         .setContentType("application/octet-stream")
         .build();
   }
