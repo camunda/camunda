@@ -100,7 +100,7 @@ final class ManifestSerializationTest {
   void shouldSerializeFailedManifest() throws JsonProcessingException {
     // given
     final var created =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),

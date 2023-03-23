@@ -22,7 +22,7 @@ import java.time.Instant;
 @JsonDeserialize(as = ManifestImpl.class)
 public sealed interface Manifest {
 
-  static InProgressManifest create(final Backup backup) {
+  static InProgressManifest createInProgress(final Backup backup) {
     final var creationTime = Instant.now();
     return new ManifestImpl(
         BackupIdentifierImpl.from(backup.id()),

@@ -83,7 +83,7 @@ public final class ManifestManager {
 
   PersistedManifest createInitialManifest(final Backup backup) {
     final var manifestBlobInfo = manifestBlobInfo(backup.id());
-    final var manifest = Manifest.create(backup);
+    final var manifest = Manifest.createInProgress(backup);
     try {
       final var blob =
           client.create(

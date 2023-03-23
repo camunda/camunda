@@ -23,7 +23,7 @@ final class ManifestStateCastingTest {
   public void shouldFailOnAsInProgress() {
     // given
     final var manifest =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
@@ -42,7 +42,7 @@ final class ManifestStateCastingTest {
   public void shouldFailOnAsCompleted() {
     // given
     final var manifest =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
@@ -59,7 +59,7 @@ final class ManifestStateCastingTest {
   public void shouldFailOnAsFailed() {
     // given
     final var manifest =
-        Manifest.create(
+        Manifest.createInProgress(
             new BackupImpl(
                 new BackupIdentifierImpl(1, 2, 43),
                 new BackupDescriptorImpl(Optional.empty(), 2345234L, 3, "1.2.0-SNAPSHOT"),
