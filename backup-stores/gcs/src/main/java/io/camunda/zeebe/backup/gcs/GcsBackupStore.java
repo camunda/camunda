@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.backup.gcs;
 
-import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -19,8 +19,8 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.CouldNotAccessBucketException;
 import io.camunda.zeebe.backup.gcs.manifest.Manifest;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
@@ -168,12 +168,12 @@ public final class GcsBackupStore implements BackupStore {
         .getService();
   }
 
-  public static void validateConfig(final GcsBackupConfig config) throws Exception {
+  public static void validateConfig(final GcsBackupConfig config) {
     try (final var storage = buildClient(config)) {
-      final var bucket = storage.get(config.bucketName());
-      if (bucket == null) {
-        throw new BucketDoesNotExistException(config.bucketName());
-      }
+      storage.list(config.bucketName(), BlobListOption.pageSize(1));
+    } catch (final Exception e) {
+      throw new CouldNotAccessBucketException(
+          "Expected to access bucket '%s' but failed".formatted(config.bucketName()), e);
     }
   }
 }
