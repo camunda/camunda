@@ -164,7 +164,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
 
   protected Instant resetZeebeTime() {
     try {
-      return zeebeRequest("DELETE", "actuator/clock/", HttpRequest.BodyPublishers.noBody());
+      return zeebeRequest("DELETE", "actuator/clock", HttpRequest.BodyPublishers.noBody());
     } catch (IOException | InterruptedException e) {
       throw new IllegalStateException("Could not reset zeebe clock", e);
     }
