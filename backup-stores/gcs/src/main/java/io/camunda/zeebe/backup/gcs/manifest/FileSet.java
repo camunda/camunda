@@ -12,10 +12,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/** FileSet use in Manifest serialization, in order to list all stored files. */
 public record FileSet(List<NamedFile> files) {
 
   public FileSet {
     Objects.requireNonNull(files);
+
+    // It might happen that the manifest has been corrupted, we want to prevent
+    // that either on storing or restoring this is silently failing (ignored)
+    // we expect that file names are always unique
     final var countByName =
         files.stream().collect(Collectors.groupingBy(NamedFile::name, Collectors.counting()));
 
