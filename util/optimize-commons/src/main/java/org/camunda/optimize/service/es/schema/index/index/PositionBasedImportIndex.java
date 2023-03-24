@@ -17,6 +17,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.FORMAT_PROP
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_PROPERTY_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.POSITION_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_BOOLEAN;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_KEYWORD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TYPE_OBJECT;
@@ -28,6 +29,7 @@ public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
   private static final String LAST_IMPORT_EXECUTION_TIMESTAMP = ImportIndexDto.Fields.lastImportExecutionTimestamp;
   private static final String POSITION_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.positionOfLastEntity;
   private static final String SEQUENCE_OF_LAST_ENTITY = PositionBasedImportIndexDto.Fields.sequenceOfLastEntity;
+  private static final String HAS_SEEN_SEQUENCE_FIELD = PositionBasedImportIndexDto.Fields.hasSeenSequenceField;
   private static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   private static final String ES_TYPE_INDEX_REFERS_TO = PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
   private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
@@ -63,6 +65,9 @@ public class PositionBasedImportIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(SEQUENCE_OF_LAST_ENTITY)
         .field(MAPPING_PROPERTY_TYPE, TYPE_KEYWORD)
+      .endObject()
+      .startObject(HAS_SEEN_SEQUENCE_FIELD)
+        .field(MAPPING_PROPERTY_TYPE, TYPE_BOOLEAN)
       .endObject()
       .startObject(TIMESTAMP_OF_LAST_ENTITY)
         .field(MAPPING_PROPERTY_TYPE, TYPE_DATE)

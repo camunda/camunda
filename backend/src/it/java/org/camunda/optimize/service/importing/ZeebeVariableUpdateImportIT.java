@@ -268,7 +268,7 @@ public class ZeebeVariableUpdateImportIT extends AbstractZeebeIT {
   public void zeebeVariableImport_updateFlowNodeLevelVariableWithPropagationOnlyUpdatesFlowNodeVariable() {
     // given
     final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();
-    waitUntilMinimumProcessInstanceEventsExportedCount(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
     importAllZeebeEntitiesFromScratch();
     ProcessInstanceDto savedProcessInstance =
       getProcessInstanceForId(String.valueOf(processInstanceEvent.getProcessInstanceKey()));

@@ -42,19 +42,17 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
   private final ConfigurationService configurationService;
-  private boolean hasSeenSequenceField;
 
   protected abstract String getBaseIndexName();
 
   protected abstract Class<T> getRecordDtoClass();
 
   public List<T> getZeebeRecordsForPrefixAndPartitionFrom(PositionBasedImportPage positionBasedImportPage) {
-    setHaveSeenSequenceField(positionBasedImportPage);
     SearchSourceBuilder searchSourceBuilder =
       new SearchSourceBuilder()
         .query(getRecordQuery(positionBasedImportPage))
         .size(configurationService.getConfiguredZeebe().getMaxImportPageSize())
-        .sort(getSortField(), SortOrder.ASC);
+        .sort(getSortField(positionBasedImportPage), SortOrder.ASC);
     final SearchRequest searchRequest = new SearchRequest(getIndexAlias())
       .source(searchSourceBuilder)
       .routing(String.valueOf(partitionId))
@@ -78,7 +76,7 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
   }
 
   private BoolQueryBuilder getRecordQuery(final PositionBasedImportPage positionBasedImportPage) {
-    return hasSeenSequenceField
+    return positionBasedImportPage.isHasSeenSequenceField()
       ? boolQuery()
       .must(rangeQuery(ZeebeRecordDto.Fields.sequence)
               .gt(positionBasedImportPage.getSequence())
@@ -88,15 +86,8 @@ public abstract class AbstractZeebeRecordFetcher<T extends ZeebeRecordDto> {
       .must(rangeQuery(ZeebeRecordDto.Fields.position).gt(positionBasedImportPage.getPosition()));
   }
 
-  private String getSortField() {
-    return hasSeenSequenceField ? ZeebeRecordDto.Fields.sequence : ZeebeRecordDto.Fields.position;
-  }
-
-  private void setHaveSeenSequenceField(final PositionBasedImportPage positionBasedImportPage) {
-    if (!hasSeenSequenceField && positionBasedImportPage.getSequence() != 0L) {
-      log.info("First Zeebe record with sequence field has been imported. Zeebe records will now be fetched based on sequence.");
-      hasSeenSequenceField = true;
-    }
+  private String getSortField(final PositionBasedImportPage positionBasedImportPage) {
+    return positionBasedImportPage.isHasSeenSequenceField() ? ZeebeRecordDto.Fields.sequence : ZeebeRecordDto.Fields.position;
   }
 
   private String getIndexAlias() {

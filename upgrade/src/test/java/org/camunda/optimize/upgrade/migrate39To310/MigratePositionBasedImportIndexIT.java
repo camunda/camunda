@@ -10,12 +10,14 @@ import org.camunda.optimize.upgrade.migrate39To310.indices.PositionBasedImportIn
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class MigratePositionBasedImportIndexIT extends AbstractUpgrade310IT {
 
   @Test
-  public void addZeebeRecordSequenceField() {
+  public void addZeebeRecordSequenceFields() {
     // given
     executeBulk("steps/3.9/importIndex/39-position-based-import-index.json");
 
@@ -27,6 +29,9 @@ public class MigratePositionBasedImportIndexIT extends AbstractUpgrade310IT {
     assertThat(positionBasedImportIndices)
       .hasSize(2)
       .allSatisfy(doc -> assertThat(doc.getSourceAsMap())
-        .containsEntry(PositionBasedImportIndexDto.Fields.sequenceOfLastEntity, 0));
+        .containsAllEntriesOf(Map.of(
+          PositionBasedImportIndexDto.Fields.sequenceOfLastEntity, 0,
+          PositionBasedImportIndexDto.Fields.hasSeenSequenceField, false
+        )));
   }
 }

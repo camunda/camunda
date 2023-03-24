@@ -32,7 +32,12 @@ public class Upgrade39To310PlanFactory implements UpgradePlanFactory {
   }
 
   private UpdateIndexStep addZeebeRecordSequenceFieldToPositionBasedImportIndex() {
-    return new UpdateIndexStep(new PositionBasedImportIndex(), "ctx._source.sequenceOfLastEntity = 0;");
+    // @formatter:off
+    final String script = "" +
+      "ctx._source.sequenceOfLastEntity = 0;"+
+      "ctx._source.hasSeenSequenceField = false;";
+    // @formatter:on
+    return new UpdateIndexStep(new PositionBasedImportIndex(), script);
   }
 
   private UpgradeStep updateSingleProcessReportIndexWithNewField() {

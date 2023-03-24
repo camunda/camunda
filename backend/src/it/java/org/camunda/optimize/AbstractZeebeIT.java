@@ -82,7 +82,7 @@ public abstract class AbstractZeebeIT extends AbstractIT {
     final OptimizeElasticsearchClient esClient =
       elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
     Awaitility.given().ignoreExceptions()
-      .timeout(5, TimeUnit.SECONDS)
+      .timeout(10, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(
         esClient
           .getHighLevelClient()

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 import org.camunda.optimize.dto.optimize.index.PositionBasedImportIndexDto;
 import org.camunda.optimize.service.es.reader.importindex.PositionBasedImportIndexReader;
@@ -21,6 +22,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler.BEGINNING_OF_TIME;
 
+@Slf4j
 @Getter
 @RequiredArgsConstructor
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
@@ -33,6 +35,7 @@ public abstract class PositionBasedImportIndexHandler
   private long persistedSequenceOfLastEntity = 0;
   private long pendingPositionOfLastEntity = 0;
   private long pendingSequenceOfLastEntity = 0;
+  private boolean hasSeenSequenceField = false;
   protected ZeebeDataSourceDto dataSource;
 
   @Autowired
@@ -56,10 +59,17 @@ public abstract class PositionBasedImportIndexHandler
       .getImportIndex(getElasticsearchDocID(), dataSource);
     if (dto.isPresent()) {
       PositionBasedImportIndexDto loadedImportIndex = dto.get();
-      updateLastPersistedEntityPositionAndSequence(loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
-      updatePendingLastEntityPositionAndSequence(loadedImportIndex.getPositionOfLastEntity(), loadedImportIndex.getSequenceOfLastEntity());
+      updateLastPersistedEntityPositionAndSequence(
+        loadedImportIndex.getPositionOfLastEntity(),
+        loadedImportIndex.getSequenceOfLastEntity()
+      );
+      updatePendingLastEntityPositionAndSequence(
+        loadedImportIndex.getPositionOfLastEntity(),
+        loadedImportIndex.getSequenceOfLastEntity()
+      );
       updateLastImportExecutionTimestamp(loadedImportIndex.getLastImportExecutionTimestamp());
       updateTimestampOfLastPersistedEntity(loadedImportIndex.getTimestampOfLastEntity());
+      this.hasSeenSequenceField = loadedImportIndex.isHasSeenSequenceField();
     }
   }
 
@@ -71,6 +81,7 @@ public abstract class PositionBasedImportIndexHandler
     persistedSequenceOfLastEntity = 0;
     pendingPositionOfLastEntity = 0;
     pendingSequenceOfLastEntity = 0;
+    hasSeenSequenceField = false;
   }
 
   @Override
@@ -78,6 +89,7 @@ public abstract class PositionBasedImportIndexHandler
     PositionBasedImportPage page = new PositionBasedImportPage();
     page.setPosition(pendingPositionOfLastEntity);
     page.setSequence(pendingSequenceOfLastEntity);
+    page.setHasSeenSequenceField(hasSeenSequenceField);
     return page;
   }
 
@@ -89,6 +101,11 @@ public abstract class PositionBasedImportIndexHandler
   public void updateLastPersistedEntityPositionAndSequence(final long position, final long sequence) {
     this.persistedPositionOfLastEntity = position;
     this.persistedSequenceOfLastEntity = sequence;
+    if (!hasSeenSequenceField && persistedSequenceOfLastEntity > 0) {
+      log.info("First Zeebe record with sequence field for import type {} has been imported." +
+                 " Zeebe records will now be fetched based on sequence.", getElasticsearchDocID());
+      hasSeenSequenceField = true;
+    }
   }
 
   public void updatePendingLastEntityPositionAndSequence(final long position, final long sequence) {

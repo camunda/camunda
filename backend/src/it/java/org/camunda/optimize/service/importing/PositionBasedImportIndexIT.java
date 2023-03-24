@@ -14,7 +14,6 @@ import org.camunda.optimize.AbstractZeebeIT;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import org.camunda.optimize.dto.zeebe.process.ZeebeProcessInstanceDataDto;
-import org.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.util.ZeebeBpmnModels;
@@ -47,7 +46,7 @@ public class PositionBasedImportIndexIT extends AbstractZeebeIT {
 
   @RegisterExtension
   @Order(1)
-  private final LogCapturer logCapturer = LogCapturer.create().captureForType(AbstractZeebeRecordFetcher.class);
+  private final LogCapturer logCapturer = LogCapturer.create().captureForType(PositionBasedImportIndexHandler.class);
 
   @Test
   public void importPositionIsZeroIfNothingIsImportedYet() {
