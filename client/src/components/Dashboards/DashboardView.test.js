@@ -220,3 +220,9 @@ it('should reset filters when closing the filters section', () => {
   node.find('.filter-button').simulate('click');
   expect(node.find('FiltersView').prop('filter')).toEqual([]);
 });
+
+it('should hide the share button', () => {
+  const node = shallow(<DashboardView sharingHidden />);
+
+  expect(node.find('Popover.share-button')).not.toExist();
+});

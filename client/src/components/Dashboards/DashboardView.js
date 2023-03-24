@@ -45,6 +45,7 @@ export function DashboardView(props) {
     name,
     currentUserRole,
     isAuthorizedToShare,
+    sharingHidden,
     sharingEnabled,
     tiles,
     availableFilters,
@@ -139,24 +140,26 @@ export function DashboardView(props) {
                       </Button>
                     </>
                   )}
-                  <Popover
-                    main
-                    className="tool-button share-button"
-                    icon="share"
-                    title={t('common.sharing.buttonTitle')}
-                    disabled={!sharingEnabled || !isAuthorizedToShare}
-                    tooltip={getShareTooltip()}
-                  >
-                    <ShareEntity
-                      type="dashboard"
-                      resourceId={id}
-                      shareEntity={shareDashboard}
-                      revokeEntitySharing={revokeDashboardSharing}
-                      getSharedEntity={getSharedDashboard}
-                      filter={filter}
-                      defaultFilter={getDefaultFilter(availableFilters)}
-                    />
-                  </Popover>
+                  {!sharingHidden && (
+                    <Popover
+                      main
+                      className="tool-button share-button"
+                      icon="share"
+                      title={t('common.sharing.buttonTitle')}
+                      disabled={!sharingEnabled || !isAuthorizedToShare}
+                      tooltip={getShareTooltip()}
+                    >
+                      <ShareEntity
+                        type="dashboard"
+                        resourceId={id}
+                        shareEntity={shareDashboard}
+                        revokeEntitySharing={revokeDashboardSharing}
+                        getSharedEntity={getSharedDashboard}
+                        filter={filter}
+                        defaultFilter={getDefaultFilter(availableFilters)}
+                      />
+                    </Popover>
+                  )}
                 </React.Fragment>
               )}
               {fullScreenHandle.active && (
