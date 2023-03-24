@@ -95,4 +95,51 @@ public class GcsBucketIT {
             "contents/2/3/1/snapshot/snapshotFile2",
             "manifests/2/3/1/manifest.json");
   }
+
+  @Test
+  public void shouldStoreBackupInCorrectPathsUnderBase() throws IOException {
+    // given
+    store =
+        new GcsBackupStore(
+            new GcsBackupConfig.Builder()
+                .withBucketName(bucketName)
+                .withHost(GCS.externalEndpoint())
+                .withBasePath("root")
+                .withoutAuthentication()
+                .build());
+    final File snapshotFile1 = File.createTempFile("file1", "snapshotFile1");
+    final File snapshotFile2 = File.createTempFile("file2", "snapshotFile2");
+    final File segmentFile = File.createTempFile("file3", "segmentFile1");
+    final var backup =
+        new BackupImpl(
+            new BackupIdentifierImpl(1, 2, 3),
+            new BackupDescriptorImpl(Optional.empty(), 1, 1, "version"),
+            new NamedFileSetImpl(
+                Map.of(
+                    "snapshotFile1",
+                    snapshotFile1.toPath(),
+                    "snapshotFile2",
+                    snapshotFile2.toPath())),
+            new NamedFileSetImpl(Map.of("segmentFile1", segmentFile.toPath())));
+
+    // when
+    store.save(backup).join();
+
+    // then
+    final Page<Blob> blobList = client.list(bucketName);
+
+    Assertions.assertThat(blobList).isNotNull();
+
+    final var blobs = new ArrayList<Blob>();
+    blobList.iterateAll().forEach(blobs::add);
+
+    Assertions.assertThat(blobs).isNotEmpty();
+    Assertions.assertThat(blobs)
+        .extracting(Blob::getName)
+        .containsExactlyInAnyOrder(
+            "root/contents/2/3/1/segments/segmentFile1",
+            "root/contents/2/3/1/snapshot/snapshotFile1",
+            "root/contents/2/3/1/snapshot/snapshotFile2",
+            "root/manifests/2/3/1/manifest.json");
+  }
 }
