@@ -38,6 +38,7 @@ import javax.net.ssl.SSLContext;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -83,7 +84,8 @@ public class ElasticsearchHighLevelRestClientBuilder {
       final KeyStore truststore = loadCustomTrustStore(configurationService);
 
       if (truststore.size() > 0) {
-        final TrustStrategy trustStrategy = configurationService.getElasticsearchSecuritySslSelfSigned() == Boolean.TRUE ?
+        final TrustStrategy trustStrategy =
+          configurationService.getElasticsearchSecuritySslSelfSigned() == Boolean.TRUE ?
           new TrustSelfSignedStrategy() : null;
         sslContext = SSLContexts.custom().loadTrustMaterial(truststore, trustStrategy).build();
       } else {
@@ -116,7 +118,7 @@ public class ElasticsearchHighLevelRestClientBuilder {
       final ProxyConfiguration proxyConfig = configurationService.getElasticsearchProxyConfig();
       if (proxyConfig.isEnabled()) {
         httpClientBuilder.setProxy(new HttpHost(
-          proxyConfig.getHost(), proxyConfig.getPort(), proxyConfig.isSslEnabled() ? "https" : "http"
+          proxyConfig.getHost(), proxyConfig.getPort(), proxyConfig.isSslEnabled() ? HTTPS : HTTP
         ));
       }
 
@@ -238,28 +240,54 @@ public class ElasticsearchHighLevelRestClientBuilder {
                                                             final RequestOptions requestOptions) {
     RestHighLevelClient restHighLevelClient = new RestHighLevelClientBuilder(builder.build())
       .build();
-    try {
       // we only need to turn on the compatibility mode when the server is ES8
-      final String esVersion = getCurrentESVersion(restHighLevelClient, requestOptions);
-      if (esVersion.charAt(0) == '8') {
+      final String esVersion = waitUntilElasticIsUpAndFetchVersion(restHighLevelClient, requestOptions);
+      // The string containing the ElasticSearch version has the format X.X.X, therefore if the first character is 8,
+      // we are dealing with ES8
+      if (esVersion.startsWith("8")) {
         restHighLevelClient = new RestHighLevelClientBuilder(builder.build())
           .setApiCompatibilityMode(true)
           .build();
-        logger.info("The ES client has now enabled its compatibility mode for ES8.");
+        logger.info("The compatibility mode for ES8 has been enabled for the client.");
       }
       logger.info("Finished setting up HTTP rest client connection.");
       return restHighLevelClient;
-    } catch (IOException e) {
-      String message = "Could not fetch the version of the Elasticsearch server.";
-      throw new OptimizeRuntimeException(message, e);
+  }
+
+  private static String waitUntilElasticIsUpAndFetchVersion(final RestHighLevelClient restHighLevelClient,
+                                                            final RequestOptions requestOptions) {
+    // We keep trying until elasticsearch is up and running. If ES does not boot then we cannot run Optimize anyway,
+    // therefore we just stay in this infinite loop until it's up
+    while (true) {
+      try {
+        return getCurrentESVersion(restHighLevelClient, requestOptions);
+      } catch (ConnectException ex) {
+        logger.error("Can't connect to any ES node right now. Retrying connection...");
+        long sleepTime = 1000;
+        logger.info("No Elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+        try {
+          Thread.sleep(sleepTime);
+        } catch (final InterruptedException e) {
+          logger.warn("Got interrupted while waiting to retry connecting to Elasticsearch.", e);
+          Thread.currentThread().interrupt();
+        }
+      } catch (IOException e) {
+        String message = "Could not fetch the version of the Elasticsearch server.";
+        throw new OptimizeRuntimeException(message, e);
+      }
     }
   }
 
   private static RequestOptions getRequestOptions(final ConfigurationService configurationService) {
-    ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(configurationService, new PluginJarFileLoader(configurationService));
+    ElasticsearchCustomHeaderProvider customHeaderProvider = new ElasticsearchCustomHeaderProvider(
+      configurationService,
+      new PluginJarFileLoader(configurationService)
+    );
     customHeaderProvider.initPlugins();
-    RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider(customHeaderProvider.getPlugins(), configurationService);
+    RequestOptionsProvider requestOptionsProvider = new RequestOptionsProvider(
+      customHeaderProvider.getPlugins(),
+      configurationService
+    );
     return requestOptionsProvider.getRequestOptions();
   }
-
 }
