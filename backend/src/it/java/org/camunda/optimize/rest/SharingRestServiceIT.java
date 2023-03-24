@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTileDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
@@ -162,6 +163,29 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response = sharingClient.createDashboardShareResponse(dashboardShareDto);
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewReportShareForInstantPreviewDashboardReport() {
+    // given
+    final InstantPreviewDashboardService instantPreviewDashboardService =
+      embeddedOptimizeExtension.getInstantPreviewDashboardService();
+    String processDefKey = "dummy";
+    String dashboardJsonTemplateFilename = "template2.json";
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processDefKey));
+    importAllEngineEntitiesFromScratch();
+    InstantDashboardDataDto instantPreviewDashboard = instantPreviewDashboardService.createInstantPreviewDashboard(
+        processDefKey, dashboardJsonTemplateFilename)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get instant dashboard"));
+    final DashboardDefinitionRestDto dashboard = dashboardClient.getDashboard(instantPreviewDashboard.getDashboardId());
+    final DashboardReportTileDto instantPreviewReport = dashboard.getTiles().get(0);
+    final ReportShareRestDto reportShare = createReportShare(instantPreviewReport.getId());
+
+    // when
+    Response response = sharingClient.createReportShareResponse(reportShare);
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());

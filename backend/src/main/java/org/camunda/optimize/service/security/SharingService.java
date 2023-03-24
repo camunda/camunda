@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRest
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
@@ -168,9 +169,12 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         reportShare.getReportId(),
         userId
       );
-      if (reportDefinition.getDefinitionDto() instanceof SingleProcessReportDefinitionRequestDto
-        && ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto()).getData().isManagementReport()) {
-        throw new OptimizeValidationException("Management Reports cannot be shared");
+      if (reportDefinition.getDefinitionDto() instanceof SingleProcessReportDefinitionRequestDto) {
+        final ProcessReportDataDto reportData =
+          ((SingleProcessReportDefinitionRequestDto) reportDefinition.getDefinitionDto()).getData();
+        if (reportData.isManagementReport() || reportData.isInstantPreviewReport()) {
+          throw new OptimizeValidationException("Management Reports and Instant Preview Dashboard Reports cannot be shared");
+        }
       }
     } catch (OptimizeValidationException exception) {
       throw exception;
